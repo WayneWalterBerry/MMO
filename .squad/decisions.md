@@ -383,7 +383,403 @@ The game language should be **self-modifying** — player actions can change the
 - Can host revoke transformation (eject player back to ghost/their universe)?
 - Do ghosts see host universe state, or filtered version?
 
+---
+
+### 14. Architecture Decision: Code Rewrite Mutation Model (2026-03-18)
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-18  
+**Status:** Approved  
+**Firmness:** FIRM  
+**Risk Level:** LOW  
+
+**Decision:** Full rewrite mutation model. When game state changes, the object's definition/code is literally transformed — "the code IS the state." No separate state flags. The old definition ceases to exist and is replaced by the new one.
+
+**Rationale:** 
+- Aligns with the meta-code vision where code and data are blended
+- No distinction between "the object" and "the object's state"
+- Philosophically pure; creates emergent, magical player experience
+- More semantically honest than flag-based mutations
+
+**Implementation Notes:**
+- Requires careful state serialization and undo/redo handling
+- Version tagging for saved games vs. mutated instances needed
+- Immutable baseline + mutable overlays pattern recommended (don't rewrite baseline)
+
+**Mitigation:** Prototype mutation mechanics early (first 2 weeks of engine dev)
+
+---
+
+### 15. Architecture Decision: Meta-Code Format (2026-03-18)
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-18  
+**Status:** Deferred  
+**Firmness:** SOFT  
+**Risk Level:** HIGH  
+
+**Current Status:** "Likely Lua tables/closures" but not formalized
+
+**Options Being Considered:**
+1. Pure Lua source (saveable via `string.dump` or as `.lua` files)
+2. JSON representation of Lua tables (cleaner for LLM, harder to execute)
+3. Hybrid (templates in Lua, mutations in JSON)
+
+**Why it Matters:**
+- Affects serialization strategy (Lua source vs. JSON)
+- Affects LLM mutation capability
+- Affects hot-reload mechanics
+- Gates template authoring work
+
+**Recommendation:** Lock this down by end of week 1 of Phase 1. Multiple parallel prototypes may be needed to decide.
+
+---
+
+### 16. Architecture Decision: Engine Language is Lua (2026-03-18)
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-18  
+**Status:** Approved  
+**Firmness:** FIRM  
+**Risk Level:** LOW  
+
+**Decision:** Lua for both engine core AND meta-code (universe templates). Single language stack.
+
+**Rationale:**
+- Industry standard for game scripting
+- Homoiconic properties support self-modifying code patterns
+- Removes language boundary and serialization impedance mismatch
+- LLM proficiency with Lua well-established
+
+**Benefits:**
+- Simpler dev workflow, faster iteration
+- Universe divergence is literally source code divergence
+- No bridging complexity between engine and game logic
+
+---
+
+### 17. Architecture Decision: Universe Templates Generated at Build Time (2026-03-18)
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-18  
+**Status:** Approved  
+**Firmness:** FIRM  
+**Risk Level:** LOW  
+
+**Decision:** Universe templates are generated once at build time via LLM, hand-tuned by designers, then procedurally varied per player.
+
+**Rationale:**
+- Eliminates per-player LLM calls (HUGE cost savings: ~$5K–10K/month estimated)
+- Hand-tuning ensures quality at build time
+- Procedural variation (seeded) provides replay differentiation
+- Aligns with "all code written by LLM" directive without per-player overhead
+
+**Implementation:**
+- LLM generates base template + variation rules at build time
+- Designers hand-tune templates for quality
+- Each player's universe seeded for deterministic but varied content
+
+**Limitations:**
+- Mutations generated once at build time
+- Changes to game logic require rebuilding
+- Acceptable trade-off; plan post-launch content patches
+
+---
+
+### 18. Architecture Decision: Cloud Persistence Storage (2026-03-18)
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-18  
+**Status:** Approved  
+**Firmness:** FIRM  
+**Risk Level:** MEDIUM  
+
+**Decision:** Player universe state persists to cloud storage (not local only).
+
+**Rationale:**
+- Enables cross-device play
+- Supports "The Company" narrative infrastructure
+- Allows analytics pipeline for game design insights
+
+**Infrastructure Required:**
+- Database schema (universe state, mutations, player analytics)
+- Authentication + rate limiting
+- Sync protocol (merge conflicts, consistency)
+- Cost monitoring for analytics storage growth
+
+**Recommendation:** Design infrastructure first; prototype with minimal dataset. Use CRDT or event-sourced log to avoid merge conflicts.
+
+---
+
+### 19. Architecture Decision: Parser Approach (2026-03-18)
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-18  
+**Status:** Deferred  
+**Firmness:** SOFT  
+**Risk Level:** MEDIUM  
+
+**Decision:** Parser approach deferred between two viable options: NLP or rich synonyms.
+
+**Options:**
+- **Option A:** NLP-based parsing (costs tokens; feels smarter)
+- **Option B:** Rule-based rich synonyms (costs dev time; feels predictable)
+- **Stretch Goal:** Local LLM parser (ggml or ollama)
+
+**Why Deferred:** Both paths viable with different cost/complexity profiles.
+
+**Recommendation:** 1-week prototype race (week 1 of Phase 1):
+- Prototype 1: Rule-based rich synonyms for 10 core verbs
+- Prototype 2: Call LLM parser via API
+- Prototype 3 (if time): Local LLM parser
+- Pick winner based on accuracy + cost + dev velocity
+
+---
+
+### 20. Architecture Decision: Ghost Visibility (Fog of War) (2026-03-18)
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-18  
+**Status:** Approved  
+**Firmness:** FIRM  
+**Risk Level:** LOW  
+
+**Decision:** Ghosts see only the current room. Room-scoped visibility enforced (fog of war).
+
+**Rationale:**
+- Simplifies networking (no large-area state sync needed)
+- Reduces network bandwidth
+- Design choice accepted; not a technical constraint
+
+**Limitations:**
+- Removes exploration-as-shared-experience
+- May feel limiting for cooperative play
+
+**Mitigation:** Compensate with rich shared-room interactions
+
+---
+
+### 21. Architecture Decision: No Universe Merge (MVP Scope) (2026-03-18)
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-18  
+**Status:** Approved  
+**Firmness:** FIRM  
+**Risk Level:** MEDIUM  
+
+**Decision:** Ghost joins host's universe; host's universe does NOT merge with ghost's original universe. Each universe maintains independent state.
+
+**Rationale:**
+- Eliminates OT, CRDT, or last-write-wins conflict resolution complexity
+- Simplifies network sync protocol significantly
+- Scope reduction: ~2 weeks of engineering effort saved
+
+**Limitations:**
+- Caps social play (raids, shared dungeons limited)
+- Players may feel isolated early on
+
+**Mitigation:**
+- Design "opt-in merge" UX early (future feature)
+- Prototype small-scale merge for 2-player raids post-MVP
+- Monitor player feedback; iterate based on usage
+
+---
+
+### 22. Game Design Decision: Mutation is Authoritative State (2026-03-19)
+
+**Author:** Comic Book Guy (Game Designer)  
+**Date:** 2026-03-19  
+**Status:** Proposed (awaiting team review)  
+**Firmness:** FIRM  
+**Risk Level:** MEDIUM  
+
+**Decision:** World state is represented by mutated Lua code, not Boolean flags. When the mirror breaks, `mirror.description` changes in the source. When the door unlocks permanently, the Door object becomes an OpenExit.
+
+**Rationale:** 
+- This is the defining mechanic of the game
+- Flags-plus-templates produce "Zork Lite"
+- Actual code mutation produces a genuinely self-modifying world
+
+**Risk:** More expensive to implement. LLM generates mutations; requires sandboxed execution.
+
+**Fallback:** Flags for Phase 1, migrate to mutation in Phase 2
+
+**Vote Needed From:** Engineers (feasibility), Wayne (cost/timeline tradeoff)
+
+---
+
+### 23. Game Design Decision: Double-Opt-In Merge Consent (2026-03-19)
+
+**Author:** Comic Book Guy (Game Designer)  
+**Date:** 2026-03-19  
+**Status:** Proposed (awaiting team review)  
+
+**Decision:** Player-initiated universe merges require explicit acceptance from both players. World-triggered rift events are opt-out (player can DECLINE), not opt-in.
+
+**Rationale:** 
+- Forced merges enable griefing and destroy the personal-universe promise
+- This is a social contract decision
+
+**Impact:** Multiverse event system, UI for merge invitation
+
+**Vote Needed From:** Wayne (product philosophy), Engineers (implementation)
+
+---
+
+### 24. Game Design Decision: NPC Death Permanence (2026-03-19)
+
+**Author:** Comic Book Guy (Game Designer)  
+**Date:** 2026-03-19  
+**Status:** Proposed (awaiting team review)  
+
+**Decision:** When a player kills an NPC, that NPC is permanently dead in their universe. The NPC's services, quests, and dialogue are gone.
+
+**Rationale:** 
+- Consequence = investment (Ultima IV proved this)
+- Skyrim's essential NPCs proved the opposite — players feel nothing when they can't affect the world
+
+**Risk:** Players can softlock their own universe by killing quest-critical NPCs.
+
+**Mitigation:** 
+- Quest-critical NPCs warn before combat: "This NPC is important. Are you sure?"
+- OR quest has a fallback path that functions without the NPC
+
+**Vote Needed From:** Wayne (design philosophy), Engineers (NPC state persistence)
+
 **Alignment:** Refinement of multiverse model (Decision 7, 10); coordinates with universe merging mechanics.
+
+---
+
+### 14. Mutation Model: True Code Rewrite (2026-03-19)
+
+**Author:** Wayne "Effe" Berry  
+**Status:** Active  
+**Impact:** Engine architecture — defines how object state changes work  
+**Resolves:** Open question from Decision 12 (flags vs. code mutation)
+
+When a player breaks a mirror, the engine rewrites the object definition entirely. The mirror becomes a fundamentally different entity (e.g., `broken_mirror`), not a flag flip on the same object. This is a **true code rewrite** — the old entity ceases to exist and a new one takes its place in the world model.
+
+**Implications:**
+- Engine must support full entity replacement, not just property updates
+- Object identity changes on mutation (old ID → new ID)
+- Containment tree must handle entity replacement gracefully
+- Supersedes the "start with flags" recommendation in Decision 8.2
+
+---
+
+### 15. Meta-Code Format: Deferred — Likely Lua Tables/Closures (2026-03-19)
+
+**Author:** Wayne "Effe" Berry  
+**Status:** Deferred (leaning Lua tables/closures)  
+**Impact:** Engine internals — representation of mutable world definitions  
+
+Not yet formally decided, but since Lua was chosen as the engine language (Decision 16), the meta-code representation will likely be **Lua tables and closures**. This keeps engine and world definition in the same language with no serialization boundary.
+
+**Open for:** Final confirmation once prototyping begins.
+
+---
+
+### 16. Engine Language: Lua (2026-03-19)
+
+**Author:** Wayne "Effe" Berry  
+**Status:** Active  
+**Impact:** Foundational — affects all engine and world code  
+**Confirms:** Decision 6 recommendation (Frink's Lua research)
+
+Lua for **both** the engine AND the meta-code. Lua can rewrite and re-interpret itself via `loadstring()`. There is no boundary between engine code and meta-code — they are the same language, the same runtime, the same representation.
+
+**Key Properties:**
+- Self-modifying via `loadstring()` / `load()`
+- Tables unify code and data (prototype-based)
+- ~200 KB runtime, embeddable
+- Industry-proven (WoW, Roblox, LÖVE, Defold)
+
+---
+
+### 17. Universe Templates: LLM Once at Build Time + Hand-Tuning + Procedural Variation (2026-03-19)
+
+**Author:** Wayne "Effe" Berry  
+**Status:** Active  
+**Impact:** Content pipeline, cost model, player experience  
+
+**Pipeline:**
+1. **Build time:** LLM generates a canonical universe template once when the game ships
+2. **Hand-tuning:** Humans review and alter the template to improve quality
+3. **Player start:** Procedural variation creates a unique multiverse instance per player
+
+**Key Constraint:** No per-player LLM token cost. The LLM is a build tool, not a runtime dependency. Players get unique worlds through deterministic procedural variation from the hand-tuned template, not from individual LLM calls.
+
+**Implications:**
+- Need a procedural variation system (seeds, parameter ranges)
+- Template format must support parameterized variation points
+- Quality depends on the template + variation design, not on LLM quality at runtime
+
+---
+
+### 18. Persistence: Cloud Storage (2026-03-19)
+
+**Author:** Wayne "Effe" Berry  
+**Status:** Active  
+**Impact:** Infrastructure, data model, multiplayer architecture  
+
+Mutated universe state is persisted in the cloud so players can resume across sessions and devices. Cloud persistence also enables **"The Company"** (in-game meta-entity) to analyze how player worlds evolve over time.
+
+**Implications:**
+- Need cloud storage service (specific provider TBD)
+- Serialization format for mutated Lua state must be cloud-friendly
+- "The Company" analytics pipeline can process universe snapshots
+- Replaces local-only SQLite persistence model from Decision 5
+
+---
+
+### 19. Parser: NLP or Rich Synonyms — No Simple Verb-Noun (2026-03-19)
+
+**Author:** Wayne "Effe" Berry  
+**Status:** Active (details TBD)  
+**Impact:** Player interaction model, engine complexity  
+
+The parser will NOT be simple verb-noun. Two acceptable approaches:
+1. **Natural language processing** — full NLP parsing of player input
+2. **Structured commands with extensive synonym/alias mapping** — rich synonym tables that make structured commands feel natural
+
+**LLM-powered parsing** is acceptable only if running locally (no per-interaction token cost). Local LLM is a **stretch goal**, not a requirement.
+
+**Supersedes:** Decision 3's "simple tokenizer + verb dictionary" recommendation.
+
+---
+
+### 20. Ghost Visibility: Fog of War (2026-03-19)
+
+**Author:** Wayne "Effe" Berry  
+**Status:** Active  
+**Impact:** Multiplayer architecture, networking, streaming  
+**Refines:** Decision 13 (Ghost Mechanic)
+
+Ghosts (players from other universes) only see the **immediate vicinity** — the current room or area — not the whole universe. This is a fog-of-war model applied to inter-universe observation.
+
+**Benefits:**
+- Efficient for streaming — only current room state needs to be shared
+- Reduces information overload for ghost players
+- Limits scouting/griefing potential
+- Simplifies network sync (room-scoped, not universe-scoped)
+
+---
+
+### 21. Universe Merge: No Merge (2026-03-19)
+
+**Author:** Wayne "Effe" Berry  
+**Status:** Active  
+**Impact:** Multiplayer architecture, simplifies universe interaction model  
+**Supersedes:** Decision 7's merge/conflict resolution roadmap
+
+When a ghost is **transformed** into a full participant in a host's universe, they simply join as-is. Their own universe **pauses** separately — it doesn't merge, blend, or conflict-resolve with the host universe.
+
+**Key Properties:**
+- No complex merge/conflict resolution needed
+- Ghost's home universe is frozen in place, resumable later
+- Host universe is canonical — the transformed player plays in it
+- Dramatically simplifies the multiverse interaction model
+- Removes need for CRDTs, OT, or last-write-wins conflict handling
 
 ---
 
