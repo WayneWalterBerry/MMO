@@ -167,6 +167,226 @@ world.items.sword.cursed = true  -- mutate at runtime
 
 ---
 
+---
+
+### 7. Multiverse MMO Architecture
+
+**Author:** Frink (Researcher)  
+**Date:** 2026-03-19  
+**Status:** Proposed (awaiting team review)  
+**Priority:** High (affects core architecture)  
+
+**Proposal:** Adopt a multiverse MMO architecture where each player gets their own private universe by default. Universes can merge opt-in via raid mechanics, events, and social triggers.
+
+**Key Benefits:**
+- Infinite scalability with no shared bottleneck
+- No resource contention; rare items don't compete across players
+- Per-player narrative pacing; quests progress at player speed
+- Opt-in multiplayer (raids, events, trading are consensual)
+- Auditable state via event sourcing; full history preserved
+- Git-compatible; state stored as Lua source with natural diffs
+
+**Technical Stack:**
+```
+Lua VM (per-universe)
+  → Event Sourcing (immutable log)
+  → Copy-on-Write Snapshots (efficient storage; 1000 players × 10 MB ≈ 110 MB)
+  → Git-Like DAG (universe relationships)
+  → Procedural Generation (infinite universes via deterministic seeds)
+  → Storage Tiers (RAM → Hibernation → Archive → Forgotten)
+```
+
+**Implementation Roadmap:**
+1. Single canonical universe; event sourcing
+2. Per-player forks; CoW snapshots
+3. Merging; conflict resolution
+4. Procedural generation; scaling
+5. Advanced features (dimensional rifts, multi-universe events)
+
+**Key Trade-Offs:**
+- Players isolated by default; merge mechanics must be compelling
+- Merge conflicts require explicit resolution (last-write-wins, conflict markers, OT)
+- Procedural generation must be deterministic (seed-based)
+
+**Risks & Mitigations:**
+- Merge conflicts intractable → Design game logic to prevent conflicts; use CRDTs
+- State explosion → Procedural + CoW; aggressive archival
+- Lua VM overhead → LuaJIT lightweight; profile and optimize
+- Universe hopping to grief → Identity/XP tied to primary universe
+
+**Research Deliverable:** `resources/research/architecture/multiverse-mmo-architecture.md` (52K)
+
+**Next Steps:** Architecture team feasibility review; design merge conflict resolution; engineer prototyping.
+
+**Decision Ready for Team Merge** ✓
+
+---
+
+### 8. Game Design Foundations
+
+**Author:** Comic Book Guy (Game Designer)  
+**Date:** 2026-03-19  
+**Status:** Proposed (awaiting team review)  
+**Impact:** Establishes core gameplay pillars; affects engine design  
+
+**Core Decisions:**
+
+#### 8.1 Verb-Based Interaction System
+- 15–20 core verbs (LOOK, TAKE, DROP, GO, OPEN, etc.)
+- Framework for custom puzzle-specific verbs
+- Proven by 40+ years of text adventures
+- Rationale: natural for players; directly maps intent to command
+- Implications: engine must parse commands; each verb has preconditions + side effects
+
+#### 8.2 Code Mutation Over State Flags
+- Game state is MUTATED CODE, not hidden flags
+- Example: `mirror.description = "Shattered..."; mirror.on_look = new_func(...)`
+- Philosophically purer; easier to reason about; enables emergent behaviors
+- Trade-off: may be LLM-costly; less efficient than flags
+- Recommendation: Start with flags (faster iteration); migrate if LLM cost acceptable
+
+#### 8.3 Object Taxonomy & Containment
+- Five core types: Room, Item, Container, Door, Actor
+- Rules: no circular containment; weight limits; closed containers hide contents
+- Standard hooks: `on_look`, `on_take`, `on_enter`, etc.
+- Proven by Inform 7 and TADS; prevents logic errors
+
+#### 8.4 Player-Per-Universe Model (Multiverse)
+- Each player gets parallel universe by default; isolated unless explicitly merged
+- Merge triggers: cooperative boss, trading hub, rift portal, summoning ritual (all voluntary)
+- Conflict handling: owner's universe canonical; merge takes A's version of shared objects
+- Implications: DB must support versioning; session manager tracks universe_id per player
+
+#### 8.5 Narrative: Main Quest + Sandbox
+- Balance authored story (main quest) with player freedom (sandbox, side quests)
+- Main quest: linear story beats, core NPCs, climax
+- Sandbox: optional puzzles, trading, exploration
+- Implications: design both main arc AND open-world; NPCs need personality + dialogue trees
+
+#### 8.6 Moral Choices & Permanent Consequences
+- Player choices are permanent and change world code (via mutation)
+- Example: betray NPC → NPC's code changes (faction, dialogue, behavior)
+- No undo beyond loading old save; increases player investment
+- Recommendation: allow save/load to multiple slots for experimentation
+
+**Open Design Questions:**
+- Combat system: turn-based vs real-time? verbs or mechanics? (→ Turn-based, verb-based, Phase 1)
+- Magic system: LLM-generated? sandboxed Lua? verb aliases? (→ High-level verbs triggering LLM effects)
+- Persistence format: Lua source? JSON snapshots? both? (→ JSON snapshots + optional Lua export)
+- NPC AI: static? reactive? proactive? (→ Reactive for Phase 1)
+- Universe scale: hard one-player constraint or soft? (→ Soft; owner + temporary merges)
+
+**Alignment with Prior Decisions:**
+✅ Containment hierarchies (Frink) — parent-child tree model  
+✅ Lua scripting (Frink) — code-as-data blending  
+✅ Multiverse model (Wayne) — concrete merge mechanics  
+✅ Code mutation (Wayne) — engine-driven, not player-driven  
+✅ Text-based interaction (Wayne) — verb-based parser  
+
+**Design Document:** `docs/design/game-design-foundations.md`
+
+**Next Steps:** Engineer feasibility review (code mutation + Lua); PM database schema review; narrative outline; Phase 1 scope narrowing; parser + verb dispatcher prototype.
+
+**Decision Ready for Team Review** ✓
+
+---
+
+### 9. Directive: LLM-Written Code — Complexity Not a Factor
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-19  
+**Type:** Architecture Directive  
+**Status:** Active  
+
+All code in this project will be written by the LLM. Therefore, implementation complexity is NOT a factor when choosing languages, systems, or architectures. Choose the best tool for the job regardless of learning curve or code complexity.
+
+---
+
+### 10. Directive: Multiverse MMO Architecture (User Direction)
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-19  
+**Type:** Architecture Direction (Exploratory)  
+**Status:** Active  
+
+The MMO operates as a **multiverse** — an infinite set of parallel universes. Each player exists in their own universe by default (NOT a shared 40-player lobby). Players can be pulled or pushed into a shared universe with other players (conditions TBD). Resources are NOT scarce across the multiverse — each universe has its own state.
+
+**Key Constraints:**
+- No shared-world lobby model
+- Infinite universe scaling (not fixed instances)
+- Universe forking/merging must be first-class concept
+- Per-universe state isolation is the default
+
+**Alignment:** Formalized in Decision 7 (Multiverse MMO Architecture).
+
+---
+
+### 11. Directive: Self-Modifying Universe Code
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-19  
+**Type:** Architecture Direction (Exploratory)  
+**Status:** Active  
+
+The game language should be **self-modifying** — player actions can change the source code of their universe. Player interactions mutate the actual code/data files that define the universe (in a restricted/sandboxed way). The universe literally evolves through play — the code IS the world state. "Saving the game" = saving the modified source files.
+
+**Key Implications:**
+- Language must support safe, restricted self-modification (not arbitrary injection)
+- Player actions = code transformations (e.g., picking up sword modifies room source)
+- Universe divergence is literally source code divergence
+- Code IS runtime state (not just scripting)
+- Connects to homoiconicity (code that inspects and rewrites itself)
+
+**Alignment:** Operationalized in Decision 8.2 (Code Mutation Over State Flags).
+
+---
+
+### 12. Directive: Engine-Driven Code Mutation, Not Player-Driven
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-19  
+**Type:** Design Directive (Clarification)  
+**Status:** Active  
+
+**Key Distinction:**
+- ❌ Player modifies code directly
+- ✅ Player interacts naturally → engine modifies code on their behalf
+- Code changes are a consequence of gameplay, not a player authoring tool
+
+**Example:** Mirror object exists in code. When player types "break mirror," the engine rewrites the mirror's code to reflect its broken state. The player never touches code — they interact naturally; the engine translates their actions into code mutations.
+
+**Open Question:** Is mutating code the right approach, or should state changes use property flags instead? Still being explored.
+
+**Alignment:** Formalized in Decision 8.2; implementation details TBD.
+
+---
+
+### 13. Directive: Ghost Mechanic for Inter-Universe Interaction
+
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-19  
+**Type:** Design Direction (Exploratory)  
+**Status:** Active  
+
+**Vision:** Players from other universes appear as **ghosts** — visible but unable to modify objects. Ghosts CANNOT interact with host universe's objects. The host player can choose to **transform** a ghost into a full participant in their universe. Even after transformation, safeguards needed to prevent griefing.
+
+**Constraints:**
+- No "lobby of ghosts" — don't want 40 spectral players cluttering experience
+- No universe-hopping to grief — players can't jump to someone's universe to break things
+- Ghost visibility limited/curated (not every online player appears)
+- Transformation is deliberate, host-initiated action
+
+**Open Questions:**
+- How many ghosts can appear at once? (1? 3? context-dependent?)
+- What triggers ghost visibility? (proximity? shared quest? random?)
+- What permissions does transformed player get? (full? limited? time-boxed?)
+- Can host revoke transformation (eject player back to ghost/their universe)?
+- Do ghosts see host universe state, or filtered version?
+
+**Alignment:** Refinement of multiverse model (Decision 7, 10); coordinates with universe merging mechanics.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus

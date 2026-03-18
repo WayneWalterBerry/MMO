@@ -49,3 +49,29 @@ The project has six core roles:
 - Convention: All folder names use lowercase with dashes (no spaces or underscores)
 - README emphasizes MMO's core concept (containment hierarchies) and research-phase status
 - Design: Welcoming tone, clear navigation, respect for team governance structure
+
+### Project Vocabulary Extraction (2026-03-18T235900Z)
+- **Task:** Create `docs/architecture/vocabulary.md` — unified glossary for team architecture discussions
+- **Source Material:** Extracted terms from three research reports:
+  1. `resources/research/architecture/text-adventure-architecture.md` — Classic IF (Zork, Inform, TADS)
+  2. `resources/research/architecture/modern-text-adventure-data-structures.md` — Modern approaches (ECS, event sourcing, graphs)
+  3. `resources/research/architecture/code-data-blended-languages.md` — Code-as-data, DSLs, homoiconicity (includes glossary)
+- **Extracted Terms:** 200+ terms covering:
+  - IF Architecture: Actor, Room, Container, Inventory, Parser, Containment Hierarchy, World Model
+  - Data Structures: ECS, Event Sourcing, Graph Database, Containment Tree, Neo4j, SQLite, JSON-LD
+  - Languages & Runtime: Homoiconicity, DSL, Lua, LuaJIT, Lisp, Prolog, JIT/AOT compilation, REPL
+  - Game Loop: Command Parsing, Command Dispatch, Verb Resolution, State Management, Undo/Redo
+  - Narrative: Storylet, Drama Management, Branching Narrative, Rule Engine, NPC
+  - Advanced: Event Sourcing, CQRS, Backward/Forward Chaining, Immutability, Persistent Data Structures
+- **Format & Organization:**
+  - Organized into 6 categories: IF Architecture (with 3 subsections), Data Structures, Languages & Runtime (with 5 subsections), Game Loop, Narrative & World Logic, Advanced Concepts
+  - Alphabetically sorted within each category for easy reference
+  - Each term includes: definition (1-3 sentences), context for MMO project
+  - Living document design with contribution guidelines
+  - Cross-references to source research files and decisions
+- **Key Features:**
+  - Respects team terminology preferences (containment hierarchy, world model, etc.)
+  - Bridges classical IF (Zork, Inform 7, TADS) with modern patterns (ECS, event sourcing)
+  - Includes lesser-known terms (Storylet, DODM, Hot-Reloadable) alongside fundamentals
+  - Document includes version tracking and contribution process
+- **Output File:** `C:\src\MMO\docs\architecture\vocabulary.md` (200+ entries, 200+ KB)

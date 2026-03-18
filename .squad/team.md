@@ -16,6 +16,7 @@
 | 🔬 Frink | Researcher | .squad/agents/frink/charter.md | Active |
 | 📝 Brockman | Documentation | .squad/agents/brockman/charter.md | Active |
 | 🏗️ Chalmers | Project Manager | .squad/agents/chalmers/charter.md | Active |
+| 🎮 Comic Book Guy | Game Designer | .squad/agents/comic-book-guy/charter.md | Active |
 | 📋 Scribe | Session Logger | .squad/agents/scribe/charter.md | 🔄 Monitor |
 | 🔄 Ralph | Work Monitor | — | 🔄 Monitor |
 
