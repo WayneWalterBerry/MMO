@@ -82,3 +82,43 @@ Classic IF bulk/weight limits handle question 2 but say nothing about question 1
 
 **Full design:** `docs/design/containment-constraints.md`  
 **Decision filed at:** `.squad/decisions/inbox/bart-containment-architecture.md`
+
+### 2026-03-19 — Object Inheritance / Template System + Weight/Categories/Multi-Surface
+
+**Problem:** Objects duplicated boilerplate properties. No inheritance model. Missing weight, categories, and multi-surface containment.
+
+**Implemented — three interlocking systems:**
+
+1. **Template System** (`src/meta/templates/`)
+   - Four base templates: `sheet.lua` (fabric), `furniture.lua` (heavy immovable), `container.lua` (bags/boxes), `small-item.lua` (tiny portables)
+   - Objects declare `template = "sheet"` — engine resolves via `loader.resolve_template()` using deep merge (instance overrides always win)
+   - Template field is consumed at resolve time; does not exist at runtime
+   - Deep merge handles nested tables (mutations, surfaces) — arrays replace, not append
+
+2. **Weight + Categories Model**
+   - `weight` (number) added to all 10 existing objects
+   - `weight_capacity` added to containers (sack, desk surfaces)
+   - `categories` (table of strings) on all objects — feeds Layer 4 accept/reject
+   - Registry gained `find_by_category()`, `total_weight()`, `contents_weight()`
+
+3. **Multi-Surface Containment**
+   - Objects can have `surfaces` table with named zones (top, inside, underneath)
+   - Each zone has: capacity, max_item_size, weight_capacity, accessible, contents
+   - When `surfaces` is present, root-level container/capacity/contents are ignored
+   - Containment validator targets specific surfaces; rejects if surface missing or inaccessible
+   - Desk uses surfaces: top (always accessible), inside (only when drawer open via mutation), underneath
+
+4. **Engine Updates**
+   - `loader/init.lua` — added `resolve_template()` and `deep_merge()` for template resolution
+   - `registry/init.lua` — added `find_by_category()`, `total_weight()`, `contents_weight()`
+   - `containment/init.lua` — created full 4-layer validator with weight checks + multi-surface zones
+   - `mutation/init.lua` — preserves surface contents across mutations; accepts optional templates table for re-resolution
+
+**Key design decisions:**
+- Template resolution is a loader concern, not a registry concern — keeps data pipeline clean
+- `accessible = false` on surfaces (not absent surfaces) so mutation can carry contents for locked drawers
+- Mutation carries surface contents zone-by-zone, so opening/closing a drawer preserves items
+- Mirror and shattered-mirror don't use templates (too unique) — templates are for families, not snowflakes
+- Weight is a flat number, not a tier system — unlike size, weight benefits from continuous values
+
+**Decision filed at:** `.squad/decisions/inbox/bart-inheritance-model.md`
