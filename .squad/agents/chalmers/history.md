@@ -57,3 +57,23 @@ Agent Chalmers initialized as Project Manager for the MMO project.
 **Firmness Assessment:**
 - Decisions 1, 3, 4, 5, 7, 8: FIRM (7/8 locked)
 - Decisions 2, 6: SOFT (require week 1 work to finalize)
+
+### Session Update: Architecture Decisions Session (2026-03-18)
+- **Task:** Assess planning implications of 8 architecture decisions from Wayne's session (D-14 through D-21)
+- **Status:** ✅ COMPLETE
+- **Key Analysis Delivered:**
+  - Scope Impact: Identified ~4 weeks of savings from build-time LLM and no-merge simplifications
+  - Risk Assessment: High/Medium/Low risks mapped with mitigations
+  - Critical Path: ~3 weeks to alpha (foundation + prototypes + integration)
+  - Team Impact: Designer Lua literacy, networking engineer fog-of-war patterns, QA cloud testing skills
+- **Decisions Assessed:**
+  - D-14: Mutation Model (True Code Rewrite)
+  - D-15: Meta-Code Format (Deferred — Lua tables/closures)
+  - D-16: Engine Language (Lua)
+  - D-17: Universe Templates (Build-time LLM + procedural variation)
+  - D-18: Persistence (Cloud Storage)
+  - D-19: Parser (NLP or Rich Synonyms)
+  - D-20: Ghost Visibility (Fog of War)
+  - D-21: Universe Merge (No Merge)
+- **Orchestration Log:** `.squad/orchestration-log/2026-03-18T23-22-00Z-chalmers.md`
+- **Decision Firmness:** 7/8 FIRM, 2 SOFT (meta-code format and language choice need week 1 confirmation)

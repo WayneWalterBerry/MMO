@@ -983,3 +983,65 @@ The MMO's persistence problem is **not a traditional database problem; it's a co
 
 ---
 
+## Learnings
+
+### 8. Containment Plausibility in IF Systems (2026-03-20)
+
+**Research Question:** How do classic and modern IF engines enforce that objects only go inside other objects when it logically makes sense?
+
+**Executive Finding:**
+
+The evolution of IF containment systems shows a clear progression: **numeric capacity (ZIL) → weight + item count (Inform 7) → volume + weight (TADS 3) → 3D physics (Dwarf Fortress)**. However, **even the most sophisticated engines leave semantic plausibility to author discipline**. There is no IF system that prevents absurdities like "desk in sack" without explicit hand-written rules.
+
+**Key Insight:** Containment validation breaks into three orthogonal layers:
+1. **Numeric:** Item count / capacity points
+2. **Physical:** Weight, volume, dimensions
+3. **Semantic:** "This makes sense" (category rules, relationships, context)
+
+Layers 1-2 are solved well across engines. Layer 3 remains unsolved and requires per-game implementation.
+
+**State of the Art:** TADS 3's Adv3Lite library (1999–present):
+- Dual-limit validation: weight + bulk (volume)
+- Recursive calculation of nested contents
+- Per-object validation callbacks for semantic rules
+- Class-based inheritance prevents type confusion
+- Context-aware error messages
+
+**The Remaining Gap:**
+No IF engine has a **declarative syntax** for expressing common constraints:
+```
+"Books can ONLY go on shelves"
+"Containers cannot contain other containers"
+"This object is bound to its parent (inseparable)"
+"Only living creatures can hold food"
+```
+
+Each game must implement these manually.
+
+**Critical Findings by Engine:**
+
+| Engine | Model | Dimensional? | Categories? | Known Exploits |
+|--------|-------|--------------|-------------|---|
+| ZIL (1980s) | Item count only | ❌ | ❌ | Bag-in-bag cycles; absurd author configs |
+| Inform 7 | Weight + count | ✓ (size attr) | ❌ Manual | Deep nesting performance issues |
+| TADS 3 | Weight + volume | ✓✓ Full model | ✓ Method override | Rarely used fully; complexity overkill |
+| Dwarf Fortress | 3D voxel geometry | ✓✓✓ Collision | ⚠️ Soft rules | Quantum stockpiles; item duplication |
+| Quest | Item count | ❌ | ❌ | None; too simple to exploit |
+
+**Recommendations for MMO Containment System:**
+1. Adopt TADS 3's dual-limit model (weight + volume) as foundation
+2. Add **declarative constraint DSL** (which IF systems lack):
+   ```lua
+   -- Lua-based rules
+   Desk.container = false
+   Book.validContainers = { Shelf, Cabinet }
+   Sack.canContain = function(item) return not item.isBag end
+   ```
+3. Implement **spatial geometry** (even simplified 2D/3D) to catch true absurdities
+4. Generate **context-aware error messages** based on failure reason
+5. Validate **semantic consistency** at transaction commit time (part of sandbox layer)
+
+**Full Report:** `resources/research/design/containment-plausibility-in-if.md` (25K)
+
+---
+

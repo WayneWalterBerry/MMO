@@ -1,9 +1,9 @@
 # MMO Text Adventure Engine: Project Vocabulary
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Purpose:** A living glossary of terms from interactive fiction, modern game architecture, and code-as-data languages. Use this when discussing design decisions and implementation.
 
-**Last Updated:** 2026-03-18
+**Last Updated:** 2026-03-19
 
 ---
 
@@ -15,6 +15,8 @@
 4. [Game Loop & Command Execution](#game-loop--command-execution)
 5. [Narrative & World Logic](#narrative--world-logic)
 6. [Advanced Concepts](#advanced-concepts)
+7. [Engine & Mutation Architecture](#engine--mutation-architecture)
+8. [Multiverse & Universe Architecture](#multiverse--universe-architecture)
 
 ---
 
@@ -234,7 +236,10 @@ Tree representation of program structure; each node represents a syntactic const
 **Bytecode**  
 Intermediate representation between source code and machine code; platform-independent. Used by VMs like Z-machine, Java, Lua; enables portability.
 
-**C API (Lua C API)**  
+**Build-Time LLM**  
+Using a large language model as a build tool — generating content once at build time — rather than as a runtime dependency. Eliminates per-player or per-interaction LLM token costs. In this project, the LLM generates the universe template once; players receive unique worlds through procedural variation, not individual LLM calls. See [D-17] in `docs/design/architecture-decisions.md`.
+
+**C API (Lua C API)**
 Clean, low-overhead interface for calling C from Lua or embedding Lua in C. Enables tight integration of Lua scripting in C/C++ engines.
 
 **C Integration**  
@@ -315,7 +320,10 @@ Delaying computation until its result is actually needed. Enables infinite data 
 **Lexer / Tokenizer**  
 Component splitting source code into tokens (atomic units like keywords, identifiers). First stage of parsing.
 
-**Lexical Scope / Lexical Binding**  
+**loadstring()**  
+Lua function (also spelled `load()` in Lua 5.2+) that parses a string as Lua code and returns it as an executable function. The primary mechanism by which the engine rewrites world object definitions at runtime. Enables true code mutation: the engine generates a new object definition as a string and loads it into the running environment. See [D-14], [D-16] in `docs/design/architecture-decisions.md`.
+
+**Lexical Scope / Lexical Binding**
 Variable scope determined by program text structure (vs. dynamic scope). Standard in modern languages; enables closures.
 
 **Live Reloading**  
@@ -324,10 +332,16 @@ Updating code/data at runtime without restarting application. Essential for MUD 
 **Macro**  
 Program construct generating code; often extends language syntax; powerful in Lisp. Enables syntactic abstraction; meta-level programming.
 
-**Metaprogramming**  
+**Meta-Code**  
+The Lua code that defines world objects and their behavior. Meta-code is simultaneously code and data — a Lua table holding properties, functions, and mutation logic for a game entity. When the engine rewrites a broken mirror into `broken_mirror`, it is rewriting meta-code. The engine and its meta-code are the same language (Lua), with no boundary between them. See [D-15], [D-16] in `docs/design/architecture-decisions.md`.
+
+**Metaprogramming**
 Code that manipulates, generates, or inspects other code. Enables DSLs, frameworks, and runtime customization.
 
-**Metaclass**  
+**Meta-Code Rewrite** (also: **True Code Rewrite**)  
+The mutation model where the engine replaces an object's definition entirely rather than toggling flags on the existing definition. When a player breaks a mirror, the engine does not set `mirror.is_broken = true`; it rewrites the object into a new entity (`broken_mirror`) with different properties, descriptions, and available verbs. The original definition is gone. This is the project's core design mechanic. See [D-14] in `docs/design/architecture-decisions.md`.
+
+**Metaclass**
 Class whose instances are classes; enables metaprogramming. Used in Python; rarely needed in dynamic languages.
 
 **Monomorphization**  
@@ -520,7 +534,10 @@ Part-of-speech tagging identifying nouns vs. verbs. NLP technique; aids parsing.
 **Pronoun Handling**  
 Resolving "it", "him", "that" to previously mentioned objects. Context-dependent interpretation.
 
-**Tokenization**  
+**Rich Synonym Mapping**  
+Parser approach using extensive alias tables to make structured commands feel natural. Instead of simple verb-noun dispatch, a broad synonym dictionary maps player input variations ("grab", "snatch", "take", "get") to canonical verbs. Our chosen approach for making structured commands feel like natural language without runtime LLM cost. See [D-19] in `docs/design/architecture-decisions.md`.
+
+**Tokenization**
 Splitting input text into individual tokens (words). First parsing step.
 
 **Verb Handler**  
@@ -588,6 +605,9 @@ Twine architecture where each scene/choice point is a passage node. Graph-based 
 **Procedural Generation**  
 Algorithmic generation of game content (worlds, scenarios, rules). Creates variety; hard to ensure quality.
 
+**Procedural Variation**  
+The system that creates unique multiverse instances for each player by applying deterministic seeds and parameter ranges to a shared universe template. Distinct from full procedural generation in that it starts from a hand-tuned canonical template rather than generating from scratch. Ensures uniqueness without per-player LLM cost. See [D-17] in `docs/design/architecture-decisions.md`.
+
 ### World Simulation
 
 **Behavior Tree**  
@@ -620,7 +640,10 @@ Character controlled by AI, not by player. Populates world; adds interactivity.
 **Procedural Narrative**  
 Narrative generated algorithmically from rules and constraints. Scales narrative; requires careful design.
 
-**Production Rule**  
+**Universe Template**  
+The canonical world definition generated by LLM at build time, before any hand-tuning or per-player variation. The template is the starting point for all player universes; it is improved by human authors and then used as the seed for procedural variation at player start. See [D-17] in `docs/design/architecture-decisions.md`.
+
+**Production Rule**
 Rule in production system (forward-chaining); IF-THEN form. Declarative rule format.
 
 **Rule Engine**  
@@ -716,7 +739,10 @@ Function call as last operation; optimizable into jump (tail call optimization).
 **DGD (Dworkin's Game Driver)**  
 Specialized system for multiplayer text worlds using LPC. Industry standard for LPC-based MUDs; proven architecture.
 
-**Hot-Reloadable**  
+**Fog of War (Ghost Context)**  
+Ghost visibility model where inter-universe observers only see the current room or immediate area, not the whole host universe. Chosen for efficiency: only current room state needs to be streamed to the ghost player. Also limits scouting and reduces information overload. See [D-20] in `docs/design/architecture-decisions.md`.
+
+**Hot-Reloadable**
 Code and data updated while world runs; used in DGD/LPC MUD systems. No server restart; live code updates.
 
 **LPC & DGD**  
@@ -725,8 +751,14 @@ Specialized system for multiplayer text worlds; objects as fundamental unit. MUD
 **MUD (Multi-User Dungeon)**  
 Multiplayer text-based game environment; precursor to MMORPGs. Historic significance; technical proof-of-concept for persistent worlds.
 
-**Procedurally Driven Drama Management (DODM)**  
+**No-Merge Model**  
+The design decision that universe interaction does not blend or merge universe states. When a ghost becomes a full participant in a host's universe, they simply join as-is; their home universe pauses separately. Eliminates the need for CRDTs, OT, or conflict resolution. The host universe is canonical. See [D-21] in `docs/design/architecture-decisions.md`.
+
+**Procedurally Driven Drama Management (DODM)**
 Using complex state representations to model story futures and enable proactive narrative management. Advanced narrative AI; enables foresight.
+
+**Universe Pause**  
+When a ghost player joins another universe as a full participant, their home universe freezes in place. The paused universe is not destroyed or merged — it is suspended and resumable when the player returns. Persisted in cloud storage. See [D-21] in `docs/design/architecture-decisions.md`.
 
 ---
 
@@ -735,6 +767,7 @@ Using complex state representations to model story futures and enable proactive 
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | 2026-03-18 | Initial vocabulary extracted from three research reports. Organized by category; 200+ terms. |
+| 1.1 | 2026-03-19 | Added 11 terms from architecture decisions session (D-14 through D-21). Added two new sections: Engine & Mutation Architecture, Multiverse & Universe Architecture. |
 
 ---
 
@@ -761,3 +794,39 @@ This is a **living document**. As the project evolves:
 - **Modern Data Structures:** `resources/research/architecture/modern-text-adventure-data-structures.md`
 - **Code-Data Languages:** `resources/research/architecture/code-data-blended-languages.md`
 - **Architecture Decisions:** `.squad/decisions.md`
+- **Architecture Decisions (detailed):** `docs/design/architecture-decisions.md`
+
+---
+
+## Engine & Mutation Architecture
+
+Terms specific to this project's self-modifying engine design. See `docs/design/architecture-decisions.md` for the full decisions behind these concepts.
+
+**loadstring()** → see [Languages & Runtime Systems > Language Features & Concepts](#language-features--concepts)
+
+**Meta-Code** → see [Languages & Runtime Systems > Language Features & Concepts](#language-features--concepts)
+
+**Meta-Code Rewrite / True Code Rewrite** → see [Languages & Runtime Systems > Language Features & Concepts](#language-features--concepts)
+
+**Build-Time LLM** → see [Languages & Runtime Systems > Language Features & Concepts](#language-features--concepts)
+
+**The Company**  
+In-game meta-entity and analytics pipeline that observes how player worlds evolve over time. Enabled by cloud persistence: "The Company" reads universe snapshots to track mutations, divergence from the template, and emergent player behaviors. The Company is both a narrative element (in-world observer) and a technical pipeline (out-of-world analytics). See [D-18] in `docs/design/architecture-decisions.md`.
+
+---
+
+## Multiverse & Universe Architecture
+
+Terms specific to this project's multiverse and inter-universe interaction model. See `docs/design/architecture-decisions.md` for the full decisions behind these concepts.
+
+**Fog of War (Ghost Context)** → see [Advanced Concepts > Multiplayer Systems](#multiplayer-systems)
+
+**No-Merge Model** → see [Advanced Concepts > Multiplayer Systems](#multiplayer-systems)
+
+**Universe Pause** → see [Advanced Concepts > Multiplayer Systems](#multiplayer-systems)
+
+**Procedural Variation** → see [Narrative & World Logic > Narrative Structures](#narrative-structures)
+
+**Universe Template** → see [Narrative & World Logic > Narrative Structures](#narrative-structures)
+
+**Rich Synonym Mapping** → see [Game Loop & Command Execution > Command Processing Pipeline](#command-processing-pipeline)

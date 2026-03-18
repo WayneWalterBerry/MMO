@@ -75,3 +75,55 @@ The project has six core roles:
   - Includes lesser-known terms (Storylet, DODM, Hot-Reloadable) alongside fundamentals
   - Document includes version tracking and contribution process
 - **Output File:** `C:\src\MMO\docs\architecture\vocabulary.md` (200+ entries, 200+ KB)
+
+### Architecture Decisions Document (2026-03-19)
+- **Task:** Document eight architecture decisions (D-14 through D-21) from Wayne's 2026-03-19 session
+- **Output Files:**
+  - `C:\src\MMO\docs\design\architecture-decisions.md` — comprehensive decisions document
+  - `C:\src\MMO\docs\architecture\vocabulary.md` — updated with 11 new terms (v1.1)
+- **Decisions captured:**
+  - D-14: Mutation Model: True Code Rewrite (engine replaces object definitions, not flag-flips)
+  - D-15: Meta-Code Format: Deferred (likely Lua tables/closures)
+  - D-16: Engine Language: Lua (for both engine and meta-code; `loadstring()` enables self-modification)
+  - D-17: Universe Templates: LLM build-time + hand-tuning + procedural variation (no per-player LLM cost)
+  - D-18: Persistence: Cloud Storage (supports session resumption and "The Company" analytics)
+  - D-19: Parser: NLP or Rich Synonyms (not simple verb-noun; local LLM is stretch goal)
+  - D-20: Ghost Visibility: Fog of War (current room only; efficient streaming)
+  - D-21: Universe Merge: No Merge (ghost joins host universe as-is; home universe pauses)
+- **New vocabulary terms added (11):**
+  - Build-Time LLM, Fog of War (Ghost Context), loadstring(), Meta-Code, Meta-Code Rewrite / True Code Rewrite
+  - No-Merge Model, Procedural Variation, Rich Synonym Mapping, The Company, Universe Pause, Universe Template
+- **New vocabulary sections added (2):**
+  - Engine & Mutation Architecture (index/cross-reference section)
+  - Multiverse & Universe Architecture (index/cross-reference section)
+- **Document structure for architecture-decisions.md:**
+  - Summary table at top (all 8 decisions with status and impact area)
+  - Per-decision sections: Context, Decision, Rationale, Implications, Connections to prior decisions
+  - Deferred/Open items table
+  - Decision dependency map (visual ASCII)
+  - Relationship to prior decisions table
+  - Cross-references
+- **Key architectural insight documented:** D-16 (Lua) is the foundation; D-14 (True Code Rewrite) is the defining mechanic; D-20 + D-21 together define the complete inter-universe interaction model
+- **Prior decisions affected:**
+  - D-3 (simple tokenizer) superseded by D-19
+  - D-5 (local SQLite) superseded by D-18
+  - D-7 (merge roadmap) superseded by D-21
+  - D-6 (Lua recommendation) confirmed and elevated by D-16
+
+### Session Update: Architecture Decisions Session (2026-03-18)
+- **Task:** Document 8 architecture decisions from Wayne's session (D-14 through D-21)
+- **Status:** ✅ COMPLETE
+- **Deliverables:**
+  - `docs/design/architecture-decisions.md` — Comprehensive decisions document with summary table, per-decision analysis, dependency maps
+  - `docs/architecture/vocabulary.md` v1.1 — Added 11 new terms (Build-Time LLM, Fog of War, loadstring(), Meta-Code, etc.) and 2 navigation sections
+- **Key Decisions Documented:**
+  - D-14: Mutation Model (True Code Rewrite)
+  - D-15: Meta-Code Format (Deferred — Lua tables/closures)
+  - D-16: Engine Language (Lua)
+  - D-17: Universe Templates (Build-time LLM + procedural variation)
+  - D-18: Persistence (Cloud Storage)
+  - D-19: Parser (NLP or Rich Synonyms)
+  - D-20: Ghost Visibility (Fog of War)
+  - D-21: Universe Merge (No Merge)
+- **Orchestration Log:** `.squad/orchestration-log/2026-03-18T23-22-00Z-brockman.md`
+- **Session Log:** `.squad/log/2026-03-18T23-22-00Z-architecture-decisions.md`

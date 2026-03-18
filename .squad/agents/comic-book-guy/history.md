@@ -136,3 +136,34 @@ Frink's recommendation: **Lua as primary language** with Fennel as alternative. 
 - Anti-patterns are a design deliverable, not optional commentary
 
 **Status:** Document is comprehensive and ready for engineer implementation reference.
+
+---
+
+## Session: First Game Objects (2026-03-19)
+
+**Requested by:** Wayne "Effe" Berry
+
+**Deliverables:**
+- `src/meta/objects/mirror.lua` — Ornate standing mirror (breakable, non-portable)
+- `src/meta/objects/desk.lua` — Oak writing desk (container/drawer, non-portable, closed by default)
+- `src/meta/objects/sack.lua` — Burlap sack (portable container, lists contents on look)
+- `src/meta/objects/glass-shard.lua` — Spawned by mirror-break mutation (portable)
+- `src/meta/mutations/mirror-break.lua` — Broken mirror replacement; references glass-shard spawn
+- `src/meta/mutations/desk-open.lua` — Open desk; exposes drawer contents, can close
+- `src/meta/mutations/desk-close.lua` — Closed desk; hides contents, can open
+- `src/meta/world/start-room.lua` — The Study; contains mirror, desk, sack; one exit north
+
+**Key Design Patterns Established:**
+
+1. **Object Schema** — All objects carry: `id`, `name`, `keywords`, `description`, `size`, `container`, `capacity`, `portable`, `contents`, `location`, `on_look`, `mutations`.
+2. **Mutation as Total Replacement** — `desk-open.lua` and `desk-close.lua` are complete, independent table definitions. The engine swaps one for the other wholesale. There is no shared base table — each mutation is a standalone truth.
+3. **Spawn Side Effect** — `mirror-break.lua` declares `spawns = {"glass-shard"}`. The engine is responsible for interpreting this and placing the new object in the room. This is preferable to spawning inside the mutation definition (which would violate separation of concerns).
+4. **Rooms as First-Class Objects** — `start-room.lua` follows the same object schema, with `exits` as a direction→id map. Rooms are just big containers with exits.
+5. **Contents Listed by ID** — `contents` arrays hold string IDs only. The engine resolves IDs to objects. Keeps object definitions free of circular references.
+
+## Learnings
+
+- **Desk open/close symmetry is elegant**: The mutation pattern naturally handles toggle state without a single boolean flag anywhere. This vindicates the "code IS state" philosophy — the file on disk IS the truth about whether the drawer is open.
+- **Glass shard as spawn demonstrates mutation power**: A single event (BREAK mirror) can produce multiple new objects. The `spawns` key is a clean design hook for this without embedding object creation logic inside a data table.
+- **Room and object schemas can be unified**: Rooms and items both have `id`, `description`, `contents`, `location`, and `on_look`. This means the engine doesn't need two separate systems. Rooms are just anchored, very large containers.
+- **Keywords need to be generous**: A player might type "looking glass", "burlap", or "bag" for things they haven't named yet. Design for the naive player, not the one who read the source.
