@@ -38,9 +38,9 @@ The project has six core roles:
 - Created inaugural newspaper at `newspaper/2026-03-18.md`
 - Newspaper is the daily communication hub for team updates
 
-### README Creation (2026-03-18)
+### README Creation (2026-03-18T222400Z)
 - Created root README.md explaining project vision and folder structure
-- Key file locations:
+- Key file locations documented:
   - `C:\src\MMO\README.md` — Primary entry point for new readers
   - `C:\src\MMO\newspaper/` — Daily team gazette (one file per day, YYYY-MM-DD.md format)
   - `C:\src\MMO\resources/research/architecture/` — Background research and reference materials

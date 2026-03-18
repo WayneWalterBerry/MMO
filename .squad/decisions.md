@@ -66,6 +66,55 @@ Skip mobile-specific material for now. Focus research on data structures only.
 
 ---
 
+### 5. Modern IF Architecture for MMO Project (2026-03-18T222400Z)
+**Author:** Frink, Researcher  
+**Status:** Proposed (awaiting team review)  
+**Related Research:** `resources/research/architecture/modern-text-adventure-data-structures.md`
+
+**Recommendation:** Hybrid ECS + Event-Sourced + Offline-First Architecture
+
+**Rationale:**
+Modern academic research emphasizes graph-based relationships over tree-only models. ECS pattern is industry standard across Unity, Unreal, Godot. Event sourcing enables rich state history and debugging. Offline-first with SQLite is essential for mobile resilience.
+
+**Architecture Stack:**
+1. **Entity-Component-System (ECS)** — World model layer with composable entities
+2. **Event Sourcing** — Immutable log with periodic snapshots
+3. **Offline-First SQLite** — Local canonical store, mutation queue for sync
+4. **JSON-LD Serialization** — Semantic world definitions for interoperability
+
+**Data Flow:**
+Player Input → Command Parser → Event Emission → SQLite Persist → ECS Update → UI Render → Sync Queue
+
+**Strengths:**
+- Mobile-Ready: SQLite blazing fast; offline-first eliminates network waits
+- Extensible: ECS makes adding mechanics (cursed items, traps, dialogues) trivial
+- Debuggable: Event log enables session replay
+- Future-Proof: JSON-LD enables AI/tool integration
+
+**Implementation Roadmap:**
+- Phase 1: Minimal ECS (5 components) + SQLite schema + JSON-LD example
+- Phase 2: Full command loop, containment system, undo mechanism
+- Phase 3: Extensibility validation (add 3+ new mechanics)
+- Phase 4: Optimization, snapshots, UI polish
+
+**Decision Authority:** Level 2 (architecture-affecting, requires team consensus)
+
+**Approvers Needed:**
+- Wayne "Effe" Berry (Product Owner)
+- Squad Lead (if designated)
+
+**Timeline:** Proposal → Review (1 week) → Approval/Iteration → Prototype (2 weeks)
+
+**Risk Mitigations:**
+| Risk | Severity | Mitigation |
+|------|----------|-----------|
+| Event log grows large | Medium | Snapshots every N events; prune after snapshot |
+| ECS overkill for small game | Low | Start with 5–10 components; architecture scales down |
+| Team unfamiliar with ECS | Medium | Tutorial & reference implementations provided |
+| JSON-LD serialization complexity | Low | Use existing libraries; start simple |
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
