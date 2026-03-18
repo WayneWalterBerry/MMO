@@ -167,3 +167,38 @@ Frink's recommendation: **Lua as primary language** with Fennel as alternative. 
 - **Glass shard as spawn demonstrates mutation power**: A single event (BREAK mirror) can produce multiple new objects. The `spawns` key is a clean design hook for this without embedding object creation logic inside a data table.
 - **Room and object schemas can be unified**: Rooms and items both have `id`, `description`, `contents`, `location`, and `on_look`. This means the engine doesn't need two separate systems. Rooms are just anchored, very large containers.
 - **Keywords need to be generous**: A player might type "looking glass", "burlap", or "bag" for things they haven't named yet. Design for the naive player, not the one who read the source.
+
+---
+
+## Session: The Bedroom (2026-03-20)
+
+**Requested by:** Wayne "Effe" Berry
+
+**Deliverables:**
+- Replaced `desk.lua` / `desk-open.lua` with `vanity.lua` / `vanity-open.lua` (desk + mirror combined)
+- Created `vanity-mirror-broken.lua` and `vanity-open-mirror-broken.lua` (4-state mutation matrix: open/closed × mirror intact/broken)
+- Deleted standalone `mirror.lua` and `shattered-mirror.lua` (mirror is now part of vanity)
+- Created 18 new bedroom objects: bed, pillow, bed-sheets (template=sheet), blanket, nightstand, nightstand-open, candle, candle-lit, wardrobe, wardrobe-open, rug, curtains (template=sheet), curtains-open (template=sheet), window, window-open, chamber-pot, brass-key, wool-cloak
+- Updated `start-room.lua`: "The Study" → "The Bedroom" with all objects placed logically
+- Used existing `sheet.lua` template for bed-sheets and curtains
+
+**Key Design Patterns Established:**
+
+1. **Multi-Surface Containment** — Objects now use `surfaces` with named zones (top, inside, underneath, mirror_shelf), each with capacity, max_item_size, and contents. This replaces the flat `contents` array for complex furniture. The bed has `top` (pillow, sheets, blanket) and `underneath` (empty, discoverable). The rug has `underneath` (hidden brass key).
+
+2. **Composite Mutation Matrix** — The vanity demonstrates 2-axis state mutation: open/closed × mirror intact/broken = 4 files. Each file is a complete standalone truth. All transitions are explicit and bidirectional. This is the correct pattern when an object has independent toggleable properties.
+
+3. **Template Inheritance** — `bed-sheets.lua` and `curtains.lua` use `template = "sheet"` to inherit base fabric properties. Instance-specific overrides (size, weight, categories, portable, mutations) take precedence. The engine merges template + instance at load time.
+
+4. **Nested Object Placement** — Room `contents` holds top-level furniture IDs. Smaller objects live inside furniture surfaces (candle on nightstand.top, pillow on bed.top, key under rug.underneath, cloak in wardrobe.inside). The engine must resolve nested containment.
+
+5. **Hidden Discovery** — The rug's `on_look` hints at something underneath without revealing it ("One corner is slightly raised"). The player must LOOK UNDER RUG to find the brass key. Classic text adventure puzzle design — reward curiosity, not exhaustive inventory checking.
+
+6. **Light/Dark Toggle** — Candle uses `light` → `candle-lit` and `extinguish` → `candle` mutations. Categories change between states (adding "lit", "hot"). The room description mentions dimness, implying the candle matters for visibility.
+
+**New Properties Used:**
+- `weight` (number) — physical weight on all objects
+- `categories` (table) — semantic tags: {"furniture", "wooden"}, {"fabric", "warm"}, {"light source", "lit", "hot"}
+- `surfaces` (table) — multi-zone containment on bed, nightstand, vanity, wardrobe, rug
+
+**Object Count:** 28 object files total (18 new + 6 kept + 4 vanity variants)
