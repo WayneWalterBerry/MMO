@@ -115,6 +115,58 @@ Player Input → Command Parser → Event Emission → SQLite Persist → ECS Up
 
 ---
 
+### 6. Language & Runtime for Blended Code-Data IF Engine (2026-03-19)
+**Author:** Frink (Researcher)  
+**Status:** Ready for team review  
+**Impact:** Architecture-level; affects core engine design and scripting approach  
+
+**Recommendation:** Use **Lua** as the primary scripting language for the text adventure engine, with **Fennel** (Lisp on Lua) as a powerful alternative.
+
+**Key Findings:**
+1. **Code-Data Blending:** Lua's prototype-based tables naturally unify code (functions) and data (values), enabling emergent game systems.
+2. **JIT Not Needed:** Critical finding — text adventures have trivial compute workloads. Plain Lua is sufficient; LuaJIT is optional.
+3. **Industry Standard:** 100+ games use Lua for embedded scripting (WoW, Roblox, LÖVE, Defold, Garry's Mod).
+4. **Embeddable:** ~200 KB runtime; clean C API; live reloading capable.
+5. **Prototype-Based > Class-Based:** Self-modifying worlds benefit from per-object customization, not shared class structure.
+
+**Three-Tier Recommendation:**
+- **Tier 1 (Primary):** Lua — battle-tested, embeddable, prototype-based, DSL-friendly
+- **Tier 2 (Alternative):** Fennel — full homoiconicity via Lisp syntax + Lua runtime
+- **Tier 3 (Advanced):** Custom DSL on GraalVM/Truffle — only if team has compiler expertise (likely overkill)
+
+**Example Lua World Definition:**
+```lua
+local world = {
+  rooms = {
+    dungeon = {
+      name = "Dungeon",
+      description = "A dark chamber.",
+      on_enter = function() print("You feel a chill.") end,
+      exits = { north = "hallway" }
+    }
+  },
+  items = {
+    sword = {
+      name = "Iron Sword",
+      damage = 10,
+      on_take = function() print("The sword hums.") end
+    }
+  }
+}
+world.rooms.dungeon.on_enter()
+world.items.sword.cursed = true  -- mutate at runtime
+```
+
+**Next Steps:**
+1. **Engineer:** Prototype Lua embedding in target language (TypeScript/Kotlin/Swift/Rust)
+2. **Designer:** Define DSL conventions as Lua libraries (Room.define(), Item.define(), etc.)
+3. **Architect:** Decide on world persistence format (Lua source, JSON, or both)
+4. **QA:** Validate hot-reloading and mutation behavior
+
+**Full Research:** `resources/research/architecture/code-data-blended-languages.md` (40K+ words, 10+ candidates, 30+ glossary terms)
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus

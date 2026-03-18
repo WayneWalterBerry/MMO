@@ -118,3 +118,83 @@ Agent Frink initialized as Researcher for the MMO project.
 
 ---
 
+### Code-Data-Blended Languages for Interactive Fiction (2026-03-19)
+
+**Context:** User (Wayne "Effe" Berry) envisioned a JIT language where "code and data are blended" and "the engine runs code to simulate the game." Frink researched language design approaches, homoiconicity, DSLs, and embedded scripting to identify best candidates.
+
+**Key Findings:**
+
+**Homoiconicity & Code-as-Data:**
+- Homoiconicity (code as data) is the property where a language's code and data structures are identical, enabling programs to manipulate their own code.
+- Lisp (S-expressions), Forth (words), and Prolog (Horn clauses) are canonical examples.
+- Practical benefit: Objects can redefine themselves at runtime; world definitions and behavior are unified.
+- Trade-off: Flexibility can lead to complex, hard-to-debug code without discipline.
+
+**DSL Patterns for IF:**
+- Inform 7: Natural language DSL; excellent for accessibility but not embeddable.
+- ZIL: Lisp-based; true code-data blending via homoiconicity; historic but unsupported.
+- TADS: Mature OOP language; strong type safety; not embeddable as a library.
+- Best IF DSLs prioritize: state-event modeling, entity-component descriptions, behavior trees, relational definitions.
+
+**Embedded Scripting Findings:**
+- **Lua**: Industry standard for embedded game scripting; prototype-based tables naturally blur code/data; LuaJIT optional (5–10x speedup); proven in WoW, Roblox, LÖVE.
+- **LuaJIT mechanics**: Tracing JIT compiles hot code paths to machine code; small memory footprint (~100–200 KB base).
+- **LPC/DGD**: Multiplayer-focused MUD engine; true code-as-data via LPC language; overkill for single-player IF.
+- **Alternatives**: Wren, Squirrel, AngelScript—all similar to Lua; smaller communities.
+
+**JIT Compilation Necessity:**
+- **Critical Finding:** Text adventures do NOT need JIT. String matching, conditionals, data lookups are trivial compute loads.
+- Evidence: Twine (browser JS), TexTperience (.NET), TADS all responsive without JIT.
+- Benefit: JIT-less mode improves security and portability (no executable memory).
+- LuaJIT is useful IF game scripts do heavy computation (pathfinding, simulation); for pure text, interpreted Lua is sufficient.
+
+**Prototype vs Class-Based Objects:**
+- Prototype-based (JavaScript, Lua, Self): Excellent for self-modifying worlds; per-object customization; can be slower if highly divergent.
+- Class-based (Java, C++, TADS): Organized, type-safe, efficient; less flexible for unique per-entity behaviors.
+- **For IF:** Prototype-based better suits dynamic, evolving worlds; class-based better for large, structured systems.
+
+**Language Candidates Ranked:**
+
+1. **Lua/LuaJIT** (⭐⭐⭐⭐⭐): Battle-tested, embeddable, prototype-based, gentle learning curve. Best all-around choice.
+2. **Fennel** (⭐⭐⭐⭐⭐ for Lisp users): Lisp via Lua; macros for DSL; homoiconic; works on any Lua platform.
+3. **Inform 7** (⭐⭐⭐⭐): Best for classic IF; not embeddable; excellent for writers.
+4. **TADS** (⭐⭐⭐⭐): Mature OOP; strong type system; not embeddable.
+5. **Racket** (⭐⭐⭐⭐): Language creation toolkit; powerful metaprogramming; heavier runtime.
+6. **Clojure** (⭐⭐⭐⭐): JVM-based; strong homoiconicity; slower startup.
+7. **Janet** (⭐⭐⭐⭐): Lightweight embeddable Lisp; small community.
+8. **Forth** (⭐⭐): Extremely fast, homoiconic; very steep learning curve; niche.
+9. **Python** (⭐⭐): Gentle learning curve; too slow for production.
+10. **JavaScript** (⭐⭐⭐): Good for web IF; overkill for pure text.
+
+**GraalVM/Truffle Observation:**
+- Polyglot JIT VM enabling custom language implementation with automatic JIT.
+- Trade-off: Requires significant engineering (200–500 LOC minimum); overkill for text adventures.
+- Valuable if you want polyglot interop or deep language design control.
+
+**Rule-Based Systems (Bonus):**
+- Prolog uses backward chaining (goal-driven); efficient for puzzles and tactical AI.
+- Forward chaining (data-driven) better for event-driven simulations.
+- Both applicable to IF; Prolog less common in practice than imperative approaches.
+
+**Best Recommendation for Blended Code-Data IF Engine:**
+
+**Tier 1:** **Lua** — proven, simple, embeddable; tables naturally represent both data and behavior. Fennel if you prefer Lisp macros.
+
+**Tier 2:** **Clojure** — if team is on JVM; strong homoiconicity; slower startup.
+
+**Tier 3:** **Custom DSL on GraalVM** — only if deep language design expertise and polyglot needs justify engineering cost.
+
+**Avoid:** Inform 7 (not embeddable), Python (too slow), Forth (too steep).
+
+**Report Location:** `resources/research/architecture/code-data-blended-languages.md`
+
+**Decision Status:** Merged into canonical `.squad/decisions.md` (Decision #6, 2026-03-19). Ready for team review.
+
+**Downstream Impact:**
+- **Engineer:** Prototype Lua embedding in target language (TypeScript/Kotlin/Swift/Rust). Expose game engine API as Lua C bindings.
+- **Designer/Content Lead:** Define DSL conventions as Lua libraries (Room.define(), Item.define(), NPC.define()).
+- **Architect:** Decide on world persistence format (Lua source, JSON, or both).
+- **QA/Testing:** Validate live reloading and mutation behavior; stress test with large world definitions.
+
+---
+
