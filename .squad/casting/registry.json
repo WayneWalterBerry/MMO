@@ -1,0 +1,28 @@
+{
+  "agents": {
+    "frink": {
+      "persistent_name": "Frink",
+      "universe": "The Simpsons",
+      "role": "Researcher",
+      "created_at": "2026-03-18T22:17:37Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "brockman": {
+      "persistent_name": "Brockman",
+      "universe": "The Simpsons",
+      "role": "Documentation",
+      "created_at": "2026-03-18T22:17:37Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "chalmers": {
+      "persistent_name": "Chalmers",
+      "universe": "The Simpsons",
+      "role": "Project Manager",
+      "created_at": "2026-03-18T22:17:37Z",
+      "legacy_named": false,
+      "status": "active"
+    }
+  }
+}
