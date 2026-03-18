@@ -37,3 +37,15 @@ The project has six core roles:
 - Team is freshly assembled, no prior log entries
 - Created inaugural newspaper at `newspaper/2026-03-18.md`
 - Newspaper is the daily communication hub for team updates
+
+### README Creation (2026-03-18)
+- Created root README.md explaining project vision and folder structure
+- Key file locations:
+  - `C:\src\MMO\README.md` — Primary entry point for new readers
+  - `C:\src\MMO\newspaper/` — Daily team gazette (one file per day, YYYY-MM-DD.md format)
+  - `C:\src\MMO\resources/research/architecture/` — Background research and reference materials
+  - `C:\src\MMO\docs/architecture/` — Design decisions and technical specs
+  - `C:\src\MMO\.squad/decisions.md` — Team governance and architectural decisions
+- Convention: All folder names use lowercase with dashes (no spaces or underscores)
+- README emphasizes MMO's core concept (containment hierarchies) and research-phase status
+- Design: Welcoming tone, clear navigation, respect for team governance structure
