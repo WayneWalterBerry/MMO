@@ -251,9 +251,12 @@ def generate_local_variations(
     verbs: dict[str, str | None],
     objects: list[dict],
     rooms: list[dict],
+    max_variations: int = 0,
 ) -> list[dict]:
     """
     Generate training pairs using template expansion. No API calls.
+    When max_variations > 0, limits per verb+object combo to that many phrases
+    (picks the most natural: canonical verb+name, then synonym+name, then keyword forms).
     Returns list of dicts matching CSV schema.
     """
     pairs: list[dict] = []
@@ -270,7 +273,8 @@ def generate_local_variations(
 
         # --- Intransitive uses (no object) ---
         if verb_name in INTRANSITIVE_VERBS:
-            for syn in synonyms[:3]:
+            limit = max_variations if max_variations > 0 else 3
+            for syn in synonyms[:limit]:
                 phrase_id += 1
                 pairs.append({
                     "phrase_id": phrase_id,
@@ -283,7 +287,8 @@ def generate_local_variations(
         # --- Direction uses ---
         if verb_name in DIRECTION_VERBS:
             for direction in sorted(all_directions):
-                for syn in synonyms[:2]:
+                limit = max_variations if max_variations > 0 else 2
+                for syn in synonyms[:limit]:
                     phrase_id += 1
                     text = f"{syn} {direction}".strip()
                     pairs.append({
@@ -301,11 +306,8 @@ def generate_local_variations(
                 short = _short_name(obj["name"])
                 # Build a pool of noun references for this object
                 noun_forms: list[str] = []
-                # full name as-is
                 noun_forms.append(obj["name"])
-                # short name (no article)
                 noun_forms.append(short)
-                # individual keywords
                 for kw in obj.get("keywords", [])[:4]:
                     noun_forms.append(kw)
                 # deduplicate preserving order
@@ -317,12 +319,31 @@ def generate_local_variations(
                         seen.add(nl)
                         unique_nouns.append(n.lower().strip())
 
-                # Generate variations: each synonym × a selection of noun forms
-                for syn in synonyms[:4]:
-                    for noun_text in unique_nouns[:4]:
-                        # Variation 1: "verb noun"
+                # When capped, round-robin across synonyms so the index has
+                # verb diversity (critical for Tier 2 phrase-text matching).
+                # Strategy: each synonym gets one phrase with the best noun form,
+                # cycling through synonyms before adding more noun variants.
+                combo_count = 0
+                cap = max_variations if max_variations > 0 else 0  # 0 = unlimited
+
+                if cap:
+                    # Round-robin: cycle synonym → noun pairs
+                    generated = []
+                    syn_pool = synonyms[:cap]  # use up to N different synonyms
+                    noun_pool = unique_nouns[:4]
+                    for ni, noun_text in enumerate(noun_pool):
+                        if len(generated) >= cap:
+                            break
+                        for si, syn in enumerate(syn_pool):
+                            if len(generated) >= cap:
+                                break
+                            # Prefer: first round uses each synonym with primary noun
+                            idx = ni * len(syn_pool) + si
+                            text = f"{syn} {noun_text}".strip()
+                            generated.append(text)
+
+                    for text in generated:
                         phrase_id += 1
-                        text = f"{syn} {noun_text}".strip()
                         pairs.append({
                             "phrase_id": phrase_id,
                             "phrase_text": text,
@@ -330,20 +351,32 @@ def generate_local_variations(
                             "noun": obj_id,
                             "context": context,
                         })
+                else:
+                    # Unlimited: original full expansion
+                    for syn in synonyms[:4]:
+                        for noun_text in unique_nouns[:4]:
+                            phrase_id += 1
+                            text = f"{syn} {noun_text}".strip()
+                            pairs.append({
+                                "phrase_id": phrase_id,
+                                "phrase_text": text,
+                                "verb": verb_name,
+                                "noun": obj_id,
+                                "context": context,
+                            })
 
-                        # Variation 2: "verb the noun" (only if noun doesn't start with article)
-                        if not noun_text.startswith(("a ", "an ", "the ", "some ")):
-                            article = _pick_article()
-                            if article:
-                                phrase_id += 1
-                                text2 = f"{syn} {article}{noun_text}".strip()
-                                pairs.append({
-                                    "phrase_id": phrase_id,
-                                    "phrase_text": text2,
-                                    "verb": verb_name,
-                                    "noun": obj_id,
-                                    "context": context,
-                                })
+                            if not noun_text.startswith(("a ", "an ", "the ", "some ")):
+                                article = _pick_article()
+                                if article:
+                                    phrase_id += 1
+                                    text2 = f"{syn} {article}{noun_text}".strip()
+                                    pairs.append({
+                                        "phrase_id": phrase_id,
+                                        "phrase_text": text2,
+                                        "verb": verb_name,
+                                        "noun": obj_id,
+                                        "context": context,
+                                    })
 
     return pairs
 
@@ -508,6 +541,10 @@ Examples:
         "--seed", type=int, default=42,
         help="Random seed for reproducible local generation. Default: 42",
     )
+    parser.add_argument(
+        "--max-variations", type=int, default=0, dest="max_variations",
+        help="Max phrase variations per verb+object combo (0 = unlimited). Default: 0",
+    )
     args = parser.parse_args()
     random.seed(args.seed)
 
@@ -539,7 +576,7 @@ Examples:
     if args.mode == "llm":
         pairs = generate_llm_variations(verbs, objects, rooms)
     else:
-        pairs = generate_local_variations(verbs, objects, rooms)
+        pairs = generate_local_variations(verbs, objects, rooms, max_variations=args.max_variations)
 
     pairs = deduplicate(pairs)
     print(f"       Generated {len(pairs)} unique training pairs")

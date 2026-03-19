@@ -19,6 +19,7 @@ local mutation    = require("engine.mutation")
 local containment = require("engine.containment")
 local loop        = require("engine.loop")
 local verbs_mod   = require("engine.verbs")
+local parser_mod  = require("engine.parser")
 
 ---------------------------------------------------------------------------
 -- Helpers
@@ -200,6 +201,9 @@ local player = {
 ---------------------------------------------------------------------------
 -- Build the game context
 ---------------------------------------------------------------------------
+local assets_root = script_dir .. SEP .. "assets"
+local parser_instance = parser_mod.init(assets_root)
+
 local context = {
     registry       = reg,
     current_room   = room,
@@ -210,6 +214,7 @@ local context = {
     loader         = loader,
     mutation       = mutation,
     containment    = containment,
+    parser         = parser_instance,
     game_start_time = os.time(),
     game_start_hour = 2,
 }

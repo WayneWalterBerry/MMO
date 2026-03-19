@@ -1,6 +1,8 @@
 -- engine/loop/init.lua
 -- Minimal terminal REPL game loop.
 -- Parses player input into verb + noun and routes to verb handlers.
+-- Tier 1: rule-based verb dispatch (exact verb match).
+-- Tier 2: embedding-based fallback (phrase-text similarity via parser module).
 
 local loop = {}
 
@@ -161,8 +163,16 @@ function loop.run(context)
     local handler = context.verbs[verb]
     if handler then
       handler(context, noun)
+    elseif context.parser then
+      -- Tier 2 fallback: try embedding-based phrase matching
+      local parser_mod = require("engine.parser")
+      local handled = parser_mod.fallback(context.parser, trimmed, context)
+      if not handled then
+        -- Tier 2 failed — no graceful fallback past this point
+        goto continue
+      end
     else
-      -- Helpful hints for natural-language question words
+      -- No Tier 2 available — original behaviour
       local question_words = { what = true, where = true, how = true, who = true, why = true }
       if question_words[verb] then
         print("Try 'feel' to explore by touch, or 'look' if you have light. Type 'help' for a full list of commands.")
