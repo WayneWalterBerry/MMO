@@ -265,6 +265,37 @@ The 32.5MB gzipped index is too large for browser assets. Trim it down, then pla
 - Replaced all U+2014 em dashes with `--` across 36 Lua files. Windows terminal renders UTF-8 em dashes as "ΓÇö" unless codepage is set. Double-dash is safe ASCII and reads fine in prose.
 - Scope: object files, engine modules, world files, main.lua. Comments included for consistency.
 
+### FSM Engine Implementation (2026-03-23)
+
+**Engine Design (~130 lines):**
+- Table-driven FSM: definitions in `src/meta/fsms/*.lua`, engine in `src/engine/fsm/init.lua`
+- Four public functions: `load`, `transition`, `tick`, `get_transitions`
+- `apply_state` is the core internal: strips old state keys, applies shared, then applies new state
+- Critical pattern: save containment (surfaces contents, location) BEFORE cleanup step. The cleanup removes old state keys (including surfaces), so contents would be lost if not saved first.
+
+**Containment Preservation Bug (caught during testing):**
+- `apply_state` initially removed old state keys (including surfaces) then tried to preserve surface contents from `obj.surfaces` — but surfaces was already nil from cleanup
+- Fix: save `saved_surface_contents` map BEFORE the cleanup loop, then restore during new state application
+- Lesson: when a function both clears and rebuilds a structure, save all important data at the TOP before any mutation
+
+**Keyword Resolution Fixes (pre-existing, surfaced by FSM testing):**
+- `matches_keyword` substring match on names caused "match" to resolve to "matchbox" (name "an open matchbox" contains "match"). Fixed: word-boundary matching (`" match "` in `" name "`) and keywords checked before name.
+- `find_visible` interleaved hand+bag search caused items in held containers (match-2 inside matchbox in hand 1) to be found before direct hand items (match-1 in hand 2). Fixed: two-pass — all hands first, then all bag contents.
+- GET handler treated "bag" items as "already have" — prevented taking items from held containers. Fixed: allow extracting to free hand when `where == "bag"`.
+
+**Double-Tick Bug:**
+- Old `on_tick` callback (main.lua) has `tick_burnable` that decrements `burn_remaining` on any object with `casts_light`. FSM tick ALSO decrements `burn_remaining` via `on_tick`. Result: match burned at 2x speed.
+- Fix: `tick_burnable` skips objects with `_fsm_id`. FSM objects manage their own tick.
+
+**FSM-Old System Coexistence:**
+- Verb handlers (open, close, strike, extinguish) check `obj._fsm_id` first → FSM path. Else → old mutation path. Non-FSM objects (matchbox, candle, etc.) keep working unchanged.
+- LIGHT handler works unmodified: `find_tool_in_inventory` finds the FSM lit match (has `provides_tool = "fire_source"`). `consume_tool_charge` is a no-op (no charge system). Match continues burning via FSM tick.
+
+**State Property Design:**
+- `on_tick` and `terminal` are engine-only flags in FSM definitions — never applied to the object
+- State-specific `on_look` functions work correctly: applied to obj during transition, verb handler calls them normally
+- `name` changes per state (e.g., "a wooden match" → "a lit match" → "a spent match") — works because name is in each state definition, not in shared
+
 ---
 
 ## Cross-Agent Update: Compound Command & Pronoun Resolution — Batch 2 Complete (2026-03-22T14:29:02Z)
