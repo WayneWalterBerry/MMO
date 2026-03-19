@@ -107,6 +107,79 @@ local function find_in_inventory(ctx, keyword)
 end
 
 ---------------------------------------------------------------------------
+-- Helper: find a tool in inventory that provides a given capability.
+-- Also checks blood as writing instrument when player has bloody state.
+---------------------------------------------------------------------------
+local function find_tool_in_inventory(ctx, required_capability)
+    for _, obj_id in ipairs(ctx.player.inventory) do
+        local obj = ctx.registry:get(obj_id)
+        if obj and obj.provides_tool then
+            local provides = obj.provides_tool
+            if type(provides) == "string" and provides == required_capability then
+                return obj
+            elseif type(provides) == "table" then
+                for _, cap in ipairs(provides) do
+                    if cap == required_capability then
+                        return obj
+                    end
+                end
+            end
+        end
+    end
+    -- Blood as writing instrument when player is injured
+    if required_capability == "writing_instrument" then
+        local state = ctx.player.state or {}
+        if state.bloody then
+            return {
+                id = "blood", name = "your blood",
+                provides_tool = "writing_instrument",
+                _is_blood = true,
+                on_tool_use = {
+                    consumes_charge = false,
+                    use_message = "You press your bleeding finger to the surface, leaving dark crimson marks.",
+                },
+            }
+        end
+    end
+    return nil
+end
+
+---------------------------------------------------------------------------
+-- Helper: check if an object provides a specific tool capability
+---------------------------------------------------------------------------
+local function provides_capability(obj, capability)
+    if not obj or not obj.provides_tool then return false end
+    local provides = obj.provides_tool
+    if type(provides) == "string" then return provides == capability end
+    if type(provides) == "table" then
+        for _, cap in ipairs(provides) do
+            if cap == capability then return true end
+        end
+    end
+    return false
+end
+
+---------------------------------------------------------------------------
+-- Helper: consume a charge from a tool, mutate to depleted if empty
+---------------------------------------------------------------------------
+local function consume_tool_charge(ctx, tool)
+    if not tool or not tool.on_tool_use or not tool.on_tool_use.consumes_charge then
+        return
+    end
+    if not tool.charges then return end
+    tool.charges = tool.charges - 1
+    if tool.charges <= 0 and tool.on_tool_use.when_depleted then
+        if tool.on_tool_use.depleted_message then
+            print(tool.on_tool_use.depleted_message)
+        end
+        local source = ctx.object_sources[tool.on_tool_use.when_depleted]
+        if source then
+            ctx.mutation.mutate(ctx.registry, ctx.loader, tool.id, source, ctx.templates)
+        end
+    end
+end
+
+---------------------------------------------------------------------------
 -- Helper: remove an object from wherever it currently lives
 ---------------------------------------------------------------------------
 local function remove_from_location(ctx, obj)
@@ -507,6 +580,7 @@ function verbs.create()
     end
     handlers["x"] = handlers["examine"]
     handlers["find"] = handlers["examine"]
+    handlers["read"] = handlers["examine"]
     handlers["search"] = function(ctx, noun)
         if noun == "" then
             handlers["look"](ctx, "")
@@ -598,7 +672,15 @@ function verbs.create()
     end
 
     handlers["get"] = handlers["take"]
-    handlers["pick"] = handlers["take"]
+    handlers["pick"] = function(ctx, noun)
+        -- "pick lock" → lockpicking (stub)
+        if noun:match("^lock") then
+            print("You don't know how to pick locks.")
+            return
+        end
+        -- Otherwise fall through to take ("pick up X", "pick X")
+        handlers["take"](ctx, noun)
+    end
     handlers["grab"] = handlers["take"]
 
     ---------------------------------------------------------------------------
@@ -893,6 +975,26 @@ function verbs.create()
             return
         end
 
+        -- Tool check: does this mutation require a fire source?
+        if mut_data.requires_tool then
+            local tool = find_tool_in_inventory(ctx, mut_data.requires_tool)
+            if not tool then
+                print(mut_data.fail_message or "You have nothing to light it with.")
+                return
+            end
+            if tool.on_tool_use and tool.on_tool_use.use_message then
+                print(tool.on_tool_use.use_message)
+            end
+            if perform_mutation(ctx, obj, mut_data) then
+                consume_tool_charge(ctx, tool)
+                local mutated = ctx.registry:get(obj.id)
+                print(mut_data.message
+                    or ("You light " .. (mutated and mutated.name or obj.id) .. ". It casts a warm glow."))
+            end
+            return
+        end
+
+        -- No tool required — original behavior
         if perform_mutation(ctx, obj, mut_data) then
             local mutated = ctx.registry:get(obj.id)
             print(mut_data.message
@@ -928,6 +1030,310 @@ function verbs.create()
     end
 
     handlers["snuff"] = handlers["extinguish"]
+
+    ---------------------------------------------------------------------------
+    -- WRITE {text} ON {target} [WITH {tool}]
+    -- Dynamic mutation: generates new Lua source at runtime with the
+    -- player's words baked into the object definition. This is the first
+    -- true runtime code-generation in the engine.
+    ---------------------------------------------------------------------------
+    handlers["write"] = function(ctx, noun)
+        if noun == "" then
+            print("Write what? (Try: write <text> on <paper> with <pen>)")
+            return
+        end
+
+        if not has_some_light(ctx) then
+            print("It is too dark to see what you're writing.")
+            return
+        end
+
+        -- Parse: "write {text} on {target} with {tool}"
+        local text, target_word, tool_word
+        text, target_word, tool_word = noun:match("^(.+)%s+on%s+(.+)%s+with%s+(.+)$")
+        if not text then
+            -- "write on {target} with {tool}" (no text)
+            target_word, tool_word = noun:match("^on%s+(.+)%s+with%s+(.+)$")
+        end
+        if not target_word then
+            -- "write {text} on {target}" (no tool specified)
+            text, target_word = noun:match("^(.+)%s+on%s+(.+)$")
+        end
+        if not target_word then
+            -- "write on {target}" (no text, no tool)
+            target_word = noun:match("^on%s+(.+)$")
+        end
+
+        if not target_word then
+            print("Write on what? (Try: write <text> on <paper>)")
+            return
+        end
+
+        -- Find target — check visible objects and inventory
+        local target = find_visible(ctx, target_word)
+        if not target then
+            target = find_in_inventory(ctx, target_word)
+        end
+        if not target then
+            print("You don't see that here.")
+            return
+        end
+
+        if not target.writable then
+            print("You can't write on " .. (target.name or "that") .. ".")
+            return
+        end
+
+        if not text or text == "" then
+            print("What do you want to write?")
+            return
+        end
+
+        -- Find writing instrument
+        local tool = nil
+        if tool_word then
+            tool = find_in_inventory(ctx, tool_word)
+            if not tool then
+                -- Check if they specified "blood"
+                if tool_word:match("blood") and ctx.player.state and ctx.player.state.bloody then
+                    tool = find_tool_in_inventory(ctx, "writing_instrument")
+                    if tool and not tool._is_blood then tool = nil end
+                end
+                if not tool then
+                    print("You don't have " .. tool_word .. ".")
+                    return
+                end
+            end
+            if not provides_capability(tool, "writing_instrument") and not (tool._is_blood) then
+                print("You can't write with " .. (tool.name or "that") .. ".")
+                return
+            end
+        else
+            -- Auto-find writing instrument in inventory
+            tool = find_tool_in_inventory(ctx, "writing_instrument")
+            if not tool then
+                local mut_data = find_mutation(target, "write")
+                print(mut_data and mut_data.fail_message or "You have nothing to write with.")
+                return
+            end
+        end
+
+        -- Print tool use message
+        if tool.on_tool_use and tool.on_tool_use.use_message then
+            print(tool.on_tool_use.use_message)
+        end
+
+        -- Build the new written text (append if paper already has writing)
+        local written = text
+        if target.written_text then
+            written = target.written_text .. " " .. text
+        end
+
+        -- DYNAMIC MUTATION: generate new Lua source with written text baked in.
+        -- This is runtime code generation — the paper's definition is rewritten
+        -- to include the player's words as part of the object's identity.
+        local esc_written = string.format("%q", written)
+        local new_source = string.format(
+            "return {\n"
+         .. "    id = %q,\n"
+         .. "    name = \"a sheet of paper with writing\",\n"
+         .. "    keywords = {\"paper\", \"sheet\", \"page\", \"written paper\", \"note\", \"parchment\"},\n"
+         .. "    description = \"A sheet of cream-coloured paper. Words have been written across it in careful strokes.\",\n"
+         .. "    writable = true,\n"
+         .. "    written_text = %s,\n"
+         .. "    size = 1,\n"
+         .. "    weight = 0.1,\n"
+         .. "    categories = {\"small\", \"writable\", \"flammable\"},\n"
+         .. "    portable = true,\n"
+         .. "    location = nil,\n"
+         .. "    on_look = function(self)\n"
+         .. "        if self.written_text then\n"
+         .. "            return \"A sheet of paper with writing on it. It reads:\\n\\n  \\\"\" .. self.written_text .. \"\\\"\"\n"
+         .. "        end\n"
+         .. "        return self.description\n"
+         .. "    end,\n"
+         .. "    mutations = {\n"
+         .. "        write = {\n"
+         .. "            requires_tool = \"writing_instrument\",\n"
+         .. "            dynamic = true,\n"
+         .. "            mutator = \"write_on_surface\",\n"
+         .. "            message = \"You add more words to the paper.\",\n"
+         .. "            fail_message = \"You have nothing to write with.\",\n"
+         .. "        },\n"
+         .. "    },\n"
+         .. "}\n",
+            target.id, esc_written)
+
+        -- Perform the mutation
+        local had_writing = target.written_text ~= nil
+        local new_obj, err = ctx.mutation.mutate(
+            ctx.registry, ctx.loader, target.id, new_source, ctx.templates)
+        if not new_obj then
+            print("Something goes wrong — the ink smears illegibly.")
+            return
+        end
+
+        -- Store new source for future mutations
+        ctx.object_sources[target.id] = new_source
+
+        -- Consume tool charge (if applicable)
+        consume_tool_charge(ctx, tool)
+
+        -- Success message
+        if had_writing then
+            print("You add more words to the paper.")
+        else
+            local mut_data = find_mutation(target, "write")
+            print(mut_data and mut_data.message
+                or "You write carefully on the paper. The words appear in steady strokes.")
+        end
+    end
+
+    handlers["inscribe"] = handlers["write"]
+
+    ---------------------------------------------------------------------------
+    -- CUT {target} WITH {tool}  /  CUT SELF WITH {tool}
+    ---------------------------------------------------------------------------
+    handlers["cut"] = function(ctx, noun)
+        if noun == "" then
+            print("Cut what? (Try: cut <thing> with <tool>)")
+            return
+        end
+
+        local target_word, tool_word = noun:match("^(.+)%s+with%s+(.+)$")
+        if not target_word then target_word = noun end
+
+        -- CUT SELF — self-injury with a blade
+        if target_word == "self" or target_word == "myself"
+           or target_word == "me" or target_word == "hand"
+           or target_word == "palm" then
+
+            local tool = nil
+            if tool_word then
+                tool = find_in_inventory(ctx, tool_word)
+                if not tool then
+                    print("You don't have " .. tool_word .. ".")
+                    return
+                end
+                if not provides_capability(tool, "cutting_edge") then
+                    print("You can't cut yourself with " .. (tool.name or "that") .. ". You need a proper blade.")
+                    return
+                end
+            else
+                tool = find_tool_in_inventory(ctx, "cutting_edge")
+                if not tool then
+                    print("You have nothing sharp enough to cut with.")
+                    return
+                end
+            end
+
+            ctx.player.state = ctx.player.state or {}
+            ctx.player.state.bloody = true
+            print("You draw the blade across your palm. Blood wells up, dark and warm.")
+            print("Your hands are now bloody.")
+            return
+        end
+
+        -- CUT {object}
+        if not has_some_light(ctx) then
+            print("It is too dark to see what you're doing.")
+            return
+        end
+
+        local obj = find_visible(ctx, target_word)
+        if not obj then
+            print("You don't see that here.")
+            return
+        end
+
+        local mut_data = find_mutation(obj, "cut")
+        if mut_data then
+            if mut_data.requires_tool then
+                local tool = nil
+                if tool_word then
+                    tool = find_in_inventory(ctx, tool_word)
+                    if not tool then
+                        print("You don't have " .. tool_word .. ".")
+                        return
+                    end
+                    if not provides_capability(tool, mut_data.requires_tool) then
+                        print(mut_data.fail_message or "That tool won't work for cutting this.")
+                        return
+                    end
+                else
+                    tool = find_tool_in_inventory(ctx, mut_data.requires_tool)
+                    if not tool then
+                        print(mut_data.fail_message or "You have nothing to cut with.")
+                        return
+                    end
+                end
+            end
+            if perform_mutation(ctx, obj, mut_data) then
+                print(mut_data.message or "You cut " .. (obj.name or "that") .. ".")
+            end
+            return
+        end
+
+        print("You can't cut " .. (obj.name or "that") .. ".")
+    end
+
+    handlers["slash"] = handlers["cut"]
+
+    ---------------------------------------------------------------------------
+    -- PRICK SELF WITH {tool}
+    ---------------------------------------------------------------------------
+    handlers["prick"] = function(ctx, noun)
+        if noun == "" then
+            print("Prick what? (Try: prick self with <pin>)")
+            return
+        end
+
+        local target_word, tool_word = noun:match("^(.+)%s+with%s+(.+)$")
+        if not target_word then target_word = noun end
+
+        -- PRICK SELF — minor self-injury with any sharp point
+        if target_word == "self" or target_word == "myself"
+           or target_word == "me" or target_word == "finger"
+           or target_word == "thumb" then
+
+            local tool = nil
+            if tool_word then
+                tool = find_in_inventory(ctx, tool_word)
+                if not tool then
+                    print("You don't have " .. tool_word .. ".")
+                    return
+                end
+                if not provides_capability(tool, "injury_source") then
+                    print("You can't prick yourself with " .. (tool.name or "that") .. ".")
+                    return
+                end
+            else
+                tool = find_tool_in_inventory(ctx, "injury_source")
+                if not tool then
+                    print("You have nothing sharp enough to prick yourself with.")
+                    return
+                end
+            end
+
+            ctx.player.state = ctx.player.state or {}
+            ctx.player.state.bloody = true
+            print("You prick your finger with " .. (tool.name or "the sharp point") .. ". A bead of blood forms.")
+            print("Your hands are now bloody.")
+            return
+        end
+
+        print("You can only prick yourself. (Try: prick self with <pin>)")
+    end
+
+    ---------------------------------------------------------------------------
+    -- SEW {material} WITH {tool} — STUB (requires future skill system)
+    ---------------------------------------------------------------------------
+    handlers["sew"] = function(ctx, noun)
+        print("You don't know how to sew. Perhaps you could learn this skill somehow.")
+    end
+
+    handlers["stitch"] = handlers["sew"]
+    handlers["mend"] = handlers["sew"]
 
     ---------------------------------------------------------------------------
     -- PUT X IN/ON Y
@@ -1046,6 +1452,7 @@ function verbs.create()
         print("  look at <thing>   - examine something closely")
         print("  look in/on/under  - inspect a surface")
         print("  examine <thing>   - same as 'look at'")
+        print("  read <thing>      - read text on an object")
         print("  find <thing>      - same as 'examine'")
         print("  feel              - grope around (works in darkness)")
         print("  feel <thing>      - feel an object by touch")
@@ -1055,7 +1462,11 @@ function verbs.create()
         print("  close <thing>     - close something")
         print("  break <thing>     - break something breakable")
         print("  tear <thing>      - tear fabric apart")
-        print("  light <thing>     - light a candle or torch")
+        print("  cut <thing> with <tool>  - cut something (or 'cut self' for blood)")
+        print("  prick self with <tool>   - prick yourself with something sharp")
+        print("  write <text> on <thing>  - write on a writable surface")
+        print("  sew <thing> with <tool>  - sew materials together (requires skill)")
+        print("  light <thing>     - light a candle or torch (requires fire source)")
         print("  extinguish <thing>- put out a flame")
         print("  put <x> in <y>    - put something in or on something")
         print("  inventory (i)     - see what you're carrying")

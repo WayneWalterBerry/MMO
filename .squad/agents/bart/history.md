@@ -266,3 +266,44 @@ Brockman captured 12+ expanded design directives from Wayne:
 ### Scribe Session Captured
 Session log created: `.squad/log/2026-03-19T01-53-18Z-v1-repl-session.md` with summary of all four-agent work.
 
+### 2026-03-20 — V2 Verb Handlers: Tools, Writing, Injury, Stubs
+
+**Added 6 new verbs and upgraded the LIGHT verb to complete the tool-object pipeline.**
+
+**New verbs implemented:**
+1. **WRITE {text} ON {target} [WITH {tool}]** — First dynamic mutation in the engine. Generates new Lua source at runtime with the player's words baked into the paper object's definition. Handles: auto-find tool, blood-as-ink (when bloody), append to existing text, multi-parse patterns. The paper's code IS its state — "hello world" becomes part of the object definition.
+2. **CUT {target} WITH {tool}** / **CUT SELF** — Self-injury produces bloody state. Requires `cutting_edge` capability (knife). Also supports cut mutations on objects (future: rope, cloth).
+3. **PRICK SELF WITH {tool}** — Lighter self-injury. Requires `injury_source` capability (pin, knife). Same bloody result, less dramatic prose.
+4. **SEW** — Stubbed. "You don't know how to sew." Sets up future skill system hook.
+5. **PICK LOCK** — Stubbed. "You don't know how to pick locks." Overrides PICK (which was aliased to TAKE) to detect "pick lock" before falling through to take.
+6. **READ** — Aliased to EXAMINE. Paper's `on_look` already handles displaying `written_text`.
+
+**LIGHT verb upgraded:**
+- Now checks `requires_tool` on the mutation (candle requires `fire_source`)
+- Searches inventory for a tool providing the required capability
+- Handles matchbox charges: decrements on use, mutates to `matchbox-empty` when depleted
+- Prints tool use messages and depleted warnings
+
+**Three new engine helpers (all in verbs/init.lua as local functions):**
+- `find_tool_in_inventory(ctx, capability)` — resolves tool by capability matching, handles both string and array `provides_tool`, special-cases blood as writing instrument
+- `provides_capability(obj, capability)` — checks if a specific object provides a capability
+- `consume_tool_charge(ctx, tool)` — decrements charges, mutates to depleted variant
+
+**Player state system:**
+- Added `player.state = {}` in main.lua
+- `player.state.bloody` tracks injury status
+- Blood acts as a virtual writing instrument when player is injured
+
+**Key architectural decisions:**
+- Dynamic mutation uses `string.format()` with `%q` escaping to generate safe Lua source — player input is sanitized through Lua's own string formatter
+- Generated source includes a runtime `on_look` function that reads `self.written_text` at call time — not a baked string
+- Tool helpers are local functions in the verbs module, not in a separate file — they're verb-dispatch concerns, not engine concerns
+- Blood is a synthetic tool object (not in registry) created on-the-fly when checking capabilities — keeps the world model clean
+- Aliases added: `read`, `inscribe`, `slash`, `stitch`, `mend`
+
+**Files modified:**
+- `src/engine/verbs/init.lua` — All new verbs, helpers, updated LIGHT, updated HELP text (~400 new lines)
+- `src/main.lua` — Added `state = {}` to player table
+
+**Decision filed at:** `.squad/decisions/inbox/bart-v2-verbs-tools.md`
+

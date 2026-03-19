@@ -173,6 +173,7 @@ local player = {
     inventory = {},
     location = "start-room",
     max_carry_weight = 20,
+    state = {},
 }
 
 ---------------------------------------------------------------------------
