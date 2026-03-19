@@ -1,4 +1,5 @@
 return {
+    guid = "7275e1d9-5837-4f39-b3be-d64ee6d667c9",
     id = "rug",
     name = "a threadbare rug",
     keywords = {"rug", "carpet", "mat", "floor covering"},

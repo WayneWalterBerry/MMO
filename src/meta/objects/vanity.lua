@@ -1,4 +1,5 @@
 return {
+    guid = "eda1257d-8240-4c75-9c1b-a7be349a60f5",
     id = "vanity",
     name = "an oak vanity",
     keywords = {"vanity", "desk", "table", "mirror", "dressing table", "looking glass", "oak vanity"},

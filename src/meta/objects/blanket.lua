@@ -1,4 +1,5 @@
 return {
+    guid = "7eb14362-a55d-4a89-a8ea-ec2098d952ff",
     id = "blanket",
     name = "a heavy wool blanket",
     keywords = {"blanket", "wool blanket", "wool", "throw", "covering"},

@@ -1,4 +1,5 @@
 return {
+    guid = "adfd6688-bbd0-4cd5-9b3b-dfb1b12d37e0",
     template = "small-item",
     id = "bandage",
     name = "a crude bandage",

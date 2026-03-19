@@ -1,4 +1,5 @@
 return {
+    guid = "992df7f3-1b8e-4164-939a-3415f8f6ffe3",
     id = "candle",
     name = "a tallow candle",
     keywords = {"candle", "tallow", "candle stub", "light", "tallow candle"},

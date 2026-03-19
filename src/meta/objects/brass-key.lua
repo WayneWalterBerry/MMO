@@ -1,4 +1,5 @@
 return {
+    guid = "4586b2cd-3240-46de-8fb8-5216ad9d4830",
     id = "brass-key",
     name = "a small brass key",
     keywords = {"key", "brass key", "small key", "brass"},

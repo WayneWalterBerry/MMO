@@ -3,6 +3,7 @@
 -- Instances inherit these defaults and override as needed.
 
 return {
+    guid = "45a12525-ae7c-4ff1-ba22-4719e9144621",
     id = "furniture",
     name = "a piece of furniture",
     keywords = {},

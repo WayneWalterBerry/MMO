@@ -1,4 +1,5 @@
 return {
+    guid = "26484e21-5033-4531-b30c-13d8cb72696f",
     id = "nightstand-open",
     name = "a small nightstand (drawer open)",
     keywords = {"nightstand", "night stand", "bedside table", "side table", "small table", "drawer"},

@@ -1,4 +1,5 @@
 return {
+    guid = "009b0347-2ba3-45d1-a733-7a587ad1f5c9",
     template = "small-item",
 
     id = "match",

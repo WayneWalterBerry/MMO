@@ -1,4 +1,5 @@
 return {
+    guid = "b8e37cb6-cba7-48a6-bec9-5bca5f53b73c",
     id = "bed",
     name = "a large four-poster bed",
     keywords = {"bed", "four-poster", "poster bed", "four poster", "mattress", "bedframe"},

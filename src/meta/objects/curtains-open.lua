@@ -1,4 +1,5 @@
 return {
+    guid = "4479ad07-8213-460a-aac2-fbed65a0da6c",
     template = "sheet",
 
     id = "curtains-open",

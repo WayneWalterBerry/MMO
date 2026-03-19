@@ -1,4 +1,5 @@
 return {
+    guid = "9a9ff109-93a0-4dcf-9d6e-0f0f4b83f4ba",
     id = "chamber-pot",
     name = "a ceramic chamber pot",
     keywords = {"chamber pot", "pot", "ceramic pot", "toilet", "chamberpot", "privy"},

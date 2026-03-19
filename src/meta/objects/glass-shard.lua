@@ -1,4 +1,5 @@
 return {
+    guid = "1ffa70d5-f81e-49ef-9514-952e8e6b92b8",
     template = "small-item",
     id = "glass-shard",
     name = "a glass shard",

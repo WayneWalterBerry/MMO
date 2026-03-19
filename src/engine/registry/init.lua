@@ -8,15 +8,19 @@ registry.__index = registry
 
 -- new() -> registry instance
 function registry.new()
-  return setmetatable({ _objects = {} }, registry)
+  return setmetatable({ _objects = {}, _guid_index = {} }, registry)
 end
 
 -- register(id, object) — adds or replaces an object; stamps the id onto the object.
+-- Also indexes by guid if the object has one.
 function registry:register(id, object)
   assert(type(id) == "string" and id ~= "", "registry: id must be a non-empty string")
   assert(type(object) == "table", "registry: object must be a table")
   object.id = id
   self._objects[id] = object
+  if type(object.guid) == "string" and object.guid ~= "" then
+    self._guid_index[object.guid] = id
+  end
 end
 
 -- get(id) -> object | nil
@@ -24,9 +28,20 @@ function registry:get(id)
   return self._objects[id]
 end
 
+-- find_by_guid(guid) -> object | nil
+-- Looks up an object by its definition guid using the guid index.
+function registry:find_by_guid(guid)
+  local id = self._guid_index[guid]
+  if id then return self._objects[id] end
+  return nil
+end
+
 -- remove(id) -> removed object | nil
 function registry:remove(id)
   local obj = self._objects[id]
+  if obj and type(obj.guid) == "string" then
+    self._guid_index[obj.guid] = nil
+  end
   self._objects[id] = nil
   return obj
 end

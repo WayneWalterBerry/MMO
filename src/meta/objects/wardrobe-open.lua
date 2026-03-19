@@ -1,4 +1,5 @@
 return {
+    guid = "bf6cb8ae-f67c-4c54-8c67-d3b10ac21d2c",
     id = "wardrobe-open",
     name = "a heavy wardrobe (open)",
     keywords = {"wardrobe", "armoire", "closet", "cabinet", "clothes", "open"},

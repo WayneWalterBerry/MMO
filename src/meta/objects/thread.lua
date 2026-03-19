@@ -1,4 +1,5 @@
 return {
+    guid = "8a7edb7e-9dff-4587-a104-4710cb270058",
     template = "small-item",
 
     id = "thread",

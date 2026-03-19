@@ -1,4 +1,5 @@
 return {
+    guid = "e7409390-d4c4-4315-9768-72df1b3702e6",
     template = "small-item",
 
     id = "paper",

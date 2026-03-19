@@ -111,3 +111,21 @@
 - Function ordering in verbs/init.lua matters for Lua upvalue capture — `provides_capability` must be defined before `find_visible_tool`
 
 **Decision filed at:** `.squad/decisions/inbox/bart-compound-tools-hands-consumables.md`
+
+### 2026 — GUID Assignment for Streaming Architecture Prep
+
+**All 45 .lua files in src/meta/ now carry a unique UUID v4 `guid` field.**
+
+**Changes:**
+- 39 object files in `src/meta/objects/` — each has a `guid` field as first field in the returned table
+- 1 room file in `src/meta/world/` — `start-room.lua` has its own guid
+- 5 template files in `src/meta/templates/` — each has a guid (these are definition GUIDs, not instance GUIDs)
+- `src/engine/registry/init.lua` — now maintains a `_guid_index` table (guid→id mapping), updated on register/remove; added `find_by_guid(guid)` method
+
+**Key design rules:**
+- GUIDs are STABLE — once assigned to a definition file, never changed
+- Mutation variants (candle vs candle-lit) have DIFFERENT GUIDs because they are different definitions
+- The guid is for the DEFINITION, not the live instance — when an object mutates, the registry entry keeps its original id
+- No networking code — just the IDs and the registry index, preparing for future streaming/download architecture
+
+**Decision filed at:** `.squad/decisions/inbox/bart-guid-definitions.md`

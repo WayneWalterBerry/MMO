@@ -1,4 +1,5 @@
 return {
+    guid = "a1043287-aeeb-4eb7-91c4-d0fcd11f86e3",
     template = "small-item",
 
     id = "poison-bottle",

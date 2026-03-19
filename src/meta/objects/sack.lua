@@ -1,4 +1,5 @@
 return {
+    guid = "4720ace5-baed-4133-b5db-977257f5b680",
     template = "container",
     id = "sack",
     name = "a burlap sack",

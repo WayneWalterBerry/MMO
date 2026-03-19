@@ -1,4 +1,5 @@
 return {
+    guid = "ef5c4c6d-5ce4-4f49-9cf6-48d5394e7ad5",
     template = "sheet",
     id = "terrible-jacket",
     name = "a terrible burlap jacket",

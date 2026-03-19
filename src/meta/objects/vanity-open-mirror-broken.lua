@@ -1,4 +1,5 @@
 return {
+    guid = "35704b6c-25a4-489c-8760-f8de633880bf",
     id = "vanity-open-mirror-broken",
     name = "an oak vanity (drawer open, mirror broken)",
     keywords = {"vanity", "desk", "table", "broken mirror", "dressing table", "oak vanity", "shattered", "drawer"},

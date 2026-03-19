@@ -1,4 +1,5 @@
 return {
+    guid = "a105e31f-394a-441e-907a-4d5c0338b434",
     id = "window-open",
     name = "an open leaded glass window",
     keywords = {"window", "glass", "pane", "leaded glass", "open window"},

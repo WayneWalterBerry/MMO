@@ -1,4 +1,5 @@
 return {
+    guid = "44ea2c40-e898-47a6-bb9d-77e5f49b3ba0",
     template = "room",
 
     id = "start-room",
