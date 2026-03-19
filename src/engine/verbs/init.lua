@@ -30,9 +30,57 @@ local function matches_keyword(obj, kw)
 end
 
 ---------------------------------------------------------------------------
+-- Hand inventory helpers
+---------------------------------------------------------------------------
+local function hands_full(ctx)
+    return ctx.player.hands[1] ~= nil and ctx.player.hands[2] ~= nil
+end
+
+local function first_empty_hand(ctx)
+    if ctx.player.hands[1] == nil then return 1 end
+    if ctx.player.hands[2] == nil then return 2 end
+    return nil
+end
+
+local function which_hand(ctx, obj_id)
+    if ctx.player.hands[1] == obj_id then return 1 end
+    if ctx.player.hands[2] == obj_id then return 2 end
+    return nil
+end
+
+-- Returns flat list of all object IDs the player is carrying
+-- (hands + held bag contents + worn items + worn bag contents)
+local function get_all_carried_ids(ctx)
+    local ids = {}
+    local reg = ctx.registry
+    for i = 1, 2 do
+        local hand_id = ctx.player.hands[i]
+        if hand_id then
+            ids[#ids + 1] = hand_id
+            local obj = reg:get(hand_id)
+            if obj and obj.container and obj.contents then
+                for _, item_id in ipairs(obj.contents) do
+                    ids[#ids + 1] = item_id
+                end
+            end
+        end
+    end
+    for _, worn_id in ipairs(ctx.player.worn or {}) do
+        ids[#ids + 1] = worn_id
+        local obj = reg:get(worn_id)
+        if obj and obj.container and obj.contents then
+            for _, item_id in ipairs(obj.contents) do
+                ids[#ids + 1] = item_id
+            end
+        end
+    end
+    return ids
+end
+
+---------------------------------------------------------------------------
 -- Helper: find an object the player can see or reach
 -- Returns: obj, location_type, parent_obj, surface_name
---   location_type: "room" | "surface" | "inventory"
+--   location_type: "room" | "surface" | "hand" | "bag" | "worn"
 ---------------------------------------------------------------------------
 local function find_visible(ctx, keyword)
     if not keyword or keyword == "" then return nil end
@@ -77,11 +125,39 @@ local function find_visible(ctx, keyword)
         end
     end
 
-    -- 3. Player inventory
-    for _, obj_id in ipairs(ctx.player.inventory) do
-        local obj = reg:get(obj_id)
+    -- 3. Player hands
+    for i = 1, 2 do
+        local hand_id = ctx.player.hands[i]
+        if hand_id then
+            local obj = reg:get(hand_id)
+            if obj and matches_keyword(obj, kw) then
+                return obj, "hand", nil, nil
+            end
+            -- Held bag contents
+            if obj and obj.container and obj.contents then
+                for _, item_id in ipairs(obj.contents) do
+                    local item = reg:get(item_id)
+                    if item and matches_keyword(item, kw) then
+                        return item, "bag", obj, nil
+                    end
+                end
+            end
+        end
+    end
+
+    -- 4. Worn items and worn bag contents
+    for _, worn_id in ipairs(ctx.player.worn or {}) do
+        local obj = reg:get(worn_id)
         if obj and matches_keyword(obj, kw) then
-            return obj, "inventory", nil, nil
+            return obj, "worn", nil, nil
+        end
+        if obj and obj.container and obj.contents then
+            for _, item_id in ipairs(obj.contents) do
+                local item = reg:get(item_id)
+                if item and matches_keyword(item, kw) then
+                    return item, "bag", obj, nil
+                end
+            end
         end
     end
 
@@ -89,7 +165,7 @@ local function find_visible(ctx, keyword)
 end
 
 ---------------------------------------------------------------------------
--- Helper: find object in inventory only
+-- Helper: find object in player's carried items (hands + bags + worn)
 ---------------------------------------------------------------------------
 local function find_in_inventory(ctx, keyword)
     if not keyword or keyword == "" then return nil end
@@ -97,22 +173,55 @@ local function find_in_inventory(ctx, keyword)
         :gsub("^the%s+", "")
         :gsub("^a%s+", "")
         :gsub("^an%s+", "")
-    for _, obj_id in ipairs(ctx.player.inventory) do
-        local obj = ctx.registry:get(obj_id)
-        if obj and matches_keyword(obj, kw) then
-            return obj
+    local reg = ctx.registry
+    -- Hands
+    for i = 1, 2 do
+        local hand_id = ctx.player.hands[i]
+        if hand_id then
+            local obj = reg:get(hand_id)
+            if obj and matches_keyword(obj, kw) then return obj end
+        end
+    end
+    -- Held bag contents
+    for i = 1, 2 do
+        local hand_id = ctx.player.hands[i]
+        if hand_id then
+            local bag = reg:get(hand_id)
+            if bag and bag.container and bag.contents then
+                for _, item_id in ipairs(bag.contents) do
+                    local item = reg:get(item_id)
+                    if item and matches_keyword(item, kw) then return item end
+                end
+            end
+        end
+    end
+    -- Worn items
+    for _, worn_id in ipairs(ctx.player.worn or {}) do
+        local obj = reg:get(worn_id)
+        if obj and matches_keyword(obj, kw) then return obj end
+    end
+    -- Worn bag contents
+    for _, worn_id in ipairs(ctx.player.worn or {}) do
+        local bag = reg:get(worn_id)
+        if bag and bag.container and bag.contents then
+            for _, item_id in ipairs(bag.contents) do
+                local item = reg:get(item_id)
+                if item and matches_keyword(item, kw) then return item end
+            end
         end
     end
     return nil
 end
 
 ---------------------------------------------------------------------------
--- Helper: find a tool in inventory that provides a given capability.
+-- Helper: find a tool in carried items that provides a given capability.
 -- Also checks blood as writing instrument when player has bloody state.
 ---------------------------------------------------------------------------
 local function find_tool_in_inventory(ctx, required_capability)
-    for _, obj_id in ipairs(ctx.player.inventory) do
-        local obj = ctx.registry:get(obj_id)
+    local reg = ctx.registry
+    local all_ids = get_all_carried_ids(ctx)
+    for _, obj_id in ipairs(all_ids) do
+        local obj = reg:get(obj_id)
         if obj and obj.provides_tool then
             local provides = obj.provides_tool
             if type(provides) == "string" and provides == required_capability then
@@ -160,6 +269,40 @@ local function provides_capability(obj, capability)
 end
 
 ---------------------------------------------------------------------------
+-- Helper: find a tool that is visible (in room/surfaces) but not carried
+---------------------------------------------------------------------------
+local function find_visible_tool(ctx, required_capability)
+    local room = ctx.current_room
+    local reg = ctx.registry
+    -- Room contents
+    for _, obj_id in ipairs(room.contents or {}) do
+        local obj = reg:get(obj_id)
+        if obj and obj.provides_tool then
+            if provides_capability(obj, required_capability) then
+                return obj
+            end
+        end
+    end
+    -- Surface contents
+    for _, obj_id in ipairs(room.contents or {}) do
+        local obj = reg:get(obj_id)
+        if obj and obj.surfaces then
+            for _, zone in pairs(obj.surfaces) do
+                if zone.accessible ~= false then
+                    for _, item_id in ipairs(zone.contents or {}) do
+                        local item = reg:get(item_id)
+                        if item and provides_capability(item, required_capability) then
+                            return item
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+---------------------------------------------------------------------------
 -- Helper: consume a charge from a tool, mutate to depleted if empty
 ---------------------------------------------------------------------------
 local function consume_tool_charge(ctx, tool)
@@ -184,6 +327,52 @@ end
 ---------------------------------------------------------------------------
 local function remove_from_location(ctx, obj)
     local room = ctx.current_room
+    local reg = ctx.registry
+
+    -- Player hands
+    for i = 1, 2 do
+        if ctx.player.hands[i] == obj.id then
+            ctx.player.hands[i] = nil
+            return true
+        end
+    end
+
+    -- Bags in player's hands
+    for i = 1, 2 do
+        local hand_id = ctx.player.hands[i]
+        if hand_id then
+            local bag = reg:get(hand_id)
+            if bag and bag.container and bag.contents then
+                for j, item_id in ipairs(bag.contents) do
+                    if item_id == obj.id then
+                        table.remove(bag.contents, j)
+                        return true
+                    end
+                end
+            end
+        end
+    end
+
+    -- Worn items
+    for i, worn_id in ipairs(ctx.player.worn or {}) do
+        if worn_id == obj.id then
+            table.remove(ctx.player.worn, i)
+            return true
+        end
+    end
+
+    -- Worn bag contents
+    for _, worn_id in ipairs(ctx.player.worn or {}) do
+        local bag = reg:get(worn_id)
+        if bag and bag.container and bag.contents then
+            for j, item_id in ipairs(bag.contents) do
+                if item_id == obj.id then
+                    table.remove(bag.contents, j)
+                    return true
+                end
+            end
+        end
+    end
 
     -- Room contents
     for i, id in ipairs(room.contents or {}) do
@@ -195,7 +384,7 @@ local function remove_from_location(ctx, obj)
 
     -- Surface contents of room objects
     for _, parent_id in ipairs(room.contents or {}) do
-        local parent = ctx.registry:get(parent_id)
+        local parent = reg:get(parent_id)
         if parent and parent.surfaces then
             for _, zone in pairs(parent.surfaces) do
                 for i, id in ipairs(zone.contents or {}) do
@@ -214,14 +403,6 @@ local function remove_from_location(ctx, obj)
                     return true
                 end
             end
-        end
-    end
-
-    -- Inventory
-    for i, id in ipairs(ctx.player.inventory) do
-        if id == obj.id then
-            table.remove(ctx.player.inventory, i)
-            return true
         end
     end
 
@@ -287,7 +468,7 @@ local function get_light_level(ctx)
             end
         end
     end
-    for _, obj_id in ipairs(ctx.player.inventory) do
+    for _, obj_id in ipairs(get_all_carried_ids(ctx)) do
         local obj = reg:get(obj_id)
         if obj and obj.casts_light then return "lit" end
     end
@@ -399,12 +580,13 @@ local function perform_mutation(ctx, obj, mut_data)
 end
 
 ---------------------------------------------------------------------------
--- Helper: total inventory weight
+-- Helper: total carried weight (hands + worn)
 ---------------------------------------------------------------------------
 local function inventory_weight(ctx)
     local total = 0
-    for _, id in ipairs(ctx.player.inventory) do
-        local obj = ctx.registry:get(id)
+    local reg = ctx.registry
+    for _, id in ipairs(get_all_carried_ids(ctx)) do
+        local obj = reg:get(id)
         if obj then total = total + (obj.weight or 0) end
     end
     return total
@@ -741,13 +923,53 @@ function verbs.create()
     handlers["hear"] = handlers["listen"]
 
     ---------------------------------------------------------------------------
-    -- TAKE / GET / PICK UP
+    -- TAKE / GET / PICK UP / GET X FROM Y
     ---------------------------------------------------------------------------
     handlers["take"] = function(ctx, noun)
         if noun == "" then print("Take what?") return end
 
         -- "pick up X"
         local target = noun:match("^up%s+(.+)") or noun
+
+        -- "get X from Y" — extract from a bag/container the player holds
+        local from_item, from_container = target:match("^(.+)%s+from%s+(.+)$")
+        if from_item then
+            local bag = find_in_inventory(ctx, from_container)
+            if not bag then
+                print("You don't have " .. from_container .. ".")
+                return
+            end
+            if not bag.container or not bag.contents then
+                print((bag.name or "That") .. " is not a container.")
+                return
+            end
+            local kw = from_item:lower()
+                :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+            local found_idx, found_id
+            for i, item_id in ipairs(bag.contents) do
+                local item = ctx.registry:get(item_id)
+                if item and matches_keyword(item, kw) then
+                    found_idx = i
+                    found_id = item_id
+                    break
+                end
+            end
+            if not found_id then
+                print("There is no " .. from_item .. " in " .. (bag.name or "that") .. ".")
+                return
+            end
+            local slot = first_empty_hand(ctx)
+            if not slot then
+                print("Your hands are full. Drop something first.")
+                return
+            end
+            table.remove(bag.contents, found_idx)
+            ctx.player.hands[slot] = found_id
+            local item = ctx.registry:get(found_id)
+            item.location = "player"
+            print("You take " .. (item and item.name or found_id) .. " from " .. (bag.name or "the container") .. ".")
+            return
+        end
 
         if not has_some_light(ctx) then
             print("It is too dark to find anything.")
@@ -760,7 +982,7 @@ function verbs.create()
             return
         end
 
-        if where == "inventory" then
+        if where == "hand" or where == "bag" or where == "worn" then
             print("You already have that.")
             return
         end
@@ -770,20 +992,23 @@ function verbs.create()
             return
         end
 
-        local max_weight = ctx.player.max_carry_weight or 20
-        if inventory_weight(ctx) + (obj.weight or 0) > max_weight then
-            print("You are carrying too much weight.")
+        local slot = first_empty_hand(ctx)
+        if not slot then
+            print("Your hands are full. Drop something first.")
             return
         end
 
         remove_from_location(ctx, obj)
-        ctx.player.inventory[#ctx.player.inventory + 1] = obj.id
+        ctx.player.hands[slot] = obj.id
         obj.location = "player"
 
         print("You take " .. (obj.name or obj.id) .. ".")
     end
 
-    handlers["get"] = handlers["take"]
+    handlers["get"] = function(ctx, noun)
+        -- "get X from Y" and regular get both go through take
+        handlers["take"](ctx, noun)
+    end
     handlers["pick"] = function(ctx, noun)
         -- "pick lock" → lockpicking (stub)
         if noun:match("^lock") then
@@ -801,19 +1026,35 @@ function verbs.create()
     handlers["drop"] = function(ctx, noun)
         if noun == "" then print("Drop what?") return end
 
-        local obj = find_in_inventory(ctx, noun)
-        if not obj then
-            print("You aren't carrying that.")
-            return
-        end
-
-        for i, id in ipairs(ctx.player.inventory) do
-            if id == obj.id then
-                table.remove(ctx.player.inventory, i)
-                break
+        -- Only drop items directly in hands (not bag contents or worn)
+        local obj = nil
+        local hand_slot = nil
+        local kw = noun:lower()
+            :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+        for i = 1, 2 do
+            local hand_id = ctx.player.hands[i]
+            if hand_id then
+                local candidate = ctx.registry:get(hand_id)
+                if candidate and matches_keyword(candidate, kw) then
+                    obj = candidate
+                    hand_slot = i
+                    break
+                end
             end
         end
 
+        if not obj then
+            -- Check if it's in a bag — give a helpful message
+            local bag_item = find_in_inventory(ctx, noun)
+            if bag_item then
+                print("You'll need to get that out of the bag first, or drop the bag itself.")
+            else
+                print("You aren't holding that.")
+            end
+            return
+        end
+
+        ctx.player.hands[hand_slot] = nil
         ctx.current_room.contents[#ctx.current_room.contents + 1] = obj.id
         obj.location = ctx.current_room.id
 
@@ -1046,21 +1287,53 @@ function verbs.create()
     handlers["rip"] = handlers["tear"]
 
     ---------------------------------------------------------------------------
-    -- INVENTORY
+    -- INVENTORY — shows hands, worn items, and bag contents
     ---------------------------------------------------------------------------
     handlers["inventory"] = function(ctx, noun)
-        if #ctx.player.inventory == 0 then
-            print("You are carrying nothing.")
-            return
+        local reg = ctx.registry
+
+        -- Hands
+        for i = 1, 2 do
+            local hand_id = ctx.player.hands[i]
+            if hand_id then
+                local obj = reg:get(hand_id)
+                local label = (i == 1) and "Left hand" or "Right hand"
+                print("  " .. label .. ": " .. (obj and obj.name or hand_id))
+                -- Show bag contents
+                if obj and obj.container and obj.contents and #obj.contents > 0 then
+                    print("    (contains:)")
+                    for _, item_id in ipairs(obj.contents) do
+                        local item = reg:get(item_id)
+                        print("      " .. (item and item.name or item_id))
+                    end
+                end
+            else
+                local label = (i == 1) and "Left hand" or "Right hand"
+                print("  " .. label .. ": (empty)")
+            end
         end
-        print("You are carrying:")
-        for _, id in ipairs(ctx.player.inventory) do
-            local obj = ctx.registry:get(id)
-            print("  " .. (obj and obj.name or id))
+
+        -- Worn items
+        if #(ctx.player.worn or {}) > 0 then
+            print("  Worn:")
+            for _, worn_id in ipairs(ctx.player.worn) do
+                local obj = reg:get(worn_id)
+                print("    " .. (obj and obj.name or worn_id))
+                if obj and obj.container and obj.contents and #obj.contents > 0 then
+                    print("    (contains:)")
+                    for _, item_id in ipairs(obj.contents) do
+                        local item = reg:get(item_id)
+                        print("      " .. (item and item.name or item_id))
+                    end
+                end
+            end
         end
-        local w = inventory_weight(ctx)
-        print(string.format("  (Total weight: %.1f / %d)",
-            w, ctx.player.max_carry_weight or 20))
+
+        -- Flame status
+        if ctx.player.state.has_flame and ctx.player.state.has_flame > 0 then
+            print("")
+            print("  You hold a flickering match flame.")
+        end
     end
 
     handlers["i"] = handlers["inventory"]
@@ -1089,6 +1362,20 @@ function verbs.create()
 
         -- Tool check: does this mutation require a fire source?
         if mut_data.requires_tool then
+            -- Check struck match flame first
+            if ctx.player.state.has_flame and ctx.player.state.has_flame > 0 then
+                print("You touch the match flame to the wick...")
+                ctx.player.state.has_flame = 0  -- match consumed
+                if perform_mutation(ctx, obj, mut_data) then
+                    local mutated = ctx.registry:get(obj.id)
+                    print(mut_data.message
+                        or ("You light " .. (mutated and mutated.name or obj.id) .. ". It casts a warm glow."))
+                    print("The match, spent, curls into ash between your fingers.")
+                end
+                return
+            end
+
+            -- Fall through to tool search
             local tool = find_tool_in_inventory(ctx, mut_data.requires_tool)
             if not tool then
                 print(mut_data.fail_message or "You have nothing to light it with.")
@@ -1448,7 +1735,7 @@ function verbs.create()
     handlers["mend"] = handlers["sew"]
 
     ---------------------------------------------------------------------------
-    -- PUT X IN/ON Y
+    -- PUT X IN/ON Y — supports furniture surfaces AND held/worn bags
     ---------------------------------------------------------------------------
     handlers["put"] = function(ctx, noun)
         if noun == "" then
@@ -1478,26 +1765,58 @@ function verbs.create()
             return
         end
 
-        -- Find item — prefer inventory
-        local item = find_in_inventory(ctx, item_word)
+        -- Find item — must be in hands
+        local item = nil
+        local item_hand = nil
+        local kw = item_word:lower()
+            :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+        for i = 1, 2 do
+            local hand_id = ctx.player.hands[i]
+            if hand_id then
+                local candidate = ctx.registry:get(hand_id)
+                if candidate and matches_keyword(candidate, kw) then
+                    item = candidate
+                    item_hand = i
+                    break
+                end
+            end
+        end
+
         if not item then
             local found = find_visible(ctx, item_word)
             if found then
-                print("You need to pick that up first.")
+                print("You need to be holding that to put it somewhere.")
                 return
             end
             print("You don't have " .. item_word .. ".")
             return
         end
 
-        -- Find target
+        -- Find target — could be a held bag, worn bag, or room object
         local target = find_visible(ctx, target_word)
         if not target then
             print("You don't see " .. target_word .. " here.")
             return
         end
 
-        -- Determine surface name
+        -- If target is a held/worn bag (simple container, no surfaces)
+        if target.container and not target.surfaces then
+            local ok, reason = ctx.containment.can_contain(
+                item, target, nil, ctx.registry)
+            if not ok then
+                print(reason or "You can't put that there.")
+                return
+            end
+            ctx.player.hands[item_hand] = nil
+            target.contents = target.contents or {}
+            target.contents[#target.contents + 1] = item.id
+            item.location = target.id
+            print("You put " .. (item.name or item.id) ..
+                " " .. prep .. " " .. (target.name or target.id) .. ".")
+            return
+        end
+
+        -- Determine surface name (furniture)
         local surface_name = nil
         if target.surfaces then
             if prep == "on" and target.surfaces.top then
@@ -1526,7 +1845,7 @@ function verbs.create()
         end
 
         -- Move
-        remove_from_location(ctx, item)
+        ctx.player.hands[item_hand] = nil
 
         if surface_name and target.surfaces and target.surfaces[surface_name] then
             local zone = target.surfaces[surface_name]
@@ -1545,6 +1864,233 @@ function verbs.create()
     end
 
     handlers["place"] = handlers["put"]
+
+    ---------------------------------------------------------------------------
+    -- STRIKE {A} ON {B} — compound tool verb for fire-making
+    -- Design: A (match/striker) is consumed from the matchbox.
+    --   B (the matchbox) can be in your hand OR on any reachable surface.
+    --   You don't need to hold both — you strike the match against whatever
+    --   is within reach.
+    ---------------------------------------------------------------------------
+    handlers["strike"] = function(ctx, noun)
+        if noun == "" then
+            print("Strike what? (Try: strike match on matchbox)")
+            return
+        end
+
+        -- Parse "strike A on B"
+        local a_word, b_word = noun:match("^(.+)%s+on%s+(.+)$")
+        if not a_word then a_word = noun end
+
+        -- Find the fire_source (matchbox) — the thing with charges
+        local matchbox = nil
+        if b_word then
+            -- Explicit target: check carried then visible
+            matchbox = find_in_inventory(ctx, b_word)
+            if not matchbox then
+                matchbox = find_visible(ctx, b_word)
+            end
+        else
+            -- "strike match" or "strike matchbox" — auto-find fire_source
+            -- First check if they named the matchbox directly
+            matchbox = find_in_inventory(ctx, a_word)
+            if not matchbox or not provides_capability(matchbox, "fire_source") then
+                matchbox = find_visible(ctx, a_word)
+                if not matchbox or not provides_capability(matchbox, "fire_source") then
+                    -- Search for any fire_source in carried or visible
+                    matchbox = find_tool_in_inventory(ctx, "fire_source")
+                    if not matchbox then
+                        matchbox = find_visible_tool(ctx, "fire_source")
+                    end
+                end
+            end
+        end
+
+        if not matchbox then
+            print("You don't see anything to strike against.")
+            return
+        end
+
+        if not provides_capability(matchbox, "fire_source") then
+            print("You can't strike a match on " .. (matchbox.name or "that") .. ".")
+            return
+        end
+
+        if matchbox.charges and matchbox.charges <= 0 then
+            print((matchbox.name or "The matchbox") .. " is empty. No matches remain.")
+            return
+        end
+
+        -- Strike the match!
+        if matchbox.on_tool_use and matchbox.on_tool_use.use_message then
+            print(matchbox.on_tool_use.use_message)
+        else
+            print("You strike a match. It flares to life with a hiss of sulphur.")
+        end
+
+        consume_tool_charge(ctx, matchbox)
+        ctx.player.state.has_flame = 3  -- good for 3 command ticks
+        print("You hold the small flame carefully. It won't last long.")
+    end
+
+    ---------------------------------------------------------------------------
+    -- WEAR / PUT ON — equip an item from hand to worn slot
+    ---------------------------------------------------------------------------
+    handlers["wear"] = function(ctx, noun)
+        if noun == "" then
+            print("Wear what?")
+            return
+        end
+
+        -- Find item in hands
+        local obj = nil
+        local hand_slot = nil
+        local kw = noun:lower()
+            :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+        for i = 1, 2 do
+            local hand_id = ctx.player.hands[i]
+            if hand_id then
+                local candidate = ctx.registry:get(hand_id)
+                if candidate and matches_keyword(candidate, kw) then
+                    obj = candidate
+                    hand_slot = i
+                    break
+                end
+            end
+        end
+
+        if not obj then
+            print("You aren't holding that.")
+            return
+        end
+
+        if not obj.wearable then
+            print("You can't wear " .. (obj.name or "that") .. ".")
+            return
+        end
+
+        ctx.player.hands[hand_slot] = nil
+        ctx.player.worn[#ctx.player.worn + 1] = obj.id
+        obj.location = "player"
+        print("You put on " .. (obj.name or obj.id) .. ".")
+    end
+
+    handlers["don"] = handlers["wear"]
+
+    ---------------------------------------------------------------------------
+    -- REMOVE / TAKE OFF — move worn item to hand
+    ---------------------------------------------------------------------------
+    handlers["remove"] = function(ctx, noun)
+        if noun == "" then
+            print("Remove what?")
+            return
+        end
+
+        local kw = noun:lower()
+            :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+        local obj = nil
+        local worn_idx = nil
+        for i, worn_id in ipairs(ctx.player.worn or {}) do
+            local candidate = ctx.registry:get(worn_id)
+            if candidate and matches_keyword(candidate, kw) then
+                obj = candidate
+                worn_idx = i
+                break
+            end
+        end
+
+        if not obj then
+            print("You aren't wearing that.")
+            return
+        end
+
+        local slot = first_empty_hand(ctx)
+        if not slot then
+            print("Your hands are full. Drop something first.")
+            return
+        end
+
+        table.remove(ctx.player.worn, worn_idx)
+        ctx.player.hands[slot] = obj.id
+        print("You remove " .. (obj.name or obj.id) .. ".")
+    end
+
+    ---------------------------------------------------------------------------
+    -- EAT — stub for consumables
+    ---------------------------------------------------------------------------
+    handlers["eat"] = function(ctx, noun)
+        if noun == "" then
+            print("Eat what?")
+            return
+        end
+
+        local obj = find_in_inventory(ctx, noun)
+        if not obj then
+            obj = find_visible(ctx, noun)
+        end
+        if not obj then
+            print("You don't see that here.")
+            return
+        end
+
+        if obj.edible then
+            print("You eat " .. (obj.name or "it") .. ".")
+            if obj.on_eat_message then
+                print(obj.on_eat_message)
+            end
+            remove_from_location(ctx, obj)
+            ctx.registry:remove(obj.id)
+        else
+            print("You can't eat " .. (obj.name or "that") .. ".")
+        end
+    end
+
+    handlers["consume"] = handlers["eat"]
+    handlers["devour"] = handlers["eat"]
+
+    ---------------------------------------------------------------------------
+    -- BURN — stub for consumables
+    ---------------------------------------------------------------------------
+    handlers["burn"] = function(ctx, noun)
+        if noun == "" then
+            print("Burn what?")
+            return
+        end
+
+        local obj = find_in_inventory(ctx, noun)
+        if not obj then
+            obj = find_visible(ctx, noun)
+        end
+        if not obj then
+            print("You don't see that here.")
+            return
+        end
+
+        -- Need a flame
+        local has_fire = (ctx.player.state.has_flame and ctx.player.state.has_flame > 0)
+            or find_tool_in_inventory(ctx, "fire_source") ~= nil
+        if not has_fire then
+            print("You have no flame to burn anything with.")
+            return
+        end
+
+        if obj.flammable or (obj.categories and type(obj.categories) == "table") then
+            local is_flammable = obj.flammable
+            if not is_flammable and obj.categories then
+                for _, cat in ipairs(obj.categories) do
+                    if cat == "flammable" then is_flammable = true break end
+                end
+            end
+            if is_flammable then
+                print("You hold the flame to " .. (obj.name or "it") .. ". It catches fire and burns away to ash.")
+                remove_from_location(ctx, obj)
+                ctx.registry:remove(obj.id)
+                return
+            end
+        end
+
+        print("You can't burn " .. (obj.name or "that") .. ".")
+    end
 
     ---------------------------------------------------------------------------
     -- TIME
@@ -1573,20 +2119,27 @@ function verbs.create()
         print("  taste <thing>     - taste something (risky! works in darkness)")
         print("  listen            - listen to ambient sounds (works in darkness)")
         print("  listen to <thing> - listen closely to something")
-        print("  take <thing>      - pick something up")
-        print("  drop <thing>      - drop something you're carrying")
+        print("  take <thing>      - pick something up (needs a free hand)")
+        print("  get <x> from <y>  - take something from a bag or container")
+        print("  drop <thing>      - drop something you're holding")
+        print("  put <x> in <y>    - put something in a bag or container")
+        print("  put <x> on <y>    - put something on a surface")
         print("  open <thing>      - open a container or door")
         print("  close <thing>     - close something")
         print("  break <thing>     - break something breakable")
         print("  tear <thing>      - tear fabric apart")
+        print("  strike match on <x>  - strike a match (compound tool)")
+        print("  light <thing>     - light a candle or torch (needs fire)")
+        print("  extinguish <thing>- put out a flame")
         print("  cut <thing> with <tool>  - cut something (or 'cut self' for blood)")
         print("  prick self with <tool>   - prick yourself with something sharp")
         print("  write <text> on <thing>  - write on a writable surface")
         print("  sew <thing> with <tool>  - sew materials together (requires skill)")
-        print("  light <thing>     - light a candle or torch (requires fire source)")
-        print("  extinguish <thing>- put out a flame")
-        print("  put <x> in <y>    - put something in or on something")
-        print("  inventory (i)     - see what you're carrying")
+        print("  wear <thing>      - put on a wearable item (backpack, cloak)")
+        print("  remove <thing>    - take off a worn item")
+        print("  eat <thing>       - eat something edible")
+        print("  burn <thing>      - set something flammable on fire")
+        print("  inventory (i)     - see what you're carrying / wearing")
         print("  time              - check the time of day")
         print("  help              - show this list")
         print("  quit              - leave the game")

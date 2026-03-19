@@ -64,3 +64,50 @@
 **Architecture Insight:** Tool resolution is tightly coupled to verb dispatch — stays in engine/verbs/init.lua, not separate module.
 
 **Next:** Cross-agent impact on Comic Book Guy (sensory descriptions on 37 objects) and design verification.
+
+### 2026-03-21 — Compound Tools, Two-Hand Inventory, Consumables
+
+**Three major engine features implemented in one pass.**
+
+**1. Two-Hand Inventory System:**
+- Replaced `player.inventory = {}` with `player.hands = { nil, nil }` (two slots) + `player.worn = {}` + `player.skills = {}`
+- Every inventory helper rewritten: `find_in_inventory`, `find_tool_in_inventory`, `find_visible`, `remove_from_location`, `get_light_level`, `inventory_weight`
+- New helpers: `hands_full()`, `first_empty_hand()`, `which_hand()`, `get_all_carried_ids()`
+- TAKE: checks for empty hand slot; "Your hands are full. Drop something first."
+- DROP: removes from hand to room floor
+- INVENTORY: shows Left hand / Right hand + bag contents + worn items
+- GET X FROM Y: extracts items from held/worn containers
+- PUT: now requires item in hand (not just in inventory)
+- WEAR/DON: moves wearable item from hand to worn slot
+- REMOVE: moves worn item back to hand (needs empty hand)
+
+**2. Compound Tool System (STRIKE verb):**
+- STRIKE match ON matchbox: finds matchbox (in hand or reachable surface), checks charges, consumes charge, sets `player.state.has_flame = 3`
+- Design decision: you do NOT need to hold the matchbox — it just needs to be within reach. Avoids the "both hands occupied" deadlock.
+- Match is ephemeral (`has_flame` state), not a persistent object
+- LIGHT verb updated: checks `has_flame` first, then falls back to tool search
+- New helper: `find_visible_tool()` — searches room/surfaces for tools (used by STRIKE to find matchbox on nightstand)
+
+**3. Consumables System:**
+- Tick system: `context.on_tick(ctx)` called after every command via loop hook
+- Match flame: `has_flame` decrements each tick; "The match sputters and dies." when exhausted
+- Candle burn: `burn_remaining = 60` on candle-lit.lua; ticks down per command; warning at 5; consumed at 0 with "The candle gutters and goes out, plunging the room into darkness."
+- EAT verb (stub): checks `obj.edible`, removes from world
+- BURN verb (stub): checks flame + flammable category, removes from world
+
+**Files modified:**
+- `src/engine/verbs/init.lua` — ~350 lines rewritten/added (all inventory helpers, TAKE, DROP, INVENTORY, PUT, LIGHT rewritten; STRIKE, WEAR, REMOVE, EAT, BURN, GET FROM added)
+- `src/main.lua` — Player state restructured, on_tick handler for flame/candle burn
+- `src/engine/loop/init.lua` — Post-command tick hook
+- `src/meta/objects/candle-lit.lua` — Added `burn_remaining = 60`
+- `src/meta/objects/wool-cloak.lua` — Added `wearable = true`
+
+**Key architectural decisions:**
+- Hand system is slot-based (2 items max), NOT weight-based — simpler, more physical
+- Bags in hands extend capacity but cost a hand slot; worn bags (backpack) are free
+- `get_all_carried_ids(ctx)` is the canonical function for "everything the player has access to"
+- `find_visible` returns location type ("room"/"surface"/"container"/"hand"/"bag"/"worn") so verbs can make location-specific decisions
+- Tick system is per-command, not real-time (V1 simplicity)
+- Function ordering in verbs/init.lua matters for Lua upvalue capture — `provides_capability` must be defined before `find_visible_tool`
+
+**Decision filed at:** `.squad/decisions/inbox/bart-compound-tools-hands-consumables.md`

@@ -11,6 +11,7 @@ return {
     weight = 3,
     categories = {"fabric", "warm", "wearable"},
     portable = true,
+    wearable = true,
 
     location = nil,
 

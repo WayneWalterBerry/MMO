@@ -12,6 +12,7 @@ return {
     weight = 1,
     categories = {"light source", "lit", "hot"},
     casts_light = true,
+    burn_remaining = 60,  -- game ticks (commands) before candle is consumed
     portable = true,
 
     location = nil,

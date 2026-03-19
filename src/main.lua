@@ -170,10 +170,15 @@ end
 -- Player state
 ---------------------------------------------------------------------------
 local player = {
-    inventory = {},
+    hands = { nil, nil },    -- two hand slots (object IDs)
+    worn = {},               -- worn items (backpack, cloak — don't use hand slots)
+    skills = {},             -- learned skills (future use)
     location = "start-room",
-    max_carry_weight = 20,
-    state = {},
+    state = {
+        bloody = false,
+        poisoned = false,
+        has_flame = 0,       -- ticks remaining for a struck match (0 = no flame)
+    },
 }
 
 ---------------------------------------------------------------------------
@@ -191,6 +196,80 @@ local context = {
     game_start_time = os.time(),
     game_start_hour = 2,
 }
+
+---------------------------------------------------------------------------
+-- Post-command tick: match flame, candle burn
+---------------------------------------------------------------------------
+context.on_tick = function(ctx)
+    local p = ctx.player
+
+    -- Match flame countdown
+    if p.state.has_flame and p.state.has_flame > 0 then
+        p.state.has_flame = p.state.has_flame - 1
+        if p.state.has_flame <= 0 then
+            p.state.has_flame = 0
+            print("")
+            print("The match sputters and dies.")
+        end
+    end
+
+    -- Candle burn tick — check room, surfaces, and player hands
+    local room = ctx.current_room
+    local reg = ctx.registry
+
+    local function tick_burnable(obj, obj_id, remove_fn)
+        if obj and obj.casts_light and obj.burn_remaining then
+            obj.burn_remaining = obj.burn_remaining - 1
+            if obj.burn_remaining <= 0 then
+                print("")
+                print("The candle gutters and goes out, plunging the room into darkness.")
+                remove_fn()
+                reg:remove(obj_id)
+                return true
+            elseif obj.burn_remaining == 5 then
+                print("")
+                print("The candle flame flickers dangerously low. It won't last much longer.")
+            end
+        end
+        return false
+    end
+
+    -- Room contents
+    for i = #(room.contents or {}), 1, -1 do
+        local obj_id = room.contents[i]
+        local obj = reg:get(obj_id)
+        tick_burnable(obj, obj_id, function()
+            table.remove(room.contents, i)
+        end)
+    end
+
+    -- Surface contents of room objects
+    for _, parent_id in ipairs(room.contents or {}) do
+        local parent = reg:get(parent_id)
+        if parent and parent.surfaces then
+            for _, zone in pairs(parent.surfaces) do
+                for i = #(zone.contents or {}), 1, -1 do
+                    local item_id = zone.contents[i]
+                    local item = reg:get(item_id)
+                    tick_burnable(item, item_id, function()
+                        table.remove(zone.contents, i)
+                    end)
+                end
+            end
+        end
+    end
+
+    -- Player hands
+    for i = 1, 2 do
+        local hand_id = p.hands[i]
+        if hand_id then
+            local obj = reg:get(hand_id)
+            tick_burnable(obj, hand_id, function()
+                p.hands[i] = nil
+            end)
+        end
+    end
+end
 
 ---------------------------------------------------------------------------
 -- Wire verb handlers

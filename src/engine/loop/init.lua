@@ -159,6 +159,11 @@ function loop.run(context)
       print("I don't understand '" .. verb .. "'. Try 'look', 'examine', 'take', 'open', or type 'help' for a full list.")
     end
 
+    -- Post-command tick (flame countdown, candle burn, etc.)
+    if context.on_tick then
+      context.on_tick(context)
+    end
+
     ::continue::
   end
 end
