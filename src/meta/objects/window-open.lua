@@ -2,6 +2,7 @@ return {
     id = "window-open",
     name = "an open leaded glass window",
     keywords = {"window", "glass", "pane", "leaded glass", "open window"},
+    room_presence = "A tall leaded window stands open in the stone wall, letting cool air drift in from outside.",
     description = "The tall leaded window stands open, its iron latch thrown back. Cool air drifts in, carrying the smell of rain and chimney smoke from the rooftops below. The sounds of a distant city — or perhaps a distant age — filter through: a cart wheel on cobblestone, a dog barking, the low murmur of lives being lived.",
 
     size = 5,

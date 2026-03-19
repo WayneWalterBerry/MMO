@@ -2,11 +2,13 @@ return {
     id = "nightstand",
     name = "a small nightstand",
     keywords = {"nightstand", "night stand", "bedside table", "side table", "small table"},
-    description = "A squat nightstand of knotted pine, barely reaching the height of the mattress beside it. Wax drippings have pooled and hardened on its top in a frozen cascade. A small drawer sits closed at the front.",
+    room_presence = "A small nightstand crusted with candle wax sits against the wall.",
+    description = "A squat nightstand of knotted pine, its top crusted with pooled and hardened wax drippings in a frozen cascade. A small drawer sits closed at the front.",
 
     size = 4,
     weight = 15,
     categories = {"furniture", "wooden"},
+    room_position = "stands beside the bed",
     portable = false,
 
     surfaces = {

@@ -28,13 +28,14 @@ src/
 │   ├── loader/       — sandboxed loadstring() wrapper; turns Lua source into live objects
 │   ├── registry/     — tracks every live object in a universe (by id)
 │   ├── mutation/     — replaces a live object definition with a new one (the rewrite engine)
+│   ├── containment/  — validates item placement against container constraints
 │   └── loop/         — main game loop: read input → dispatch → tick → output
 │
 ├── meta/
 │   ├── world/        — room graph: canonical room definitions and exit topology
-│   ├── objects/      — canonical object definitions (e.g. mirror.lua, chest.lua)
-│   ├── npcs/         — NPC definitions (behaviour, dialogue, state)
-│   └── mutations/    — named mutation rules: what an object becomes after an event
+│   ├── objects/      — canonical object definitions with self-describing mutations
+│   ├── templates/    — base object templates for inheritance (sheet, furniture, container, small-item)
+│   └── npcs/         — NPC definitions (behaviour, dialogue, state)
 │
 ├── parser/
 │   ├── verbs/        — verb handlers: each verb (break, open, take, look…) as a module
@@ -58,19 +59,20 @@ src/
 ## Rationale
 
 ### `engine/`
-The machine that makes code-IS-state possible. Four sub-concerns kept deliberately separate:
+The machine that makes code-IS-state possible. Five sub-concerns kept deliberately separate:
 
 - **loader** — one job: accept a Lua string, return a sandboxed live table. No knowledge of the world.
 - **registry** — the authoritative map of `id → live object` for a universe instance. Everything else looks up objects here.
 - **mutation** — given an object id and a new Lua source string, call loader and hot-swap the entry in registry. This is the core differentiator of the whole engine. It must be simple, fast, and auditable.
-- **loop** — thin orchestrator. Reads a command string, routes through parser, fires handlers, drives output. Keeps everything else stateless.
+- **containment** — validates whether an item can be placed in a container by checking five layers (container identity, physical size, capacity, category, weight). Runs before any mutation occurs.
+- **loop** — thin orchestrator. Reads a command string, routes through parser, fires handlers, drives output. Composes room views dynamically: room description (permanent features) + object `room_presence` sentences + visible exits. See `docs/design/dynamic-room-descriptions.md`. Keeps everything else stateless.
 
 ### `meta/`
 The canonical authored world — the source of truth before any player touches it. This is **not** runtime state; it is the template that gets cloned per-player universe.
 
-- **world/** — room graph lives here. Each room is a Lua table with `name`, `description`, `exits`, and `on_enter` hooks.
-- **objects/** — per-object `.lua` files. `mirror.lua` is a prime example (see below).
-- **mutations/** — named transformation rules. `mirror-break.lua` describes what the mirror *becomes* after the `break` verb fires. Keeping mutations separate from object definitions means the object file stays clean and mutation rules can be reused, composed, or versioned independently.
+- **world/** — room graph lives here. Each room is a Lua table with `name`, `description`, `exits`, and `on_enter` hooks. Room `description` must contain ONLY permanent features (walls, floor, ceiling, atmosphere, light, smell). Movable objects are NEVER referenced in room descriptions — the engine composes them dynamically from object `room_presence` fields at runtime. See `docs/design/dynamic-room-descriptions.md`.
+- **objects/** — per-object `.lua` files containing the canonical definition plus self-describing mutations. Each object defines a `room_presence` field — a complete prose sentence describing how the object appears at a glance when standing in the room. Objects use `description` for detailed examine text. `room_presence` must NOT reference other movable objects (only walls, corners, floor — permanent features).
+- **templates/** — base object templates for inheritance. Templates define shared properties that multiple objects can reference. Common templates: `sheet`, `furniture`, `container`, `small-item`. Objects reference a template via `template = "sheet"` and the engine merges the template properties with the object's own definition.
 - **npcs/** — behavioural definitions, separated from static objects because they tick on every loop turn.
 
 ### `parser/`
@@ -112,16 +114,26 @@ This file is the canonical intact-mirror definition — a Lua table with `name`,
 
 ### 2. Where does the mutation logic live?
 
-Two places, deliberately split:
+**All mutation definitions now live inside the object file itself.** Objects use a `mutations` table to self-describe what they become after events.
 
-| What | Where |
-|------|-------|
-| The broken-mirror *definition* (what the object IS after mutation) | `src/meta/mutations/mirror-break.lua` |
-| The generic *rewrite mechanism* (how any object gets swapped) | `src/engine/mutation/` |
+```lua
+-- src/meta/objects/mirror.lua
+return {
+  id          = "mirror",
+  name        = "ornate mirror",
+  -- ... other fields ...
+  mutations   = {
+    break = {
+      becomes = "mirror-broken",     -- this mirror becomes mirror-broken object
+      spawns  = { shard = 3 },        -- and spawns 3 shards
+    },
+  }
+}
+```
 
-The verb handler `src/parser/verbs/break.lua` is the glue: it resolves the noun (`mirror`), looks up the mutation rule (`mirror-break`), and calls `engine/mutation` with both. The mutation engine calls `loader` with the new source, then updates `registry`. Done.
+The verb handler `src/parser/verbs/break.lua` is the glue: it resolves the noun (`mirror`), reads the mutation definition from the object (`mirror.mutations.break`), and calls `engine/mutation` with the new object definition (`mirror-broken`). The mutation engine calls `loader` with the new source, then updates `registry`. Done.
 
-This means the engine itself knows nothing about mirrors. The mirror knows nothing about being broken. The mutation rule file is the only place that couples them — and it's small, auditable, and LLM-generatable.
+This means the engine itself knows nothing about mirrors. The mirror knows nothing about being broken. The object file is the only place that couples them — it's small, auditable, and LLM-generatable. Mutations are now **self-describing** and kept with their objects, not scattered in a separate mutations directory.
 
 ### 3. How far are we? Dependency chain.
 
@@ -134,22 +146,24 @@ We are **zero files written** in `src/` today. Here is the dependency chain from
         ↓
 [3] engine/mutation      — hot-swap using loader + registry
         ↓
-[4] meta/objects/mirror.lua          — intact mirror definition
-    meta/mutations/mirror-break.lua  — broken mirror definition
+[4] engine/containment   — validator for item placement
         ↓
-[5] parser/synonyms      — "smash", "shatter" → "break"
-    parser/verbs/break.lua           — resolves noun, fires mutation
+[5] meta/objects/mirror.lua          — intact mirror definition with mutations table
+    meta/objects/mirror-broken.lua   — broken mirror definition
         ↓
-[6] engine/loop          — minimal read/eval/print loop
+[6] parser/synonyms      — "smash", "shatter" → "break"
+    parser/verbs/break.lua           — resolves noun, reads mutations, fires rewrite
         ↓
-[7] meta/world/start-room.lua        — one room containing the mirror
+[7] engine/loop          — minimal read/eval/print loop
+        ↓
+[8] meta/world/start-room.lua        — one room containing the mirror
 ```
 
 **Blockers before writing the mirror:**  
-None. The mirror definition (`step 4`) can be written *today* without any engine code existing — it's just a Lua table. The engine pieces (steps 1–3) can also be written independently and in parallel with the meta content.
+None. The mirror definition (`step 5`) can be written *today* without any engine code existing — it's just a Lua table. The engine pieces (steps 1–4) can also be written independently and in parallel with the meta content.
 
 **Realistic sequencing for a minimal prototype:**  
-Steps 1 → 2 → 3 can be written back-to-back in a single session (each is ~30–60 lines of Lua). Steps 4 and 5 follow immediately. Step 6 is a tiny REPL. Step 7 is one room table. A working "break mirror" prototype is **3–4 hours of writing** once the architecture is clear — which it now is.
+Steps 1 → 2 → 3 → 4 can be written back-to-back in a single session (each is ~20–40 lines of Lua). Steps 5 and 6 follow immediately. Step 7 is a tiny REPL. Step 8 is one room table. A working "break mirror" prototype is **3–4 hours of writing** once the architecture is clear — which it now is.
 
 ### 4. Minimal Prototype
 

@@ -2,11 +2,13 @@ return {
     id = "bed",
     name = "a large four-poster bed",
     keywords = {"bed", "four-poster", "poster bed", "four poster", "mattress", "bedframe"},
-    description = "A massive four-poster bed dominates the room, its dark wooden frame carved with twisting vines and half-seen faces. The mattress is stuffed thick with straw and wool, sagging slightly in the middle where countless sleepers have left their impression. Heavy curtains hang from the posts, moth-eaten but still grand.",
+    room_presence = "A massive four-poster bed dominates the center of the room, its heavy curtains hanging in moth-eaten folds.",
+    description = "A massive four-poster bed with a dark wooden frame carved with twisting vines and half-seen faces. The mattress is stuffed thick with straw and wool, sagging slightly in the middle where countless sleepers have left their impression. Heavy curtains hang from the posts, moth-eaten but still grand.",
 
     size = 10,
     weight = 80,
     categories = {"furniture", "wooden", "large"},
+    room_position = "dominates the center of the room",
     portable = false,
 
     surfaces = {

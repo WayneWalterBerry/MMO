@@ -46,9 +46,9 @@ The system must be **fully deterministic**, **offline**, and **fast** (sub-milli
 
 ---
 
-## 2. Proposed Architecture: Four-Layer Validation
+## 2. Proposed Architecture: Five-Layer Validation
 
-Containment validation is a chain of four layers. Each layer can **reject with a reason**. If all layers pass, the move is valid.
+Containment validation is a chain of five layers. Each layer can **reject with a reason**. If all layers pass, the move is valid.
 
 ```
 validate(item, container)
@@ -56,7 +56,8 @@ validate(item, container)
   ├─► Layer 1: Is container a container?     → "You can't put things inside an elephant."
   ├─► Layer 2: Does item fit physically?     → "The desk won't fit in the sack."
   ├─► Layer 3: Is there room left?           → "The sack is too full."
-  └─► Layer 4: Category accept/reject?       → "The bookshelf is for books only."
+  ├─► Layer 4: Category accept/reject?       → "The bookshelf is for books only."
+  └─► Layer 5: Does it exceed weight limit?  → "That's too heavy for the desk."
 ```
 
 ### Layer 1 — Container Identity
@@ -129,6 +130,112 @@ This is modelled with two optional fields on the container:
 Items have a `categories` list (e.g., `{"fragile", "reflective"}` for a mirror, `{"weapon", "bladed", "one-handed"}` for a dagger).
 
 If neither `accepts` nor `rejects` is set on the container, Layer 4 passes unconditionally. Most containers (sacks, drawers, rooms) have no category restrictions.
+
+### Layer 5 — Weight Capacity
+
+Objects have a `weight` property (integer representing burden units). Containers have a `weight_capacity` limit. This is the fifth and final validation layer.
+
+When an item of weight *W* is placed in a container, the sum of all contained items' weights must not exceed the container's `weight_capacity`. When an item is removed, the total weight decreases by *W*.
+
+**Why a separate weight layer?** Size (Layer 3) measures available space in tier units. Weight measures structural strength. A sack might be able to fit (size-wise) all the goblets in the world, but 1000 gold bars would break the seams. A desk can physically hold a single book (fits through the opening, space available) but not a stone block (too much weight, desk collapses).
+
+Weight is typically a "soft" constraint for gameplay. The game might allow packing a bit over capacity (backpack strain), or offer magical bags. Size and category are "hard" constraints. When weight is exceeded, a reasonable failure message is: *"The \[container\] is too heavy to carry"* or *"The \[container\] sags under the weight."*
+
+---
+
+## 2b. Multi-Surface Containment
+
+Not all containers are simple boxes. Real objects have multiple storage zones: a desk has a top surface, a drawer inside, and space underneath. A room has floor, walls, ceiling, and hidden alcoves. A tree has branches, a hollow trunk, and roots.
+
+The `surfaces` table allows an object to define multiple distinct containment zones. Each surface has its own `capacity`, `accepts`/`rejects`, and `contents`.
+
+### Structure
+
+```lua
+container = {
+  surfaces = {
+    top = {
+      max_item_size = 5,
+      capacity = 8,
+      weight_capacity = 100,
+      contents = {},
+    },
+    inside = {
+      max_item_size = 3,
+      capacity = 6,
+      weight_capacity = 50,
+      contents = {},
+    },
+    underneath = {
+      max_item_size = 4,
+      capacity = 4,
+      weight_capacity = 75,
+      contents = {},
+    },
+  }
+}
+```
+
+When validating a put operation, the validator checks **both** the target surface's constraints. A player must specify which surface: *"PUT BOOK ON DESK"* (surface=top), *"PUT LETTER IN DESK"* (surface=inside). If no surface is specified, the parser/verb handler chooses a sensible default (usually "top" or "inside").
+
+### Surfaces Table
+
+The `surfaces` table is a dictionary where keys are surface names (strings: "top", "inside", "underneath", "branches", "roots", etc.) and values are container-like tables with `max_item_size`, `capacity`, `weight_capacity`, and `contents`.
+
+Each surface is independently validated. The engine tracks which items are on which surface by storing the surface name alongside the item reference in `contents` (or by keeping separate `contents` lists per surface).
+
+### Example
+
+```lua
+-- src/meta/objects/desk.lua
+return {
+  id          = "desk",
+  name        = "oak desk",
+  size        = 5,
+  weight      = 50,
+  categories  = { "furniture" },
+  container   = {
+    surfaces = {
+      top = {
+        max_item_size = 4,
+        capacity = 12,
+        weight_capacity = 100,
+        contents = {},
+      },
+      inside = {
+        max_item_size = 3,
+        capacity = 6,
+        weight_capacity = 40,
+        accepts = { "document", "writing-utensil" },
+        contents = {},
+      },
+    }
+  }
+}
+
+-- Player interactions:
+-- "put book on desk"         → validate against surfaces.top
+-- "put letter in desk"        → validate against surfaces.inside
+-- "put sword on desk"         → Layer 4: rejects (not a document/utensil)
+```
+
+### Why Surfaces Matter
+
+Without surfaces, a designer must create three separate "desk" objects (desk-top, desk-inside, desk-underneath) to model realistic storage. Surfaces collapse this into one semantic object with realistic internal structure. This is especially important for rooms, which are the ultimate multi-surface containers.
+
+### Surface Visibility Rules
+
+Surfaces interact with the visibility system for room descriptions (see `docs/design/dynamic-room-descriptions.md`). Objects on surfaces are NOT shown in the room view — only top-level objects in `room.contents` appear. When a player examines an object, its `on_look` handler reveals surface contents selectively:
+
+| Surface Type | Default Visibility | Player Action Required |
+|---|---|---|
+| `top` | Visible on examine | Just examine the parent object |
+| `inside` (closed) | Hidden | Open it first, then examine |
+| `inside` (open) | Visible on examine | Just examine the parent object |
+| `underneath` | Hidden | "look under [object]" |
+| `behind` | Hidden | "look behind [object]" |
+
+Objects inside closed containers (sacks, wardrobes, closed drawers) are invisible until the container is opened. Objects underneath or behind furniture require explicit investigation. Each player interaction reveals one layer — players peel the onion.
 
 ---
 
@@ -296,7 +403,7 @@ end
 
 -- Returns: ok (bool), reason (string or nil)
 -- reason is a player-facing message, ready to print.
-function M.validate(item, container)
+function M.validate(item, container, surface_name)
   -- Layer 1: Is the target actually a container?
   if not container.container then
     return false, string.format(
@@ -305,6 +412,14 @@ function M.validate(item, container)
   end
 
   local c = container.container
+  
+  -- If surfaces are defined, use the specified surface; otherwise use the whole container
+  if c.surfaces and surface_name then
+    c = c.surfaces[surface_name]
+    if not c then
+      return false, "That's not a valid place on " .. container.name .. "."
+    end
+  end
 
   -- Layer 2: Physical size — does it fit through the opening?
   if item.size > c.max_item_size then
@@ -333,6 +448,15 @@ function M.validate(item, container)
   if c.accepts and not item_matches_categories(item_cats, c.accepts) then
     return false, string.format(
       "%s doesn't belong in %s.", item.name, container.name
+    )
+  end
+
+  -- Layer 5: Weight capacity
+  local item_weight = item.weight or 0
+  local total_weight = (c.total_weight or 0) + item_weight
+  if c.weight_capacity and total_weight > c.weight_capacity then
+    return false, string.format(
+      "%s is too heavy for %s.", item.name, container.name
     )
   end
 

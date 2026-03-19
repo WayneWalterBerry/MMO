@@ -2,7 +2,8 @@ return {
     id = "vanity-open-mirror-broken",
     name = "an oak vanity (drawer open, mirror broken)",
     keywords = {"vanity", "desk", "table", "broken mirror", "dressing table", "oak vanity", "shattered", "drawer"},
-    description = "A solid oak vanity sits against the wall, still sturdy despite the violence visited upon it. Where an ornate mirror once stood, only the gilt frame remains — jagged glass teeth jutting from the backing. The brass-handled drawer hangs open.",
+    room_presence = "An oak vanity with a broken mirror and an open drawer sits against the wall, shards of glass glinting on its surface.",
+    description = "A solid oak vanity, still sturdy despite the violence visited upon it. Where an ornate mirror once stood, only the gilt frame remains — jagged glass teeth jutting from the backing. The brass-handled drawer hangs open.",
 
     size = 8,
     weight = 38,

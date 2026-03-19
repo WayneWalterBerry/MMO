@@ -2,6 +2,7 @@ return {
     id = "nightstand-open",
     name = "a small nightstand (drawer open)",
     keywords = {"nightstand", "night stand", "bedside table", "side table", "small table", "drawer"},
+    room_presence = "A small nightstand with an open drawer sits against the wall, its top crusted with wax.",
     description = "A squat nightstand of knotted pine. Wax drippings cascade down its side in frozen rivulets. The small drawer is pulled open.",
 
     size = 4,

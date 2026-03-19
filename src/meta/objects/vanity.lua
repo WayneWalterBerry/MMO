@@ -2,11 +2,13 @@ return {
     id = "vanity",
     name = "an oak vanity",
     keywords = {"vanity", "desk", "table", "mirror", "dressing table", "looking glass", "oak vanity"},
-    description = "A solid oak vanity dominates one wall, its surface darkened by years of candle smoke and spilled cosmetics. An ornate mirror rises from the back, framed in tarnished gilt scrollwork. The glass is old and faintly warped, giving your reflection a dreamlike, wavering quality. A single drawer sits closed at the front, its brass pull green with age.",
+    room_presence = "An oak vanity with an ornate mirror sits against one wall, its surface darkened by years of smoke.",
+    description = "A solid oak vanity, its surface darkened by years of candle smoke and spilled cosmetics. An ornate mirror rises from the back, framed in tarnished gilt scrollwork. The glass is old and faintly warped, giving your reflection a dreamlike, wavering quality. A single drawer sits closed at the front, its brass pull green with age.",
 
     size = 8,
     weight = 40,
     categories = {"furniture", "wooden", "reflective"},
+    room_position = "sits against the east wall",
     portable = false,
 
     surfaces = {

@@ -122,3 +122,70 @@ Classic IF bulk/weight limits handle question 2 but say nothing about question 1
 - Weight is a flat number, not a tier system — unlike size, weight benefits from continuous values
 
 **Decision filed at:** `.squad/decisions/inbox/bart-inheritance-model.md`
+
+### 2026-03-19 — Room Exit Architecture
+
+**Problem:** Rooms connected via flat `exits = { north = "hallway" }` — no constraints on what can pass through, no state (locked, hidden, broken), no mutation support. Wayne needs rich exit types (doors, windows, ladders, crawlspaces) that physically constrain what objects can traverse them.
+
+**Designed:**
+
+1. **Exits are first-class mutable objects** embedded inline in the room's `exits` table. Each exit has physical constraints (`max_carry_size`, `max_carry_weight`, `requires_hands_free`, `player_max_size`), state (`open`, `locked`, `hidden`, `broken`), and self-describing `mutations` with `becomes_exit` partial-merge semantics.
+
+2. **16 exit types catalogued** — doorway, door, trapdoor, window, stairs, ladder, crawlspace, rope, grate/drain, chimney, balcony/ledge, secret passage, hole in wall, bridge, portal/rift, gate/portcullis. Type is a descriptive label; LLM sets all numeric constraints per-instance.
+
+3. **5-layer traversal validation** — Visibility → Accessibility → Player Fit → Carry Constraints → Direction. Analogous to containment validator but for movement between rooms.
+
+4. **Bidirectionality is explicit** — both rooms declare their side. Paired exits share `passage_id` for synchronized mutations. No automatic mirroring.
+
+5. **Exit mutations use partial deep-merge** (`becomes_exit`), not full replacement. Only changed fields are declared. Room file is rewritten by mutation engine.
+
+6. **Portability tiers** (`false` / `"heavy"` / `true`) interact with exit constraints — heavy items can be dragged through passable exits but not climbed up ladders.
+
+7. **Room template** created at `src/meta/templates/room.lua` — base defaults for all rooms.
+
+8. **start-room.lua updated** — rich exits: oak door (north, lockable, breakable) and window (to courtyard, breakable, climbable).
+
+9. **Backward compatible** — string exits still work, normalized to unrestricted doorways at load time.
+
+**Key architectural insight:** Exit mutations use partial merge (not full replace) because exits have many stable fields (target, passage_id, constraints). Object mutations use full replace because identity can change entirely (mirror → shattered mirror). Different mutation semantics for different structural roles.
+
+**Files created/modified:**
+- `docs/design/room-exits.md` — full design document
+- `src/meta/templates/room.lua` — base room template
+- `src/meta/world/start-room.lua` — updated with rich exits
+- `.squad/decisions/inbox/bart-room-exits.md` — decision record
+
+**Decision filed at:** `.squad/decisions/inbox/bart-room-exits.md`
+
+### 2026-03-20 — Dynamic Room Description Architecture
+
+**Problem:** Room descriptions hardcoded references to mutable, movable objects. The start room's `description` said "A massive four-poster bed dominates the center" and `on_look` hardcoded a paragraph listing every object. If any object moved, the text became a lie. Wayne's directive: players should not see everything at once — progressive disclosure, one layer at a time.
+
+**Designed: Three-part dynamic composition**
+
+1. **Room `description`** — permanent features ONLY (walls, floor, ceiling, atmosphere, light, smell). Never references any object in `contents`.
+2. **Object `room_presence`** — each object defines a complete prose sentence describing how it appears in the room at a glance. Engine concatenates these for all visible objects.
+3. **Exit rendering** — auto-composed from exit data (unchanged from room-exits design).
+
+**Key architectural decisions:**
+
+- `room_presence` is a complete sentence, not a fragment — gives LLM full creative control over prose quality
+- `room_presence` must NOT reference other movable objects — position relative to permanent features only (walls, corners, floor)
+- Engine's `cmd_look` handles composition — rooms should NOT define custom `on_look` for standard description
+- Custom `on_look` is the escape hatch for truly special rooms (magical visions, darkness, etc.)
+- Layered visibility: room view → examine object → look in/under/behind — each interaction reveals one layer
+- Surface visibility rules: `top` visible on examine, `inside` hidden until opened, `underneath`/`behind` require explicit action
+- `hidden = true` objects are completely invisible until discovered via mutation
+- Object ordering in `room.contents` determines prose flow — most prominent first
+
+**Files created/modified:**
+- `docs/design/dynamic-room-descriptions.md` — full design document
+- `docs/architecture/src-structure.md` — updated meta/ and loop/ descriptions
+- `docs/design/room-exits.md` — updated on_look section
+- `docs/design/containment-constraints.md` — added surface visibility rules
+- `docs/contributing/objects.md` — added room_presence field and authoring rules
+- `src/engine/loop/init.lua` — cmd_look now composes dynamically from room_presence
+- `src/meta/world/start-room.lua` — removed custom on_look
+- `src/meta/objects/*.lua` — added room_presence to all 15 bedroom objects (base + mutated variants), removed movable-object references from descriptions
+
+**Decision filed at:** `.squad/decisions/inbox/bart-dynamic-room-descriptions.md`

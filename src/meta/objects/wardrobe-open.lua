@@ -2,6 +2,7 @@ return {
     id = "wardrobe-open",
     name = "a heavy wardrobe (open)",
     keywords = {"wardrobe", "armoire", "closet", "cabinet", "clothes", "open"},
+    room_presence = "A towering wardrobe stands open in the corner, its carved doors flung wide like wings.",
     description = "The massive wardrobe stands open, its carved doors flung wide like wings. The interior is lined with cedar — you can smell it, sharp and sweet beneath the must. A few wooden pegs jut from the back wall, most empty.",
 
     size = 9,

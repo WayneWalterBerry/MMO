@@ -2,7 +2,8 @@ return {
     id = "vanity-open",
     name = "an oak vanity (drawer open)",
     keywords = {"vanity", "desk", "table", "mirror", "dressing table", "looking glass", "oak vanity", "drawer"},
-    description = "A solid oak vanity dominates one wall, its surface darkened by years of candle smoke and spilled cosmetics. An ornate mirror rises from the back, framed in tarnished gilt scrollwork. The brass-handled drawer hangs open, its dark interior exposed.",
+    room_presence = "An oak vanity with a drawer hanging open sits against one wall, its mirror reflecting the room.",
+    description = "A solid oak vanity, its surface darkened by years of candle smoke and spilled cosmetics. An ornate mirror rises from the back, framed in tarnished gilt scrollwork. The brass-handled drawer hangs open, its dark interior exposed.",
 
     size = 8,
     weight = 40,

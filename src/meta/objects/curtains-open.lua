@@ -4,7 +4,8 @@ return {
     id = "curtains-open",
     name = "heavy velvet curtains (open)",
     keywords = {"curtains", "drapes", "curtain", "velvet", "window covering", "open"},
-    description = "The heavy burgundy curtains have been pulled aside, bunched against the wall in dusty velvet heaps. Pale grey light spills through the window they once concealed, illuminating motes of dust that swirl like tiny lost souls.",
+    room_presence = "Heavy burgundy curtains have been pulled aside against the wall, letting pale light spill across the floor.",
+    description = "The heavy burgundy curtains have been pulled aside, bunched against the wall in dusty velvet heaps. Pale grey light spills through, illuminating motes of dust that swirl like tiny lost souls.",
 
     size = 4,
     weight = 4,
