@@ -76,3 +76,23 @@ Infinite loops, memory exhaustion, state corruption, universe contamination, pri
 - Timeline: Rule-based MVP (Phase 1), SLM enhancement (Phase 2)
 
 **Full research:** `resources/research/architecture/local-slm-parser.md`
+
+### 2026-07-23: Model Distillation for Custom Tiny Parser
+
+**Report:** `resources/research/architecture/parser-distillation.md`
+
+**Key findings:**
+
+1. **Embedding-based intent matching beats generative distillation for our domain.** A quantized GTE-tiny (~5MB ONNX) with pre-computed command vectors gives 92–95% accuracy at 10–30ms latency. Generative distillation (350MB Qwen2.5-0.5B) only adds ~3% accuracy for 70× the size and 20× the latency.
+
+2. **Three-tier hybrid is the optimal architecture.** Tier 1: rule-based (~85%, <1ms, 0 bytes). Tier 2: embedding similarity (~12%, 10–30ms, ~5.5MB). Tier 3: optional generative SLM (~3%, 200–1500ms, 350MB background download).
+
+3. **Re-distillation is trivial for embeddings.** Adding a new verb = LLM generates 100 phrase pairs ($0.05), encode with GTE-tiny (5 seconds), append to index. No GPU. No retraining. Fully automated in CI. ~35 seconds total.
+
+4. **Full SLM retrain is cheap but rare.** ~$2, ~1 hour, needs GPU. Only needed per-release or major expansion. Can be automated in GitHub Actions with a GPU runner.
+
+5. **Build pipeline integration is natural.** Same LLM call that generates room content also generates parser training phrases. Parser accuracy scales automatically with content. Total annual cost: ~$65.
+
+6. **CL-LoRA enables incremental fine-tuning** (CVPR 2025), but for our small domain (~2000 examples), full retrain is fast enough that incremental methods aren't necessary.
+
+**Recommendation:** Embedding-primary hybrid. Tier 2 (5.5MB embedding matcher) replaces most of the 350MB SLM's job. Tier 3 SLM becomes purely optional for complex NLP. This drops the "smart parser" download from 350MB to 5.5MB while maintaining 97% coverage.
