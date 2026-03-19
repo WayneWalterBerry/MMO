@@ -14,6 +14,51 @@ Agent Chalmers initialized as Project Manager for the MMO project.
 
 ## Learnings
 
+### 2026-03-20: Tier 2 Embedding Parser Implementation Plan Delivered
+
+**Task:** Create comprehensive implementation plan for embedding-based parser (Tier 2).
+
+**Deliverables:**
+- ✅ Created `plan/` directory at repo root
+- ✅ Created `plan/llm-slm-parser-plan.md` (445 lines, 17.6KB)
+- ✅ Committed to main branch
+
+**Plan Structure (Requested by Wayne):**
+1. **Goal:** Build deterministic GPU-free embedding fallback (handles 12% of Tier 1 misses)
+2. **What We Have:** Tier 1 rule-based parser at 85% coverage (complete, unchanged)
+3. **What We Need:** GTE-tiny ONNX INT8 model (5.5MB) + ~2,000 canonical phrases encoded into 384-dim vectors (~3MB raw, ~400KB compressed)
+4. **6 Implementation Phases:**
+   - Phase 1: LLM generates training data (~2,000 phrases from verbs/objects)
+   - Phase 2: Build embedding index using GTE-tiny
+   - Phase 3: Runtime integration (ONNX Runtime Web + WASM)
+   - Phase 4: Game loop fallback chain (Tier 1 → Tier 2 on miss)
+   - Phase 5: CI/CD automation (rebuild index on verb/object changes)
+   - Phase 6: Testing & tuning (90%+ accuracy target)
+5. **Dependencies:** Phase 1→2→3→4 serial, Phase 5 parallel, Phase 6 blocks release
+6. **Risks:** ONNX/Wasmoon conflict, stale index, accuracy below 90%
+7. **Open Questions:** Accuracy threshold (0.75?), disambiguation UX, Tier 3 room in architecture
+
+**Timeline:** ~10 working days, mostly parallelizable after Phase 2
+
+**Key Insights:**
+- Pre-computed vectors eliminate runtime LLM cost (critical for PWA deployment)
+- 2,000-phrase index rebuildable in <2 min on code change (vs. SLM retraining)
+- Deterministic cosine similarity → no model drift risk
+- Fallback chain preserves Tier 1 reliability (no regressions possible)
+
+**Aligned With:**
+- Decision D-19 (Parser approach: embedding recommended over SLM)
+- Decision D-17 (Build-time LLM cost model)
+
+**Open Items for Wayne:**
+- Confirm accuracy threshold (score 0.75 → execute, 0.50–0.75 → disambiguate, <0.50 → fail)
+- Decide on Tier 3 (Qwen2.5 generative, optional, ~350MB)
+- Approve training data volume (2,000 vs. 5,000–10,000 phrases)
+
+**Confidence:** HIGH (85%) — Architecture proven (GTE-tiny used in production), dependencies clear, no blockers from active work.
+
+---
+
 ### 2026-03-20: Architecture Decision Planning Assessment
 
 **Key Planning Insights:**
