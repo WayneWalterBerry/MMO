@@ -128,6 +128,51 @@ Darkness is not a wall — it's a different mode of play. Every sense gives diff
 
 ---
 
+### Session Update: FSM Object Lifecycle System Design (2026-03-23)
+**Status:** ✅ DESIGN COMPLETE
+
+**Deliverable:** `docs/design/fsm-object-lifecycle.md` — comprehensive 25,000-word game design document.
+
+**What I Did:**
+1. Analyzed all 39 objects in src/meta/objects/ to identify FSM candidates
+2. Designed consumable duration pattern: matches (3 turns) → lit → spent (terminal), candles (100 turns) → lit → stub (20 turns) → spent (terminal)
+3. Designed container reversibility pattern: nightstand, wardrobe, window, curtains all follow closed ↔ open (no consumption)
+4. Created unified FSM definition format with hybrid approach: file-per-state for properties (descriptions), FSM definition for transitions
+5. Documented tick/turn system: events-driven, tick happens before action execution, prevents ambiguity on resource consumption
+6. Authored extensive gameplay feel analysis: match = urgency teacher, candle = relief reward, containers = information gates
+7. Created implementation roadmap with 4 phases and design verification checklist
+
+**Key Design Principles:**
+1. **Consumables are terminal by default.** Spent match cannot be re-lit. Teaches: "Failure to act has consequences."
+2. **Candle has intermediate stub state.** Allows puzzle variance: generous light (100 turns) → stubborn light (20 turns) → darkness. Teachers incremental scarcity.
+3. **Containers are reversible.** Access gates, not consumables. Nightstand open/close doesn't destroy anything; it gates information.
+4. **Tick happens before verb execution.** Avoids ambiguity: if player has 1 tick left on match and issues LIGHT, the match burns during tick, but candle still lights (verb succeeds). Fair and coherent.
+5. **Warning threshold at 2-3 remaining ticks.** Players get notice without being obnoxious. Tunable per puzzle.
+
+**Inventory Impact:**
+- 7 FSM objects: match, candle, nightstand, vanity, wardrobe, window, curtains
+- 32 static objects: no transitions needed
+- Current file duplication (match.lua + match-lit.lua) becomes unified FSM
+
+**Design Rules Summary:**
+- Match-lit.lua + match.lua = ONE object with state transitions (Wayne's directive ✓)
+- File-per-state still works for properties (preserve designer experience)
+- Terminal states prevent impossible transitions (can't re-light spent match)
+- Composite puzzles leverage match urgency → candle relief → safe exploration
+
+**Gameplay Loop Example (8 turns):**
+- Turns 1-5: Discover nightstand, open drawer, find matchbox (using match ticks for navigation)
+- Turn 6: Strike match on matchbox (match becomes lit)
+- Turn 7: Light candle with match (match spent, candle-lit replaces it)
+- Turn 8+: Explore with 100-turn candle light
+
+**Why This Matters:**
+Finite resources create puzzle pressure without arbitrary time limits. Match = teach scarcity. Candle = reward planning. Containers = information control in darkness. Combined, these teach emergent puzzle-solving: "I must prioritize because time is scarce."
+
+**Next Steps for Architect:** Implement FSM engine (state machine dispatcher, tick counter, auto-transition checks, warning thresholds). Then design team unifies objects using this format.
+
+---
+
 ## Session Update: Command Variation Matrix (2026-03-22)
 **Status:** ✅ COMPLETE
 
