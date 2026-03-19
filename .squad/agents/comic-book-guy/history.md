@@ -202,3 +202,71 @@ Frink's recommendation: **Lua as primary language** with Fennel as alternative. 
 - `surfaces` (table) — multi-zone containment on bed, nightstand, vanity, wardrobe, rug
 
 **Object Count:** 28 object files total (18 new + 6 kept + 4 vanity variants)
+
+---
+
+## Session: Tool Objects & Match/Candle Puzzle (2026-03-20)
+
+**Requested by:** Wayne "Effe" Berry
+
+**Deliverables:**
+- `src/meta/objects/matchbox.lua` — Matchbox with 3 charges, provides `fire_source` tool capability
+- `src/meta/objects/matchbox-empty.lua` — Depleted matchbox mutation variant (junk item)
+- Updated `src/meta/objects/candle.lua` — Added `requires_tool = "fire_source"` to LIGHT mutation, plus message and fail_message
+- Updated `src/meta/objects/candle-lit.lua` — Added `casts_light = true` for the light/dark system
+- Updated `src/meta/objects/nightstand.lua` — Matchbox placed inside drawer (surfaces.inside.contents)
+- Updated `src/meta/objects/nightstand-open.lua` — Same; matchbox visible when drawer opened
+- `docs/design/tool-objects.md` — Comprehensive design doc for the tool convention
+- Decision proposal: `.squad/decisions/inbox/comic-book-guy-tool-convention.md`
+
+**Key Design Patterns Established:**
+
+1. **Tool Convention (requires_tool / provides_tool)** — Objects declare capabilities they provide (`provides_tool = "fire_source"`) and mutations declare capabilities they require (`requires_tool = "fire_source"`). The engine resolves by searching player inventory for capability matches. This is distinct from the existing key pattern (`requires = "item-id"`) which uses specific item matching.
+
+2. **Consumable Charges** — Tools can have limited uses via `charges` property. Each use decrements charges via D-14 code rewrite. When depleted, the tool mutates to its `on_tool_use.when_depleted` variant. The matchbox has 3 charges → becomes `matchbox-empty` when all spent.
+
+3. **Composed Tool Messages** — When a tool is used for a mutation, two messages compose: the tool's `use_message` followed by the target's `message`. Depletion adds a third (`depleted_message`). Failure shows the target's `fail_message`.
+
+4. **First Puzzle Design (Light the Candle)** — Player wakes in dark room → opens nightstand drawer → finds matchbox → takes candle from nightstand top → "light candle" → room illuminated. Classic two-step discovery that teaches the containment system. Anti-softlock: door is already open, daytime provides window light, 3 matches provides margin for error.
+
+## Learnings
+
+- **Capability matching > item-ID matching for tools.** The key pattern (`requires = "brass-key"`) is correct for unique keys, but tools need generic capability matching. A tinderbox and a matchbox both provide `fire_source`. This extensibility is free if designed from the start.
+- **3 is the right number of charges.** One is cruel (no margin for error), five is generous (no tension). Three creates meaningful resource awareness without punishing exploration. It's the Goldilocks number, and also the fairy-tale number. Not a coincidence.
+- **Placing solution components near each other is good design.** Candle on top of nightstand, matches inside the drawer. The player doesn't need to cross-reference distant rooms — the puzzle components are co-located. This teaches the verb/containment system without frustration.
+- **The `casts_light` property was missing from candle-lit.lua.** It was implied by the categories ("light source", "lit") but never declared as a queryable boolean. Fixed. The engine needs a concrete property to check, not a category string to parse.
+- **Tool depletion is just another mutation.** matchbox → matchbox-empty is the same full-rewrite pattern as candle → candle-lit. The mutation model handles tool state elegantly — no special-casing needed.
+
+## Session: Cross-Agent Updates (2026-03-20)
+
+**Team Context Received:**
+
+### Bart's V1 REPL Complete
+Bart delivered fully playable V1 bedroom REPL with 12 core verbs, light/dark system, real-time game clock, all verbs wired. Game runs: lua src/main.lua. All foundational systems operational. Ready for playtesting.
+
+**Architectural insights from Bart:**
+- Object sources loaded at startup as mutation fuel (not runtime filesystem access)
+- Verb handlers use factory pattern + dependency injection (testable, clean)
+- Exit mutations use partial merge; object mutations use full replacement (different semantics for different structural roles)
+
+### Frink's Hosting Platform Research
+Frink completed architecture research recommending **Wasmoon (Lua 5.4 → WebAssembly) + Progressive Web App**:
+- Phase 1 (3 days): PWA prototype on phones
+- Phase 2 (2 weeks): App Store submission via Capacitor
+- Phase 3 (Future): Defold migration if graphical elements needed
+
+This validates our Lua engine choice — Wasmoon can run unmodified Lua engine files.
+
+### Brockman's Documentation Refresh
+Brockman captured 12+ new design directives from Wayne and updated all documentation:
+- Paper + writing system (WRITE verb with pen/pencil/blood as tools)
+- Skills system (lockpicking, sewing, crafting unlock new tool combinations)
+- Injury mechanics (knife/pin → blood resource)
+- **OPEN QUESTION:** Single-file vs. multi-file mutation objects. Wayne questioning whether nightstand-open/nightstand-closed should be one file or two. Potentially challenges D-14 implementation.
+
+### Team Decisions Merged
+All 17 new decisions (D-22 through D-36) merged into .squad/decisions.md:
+- D-22–D-26: Major architectural decisions (Template System, V1 REPL, Bedroom Design, Tool Convention, Hosting Platform)
+- D-27–D-36: User directives (light/time, docs current, newspaper, fire source, paper/writing, blood, skills, puzzles, single-file QUESTION, crafting)
+
+**Decision Architecture Insight:** The tool convention (D-25) opens design space for all puzzle verbs. Capability matching (not item-ID matching) enables extensibility: LIGHT (fire_source), WRITE (pen/pencil/blood), PICK LOCK (lockpicking skill + pin), SEW (sewing skill + needle), CRAFT (crafting skill + materials).

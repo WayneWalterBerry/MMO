@@ -127,3 +127,83 @@ The project has six core roles:
   - D-21: Universe Merge (No Merge)
 - **Orchestration Log:** `.squad/orchestration-log/2026-03-18T23-22-00Z-brockman.md`
 - **Session Log:** `.squad/log/2026-03-18T23-22-00Z-architecture-decisions.md`
+
+### Vocabulary Refinement Session (2026-03-20)
+- **Task:** Review and refine vocabulary document (docs/architecture/vocabulary.md) against all 24 architecture decisions
+- **Status:** ✅ COMPLETE
+- **Approach:**
+  1. Cross-referenced vocabulary against .squad/decisions.md (all 24 decisions D-1 through D-24)
+  2. Identified and updated conflicting or outdated terms
+  3. Added missing terminology for new game systems
+  4. Updated version to 1.2; bumped last-modified date
+- **Key Findings & Updates:**
+  - **ECS term superseded:** Decision 3 recommended hybrid ECS, but team chose containment hierarchy (D-3) + Lua prototype-based inheritance. Updated term to clarify; preserved ECS as reference material.
+  - **State Flags superseded:** Decision 22 (Code Mutation Over State Flags) makes flags inappropriate. Updated Flags/Counters term with ⚠️ note; emphasized code mutation IS the state.
+  - **Persistence model changed:** Decision 18 (Cloud Storage) supersedes earlier Decision 5 (local SQLite). Updated Relational/SQLite, Offline-First Architecture, Sync Queue terms.
+  - **Language choice clarified:** Decision 16 (Engine Language: Lua) is foundational; removed any speculative references to TypeScript/Kotlin/Swift.
+- **New Terms Added (10):**
+  1. **Mutation Variant** — Pattern of multi-state object files (vanity.lua, vanity-open.lua, etc.)
+  2. **Room Presence** — Field for dynamic room description composition
+  3. **Surface** — Multi-zone containment within objects (top, inside, underneath)
+  4. **Registry** — Live in-memory object store (ID → object table)
+  5. **Sandbox Loader** — Lua execution environment for object definitions
+  6. **Light Source** — Objects with casts_light = true property
+  7. **Game Clock** — Accelerated time system (1 real hour = 1 game day)
+  8. **Ghost** — Inter-universe observer player with limited interaction
+  9. **Universe Fork** — Per-player universe creation from base template
+  10. **Template** — Base definition pattern for object classes (with inheritance explanation)
+- **Updated Cross-References (4):**
+  - Container: Added Surface reference
+  - Supporter: Added Surface reference
+  - Updated 15+ terms with explicit Decision cross-references ([D-XX])
+- **Coverage Analysis:**
+  - All 24 decisions now covered in vocabulary or cross-referenced
+  - Speculative/superseded content marked with ⚠️ warnings
+  - Architecture research terms (ECS, Event Sourcing, etc.) preserved as reference material
+  - New game systems documented: Light system, Time system, Multi-surface containment, Dynamic room composition
+  - Multiverse architecture comprehensively covered
+- **Commit:** 50cf334 — "docs: refine vocabulary document v1.2 — align with all 24 architecture decisions"
+- **Document Quality:**
+  - 200+ terms maintained, 10 new terms added
+  - All decisions cross-referenced where applicable
+  - Living document contribution guidelines preserved
+  - Markdown structure and TOC intact
+- **Commit:** 50cf334 — "docs: refine vocabulary document v1.2 — align with all 24 architecture decisions"
+- **Document Quality:**
+  - 200+ terms maintained, 10 new terms added
+  - All decisions cross-referenced where applicable
+  - Living document contribution guidelines preserved
+  - Markdown structure and TOC intact
+
+### Session: Documentation Refresh (2026-03-20)
+
+**Parallel Tasks:** 3 documentation tasks completed in parallel session
+
+**Task 1: Newspaper Republish (Comic + Op-Ed)**
+- Duration: ~1 minute
+- Deliverable: 
+ewspaper/2026-03-18.md — Republished with comic strip and op-ed sections
+- Outcome: Comic section (visual humor about bedroom setup) and op-ed (reflections on V1 REPL readiness) established as recurring sections
+
+**Task 2: Vocabulary Refinement v1.2**
+- Duration: ~4 minutes
+- Deliverable: docs/architecture/vocabulary.md — Updated glossary aligned with all 24 architecture decisions
+- Changes: 10 new terms, 4 updated terms with cross-references, 15+ terms linked to [D-XX] decisions
+- Coverage: All 24 decisions now covered
+
+**Task 3: Design Directives Consolidation**
+- Duration: ~2 minutes
+- Deliverable: docs/design/design-directives.md — Consolidated user directives from Wayne
+- Captured: V1 scope, light/time systems, paper/writing, skills, crafting, puzzle design, single-file mutation QUESTION
+
+**Captured Wayne's Expanded Directives (12+ new features):**
+- D-27: Keep docs current (not lagging behind implementation)
+- D-28: Newspaper format (comic + op-ed recurring sections)
+- D-29: Fire source for lighting (LIGHT requires tool)
+- D-30: Paper and writing system (WRITE verb with pen/pencil/blood)
+- D-31: Paper mutation on writing (paper's code rewrites to include written text)
+- D-32: Blood as writing instrument (injury mechanics, knife/pin → blood resource)
+- D-33: Player skills system (lockpicking, sewing, crafting unlocks new tool combos)
+- D-34: Puzzle-first design philosophy (puzzles are first-class goal, not side effect)
+- D-35: Single-file vs. multi-file mutation objects (OPEN QUESTION — challenges D-14 implementation)
+- D-36: Sewing as crafting skill (cloth + needle + sewing skill → wearable items)

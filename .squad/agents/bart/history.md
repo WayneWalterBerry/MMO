@@ -189,3 +189,80 @@ Classic IF bulk/weight limits handle question 2 but say nothing about question 1
 - `src/meta/objects/*.lua` — added room_presence to all 15 bedroom objects (base + mutated variants), removed movable-object references from descriptions
 
 **Decision filed at:** `.squad/decisions/inbox/bart-dynamic-room-descriptions.md`
+
+### 2026-03-20 — V1 Playable REPL Built
+
+**Built the complete V1 bedroom REPL — the game is now playable.**
+
+**Files created:**
+- `src/main.lua` — Entry point. Sets package.path, loads templates/objects/room, creates registry, two-phase world population (room contents → surface contents), wires context, starts REPL.
+- `src/engine/verbs/init.lua` — All V1 verb handlers: LOOK (room + examine + look in/on/under), TAKE/GET, DROP, OPEN, CLOSE, BREAK, TEAR, LIGHT, EXTINGUISH, PUT X IN/ON Y, INVENTORY, TIME, HELP. Plus aliases (i, x, examine, grab, pick, smash, shut, etc.)
+- `src/meta/templates/room.lua` — Minimal room template (start-room uses `template = "room"`)
+
+**Files modified:**
+- `src/meta/objects/curtains-open.lua` — Added `allows_daylight = true` for light system
+- `src/meta/objects/nightstand.lua` — Added `accessible = false` on closed drawer surface
+- `src/meta/world/start-room.lua` — Fixed `break = {}` to `["break"] = {}` (Lua reserved keyword)
+
+**Architecture decisions in this build:**
+
+1. **Object sources stored at startup** — All `.lua` files in `src/meta/objects/` are read as raw strings and indexed by object ID. This map (`object_sources`) is the mutation fuel: when a verb triggers `mutations.open = { becomes = "vanity-open" }`, the engine loads `object_sources["vanity-open"]` as the new source. Unregistered variants (like candle-lit, vanity-open) live as dormant strings until needed.
+
+2. **Two-phase world initialization** — Phase 1: register objects listed in `room.contents`, set `location = room.id`. Phase 2: iterate registered objects' surfaces, register items found in `zone.contents`, set `location = parent_obj.id`. Avoids chicken-and-egg: we need the object loaded to read its surfaces, then register those surface items.
+
+3. **Layered object search** — `find_visible(ctx, keyword)` searches in order: room contents → accessible surface contents → non-surface container contents → player inventory. Returns the object plus where it was found (room/surface/container/inventory). Verbs use this to decide what actions are valid (e.g., TAKE requires room/surface/container; DROP requires inventory).
+
+4. **Verb-to-mutation mapping** — `find_mutation(obj, verb)` checks exact match first (`mutations.break`), then prefix match (`mutations.break_mirror`). This lets "break mirror" find the vanity via keyword "mirror" and then match its `break_mirror` mutation without the player needing to type the exact mutation key.
+
+5. **Light system** — Two light sources: daylight (needs `allows_daylight = true` on an object in the room + daytime hours) and artificial (`casts_light = true` on any object in room/surfaces/inventory). Dark rooms block most verbs except LIGHT, INVENTORY, TIME, DROP.
+
+6. **Time system** — Real-time based via `os.time()`. 1 real second = 24 game seconds. Starts at 6:00 AM. Daytime = 6 AM to 6 PM. Displayed on every LOOK and via TIME verb. Time-of-day descriptions change with the hour.
+
+7. **Exit mutations handled separately** — Exits live in the room table, not the registry. Exit mutations use partial merge (`becomes_exit` overlays changed fields), distinct from object mutations (full replacement). OPEN/CLOSE/BREAK check objects first, then exits, so physical objects take priority.
+
+8. **Spawn deduplication** — When a mutation spawns an object that already exists in the registry (e.g., a second glass-shard), the spawner appends `-2`, `-3`, etc. to create unique IDs.
+
+9. **Destruction mutations** — When `mutations.tear = { spawns = {"cloth", "cloth", "rag"} }` has spawns but no `becomes`, the original object is destroyed (removed from registry and room contents) and spawns replace it.
+
+**Bug found and fixed in content:**
+- `start-room.lua` used bare `break = {` as table key — `break` is a Lua reserved word. Fixed to `["break"] = {}`.
+- `nightstand.lua` had drawer surface without `accessible = false`, letting players reach inside a closed drawer. Fixed.
+
+**Key file paths for this build:**
+- Entry point: `src/main.lua`
+- Verb handlers: `src/engine/verbs/init.lua`
+- Room template: `src/meta/templates/room.lua`
+- Light-related: `candle-lit.lua` (casts_light), `curtains-open.lua` (allows_daylight)
+
+**Run with:** `lua src/main.lua` from repo root.
+
+---
+
+## 2026-03-20 — Cross-Agent Context Updates
+
+### Frink's Hosting Research
+Frink completed architecture research recommending **Wasmoon (Lua 5.4 → WebAssembly) + Progressive Web App** as primary hosting platform. Phase 1 prototype in 3 days; Phase 2 App Store wrapping in 2 weeks. This validates our choice of Lua engine — Wasmoon runs existing Lua engine files unmodified. No engine rewrites needed for deployment.
+
+### Comic Book Guy's Tool Convention
+Comic Book Guy established **tool convention pattern** with `requires_tool` / `provides_tool` capability matching. First implementation: matchbox (3 charges, provides fire_source) → candle (requires fire_source to light). This opens design space for all puzzle verbs: WRITE (requires pen/pencil/blood), PICK LOCK (requires lockpicking skill + pin), SEW (requires sewing skill + needle).
+
+### Brockman's Design Consolidation
+Brockman captured 12+ expanded design directives from Wayne:
+- Paper + writing system (WRITE verb with pen/pencil/blood)
+- Skills system (lockpicking, sewing, etc.)
+- Crafting mechanics (sewing skill transforms cloth into wearable items)
+- Injury mechanics (knife/pin → blood resource)
+- **OPEN QUESTION:** Single-file vs. multi-file mutation objects. Wayne questioning whether nightstand-open/nightstand-closed should be separate files or one file with state. Potentially challenges D-14 (true code rewrite). Needs architectural decision.
+
+### Team Decisions Merged
+17 new decisions added to `.squad/decisions.md` (Decisions 22–36):
+- D-22: Object Inheritance / Template System (implemented)
+- D-23: V1 REPL Architecture (implemented)
+- D-24: Bedroom Design Patterns (implemented)
+- D-25: Tool Object Convention (proposed, likely FIRM)
+- D-26: Lua Hosting Platform (proposed for review)
+- D-27 to D-36: User directives (light/time, paper/writing, skills, sewing, crafting, puzzle design, single-file mutation QUESTION)
+
+### Scribe Session Captured
+Session log created: `.squad/log/2026-03-19T01-53-18Z-v1-repl-session.md` with summary of all four-agent work.
+

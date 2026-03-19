@@ -69,14 +69,34 @@
 
 ---
 
-**Team Alignment (2026-03-19):**
-Comic Book Guy (Game Designer) has operationalized this research into concrete game design:
-- Verb-based interaction (LOOK, TAKE, DROP, GO, etc.)
-- Code mutation over state flags
-- Five object types with strict containment rules
-- Player-per-universe model with opt-in merging
-- Permanent consequences via code mutation
-- Game design document: `docs/design/game-design-foundations.md`
+---
+
+## Session: Lua Hosting Platform Research (2026-03-20)
+
+**Task:** Research Lua hosting platforms for delivering the MMO to players on browsers and mobile.
+
+**Deliverable:** `resources/research/architecture/lua-hosting-platforms.md` — Comprehensive platform analysis
+
+**Recommendation:**
+
+**Primary:** Wasmoon (Lua 5.4 → WebAssembly) + Progressive Web App
+
+**Rationale:**
+1. HTML/CSS is the best text rendering engine available — superior to any game engine for our text adventure
+2. Wasmoon runs our existing Lua engine files unmodified
+3. PWA = fastest distribution (URL sharing, no app store approval)
+4. Capacitor provides App Store path when ready
+5. Performance is a non-issue — text adventures need <2ms per command cycle
+
+**Phase 1 (3 days):** PWA with Wasmoon playable prototype on phones
+**Phase 2 (2 weeks):** App Store submission via Capacitor
+**Phase 3 (Future):** Defold migration if graphical elements become important
+
+**Impact on Architecture:**
+- Validates Lua engine choice (D-16) — Wasmoon can run unmodified Lua engine
+- Aligns with cloud persistence (D-18) — PWA handles offline via service worker
+- Supports code rewrite mutation (D-14) — Wasmoon runs modified Lua source
+- No rewrite needed; engine code portable to three platforms (browser, iOS, Android)
 
 See `.squad/decisions.md` Decisions 7–8 for merged proposals. Team review pending.
 
@@ -1042,6 +1062,36 @@ Each game must implement these manually.
 5. Validate **semantic consistency** at transaction commit time (part of sandbox layer)
 
 **Full Report:** `resources/research/design/containment-plausibility-in-if.md` (25K)
+
+---
+
+### Lua Hosting Platforms for Mobile & Web (2026-03-20)
+
+**Decision:** Recommend Wasmoon (Lua 5.4 → WASM) + PWA as primary host platform, with Capacitor wrapping for app stores.
+
+**Key Findings:**
+- **Wasmoon** compiles official Lua 5.4 to WebAssembly via Emscripten; 25x faster than Fengari (JS-based Lua); runs our engine files unmodified
+- **PWA** (Progressive Web App) provides installability, offline support, and zero app-store gatekeeping — fastest distribution path
+- **Capacitor** (Ionic) wraps any web app as native iOS/Android container for App Store / Play Store presence
+- **Defold** is the strong runner-up — production-grade Lua game engine with iOS/Android/HTML5 targets; has a text-adventure template on GitHub; best choice if graphical elements become important
+- **LÖVE/Love2D** is wrong paradigm — graphics-oriented, poor text rendering; Balatro proved mobile viability but it's a card game, not text adventure
+- **Fengari** (Lua 5.3 in JS) is viable fallback — slowest but smallest bundle; adequate for text adventures
+- **HTML/CSS is the world's best text renderer** — building a text adventure in a game engine means fighting its rendering assumptions
+- **Performance is irrelevant** for text adventures — even Fengari's "slow" speed completes a full command cycle in <2ms
+
+**Architecture:**
+- Host (JS/HTML): UI rendering, input capture, cloud sync, auth, local storage, accessibility
+- Bridge: 5-10 exposed functions (host_print, host_get_input, host_save_state, etc.)
+- Lua Engine (in WASM): game logic, world state, command processing, mutation — unchanged from current codebase
+
+**Fastest Path to Phone Prototype: 3 days**
+1. Day 1: Single HTML + Wasmoon + our Lua engine → web REPL
+2. Day 2: PWA manifest + service worker → installable, offline
+3. Day 3: CSS polish + deploy → share URL with playtesters
+
+**Player UI Recommendation:** Hybrid input — verb buttons (LOOK, TAKE, etc.) plus free-form typing with auto-complete. Based on analysis of Frotz, Hadean Lands, 80 Days, and AI Dungeon.
+
+**Full Report:** `resources/research/architecture/lua-hosting-platforms.md` (27K)
 
 ---
 

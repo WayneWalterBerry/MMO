@@ -783,6 +783,267 @@ When a ghost is **transformed** into a full participant in a host's universe, th
 
 ---
 
+### 22. Object Inheritance / Template System + Weight/Categories/Multi-Surface (2026-03-19)
+
+**Author:** Bart (Architect)  
+**Status:** Implemented  
+**Impact:** Architecture-level; affects object definitions, loader, registry, containment, mutation  
+
+**Decision:** Three interlocking systems added to the engine:
+
+1. **Template Inheritance** — Objects can declare `template = "sheet"` to inherit base properties. The loader deep-merges the template under instance overrides. Instance always wins.
+
+2. **Weight + Categories** — All objects now carry `weight` (number) and `categories` (table of strings). Containers carry `weight_capacity`. The containment validator checks weight alongside size.
+
+3. **Multi-Surface Containment** — Objects can define `surfaces = { top = {...}, inside = {...} }` to support multiple containment zones. Each zone has its own capacity, max_item_size, weight_capacity, and accessibility flag.
+
+**Template System:**
+| Template | Purpose | Key defaults |
+|----------|---------|-------------|
+| `sheet.lua` | Fabric/cloth family | size 1, weight 0.2, portable, tearable |
+| `furniture.lua` | Heavy immovable objects | size 5, weight 30, not portable |
+| `container.lua` | Bags, boxes, chests | container true, capacity 4, weight_capacity 10 |
+| `small-item.lua` | Tiny portable items | size 1, weight 0.1, portable |
+
+**Engine Changes:**
+| File | Changes |
+|------|---------|
+| `engine/loader/init.lua` | Added `resolve_template()`, `load_template()`, `deep_merge()` |
+| `engine/registry/init.lua` | Added `find_by_category()`, `total_weight()`, `contents_weight()` |
+| `engine/containment/init.lua` | Enhanced with weight + multi-surface validator |
+| `engine/mutation/init.lua` | Surface content preservation, optional template re-resolution |
+
+**Rationale:**
+- Templates are single-level (not deep inheritance chains) to avoid debugging nightmares
+- Weight is continuous, not tiered — exact values for realistic stacking
+- Surfaces use `accessible` flag (not absence) — locked drawer still has contents
+- Template resolution is loader concern — registry doesn't need to know about templates
+
+---
+
+### 23. V1 REPL Architecture (2026-03-20)
+
+**Author:** Bart (Architect)  
+**Status:** Implemented  
+**Impact:** Full stack — engine wiring, verb system, light/time systems  
+
+**Decision:** Built three new files that wire the existing engine into a playable game:
+
+1. **Object sources as mutation fuel** — All object `.lua` files loaded as raw strings at startup, indexed by ID. Mutation variants (vanity-open, candle-lit, etc.) exist as dormant strings until a verb triggers them. No filesystem access at runtime.
+
+2. **Verbs module returns a factory** — `verbs.create()` returns a handler table. No closures over context; handlers receive `ctx` as a parameter from the loop. Clean dependency injection.
+
+3. **Light via object properties** — `casts_light = true` (candle-lit) and `allows_daylight = true` (open curtains). No light "system" — just property checks in the verb layer. Easy to extend.
+
+4. **Real-time game clock** — `os.time()` delta × 24 = game seconds. No tick-based advancement. Time is always accurate, even between commands.
+
+5. **Exit mutations are partial merge, object mutations are full replacement** — Exits modify fields in-place. Objects swap the entire registry entry. Different semantics for different structural roles.
+
+**Consequences:**
+- The game is playable now. `lua src/main.lua` from repo root.
+- Future verbs just add handlers to the verbs module.
+- Future rooms just need a room file + placement in a room graph.
+- Light/time systems are intentionally minimal — extend when needed.
+
+**Files Created:**
+- `src/main.lua` — entry point
+- `src/engine/verbs/init.lua` — verb handlers
+- `src/meta/templates/room.lua` — room template
+
+---
+
+### 24. Bedroom Design Patterns (2026-03-20)
+
+**Author:** Comic Book Guy (Game Designer)  
+**Status:** Implemented  
+**Impact:** Object model, engine requirements  
+
+**Decision:** Established five core design patterns for the bedroom:
+
+1. **Multi-Surface Containment Model** — Objects with multiple interaction zones use `surfaces` instead of flat `contents`. Each surface has `capacity`, `max_item_size`, and `contents`. Examples: bed (top, underneath), nightstand (top, inside), vanity (top, inside, mirror_shelf), rug (underneath).
+
+2. **Composite Mutation Matrix** — When an object has N independent toggleable properties, it requires 2^N mutation files. The vanity has 2 axes (drawer open/closed, mirror intact/broken) = 4 files. Each is a complete standalone object definition.
+
+3. **Template Inheritance for Object Families** — Objects that share a base type use `template = "sheet"` to inherit default properties. Instance overrides win. Used for: bed-sheets, curtains.
+
+4. **Hidden Object Discovery Pattern** — Objects can contain hidden items (rug → brass-key underneath). The `on_look` function should hint at hidden content without revealing it. Separate verbs (LOOK UNDER, SEARCH) expose hidden contents.
+
+5. **Room Object Hierarchy** — Room `contents` lists top-level furniture. Portable items live inside furniture surfaces, not directly in the room. This creates a natural discovery hierarchy: enter room → see furniture → examine furniture → find items.
+
+6. **Bedroom as Start Room** — The player now starts in a bedroom instead of a study. More natural for a "waking up" narrative opening and provides immediate interactive objects.
+
+**Objects Created:**
+- Vanity (4 variants: open, closed, mirror-broken, open+broken)
+- Bed, pillow, bed-sheets, blanket
+- Nightstand (2 variants: open, closed with matchbox)
+- Candle (2 variants: dark, lit)
+- Wardrobe (2 variants: open, closed)
+- Rug with brass key underneath
+- Curtains (2 variants: closed, open with daylight)
+- Window, chamber-pot, wool-cloak
+
+---
+
+### 25. Tool Object Convention (requires_tool / provides_tool) (2026-03-20)
+
+**Author:** Comic Book Guy (Game Designer)  
+**Status:** Proposed  
+**Impact:** Engine verb resolution, object schema, puzzle design  
+**Firmness:** FIRM  
+**Risk Level:** LOW  
+
+**Decision:** Introduce a **tool convention** for objects that enable verb actions on other objects:
+
+- **`requires_tool = "capability"`** on mutation targets — declares that a verb/mutation needs a tool with a specific capability
+- **`provides_tool = "capability"`** on tool objects — declares what capability this tool provides
+
+The engine resolves tool requirements by searching the player's inventory for any object whose `provides_tool` matches the target's `requires_tool`. This is **capability matching**, not item-ID matching.
+
+**How It Differs from `requires` (Key Pattern):**
+
+| Pattern | Matches by | Example |
+|---------|-----------|---------|
+| `requires = "item-id"` | Specific item ID | Brass key → bedroom door |
+| `requires_tool = "capability"` | Any provider of capability | Matchbox (fire_source) → candle |
+
+**Consumable Tools:**
+
+Tools can have limited charges via the `charges` property and `on_tool_use` block. Charge decrement follows D-14 (full code rewrite). When depleted, the tool mutates to its `when_depleted` variant.
+
+**First Implementation:**
+
+- `matchbox.lua` — provides `fire_source`, 3 charges, depletes to `matchbox-empty.lua`
+- `candle.lua` — mutation `light` requires_tool `fire_source`, mutates to `candle-lit.lua`
+- `candle-lit.lua` — gains `casts_light = true` for the light/dark system
+
+**Engine Requirements:**
+
+1. When processing a mutation with `requires_tool`, search player inventory for matching `provides_tool`
+2. Handle both string and list values for `provides_tool`
+3. Compose tool use messages with target mutation messages
+4. Rewrite tool charges per D-14 code mutation model
+5. Mutate depleted tools to their `when_depleted` variant
+
+**Rationale:**
+- Proven pattern: Zork's torch, Monkey Island's tools, Inform 7's "doing it with" rules
+- Capability matching is more extensible than item-ID matching
+- Consumable charges create resource tension and meaningful player choices
+- Integrates cleanly with existing mutation and code-rewrite systems
+- Does not break any existing patterns (additive, not breaking)
+
+---
+
+### 26. Lua Hosting Platform (2026-03-20)
+
+**Author:** Frink (Researcher)  
+**Status:** Proposed  
+**Priority:** High  
+**Impact:** Architecture-level; affects how players access the game  
+
+**Proposal:** Adopt **Wasmoon (Lua 5.4 → WebAssembly) + Progressive Web App** as the primary host platform for delivering the game to players' phones and browsers.
+
+**Phase 1 (Prototype): PWA with Wasmoon**
+- HTML/CSS/JS host application runs Lua engine via Wasmoon in browser
+- PWA manifest + service worker for installability and offline play
+- Deploy to any static host (GitHub Pages, Netlify)
+- **Timeline: 3 days to playable prototype on phones**
+
+**Phase 2 (App Store): Capacitor wrapping**
+- Same codebase wrapped in Capacitor for iOS App Store + Google Play Store
+- Add native features: push notifications, haptics, storage
+- **Timeline: 2 weeks to store submission**
+
+**Phase 3 (Future): Defold migration (if needed)**
+- Only if graphical elements become important
+- Lua engine code transfers directly to Defold
+
+**Rationale:**
+1. HTML/CSS is the best text rendering engine available — superior to any game engine for our text adventure
+2. Wasmoon runs our existing Lua engine files unmodified
+3. PWA = fastest distribution (URL sharing, no app store approval)
+4. Capacitor provides App Store path when ready
+5. Performance is a non-issue — text adventures need <2ms per command cycle
+
+**Aligns With:**
+- Decision 16: Engine language is Lua (FIRM)
+- Decision 18: Cloud persistence (FIRM)
+- Decision 14: Code rewrite mutation model (FIRM)
+- Decision 9: LLM-written code, complexity not a factor
+- Decision 10: Multiverse per-player universes
+
+**Needs Review From:**
+- Wayne "Effe" Berry (Product Owner)
+- Gil (Lead Engineer) — for implementation feasibility
+
+---
+
+## User Directives (Captured 2026-03-19)
+
+### D-25: V1 Play Test Scope (2026-03-19T012051Z)
+
+**By:** Wayne "Effe" Berry  
+**What:** Single room, breakable objects, text REPL. That's the first playable version. Goal is to get to play test as fast as possible.
+
+### D-26: Light and Time Systems (2026-03-19T012411Z)
+
+**By:** Wayne "Effe" Berry  
+**What:**
+1. **Light system:** There is light in the game. Some objects cast light (e.g., torch, candle). Outside areas during daytime have natural light. Inside areas need either a window to daytime OR objects that cast light.
+2. **Time system:** The game has time, and it moves faster than real time. One real-time hour = one full in-game day.
+
+### D-27: Keep Docs Current (2026-03-19T013009Z)
+
+**By:** Wayne "Effe" Berry  
+**What:** Keep the architecture and design docs up to date as decisions and implementation progress. Docs should reflect current state, not lag behind.
+
+### D-28: Newspaper Format (2026-03-19T013254Z)
+
+**By:** Wayne "Effe" Berry  
+**What:** Every daily newspaper edition must include a comic strip and an op-ed piece. These are recurring sections, not one-offs.
+
+### D-29: Fire Source for Lighting (2026-03-19T014223Z)
+
+**By:** Wayne "Effe" Berry  
+**What:** You need a match (or similar fire source object) to light the candle. Players can't just "light candle" from nothing — they need to find/have a fire source item first. This is a gameplay constraint and puzzle element.
+
+### D-30: Paper and Writing System (2026-03-19T014604Z)
+
+**By:** Wayne "Effe" Berry  
+**What:** There should be a sheet of paper object that words can be written on. Writing requires a tool: pen, pencil, or blood. The paper + writing instrument interaction is another tool-based verb pattern (WRITE ON {paper} WITH {instrument}). Blood as a writing instrument implies injury or a blood source — dark gameplay element.
+
+### D-31: Paper Mutation on Writing (2026-03-19T014629Z)
+
+**By:** Wayne "Effe" Berry  
+**What:** The paper object is mutable — when words are written on it, the paper's definition mutates to include those words. "WRITE hello ON paper WITH pen" → the paper object's code is rewritten to include "hello" in its description/content. This is the code-mutation model applied to player-authored content. The paper literally becomes a different object (paper-with-writing) via the mutation engine.
+
+### D-32: Blood as Writing Instrument (2026-03-19T014726Z)
+
+**By:** Wayne "Effe" Berry  
+**What:** A player can cut themselves with a knife (a tool) or prick themselves with a pin (another tool) to draw blood. Blood is a writing instrument for the paper. The knife and pin are tools in the "injury_source" category — they provide blood as a resource. This creates a tool chain: knife/pin → blood → write on paper. The player must actively choose to injure themselves to get the writing material. Dark, consequential, intentional.
+
+### D-33: Player Skills System (2026-03-19T014811Z)
+
+**By:** Wayne "Effe" Berry  
+**What:** Introduce a player skills system. Players can learn skills (e.g., lockpicking). A skill unlocks new tool+verb combinations that weren't available before. Example: without lockpicking skill, a pin is just a pin. WITH lockpicking skill, a pin becomes a tool that can PICK LOCK on a door — an alternative to using the brass key. Skills are learned through gameplay (finding a book, practicing, being taught by an NPC, etc.).
+
+### D-34: Puzzle-First Design Philosophy (2026-03-19T015115Z)
+
+**By:** Wayne "Effe" Berry  
+**What:** Making puzzles is good. When designing objects, rooms, and mechanics, the team should actively think about puzzle design — how objects interact, what requires what, what chains of actions lead to discoveries. Puzzles are a first-class design goal, not a side effect.
+
+### D-35: Single-File vs. Multi-File Mutation Objects (2026-03-19T015239Z)
+
+**By:** Wayne "Effe" Berry  
+**Status:** OPEN QUESTION  
+**What:** Questioning the separate-file mutation variant pattern (nightstand.lua + nightstand-open.lua as two files). Maybe objects should be a single file with states instead of multiple files. The nightstand open/closed is the same object with different states — not two different objects. This potentially challenges Decision 14 (true code rewrite) or at least how we implement it. The question is: does "code rewrite" mean "swap the entire file" or can it mean "mutate properties within the same object definition"?
+
+### D-36: Sewing as Crafting Skill (2026-03-19T015318Z)
+
+**By:** Wayne "Effe" Berry  
+**What:** Sewing is a player skill. With sewing skill + a needle (tool), a player can craft cloth into clothing. This introduces crafting as a skill-gated activity. Cloth already exists as an object in the bedroom (cloth.lua). With sewing skill, cloth becomes a raw material that can be transformed into wearable items. Without sewing skill, cloth is just cloth. Needle is the tool that provides "sewing_tool" capability.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
