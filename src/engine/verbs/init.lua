@@ -758,16 +758,40 @@ function verbs.create()
     end
 
     handlers["examine"] = function(ctx, noun)
-        handlers["look"](ctx, "at " .. noun)
+        if noun == "" then print("Examine what?") return end
+        if has_some_light(ctx) then
+            handlers["look"](ctx, "at " .. noun)
+        else
+            -- Dark: fall back to feel description
+            local obj = find_visible(ctx, noun)
+            if not obj then
+                print("You can't find anything like that in the darkness.")
+                return
+            end
+            if obj.on_feel then
+                print("It's too dark to see, but you feel: " .. obj.on_feel)
+            elseif obj.touch_description then
+                print("It's too dark to see, but you feel: " .. obj.touch_description)
+            else
+                print("It's too dark to see, and you can't make out much by touch.")
+            end
+        end
     end
     handlers["x"] = handlers["examine"]
     handlers["find"] = handlers["examine"]
-    handlers["read"] = handlers["examine"]
+    handlers["read"] = function(ctx, noun)
+        if noun == "" then print("Read what?") return end
+        if not has_some_light(ctx) then
+            print("It is too dark to read anything.")
+            return
+        end
+        handlers["look"](ctx, "at " .. noun)
+    end
     handlers["search"] = function(ctx, noun)
         if noun == "" then
             handlers["look"](ctx, "")
         else
-            handlers["look"](ctx, "at " .. noun)
+            handlers["examine"](ctx, noun)
         end
     end
 
@@ -977,11 +1001,6 @@ function verbs.create()
             return
         end
 
-        if not has_some_light(ctx) then
-            print("It is too dark to find anything.")
-            return
-        end
-
         local obj, where, parent, sname = find_visible(ctx, target)
         if not obj then
             print("You don't see that here.")
@@ -1073,11 +1092,6 @@ function verbs.create()
     handlers["open"] = function(ctx, noun)
         if noun == "" then print("Open what?") return end
 
-        if not has_some_light(ctx) then
-            print("It is too dark to see what you're doing.")
-            return
-        end
-
         -- Check room objects first
         local obj = find_visible(ctx, noun)
         if obj then
@@ -1141,11 +1155,6 @@ function verbs.create()
     handlers["close"] = function(ctx, noun)
         if noun == "" then print("Close what?") return end
 
-        if not has_some_light(ctx) then
-            print("It is too dark to see what you're doing.")
-            return
-        end
-
         -- Check room objects first
         local obj = find_visible(ctx, noun)
         if obj then
@@ -1201,11 +1210,6 @@ function verbs.create()
     ---------------------------------------------------------------------------
     handlers["break"] = function(ctx, noun)
         if noun == "" then print("Break what?") return end
-
-        if not has_some_light(ctx) then
-            print("It is too dark to see what you're doing.")
-            return
-        end
 
         -- Check objects first
         local obj = find_visible(ctx, noun)
@@ -1265,11 +1269,6 @@ function verbs.create()
     ---------------------------------------------------------------------------
     handlers["tear"] = function(ctx, noun)
         if noun == "" then print("Tear what?") return end
-
-        if not has_some_light(ctx) then
-            print("It is too dark to see what you're doing.")
-            return
-        end
 
         local obj = find_visible(ctx, noun)
         if not obj then
@@ -1746,11 +1745,6 @@ function verbs.create()
     handlers["put"] = function(ctx, noun)
         if noun == "" then
             print("Put what where? (Try: put <item> in/on <target>)")
-            return
-        end
-
-        if not has_some_light(ctx) then
-            print("It is too dark to see what you're doing.")
             return
         end
 
