@@ -6,6 +6,8 @@ return {
     keywords = {"sheets", "bed sheets", "bedsheets", "linen", "bedding"},
     description = "Fine cotton bed sheets, once white, now the color of old cream. They are hopelessly rumpled, twisted into shapes that suggest either restless sleep or a hasty departure. Still faintly warm.",
 
+    on_feel = "Smooth cotton, finely woven but hopelessly rumpled. Still faintly warm.",
+
     size = 3,
     weight = 2,
     categories = {"fabric", "soft", "warm"},

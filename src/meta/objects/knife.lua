@@ -6,6 +6,9 @@ return {
     keywords = {"knife", "blade", "small knife", "dagger", "shiv", "paring knife"},
     description = "A small knife with a bone handle and a blade no longer than your finger. The edge is still keen — it nicks the air when you turn it. The kind of knife used for peeling apples, cutting twine, or less wholesome things.",
 
+    on_feel = "A bone handle, smooth and cold. The blade — SHARP. Leather wrapping on the grip. Handle one end, blade the other. Mind which is which.",
+    on_smell = "Oiled metal and old leather.",
+
     size = 1,
     weight = 0.3,
     categories = {"small", "tool", "weapon", "sharp", "metal"},

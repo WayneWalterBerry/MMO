@@ -7,6 +7,9 @@ return {
     room_presence = "Heavy burgundy curtains have been pulled aside against the wall, letting pale light spill across the floor.",
     description = "The heavy burgundy curtains have been pulled aside, bunched against the wall in dusty velvet heaps. Pale grey light spills through, illuminating motes of dust that swirl like tiny lost souls.",
 
+    on_feel = "Heavy velvet, bunched and dusty. The fabric is thick and slightly damp near the window.",
+    on_smell = "Dust stirred up from the folds. The smell of a room opening its eyes.",
+
     size = 4,
     weight = 4,
     categories = {"fabric", "soft", "window covering"},

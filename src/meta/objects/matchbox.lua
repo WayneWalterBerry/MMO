@@ -6,6 +6,9 @@ return {
     keywords = {"matchbox", "matches", "match", "match box", "box of matches", "tinderbox", "lucifers"},
     description = "A battered little cardboard matchbox, its striking strip worn nearly smooth. Through a tear in the side you can see the pale wooden heads of the matches within. It rattles faintly when shaken.",
 
+    on_feel = "A small cardboard box, light and hollow. One side has a rough striker strip that catches your thumb.",
+    on_listen = "Wooden matches rattle inside when you tilt it. A promising sound.",
+
     size = 1,
     weight = 0.2,
     categories = {"small", "tool", "fire_source"},

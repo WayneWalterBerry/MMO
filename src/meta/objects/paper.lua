@@ -6,6 +6,9 @@ return {
     keywords = {"paper", "sheet", "page", "blank paper", "sheet of paper", "parchment", "stationery"},
     description = "A single sheet of cream-coloured paper, slightly foxed at the edges but otherwise blank. It has the dry, clean smell of a stationer's shop — a rare thing in a room that smells of tallow and old wool.",
 
+    on_feel = "Thin, flat, smooth. The edges are slightly foxed. Paper — unmistakable even in the dark.",
+    on_smell = "Faintly fibrous. The dry, clean smell of a stationer's shop.",
+
     size = 1,
     weight = 0.1,
     categories = {"small", "writable", "flammable"},

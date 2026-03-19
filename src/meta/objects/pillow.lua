@@ -4,6 +4,9 @@ return {
     keywords = {"pillow", "cushion", "down pillow", "goose down"},
     description = "A plump pillow stuffed with goose down, its linen case yellowed with age but still soft. It carries the faint scent of lavender — someone once cared about sleeping well in this room.",
 
+    on_feel = "Soft and lumpy, stuffed with down that shifts under your fingers. Something sharp pricks you if you squeeze too hard.",
+    on_smell = "Faint lavender, old linen.",
+
     size = 2,
     weight = 1,
     categories = {"soft", "fabric"},

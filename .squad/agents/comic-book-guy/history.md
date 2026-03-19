@@ -270,3 +270,50 @@ All 17 new decisions (D-22 through D-36) merged into .squad/decisions.md:
 - D-27–D-36: User directives (light/time, docs current, newspaper, fire source, paper/writing, blood, skills, puzzles, single-file QUESTION, crafting)
 
 **Decision Architecture Insight:** The tool convention (D-25) opens design space for all puzzle verbs. Capability matching (not item-ID matching) enables extensibility: LIGHT (fire_source), WRITE (pen/pencil/blood), PICK LOCK (lockpicking skill + pin), SEW (sewing skill + needle), CRAFT (crafting skill + materials).
+
+---
+
+## Session: Multi-Sensory Descriptions + Poison Bottle (2026-03-20)
+
+**Requested by:** Wayne "Effe" Berry
+
+**Deliverables:**
+- Added `on_feel`, `on_smell`, `on_taste`, and `on_listen` sensory fields to ALL 36 existing object files in `src/meta/objects/`
+- Created `src/meta/objects/poison-bottle.lua` — small glass bottle with skull and crossbones label, placed on nightstand
+- Updated `nightstand.lua` and `nightstand-open.lua` — poison-bottle added to surfaces.top.contents
+- Updated `glass-shard.lua` — added `on_feel_effect = "cut"` for hazard mechanic
+- Fixed pre-existing `/a` prefix bug in `cloth.lua`
+
+**Sensory Coverage (37 objects total):**
+- `on_feel`: 37/37 (100%) — primary dark-navigation sense
+- `on_smell`: 24/37 (65%) — safe identification sense for liquids/chemicals
+- `on_listen`: 6/37 (16%) — candle-lit, matchbox, matchbox-empty, poison-bottle, window, window-open
+- `on_taste`: 3/37 (8%) — brass-key (metallic), glass-shard (DO NOT), poison-bottle (FATAL)
+- `on_feel_effect`: 1 (glass-shard → "cut")
+- `on_taste_effect`: 1 (poison-bottle → "poison")
+
+**Key Design Patterns Established:**
+
+1. **Sensory Hierarchy for Darkness** — FEEL is primary (every object has it), SMELL is secondary (safe identification), LISTEN is environmental (active/mechanical objects only), TASTE is the danger sense (real consequences). This creates a natural risk/reward gradient: safe senses give partial info, dangerous senses give complete info at a cost.
+
+2. **Hazard Effects on Sensory Interaction** — `on_feel_effect` and `on_taste_effect` trigger engine-level state changes when a player uses FEEL or TASTE on hazardous objects. Glass shard cuts you (triggers bloody state). Poison bottle kills you. The engine must check for `_effect` suffixes on all sensory fields and apply consequences.
+
+3. **The "Taste at Your Own Risk" Lesson** — The poison bottle teaches players that actions have consequences. In darkness, you can safely FEEL and SMELL the bottle to determine it's dangerous (cold glass, acrid chemical smell). Only TASTE triggers death. SMELL is the safe way to identify liquids — this is the core teaching moment.
+
+4. **Mutation Variant Consistency** — All mutation variants of the same object (e.g., nightstand/nightstand-open, wardrobe/wardrobe-open, all 4 vanity states) carry the same base sensory descriptions with contextual variations. The open wardrobe smells more strongly of cedar than the closed one. The lit candle has listen/smell that the unlit one doesn't.
+
+**New Properties Introduced:**
+- `on_feel` (string) — touch/texture description
+- `on_smell` (string) — scent description
+- `on_taste` (string) — taste description (dangerous!)
+- `on_listen` (string) — sound description
+- `on_feel_effect` (string) — engine effect triggered by FEEL (e.g., "cut")
+- `on_taste_effect` (string) — engine effect triggered by TASTE (e.g., "poison")
+
+## Learnings
+
+- **FEEL is the new LOOK.** In darkness, FEEL replaces LOOK as the primary information-gathering verb. Every object must have on_feel — it's not optional. This is the single most important dark-room mechanic.
+- **SMELL is the safe identification sense.** The poison bottle's on_smell warns you it's dangerous without killing you. This is the "read the label" equivalent in darkness. SMELL should be generous with safety-relevant information.
+- **TASTE is the consequence sense.** Only 3 objects have on_taste, and two of them are warnings. This rarity makes TASTE feel genuinely dangerous — players learn quickly that putting unknown things in their mouth has consequences. Classic IF design: Hitchhiker's Guide taught this with the babel fish puzzle; we teach it with poison.
+- **Sensory fields belong after description, before size.** Established consistent placement: description → on_feel/on_smell/on_taste/on_listen → size/weight. This groups all textual descriptions together, separate from mechanical properties.
+- **Mutation variants need sensory consistency.** Every state of an object (open/closed, lit/unlit, broken/intact) needs its own sensory fields. The lit candle smells different from the unlit one. The open window sounds different from the closed one. Sensory fields are state-dependent, not just object-dependent.

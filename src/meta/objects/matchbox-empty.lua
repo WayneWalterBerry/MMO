@@ -6,6 +6,10 @@ return {
     keywords = {"matchbox", "matches", "match", "match box", "empty matchbox", "empty box"},
     description = "A battered little cardboard matchbox, its striking strip worn to a dark smear. It is empty — the faint ghost of sulphur is all that remains of its former usefulness.",
 
+    on_feel = "A small cardboard box, crushed and light. The striker strip is worn to nothing. Empty.",
+    on_smell = "The ghost of sulphur. A memory of fire, spent.",
+    on_listen = "Silence. You shake it and hear nothing.",
+
     size = 1,
     weight = 0.1,
     categories = {"small", "junk"},

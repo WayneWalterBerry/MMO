@@ -6,6 +6,8 @@ return {
     keywords = {"pin", "sewing pin", "straight pin", "needle pin", "stick pin"},
     description = "A long steel pin with a tiny glass bead at one end, the kind used to hold fabric in place while sewing. The point is wickedly sharp — it pricks your thumb just looking at it.",
 
+    on_feel = "Tiny, thin metal. A glass bead at one end, a wickedly sharp point at the other. Mind your fingers.",
+
     size = 1,
     weight = 0.05,
     categories = {"small", "tool", "sharp", "metal", "sewing"},

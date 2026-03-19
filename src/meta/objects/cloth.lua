@@ -1,9 +1,11 @@
-/areturn {
+return {
     template = "sheet",
     id = "cloth",
     name = "a piece of cloth",
     keywords = {"cloth", "fabric", "burlap", "scrap", "material"},
     description = "A rough square of burlap cloth, torn from a sack. The edges are frayed and uneven, but the weave is sturdy enough to be useful.",
+
+    on_feel = "Soft fabric with torn, frayed edges. The weave is coarse but sturdy.",
 
     size = 1,
     weight = 0.2,

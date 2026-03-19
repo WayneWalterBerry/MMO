@@ -5,6 +5,9 @@ return {
     keywords = {"sack", "bag", "burlap sack", "burlap", "pouch"},
     description = "A rough burlap sack, cinched at the top with a length of fraying rope. It smells faintly of grain and old earth. Something small and hard rattles inside.",
 
+    on_feel = "Rough burlap, cinched with fraying rope. Something small and hard shifts inside when you squeeze.",
+    on_smell = "Grain and old earth. The honest smell of a storeroom.",
+
     size = 1,
     weight = 0.3,
     portable = true,

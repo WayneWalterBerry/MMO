@@ -5,13 +5,16 @@ return {
     room_presence = "A small nightstand with an open drawer sits against the wall, its top crusted with wax.",
     description = "A squat nightstand of knotted pine. Wax drippings cascade down its side in frozen rivulets. The small drawer is pulled open.",
 
+    on_feel = "Smooth wooden surface, crusted with hardened wax drippings. The drawer slides open under your fingers.",
+    on_smell = "Old pine wood and melted tallow.",
+
     size = 4,
     weight = 15,
     categories = {"furniture", "wooden"},
     portable = false,
 
     surfaces = {
-        top = { capacity = 3, max_item_size = 2, contents = {"candle"} },
+        top = { capacity = 3, max_item_size = 2, contents = {"candle", "poison-bottle"} },
         inside = { capacity = 2, max_item_size = 1, contents = {"matchbox"} },
     },
 

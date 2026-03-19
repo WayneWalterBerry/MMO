@@ -6,6 +6,8 @@ return {
     keywords = {"pencil", "graphite", "lead pencil", "writing pencil", "drawing pencil"},
     description = "A short pencil of cedar wood, sharpened to a fine point with a knife at some point. The graphite core leaves faint grey smudges on your fingers. Someone has chewed the end.",
 
+    on_feel = "A wooden shaft, hexagonal, with a pointed graphite tip. One end is chewed. Leaves grey smudges on your fingers.",
+
     size = 1,
     weight = 0.1,
     categories = {"small", "tool", "writing"},

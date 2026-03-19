@@ -5,6 +5,9 @@ return {
     room_presence = "A ceramic chamber pot sits discreetly in the far corner.",
     description = "A squat ceramic chamber pot with the quiet dignity of an object that knows exactly what it is for. It is mercifully empty, glazed in a chipped blue-and-white pattern that suggests someone once thought aesthetics mattered even here.",
 
+    on_feel = "A ceramic bowl, smooth-glazed and cold. The rim is chipped in places.",
+    on_smell = "You'd rather not. Even empty, the memory of its purpose lingers.",
+
     size = 2,
     weight = 3,
     categories = {"ceramic", "container", "fragile"},

@@ -5,6 +5,9 @@ return {
     room_presence = "An oak vanity with a broken mirror and an open drawer sits against the wall, shards of glass glinting on its surface.",
     description = "A solid oak vanity, still sturdy despite the violence visited upon it. Where an ornate mirror once stood, only the gilt frame remains — jagged glass teeth jutting from the backing. The brass-handled drawer hangs open.",
 
+    on_feel = "Smooth oak surface — CAREFUL. Glass shards everywhere. The drawer hangs open, its interior dusty.",
+    on_smell = "Faint perfume and the mineral tang of broken glass.",
+
     size = 8,
     weight = 38,
     categories = {"furniture", "wooden"},
