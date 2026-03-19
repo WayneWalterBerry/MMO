@@ -1,12 +1,25 @@
 # MMO — A Text Adventure Game for Mobile
 
-Welcome to **MMO**, a modern text adventure game for mobile phones, inspired by the timeless design of *Zork*. This project explores how classic interactive fiction can thrive on contemporary platforms through elegant architecture and containment hierarchies.
+Welcome to **MMO**, a modern text adventure game inspired by the timeless design of *Zork*. This is a working prototype implementing a **Lua-based interactive fiction engine** with containment hierarchies, a mutation-based object system, and a verb-dispatch command parser.
 
 ## What Is This?
 
-MMO is an early-stage research and architecture exploration project. Our core concept: **containment hierarchies** — the idea that game objects exist within other objects (coins in bags, people in rooms, items on tables). This simple model unlocks rich interactive possibilities while keeping the system clean and maintainable.
+MMO is a functional **text adventure engine** built on Lua, featuring:
+- **Containment hierarchy**: objects exist in/on other objects (coins in bags, bags in rooms, etc.)
+- **Instance/base-class architecture**: objects are defined as templates with per-room instantiation
+- **Mutations**: objects transform via verb handlers (e.g., breaking a mirror spawns shards)
+- **Tool system**: verbs require capabilities (e.g., cutting requires a sharp tool)
+- **Sensory verbs**: look, feel, smell, taste, listen (not just examine)
+- **Dynamic light**: time-of-day system with light sources, daylight, and darkness mechanics
+- **Two-hand inventory**: strategic inventory management with compound tool actions
 
-Think of it as building a new engine for text-based adventure games, starting with the fundamentals and scaling thoughtfully.
+## How to Run
+
+```bash
+lua src/main.lua
+```
+
+The game starts in a dark bedroom at 2 AM. Use sensory verbs to explore and interact with objects.
 
 ## Folder Structure
 
@@ -33,15 +46,25 @@ MMO/
 
 ## Project Stage
 
-🔬 **Research & Architecture Phase**
+✅ **Prototype Phase**
 
-We're currently exploring and validating the core architectural patterns. Expect experimentation, design documents, and research artifacts. This is not a shipping product—yet.
+The core engine is functional and playable. The V1 bedroom scenario with 45+ objects, sensory interactions, light mechanics, and tool-based puzzles is ready for playtesting.
+
+## Documentation
+
+- **[Source structure guide](docs/architecture/src-structure.md)** — How the engine is organized
+- **[Vocabulary](docs/architecture/vocabulary.md)** — Terms used across the project
+- **[Verb system](docs/design/verb-system.md)** — Complete list of implemented verbs and handlers
+- **[Instance model](docs/architecture/instance-model.md)** — How objects are defined and instantiated
+- **[Design directives](docs/design/design-directives.md)** — Game design rules and mechanics
+- **[Puzzles](docs/puzzles/)** — Design docs for in-game puzzles
 
 ## Getting Started
 
-- Check the latest **[newspaper edition](newspaper/)** for recent team updates
-- Review **[architecture research](resources/research/architecture/)** to understand the problem space
-- Explore **[design decisions](docs/architecture/)** for architectural choices
+- **Play the game**: `lua src/main.lua`
+- **Explore the code**: Start with `src/main.lua`, then `src/engine/` for the core systems
+- **Check the latest news**: See [newspaper editions](newspaper/) for team updates and changes
+- **Understand the design**: Read [architecture decisions](docs/design/architecture-decisions.md)
 
 ## Team
 
@@ -49,4 +72,4 @@ This project is developed by a coordinated team of specialists (both human and A
 
 ---
 
-*Last updated: 2026-03-18*
+*Last updated: 2026-03-21*

@@ -60,3 +60,36 @@ Refined vocabulary v1.2 across all 24 architecture decisions; consolidated 12+ u
 - Playtest Log #2 — documents FEEL verb edge cases for future fixes
 
 **All documentation should reference updated decisions.md for current architecture state. No stale copies exist after merge.**
+
+---
+
+### Session Update: Post-Integration Documentation Sweep (2026-03-21)
+**Status:** ✅ COMPLETE
+
+**Comprehensive documentation update reflecting V1 prototype completion:**
+
+**Changes Made:**
+1. **README.md** — Updated from "research phase" to "prototype phase"; added "How to Run" section; updated features list to reflect all implemented mechanics; added direct links to key docs
+2. **docs/design/verb-system.md** — **NEW** — Created comprehensive verb reference documenting all 31 implemented verbs across 4 categories (navigation/perception, inventory, object interaction, meta)
+3. **docs/architecture/src-structure.md** — Updated status to "✅ Implemented and running"; corrected object count (~45), verb count (31), surfaces count (7), removed stale parser section about per-verb files, added clarification on consolidated verbs/init.lua
+4. **Vocabulary.md** — Already at v1.3, up-to-date; no changes needed
+
+**Key Documentation Artifacts:**
+- README now accurately describes running game (`lua src/main.lua`)
+- Verb system documentation (verb-system.md) is canonical reference for all player-facing commands
+- Object count and architecture reflect actual state (~45 objects, 7 surfaces, 31 verbs)
+- Links from README to key docs (vocabulary, verb-system, instance model, design directives, puzzles)
+
+**Quality Check:**
+- No broken links
+- Consistent terminology with vocabulary.md
+- All recent features documented (two-hand inventory, sensory verbs, tool system, light mechanics, compound tools, mutations)
+- Starter-friendly (README → How to Run → key docs)
+
+## Learnings
+
+**Documentation Timing:** Post-integration sweep revealed significant drift in summary docs (README, src-structure). Learned to update foundational docs immediately after major features land, not in bulk sweeps later.
+
+**Verb Documentation Pattern:** The 31-verb system is now well-documented in both vocabulary.md and new verb-system.md. Verb-system.md serves as the canonical player reference; vocabulary.md serves as design reference.
+
+**Structure Stability:** Core src/ structure is stable and reflects intended architecture. No major refactors needed; documentation now accurate to code.

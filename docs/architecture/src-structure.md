@@ -2,7 +2,8 @@
 
 **Author:** Bart (Architect)  
 **Date:** 2026-03-18  
-**Status:** Approved — structure created
+**Status:** ✅ Implemented and running
+**Last Updated:** 2026-03-21
 
 ---
 
@@ -32,15 +33,13 @@ src/
 │   └── loop/         — main game loop: read input → dispatch → tick → output
 │
 ├── meta/
-│   ├── world/        — room graph: canonical room definitions and exit topology
-│   ├── objects/      — canonical object definitions with self-describing mutations
-│   │                    (includes: paper, pen, pencil, knife, pin, needle, matchbox, match, match-lit, thread, poison-bottle)
+│   ├── world/        — room graph: canonical room definitions (1 bedroom with 7 surfaces)
+│   ├── objects/      — canonical object definitions (45+ objects: bed, window, curtains, vanity, mirror, wardrobe, nightstand, desk, lamp, candle, match, matchbox, paper, pen, pencil, knife, needle, thread, pin, cloth, rag, blanket, pillow, chamber-pot, poison-bottle, glass-shard, bandage, terrible-jacket, wool-cloak, sack, rug, and variants)
 │   ├── templates/    — base object templates for inheritance (sheet, furniture, container, small-item)
-│   └── npcs/         — NPC definitions (behaviour, dialogue, state)
+│   └── npcs/         — NPC definitions (future use)
 │
 ├── parser/
-│   ├── verbs/        — verb handlers (~20 canonical verbs: look, take, drop, open, close, light, strike, write, cut, prick, feel, smell, taste, listen, break, examine, inventory, help, etc.)
-│   └── synonyms/     — synonym tables mapping player input to canonical verbs/nouns
+│   └── verbs/        — verb handlers (31 verbs: look, examine, read, search, feel, smell, taste, listen, take, get, pick, grab, drop, open, close, break, smash, shatter, tear, rip, inventory, light, ignite, extinguish, snuff, write, inscribe, cut, slash, sew, stitch, mend, prick, strike, wear, put, place, and 4 meta-verbs: help, quit, x, find)
 │
 ├── multiverse/
 │   ├── instancing/   — fork a canonical template into a new player universe
@@ -79,8 +78,7 @@ The canonical authored world — the source of truth before any player touches i
 ### `parser/`
 Intentionally thin. The team decision is: **no per-interaction LLM tokens**. This is a fast, local lookup.
 
-- **verbs/** — one file per canonical verb (~20 verbs implemented: LOOK, TAKE, DROP, OPEN, CLOSE, LIGHT, STRIKE, WRITE, CUT, PRICK, FEEL, SMELL, TASTE, LISTEN, BREAK, EXAMINE, INVENTORY, HELP, etc.). Each verb file knows how to resolve `verb <noun>` into an engine call.
-- **synonyms/** — tables like `{ smash=break, shatter=break, destroy=break }`. Loaded once at startup.
+- **verbs/init.lua** — all 31 verb handlers implemented in a single consolidated file (LOOK, EXAMINE, READ, SEARCH, FEEL, SMELL, TASTE, LISTEN, TAKE, GET, PICK, GRAB, DROP, OPEN, CLOSE, BREAK, SMASH, SHATTER, TEAR, RIP, INVENTORY, LIGHT, IGNITE, EXTINGUISH, SNUFF, WRITE, INSCRIBE, CUT, SLASH, SEW, STITCH, MEND, PRICK, STRIKE, WEAR, PUT, PLACE, HELP, QUIT). Each verb function receives (context, noun) and implements its game logic, including tool capability matching and object mutations.
 
 ### `multiverse/`
 Inter-universe mechanics. Kept entirely separate from the engine because the engine operates on a single universe instance and has no concept of "other universes".

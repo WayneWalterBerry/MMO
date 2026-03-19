@@ -96,6 +96,24 @@ Darkness is not a wall — it's a different mode of play. Every sense gives diff
 
 **Matchbox rework decision now formally in decisions.md with all compound tool patterns documented.**
 
+### Session Update: Player Skills System Design (2026-03-21)
+**Status:** ✅ DESIGN COMPLETE
+
+**Deliverable:** `docs/design/player-skills.md` — comprehensive 6,500-word game design document.
+
+**Key Designs:**
+1. **Skill Acquisition:** Binary model (have/don't have) with four methods: Find & Read, Practice, NPC Teaching, Puzzle Solve. Discovery-based, not grinding.
+2. **MVP Skills:** Lockpicking (pin + PICK LOCK), Sewing (needle + thread + SEW). Future candidates: Anatomy, Alchemy, Cartography, Interrogation.
+3. **Core Mechanic:** Skills unlock alternatives, not replacements. Pin can prick (no skill) or pick locks (with lockpicking skill).
+4. **Failure Modes:** Bent pin on failed lock pick (consumed). Tangled thread on failed sewing (consumed). Costs teach consequences.
+5. **Blood Writing:** PRICK SELF → blood object → WRITE WITH blood. Transgressive, costly (5 HP), permanent. Teaches urgency and consequence.
+6. **Dynamic Paper:** WRITE verb generates paper-with-writing.lua (file-per-state). Player text embedded as `written_text` field. Supports future ERASE verb for pencil writes.
+7. **Tool Dispatch:** Skills add second gate to verb handlers. `requires_tool` (capability) + `requires_skill` (knowledge) both enforced.
+
+**Design Philosophy:** Darkness teaches caution. Blood writes consequences. Paper records the player's story, literally and persistently.
+
+**No Puzzle Lock-Out:** Every puzzle has a no-skill solution. Skills accelerate or offer alternatives, never block.
+
 ## Learnings
 
 - **Containers are simpler and more immersive than charges.** Real matches in a box > abstract counter. Code IS state means the state should be visible objects.
@@ -103,3 +121,7 @@ Darkness is not a wall — it's a different mode of play. Every sense gives diff
 - **7 matches is generous, and that's correct for the first puzzle.** Teach, don't frustrate.
 - **Co-locate compound tool components.** Thread with needle in sack. Matches in matchbox in drawer next to candle. Discovery should feel natural.
 - **requires_property is a new engine pattern.** Match strike needs `has_striker` on target — different from capability matching or item-ID matching.
+- **Skills as discovery gates, not progression gates.** Skills should unlock *alternatives*, never block the main path. This respects player agency: "I can solve this my way, or find another way."
+- **Binary skills scale better than XP bars.** Proficiency levels are designed but not needed for V1. Discovery is the reward, not a number going up.
+- **Failure costs teach design language.** Bent pins, tangled threads—consumable failure states teach: "Resources are finite. Think before you act."
+- **Blood is design shorthand for consequence.** Writing in blood feels transgressive because it IS transgressive (health cost, permanent, disturbing). Mechanics mirror mood.
