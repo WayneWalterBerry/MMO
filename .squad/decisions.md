@@ -1844,3 +1844,211 @@ Puzzle unsolvable: player finds drawer by feel but can't open it. Blocks core da
 - Implement tactile gating: OPEN/CLOSE/TAKE work in darkness from felt objects
 - Implement EXAMINE fallback: if object can't be seen, show on_feel instead
 - Consider "touch-to-interact" model: any verb requiring fine motor control (OPEN, CLOSE, TAKE, WRITE, CUT, PRICK, SEW, PICK LOCK) should work by feel
+
+---
+
+### 22. Parser Pipeline Architecture (Phase 1 + 2) — Decision: Bart
+
+**Author:** Bart (Architect)  
+**Date:** 2026-03-21  
+**Status:** Implemented  
+**Impact:** Build tools, CI/CD pipeline, parser data flow
+
+## Decision
+
+The embedding parser's build pipeline is two Python scripts in `scripts/`, producing artifacts consumed at runtime. Both scripts are **build tools only** — they never run in the game engine.
+
+## Key Design Choices
+
+1. **Two-mode data generation:** `--mode=local` (offline, zero deps) vs `--mode=llm` (GPT-4 via OpenAI API). Local mode is the development/CI default. LLM mode is for higher-quality production data.
+
+2. **CSV as intermediate format:** Phase 1 outputs CSV → Phase 2 reads CSV. This decouples the scripts and allows manual editing/review of training data between phases.
+
+3. **Verb extraction via regex, not Lua parser:** The `handlers["verb"]` pattern in `verbs/init.lua` is consistent enough that regex extraction is reliable and dependency-free. No need for a Lua parser.
+
+4. **All 54 verbs covered:** Both primary handlers (31) and aliases (23) generate training pairs. Aliases are real player input paths.
+
+5. **Model caching in `models/`:** GTE-tiny is downloaded once and cached. Directory is gitignored. CI/CD should cache this directory between runs.
+
+6. **Dual output (JSON + gzip):** Uncompressed JSON for debugging, gzip for production. Both in `src/assets/parser/`.
+
+## File Ownership
+
+| File | Owner | When Updated |
+|------|-------|-------------|
+| `scripts/generate_parser_data.py` | Bart / Pipeline | When verbs or objects change |
+| `scripts/build_embedding_index.py` | Bart / ML | When encoding approach changes |
+| `data/parser/training-pairs.csv` | Generated | Regenerated per build |
+| `src/assets/parser/embedding-index.*` | Generated | Regenerated per build |
+
+## Dependencies
+
+- Phase 1 local mode: Python 3.8+ stdlib only
+- Phase 1 LLM mode: `openai` package + API key
+- Phase 2: `sentence-transformers` or `transformers` + `torch` + `onnxruntime`
+
+## Next Steps
+
+- Phase 3 (Runtime integration) consumes the gzip index
+- Phase 5 (CI/CD) automates both scripts on verb/object changes
+
+**Files Created:**
+- `scripts/generate_parser_data.py`
+- `scripts/build_embedding_index.py`
+- `scripts/requirements.txt`
+- `data/parser/.gitkeep`
+- `src/assets/parser/.gitkeep`
+
+**Verification:** Phase 1 local mode tested: 29,582 training pairs generated successfully.
+
+---
+
+### 23. Command Variation Matrix for Embedding Parser — Decision: Comic Book Guy
+
+**Author:** Comic Book Guy (Game Designer)  
+**Date:** 2026-03-22  
+**Status:** Ready for Review  
+**Related:** `docs/design/command-variation-matrix.md`
+
+## The Decision
+
+Define a canonical command variation matrix — all natural language variations players might type for the 31 verbs in the game — to serve as training data for the embedding-based parser (Tier 2).
+
+## Context
+
+The MMO engine has 31 verbs (23 canonical + 8 aliases). Players will not always use the canonical form:
+- "grab" instead of "take"
+- "pick up" instead of "pick"
+- "examine" instead of "x"
+- "go north" vs. "north" vs. "n"
+
+An embedding-based parser needs examples of natural language variations to train accurately. This matrix provides ~400+ variations across all verbs, ensuring the embedding model understands player intent even when they don't use the exact canonical form.
+
+## Key Design Decisions Embedded
+
+### 1. Pronoun Resolution: Last-Examined Object
+When a player types "it", "this", or "that", the parser resolves to the **last-examined object** (tracked via `ctx.last_object`).
+
+**Rationale:**
+- Simplest implementation (no discourse tracking or anaphora resolution)
+- Fits the terse adventure game interface
+- Avoids ambiguity in most cases
+
+### 2. Darkness Verbs Are First-Class
+FEEL, SMELL, TASTE, and LISTEN all have **darkness-aware variations** where feedback is sensory, not visual.
+
+**Rationale:**
+- Game is playable in pitch darkness
+- These senses provide alternative information channels
+- Sensory hierarchy: FEEL (primary), SMELL (safe ID), LISTEN (mechanics), TASTE (danger)
+
+### 3. Tool Verbs Are Explicit About Requirements
+WRITE, CUT, SEW, STRIKE, PRICK all have **tool-present** and **tool-absent** variations.
+
+**Rationale:**
+- Clear feedback guides player exploration (search for missing tool)
+- Teaches the capability/requirement system
+- Enables puzzles based on tool availability
+
+### 4. Bare Commands Prompt for Clarification
+Verbs that require objects (TAKE, OPEN, LIGHT) should prompt when called bare.
+
+**Rationale:**
+- Teaches players the verb interface gradually
+- Prevents silent failures
+- Natural MUD/IF convention
+
+### 5. Compound Actions Are Explicit
+STRIKE, SEW, PRICK SELF have two-object or special-case variations.
+
+**Rationale:**
+- Compounds teach real-world logic (fire needs fuel + friction)
+- Mutations are predictable (match → match-lit)
+- Failure states are educational (bent pin, tangled thread)
+
+### 6. Edge Cases Are Documented
+The matrix includes edge cases like pronouns, ambiguous targets, non-standard phrasings.
+
+**Rationale:**
+- Parser needs to handle these gracefully
+- Teaches QA team what to test
+- Future embedding model will see these variations in training data
+
+## Variations Documented
+
+| Category | Verb Count | Variation Range | Example |
+|----------|-----------|-----------------|---------|
+| Navigation | 8 (LOOK, EXAMINE, READ, SEARCH, FEEL, SMELL, TASTE, LISTEN) | 12-18 per verb | FEEL: "feel around", "touch", "grope", "run fingers" |
+| Inventory | 7 (TAKE, GET, PICK, GRAB, DROP, INVENTORY, PUT, OPEN, CLOSE) | 10-20 per verb | TAKE: "grab", "pick up", "snatch", "collect" |
+| Interaction | 8 (LIGHT, STRIKE, EXTINGUISH, BREAK, TEAR, WRITE, CUT, SEW, PRICK) | 10-18 per verb | STRIKE: "strike match on matchbox", "rub against", "friction" |
+| Movement | (GO + directions) | 8+ per direction | "go north", "north", "n", "head north", "walk north" |
+| Meta | 2 (HELP, QUIT) | 5-8 per verb | QUIT: "quit", "exit", "goodbye", "bye" |
+
+**Total: ~400+ variations**
+
+## Training Pipeline Integration
+
+### What Bart's Script Does
+1. Reads all variations from this matrix
+2. For each variation, generates an embedding vector
+3. Groups vectors by canonical verb (training label)
+4. Trains the embedding model to cluster variations by verb
+5. Produces a lookup table: embedding → verb
+
+### What QA Phase Does
+1. Takes a subset of variations from this matrix
+2. Passes them through the embedding matcher
+3. Validates that the matcher returns the correct canonical verb
+4. Catches any misclassifications or edge cases
+
+## Impact
+
+**Parser Team (Bart):**
+- Training data for embedding model now defined
+- Clear specifications for what variations to expect
+- Confidence that all major edge cases are covered
+
+**QA Team:**
+- Clear test plan: validate all variations map to correct verbs
+- Context variations give testing depth (darkness, tools, containers)
+- Pronoun resolution scope is defined
+
+**Design Team:**
+- Command variation matrix is canonical reference
+- Future verbs should follow same pattern
+- Sensory hierarchy is now documented
+
+**Player Experience:**
+- Game understands ~400 variations of natural player input
+- Darkness gameplay is proven viable (sensory hierarchy)
+- Tool verbs teach real-world logic through mechanics
+
+## Approval
+
+**Ready for:** Wayne "Effe" Berry (Project Owner), Bart (Parser/Architecture), QA Lead  
+
+---
+
+### 24. Directive: No Fallback Past Tier 2 — Parser Directive
+
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-19T17-22-26Z  
+**Type:** System Architecture Directive  
+**Status:** Active  
+**Firmness:** FIRM
+
+## The Directive
+
+No fallback to natural language / "I don't understand" in the parser pipeline. The embedding matcher (Tier 2) should be the terminal tier — if it doesn't match, the command fails. This keeps the SLM testable.
+
+## Rationale
+
+If there's a fallback that papers over misses, it becomes impossible to measure what the SLM/embedding matcher is actually catching vs missing. Testability of the embedding parser is a priority.
+
+## Implementation Implication
+
+**Tier 1 (Rules)** → **Tier 2 (Embedding)** → **FAIL** (no Tier 3)
+
+If the embedding matcher cannot confidently match the player's command to any verb, return a visible error rather than attempting LLM fallback or natural language guessing.
+
+**Error Format:** `[UNKNOWN COMMAND]` or similar, encouraging player to try `HELP` for verb listing.

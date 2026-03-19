@@ -212,3 +212,41 @@ Brockman completed post-integration documentation:
 **Useful for design team onboarding:** New designers can read verb-system.md to understand what verbs exist and how they interact with your object definitions.
 
 **Next:** When designing new objects, refer to verb-system.md sensory hierarchy to ensure consistent coverage.
+
+---
+
+## Cross-Agent Update: Parser Phase 1+2 Scripts Complete (2026-03-22T10-28-59Z)
+
+**From:** Bart (Architect)  
+**Impact:** Training data generation, embedding pipeline  
+
+Bart completed the build pipeline for the embedding parser (Phases 1 & 2), including scripts for training data extraction and embedding index generation.
+
+**Key Finding That Affects Your Matrix:** Your matrix covers 31 verbs, but Bart's extraction found 54 total verbs in the codebase:
+- 31 primary handlers (the canonical verbs you documented)
+- 23 aliases (TAKE→GET→GRAB→PICK, GO→N/S/E/W, etc.)
+
+**Impact on Your Design:**
+
+1. **Your matrix is _almost_ complete** — you have all 31 canonical verbs documented thoroughly.
+
+2. **Aliases matter for training data** — Bart's Phase 1 script extracts all 54 verbs and generates training pairs for each. Players can type any of the 23 aliases, so the embedding model needs to see those variations too.
+
+3. **Your variations might need expansion** — For each alias (GET, GRAB, PICK, N, S, E, W, etc.), consider adding 5-10 variations to ensure the embedding model understands all entry points.
+
+4. **No conflict** — Your design (pronoun resolution, darkness verbs, tool verbs, bare commands) applies equally to all 54 verbs. The extra 23 just need variation examples.
+
+**Recommended Action:** Review your matrix and add natural language variations for the 23 aliases alongside the canonical verbs. Example:
+- TAKE: "grab", "pick up", "snatch"
+- GET: "obtain", "retrieve" (alias of TAKE, but separate handler)
+- GRAB: "seize", "snatch" (alias of TAKE)
+- PICK: "pick", "pluck" (alias of TAKE)
+
+**Verification Complete:**
+- Phase 1 script tested: 29,582 training pairs generated successfully
+- All 54 verbs + 39 objects covered
+- CSV intermediate format ready for QA validation
+
+**Next Step:** Consider updating the command-variation-matrix.md section titles to clarify which are primary and which are aliases, or expand sections to include alias variations explicitly.
+
+**Decision Filed:** `.squad/decisions.md` - "Parser Pipeline Architecture (Phase 1 + 2)"

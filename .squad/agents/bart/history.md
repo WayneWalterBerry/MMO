@@ -192,6 +192,37 @@
 - Functions in Lua tables are copied by reference during deep_merge — multiple instances sharing a base class safely share function references since they access state through `self`
 - Verb handlers that interact with objects should always check for both `obj.surfaces` (multi-zone) and `obj.container`/`obj.contents` (simple) patterns — they are independent containment models that can coexist
 - The `accessible == false` gate on surface zones is the canonical pattern for hiding contents behind state (closed drawers, locked compartments). Always respect it in any verb that enumerates contents.
+- Lua source parsing via Python regex is reliable for extracting `handlers["verb"]`, `id = "..."`, `name = "..."`, `keywords = {...}` patterns — no Lua parser needed for metadata extraction
+- The verb system has 54 total verbs (31 primary handlers, 23 aliases). When generating training data, all 54 must be covered since players can type any of them
+- Local-mode template generation (synonym lists × noun forms × article variations) produces ~30k pairs from 54 verbs × 39 objects — sufficient coverage for embedding training
+- Phase 1 script has zero external dependencies in local mode (stdlib only) — critical for CI/CD portability
+- Object keyword arrays in Lua files vary from 2-8 entries; using first 4 keywords per object keeps training data manageable while covering the most common references
+
+---
+
+### 2026 — Phase 1 + Phase 2 Parser Pipeline Scripts
+
+**Build tools for the Tier 2 embedding parser (Phases 1 & 2 of the plan).**
+
+**Files created:**
+- `scripts/generate_parser_data.py` — Training data generation (local + LLM modes)
+- `scripts/build_embedding_index.py` — GTE-tiny embedding index builder
+- `scripts/requirements.txt` — Python dependencies
+- `.gitignore` — models/, __pycache__/, *.pyc
+- `data/parser/.gitkeep` — Output directory for training CSV
+- `src/assets/parser/.gitkeep` — Output directory for embedding index
+
+**Phase 1 results (local mode verified):**
+- Extracts 54 verbs (31 primary, 23 aliases) from `src/engine/verbs/init.lua`
+- Extracts 39 objects from `src/meta/objects/*.lua`
+- Extracts 1 room with exits from `src/meta/world/start-room.lua`
+- Generates 29,582 unique training pairs covering all 54 verbs
+- Output: `data/parser/training-pairs.csv` (1.6MB)
+
+**Phase 2 structure verified:**
+- Loads Phase 1 CSV, encodes via GTE-tiny (384-dim), outputs JSON + gzip
+- Clear error handling when ML deps not installed
+- Supports sentence-transformers or transformers+torch backends
 
 ---
 
@@ -283,3 +314,32 @@ Frink completed PWA + Wasmoon prototype research. Key implications for your engi
 **Recommendation:** When Frink starts prototype, coordinate around `main_browser.lua` interface. Current expectation: expose a `process_command(input_string)` function that returns output string (vs. blocking REPL).
 
 **Decision:** D-43 filed: PWA + Wasmoon Prototype Feasibility
+
+---
+
+## Cross-Agent Update: Command Variation Matrix Ready (2026-03-22T10-28-59Z)
+
+**From:** Comic Book Guy (Game Designer)  
+**Impact:** Parser training data, embedding model accuracy  
+
+Comic Book Guy completed the command variation matrix — all ~400 natural language variations players might type for the 54 verbs (31 canonical + 23 aliases).
+
+**Critical Finding:** The matrix covers 54 verbs, not just the 31 canonical handlers. This includes all aliases as real player input paths. Your scripts extract all 54 verbs correctly.
+
+**How This Feeds Your Pipeline:**
+
+1. **Your Phase 1 script** extracts 54 verbs from `src/engine/verbs/init.lua` (31 primary + 23 aliases) ✅
+2. **Comic Book Guy's matrix** documents ~400 natural language variations for those 54 verbs
+3. **Your Phase 1 pipeline** uses your 54-verb extraction to generate 29,582 training pairs
+4. **Comic Book Guy's matrix** becomes the ground-truth validation set for QA testing
+
+**The matrix is structured by:**
+- **Category:** Navigation, Inventory, Interaction, Movement, Meta
+- **Variations per verb:** 10-20 natural phrasings
+- **Context variations:** darkness-aware (FEEL/SMELL), tool-present/absent, container states, edge cases
+
+**Key Detail:** Pronoun resolution is set to "last-examined object" — this is simple and testable. No full discourse tracking needed.
+
+**Next Step for You:** When Phase 3 runtime integration happens, the embedding matcher will be validated against this matrix. Your job: ensure the index can look up these ~400 variations reliably.
+
+**Decision Filed:** `.squad/decisions.md` - "Command Variation Matrix for Embedding Parser"
