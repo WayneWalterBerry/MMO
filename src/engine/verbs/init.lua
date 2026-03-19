@@ -815,6 +815,8 @@ function verbs.create()
     end
     handlers["x"] = handlers["examine"]
     handlers["find"] = handlers["examine"]
+    handlers["check"] = handlers["examine"]
+    handlers["inspect"] = handlers["examine"]
     handlers["read"] = function(ctx, noun)
         if noun == "" then print("Read what?") return end
         if not has_some_light(ctx) then
@@ -856,6 +858,72 @@ function verbs.create()
                 end
             else
                 print("You feel around but find nothing within reach.")
+            end
+            return
+        end
+
+        -- Handle "feel in/inside {container}" prepositional phrases
+        local container_noun = noun:match("^in%s+(.+)") or noun:match("^inside%s+(.+)")
+        -- Bare "feel inside" / "feel in" → use last-interacted container
+        if not container_noun and (noun == "inside" or noun == "in") then
+            if ctx.last_object and (ctx.last_object.surfaces or (ctx.last_object.container and ctx.last_object.contents)) then
+                container_noun = ctx.last_object.id
+            else
+                print("Feel inside what?")
+                return
+            end
+        end
+        if container_noun then
+            local cobj = find_visible(ctx, container_noun)
+            if not cobj then
+                print("You can't feel anything like that nearby.")
+                return
+            end
+            local found_anything = false
+            -- Check surface contents (e.g., nightstand "inside" zone)
+            if cobj.surfaces then
+                for zone_name, zone in pairs(cobj.surfaces) do
+                    if zone.accessible ~= false and #(zone.contents or {}) > 0 then
+                        local items = {}
+                        for _, id in ipairs(zone.contents) do
+                            local item = ctx.registry:get(id)
+                            items[#items + 1] = item and item.name or id
+                        end
+                        print("Your fingers find " .. zone_name .. ":")
+                        for _, item_name in ipairs(items) do
+                            print("  " .. item_name)
+                        end
+                        found_anything = true
+                    end
+                end
+            end
+            -- Check simple container contents
+            if cobj.container and cobj.contents and #cobj.contents > 0 then
+                local items = {}
+                for _, id in ipairs(cobj.contents) do
+                    local item = ctx.registry:get(id)
+                    items[#items + 1] = item and item.name or id
+                end
+                print("Inside you feel:")
+                for _, item_name in ipairs(items) do
+                    print("  " .. item_name)
+                end
+                found_anything = true
+            end
+            if not found_anything then
+                if cobj.surfaces then
+                    local any_inaccessible = false
+                    for _, zone in pairs(cobj.surfaces) do
+                        if zone.accessible == false then any_inaccessible = true; break end
+                    end
+                    if any_inaccessible then
+                        print("You can't reach inside " .. (cobj.name or "that") .. ". It seems closed.")
+                    else
+                        print("You feel around inside " .. (cobj.name or "that") .. " but find nothing.")
+                    end
+                else
+                    print("You can't feel inside " .. (cobj.name or "that") .. ".")
+                end
             end
             return
         end
@@ -1501,6 +1569,24 @@ function verbs.create()
 
         local mut_data = find_mutation(obj, "light")
         if not mut_data then
+            -- FSM path: check for a "strike" or "light" transition (e.g., match)
+            if obj._fsm_id then
+                local transitions = fsm_mod.get_transitions(obj)
+                for _, t in ipairs(transitions) do
+                    if t.verb == "strike" or t.verb == "light" then
+                        handlers["strike"](ctx, noun)
+                        return
+                    end
+                    if t.aliases then
+                        for _, alias in ipairs(t.aliases) do
+                            if alias == "light" then
+                                handlers["strike"](ctx, noun)
+                                return
+                            end
+                        end
+                    end
+                end
+            end
             print("You can't light " .. (obj.name or "that") .. ".")
             return
         end

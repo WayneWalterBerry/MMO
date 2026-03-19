@@ -58,6 +58,7 @@ return {
     transitions = {
         {
             from = "unlit", to = "lit", verb = "strike",
+            aliases = {"light", "ignite"},
             requires_property = "has_striker",
             message = "You drag the match head across the striker strip. It sputters once, twice -- then catches with a sharp hiss and a curl of sulphur smoke. A tiny flame dances at the tip.",
             fail_message = "You need a rough surface to strike it on. A matchbox striker, perhaps.",
