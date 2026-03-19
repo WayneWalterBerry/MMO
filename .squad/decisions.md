@@ -1049,3 +1049,325 @@ Tools can have limited charges via the `charges` property and `on_tool_use` bloc
 - All meaningful changes require team consensus
 - Document architectural decisions here
 - Keep history focused on work, decisions focused on direction
+
+## Merged from Inbox (2026-03-21)
+
+---
+# Decision: Game Start Time + Sensory Verb System
+
+**Author:** Bart (Architect)  
+**Date:** 2026-03-21  
+**Status:** IMPLEMENTED
+
+## Game Start Time: 2 AM
+
+Changed from 6 AM to 2 AM. The player now wakes in absolute darkness. Dawn at 6 AM arrives after ~10 real minutes (at 24x game speed). This forces the candle puzzle — players cannot simply LOOK around, they must FEEL, SMELL, LISTEN their way to the candle and matches.
+
+## Sensory Verb Convention
+
+All sensory verbs work in complete darkness. Objects support these optional fields:
+
+| Field | Verb | Light required? |
+|-------|------|----------------|
+| `on_feel` | FEEL/TOUCH | No |
+| `on_smell` | SMELL/SNIFF | No |
+| `on_taste` | TASTE/LICK | No |
+| `on_taste_effect` | (triggered by TASTE) | No |
+| `on_listen` | LISTEN/HEAR | No |
+
+Room-level ambient fields: `room.on_smell`, `room.on_listen`.
+
+Objects without these fields get graceful defaults ("nothing distinctive", "makes no sound", etc.).
+
+## Poison Mechanic (V1)
+
+`on_taste_effect = "poison"` → immediate death. Future: antidote, timed effects, partial poisoning.
+
+## Team Impact
+
+- **Comic Book Guy:** Add `on_feel`, `on_smell`, `on_taste`, `on_listen` fields to objects. `on_taste_effect` on dangerous items. `on_smell` and `on_listen` on start-room.
+- **All:** LOOK still requires light. All other senses do not.
+
+---
+# Decision: V2 Verb Handlers — Tool Pipeline & Dynamic Mutation
+
+**Author:** Bart (Architect)  
+**Date:** 2026-03-20  
+**Status:** IMPLEMENTED
+
+## Context
+
+V1 REPL had 12 verbs but no tool-capability resolution. Comic Book Guy created tool objects (pen, knife, pin, needle, matchbox, paper) with `provides_tool`/`requires_tool` convention. Engine needed verb handlers that resolve tools by capability, consume charges, and — critically — perform the first dynamic mutation (WRITE on paper).
+
+## Decisions
+
+### D-37: Tool Resolution is a Verb-Layer Concern
+Tool-finding helpers (`find_tool_in_inventory`, `provides_capability`, `consume_tool_charge`) live in `engine/verbs/init.lua` as local functions, not in a separate engine module. Rationale: tool resolution is tightly coupled to verb dispatch logic. If tool resolution becomes needed outside verbs (e.g., NPC actions), extract then.
+
+### D-38: Dynamic Mutation via string.format + %q
+The WRITE verb generates Lua source at runtime using `string.format()` with `%q` for player-provided text. This sanitizes arbitrary player input through Lua's own string escaper. The generated source includes a runtime `on_look` function (reads `self.written_text` at call time) and preserves the `write` mutation entry for appending more text. Generated source is stored back in `object_sources` for future mutation chains.
+
+### D-39: Blood as Virtual Tool
+When `player.state.bloody == true`, the tool resolver returns a synthetic tool object (not registered, not in inventory) that provides `writing_instrument`. This keeps the world model clean — blood isn't an inventory item, it's a player state that enables a capability.
+
+### D-40: CUT vs PRICK Capability Split
+CUT SELF requires `cutting_edge` (knife only). PRICK SELF requires `injury_source` (pin or knife). Both produce the same `bloody` state. This gives the player two paths to the same result with different tools and different narrative weight.
+
+### D-41: Future Verb Stubs (SEW, PICK LOCK)
+Stubbed with "you don't know how to" messages that hint at a learnable skill system. When the skill system ships, these stubs become the integration points.
+
+## Impact
+- Enables the full chain: find knife → cut self → write in blood on paper → read paper
+- Enables: find matchbox → light candle (with charge tracking)
+- Sets pattern for all future tool-gated verbs
+
+---
+# Decision: Multi-Sensory Object Convention
+
+**Proposed by:** Comic Book Guy (Game Designer)
+**Date:** 2026-03-20
+**Status:** Proposed
+**Requested by:** Wayne "Effe" Berry
+
+## Summary
+
+All objects now carry multi-sensory description fields (`on_feel`, `on_smell`, `on_taste`, `on_listen`) in addition to visual `description`. These enable the dark-room mechanic where players use non-visual senses to navigate, identify objects, and make risk/reward decisions.
+
+## Decision
+
+1. **Every object MUST have `on_feel`** — it is the primary dark-navigation sense.
+2. **`on_smell` is recommended** for objects with distinctive scents — it is the safe identification sense.
+3. **`on_listen` is for active/mechanical objects only** — things that make sounds when interacted with.
+4. **`on_taste` is the danger sense** — reserved for objects where tasting has real consequences. Rarity is intentional.
+5. **`on_feel_effect` and `on_taste_effect`** trigger engine-level state changes (e.g., `"cut"` from glass shard, `"poison"` from poison bottle). The engine must check for `_effect` suffixes on all sensory fields.
+
+## Sensory Hierarchy
+
+| Sense | Safety | Information | Coverage |
+|-------|--------|-------------|----------|
+| FEEL | Medium | Shape, texture, temperature, weight | 100% |
+| SMELL | Safe | Chemical identity, materials, age | ~65% |
+| LISTEN | Safe | Mechanical state, contents, environment | ~16% |
+| TASTE | DANGEROUS | Chemical composition — at a cost | ~8% |
+
+## Design Philosophy
+
+- Darkness is not a wall — it's a different mode of play
+- Every sense gives different information about the same object
+- SMELL is the safe way to identify liquids and chemicals
+- TASTE is the "learn by dying" sense — real consequences, teaches caution
+- The poison bottle is the canonical teaching moment: SMELL warns you, TASTE kills you
+
+## Impact
+
+- Engine must implement FEEL, SMELL, TASTE, LISTEN verbs that read corresponding `on_*` fields
+- Engine must check for `_effect` suffixes and apply state changes
+- All future objects must include at least `on_feel`
+- Mutation variants must carry their own sensory fields (state-dependent)
+
+## Files Changed
+
+- 36 existing objects in `src/meta/objects/` updated with sensory fields
+- 1 new object: `src/meta/objects/poison-bottle.lua`
+- `nightstand.lua` and `nightstand-open.lua` updated to place poison bottle
+
+---
+### 2026-03-19T123739Z: User directive
+**By:** Wayne "Effe" Berry (via Copilot)
+**What:** File-per-state is the chosen object model. Keep separate .lua files for each object state (nightstand.lua + nightstand-open.lua, candle.lua + candle-lit.lua, etc.). This resolves the open question from D-35. Wayne considered single-file-with-states but prefers the current pattern. Each state is a complete, self-contained object definition. Mutation = swap the entire file.
+**Why:** User decision — resolves architecture question. File-per-state stays. No refactoring needed.
+
+---
+### 2026-03-19T125251Z: User directive — Matchbox/Match Interaction Rethink
+**By:** Wayne "Effe" Berry (via Copilot)
+**What:** The matchbox interaction needs to be richer and more realistic:
+1. The matchbox is a CONTAINER that holds individual match objects (7 in this room, varies per matchbox)
+2. The matchbox has a STRIKER on the side
+3. To light a match, you STRIKE the match ON the matchbox — two objects are required
+4. The lit match is then the fire_source tool you use to light the candle
+5. This raises the question: is the match the tool? The matchbox? Both?
+
+Wayne's answer (implied): BOTH are required for different steps:
+- Matchbox = container + striker surface (not a tool itself, but a required surface)
+- Match = the item that becomes a fire_source AFTER being struck on the matchbox
+- Lit match = the actual fire_source tool (mutation: match → match-lit)
+- Match-lit burns out after one use (consumed)
+
+This creates a richer puzzle chain:
+OPEN matchbox → TAKE match → STRIKE match ON matchbox → match-lit (fire_source) → LIGHT candle WITH match
+
+This REPLACES the current "matchbox with charges" design. Individual matches as objects, not a counter.
+
+**Why:** User request — design philosophy: realistic object interactions create better puzzles. Two-tool interactions add depth. Challenges the simple "charges" model.
+
+---
+### 2026-03-19T125500Z: User directive — Compound Tool Interactions
+**By:** Wayne "Effe" Berry (via Copilot)
+**What:** Some skills require TWO tools used together. This is a "compound tool" pattern:
+- Lighting a match = a skill everyone knows, but requires match + matchbox (striker) together
+- Sewing = a learned skill that requires needle + thread together
+- The engine needs to support: SKILL + TOOL A + TOOL B → action
+
+This reframes the tool system:
+- Single-tool actions: LIGHT candle WITH match-lit (one tool)
+- Compound-tool actions: STRIKE match ON matchbox (two tools, innate skill)
+- Compound-tool + learned skill: SEW cloth WITH needle AND thread (two tools + learned skill)
+
+The complexity isn't in HAVING a skill — lighting a match is innate. The complexity is in HAVING BOTH required objects. This is the puzzle: find the match AND the matchbox. Find the needle AND the thread.
+
+**Implications:**
+- Tool convention needs a `requires_tools` (plural) field — array of required capabilities
+- Skills can be innate (everyone knows) or learned (lockpicking, sewing)
+- Thread is a new object needed for sewing (needle alone isn't enough)
+- The STRIKE verb is a compound-tool verb
+
+**Why:** User request — major game mechanic. Compound tools add realistic puzzle depth. Every crafting/interaction becomes: do you have ALL the pieces?
+
+---
+### 2026-03-19T125825Z: User directive — Two-Hand Inventory + Bags
+**By:** Wayne "Effe" Berry (via Copilot)
+**What:** Players have TWO HANDS. That's their base inventory — they can carry/hold two items max. However:
+- A BAG (held in one hand) expands capacity — bag contents don't count against hand slots, but the bag itself takes one hand
+- A BACKPACK (worn on back) frees BOTH hands — backpack contents available without using hand slots
+- TOOL USAGE REQUIRES HANDS. To strike a match on a matchbox, you need BOTH hands free (one for match, one for matchbox). If you're holding a bag, you must DROP BAG first.
+- This creates real inventory management puzzles:
+  - Carrying a bag + sword = no free hands = can't light match
+  - Drop bag → strike match → light candle → pick up bag
+  - Wearing a backpack = hands free for tool use
+  - Backpack is a major upgrade item (not available in bedroom?)
+
+**Implications:**
+- Player state needs: hands[] (array of 2 slots) + worn[] (backpack slot) + bag contents
+- Items need a `held_in` property: "hand", "bag", "backpack", "worn"
+- Compound tool actions check: are both hands available?
+- DROP becomes strategically important (not just discarding)
+- Bags and backpacks are containers the player carries
+- The sack in the bedroom could be the first bag!
+
+**Puzzle depth this creates:**
+- Dark room: you're holding the bed sheet. Drop sheet → open drawer → take match → take matchbox → strike match → light candle. That's 6 actions just to get light. Real gameplay.
+- Trade-offs: carry the knife (protection) or the candle (light)? Can't hold both + a bag.
+
+**Why:** User request — major inventory mechanic. Transforms inventory from "magic pocket" to physical constraint. Every item held is a choice. Every compound tool action requires hand management.
+
+---
+### 2026-03-19T130000Z: User directive — Sensory Descriptions + Start Time + Poison
+**By:** Wayne "Effe" Berry (via Copilot)
+
+**Part 1 — Game Start Time:**
+Don't start at dawn. Start BEFORE dawn (middle of the night — say 2 AM or 3 AM). The room is truly dark. Dawn comes later (6 AM = after ~3-4 minutes real time at 1hr=1day rate). The match/candle puzzle MATTERS because the player is in real darkness and dawn is NOT imminent. They NEED to light the candle to see. Dawn eventually rescues them if they can't solve it, but that's minutes of fumbling in the dark.
+
+**Part 2 — Multi-Sensory Object Descriptions:**
+Every object should have multiple sensory descriptions:
+- `on_look` / `description` — what it looks like (requires light)
+- `on_feel` — what it feels like by touch (works in dark!)
+- `on_smell` — what it smells like (works in dark!)
+- `on_taste` — what it tastes like (works always, but risky...)
+- `on_listen` — what it sounds like (works in dark!)
+
+This means in the dark, players can FEEL, SMELL, TASTE, and LISTEN to identify objects without seeing them. This is the core dark-room mechanic:
+- FEEL nightstand → "Your hands find a smooth wooden surface with a small drawer."
+- SMELL candle → "Waxy, slightly sweet. Definitely a candle."
+- TASTE bottle → "BITTER! You spit it out. That tasted like poison." (consequences!)
+
+**Part 3 — Poison Bottle:**
+Add a bottle of poison on the nightstand. This creates a deadly puzzle in the dark:
+- Player feels around → finds bottle on nightstand
+- If they TASTE it in the dark (trying to identify it) → POISONED
+- If they can see (have light) → LOOK at bottle reveals skull and crossbones label
+- SMELL bottle → "Smells acrid and chemical. Something dangerous."
+- This is a consequence-driven design: tasting unknown things in the dark can kill you
+
+**Why:** User request — transforms the dark room from frustration into rich sensory gameplay. Every sense is a tool. Tasting is dangerous. The poison bottle is the first lethal puzzle.
+
+---
+### 2026-03-19T130100Z: Architecture question — Verbs as Meta-Code
+**By:** Wayne "Effe" Berry (via Copilot)
+**What:** Wayne wonders if verbs should be defined in src/meta/verbs/ (as Lua data files) rather than hardcoded in src/engine/verbs/init.lua. This would make verbs part of the world definition, not the engine. Each verb = a .lua file returning a table with handler, aliases, prerequisites. Engine just loads and dispatches. Verbs become mutable — a cursed room could change how LOOK works. New verbs = new files, no engine changes. Aligns with "code IS the world" philosophy.
+**Status:** Open question — Wayne exploring, not directing yet. Needs Bart (Architect) analysis.
+**Why:** Architectural consistency. If objects are meta-code, why aren't verbs? Could enable room-specific verbs, mutable actions, per-universe verb sets.
+
+---
+### 2026-03-19T130200Z: User directive — Prime Directive
+**By:** Wayne "Effe" Berry (via Copilot)
+**What:** The main goal is ALWAYS to honor Effe's directives and designs and work towards play testing. This is the team's prime directive. Every decision, every implementation, every architecture choice serves two masters: (1) Wayne's vision as expressed through his directives, and (2) getting to a playable state as fast as possible. When in doubt, ask: "Does this honor Wayne's design? Does this get us closer to play testing?" If both answers are yes, do it.
+**Why:** User request — this is the governing principle above all others. Captured as the team's prime directive.
+
+---
+### 2026-03-19T131013Z: User directive — Puzzle Documentation
+**By:** Wayne "Effe" Berry (via Copilot)
+**What:** Start documenting puzzles in docs/puzzles/ (new subfolder). Every puzzle the team designs should be documented there for reference. This is a living reference for game designers and play testers. Each puzzle doc should cover: setup, required objects, solution steps, alternative solutions (if any), what the player learns, and consequences of failure.
+**Why:** User request — puzzles are first-class design artifacts. They need their own documentation, not scattered across design docs and object files.
+
+---
+### 2026-03-19T131234Z: User directive — Consumables System
+**By:** Wayne "Effe" Berry (via Copilot)
+**What:** Objects can be consumable — when consumed, they are REMOVED from the universe entirely:
+- Candles burn down over time (consumed by burning)
+- Food can be eaten (consumed by eating)
+- Paper can be burned (consumed by fire)
+- Matches are consumed when struck and burned out
+- When consumed, the object is removed from the registry. It no longer exists. Gone.
+
+This is different from mutation (object becomes something else) — consumption is DESTRUCTION. The object ceases to exist. No variant file, no replacement. Just gone.
+
+**Engine implications:**
+- Registry needs a `destroy(id)` or `remove(id)` method (already has `remove` — verify it works for this)
+- Candles need a burn timer — after N turns of being lit, candle is consumed (dark again!)
+- EAT verb needed (future)
+- BURN verb needed (future — burn paper, burn cloth, etc.)
+- Matches consumed after one use (strike → light something → match gone)
+
+**Gameplay implications:**
+- Candles are FINITE. You can't leave one burning forever. Resource management.
+- Matches are one-use. 7 matches = 7 chances to light things.
+- Food is survival. Eat it and it's gone.
+- This creates urgency and scarcity — core to good puzzle design.
+
+**Why:** User request — adds resource management and scarcity to the game. Objects are precious because they can be permanently lost.
+
+---
+### 2026-03-19T131234Z: User directive — Matchbox as Container (not separate empty file)
+**By:** Wayne "Effe" Berry (via Copilot)
+**What:** The matchbox should NOT have a matchbox.lua + matchbox-empty.lua pattern. The matchbox is a CONTAINER (like the sack) with a contents array listing what's inside it (individual matches). When all matches are used, the matchbox is just empty — same object, empty contents array. No separate "empty" variant file. This is different from the file-per-state decision for objects like candle/nightstand — the matchbox isn't changing STATE, it's just having items removed from it. It's a container, not a state machine.
+
+**Clarification on file-per-state:** File-per-state is for objects that CHANGE WHAT THEY ARE (candle → candle-lit, nightstand → nightstand-open). Containers that just have stuff taken out of them don't need variant files — their contents array changes.
+
+**Why:** User request — simplifies container objects. Aligns with containment model. The sack doesn't have a sack-empty.lua, so neither should the matchbox.
+
+---
+### 2026-03-19T124327Z: Play Test Log #1
+**By:** Wayne "Effe" Berry
+**Date:** 2026-03-19
+**Build:** V1 REPL (commit bd9c55a)
+
+#### Transcript:
+```
+> look
+It is too dark to see. You need a light source.
+Dawn breaks on the horizon. It is 6:02 AM.
+
+> find side table
+You don't know how to 'find'.
+
+> look
+It is too dark to see. You need a light source.
+Dawn breaks on the horizon. It is 6:08 AM.
+
+> open curtains
+It is too dark to see what you're doing.
+
+> what is around me
+You don't know how to 'what'.
+```
+
+#### Issues Identified:
+1. **Dawn + dark = contradiction.** It's 6:02 AM (dawn), but the room is pitch dark. If it's dawn, shouldn't there be SOME light through the window?
+2. **Dark room is a dead end.** Player can't open curtains (too dark), can't find nightstand (too dark), can't do anything. No way to progress without blind groping.
+3. **No FEEL/TOUCH/GROPE verb.** In darkness, player should be able to feel around to find nearby objects.
+4. **"find" is not a verb.** Natural language expectation gap.
+5. **"what is around me" fails.** Player is trying to orient — needs a way to get bearings in the dark.
+6. **Error messages unhelpful.** "You don't know how to 'find'" sounds like a character flaw, not a parser limitation. Should suggest valid verbs.
+
+#### Severity: HIGH — game is unsolvable as-is at dawn.
+

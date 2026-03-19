@@ -353,3 +353,29 @@ Session log created: `.squad/log/2026-03-19T01-53-18Z-v1-repl-session.md` with s
 
 **Decision filed at:** `.squad/decisions/inbox/bart-sensory-verbs-start-time.md`
 
+
+### Session Update: V2 Verb System & Tool Pipeline (2026-03-19T13-22)
+**Status:** ✅ COMPLETE  
+**Parallel Spawns:** 2 successful background spawns
+
+**Spawn 1: Sensory Verbs + Start Time Fix**
+- Moved game start from 6 AM → 2 AM (true darkness)
+- Implemented FEEL, SMELL, TASTE, LISTEN verbs for sensory navigation
+- All sensory verbs work in complete darkness
+- Poison mechanic: TASTE → death (immediate consequence)
+- Decision D-37: Sensory verb convention established
+
+**Spawn 2: V2 Tool Pipeline (WRITE/CUT/PRICK/SEW/PICK LOCK)**
+- Decision D-38: Tool resolution as verb-layer concern
+- Decision D-39: Blood as virtual tool
+- Decision D-40: CUT vs PRICK capability split
+- Decision D-41: Future verb stubs (SEW, PICK LOCK)
+- Implemented: Dynamic mutation via string.format + %q (sanitizes player input)
+- Tool resolver now supports:
+  - find_tool_in_inventory()
+  - provides_capability()
+  - consume_tool_charge()
+
+**Architecture Insight:** Tool resolution is tightly coupled to verb dispatch — stays in engine/verbs/init.lua, not separate module.
+
+**Next:** Cross-agent impact on Comic Book Guy (sensory descriptions on 37 objects) and design verification.

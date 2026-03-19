@@ -207,3 +207,20 @@ ewspaper/2026-03-18.md — Republished with comic strip and op-ed sections
 - D-34: Puzzle-first design philosophy (puzzles are first-class goal, not side effect)
 - D-35: Single-file vs. multi-file mutation objects (OPEN QUESTION — challenges D-14 implementation)
 - D-36: Sewing as crafting skill (cloth + needle + sewing skill → wearable items)
+
+### Session Update: Play Test Iteration (2026-03-19T13-22)
+**Status:** ✅ COMPLETE
+
+**Tasks Completed:**
+- Documented March 19 newspaper edition
+- Documented 4 core puzzles (dark room, candle, paper/blood writing, compound tools)
+- Merged cross-agent decisions from team spawns
+
+**Key Decisions Merged:**
+- D-37 to D-41: Verb system, tool resolution, tool capabilities
+- User Directives: Matchbox container model, two-hand inventory, sensory descriptions, consumables
+
+**Impact:**
+- Newspaper serves as daily communication hub — established comic strip and op-ed as recurring sections
+- Puzzle documentation establishes design methodology — puzzles are first-class artifacts
+- Team decisions now consolidated in decisions.md (14 inbox files merged)

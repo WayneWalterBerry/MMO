@@ -317,3 +317,34 @@ All 17 new decisions (D-22 through D-36) merged into .squad/decisions.md:
 - **TASTE is the consequence sense.** Only 3 objects have on_taste, and two of them are warnings. This rarity makes TASTE feel genuinely dangerous — players learn quickly that putting unknown things in their mouth has consequences. Classic IF design: Hitchhiker's Guide taught this with the babel fish puzzle; we teach it with poison.
 - **Sensory fields belong after description, before size.** Established consistent placement: description → on_feel/on_smell/on_taste/on_listen → size/weight. This groups all textual descriptions together, separate from mechanical properties.
 - **Mutation variants need sensory consistency.** Every state of an object (open/closed, lit/unlit, broken/intact) needs its own sensory fields. The lit candle smells different from the unlit one. The open window sounds different from the closed one. Sensory fields are state-dependent, not just object-dependent.
+
+### Session Update: Multi-Sensory Convention Implementation (2026-03-19T13-22)
+**Status:** ✅ COMPLETE
+
+**Spawn: Sensory Descriptions on 37 Objects + Poison Bottle**
+- Added multi-sensory fields to 36 existing objects:
+  - on_feel (primary dark-navigation sense) — 100% coverage
+  - on_smell (safe identification sense) — ~65% coverage
+  - on_listen (mechanical objects) — ~16% coverage
+  - on_taste (danger sense + consequences) — ~8% coverage
+  - on_listen (active/mechanical) — ~16% coverage
+- Decision D-28: Multi-Sensory Object Convention (formally approved)
+
+**Sensory Hierarchy Established:**
+| Sense | Safety | Information | Coverage |
+|-------|--------|-------------|----------|
+| FEEL | Medium | Shape, texture, temperature, weight | 100% |
+| SMELL | Safe | Chemical identity, materials | ~65% |
+| LISTEN | Safe | Mechanical state, contents | ~16% |
+| TASTE | DANGEROUS | Chemical composition | ~8% |
+
+**Poison Bottle Implementation:**
+- New object: src/meta/objects/poison-bottle.lua
+- Nightstand variants updated (nightstand.lua + nightstand-open.lua)
+- SMELL: "Acrid and chemical. Something dangerous."
+- TASTE: "BITTER! You spit it out. That tasted like poison." → immediate death
+- LOOK: Skull and crossbones label (requires light)
+
+**Key Design Philosophy:** Darkness is not a wall — it's a different mode of play. Every sense gives different information about same object. TASTE is the "learn by dying" sense.
+
+**Impact:** Enables dark-room mechanic across all objects. Players navigate by touch/smell/sound, not sight.
