@@ -110,4 +110,51 @@ function loader.load_template(source)
   return loader.load_source(source)
 end
 
+-- resolve_instance(instance, base_classes, templates) -> resolved_object, nil | nil, error_string
+-- Takes an instance definition (with base_guid and optional overrides),
+-- looks up the base class by GUID, deep-merges overrides on top,
+-- and prepares the object for registration.
+-- Contents arrays are cleared — they are rebuilt from the instance tree.
+function loader.resolve_instance(instance, base_classes, templates)
+  if not instance.base_guid then
+    return nil, "instance '" .. tostring(instance.id) .. "' missing base_guid"
+  end
+
+  local base = base_classes[instance.base_guid]
+  if not base then
+    return nil, "base class not found for guid '" .. instance.base_guid
+        .. "' (instance '" .. tostring(instance.id) .. "')"
+  end
+
+  -- Deep-copy base, then overlay instance overrides
+  local resolved = deep_merge(base, instance.overrides or {})
+
+  -- Resolve template if base was not pre-resolved
+  if resolved.template then
+    local tmpl_resolved, err = loader.resolve_template(resolved, templates or {})
+    if not tmpl_resolved then
+      return nil, err
+    end
+    resolved = tmpl_resolved
+  end
+
+  -- Instance identity overrides base identity
+  resolved.id = instance.id
+  resolved.base_guid = instance.base_guid
+  resolved.guid = nil  -- guid belongs to the base class, not the instance
+
+  -- Clear contents — these are rebuilt from the instance tree.
+  -- Preserve the field if the base class defined it (for on_look etc.)
+  if resolved.contents ~= nil then
+    resolved.contents = {}
+  end
+  if resolved.surfaces then
+    for _, zone in pairs(resolved.surfaces) do
+      zone.contents = {}
+    end
+  end
+
+  return resolved, nil
+end
+
 return loader

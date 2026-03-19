@@ -76,9 +76,10 @@ for _, fname in ipairs(template_files) do
 end
 
 ---------------------------------------------------------------------------
--- Load all object sources (indexed by id for mutation lookup)
+-- Load all object sources and build base class index (GUID -> definition)
 ---------------------------------------------------------------------------
 local object_sources = {}
+local base_classes = {}
 local object_dir = meta_root .. SEP .. "objects"
 local object_files = list_lua_files(object_dir)
 for _, fname in ipairs(object_files) do
@@ -86,10 +87,24 @@ for _, fname in ipairs(object_files) do
     local source = read_file(path)
     if source then
         local def, err = loader.load_source(source)
-        if def and def.id then
-            object_sources[def.id] = source
+        if def then
+            -- Resolve template so base classes are fully materialized
+            if def.template then
+                def, err = loader.resolve_template(def, templates)
+                if not def then
+                    io.stderr:write("Warning: failed to resolve template for " .. fname .. ": " .. tostring(err) .. "\n")
+                end
+            end
+            if def then
+                if def.guid then
+                    base_classes[def.guid] = def
+                end
+                if def.id then
+                    object_sources[def.id] = source
+                end
+            end
         else
-            io.stderr:write("Warning: failed to load object " .. fname .. ": " .. tostring(err or "no id") .. "\n")
+            io.stderr:write("Warning: failed to load object " .. fname .. ": " .. tostring(err) .. "\n")
         end
     end
 end
@@ -116,52 +131,53 @@ if not room then
 end
 
 ---------------------------------------------------------------------------
--- Create the registry and populate the world
+-- Create the registry and populate from room instances
 ---------------------------------------------------------------------------
 local reg = registry.new()
 
--- Register and resolve a single object from stored sources.
-local function register_object(id)
-    local source = object_sources[id]
-    if not source then
-        io.stderr:write("Warning: no source for object '" .. id .. "'\n")
-        return nil
-    end
-    local obj, load_err = loader.load_source(source)
-    if not obj then
-        io.stderr:write("Warning: " .. tostring(load_err) .. "\n")
-        return nil
-    end
-    obj, load_err = loader.resolve_template(obj, templates)
-    if not obj then
-        io.stderr:write("Warning: " .. tostring(load_err) .. "\n")
-        return nil
-    end
-    reg:register(id, obj)
-    return obj
-end
-
--- Phase 1: register room-level objects
-for _, obj_id in ipairs(room.contents) do
-    local obj = register_object(obj_id)
-    if obj then
-        obj.location = room.id
+-- Phase 1: Resolve all instances against their base classes and register
+for _, inst in ipairs(room.instances or {}) do
+    local resolved, inst_err = loader.resolve_instance(inst, base_classes, templates)
+    if resolved then
+        reg:register(inst.id, resolved)
+    else
+        io.stderr:write("Warning: " .. tostring(inst_err) .. "\n")
     end
 end
 
--- Phase 2: register objects inside surfaces of room-level objects
-for _, obj_id in ipairs(room.contents) do
-    local obj = reg:get(obj_id)
-    if obj and obj.surfaces then
-        for _, zone in pairs(obj.surfaces) do
-            for _, item_id in ipairs(zone.contents or {}) do
-                if not reg:get(item_id) then
-                    local item = register_object(item_id)
-                    if item then
-                        item.location = obj_id
-                    end
-                end
+-- Phase 2: Build containment tree from instance locations
+room.contents = {}
+for _, inst in ipairs(room.instances or {}) do
+    local loc = inst.location
+    local obj = reg:get(inst.id)
+
+    if loc == "room" then
+        -- Top-level room object
+        room.contents[#room.contents + 1] = inst.id
+        if obj then obj.location = room.id end
+    else
+        local parent_id, surface_name = loc:match("^(.-)%.(.+)$")
+        if parent_id and surface_name then
+            -- Surface location: "parent.surface"
+            local parent = reg:get(parent_id)
+            if parent and parent.surfaces and parent.surfaces[surface_name] then
+                local zone = parent.surfaces[surface_name]
+                zone.contents = zone.contents or {}
+                zone.contents[#zone.contents + 1] = inst.id
+            else
+                io.stderr:write("Warning: surface '" .. loc .. "' not found for instance '" .. inst.id .. "'\n")
             end
+            if obj then obj.location = parent_id end
+        else
+            -- Container location: just a parent id (e.g., "matchbox", "sack")
+            local parent = reg:get(loc)
+            if parent then
+                parent.contents = parent.contents or {}
+                parent.contents[#parent.contents + 1] = inst.id
+            else
+                io.stderr:write("Warning: container '" .. loc .. "' not found for instance '" .. inst.id .. "'\n")
+            end
+            if obj then obj.location = loc end
         end
     end
 end
@@ -189,6 +205,7 @@ local context = {
     current_room   = room,
     player         = player,
     templates      = templates,
+    base_classes   = base_classes,
     object_sources = object_sources,
     loader         = loader,
     mutation       = mutation,

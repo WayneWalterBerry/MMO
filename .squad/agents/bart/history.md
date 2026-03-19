@@ -129,3 +129,42 @@
 - No networking code — just the IDs and the registry index, preparing for future streaming/download architecture
 
 **Decision filed at:** `.squad/decisions/inbox/bart-guid-definitions.md`
+
+### 2026 — Instance/Base-Class Architecture
+
+**Implemented the instance model: clean separation between immutable base classes and mutable instances.**
+
+**Architecture:**
+- **Base classes** (`src/meta/objects/*.lua`) are immutable templates indexed by GUID
+- **Instances** are defined in room files with `base_guid`, `location`, and optional `overrides`
+- **Room** (`src/meta/world/start-room.lua`) is the uber-container holding all instances
+- At load time: base classes are template-resolved → instances are resolved against base classes → containment tree is built from instance locations
+
+**Files modified:**
+- `src/meta/world/start-room.lua` — replaced `contents` array with `instances` array (31 instances with base_guid references and location-based containment)
+- `src/engine/loader/init.lua` — added `resolve_instance(instance, base_classes, templates)` function (deep-merge base + overrides, clear contents for rebuild)
+- `src/main.lua` — rewrote loading pipeline: Phase 1 builds base_classes by GUID, Phase 2 resolves instances and registers, Phase 3 builds containment tree from locations
+- `docs/architecture/instance-model.md` — full architecture documentation
+
+**Key design decisions:**
+- Instance `location` uses dot notation for surfaces (`"nightstand.top"`) and bare IDs for containers (`"matchbox"`)
+- `resolve_instance` strips `guid` from resolved objects (guid belongs to base, not instance) and sets `base_guid` instead
+- Contents arrays are cleared during resolution and rebuilt from the instance tree
+- Base class files unchanged — they remain the canonical definitions
+- `object_sources` still maintained for V1 mutation system (source-code-based hot-swap)
+- Deep objects (matches in matchbox, pin in pillow, items in sack) now registered in registry (were previously unregistered string references)
+
+**Containment tree verified:**
+- 8 room-level objects, 13 surface items, 10 container items = 31 total instances
+- All locations, surface contents, container contents validated
+- Game plays identically to pre-refactor
+
+**Decision filed at:** `.squad/decisions/inbox/bart-instance-model.md`
+
+## Learnings
+
+- When deep-merging base classes with instance overrides, contents arrays must be explicitly cleared and rebuilt from the instance tree — otherwise base class contents leak into instances
+- The `location` dot-notation pattern (`"parent.surface"` vs bare `"parent"`) is clean and unambiguous for parsing containment
+- Pre-resolving templates into base classes before instance resolution simplifies the pipeline — instances never need to worry about template inheritance
+- Registering previously-unregistered deep objects (matches, pin, needle, thread) doesn't break existing verb behavior — verbs use keyword search and specific ID lookups, not full registry iteration
+- Functions in Lua tables are copied by reference during deep_merge — multiple instances sharing a base class safely share function references since they access state through `self`
