@@ -12,8 +12,8 @@ return {
     portable = false,
 
     surfaces = {
-        top = { capacity = 6, max_item_size = 4, contents = {} },
-        inside = { capacity = 4, max_item_size = 2, contents = {} },
+        top = { capacity = 6, max_item_size = 4, contents = {"paper", "pen"} },
+        inside = { capacity = 4, max_item_size = 2, contents = {"pencil"}, accessible = false },
         mirror_shelf = { capacity = 2, max_item_size = 1, contents = {} },
     },
 
@@ -22,6 +22,12 @@ return {
     on_look = function(self)
         local text = self.description
         text = text .. "\n\nYour reflection stares back from the mirror, mimicking your movements with an unsettling half-second delay."
+        if #self.surfaces.top.contents > 0 then
+            text = text .. "\nOn the vanity's surface:"
+            for _, id in ipairs(self.surfaces.top.contents) do
+                text = text .. "\n  " .. id
+            end
+        end
         text = text .. "\nThe drawer is closed."
         return text
     end,

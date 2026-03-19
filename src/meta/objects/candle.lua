@@ -18,6 +18,9 @@ return {
     mutations = {
         light = {
             becomes = "candle-lit",
+            requires_tool = "fire_source",
+            message = "The wick catches the flame and curls to life, throwing a warm amber glow across the room. Shadows retreat to the corners like startled cats.",
+            fail_message = "You have nothing to light it with. The wick stares back at you, cold and uncooperative.",
         },
     },
 }

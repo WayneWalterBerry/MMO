@@ -11,15 +11,21 @@ return {
     portable = false,
 
     surfaces = {
-        top = { capacity = 6, max_item_size = 4, contents = {} },
-        inside = { capacity = 4, max_item_size = 2, contents = {} },
+        top = { capacity = 6, max_item_size = 4, contents = {"paper", "pen"} },
+        inside = { capacity = 4, max_item_size = 2, contents = {"pencil"}, accessible = false },
     },
 
     location = nil,
 
     on_look = function(self)
         local text = self.description
-        text = text .. "\n\nThe drawer is closed."
+        if #self.surfaces.top.contents > 0 then
+            text = text .. "\n\nOn the vanity's surface:"
+            for _, id in ipairs(self.surfaces.top.contents) do
+                text = text .. "\n  " .. id
+            end
+        end
+        text = text .. "\nThe drawer is closed."
         return text
     end,
 

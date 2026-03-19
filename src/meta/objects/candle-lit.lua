@@ -7,6 +7,7 @@ return {
     size = 1,
     weight = 1,
     categories = {"light source", "lit", "hot"},
+    casts_light = true,
     portable = true,
 
     location = nil,

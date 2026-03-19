@@ -9,10 +9,18 @@ return {
     categories = {"soft", "fabric"},
     portable = true,
 
+    surfaces = {
+        inside = { capacity = 1, max_item_size = 1, contents = {"pin"}, accessible = false },
+    },
+
     location = nil,
 
     on_look = function(self)
-        return self.description
+        local text = self.description
+        if #self.surfaces.inside.contents > 0 then
+            text = text .. "\n\nSomething sharp pricks your hand when you press the pillow. There seems to be a pin stuck in it."
+        end
+        return text
     end,
 
     mutations = {

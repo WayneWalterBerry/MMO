@@ -75,6 +75,42 @@ local function parse(input)
   return (verb or ""):lower(), (noun or ""):lower()
 end
 
+-- preprocess_natural_language(input) -> verb, noun or nil, nil
+-- Converts common question patterns and multi-word phrases into known verbs.
+local function preprocess_natural_language(input)
+  local lower = input:lower():match("^%s*(.-)%s*$")
+  if not lower or lower == "" then return nil, nil end
+
+  -- Question patterns → look
+  if lower:match("^what%s+is%s+around")
+    or lower:match("^what%s+do%s+i%s+see")
+    or lower:match("^what%s+can%s+i%s+see")
+    or lower:match("^where%s+am%s+i")
+    or lower:match("^look%s+around$") then
+    return "look", ""
+  end
+
+  -- Question patterns → time
+  if lower:match("^what%s+time")
+    or lower:match("^what%s+is%s+the%s+time") then
+    return "time", ""
+  end
+
+  -- Question patterns → inventory
+  if lower:match("^what%s+am%s+i%s+carry")
+    or lower:match("^what%s+do%s+i%s+have") then
+    return "inventory", ""
+  end
+
+  -- Question patterns → help
+  if lower:match("^what%s+can%s+i%s+do")
+    or lower:match("^how%s+do%s+i") then
+    return "help", ""
+  end
+
+  return nil, nil
+end
+
 -- run(context)
 -- context fields:
 --   registry     — live registry instance
@@ -99,7 +135,15 @@ function loop.run(context)
     local input = io.read()
     if not input then break end -- EOF / piped input exhausted
 
-    local verb, noun = parse(input)
+    local trimmed = input:match("^%s*(.-)%s*$")
+    if trimmed == "" then goto continue end
+
+    -- Try natural language preprocessing first
+    local verb, noun = preprocess_natural_language(trimmed)
+    if not verb then
+      verb, noun = parse(trimmed)
+    end
+
     if verb == "" then goto continue end
 
     if verb == "quit" then
@@ -112,7 +156,7 @@ function loop.run(context)
     if handler then
       handler(context, noun)
     else
-      print("You don't know how to '" .. verb .. "'.")
+      print("I don't understand '" .. verb .. "'. Try 'look', 'examine', 'take', 'open', or type 'help' for a full list.")
     end
 
     ::continue::

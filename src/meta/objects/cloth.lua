@@ -1,4 +1,4 @@
-return {
+/areturn {
     template = "sheet",
     id = "cloth",
     name = "a piece of cloth",
@@ -33,7 +33,12 @@ return {
     crafting = {
         sew = {
             consumes = {"cloth", "cloth"},
+            requires_tool = "sewing_tool",
+            requires_skill = "sewing",
             becomes = "terrible-jacket",
+            message = "You stitch the pieces together with small, uneven stitches. The result is... well, it's a jacket. Technically.",
+            fail_message_no_tool = "You have nothing to sew with.",
+            fail_message_no_skill = "You wouldn't know where to begin. You'd need to learn to sew first.",
         },
     },
 }

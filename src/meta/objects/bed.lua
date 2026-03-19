@@ -13,7 +13,7 @@ return {
 
     surfaces = {
         top = { capacity = 8, max_item_size = 5, contents = {"pillow", "bed-sheets", "blanket"} },
-        underneath = { capacity = 4, max_item_size = 3, contents = {} },
+        underneath = { capacity = 4, max_item_size = 3, contents = {"knife"} },
     },
 
     location = nil,
@@ -27,10 +27,7 @@ return {
             end
         end
         if #self.surfaces.underneath.contents > 0 then
-            text = text .. "\n\nPeeking out from underneath:"
-            for _, id in ipairs(self.surfaces.underneath.contents) do
-                text = text .. "\n  " .. id
-            end
+            text = text .. "\n\nThe bedskirt hangs unevenly, as if something is wedged beneath the mattress."
         end
         return text
     end,

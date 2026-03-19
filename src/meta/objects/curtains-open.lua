@@ -11,6 +11,7 @@ return {
     weight = 4,
     categories = {"fabric", "soft", "window covering"},
     portable = false,
+    allows_daylight = true,
 
     location = nil,
 

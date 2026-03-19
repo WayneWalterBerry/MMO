@@ -11,8 +11,8 @@ return {
     portable = false,
 
     surfaces = {
-        top = { capacity = 6, max_item_size = 4, contents = {} },
-        inside = { capacity = 4, max_item_size = 2, contents = {} },
+        top = { capacity = 6, max_item_size = 4, contents = {"paper", "pen"} },
+        inside = { capacity = 4, max_item_size = 2, contents = {"pencil"} },
     },
 
     location = nil,

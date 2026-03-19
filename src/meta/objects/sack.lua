@@ -3,7 +3,7 @@ return {
     id = "sack",
     name = "a burlap sack",
     keywords = {"sack", "bag", "burlap sack", "burlap", "pouch"},
-    description = "A rough burlap sack, cinched at the top with a length of fraying rope. It smells faintly of grain and old earth.",
+    description = "A rough burlap sack, cinched at the top with a length of fraying rope. It smells faintly of grain and old earth. Something small and hard rattles inside.",
 
     size = 1,
     weight = 0.3,
@@ -14,7 +14,7 @@ return {
     capacity = 4,
     max_item_size = 2,
     weight_capacity = 10,
-    contents = {},
+    contents = {"needle"},
     location = nil,
 
     categories = {"fabric", "container"},

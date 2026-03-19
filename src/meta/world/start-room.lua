@@ -64,7 +64,7 @@ return {
                     },
                     message = "The key turns with a satisfying click. The lock releases.",
                 },
-                break = {
+                ["break"] = {
                     becomes_exit = {
                         type = "hole in wall",
                         name = "a splintered doorframe",
@@ -130,7 +130,7 @@ return {
                     },
                     message = "You pull the window shut. The sounds of the night are muffled once more.",
                 },
-                break = {
+                ["break"] = {
                     becomes_exit = {
                         type = "hole in wall",
                         name = "a shattered window frame",

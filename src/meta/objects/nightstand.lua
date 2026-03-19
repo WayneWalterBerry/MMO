@@ -13,7 +13,7 @@ return {
 
     surfaces = {
         top = { capacity = 3, max_item_size = 2, contents = {"candle"} },
-        inside = { capacity = 2, max_item_size = 1, contents = {} },
+        inside = { capacity = 2, max_item_size = 1, contents = {"matchbox"}, accessible = false },
     },
 
     location = nil,

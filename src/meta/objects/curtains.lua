@@ -12,6 +12,7 @@ return {
     categories = {"fabric", "soft", "window covering"},
     room_position = "hang across the window in the far wall",
     portable = false,
+    filters_daylight = true,
 
     location = nil,
 
