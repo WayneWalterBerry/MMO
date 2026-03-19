@@ -28,6 +28,28 @@ Prefer lowercase folder names with dashes instead of spaces (e.g., `my-folder`, 
 
 ---
 
+### 4. Cross-Agent Directive: No Fallback Past Tier 2 (2026-03-19T17:22:26Z)
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Status:** Active  
+**Affects:** Parser architecture, error handling, testability
+
+When the embedding parser encounters a miss (no good match), it must fail visibly rather than falling back to lower-tier heuristics. Misses should surface clearly for analysis and iteration, enabling empirical QA of parser quality.
+
+**Rationale:** Early visibility of parser shortcomings supports rapid iteration and prevents silent failures masking design gaps.
+
+---
+
+### 5. User Directive: Trim Index & Play Test Empirically (2026-03-19T18:10:37Z)
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Status:** Active  
+**Affects:** Index size, browser deployment, parser tuning
+
+The 32.5MB gzipped embedding index is too large for browser asset delivery. Trim it down, then play test empirically. If parser quality drops below acceptable, that means too much was trimmed — iterate from there. Prefer data-driven decisions over theoretical coverage projections.
+
+**Rationale:** Ship lean, test, expand only if needed. Avoid over-engineering for unknown requirements.
+
+---
+
 ### 3. Text Adventure Containment Architecture (2026-03-18)
 **Author:** Frink (Researcher)  
 **Status:** Ready for team review  

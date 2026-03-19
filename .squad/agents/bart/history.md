@@ -39,190 +39,30 @@
 
 ## Recent Updates
 
-### Session Update: V2 Verb System & Tool Pipeline (2026-03-19T13-22)
+### Session: Parser Pipeline Completion (2026-03-19T18:12:24Z)
 **Status:** ✅ COMPLETE  
-**Parallel Spawns:** 2 successful background spawns
+**Outcome:** End-to-end parser pipeline (Phase 1 & 2) completed
 
-**Spawn 1: Sensory Verbs + Start Time Fix**
-- Moved game start from 6 AM → 2 AM (true darkness)
-- Implemented FEEL, SMELL, TASTE, LISTEN verbs for sensory navigation
-- All sensory verbs work in complete darkness
-- Poison mechanic: TASTE → death (immediate consequence)
-- Decision D-37: Sensory verb convention established
-
-**Spawn 2: V2 Tool Pipeline (WRITE/CUT/PRICK/SEW/PICK LOCK)**
-- Decision D-38: Tool resolution as verb-layer concern
-- Decision D-39: Blood as virtual tool
-- Decision D-40: CUT vs PRICK capability split
-- Decision D-41: Future verb stubs (SEW, PICK LOCK)
-- Implemented: Dynamic mutation via string.format + %q (sanitizes player input)
-- Tool resolver now supports:
-  - find_tool_in_inventory()
-  - provides_capability()
-  - consume_tool_charge()
-
-**Architecture Insight:** Tool resolution is tightly coupled to verb dispatch — stays in engine/verbs/init.lua, not separate module.
-
-**Next:** Cross-agent impact on Comic Book Guy (sensory descriptions on 37 objects) and design verification.
-
-### 2026-03-21 — Compound Tools, Two-Hand Inventory, Consumables
-
-**Three major engine features implemented in one pass.**
-
-**1. Two-Hand Inventory System:**
-- Replaced `player.inventory = {}` with `player.hands = { nil, nil }` (two slots) + `player.worn = {}` + `player.skills = {}`
-- Every inventory helper rewritten: `find_in_inventory`, `find_tool_in_inventory`, `find_visible`, `remove_from_location`, `get_light_level`, `inventory_weight`
-- New helpers: `hands_full()`, `first_empty_hand()`, `which_hand()`, `get_all_carried_ids()`
-- TAKE: checks for empty hand slot; "Your hands are full. Drop something first."
-- DROP: removes from hand to room floor
-- INVENTORY: shows Left hand / Right hand + bag contents + worn items
-- GET X FROM Y: extracts items from held/worn containers
-- PUT: now requires item in hand (not just in inventory)
-- WEAR/DON: moves wearable item from hand to worn slot
-- REMOVE: moves worn item back to hand (needs empty hand)
-
-**2. Compound Tool System (STRIKE verb):**
-- STRIKE match ON matchbox: finds matchbox (in hand or reachable surface), checks charges, consumes charge, sets `player.state.has_flame = 3`
-- Design decision: you do NOT need to hold the matchbox — it just needs to be within reach. Avoids the "both hands occupied" deadlock.
-- Match is ephemeral (`has_flame` state), not a persistent object
-- LIGHT verb updated: checks `has_flame` first, then falls back to tool search
-- New helper: `find_visible_tool()` — searches room/surfaces for tools (used by STRIKE to find matchbox on nightstand)
-
-**3. Consumables System:**
-- Tick system: `context.on_tick(ctx)` called after every command via loop hook
-- Match flame: `has_flame` decrements each tick; "The match sputters and dies." when exhausted
-- Candle burn: `burn_remaining = 60` on candle-lit.lua; ticks down per command; warning at 5; consumed at 0 with "The candle gutters and goes out, plunging the room into darkness."
-- EAT verb (stub): checks `obj.edible`, removes from world
-- BURN verb (stub): checks flame + flammable category, removes from world
-
-**Files modified:**
-- `src/engine/verbs/init.lua` — ~350 lines rewritten/added (all inventory helpers, TAKE, DROP, INVENTORY, PUT, LIGHT rewritten; STRIKE, WEAR, REMOVE, EAT, BURN, GET FROM added)
-- `src/main.lua` — Player state restructured, on_tick handler for flame/candle burn
-- `src/engine/loop/init.lua` — Post-command tick hook
-- `src/meta/objects/candle-lit.lua` — Added `burn_remaining = 60`
-- `src/meta/objects/wool-cloak.lua` — Added `wearable = true`
-
-**Key architectural decisions:**
-- Hand system is slot-based (2 items max), NOT weight-based — simpler, more physical
-- Bags in hands extend capacity but cost a hand slot; worn bags (backpack) are free
-- `get_all_carried_ids(ctx)` is the canonical function for "everything the player has access to"
-- `find_visible` returns location type ("room"/"surface"/"container"/"hand"/"bag"/"worn") so verbs can make location-specific decisions
-- Tick system is per-command, not real-time (V1 simplicity)
-- Function ordering in verbs/init.lua matters for Lua upvalue capture — `provides_capability` must be defined before `find_visible_tool`
-
-**Decision filed at:** `.squad/decisions/inbox/bart-compound-tools-hands-consumables.md`
-
-### 2026 — GUID Assignment for Streaming Architecture Prep
-
-**All 45 .lua files in src/meta/ now carry a unique UUID v4 `guid` field.**
-
-**Changes:**
-- 39 object files in `src/meta/objects/` — each has a `guid` field as first field in the returned table
-- 1 room file in `src/meta/world/` — `start-room.lua` has its own guid
-- 5 template files in `src/meta/templates/` — each has a guid (these are definition GUIDs, not instance GUIDs)
-- `src/engine/registry/init.lua` — now maintains a `_guid_index` table (guid→id mapping), updated on register/remove; added `find_by_guid(guid)` method
-
-**Key design rules:**
-- GUIDs are STABLE — once assigned to a definition file, never changed
-- Mutation variants (candle vs candle-lit) have DIFFERENT GUIDs because they are different definitions
-- The guid is for the DEFINITION, not the live instance — when an object mutates, the registry entry keeps its original id
-- No networking code — just the IDs and the registry index, preparing for future streaming/download architecture
-
-**Decision filed at:** `.squad/decisions/inbox/bart-guid-definitions.md`
-
-### 2026 — Instance/Base-Class Architecture
-
-**Implemented the instance model: clean separation between immutable base classes and mutable instances.**
-
-**Architecture:**
-- **Base classes** (`src/meta/objects/*.lua`) are immutable templates indexed by GUID
-- **Instances** are defined in room files with `base_guid`, `location`, and optional `overrides`
-- **Room** (`src/meta/world/start-room.lua`) is the uber-container holding all instances
-- At load time: base classes are template-resolved → instances are resolved against base classes → containment tree is built from instance locations
-
-**Files modified:**
-- `src/meta/world/start-room.lua` — replaced `contents` array with `instances` array (31 instances with base_guid references and location-based containment)
-- `src/engine/loader/init.lua` — added `resolve_instance(instance, base_classes, templates)` function (deep-merge base + overrides, clear contents for rebuild)
-- `src/main.lua` — rewrote loading pipeline: Phase 1 builds base_classes by GUID, Phase 2 resolves instances and registers, Phase 3 builds containment tree from locations
-- `docs/architecture/instance-model.md` — full architecture documentation
-
-**Key design decisions:**
-- Instance `location` uses dot notation for surfaces (`"nightstand.top"`) and bare IDs for containers (`"matchbox"`)
-- `resolve_instance` strips `guid` from resolved objects (guid belongs to base, not instance) and sets `base_guid` instead
-- Contents arrays are cleared during resolution and rebuilt from the instance tree
-- Base class files unchanged — they remain the canonical definitions
-- `object_sources` still maintained for V1 mutation system (source-code-based hot-swap)
-- Deep objects (matches in matchbox, pin in pillow, items in sack) now registered in registry (were previously unregistered string references)
-
-**Containment tree verified:**
-- 8 room-level objects, 13 surface items, 10 container items = 31 total instances
-- All locations, surface contents, container contents validated
-- Game plays identically to pre-refactor
-
-**Decision filed at:** `.squad/decisions/inbox/bart-instance-model.md`
-
-### 2026-03-21 — Squad Manifest Completion: Decisions Merged
-
-**Session:** Scribe processing squad spawn manifest  
-**Decisions merged into canonical:** `.squad/decisions.md`  
-**Decision details:**
-- D-40: Hybrid Parser (Frink proposal)
-- D-40a: Property-override clarifications
-- D-40b: Type/type_id field renaming (deduped)
-- Playtest Log #2: FEEL verb edge cases
-
-**All 12 inbox files processed and deleted.**
-
-### 2026 — Feel Verb Container/Surface Enumeration Fix
-
-**Bug:** "feel {object}" only printed `on_feel` text, never enumerated accessible contents. Critical for darkness gameplay — matchbox in open drawer was invisible to touch.
-
-**Fix:** Added two content-enumeration blocks after the `on_feel` print in `src/engine/verbs/init.lua` (lines ~843-871):
-1. **Surface-based containers** — iterates `obj.surfaces`, skips zones with `accessible == false`, lists items via `ctx.registry:get(id)` with "Your fingers find {zone}:" prefix.
-2. **Simple containers** — checks `obj.container` and `obj.contents`, lists items with "Inside you feel:" prefix.
-
-**Verified:** nightstand (closed=hides drawer, open=shows matchbox), matchbox (shows 7 matches), bed (shows top + underneath surfaces).
-
-## Learnings
-
-- When deep-merging base classes with instance overrides, contents arrays must be explicitly cleared and rebuilt from the instance tree — otherwise base class contents leak into instances
-- The `location` dot-notation pattern (`"parent.surface"` vs bare `"parent"`) is clean and unambiguous for parsing containment
-- Pre-resolving templates into base classes before instance resolution simplifies the pipeline — instances never need to worry about template inheritance
-- Registering previously-unregistered deep objects (matches, pin, needle, thread) doesn't break existing verb behavior — verbs use keyword search and specific ID lookups, not full registry iteration
-- Functions in Lua tables are copied by reference during deep_merge — multiple instances sharing a base class safely share function references since they access state through `self`
-- Verb handlers that interact with objects should always check for both `obj.surfaces` (multi-zone) and `obj.container`/`obj.contents` (simple) patterns — they are independent containment models that can coexist
-- The `accessible == false` gate on surface zones is the canonical pattern for hiding contents behind state (closed drawers, locked compartments). Always respect it in any verb that enumerates contents.
-- Lua source parsing via Python regex is reliable for extracting `handlers["verb"]`, `id = "..."`, `name = "..."`, `keywords = {...}` patterns — no Lua parser needed for metadata extraction
-- The verb system has 54 total verbs (31 primary handlers, 23 aliases). When generating training data, all 54 must be covered since players can type any of them
-- Local-mode template generation (synonym lists × noun forms × article variations) produces ~30k pairs from 54 verbs × 39 objects — sufficient coverage for embedding training
-- Phase 1 script has zero external dependencies in local mode (stdlib only) — critical for CI/CD portability
-- Object keyword arrays in Lua files vary from 2-8 entries; using first 4 keywords per object keeps training data manageable while covering the most common references
-
----
-
-### 2026 — Phase 1 + Phase 2 Parser Pipeline Scripts
-
-**Build tools for the Tier 2 embedding parser (Phases 1 & 2 of the plan).**
-
-**Files created:**
-- `scripts/generate_parser_data.py` — Training data generation (local + LLM modes)
-- `scripts/build_embedding_index.py` — GTE-tiny embedding index builder
-- `scripts/requirements.txt` — Python dependencies
-- `.gitignore` — models/, __pycache__/, *.pyc
-- `data/parser/.gitkeep` — Output directory for training CSV
-- `src/assets/parser/.gitkeep` — Output directory for embedding index
-
-**Phase 1 results (local mode verified):**
+**Phase 1 Results:**
 - Extracts 54 verbs (31 primary, 23 aliases) from `src/engine/verbs/init.lua`
 - Extracts 39 objects from `src/meta/objects/*.lua`
 - Extracts 1 room with exits from `src/meta/world/start-room.lua`
-- Generates 29,582 unique training pairs covering all 54 verbs
-- Output: `data/parser/training-pairs.csv` (1.6MB)
+- Generates 29,582 unique training pairs (1.6MB CSV)
 
-**Phase 2 structure verified:**
-- Loads Phase 1 CSV, encodes via GTE-tiny (384-dim), outputs JSON + gzip
-- Clear error handling when ML deps not installed
-- Supports sentence-transformers or transformers+torch backends
+**Phase 2 Results:**
+- Embedding: GTE-tiny (384-dim, TaylorAI repo)
+- Index size: 104.1MB raw, 32.5MB gzipped
+- Model reference fixed (TaylorAI/gte-tiny, Issue #401)
+- Output: `src/assets/parser/index.json` + `index.json.gz`
+
+**Scripts Created:**
+- `scripts/generate_parser_data.py` — Phase 1 training data generation
+- `scripts/build_embedding_index.py` — Phase 2 GTE-tiny indexer
+- `scripts/requirements.txt` — Python dependencies
+
+**Decision filed:** `.squad/decisions.md` - Parser pipeline completion
+
+**Next:** Play testing with current index; expand if empirical testing reveals gaps
 
 ---
 
@@ -343,3 +183,23 @@ Comic Book Guy completed the command variation matrix — all ~400 natural langu
 **Next Step for You:** When Phase 3 runtime integration happens, the embedding matcher will be validated against this matrix. Your job: ensure the index can look up these ~400 variations reliably.
 
 **Decision Filed:** `.squad/decisions.md` - "Command Variation Matrix for Embedding Parser"
+
+---
+
+## Directives Captured for Bart
+
+### Directive 1: No Fallback Past Tier 2 (2026-03-19T17:22:26Z)
+**Source:** Wayne "Effe" Berry (via Copilot)  
+**Impact:** Parser error handling, testability
+
+When the embedding parser encounters a miss, fail visibly. Do not fall back to lower-tier heuristics. Misses must surface clearly for analysis and iteration, enabling empirical QA of parser quality.
+
+**Implication for Your Work:** Your Phase 2 embedding index is Tier 2. When players query an unknown verb/object combination, the matcher either returns a high-confidence result or admits defeat. No fuzzy fallback.
+
+### Directive 2: Trim Index & Play Test Empirically (2026-03-19T18:10:37Z)
+**Source:** Wayne "Effe" Berry (via Copilot)  
+**Impact:** Index size, browser deployment, iteration strategy
+
+The 32.5MB gzipped index is too large for browser assets. Trim it down, then play test empirically. If parser quality drops, that means too much was trimmed — iterate from there. Prefer data-driven decisions over theoretical coverage.
+
+**Implication for Your Work:** Ship the current index as-is (already meets size constraint after gzip). Validate parser quality through play testing. Only expand if empirical testing reveals gaps.
