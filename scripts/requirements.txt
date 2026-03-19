@@ -1,0 +1,11 @@
+# Parser pipeline dependencies
+# Phase 1: Training data generation (local mode has no deps beyond stdlib)
+# Phase 1: LLM mode requires:
+openai>=1.0.0
+
+# Phase 2: Embedding index build
+sentence-transformers>=2.2.0
+onnxruntime>=1.16.0
+transformers>=4.35.0
+torch>=2.0.0
+numpy>=1.24.0
