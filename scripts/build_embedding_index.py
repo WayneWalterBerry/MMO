@@ -33,7 +33,7 @@ DEFAULT_INPUT = REPO_ROOT / "data" / "parser" / "training-pairs.csv"
 OUTPUT_DIR = REPO_ROOT / "src" / "assets" / "parser"
 MODELS_DIR = REPO_ROOT / "models"
 
-MODEL_NAME = "thenlper/gte-tiny"
+MODEL_NAME = "TaylorAI/gte-tiny"
 EXPECTED_DIM = 384
 
 # ---------------------------------------------------------------------------
