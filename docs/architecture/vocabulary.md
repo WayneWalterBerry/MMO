@@ -1,9 +1,10 @@
 # MMO Text Adventure Engine: Project Vocabulary
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Purpose:** A living glossary of terms from interactive fiction, modern game architecture, and code-as-data languages. Use this when discussing design decisions and implementation.
 
-**Last Updated:** 2026-03-19
+**Last Updated:** 2026-03-19  
+**Refined:** 2026-03-20 (aligned with architecture decisions; added missing terms for light system, time system, mutations, surfaces, ghosts, registry, sandbox loader)
 
 ---
 
@@ -31,7 +32,7 @@ A character entity that can hold inventory and move; represents NPCs and the pla
 An object visible from multiple rooms simultaneously without being physically located in each. Useful for modeling sky, walls, or other omnipresent scenery. Reduces redundancy in our containment tree.
 
 **Container**  
-An object that holds other objects "in" it; has capacity constraints and open/locked states. Core to the containment hierarchy that underpins the entire world model.
+An object that holds other objects "in" it; has capacity constraints and open/locked states. Core to the containment hierarchy that underpins the entire world model. Implemented via surfaces: a container has an "inside" surface. A sophisticated container might have multiple surfaces (e.g., a desk: top, inside, underneath).
 
 **Enterable**  
 An object type the player can enter (e.g., beds, cages). Part of Inform 7's spatial relationship system; relevant to supporting varied object interactions.
@@ -43,7 +44,7 @@ An object permanently part of a room; cannot be moved. Used in Inform 7 to model
 A top-level container representing a location; nodes in the world graph where scenes occur. The foundational unit of spatial organization; rooms connect via exits.
 
 **Supporter**  
-An object that holds other objects "on" it (like a table holds items on its surface). Distinct from container (in/on relationship). Critical for modeling realistic object placement.
+An object that holds other objects "on" it (like a table holds items on its surface). Distinct from container (in/on relationship). Critical for modeling realistic object placement. Implemented via the `Surface` concept: a supporter has a "top" surface. Multi-surface objects (desk with top and inside) have multiple surfaces defined.
 
 **Thing**  
 The base entity type for all game objects in IF engines. In Inform 7, all in-game entities inherit from Thing; establishes common interface.
@@ -100,6 +101,9 @@ Object type or class in Inform 7 (e.g., "A shirt is a kind of clothing"). Classi
 **Object Definition**  
 Creating game entities with properties and behaviors in code. Every game object is formally defined with initial state and methods.
 
+**Template**  
+A base definition pattern used for objects of the same category (small-item, sheet, furniture, container). Templates define the default properties, methods, and behaviors for a class of objects. Instances override template values. Example: all `small-item` templates have `weight`, `description`, `on_take`, `on_drop` hooks; a specific sword instance might override the description and damage. Enables inheritance and code reuse without classical class systems. Per D-3, we use prototype-based inheritance via Lua metatables rather than traditional class hierarchies.
+
 **Object/Entity Model**  
 System treating all in-game entities as objects with properties and location. Universal approach across all major IF systems.
 
@@ -140,7 +144,7 @@ Direct children of an object in a containment tree. Queried frequently; often ca
 Organized format for representing game world information (tree, graph, table, etc.). Choice of data structure affects performance and expressiveness.
 
 **Entity-Component-System (ECS)**  
-Architecture where entities are containers for data-only components; systems apply logic. Modern game engine pattern; separates data from behavior. Scales to thousands of entities.
+Architecture where entities are containers for data-only components; systems apply logic. Modern game engine pattern; separates data from behavior. Scales to thousands of entities. ⚠️ **Note:** Decision 3 recommended hybrid ECS, but team chose containment hierarchy (D-3) and Lua prototype-based inheritance as more natural for IF and code mutation. ECS remains useful reference for component patterns but is not our primary architecture.
 
 **Graph-Based Containment**  
 Uses graph database or semantic network for flexible multi-parent relationships. More flexible than tree; allows items in multiple places simultaneously.
@@ -167,7 +171,7 @@ Reference from object to its container in containment tree. Single pointer per o
 Object system where objects clone prototypes; inheritance via delegation; good for unique per-entity customization. Flexible; enables runtime modification.
 
 **Relational (SQLite)**  
-Database using tables and primary keys; efficient for mobile; ACID guarantees. Perfect for offline-first mobile architecture.
+Database using tables and primary keys; efficient for mobile; ACID guarantees. ⚠️ **Note:** Earlier research (D-5) recommended SQLite for offline-first architecture, but Decision 18 supersedes this: we use cloud storage for persistence, not local SQLite. This term remains relevant as a reference for potential session-local caching.
 
 **Tables (Lua)**  
 Lua's only data structure; serves as both arrays and objects; can hold both data and functions. Elegantly simple; enables code-as-data patterns.
@@ -190,7 +194,7 @@ Immutable record of all state changes; enables replay, undo, and debugging. Cent
 Architecture treating all state changes as immutable events; current state rebuilt by replaying events. Enables rich history, debugging, and undo; requires snapshots for performance.
 
 **Offline-First Architecture**  
-Mobile pattern where local database is primary; cloud is secondary for sync. Essential for resilience; user never blocked by network.
+Mobile pattern where local database is primary; cloud is secondary for sync. ⚠️ **Deprecated in our architecture:** Earlier research recommended offline-first with local SQLite, but Decision 18 (Cloud Persistence) is our chosen approach. Player universe state persists directly to cloud storage, not to a local database first. This term remains as historical reference; may be revisited for session-local caching in future versions.
 
 **RDF/Ontologies**  
 Semantic networks representing relationships as subject-predicate-object triples. Formal knowledge representation; enables reasoning.
@@ -213,7 +217,7 @@ Saving and restoring game state across sessions. Critical for mobile experience;
 Converting game state to a storable format (JSON, YAML, binary). Required for save/load and cloud sync.
 
 **Sync Queue**  
-List of mutations pending cloud synchronization; enables offline-first mobile architecture. Queued locally; synced when network available.
+List of mutations pending cloud synchronization; enables offline-first mobile architecture. ⚠️ **Note:** Our architecture (D-18) is cloud-first, not offline-first. The sync queue concept remains relevant for potential session-local buffering of mutations before cloud commit, but is not a primary architectural component.
 
 **YAML Format**  
 Human-readable data serialization; slightly more compact than JSON. Alternative to JSON for world definitions; less common in production.
@@ -549,7 +553,7 @@ Mapping user input verbs to handler functions; handles synonyms. Normalizes verb
 ### State Management
 
 **Flags/Counters**  
-Boolean or numeric state tracking game progression (e.g., has_visited_library, items_collected). Simple flags; easy to query.
+Boolean or numeric state tracking game progression (e.g., has_visited_library, items_collected). Simple flags; easy to query. ⚠️ **SUPERSEDED:** Per Decision 22 (Code Mutation Over State Flags), our engine does NOT use flags for state. Instead, state IS mutated code. When a mirror breaks, the object definition itself is rewritten into `broken_mirror`, not flagged as `is_broken = true`. See [D-22], [D-14] in `docs/design/architecture-decisions.md`.
 
 **Global Variables**  
 State tracking overall game progression and story flags. Quick to access; can become messy.
@@ -640,8 +644,11 @@ Character controlled by AI, not by player. Populates world; adds interactivity.
 **Procedural Narrative**  
 Narrative generated algorithmically from rules and constraints. Scales narrative; requires careful design.
 
-**Universe Template**  
-The canonical world definition generated by LLM at build time, before any hand-tuning or per-player variation. The template is the starting point for all player universes; it is improved by human authors and then used as the seed for procedural variation at player start. See [D-17] in `docs/design/architecture-decisions.md`.
+**Game Clock**  
+The accelerated time system where 1 real-world hour = 1 in-game day. Time progresses in the player's universe independently, affecting daytime/nighttime cycles. Impacts lighting (rooms need light sources or windows during nighttime), NPC schedules, and time-based events. Enables temporal narrative pacing without real-time sync overhead. (From latest directive)
+
+**Light Source**  
+An object with `casts_light = true` property. Light sources illuminate their current room. Rooms without light sources or windows to daytime are dark (unreadable). NPCs and players need light to see. Affects room descriptions dynamically. Interacts with time system (nighttime requires light; daytime doesn't). (From latest directive)
 
 **Production Rule**
 Rule in production system (forward-chaining); IF-THEN form. Declarative rule format.
@@ -768,6 +775,7 @@ When a ghost player joins another universe as a full participant, their home uni
 |---------|------|---------|
 | 1.0 | 2026-03-18 | Initial vocabulary extracted from three research reports. Organized by category; 200+ terms. |
 | 1.1 | 2026-03-19 | Added 11 terms from architecture decisions session (D-14 through D-21). Added two new sections: Engine & Mutation Architecture, Multiverse & Universe Architecture. |
+| 1.2 | 2026-03-20 | Refined vocabulary against all 24 decisions. Updated terms with decision cross-references; removed speculative language about TypeScript/Kotlin/Swift (engine is Lua only, D-16). Added new terms: Mutation Variant, Room Presence, Template, Surface, Light Source, Game Clock, Ghost, Universe Fork, Registry, Sandbox Loader. Updated State Flags term to emphasize code mutation is authoritative (D-22). Marked ECS as superseded by containment hierarchy. |
 
 ---
 
@@ -813,6 +821,21 @@ Terms specific to this project's self-modifying engine design. See `docs/design/
 **The Company**  
 In-game meta-entity and analytics pipeline that observes how player worlds evolve over time. Enabled by cloud persistence: "The Company" reads universe snapshots to track mutations, divergence from the template, and emergent player behaviors. The Company is both a narrative element (in-world observer) and a technical pipeline (out-of-world analytics). See [D-18] in `docs/design/architecture-decisions.md`.
 
+**Mutation Variant**  
+The pattern of multiple object definition files representing different states of the same logical object. Example: `vanity.lua` (original), `vanity-open.lua` (opened), `vanity-open-mirror-broken.lua` (mirror broken). Each variant is a complete replacement definition, not a modification. Implements the true code rewrite model (D-14). The engine reloads the appropriate variant as the object's state changes. Each variant has its own hooks (`on_look`, `on_take`, etc.) appropriate to that state.
+
+**Room Presence**  
+A field in object definitions (`room_presence`) that specifies how the object's description is composed into the room description dynamically. Instead of hardcoded room text, the room description is built from: room.description + (each object's room_presence) + dynamic exits. Enables elegant object-driven room composition without duplicating descriptions. Example: candle object has `room_presence = "A candle flickers on the shelf."` and is automatically included when describing the room.
+
+**Surface**  
+A labeled containment zone on an object (e.g., "top", "inside", "underneath"). Objects can have multiple surfaces, not just flat contents. Example: table.surfaces = { top = {items}, underneath = {items} }. Enables realistic multi-location modeling (items on top of desk, books inside desk drawer, keys stuck underneath).
+
+**Registry**  
+The live in-memory object store mapping object IDs to object tables in the running Lua VM. Central lookup structure for finding objects by ID. When the engine loads a universe, all object definitions are loaded into the registry. When an object mutates, its entry is replaced with a new definition. The registry is the "living world" representation.
+
+**Sandbox Loader**  
+The Lua execution environment that safely loads and executes object definitions (Lua code) within a restricted context. Uses Lua's sandbox mechanisms (limited environment, no dangerous functions) to prevent malicious meta-code from breaking the engine. Loads universe template definitions and player-mutated instances into the registry. The engine calls `loadstring()` within the sandbox to rewrite objects.
+
 ---
 
 ## Multiverse & Universe Architecture
@@ -820,6 +843,12 @@ In-game meta-entity and analytics pipeline that observes how player worlds evolv
 Terms specific to this project's multiverse and inter-universe interaction model. See `docs/design/architecture-decisions.md` for the full decisions behind these concepts.
 
 **Fog of War (Ghost Context)** → see [Advanced Concepts > Multiplayer Systems](#multiplayer-systems)
+
+**Ghost**  
+A player from another universe who appears in the host's universe as a semi-transparent, non-interactive observer. Ghosts can see and explore but cannot pick up items or modify objects. Ghosts are visible only within the current room (fog of war). Host players can transform a ghost into a full participant via a deliberate action, granting them the ability to interact. See [D-13], [D-20], [D-21] in `docs/design/architecture-decisions.md`.
+
+**Universe Fork**  
+The process of creating a new per-player universe from the base universe template. Each player's instance is a fork: the canonical template (hand-tuned, procedurally varied) becomes the root of that player's universe tree. From that point forward, all mutations are player-specific and affect only their universe. See [D-10], [D-17] in `docs/design/architecture-decisions.md`.
 
 **No-Merge Model** → see [Advanced Concepts > Multiplayer Systems](#multiplayer-systems)
 
