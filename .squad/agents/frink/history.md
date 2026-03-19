@@ -118,3 +118,25 @@ Infinite loops, memory exhaustion, state corruption, universe contamination, pri
 7. **Prototype: 5-7 hours total.** Phase 0 (hello world, 30min) → Phase 1 (one module, 1hr) → Phase 2 (all modules, 1-2hr) → Phase 3 (browser REPL, 2-3hr) → Phase 4 (PWA wrapper, 1hr).
 
 **Recommendation:** Proceed with prototype. High confidence, low risk. Create `main_browser.lua` as parallel entry point — don't modify existing `main.lua`.
+
+### 2026-07-24: Choose Your Own Adventure Book Series Research
+
+**Report:** `resources/research/choose-your-own-adventure/` (14 files)
+
+**Key findings:**
+
+1. **Six branching patterns identified across 184 books.** Time Cave (pure branching), Branch-and-Bottleneck (diamond/hourglass), Parallel Tracks, Hub-and-Spoke, Loop/Cycle, and Hidden/Unreachable Node. Our engine needs to support at least the first four natively.
+
+2. **Packard vs. Montgomery = Logic vs. Chaos.** Packard builds tight cause-and-effect trees with ethical dilemmas; Montgomery builds wild, surreal, genre-shifting adventures. Both philosophies serve our game: Packard for puzzle design, Montgomery for wonder and discovery.
+
+3. **Inside UFO 54-40's unreachable ending is the most applicable single design to our project.** A paradise reachable only by "breaking the rules" — directly translatable to hidden rooms/states discoverable through unconventional commands in our text adventure.
+
+4. **Underground Kingdom (#18) is the closest structural analogue to our game.** Vertical descent, escalating commitment, civilizational encounters, and "staying" as a valid ending. Our darkness-exploration game is essentially this structure.
+
+5. **Resource management branching (Survival at Sea #16) maps to survival mechanics.** Tracking resources (light, energy, items) as a survival mechanic creates sustained tension — every action costs something.
+
+6. **Quick failure cycles drive experimentation.** The best-selling CYOA books (#37) had 28 endings with rapid resolution. Cheap failure + many outcomes = high replay. Our game should make death/failure inexpensive.
+
+7. **State tracking is our advantage over print.** CYOA books couldn't track variables or inventory. Our Lua engine can have reconvergent paths that remember prior choices — the key evolution from CYOA to interactive fiction.
+
+**Recommendation:** Use bottleneck/diamond branching as primary structure, with time-cave branching reserved for critical story moments. Implement hidden/unreachable content discoverable through unconventional play. Track player state to make reconvergent paths feel personalized.
