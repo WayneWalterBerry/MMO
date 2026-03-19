@@ -179,6 +179,142 @@ All follow the same pattern: binary toggle, reversible, no consumption.
 | Messages | Auto-transition alerts ("flame dies") | Action confirmations ("drawer opens") |
 | Puzzle impact | Resource scarcity (time pressure) | Access control (information gating) |
 
+### 2.3 Furniture-as-Container Pattern: Replacing Surface-Zone Model
+
+**Problem Statement:** The current nightstand implementation uses a "surface-zone" abstraction: `surfaces = { top = {...}, inside = {...} }`. This internal structure conflicts with the player's mental model. Players think of the nightstand as a **container** — a thing with stuff *in* it and *on* it. Surface zones are a designer convenience, not a gameplay concept.
+
+**Solution:** Reclassify nightstand, wardrobe, vanity, and similar furniture as **containers with named compartments**, eliminating the surface-zone layer.
+
+#### 2.3.1 The Nightstand as Container
+
+**Model:**
+- The nightstand is a container with two named compartments: `top` and `drawer`
+- `top`: Always accessible (where items rest on the surface)
+- `drawer`: Accessible only when the nightstand is open
+
+**States and Accessibility:**
+
+| State | Top Accessible | Drawer Accessible | Player Experience |
+|-------|----------------|-------------------|-------------------|
+| closed | ✓ Yes | ✗ No | Feel items on top, but drawer is hidden |
+| open | ✓ Yes | ✓ Yes | Both top and drawer contents are reachable |
+
+**FSM Transitions:**
+```
+closed ↔ OPEN/CLOSE ↔ open
+```
+
+**Verb Mapping:**
+- `OPEN nightstand` → `OPEN drawer` → same action, same result (draw opens, drawer compartment becomes accessible)
+- `CLOSE nightstand` → `CLOSE drawer` → same action (drawer closes, contents hidden)
+- `PUT item ON nightstand` → puts in `top` compartment
+- `PUT item IN nightstand` → puts in `drawer` compartment
+- `TAKE item FROM nightstand` → takes from either compartment if accessible
+
+**Why This Works:**
+1. **Mental model alignment:** Player thinks "open the nightstand" naturally. The drawer is part of the nightstand, not a separate surface zone.
+2. **Accessibility gates are clear:** "Can I reach the drawer? Only if it's open." No confusion about `accessible=false` on surfaces.
+3. **Sensory consistency:** FEEL NIGHTSTAND gives tactile feedback about both compartments: "The top is smooth. A drawer handle protrudes."
+4. **Scalability:** Other furniture use the same pattern (wardrobe has compartments for shelves, vanity has mirror-top and drawer, etc.).
+
+#### 2.3.2 How This Replaces Surface-Zone System
+
+**Old Model (surface-zone):**
+```lua
+surfaces = {
+    top = {
+        name = "the surface",
+        on_feel = "Smooth wooden top.",
+        contents = { "matchbox" },
+        accessible = true,
+    },
+    inside = {
+        name = "the interior",
+        on_feel = "Empty wooden drawer.",
+        contents = {},
+        accessible = false,  -- player confusion point
+    },
+}
+```
+
+**New Model (container with compartments):**
+```lua
+compartments = {
+    top = {
+        name = "the top surface",
+        description_feel = "Smooth wooden top.",
+        contents = { "matchbox" },
+        accessible = true,  -- always; inherits from state
+    },
+    drawer = {
+        name = "the drawer",
+        description_feel = "Empty wooden interior.",
+        contents = {},
+        accessible = false,  -- when closed; true when open
+    },
+}
+```
+
+**Key Improvements:**
+1. **Removes mental model friction:** "Inside" is now "drawer" — language matches player intent.
+2. **Accessibility inherited from state:** No separate `accessible` flags; they flow from FSM state (open/closed).
+3. **Simpler verb handling:** Parser sees "OPEN drawer" and "OPEN nightstand" as the same action; engine resolves to state transition.
+4. **Clearer sensory output:** FEEL nightstand reports both compartments in natural language: "Your fingers find the smooth top surface. A drawer handle protrudes."
+
+#### 2.3.3 Applying the Pattern to Other Furniture
+
+**Wardrobe:**
+- Compartments: `interior` (accessible when open), `top` (always accessible for items resting on top)
+- FSM: closed ↔ open
+- Puzzle role: Hides clothing/tools inside until opened
+
+**Vanity:**
+- Compartments: `mirror` (state-dependent visual component, not a compartment), `top` (surface items), `drawer` (when open)
+- FSM: Two independent states converging:
+  - Openness: closed ↔ open
+  - Mirror integrity: intact ↔ broken
+- Puzzle role: Mirror is a tool for seeing in darkness; drawer holds cosmetics or secrets
+
+**Window:**
+- Compartments: `sill` (always accessible), `interior` (outside, accessible when open)
+- FSM: closed ↔ open
+- Puzzle role: Separates inside/outside; fresh air and outside items when open
+
+**Curtains:**
+- Compartments: N/A (not really a container, more of a state gate)
+- FSM: closed ↔ open
+- Puzzle role: Gates light from outside; sensory descriptions change based on state
+
+#### 2.3.4 Why Containers Beat Surface Zones
+
+| Aspect | Surface Zones | Containers |
+|--------|---------------|-----------|
+| Player mental model | Confusing (what is "inside" vs "top"?) | Intuitive (drawer is part of nightstand) |
+| Verb alignment | Parser needs special "surface" routing | Natural verb dispatch (OPEN, PUT, TAKE all work) |
+| Accessibility logic | Custom flags per zone | Inherited from FSM state |
+| Scalability | Breaks with complex furniture (vanity) | Works for any multi-compartment object |
+| Engine simplicity | Requires surface-zone subsystem | Uses standard container system (IF tradition) |
+| Discovery mechanism | FEEL verb must enumerate zones | FEEL verb enumerates compartments (same code) |
+
+**Design Decision:** Drop the `surfaces` abstraction entirely. Replace with `compartments` table that inherits accessibility from FSM state. This aligns the engine's internal model with the player's mental model and reduces special-case code.
+
+#### 2.3.5 Implementation Impact on FSM Objects Inventory
+
+**Reclassified Objects:**
+
+| Object | Old Category | New Category | Reason |
+|--------|--------------|--------------|--------|
+| nightstand | Surface-zone furniture | Container with FSM | Drawer is a compartment, not a zone |
+| wardrobe | Surface-zone furniture | Container with FSM | Interior is a compartment |
+| vanity | Surface-zone + state | Container with FSM | Mirror + drawer are compartments |
+| window | Surface-zone furniture | Container with FSM | Outside is a compartment (not accessible when closed) |
+| curtains | Surface-zone furniture | State-only container | Open/closed gates light; no internal compartments |
+
+**Summary:**
+- **7 FSM objects** (no change in count): 2 consumable (match, candle), 5 container (nightstand, wardrobe, vanity, window, curtains)
+- **Paradigm shift:** Containers are no longer "furniture with special surface zones." They are first-class game objects with named compartments and FSM-driven accessibility.
+- **Engine work:** Replace `surfaces` subsystem with unified `compartments` system. Compartment accessibility is controlled by FSM state, not by custom flags.
+
 ---
 
 ## 3. The FSM Definition Format
