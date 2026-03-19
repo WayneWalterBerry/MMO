@@ -17,7 +17,7 @@ return {
     capacity = 4,
     max_item_size = 2,
     weight_capacity = 10,
-    contents = {"needle"},
+    contents = {"needle", "thread"},
     location = nil,
 
     categories = {"fabric", "container"},

@@ -57,3 +57,35 @@ Darkness is not a wall — it's a different mode of play. Every sense gives diff
 **Key Design Philosophy:** Darkness is not a wall — it's a different mode of play. Every sense gives different information about same object. TASTE is the "learn by dying" sense.
 
 **Impact:** Enables dark-room mechanic across all objects. Players navigate by touch/smell/sound, not sight.
+
+---
+
+### Session Update: Matchbox Rework + Match Objects + Thread (2026-03-20)
+**Status:** ✅ COMPLETE
+
+**Spawn: Matchbox-as-container + individual matches + thread object**
+
+**Changes:**
+- Rewrote `matchbox.lua` as container (`container = true`, `has_striker = true`) with 7 individual match objects in contents
+- Deleted `matchbox-empty.lua` — no longer needed (empty container = empty matchbox)
+- Created `match.lua` — individual match, NOT a fire_source until struck. Mutation: STRIKE match ON matchbox → match-lit
+- Created `match-lit.lua` — lit match: `provides_tool = "fire_source"`, `casts_light = true`, `consumable = true`, `burn_remaining = 30`
+- Created `thread.lua` — spool of cotton thread, `provides_tool = "sewing_material"`, placed in sack with needle
+- Updated `sack.lua` — contents now includes thread alongside needle
+- Updated `001-light-the-room.md` — full rewrite with compound action flow
+- Updated `tool-objects.md` — compound tools, consumables, container-vs-state docs
+- Updated `design-directives.md` — consumable/compound tool patterns, skill matrix
+
+**Key Patterns Established:**
+1. **Container-with-contents** for things holding discrete sub-objects (matchbox, sack) vs **file-per-state** for qualitative changes (candle-lit, mirror-broken)
+2. **Compound tool actions** — STRIKE match ON matchbox (two objects, one verb, one result)
+3. **Consumable fire source** — match-lit burns for ~30 seconds, consumed after LIGHT action
+4. **Compound tool pairs** — needle + thread for sewing (sewing_tool + sewing_material)
+
+## Learnings
+
+- **Containers are simpler and more immersive than charges.** Real matches in a box > abstract counter. Code IS state means the state should be visible objects.
+- **Compound actions create better puzzles.** STRIKE match ON matchbox teaches real-world logic: fire = fuel + friction.
+- **7 matches is generous, and that's correct for the first puzzle.** Teach, don't frustrate.
+- **Co-locate compound tool components.** Thread with needle in sack. Matches in matchbox in drawer next to candle. Discovery should feel natural.
+- **requires_property is a new engine pattern.** Match strike needs `has_striker` on target — different from capability matching or item-ID matching.

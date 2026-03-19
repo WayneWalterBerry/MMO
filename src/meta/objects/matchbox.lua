@@ -3,37 +3,37 @@ return {
 
     id = "matchbox",
     name = "a small matchbox",
-    keywords = {"matchbox", "matches", "match", "match box", "box of matches", "tinderbox", "lucifers"},
-    description = "A battered little cardboard matchbox, its striking strip worn nearly smooth. Through a tear in the side you can see the pale wooden heads of the matches within. It rattles faintly when shaken.",
+    keywords = {"matchbox", "match box", "box of matches", "tinderbox", "lucifers"},
+    description = "A battered little cardboard matchbox of thin cardboard. The sliding tray is closed. One long side bears a rough brown striker strip, worn but functional.",
 
-    on_feel = "A small cardboard box, light and hollow. One side has a rough striker strip that catches your thumb.",
-    on_listen = "Wooden matches rattle inside when you tilt it. A promising sound.",
+    on_feel = "A small cardboard box. One side is rough — a striker strip.",
+    on_smell = "Faintly sulfurous — the promise of fire, dormant.",
+    on_listen = "Something rattles inside — small wooden sticks.",
 
     size = 1,
-    weight = 0.2,
-    categories = {"small", "tool", "fire_source"},
+    weight = 0.3,
+    categories = {"small", "container"},
     portable = true,
 
-    -- Tool convention: this object provides a capability to the verb system.
-    -- Any mutation with requires_tool = "fire_source" can be fulfilled by this object.
-    provides_tool = "fire_source",
-    charges = 3,
-    on_tool_use = {
-        consumes_charge = true,
-        when_depleted = "matchbox-empty",
-        use_message = "You slide the matchbox open and strike a match against the worn strip. It sputters once, twice, then catches with a sharp hiss and a curl of sulphur smoke.",
-        depleted_message = "That was your last match.",
-    },
+    -- The matchbox is a CONTAINER holding individual match objects.
+    -- It also has a striker surface required for the STRIKE compound action.
+    container = true,
+    capacity = 10,
+    max_item_size = 1,
+    weight_capacity = 1,
+    contents = {"match-1", "match-2", "match-3", "match-4", "match-5", "match-6", "match-7"},
+
+    has_striker = true,
 
     location = nil,
 
     on_look = function(self)
-        if self.charges == 1 then
-            return self.description .. "\n\nOnly one match remains. Use it wisely."
-        elseif self.charges > 1 then
-            return self.description .. "\n\nThere are " .. self.charges .. " matches left."
+        if #self.contents == 0 then
+            return self.description .. "\n\nIt is empty. Not a single match remains."
         end
-        return self.description
+        local text = self.description
+        text = text .. "\n\nInside: " .. #self.contents .. " wooden matches."
+        return text
     end,
 
     mutations = {},

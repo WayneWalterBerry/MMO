@@ -1,6 +1,6 @@
 # Design Directives
 
-**Last updated:** 2026-03-20  
+**Last updated:** 2026-03-21  
 **Audience:** Game Designers (Comic Book Guy et al.)  
 **Purpose:** Consolidated reference for all game design directives when building objects, rooms, and mechanics.
 
@@ -66,20 +66,39 @@ The engine resolves tool requirements by searching the player's inventory for an
 
 #### Consumable Tools
 
-Tools can have limited charges via `charges` property and `on_tool_use` block:
+Tools can be consumable — destroyed after a single use or after a timed duration:
 
 ```lua
+-- match-lit.lua (lit match, provides fire_source temporarily)
 provides_tool = "fire_source",
-charges = 3,
-on_tool_use = {
-    consumes_charge = true,
-    when_depleted = "matchbox-empty",
-    use_message = "You strike a match...",
-    depleted_message = "That was your last match.",
+consumable = true,
+burn_remaining = 30,
+on_consumed = {
+    message = "The match flame reaches your fingers...",
+    becomes = nil,
 },
 ```
 
-When a tool is depleted, it mutates to the `when_depleted` variant (full code rewrite per D-14).
+When a consumable tool is used (e.g., LIGHT candle WITH match-lit), the tool is destroyed after the action. Timed consumables (like burning matches) also auto-consume when `burn_remaining` reaches 0.
+
+#### Compound Tool Actions
+
+Some actions require two objects working together. Neither alone produces the result:
+
+```lua
+-- match.lua (unlit match — NOT a fire_source)
+mutations = {
+    strike = {
+        becomes = "match-lit",
+        requires = "matchbox",
+        requires_property = "has_striker",
+        message = "You drag the match head across the striker strip...",
+        fail_message = "You need a rough surface to strike it on.",
+    },
+},
+```
+
+STRIKE match ON matchbox → match becomes match-lit (now provides fire_source). The matchbox is a container with `has_striker = true`; it holds the matches and provides the striking surface.
 
 #### Tool Matching vs. Item-ID Matching
 
@@ -277,11 +296,226 @@ Use this matrix when designing new tools and deciding whether a skill should unl
 | (none) | Knife | CUT | Tool exists | Required item |
 | (none) | Pin | PRICK | Tool exists | Required item |
 | (none) | Pen/Pencil | WRITE | Tool exists | Required item |
-| (none) | Match/Matchbox | LIGHT | Tool exists, fire_source capability | Required item |
+| (none) | Match + Matchbox | STRIKE / LIGHT | Match + matchbox (compound), then match-lit = fire_source | Required item |
+| (none) | Thread + Needle | SEW | Both tools exist (compound: sewing_tool + sewing_material) | Required items |
 | **Lockpicking** | Pin | PICK LOCK | Tool exists + skill learned | Brass key (specific ID) |
 | **Crafting** | Knife + Wood | CARVE | Tools exist + skill learned | (N/A for V1) |
 
 **Design Note:** Blanks in this table are opportunities for new skills. Each skill should have at least one tool+verb combination that no other skill provides.
+
+---
+
+## Compound Tools
+
+### Compound Tool Interactions
+
+**Core Mechanic:** Some actions require TWO tools used together, not just one.
+
+| Action | Tool A | Tool B | Innate? | Puzzle | Source |
+|--------|--------|--------|---------|--------|--------|
+| **Strike match** | Match | Matchbox (striker) | Yes | Find both objects | Wayne (2026-03-19T125500Z) |
+| **Sew cloth** | Needle | Thread | Learned | Find both + learn skill | Wayne (2026-03-19T125500Z) |
+
+**Design Pattern:** The complexity isn't in having a skill — striking matches is innate. The complexity is HAVING BOTH REQUIRED OBJECTS. This creates puzzle depth: find the match AND the matchbox. Find the needle AND the thread.
+
+**Engine Implication:** Tool convention needs `requires_tools` (plural) field — array of required capabilities.
+
+---
+
+## Two-Hand Inventory
+
+### Hand Slots & Container Mechanics
+
+**Core Mechanic:** Players have TWO HANDS as their base inventory slots. Items can be held in hands, worn (backpack), or placed in bags.
+
+| Slot Type | Capacity | Effect on Tool Usage | Example |
+|-----------|----------|----------------------|---------|
+| **Hand slots** | 2 items max | Both hands needed for compound tools (e.g., match + matchbox) | Holding sword + holding bag = no free hands |
+| **Bag (held in 1 hand)** | Expanded capacity | Bag contents don't count against hand slots, but bag takes 1 hand | Carrying bag + sword = no free hands for striking match |
+| **Backpack (worn)** | Expanded capacity | Frees both hands | Wearing backpack = hands always free for tool use |
+
+**Design Insight:** Every item held is a choice. Tool use requires hand management.
+
+**Example Puzzle Chain:**
+1. Dark room: holding bed sheet
+2. DROP sheet → open drawer → take match → take matchbox
+3. STRIKE match ON matchbox → match-lit (fire_source)
+4. LIGHT candle WITH match-lit
+5. Pick up sheet
+
+**Why:** User request — transforms inventory from "magic pocket" to physical constraint. Compound tools + hand management = strategic depth.
+
+**Source:** Wayne (2026-03-19T125825Z)
+
+---
+
+## Consumables
+
+### Consumption & Destruction
+
+**Core Mechanic:** Objects can be CONSUMED — when consumed, they are REMOVED from the universe entirely. Consumption is destruction, not mutation.
+
+| Object | Consume Verb | Trigger | Result | Strategy |
+|--------|--------------|---------|--------|----------|
+| **Candle (lit)** | (automatic, over time) | Burn timer | Burned down, removed, room goes dark again | Resource: candles are finite |
+| **Matches** | (automatic, on use) | Struck and burned | Match consumed after one use | 7 matches = 7 chances to light |
+| **Food** | EAT | Player eats | Removed, survival mechanic | Resource: food is finite |
+| **Paper** | BURN | Fire consumes | Removed, destroyed | Consequence: written notes can be lost |
+
+**Engine Implication:**
+- Registry needs `destroy(id)` or `remove(id)` method for complete removal
+- Candles need `burn_timer` — after N turns of being lit, candle is consumed (dark again!)
+- BURN verb needed for burning objects
+- `on_consume` or `on_destroy` hooks for cleanup
+
+**Gameplay Implication:** Resource scarcity creates urgency. Objects are precious because they can be permanently lost.
+
+**Why:** User request — adds resource management and scarcity to the game.
+
+**Source:** Wayne (2026-03-19T131234Z)
+
+---
+
+## Sensory System
+
+### Multi-Sensory Object Descriptions & Dark-Room Gameplay
+
+**Core Mechanic:** Every object has multiple sensory descriptions. In darkness, players navigate using FEEL, SMELL, LISTEN, and TASTE instead of sight.
+
+#### Sensory Fields & Verbs
+
+| Sense | Field | Verb | Light Required? | Safety | Information |
+|-------|-------|------|----------------|--------|-------------|
+| **Sight** | `description` / `on_look` | LOOK | YES | Safe | Visual: shape, color, texture |
+| **Touch** | `on_feel` | FEEL / TOUCH | No | Medium | Texture, temperature, shape, weight |
+| **Smell** | `on_smell` | SMELL / SNIFF | No | Safe | Chemical identity, materials, age |
+| **Sound** | `on_listen` | LISTEN / HEAR | No | Safe | Mechanical state, contents, sounds |
+| **Taste** | `on_taste` | TASTE / LICK | No | **DANGEROUS** | Chemical composition — consequences |
+
+#### Design Philosophy
+
+- Darkness is not a wall — it's a different mode of play
+- FEEL is the primary dark-navigation sense; every object MUST have `on_feel`
+- SMELL is the safe identification sense (distinctive scents)
+- LISTEN is for active/mechanical objects that make sounds
+- TASTE is the "learn by dying" sense — consequences teach caution
+- **Poison bottle:** SMELL warns you; TASTE kills you
+
+#### Sensory Effects
+
+Objects can define `on_taste_effect = "poison"` to trigger engine-level state changes:
+- `on_feel_effect` — e.g., "cut" from glass shard
+- `on_taste_effect` — e.g., "poison" from poison bottle
+
+#### Game Start Consequence
+
+Players wake at **2 AM** (true darkness). Dawn at 6 AM arrives after ~10 real minutes. This forces the candle puzzle — players cannot simply LOOK; they must navigate the dark room using non-visual senses.
+
+**Why:** User request — transforms dark room from frustration into rich sensory gameplay.
+
+**Source:** Wayne (2026-03-19T130000Z); Bart (2026-03-21T000000Z); Comic Book Guy (2026-03-20T000000Z)
+
+---
+
+## Matchbox as Container
+
+### Container vs. State Machine Distinction
+
+**Core Mechanic:** The matchbox is a CONTAINER with contents, NOT a state machine with file variants.
+
+| Approach | File Structure | State | Example |
+|----------|----------------|-------|---------|
+| **Container** | Single `matchbox.lua` | Empty contents = empty matchbox | 7 matches inside → take match → 6 matches inside |
+| **State Machine** | `matchbox.lua` + `matchbox-empty.lua` | State flag tracks variant | ❌ DEPRECATED — no longer used |
+
+**Design Rule:**
+- **File-per-state:** Objects that CHANGE WHAT THEY ARE (candle → candle-lit, nightstand → nightstand-open)
+- **Single file + contents:** Containers that just have stuff taken out of them (matchbox, sack, bag)
+
+**Example - Matchbox Structure:**
+```lua
+return {
+  id        = "matchbox",
+  name      = "a small matchbox",
+  container = true,
+  has_striker = true,
+  contents  = { "match-1", "match-2", "match-3", "match-4", "match-5", "match-6", "match-7" },
+  -- ... rest of definition
+}
+```
+
+When player takes a match, contents array shrinks. No new file needed.
+
+**Why:** User request — simplifies container objects. Aligns with containment model. The sack doesn't have a sack-empty.lua, so neither should the matchbox.
+
+**Source:** Wayne (2026-03-19T131234Z)
+
+---
+
+## Prime Directive
+
+### Guiding Principle: Honor Design, Pursue Playtesting
+
+**Core Principle:** The main goal is ALWAYS to honor Effe's directives and designs AND work towards play testing. This is the team's prime directive.
+
+**Decision Framework:**
+When in doubt, ask:
+1. **Does this honor Wayne's design?**
+2. **Does this get us closer to play testing?**
+
+If both answers are YES → do it.
+
+**Why:** This is the governing principle above all others. Every decision, every implementation, every architecture choice serves two masters: (1) Wayne's vision and (2) reaching a playable state.
+
+**Source:** Wayne (2026-03-19T130200Z)
+
+---
+
+## Puzzle Documentation
+
+### Puzzle Architecture & Design
+
+**Core Directive:** Keep an authoritative folder of puzzle documentation at `docs/puzzles/` where game designers document the logic, state, and learning outcomes of each puzzle in the game.
+
+**Contents:** Each puzzle gets a design document covering:
+- Puzzle name and location
+- Prerequisite knowledge / skills
+- Solution path(s)
+- Objects involved
+- Sensory / timing constraints
+- Teach-value (what the player learns)
+- Consequence if failed
+
+**Why:** Makes puzzle design collaborative and auditable. New designers can onboard by reading puzzle docs.
+
+**Source:** Wayne (2026-03-19T130200Z)
+
+---
+
+## Verbs as Meta-Code
+
+### Architecture Question: Are Verbs World Data?
+
+**Status:** OPEN QUESTION — Wayne exploring, not directing yet.
+
+**Question:** Should verbs be defined in `src/meta/verbs/` (as Lua data files) rather than hardcoded in `src/engine/verbs/init.lua`?
+
+**Rationale:**
+- If verbs are part of the world definition, each verb = a `.lua` file returning a table with handler, aliases, prerequisites
+- Engine just loads and dispatches verbs; doesn't know their internals
+- Verbs become mutable — a cursed room could change how LOOK works
+- New verbs = new files; no engine changes
+- Aligns with "code IS the world" philosophy
+
+**Implication:** If objects are meta-code, why aren't verbs? Could enable:
+- Room-specific verbs (this room has a TASTE verb that others don't)
+- Cursed interactions (LOOK returns nonsense)
+- Per-universe verb sets (magic realm has different verbs than mundane realm)
+- Dynamic verb creation (new tools unlock new verbs)
+
+**Needs:** Bart (Architect) analysis and decision.
+
+**Source:** Wayne (2026-03-19T130100Z)
 
 ---
 

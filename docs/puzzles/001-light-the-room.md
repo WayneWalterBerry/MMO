@@ -2,7 +2,7 @@
 
 ## Overview
 
-The player wakes in complete darkness in a bedroom around 2–3 AM. They cannot see anything and must find a light source. This is the first puzzle and teaches the core tool system: finding objects, using containers, and chaining tools together to accomplish a goal.
+The player wakes in complete darkness in a bedroom around 2–3 AM. They cannot see anything and must find a light source. This is the first puzzle and teaches the core tool system: finding objects, using containers, and chaining compound tool actions together to accomplish a goal.
 
 ## Room
 
@@ -11,10 +11,9 @@ Bedroom (starting location)
 ## Required Objects
 
 - Nightstand (furniture with drawer)
-- Matchbox (container with matches inside)
-- Individual matches (consumable tool, provides `fire_source`)
+- Matchbox (container with striker surface, holds individual matches)
+- Individual matches (7 inside matchbox; each is a separate object)
 - Candle (target object that can be lit)
-- Matchbox striker surface (built into matchbox)
 
 ## Solution
 
@@ -25,10 +24,10 @@ Bedroom (starting location)
 3. **OPEN nightstand** — The drawer opens (requiring an OPEN verb without light).
 4. **FEEL inside drawer** — By touch, the player finds the matchbox.
 5. **TAKE matchbox** — Player takes the matchbox into inventory.
-6. **OPEN matchbox** — Player opens the matchbox, revealing individual matches inside (matchbox has 3 matches).
-7. **TAKE match** — Player takes one match from the matchbox.
-8. **STRIKE match ON matchbox** — This is a compound tool action. The player uses the match against the matchbox striker surface. The engine consumes one match charge from the matchbox (it now has 2 matches left) and creates a lit-match object. The match cannot exist in inventory as a separate object — it's consumed and replaced with a visual representation of "a lit match" in the player's hand.
-9. **LIGHT candle WITH match** — The player applies the lit match to the candle. The candle's code mutates: `candle.lua` → `candle-lit.lua`. The candle now has `casts_light = true`, illuminating the room.
+6. **OPEN matchbox** — Player opens the matchbox, revealing 7 individual matches inside. The matchbox is a container — its contents are listed.
+7. **TAKE match** — Player takes one match from the matchbox into inventory.
+8. **STRIKE match ON matchbox** — This is a **compound tool action**. The match requires a striker surface (the matchbox's `has_striker` property) to ignite. The match mutates: `match` → `match-lit`. The lit match now has `provides_tool = "fire_source"` and `casts_light = true` (small radius). A tiny flame appears. The match is burning — the player has ~30 game seconds before it burns out.
+9. **LIGHT candle WITH match** — The player applies the lit match (fire_source) to the candle. The candle's code mutates: `candle.lua` → `candle-lit.lua`. The candle now has `casts_light = true`, illuminating the room. The match is consumed in the process.
 10. **Room illuminated** — The player can now see. All objects in the room become visible. The player learns they're in a bedroom with furniture, and can now read labels, explore visually, etc.
 
 ## Alternative Solutions
@@ -55,23 +54,29 @@ The candle sits on TOP of the nightstand. A player could:
 ## What the Player Learns
 
 1. **FEEL works in darkness** — Sensory verbs function without light. The player discovers that darkness is not a complete blocker, just a limitation.
-2. **Tools are objects** — The matchbox is not an abstract inventory system; it's a physical object that must be found, picked up, and opened.
-3. **Containers have contents** — The matchbox is a container. Opening it reveals contents inside. Containment is a physical reality in the game world.
-4. **Tools enable verbs** — Without a match (fire_source capability), the player cannot light the candle. The verb is blocked until the tool exists.
-5. **Compound tools exist** — Striking a match requires both the match and the matchbox striker. This teaches that some actions need two specific objects.
-6. **Consumable resources** — Matches are limited (3 available). Using a match consumes it. Resource management is important.
+2. **Tools are objects** — The matchbox is not an abstract inventory system; it's a physical container that must be found, opened, and has things inside.
+3. **Containers have contents** — The matchbox is a container. Opening it reveals individual matches. You take a match OUT of the matchbox. Containment is a physical reality.
+4. **Compound tool actions** — Striking a match requires BOTH the match AND the matchbox (its striker surface). This teaches that some actions need two specific objects working together. Neither object alone can produce fire.
+5. **Consumable resources** — Matches are limited (7 available). Using a match consumes it. Lit matches burn out after ~30 seconds if not used. Resource management is important.
+6. **Tool capability matching** — The lit match provides `fire_source`. The candle requires `fire_source`. Any fire source can light any candle — capability matching, not item-ID matching.
 7. **Objects cast light** — When an object has `casts_light = true`, it illuminates the surrounding room. Lighting objects is a core mechanic.
 8. **State mutations are visible** — When the candle lights, it changes fundamentally. It's not a flag flip — the candle becomes a different object visually and functionally.
 
 ## Failure Consequences
 
 ### Running Out of Matches
-If the player wastes all 3 matches without lighting the candle:
+If the player wastes all 7 matches without lighting the candle:
 
-- The matchbox mutates to `matchbox-empty.lua` (an empty, useless container).
+- The matchbox is simply empty (contents = {}). No special mutation needed — an empty container is just an empty container.
 - The player is left in darkness with no remaining fire source.
 - **Soft failure:** The player can wait for daytime (6 AM) and use natural light. This is inconvenient but not a softlock.
 - **Learning moment:** Resource management matters. Wasting tools has real costs.
+
+### Match Burns Out
+If the player strikes a match but doesn't use it within ~30 game seconds:
+
+- The match burns down to the player's fingers and is consumed.
+- The player must strike another match. This teaches urgency — lit matches are temporary.
 
 ### Fumbling in Darkness (Flavor)
 Attempting actions in darkness without light might display messages like:
@@ -98,7 +103,9 @@ If the player tries `LIGHT candle` without possessing a fire source:
 
 ### Why These Objects?
 
-- **Matchbox with 3 matches:** Enough for multiple attempts plus margin for error. Three is the classic puzzle number. More than one allows for retries; not so many that matches feel infinite.
+- **Matchbox as container with 7 matches:** The matchbox is a proper container (like the sack) holding individual match objects. Each match is a real thing you take out, hold, and strike. 7 matches provides generous margin for experimentation — this is the first puzzle and we want players to learn, not suffer. The physical reality of taking a match out of a box is more immersive than an abstract "charges" counter.
+- **Compound action (STRIKE match ON matchbox):** This is the first compound tool action. The match alone can't ignite. The matchbox alone can't ignite. You need both — the match head AND the striker surface. This teaches players that some tools require a second object to activate.
+- **Match-lit as temporary fire_source:** The lit match is a time-limited resource. It provides `fire_source` and `casts_light`, but burns out in ~30 game seconds. This creates urgency and teaches that some tools are temporary.
 - **Nightstand drawer:** Natural place to look for matches. The closed drawer teaches the containment system. The nightstand location is logical without being obscure.
 - **Candle on nightstand top:** Visible (or discoverable by FEEL) once the drawer is found. Adjacency suggests the matches might be nearby.
 
@@ -122,5 +129,8 @@ This makes the "wait for daylight" path feel viable but slower than finding the 
 
 - **Light System:** Defined in `design-directives.md` (Light & Time System section)
 - **Tool Convention:** Defined in `design-directives.md` (Tools System section)
-- **Consumable Tools:** Defined in `design-directives.md` (Consumable Tools subsection)
-- **Object: Matchbox:** Full spec in `tool-objects.md`
+- **Compound Tool Pattern:** Defined in `tool-objects.md` (Compound Tool Actions section)
+- **Consumable Pattern:** Defined in `tool-objects.md` (Consumable Tools section)
+- **Object: Matchbox:** Container with striker, defined in `src/meta/objects/matchbox.lua`
+- **Object: Match:** Individual match, defined in `src/meta/objects/match.lua`
+- **Object: Match-lit:** Lit match variant, defined in `src/meta/objects/match-lit.lua`
