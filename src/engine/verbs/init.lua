@@ -114,8 +114,9 @@ local function find_visible(ctx, keyword)
                 end
             end
         end
-        -- Also search non-surface container contents
-        if obj and not obj.surfaces and obj.container and obj.contents then
+        -- Also search non-surface container contents (if accessible)
+        if obj and not obj.surfaces and obj.container and obj.contents
+            and obj.accessible ~= false then
             for _, item_id in ipairs(obj.contents) do
                 local item = reg:get(item_id)
                 if item and matches_keyword(item, kw) then

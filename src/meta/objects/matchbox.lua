@@ -19,6 +19,7 @@ return {
     -- The matchbox is a CONTAINER holding individual match objects.
     -- It also has a striker surface required for the STRIKE compound action.
     container = true,
+    accessible = false,
     capacity = 10,
     max_item_size = 1,
     weight_capacity = 1,
@@ -37,5 +38,10 @@ return {
         return text
     end,
 
-    mutations = {},
+    mutations = {
+        open = {
+            becomes = "matchbox-open",
+            message = "You slide the matchbox tray open with your thumb. Inside, a clutch of wooden matches rests snugly in a row.",
+        },
+    },
 }

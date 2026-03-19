@@ -22,6 +22,63 @@ local STOP_WORDS = {
 }
 
 ---------------------------------------------------------------------------
+-- Levenshtein edit distance for typo correction
+---------------------------------------------------------------------------
+local function levenshtein(a, b)
+  local la, lb = #a, #b
+  if la == 0 then return lb end
+  if lb == 0 then return la end
+  local matrix = {}
+  for i = 0, la do
+    matrix[i] = { [0] = i }
+  end
+  for j = 0, lb do
+    matrix[0][j] = j
+  end
+  for i = 1, la do
+    for j = 1, lb do
+      local cost = (a:sub(i, i) == b:sub(j, j)) and 0 or 1
+      matrix[i][j] = math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      )
+    end
+  end
+  return matrix[la][lb]
+end
+
+---------------------------------------------------------------------------
+-- Typo correction: fix misspelled verbs using known verb set
+---------------------------------------------------------------------------
+local function correct_typos(tokens, known_verbs)
+  if not known_verbs or not next(known_verbs) then return tokens end
+  local corrected = {}
+  for _, token in ipairs(tokens) do
+    if known_verbs[token] then
+      corrected[#corrected + 1] = token
+    else
+      local best_verb, best_dist = nil, 3
+      for verb in pairs(known_verbs) do
+        if math.abs(#token - #verb) <= 2 then
+          local dist = levenshtein(token, verb)
+          if dist < best_dist then
+            best_dist = dist
+            best_verb = verb
+          end
+        end
+      end
+      if best_verb then
+        corrected[#corrected + 1] = best_verb
+      else
+        corrected[#corrected + 1] = token
+      end
+    end
+  end
+  return corrected
+end
+
+---------------------------------------------------------------------------
 -- Tokenizer: lowercase, strip punctuation, remove stop words
 ---------------------------------------------------------------------------
 local function tokenize(text)
@@ -124,6 +181,14 @@ function matcher.new(index_path)
     }
   end
 
+  -- Build known-verbs set from the index for typo correction
+  self.known_verbs = {}
+  for _, entry in ipairs(self.phrases) do
+    if entry.verb then
+      self.known_verbs[entry.verb] = true
+    end
+  end
+
   self.loaded = true
   io.stderr:write("[Parser] Tier 2 loaded: " .. #self.phrases .. " phrases from index\n")
   return self
@@ -143,6 +208,9 @@ function matcher:match(input_text)
   if #input_tokens == 0 then
     return nil, nil, 0, nil
   end
+
+  -- Apply typo correction against known verbs before matching
+  input_tokens = correct_typos(input_tokens, self.known_verbs)
 
   local best_score = -1
   local best_phrase = nil

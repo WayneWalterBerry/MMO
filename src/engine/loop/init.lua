@@ -104,6 +104,12 @@ local function preprocess_natural_language(input)
     return "inventory", ""
   end
 
+  -- Question patterns → examine (contextual container queries)
+  if lower:match("^what'?s%s+inside")
+    or lower:match("^what%s+is%s+inside") then
+    return "look", ""
+  end
+
   -- Question patterns → help
   if lower:match("^what%s+can%s+i%s+do")
     or lower:match("^how%s+do%s+i") then
