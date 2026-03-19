@@ -246,3 +246,76 @@ The 32.5MB gzipped index is too large for browser assets. Trim it down, then pla
 
 **NLP preprocessing expansion:**
 - "what's inside" / "what is inside" → look. Minimal fix for contextual container queries. Full pronoun/context resolution deferred.
+
+### Play Test Bug Fixes — Batch 2 (2026-03-22)
+
+**NLP noun extraction for container queries:**
+- "what's in {noun}" / "what is in {noun}" now extracts the noun and maps to `look in {noun}`, routing through the surface inspection handler. Previously these fell through to Tier 2 and missed.
+- Trailing `?` stripped from all input before parsing. Simple gsub at the top of the game loop.
+
+**Compound command splitting:**
+- Input split on ` and ` (with surrounding spaces) before dispatch. Each sub-command runs through preprocess → parse → Tier 1 → Tier 2 independently.
+- Splitting uses greedy left-to-right matching: "get a match and light it" → ["get a match", "light it"]. Safe for game commands; no items use " and " in their names.
+- find_visible wrapped with pronoun resolution ("it", "one", "that") + last-object tracking. Every successful find_visible call stores the found object on context; pronouns resolve to it. Zero changes to verb handlers needed.
+
+**Nightstand inside surface accessibility:**
+- nightstand-open.lua's inside surface now has explicit `accessible = true`. Code analysis showed `nil ~= false` evaluates true in Lua (so it should have worked), but explicit is safer and clearer.
+
+**Unicode em dash cleanup:**
+- Replaced all U+2014 em dashes with `--` across 36 Lua files. Windows terminal renders UTF-8 em dashes as "ΓÇö" unless codepage is set. Double-dash is safe ASCII and reads fine in prose.
+- Scope: object files, engine modules, world files, main.lua. Comments included for consistency.
+
+---
+
+## Cross-Agent Update: Compound Command & Pronoun Resolution — Batch 2 Complete (2026-03-22T14:29:02Z)
+
+**From:** Bart (Architect) — Completed  
+**Status:** Implemented & Committed  
+**Impact:** Parser pipeline, find_visible, verb handlers (indirect)
+
+**What Happened:** Play test batch 2 is now complete with 5 critical fixes implemented:
+
+1. **Compound command splitting** — " and " splitting at REPL level (not parser). Each sub-command flows independently through preprocess → parse → Tier 1 → Tier 2.
+2. **Pronoun resolution** — find_visible wrapper tracks last-found object; "it", "one", "that" resolve automatically. Zero changes to verb handlers.
+3. **Em dash normalization** — Unicode em dashes → ASCII double-dash across 36 files.
+4. **Container queries** — "what's in {noun}" extracts noun, routes to surface inspection.
+5. **Trailing punctuation** — Trailing `?` stripped before parsing.
+
+**Key Learning for Future Pronouns:** Single-depth pronoun tracking (last object only) is sufficient for sequential command patterns. Stack-based history deferred.
+
+**Integration Point:** Container model handoff now ready. Your surface definitions need to match the pronoun-resolution pattern — the system assumes last-found object is the most recent reference.
+
+---
+
+## Cross-Agent Update: FSM Design — Container Model Integration (2026-03-22T14:29:02Z)
+
+**From:** Comic Book Guy (Game Designer) — Completed  
+**Status:** Documentation Added (fsm-object-lifecycle.md Section 2.3)  
+**Impact:** Object design, container pattern specification
+
+**What Happened:** FSM design updated with container-as-furniture pattern. Section 2.3 now documents:
+
+- **Nightstand** — top surface (visible) + drawer (container)
+- **Wardrobe** — hanging rod + shelves (stacked containers)
+- **Vanity** — drawer + mirror surface
+- **Window** — interior compartments (blinds storage, frame interior)
+
+**Container Pattern Unified:** All complex furniture now follows: exterior surfaces (visible/feel-able) + interior compartments (open/close states, accessible gating).
+
+**Implication for You:** Your compound command + pronoun resolution work aligns perfectly with this pattern. When players open a container and say "get it", the last-found object is the drawer/compartment, which makes pronoun resolution feel natural.
+
+**Next for You:** When implementing container mutation (object state transitions), confirm that compartment accessibility gating matches the accessible-flag pattern in batch 2 fixes.
+
+---
+
+## Cross-Agent Update: CYOA Research Filed as Decision (2026-03-22T14:29:02Z)
+
+**From:** Frink (Researcher)  
+**Status:** Proposed (filed to decisions.md)  
+**Impact:** Narrative engine architecture, content scope
+
+**What's New:** CYOA branching research (13-book analysis) is now in the decision log. Key principle: bottleneck/diamond branching with state-tracking personalization.
+
+**Why It Matters for You:** The engine's narrative scaffolding will eventually integrate with your verb system. If future work includes state-aware content (NPC reactions based on history), your verb handlers may need to query state. Not immediate, but architectural awareness.
+
+**Decision:** Lua engine can implement hidden nodes (UFO 54-40 pattern) — unconventional verb usage unlocking secret content. Your tool resolution + capability-based dispatch already supports this design pattern.

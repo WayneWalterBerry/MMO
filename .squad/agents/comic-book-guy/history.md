@@ -295,3 +295,41 @@ Bart completed the build pipeline for the embedding parser (Phases 1 & 2), inclu
 **Next Step:** Consider updating the command-variation-matrix.md section titles to clarify which are primary and which are aliases, or expand sections to include alias variations explicitly.
 
 **Decision Filed:** `.squad/decisions.md` - "Parser Pipeline Architecture (Phase 1 + 2)"
+
+---
+
+## Cross-Agent Update: FSM Container Model Integration Ready (2026-03-22T14:29:02Z)
+
+**From:** Bart (Architect) — Completed Batch 2 Fixes  
+**Status:** Compound commands, pronoun resolution, em dash normalization  
+**Impact:** Parser usability, natural language support, cross-platform compatibility
+
+**What Happened:** Batch 2 play test fixes are complete and committed. Key implications for your design work:
+
+1. **Compound commands now work** — "get a match and light it" splits into two independent commands that both resolve naturally. Your container design (nightstand + drawer) integrates perfectly here.
+
+2. **Pronouns resolve to last-found object** — When players open a drawer and say "take it", the pronoun resolver finds the drawer (last-found container) and resolves "it" to the most recent examined object. Zero designer work required; this is automatic.
+
+3. **Em dashes normalized** — All player-visible text is now ASCII-safe. Your sensory descriptions should avoid Unicode em dashes; double-dash `--` is safe and reads naturally.
+
+**Design Integration Checkpoint:** Your multi-sensory descriptions + Bart's container queries + pronoun resolution create a cohesive dark-mode experience. Example flow:
+- Player: "feel around" → gets room summary (your sensory descriptions)
+- Player: "open drawer" → Bart's container model + mutation system
+- Player: "what's in it?" → Bart's container query NLP
+- Player: "take it" → Pronoun resolution finds the drawer; system asks "Take what from the drawer?"
+
+**Next for You:** Verify that your sensory descriptions are sufficient for the "feel" path through containers. Example: does a player who only touches the nightstand (no sight) understand there's a drawer? Test with Bart when container mutation is live.
+
+---
+
+## Cross-Agent Update: CYOA Branching Research Now in Decisions (2026-03-22T14:29:02Z)
+
+**From:** Frink (Researcher)  
+**Status:** Proposed (filed Decision #8)  
+**Impact:** Future narrative engine, hidden content design
+
+**Key Principle:** Bottleneck/diamond branching (convergent paths) with state-tracking personalization. Hidden nodes as first-class feature.
+
+**Why It Matters for You:** Future object design may include state-aware flavor text. Example: the nightstand's sensory description might differ based on whether the player has already opened the drawer (visited state) or not. Your multi-sensory system already supports conditional field logic — this design principle just formalizes how to use it.
+
+**Not Immediate:** This affects narrative scope, not core gameplay. But design language (state-aware descriptions, hidden discovery, consequence-based branching) should inform new object design.
