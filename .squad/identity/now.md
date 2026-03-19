@@ -1,43 +1,61 @@
 ---
-updated_at: 2026-03-19T16:28:39Z
-focus_area: Planning + research complete — ready for engineering phase
+updated_at: 2026-03-19T11:27:41Z
+focus_area: Tier 2 parser live + FSM engine design complete. Next: implement FSM engine.
 active_issues: []
 ---
 
 # What We're Focused On
 
-V1 REPL is playable and tested. Foundation work (engine, verbs, tools, skills system) delivered. New planning phase complete:
-- ✅ Feel verb bug fixed, container/surface enumeration working
-- ✅ All batch 1 pending items addressed (blockers fixed, objects designed, skills system designed, docs swept)
-- ✅ Parser plan delivered (Tier 2 embedding-based, 6 phases, 10 working days)
-- ✅ PWA+Wasmoon research complete (5–7hr prototype, high confidence)
+**Phase 2 Complete:** Tier 2 embedding-based parser is now live in the game loop. FSM object lifecycle design is complete. Ready for FSM engine implementation.
 
-**Next decisions needed from Wayne:**
-1. Chalmers' open questions: accuracy threshold, Tier 3 optional SLM, training volume
-2. Greenlight Frink's PWA prototype (5–7hr)
+## Completed (Batch 2)
 
-## Artifacts Generated (Batch 2)
+- ✅ **Bart:** Tier 2 Parser Wired
+  - Trimmed embedding index: 29,582 → 4,337 phrases (gzip 34MB → 4.9MB)
+  - Created Jaccard phrase-text matcher in Lua (no ONNX needed yet)
+  - Wired into game loop: Tier 1 (exact dispatch) → Tier 2 (similarity) on miss
+  - Threshold 0.40; fails visibly below threshold with diagnostic output
+  - Files: `src/engine/parser/init.lua`, `embedding_matcher.lua`, loop integration
+  - **Status:** Tested, committed
+  
+- ✅ **Comic Book Guy:** FSM Object Lifecycle Design
+  - Designed 7 FSM objects: match (3 states), candle (4 states), 5 containers
+  - 32 static objects catalogued (no FSM needed)
+  - Duration tick system (event-driven: 1 tick = 1 player command)
+  - Consumables: finite duration with terminal "spent" state
+  - Containers: reversible open/closed, no terminal states
+  - Warning thresholds tunable (match: 5 ticks, candle: 10 ticks)
+  - Ticks fire before verb execution (fair resource consumption)
+  - File: `docs/design/fsm-object-lifecycle.md` (25KB)
+  - **Status:** Ready for implementation
 
-- `plan/llm-slm-parser-plan.md` — Tier 2 embedding parser implementation (445 lines, 17.6KB)
-- `.squad/agents/frink/research-pwa-wasmoon.md` — PWA + Wasmoon feasibility study (28.5KB)
-- `docs/design/player-skills.md` — Skills system architecture (24.3KB)
+## Artifacts Generated (Batch 3)
 
-## Decisions Filed
+- `.squad/orchestration-log/bart-20260319-112741.md` — Bart's work summary
+- `.squad/orchestration-log/cbg-20260319-112741.md` — CBG's work summary
+- `.squad/log/20260319-tier2-wired-fsm-designed.md` — Session log
+- `.squad/decisions.md` — Merged decisions 6 & 7 (Tier 2 Wiring, FSM Design)
 
-- **D-42:** Tier 2 Embedding Parser (references D-19, D-17)
-- **D-43:** PWA + Wasmoon Prototype Feasibility
+## Cross-Agent Context
 
-## Still Pending (engineering phase)
+- **Bart → CBG:** Tier 2 parser live; can test ~400 command variations now
+- **CBG → Bart:** FSM design done; next task is FSM engine implementation from this design
 
-- Chalmers: Phase 1 LLM data generation (pending Wayne approval)
-- Frink: PWA prototype (5–7hr, pending greenlight)
-- Bart: Wire WRITE, CUT, SEW, PICK LOCK verbs (blocked until Chalmers Phase 1 begins)
-- Comic Book Guy: New object designs (paper, pen, knife, pin, needle) awaiting integration
-- Brockman: Ongoing newspaper/docs as engineering progresses
+## Immediate Next Steps
 
-## Recent Directives Not Yet Implemented
+1. **Bart's next task:** Build FSM engine from CBG's design
+   - FSM data structure with transitions and auto-conditions
+   - State machine dispatcher
+   - Tick counter and auto-transition checks
+   - Warning threshold system
+   
+2. **CBG's next task:** Phase 2 consumable object conversion (match → FSM)
+   - Merge match.lua + match-lit.lua
+   - Test duration mechanics and warning thresholds
 
-- Paper mutates with written words (dynamic mutation)
-- Knife/pin as injury tools → blood for writing
-- Sewing: cloth → clothing with needle
-- Puzzles are first-class design goal
+## Pending Directives
+
+- **Not yet shipped:** Phase 1 FSM engine (pending Bart implementation)
+- **Blocked:** Paper dynamics, knife/pin as injury tools, sewing (awaiting FSM foundation)
+- **Research:** Chalmers' Phase 1 LLM data generation (pending Wayne)
+- **Prototype:** Frink's PWA + Wasmoon (pending Wayne greenlight)
