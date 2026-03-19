@@ -1,74 +1,76 @@
 ---
-updated_at: 2026-03-22T00:00:00Z
-focus_area: Play test fixes shipped. Tier 2 parser live + FSM engine implementation next. CYOA research in progress.
+updated_at: 2026-03-19T14:54:50Z
+focus_area: FSM engine shipped. Match 3-turn consumable live. Nightstand container with state swapping working. Next: candle, wardrobe, vanity FSM. Player skills implementation pending.
 active_issues: []
 ---
 
 # What We're Focused On
 
-**Phase 2 Status:** Tier 2 embedding-based parser is live and robust (typo correction added). Play test bugs fixed. FSM object lifecycle design complete and validated. FSM engine implementation starting.
+**Phase 2 Status:** FSM engine implementation complete and tested. Match and nightstand state machines live. Candle, wardrobe, vanity, window, curtains FSM conversions queued. Player skills system pending FSM completion.
 
-## Completed (Play Test Batch)
+## Completed (FSM Engine Batch)
 
-- ✅ **Bart:** Play Test Bug Fixes (4 bugs resolved)
-  - Added "drawer" keyword to nightstand surface zone
-  - Implemented NLP preprocessing for "what's inside" → look
-  - Created matchbox-open.lua; added accessible gating to containers
-  - Levenshtein typo correction in Tier 2 preprocessing
-  - All fixes verified during playtesting
-  - **Commit:** a6dc7b0
+- ✅ **Bart:** FSM Engine Implementation (shipped)
+  - Built FSM engine (~130 lines) with lazy-loading definitions and in-place mutation
+  - Match FSM: unlit → lit → burned-out (3-turn auto-burn)
+  - Nightstand FSM: closed ↔ open with compartment property swapping
+  - Game loop tick phase after each command
+  - Verb handlers check FSM before old mutation system (backward compatible)
+  - Fixed 3 search bugs (keyword substring, hand/bag priority, bag extraction)
+  - All 9 test cases pass
+  - **Commit:** FSM engine shipped
+  - **Files:** src/engine/fsm/init.lua, src/meta/fsms/match.lua, src/meta/fsms/nightstand.lua
   
-- ✅ **Comic Book Guy:** FSM Object Lifecycle Design (previous batch, now logged)
-  - Designed 7 FSM objects (match, candle, 5 containers)
-  - 32 static objects catalogued
-  - Duration tick system (event-driven, per-command)
-  - File-per-state pattern validated by matchbox fixes
-  - Ready for FSM engine implementation
-  - **File:** `docs/design/fsm-object-lifecycle.md` (25KB)
+- ✅ **Comic Book Guy:** FSM Design Validated
+  - Your FSM object lifecycle design implemented exactly by Bart
+  - Table-driven approach with lazy loading proved clean and extensible
+  - Match lifecycle (urgency teacher) and nightstand reversibility (information gate) validated in play
 
 ## In Progress
 
 - ⏳ **Frink:** CYOA Book Series Research
-  - Researching branching narrative patterns
-  - Analyzing CYOA mechanics for story module design
-  - Awaiting Wayne scope/timeline directive
+  - Branching patterns documented (Time Cave, Branch-and-Bottleneck, etc.)
+  - Lua table-driven FSM validates homoiconicity research
+  - Awaiting Wayne scope/timeline directive for story module design
   - Expected completion: Next session
 
-## Artifacts Generated (Batch 4)
+## Queued (Ready)
 
-- `.squad/orchestration-log/2026-03-22T000000Z-bart-playtest-fixes.md` — Playtest fixes summary
-- `.squad/orchestration-log/2026-03-22T000001Z-cbg-fsm-design-logged.md` — FSM design logging
-- `.squad/orchestration-log/2026-03-22T000002Z-frink-cyoa-research.md` — Research status
-- `.squad/log/2026-03-22T000000Z-playtest-fixes.md` — Session log
-- `.squad/decisions.md` — Merged playtest fixes decision (#13)
+- **Candle FSM** — 3 states (unlit, lit, stub), 100-turn + 20-turn + terminal, drips mechanic
+- **Wardrobe FSM** — hanging space, drawer storage, try-on mechanics
+- **Vanity FSM** — mirror, locked drawer, cosmetics mechanics
+- **Window FSM** — closed ↔ open, breakable state
+- **Curtains FSM** — open ↔ closed, light-blocking mechanic
+
+## Artifacts Generated (Batch 5)
+
+- `.squad/orchestration-log/2026-03-19-145450-bart.md` — FSM engine shipping log
+- `.squad/log/2026-03-19-145450-fsm-engine-shipped.md` — Session log with design rationale
+- `.squad/decisions.md#20` — Decision 20: FSM Engine Architecture (merged from inbox)
 
 ## Cross-Agent Context
 
-- **Bart → CBG:** Playtest fixes complete; matchbox-open.lua pattern validates file-per-state approach
-- **CBG → Bart:** FSM design ready; Tier 2 supports ~400 command variations for testing
-- **CBG → Frink:** FSM engine next priority; Frink research continues in parallel
+- **Bart → CBG:** FSM engine live. Your design validated. Match 3-turn and nightstand container working as specified.
+- **CBG → Frink:** FSM engine validates table-driven Lua approach. Homoiconicity proved valuable for runtime introspection.
+- **Frink → Bart:** CYOA research continues in parallel. State machine patterns align with branching narrative requirements.
 
 ## Immediate Next Steps
 
-1. **Bart's next task:** Build FSM engine from CBG's design
-   - FSM data structure with transitions and auto-conditions
-   - State machine dispatcher
-   - Tick counter and auto-transition checks
-   - Warning threshold system
-   
-2. **CBG's next task:** Phase 2 consumable object conversion (match → FSM)
-   - Merge match.lua + match-lit.lua
-   - Implement via new FSM engine
-   - Test duration mechanics and warning thresholds
+1. **Convert remaining 5 FSM objects** (candle, vanity, wardrobe, window, curtains)
+   - Same pattern as match/nightstand (~20 lines each)
+   - Expected: 1 session per 2-3 objects
 
-3. **Frink's next task:** Complete CYOA research (pending Wayne)
-   - Finalize research findings
-   - Propose story module architecture
+2. **Player skills implementation** (pending FSM completion)
+   - Lockpicking skill (pin + PICK LOCK verb)
+   - Sewing skill (needle + thread + SEW verb)
+   - Blood writing (PRICK SELF + WRITE WITH blood)
 
-## Pending Directives
+3. **Frink's scope clarification** (pending Wayne)
+   - CYOA research → story module architecture
+   - Timeline and integration points with game engine
 
-- **Wayne:** Greenlight Frink's CYOA research scope/timeline
-- **Not yet shipped:** FSM engine (Bart starting implementation)
-- **Blocked:** Paper dynamics, knife/pin as injury tools, sewing (awaiting FSM foundation)
-- **Research:** Completed design phases; implementation underway
+4. **Advanced mechanics** (blocked until FSM foundation complete)
+   - Paper dynamics (requires paper/ink FSM)
+   - Knife/pin as injury tools (requires safe FSM)
+   - Sewing mechanics (requires wardrobe FSM)
 

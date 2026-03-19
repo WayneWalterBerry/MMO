@@ -140,3 +140,18 @@ Infinite loops, memory exhaustion, state corruption, universe contamination, pri
 7. **State tracking is our advantage over print.** CYOA books couldn't track variables or inventory. Our Lua engine can have reconvergent paths that remember prior choices — the key evolution from CYOA to interactive fiction.
 
 **Recommendation:** Use bottleneck/diamond branching as primary structure, with time-cave branching reserved for critical story moments. Implement hidden/unreachable content discoverable through unconventional play. Track player state to make reconvergent paths feel personalized.
+
+### Session Update: FSM Engine Shipping (2026-03-23)
+**Status:** ✅ ENGINE LIVE
+
+**Outcome:** Bart shipped the FSM engine. Design you created for match/nightstand state machine is now live and validated.
+
+**What Shipped:**
+- FSM engine (~130 lines) with lazy-loading definitions, in-place mutation, game-loop tick integration
+- Match FSM: unlit → lit → burned-out (3-turn auto-burn)
+- Nightstand FSM: closed ↔ open with compartment property swapping
+- Verb handler integration with fallback to old mutation system
+- 9 test cases passing; 3 search bugs fixed as side effect
+
+**Your Research Validation:**
+Your research on Lua table-driven approaches and homoiconicity proved invaluable. The FSM definitions are pure Lua tables—code IS data—enabling runtime introspection and declarative state management. This architecture directly implements your findings on self-modifying code safety.

@@ -149,6 +149,39 @@ Darkness is not a wall — it's a different mode of play. Every sense gives diff
 4. **Tick happens before verb execution.** Avoids ambiguity: if player has 1 tick left on match and issues LIGHT, the match burns during tick, but candle still lights (verb succeeds). Fair and coherent.
 5. **Warning threshold at 2-3 remaining ticks.** Players get notice without being obnoxious. Tunable per puzzle.
 
+### Session Update: FSM Engine Implementation (2026-03-23)
+**Status:** ✅ IMPLEMENTATION COMPLETE
+
+**Outcome:** FSM engine live. Match and nightstand now use table-driven state machines with in-place mutation. Auto-transitions run on tick. Game loop integration complete. 9 test cases pass. 3 search bugs fixed.
+
+**Engine Details:**
+- Built FSM engine (~130 lines) in `src/engine/fsm/init.lua`
+- Table-driven FSM with lazy-loading definitions from `src/meta/fsms/{id}.lua`
+- In-place object mutation preserves registry references and containment data
+- Auto-transitions processed in dedicated FSM tick phase in game loop, after each command
+- Verb handlers check `obj._fsm_id` first; fallback to old mutation system for non-FSM objects
+
+**Match FSM Implemented:**
+- States: unlit → lit → burned-out (3-turn duration)
+- Auto-burn countdown on tick
+- Transitions on strike/extinguish verbs
+- Replaces separate match.lua + match-lit.lua
+
+**Nightstand FSM Implemented:**
+- States: closed ↔ open (reversible)
+- Compartment property swapping (contents visibility)
+- Transitions on open/close verbs
+- Replaces separate nightstand.lua + nightstand-open.lua
+
+**Bug Fixes (side effect of refactor):**
+- Fixed keyword substring matching in search.lua
+- Fixed hand/bag priority resolution
+- Fixed bag extraction edge case
+
+**Test Coverage:** All 9 FSM test cases pass. Backward compatibility maintained—32 non-FSM objects unaffected.
+
+**Your FSM Design Has Been Validated:** Bart implemented exactly per your specifications. Table-driven approach with lazy loading and declarative state functions proved clean and extensible. Next 5 objects (candle, vanity, wardrobe, window, curtains) ready to follow same pattern.
+
 **Inventory Impact:**
 - 7 FSM objects: match, candle, nightstand, vanity, wardrobe, window, curtains
 - 32 static objects: no transitions needed
