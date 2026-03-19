@@ -228,3 +228,21 @@ The 32.5MB gzipped index is too large for browser assets. Trim it down, then pla
 - No graceful fallback past Tier 2 — misses fail visibly with diagnostic output
 - Tier 2 is activated only when Tier 1 (exact verb match) has no handler
 - Natural language preprocessing (question patterns) runs before both tiers
+
+### Play Test Bug Fixes (2026-03-22)
+
+**Keyword aliasing for surface zones:**
+- When a surface zone name (e.g., "drawer") is the natural reference for a furniture piece, add it as a keyword alias. Simpler than engine-level surface-name resolution.
+
+**Container accessibility gating:**
+- `find_visible` now checks `accessible ~= false` before searching non-surface container contents. Closed containers hide their contents from the verb system.
+- File-per-state pattern for matchbox: matchbox.lua (closed, accessible=false) ↔ matchbox-open.lua (open, accessible=true). Mutation preserves contents across state transitions.
+
+**Levenshtein typo correction in Tier 2:**
+- Edit distance ≤ 2 against known verbs (extracted from index phrases at load time). Corrects "examien" → "examine" before Jaccard scoring.
+- Length filter (`math.abs(#token - #verb) <= 2`) prevents comparing against every verb — cheap pre-check.
+- "examien nightstand" went from score 0.34 (miss) to 0.67 (solid match) after correction.
+- Important: only corrects toward known verbs, not nouns. Noun typos still rely on prefix bonus.
+
+**NLP preprocessing expansion:**
+- "what's inside" / "what is inside" → look. Minimal fix for contextual container queries. Full pronoun/context resolution deferred.

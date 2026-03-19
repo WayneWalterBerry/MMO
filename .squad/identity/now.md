@@ -1,45 +1,52 @@
 ---
-updated_at: 2026-03-19T11:27:41Z
-focus_area: Tier 2 parser live + FSM engine design complete. Next: implement FSM engine.
+updated_at: 2026-03-22T00:00:00Z
+focus_area: Play test fixes shipped. Tier 2 parser live + FSM engine implementation next. CYOA research in progress.
 active_issues: []
 ---
 
 # What We're Focused On
 
-**Phase 2 Complete:** Tier 2 embedding-based parser is now live in the game loop. FSM object lifecycle design is complete. Ready for FSM engine implementation.
+**Phase 2 Status:** Tier 2 embedding-based parser is live and robust (typo correction added). Play test bugs fixed. FSM object lifecycle design complete and validated. FSM engine implementation starting.
 
-## Completed (Batch 2)
+## Completed (Play Test Batch)
 
-- ✅ **Bart:** Tier 2 Parser Wired
-  - Trimmed embedding index: 29,582 → 4,337 phrases (gzip 34MB → 4.9MB)
-  - Created Jaccard phrase-text matcher in Lua (no ONNX needed yet)
-  - Wired into game loop: Tier 1 (exact dispatch) → Tier 2 (similarity) on miss
-  - Threshold 0.40; fails visibly below threshold with diagnostic output
-  - Files: `src/engine/parser/init.lua`, `embedding_matcher.lua`, loop integration
-  - **Status:** Tested, committed
+- ✅ **Bart:** Play Test Bug Fixes (4 bugs resolved)
+  - Added "drawer" keyword to nightstand surface zone
+  - Implemented NLP preprocessing for "what's inside" → look
+  - Created matchbox-open.lua; added accessible gating to containers
+  - Levenshtein typo correction in Tier 2 preprocessing
+  - All fixes verified during playtesting
+  - **Commit:** a6dc7b0
   
-- ✅ **Comic Book Guy:** FSM Object Lifecycle Design
-  - Designed 7 FSM objects: match (3 states), candle (4 states), 5 containers
-  - 32 static objects catalogued (no FSM needed)
-  - Duration tick system (event-driven: 1 tick = 1 player command)
-  - Consumables: finite duration with terminal "spent" state
-  - Containers: reversible open/closed, no terminal states
-  - Warning thresholds tunable (match: 5 ticks, candle: 10 ticks)
-  - Ticks fire before verb execution (fair resource consumption)
-  - File: `docs/design/fsm-object-lifecycle.md` (25KB)
-  - **Status:** Ready for implementation
+- ✅ **Comic Book Guy:** FSM Object Lifecycle Design (previous batch, now logged)
+  - Designed 7 FSM objects (match, candle, 5 containers)
+  - 32 static objects catalogued
+  - Duration tick system (event-driven, per-command)
+  - File-per-state pattern validated by matchbox fixes
+  - Ready for FSM engine implementation
+  - **File:** `docs/design/fsm-object-lifecycle.md` (25KB)
 
-## Artifacts Generated (Batch 3)
+## In Progress
 
-- `.squad/orchestration-log/bart-20260319-112741.md` — Bart's work summary
-- `.squad/orchestration-log/cbg-20260319-112741.md` — CBG's work summary
-- `.squad/log/20260319-tier2-wired-fsm-designed.md` — Session log
-- `.squad/decisions.md` — Merged decisions 6 & 7 (Tier 2 Wiring, FSM Design)
+- ⏳ **Frink:** CYOA Book Series Research
+  - Researching branching narrative patterns
+  - Analyzing CYOA mechanics for story module design
+  - Awaiting Wayne scope/timeline directive
+  - Expected completion: Next session
+
+## Artifacts Generated (Batch 4)
+
+- `.squad/orchestration-log/2026-03-22T000000Z-bart-playtest-fixes.md` — Playtest fixes summary
+- `.squad/orchestration-log/2026-03-22T000001Z-cbg-fsm-design-logged.md` — FSM design logging
+- `.squad/orchestration-log/2026-03-22T000002Z-frink-cyoa-research.md` — Research status
+- `.squad/log/2026-03-22T000000Z-playtest-fixes.md` — Session log
+- `.squad/decisions.md` — Merged playtest fixes decision (#13)
 
 ## Cross-Agent Context
 
-- **Bart → CBG:** Tier 2 parser live; can test ~400 command variations now
-- **CBG → Bart:** FSM design done; next task is FSM engine implementation from this design
+- **Bart → CBG:** Playtest fixes complete; matchbox-open.lua pattern validates file-per-state approach
+- **CBG → Bart:** FSM design ready; Tier 2 supports ~400 command variations for testing
+- **CBG → Frink:** FSM engine next priority; Frink research continues in parallel
 
 ## Immediate Next Steps
 
@@ -51,11 +58,17 @@ active_issues: []
    
 2. **CBG's next task:** Phase 2 consumable object conversion (match → FSM)
    - Merge match.lua + match-lit.lua
+   - Implement via new FSM engine
    - Test duration mechanics and warning thresholds
+
+3. **Frink's next task:** Complete CYOA research (pending Wayne)
+   - Finalize research findings
+   - Propose story module architecture
 
 ## Pending Directives
 
-- **Not yet shipped:** Phase 1 FSM engine (pending Bart implementation)
+- **Wayne:** Greenlight Frink's CYOA research scope/timeline
+- **Not yet shipped:** FSM engine (Bart starting implementation)
 - **Blocked:** Paper dynamics, knife/pin as injury tools, sewing (awaiting FSM foundation)
-- **Research:** Chalmers' Phase 1 LLM data generation (pending Wayne)
-- **Prototype:** Frink's PWA + Wasmoon (pending Wayne greenlight)
+- **Research:** Completed design phases; implementation underway
+
