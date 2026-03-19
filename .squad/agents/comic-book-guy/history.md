@@ -128,6 +128,49 @@ Darkness is not a wall — it's a different mode of play. Every sense gives diff
 
 ---
 
+## Session Update: Command Variation Matrix (2026-03-22)
+**Status:** ✅ COMPLETE
+
+**Deliverable:** `docs/design/command-variation-matrix.md` — comprehensive natural language variations for all 31 verbs.
+
+**What I Did:**
+1. Extracted all 31 handler entries from `src/engine/verbs/init.lua` (23 unique canonical handlers + 8 aliases).
+2. Cross-referenced with `docs/design/verb-system.md` to understand verb categories (Navigation, Inventory, Interaction, Meta).
+3. Read `docs/design/room-exits.md` to understand movement as exit traversal (GO + directions, not verb dispatch).
+4. Documented natural language variations for EVERY verb — 10-20 per verb, ~400+ variations total.
+5. Focused on critical areas:
+   - **Darkness verbs** (FEEL, SMELL, TASTE, LISTEN): sensory feedback in pitch-black, content-aware
+   - **Tool verbs** (WRITE, CUT, SEW, STRIKE, PRICK): compound actions, requires_tool dependencies, mutation flows
+   - **Movement** (GO, N/S/E/W, etc): directional shortcuts, exit traversal layers
+   - **Container interactions** (OPEN, CLOSE, PUT, TAKE): nested access, state-dependent behavior
+6. Documented edge cases: pronouns ("it"), bare commands ("take?"), ambiguous targets, non-standard phrasings.
+7. Created context-sensitive variations for darkness (tactile/auditory feedback replaces visual), tools (success/failure scenarios), containers (open/closed/locked/full states).
+8. Added testing checklist for QA phase validation.
+
+**Key Design Principles Baked In:**
+- Darkness is playable — every verb works, sensory channels change
+- Tools unlock capabilities — missing tools provide clear guidance for exploration
+- Compound actions (STRIKE, SEW, PRICK) teach resource scarcity and real-world logic
+- Consequences matter — TASTE can kill, PRICK costs HP, bent pins consumed
+- Pronouns resolve to last-examined objects for natural interaction
+- Sensory hierarchy: FEEL=primary dark navigation, SMELL=safe identification, LISTEN=mechanics, TASTE=learn-by-dying
+
+**Why This Matters:**
+This matrix is the canonical training data for Bart's embedding training pipeline. Every variation here will be transformed into embedding vectors. The QA team will validate that the embedding matcher correctly maps all ~400 variations back to their canonical verbs. This is how we move from rules-based parsing (tier 1) to semantic understanding (tier 2).
+
+**Design Decision: Pronoun Resolution Scope**
+Determined that "it" should resolve to the **last-examined object** (set by EXAMINE, LOOK, FEEL, etc.). This is simpler than full discourse tracking and fits the game's terse interface. Examples: "examine candle" → "take it" = take candle. "feel around" → "take it" = take last-felt object (ambiguous if multiple, ask for clarification).
+
+**Design Decision: Bare Commands**
+Verbs that require objects (TAKE, OPEN, LIGHT) should prompt "Take what?" when called bare. Verbs that work bare (FEEL, SMELL, LOOK) should describe room/ambient state. This teaches players the verb interface gradually.
+
+**Future Considerations:**
+- CLIMB, PUSH/PULL not yet designed (may be subsumed by GO + exits, or become future verbs)
+- Compound commands ("take and examine") parse as first verb only (queue feature for future)
+- Preposition handling (in/on/from/with) in parser scope, not verb design scope
+
+---
+
 ## Cross-Agent Update: Feel Verb Container Enumeration Fix (2026-03-19T16-23-38Z)
 
 **From:** Bart (Architect)  
