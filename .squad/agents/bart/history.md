@@ -307,3 +307,49 @@ Session log created: `.squad/log/2026-03-19T01-53-18Z-v1-repl-session.md` with s
 
 **Decision filed at:** `.squad/decisions/inbox/bart-v2-verbs-tools.md`
 
+### 2026-03-21 — Game Start Time Fix + Sensory Verbs
+
+**Problem:** Game started at 6 AM (dawn). The bedroom was immediately dim/lit, making the candle puzzle trivial. Players need to wake in TRUE darkness to force candle interaction.
+
+**Fix 1: Start time changed to 2:00 AM**
+- `GAME_START_HOUR` constant in `verbs/init.lua`: 6 → 2
+- `game_start_hour` in `main.lua` context: 6 → 2
+- Dawn at 6 AM = ~10 real seconds per game hour × 4 hours = ~40 seconds minimum darkness (at 24x rate, actually ~10 real minutes). Player MUST use FEEL/SMELL/LISTEN or light the candle.
+- Welcome text updated: "You wake with a start. The darkness is absolute." instead of directing to LOOK.
+
+**Fix 2: Four sensory verbs added/upgraded**
+
+1. **SMELL / SNIFF** — Works in dark. Checks `obj.on_smell`, falls back to "nothing distinctive." Bare SMELL checks `room.on_smell` or default ambient. Aliases: `sniff`.
+
+2. **TASTE / LICK** — Works in dark. Checks `obj.on_taste` for description, then `obj.on_taste_effect` for consequences. Poison = dramatic death sequence + `os.exit(0)`. Nausea = state flag. Bare TASTE: "You're not going to lick the floor... are you?" Aliases: `lick`.
+
+3. **LISTEN / HEAR** — Works in dark. Checks `obj.on_listen`, falls back to "makes no sound." Bare LISTEN checks `room.on_listen` or default ambient. Parses "listen to X". Aliases: `hear`.
+
+4. **FEEL (upgraded)** — Now checks `obj.on_feel` first (rich sensory from Comic Book Guy), falls back to existing `touch_description`, then generic. No behavioral change to bare FEEL (room groping).
+
+**Sensory field convention established:**
+- `on_feel` — touch (works in dark)
+- `on_smell` — smell (works in dark)
+- `on_taste` — taste text (works always)
+- `on_taste_effect` — effect string: "poison" (death), "nausea" (state flag)
+- `on_listen` — sound (works in dark)
+- Room-level: `room.on_smell`, `room.on_listen` for ambient descriptions
+
+**Poison mechanic (V1):**
+- `on_taste_effect = "poison"` → dramatic multi-line death text → `player.state.poisoned = true`, `player.state.dead = true` → `os.exit(0)`
+- Future: antidote mechanic, partial poisoning, timed death
+
+**Key design decisions:**
+- All sensory verbs use `find_visible()` for object resolution — same keyword matching as LOOK/TAKE, works even in darkness (find_visible doesn't check light)
+- Sensory verbs NEVER call `has_some_light()` — they are explicitly light-independent
+- TASTE prints the description THEN checks effects — player reads what they taste before dying
+- Poison is immediate game-over via `os.exit(0)` — clean V1 approach, no zombie state
+- Nausea sets `player.state.nauseated` for future effect hooks (movement penalty, etc.)
+- HELP text updated with all four new verb categories
+
+**Files modified:**
+- `src/engine/verbs/init.lua` — GAME_START_HOUR 6→2, upgraded FEEL, added SMELL/SNIFF, TASTE/LICK, LISTEN/HEAR, updated HELP
+- `src/main.lua` — game_start_hour 6→2, welcome text rewritten for darkness
+
+**Decision filed at:** `.squad/decisions/inbox/bart-sensory-verbs-start-time.md`
+

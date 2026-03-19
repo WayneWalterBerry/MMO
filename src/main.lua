@@ -189,7 +189,7 @@ local context = {
     mutation       = mutation,
     containment    = containment,
     game_start_time = os.time(),
-    game_start_hour = 6,
+    game_start_hour = 2,
 }
 
 ---------------------------------------------------------------------------
@@ -205,7 +205,10 @@ print("  THE BEDROOM — A Text Adventure")
 print("  V1 Playtest")
 print("================================================================")
 print("")
-print("Type 'help' for commands. Type 'look' to begin.")
+print("You wake with a start. The darkness is absolute.")
+print("You can feel rough linen beneath your fingers.")
+print("")
+print("Type 'help' for commands. Try 'feel' to explore the darkness.")
 print("")
 
 ---------------------------------------------------------------------------

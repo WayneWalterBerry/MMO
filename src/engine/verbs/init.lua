@@ -9,7 +9,7 @@ local verbs = {}
 -- Constants
 ---------------------------------------------------------------------------
 local GAME_SECONDS_PER_REAL_SECOND = 24
-local GAME_START_HOUR = 6
+local GAME_START_HOUR = 2
 local DAYTIME_START = 6
 local DAYTIME_END = 18
 
@@ -618,7 +618,10 @@ function verbs.create()
             return
         end
 
-        if obj.touch_description then
+        -- Prefer on_feel (rich sensory), fall back to touch_description, then generic
+        if obj.on_feel then
+            print(obj.on_feel)
+        elseif obj.touch_description then
             print(obj.touch_description)
         else
             print("You run your hands over " .. (obj.name or "it") ..
@@ -627,6 +630,115 @@ function verbs.create()
     end
     handlers["touch"] = handlers["feel"]
     handlers["grope"] = handlers["feel"]
+
+    ---------------------------------------------------------------------------
+    -- SMELL / SNIFF — works in darkness AND light
+    ---------------------------------------------------------------------------
+    handlers["smell"] = function(ctx, noun)
+        if noun == "" then
+            -- Ambient room smell
+            local room = ctx.current_room
+            if room.on_smell then
+                print("You smell the air around you.")
+                print(room.on_smell)
+            else
+                print("You smell the air around you. Dust and stillness.")
+            end
+            return
+        end
+
+        local obj = find_visible(ctx, noun)
+        if not obj then
+            print("You can't find anything like that to smell.")
+            return
+        end
+
+        if obj.on_smell then
+            print(obj.on_smell)
+        else
+            print("You don't smell anything distinctive.")
+        end
+    end
+    handlers["sniff"] = handlers["smell"]
+
+    ---------------------------------------------------------------------------
+    -- TASTE / LICK — works in darkness AND light (DANGEROUS)
+    ---------------------------------------------------------------------------
+    handlers["taste"] = function(ctx, noun)
+        if noun == "" then
+            print("You're not going to lick the floor... are you?")
+            return
+        end
+
+        local obj = find_visible(ctx, noun)
+        if not obj then
+            print("You can't find anything like that to taste.")
+            return
+        end
+
+        if obj.on_taste then
+            print(obj.on_taste)
+        else
+            print("You give " .. (obj.name or "it") .. " a cautious lick. Nothing remarkable.")
+        end
+
+        -- Check for taste effects AFTER printing the taste description
+        if obj.on_taste_effect then
+            if obj.on_taste_effect == "poison" then
+                print("")
+                print("Fire courses through your veins. Your throat constricts.")
+                print("The world tilts. Your knees buckle.")
+                print("A spreading numbness crawls from your stomach to your fingertips.")
+                print("")
+                print("You collapse to the floor. The darkness — already absolute — becomes eternal.")
+                print("")
+                print("*** YOU HAVE DIED ***")
+                ctx.player.state = ctx.player.state or {}
+                ctx.player.state.poisoned = true
+                ctx.player.state.dead = true
+                os.exit(0)
+            elseif obj.on_taste_effect == "nausea" then
+                print("")
+                print("Your stomach lurches. A wave of nausea washes over you.")
+                print("You retch, gasping. The taste lingers, foul and insistent.")
+                ctx.player.state = ctx.player.state or {}
+                ctx.player.state.nauseated = true
+            end
+        end
+    end
+    handlers["lick"] = handlers["taste"]
+
+    ---------------------------------------------------------------------------
+    -- LISTEN / HEAR — works in darkness AND light
+    ---------------------------------------------------------------------------
+    handlers["listen"] = function(ctx, noun)
+        if noun == "" then
+            -- Ambient room sounds
+            local room = ctx.current_room
+            if room.on_listen then
+                print(room.on_listen)
+            else
+                print("You hold your breath and listen. Silence — save for your own heartbeat.")
+            end
+            return
+        end
+
+        -- "listen to X"
+        local target = noun:match("^to%s+(.+)") or noun
+
+        local obj = find_visible(ctx, target)
+        if not obj then
+            print("You can't hear anything like that.")
+            return
+        end
+
+        if obj.on_listen then
+            print(obj.on_listen)
+        else
+            print("You listen closely. " .. (obj.name or "It") .. " makes no sound.")
+        end
+    end
+    handlers["hear"] = handlers["listen"]
 
     ---------------------------------------------------------------------------
     -- TAKE / GET / PICK UP
@@ -1456,6 +1568,11 @@ function verbs.create()
         print("  find <thing>      - same as 'examine'")
         print("  feel              - grope around (works in darkness)")
         print("  feel <thing>      - feel an object by touch")
+        print("  smell             - smell the air (works in darkness)")
+        print("  smell <thing>     - smell a specific object")
+        print("  taste <thing>     - taste something (risky! works in darkness)")
+        print("  listen            - listen to ambient sounds (works in darkness)")
+        print("  listen to <thing> - listen closely to something")
         print("  take <thing>      - pick something up")
         print("  drop <thing>      - drop something you're carrying")
         print("  open <thing>      - open a container or door")
