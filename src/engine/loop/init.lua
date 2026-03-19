@@ -226,6 +226,50 @@ function loop.run(context)
       break
     end
 
+    -- Post-command FSM tick phase: process auto-transitions (burn countdown, etc.)
+    local fsm_ok, fsm_mod = pcall(require, "engine.fsm")
+    if fsm_ok and fsm_mod and context.registry then
+      local tick_targets = {}
+      local reg = context.registry
+      local room = context.current_room
+      -- Room contents + their surface/container contents
+      for _, obj_id in ipairs(room and room.contents or {}) do
+        tick_targets[#tick_targets + 1] = obj_id
+        local obj = reg:get(obj_id)
+        if obj and obj.surfaces then
+          for _, zone in pairs(obj.surfaces) do
+            for _, item_id in ipairs(zone.contents or {}) do
+              tick_targets[#tick_targets + 1] = item_id
+            end
+          end
+        end
+        if obj and obj.contents then
+          for _, item_id in ipairs(obj.contents) do
+            tick_targets[#tick_targets + 1] = item_id
+          end
+        end
+      end
+      -- Player hands
+      if context.player then
+        for i = 1, 2 do
+          if context.player.hands[i] then
+            tick_targets[#tick_targets + 1] = context.player.hands[i]
+          end
+        end
+      end
+      -- Tick all FSM objects
+      for _, obj_id in ipairs(tick_targets) do
+        local obj = reg:get(obj_id)
+        if obj and obj._state then
+          local msg = fsm_mod.tick(reg, obj_id)
+          if msg then
+            print("")
+            print(msg)
+          end
+        end
+      end
+    end
+
     -- Post-command tick (flame countdown, candle burn, etc.)
     if context.on_tick then
       context.on_tick(context)

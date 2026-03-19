@@ -1,5 +1,8 @@
+-- nightstand.lua -- FSM-managed object (see meta/fsms/nightstand.lua for state definitions)
+-- States: closed <-> open. Container with top + drawer compartments.
 return {
     guid = "d40b15e6-7d64-489e-9324-ea00fb915602",
+
     id = "nightstand",
     name = "a small nightstand",
     keywords = {"nightstand", "night stand", "bedside table", "side table", "small table", "drawer"},
@@ -24,19 +27,19 @@ return {
 
     on_look = function(self)
         local text = self.description
-        if #self.surfaces.top.contents > 0 then
-            text = text .. "\n\nOn top:"
-            for _, id in ipairs(self.surfaces.top.contents) do
-                text = text .. "\n  " .. id
+        if self.surfaces and self.surfaces.top then
+            local items = self.surfaces.top.contents or {}
+            if #items > 0 then
+                text = text .. "\n\nOn top:"
+                for _, id in ipairs(items) do
+                    text = text .. "\n  " .. id
+                end
             end
         end
         text = text .. "\nThe drawer is closed."
         return text
     end,
 
-    mutations = {
-        open = {
-            becomes = "nightstand-open",
-        },
-    },
+    _fsm_id = "nightstand",
+    _state = "closed",
 }

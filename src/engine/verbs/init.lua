@@ -5,6 +5,8 @@
 
 local verbs = {}
 
+local fsm_mod = require("engine.fsm")
+
 ---------------------------------------------------------------------------
 -- Constants
 ---------------------------------------------------------------------------
@@ -20,11 +22,16 @@ local function matches_keyword(obj, kw)
     if not obj then return false end
     kw = kw:lower()
     if obj.id and obj.id:lower() == kw then return true end
-    if obj.name and obj.name:lower():find(kw, 1, true) then return true end
+    -- Exact keyword match first (highest priority)
     if type(obj.keywords) == "table" then
         for _, k in ipairs(obj.keywords) do
             if k:lower() == kw then return true end
         end
+    end
+    -- Word-boundary match on name (avoids "match" matching "matchbox")
+    if obj.name then
+        local padded = " " .. obj.name:lower() .. " "
+        if padded:find(" " .. kw .. " ", 1, true) then return true end
     end
     return false
 end
@@ -126,7 +133,7 @@ local function find_visible(ctx, keyword)
         end
     end
 
-    -- 3. Player hands
+    -- 3. Player hands (direct items first, then bag contents)
     for i = 1, 2 do
         local hand_id = ctx.player.hands[i]
         if hand_id then
@@ -134,7 +141,12 @@ local function find_visible(ctx, keyword)
             if obj and matches_keyword(obj, kw) then
                 return obj, "hand", nil, nil
             end
-            -- Held bag contents
+        end
+    end
+    for i = 1, 2 do
+        local hand_id = ctx.player.hands[i]
+        if hand_id then
+            local obj = reg:get(hand_id)
             if obj and obj.container and obj.contents then
                 for _, item_id in ipairs(obj.contents) do
                     local item = reg:get(item_id)
@@ -1061,8 +1073,34 @@ function verbs.create()
             return
         end
 
-        if where == "hand" or where == "bag" or where == "worn" then
+        if where == "hand" or where == "worn" then
             print("You already have that.")
+            return
+        end
+
+        -- "bag" means item is inside a container the player is holding.
+        -- Allow extracting it to a free hand (e.g., pulling a match from a matchbox).
+        if where == "bag" and parent then
+            if not obj.portable then
+                print("You can't carry " .. (obj.name or "that") .. ".")
+                return
+            end
+            local slot = first_empty_hand(ctx)
+            if not slot then
+                print("Your hands are full. Drop something first.")
+                return
+            end
+            if parent.contents then
+                for i, cid in ipairs(parent.contents) do
+                    if cid == obj.id then
+                        table.remove(parent.contents, i)
+                        break
+                    end
+                end
+            end
+            ctx.player.hands[slot] = obj.id
+            obj.location = "player"
+            print("You take " .. (obj.name or obj.id) .. " from " .. (parent.name or "the container") .. ".")
             return
         end
 
@@ -1149,6 +1187,30 @@ function verbs.create()
         -- Check room objects first
         local obj = find_visible(ctx, noun)
         if obj then
+            -- FSM path: object managed by FSM engine
+            if obj._fsm_id then
+                local transitions = fsm_mod.get_transitions(obj)
+                local target_state
+                for _, t in ipairs(transitions) do
+                    if t.verb == "open" then target_state = t.to; break end
+                end
+                if target_state then
+                    local trans, err = fsm_mod.transition(ctx.registry, obj.id, target_state, {})
+                    if trans then
+                        print(trans.message or ("You open " .. (obj.name or obj.id) .. "."))
+                    else
+                        print("You can't open " .. (obj.name or "that") .. ".")
+                    end
+                else
+                    if obj._state == "open" then
+                        print("It is already open.")
+                    else
+                        print("You can't open " .. (obj.name or "that") .. ".")
+                    end
+                end
+                return
+            end
+
             local mut_data = find_mutation(obj, "open")
             if mut_data then
                 if perform_mutation(ctx, obj, mut_data) then
@@ -1212,6 +1274,30 @@ function verbs.create()
         -- Check room objects first
         local obj = find_visible(ctx, noun)
         if obj then
+            -- FSM path
+            if obj._fsm_id then
+                local transitions = fsm_mod.get_transitions(obj)
+                local target_state
+                for _, t in ipairs(transitions) do
+                    if t.verb == "close" then target_state = t.to; break end
+                end
+                if target_state then
+                    local trans, err = fsm_mod.transition(ctx.registry, obj.id, target_state, {})
+                    if trans then
+                        print(trans.message or ("You close " .. (obj.name or obj.id) .. "."))
+                    else
+                        print("You can't close " .. (obj.name or "that") .. ".")
+                    end
+                else
+                    if obj._state == "closed" then
+                        print("It is already closed.")
+                    else
+                        print("You can't close " .. (obj.name or "that") .. ".")
+                    end
+                end
+                return
+            end
+
             local mut_data = find_mutation(obj, "close")
             if mut_data then
                 if perform_mutation(ctx, obj, mut_data) then
@@ -1472,6 +1558,26 @@ function verbs.create()
         if not obj then obj = find_visible(ctx, noun) end
         if not obj then
             print("You don't see that here.")
+            return
+        end
+
+        -- FSM path
+        if obj._fsm_id then
+            local transitions = fsm_mod.get_transitions(obj)
+            local target_state
+            for _, t in ipairs(transitions) do
+                if t.verb == "extinguish" then target_state = t.to; break end
+            end
+            if target_state then
+                local trans, err = fsm_mod.transition(ctx.registry, obj.id, target_state, {})
+                if trans then
+                    print(trans.message or ("You extinguish " .. (obj.name or obj.id) .. "."))
+                else
+                    print("You can't extinguish " .. (obj.name or "that") .. ".")
+                end
+            else
+                print("You can't extinguish " .. (obj.name or "that") .. ".")
+            end
             return
         end
 
@@ -1921,10 +2027,8 @@ function verbs.create()
 
     ---------------------------------------------------------------------------
     -- STRIKE {A} ON {B} -- compound tool verb for fire-making
-    -- Design: A (match/striker) is consumed from the matchbox.
-    --   B (the matchbox) can be in your hand OR on any reachable surface.
-    --   You don't need to hold both -- you strike the match against whatever
-    --   is within reach.
+    -- FSM path: A is a match with _fsm_id, B is something with has_striker.
+    -- Legacy path: matchbox with fire_source charges.
     ---------------------------------------------------------------------------
     handlers["strike"] = function(ctx, noun)
         if noun == "" then
@@ -1936,22 +2040,94 @@ function verbs.create()
         local a_word, b_word = noun:match("^(.+)%s+on%s+(.+)$")
         if not a_word then a_word = noun end
 
-        -- Find the fire_source (matchbox) -- the thing with charges
+        -- Find the object to strike (A) -- check carried then visible
+        local match_obj = find_in_inventory(ctx, a_word)
+        if not match_obj then
+            match_obj = find_visible(ctx, a_word)
+        end
+
+        -- FSM path: A is an FSM object with a "strike" transition
+        if match_obj and match_obj._fsm_id then
+            local transitions = fsm_mod.get_transitions(match_obj)
+            local strike_trans
+            for _, t in ipairs(transitions) do
+                if t.verb == "strike" then strike_trans = t; break end
+            end
+
+            if not strike_trans then
+                if match_obj._state == "spent" then
+                    print("The match is spent. It cannot be relit.")
+                elseif match_obj._state == "lit" then
+                    print("The match is already lit.")
+                else
+                    print("You can't strike " .. (match_obj.name or "that") .. ".")
+                end
+                return
+            end
+
+            -- Find the striker surface (B)
+            local striker
+            if b_word then
+                striker = find_in_inventory(ctx, b_word)
+                if not striker then striker = find_visible(ctx, b_word) end
+            else
+                -- Auto-find: search carried then visible for has_striker
+                for _, id in ipairs(get_all_carried_ids(ctx)) do
+                    local o = ctx.registry:get(id)
+                    if o and o.has_striker then striker = o; break end
+                end
+                if not striker then
+                    local room = ctx.current_room
+                    for _, obj_id in ipairs(room.contents or {}) do
+                        local o = ctx.registry:get(obj_id)
+                        if o and o.has_striker then striker = o; break end
+                        if o and o.surfaces then
+                            for _, zone in pairs(o.surfaces) do
+                                if zone.accessible ~= false then
+                                    for _, item_id in ipairs(zone.contents or {}) do
+                                        local item = ctx.registry:get(item_id)
+                                        if item and item.has_striker then striker = item; break end
+                                    end
+                                end
+                                if striker then break end
+                            end
+                        end
+                        if striker then break end
+                    end
+                end
+            end
+
+            if not striker then
+                print(strike_trans.fail_message or "You need a rough surface to strike it on. A matchbox striker, perhaps.")
+                return
+            end
+
+            local trans, err = fsm_mod.transition(
+                ctx.registry, match_obj.id, strike_trans.to, { target = striker })
+            if trans then
+                print(trans.message)
+            elseif err == "requires_property" then
+                print("You can't strike a match on " .. (striker.name or "that") .. ".")
+            elseif err == "terminal" then
+                print("The match is spent. It cannot be relit.")
+            else
+                print("You can't strike " .. (match_obj.name or "that") .. ".")
+            end
+            return
+        end
+
+        -- Legacy path: matchbox with fire_source charges
         local matchbox = nil
         if b_word then
-            -- Explicit target: check carried then visible
             matchbox = find_in_inventory(ctx, b_word)
             if not matchbox then
                 matchbox = find_visible(ctx, b_word)
             end
         else
-            -- "strike match" or "strike matchbox" -- auto-find fire_source
-            -- First check if they named the matchbox directly
             matchbox = find_in_inventory(ctx, a_word)
             if not matchbox or not provides_capability(matchbox, "fire_source") then
                 matchbox = find_visible(ctx, a_word)
                 if not matchbox or not provides_capability(matchbox, "fire_source") then
-                    -- Search for any fire_source in carried or visible
                     matchbox = find_tool_in_inventory(ctx, "fire_source")
                     if not matchbox then
                         matchbox = find_visible_tool(ctx, "fire_source")
@@ -1975,7 +2151,6 @@ function verbs.create()
             return
         end
 
-        -- Strike the match!
         if matchbox.on_tool_use and matchbox.on_tool_use.use_message then
             print(matchbox.on_tool_use.use_message)
         else
@@ -1983,7 +2158,7 @@ function verbs.create()
         end
 
         consume_tool_charge(ctx, matchbox)
-        ctx.player.state.has_flame = 3  -- good for 3 command ticks
+        ctx.player.state.has_flame = 3
         print("You hold the small flame carefully. It won't last long.")
     end
 

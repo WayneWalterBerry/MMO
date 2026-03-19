@@ -225,7 +225,7 @@ local context = {
 context.on_tick = function(ctx)
     local p = ctx.player
 
-    -- Match flame countdown
+    -- Match flame countdown (legacy -- FSM objects handle their own tick)
     if p.state.has_flame and p.state.has_flame > 0 then
         p.state.has_flame = p.state.has_flame - 1
         if p.state.has_flame <= 0 then
@@ -235,11 +235,13 @@ context.on_tick = function(ctx)
         end
     end
 
-    -- Candle burn tick -- check room, surfaces, and player hands
+    -- Candle burn tick (candle is not yet FSM-managed)
     local room = ctx.current_room
     local reg = ctx.registry
 
     local function tick_burnable(obj, obj_id, remove_fn)
+        -- Skip FSM-managed objects (they handle their own tick)
+        if obj and obj._fsm_id then return false end
         if obj and obj.casts_light and obj.burn_remaining then
             obj.burn_remaining = obj.burn_remaining - 1
             if obj.burn_remaining <= 0 then
