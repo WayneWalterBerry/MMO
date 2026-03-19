@@ -173,6 +173,16 @@
 
 **All 12 inbox files processed and deleted.**
 
+### 2026 — Feel Verb Container/Surface Enumeration Fix
+
+**Bug:** "feel {object}" only printed `on_feel` text, never enumerated accessible contents. Critical for darkness gameplay — matchbox in open drawer was invisible to touch.
+
+**Fix:** Added two content-enumeration blocks after the `on_feel` print in `src/engine/verbs/init.lua` (lines ~843-871):
+1. **Surface-based containers** — iterates `obj.surfaces`, skips zones with `accessible == false`, lists items via `ctx.registry:get(id)` with "Your fingers find {zone}:" prefix.
+2. **Simple containers** — checks `obj.container` and `obj.contents`, lists items with "Inside you feel:" prefix.
+
+**Verified:** nightstand (closed=hides drawer, open=shows matchbox), matchbox (shows 7 matches), bed (shows top + underneath surfaces).
+
 ## Learnings
 
 - When deep-merging base classes with instance overrides, contents arrays must be explicitly cleared and rebuilt from the instance tree — otherwise base class contents leak into instances
@@ -180,3 +190,5 @@
 - Pre-resolving templates into base classes before instance resolution simplifies the pipeline — instances never need to worry about template inheritance
 - Registering previously-unregistered deep objects (matches, pin, needle, thread) doesn't break existing verb behavior — verbs use keyword search and specific ID lookups, not full registry iteration
 - Functions in Lua tables are copied by reference during deep_merge — multiple instances sharing a base class safely share function references since they access state through `self`
+- Verb handlers that interact with objects should always check for both `obj.surfaces` (multi-zone) and `obj.container`/`obj.contents` (simple) patterns — they are independent containment models that can coexist
+- The `accessible == false` gate on surface zones is the canonical pattern for hiding contents behind state (closed drawers, locked compartments). Always respect it in any verb that enumerates contents.

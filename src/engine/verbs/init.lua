@@ -839,6 +839,36 @@ function verbs.create()
             print("You run your hands over " .. (obj.name or "it") ..
                 ". " .. (obj.description or "It feels ordinary."))
         end
+
+        -- Enumerate accessible surface contents by touch
+        if obj.surfaces then
+            for zone_name, zone in pairs(obj.surfaces) do
+                if zone.accessible ~= false and #(zone.contents or {}) > 0 then
+                    local items = {}
+                    for _, id in ipairs(zone.contents) do
+                        local item = ctx.registry:get(id)
+                        items[#items + 1] = item and item.name or id
+                    end
+                    print("Your fingers find " .. zone_name .. ":")
+                    for _, item_name in ipairs(items) do
+                        print("  " .. item_name)
+                    end
+                end
+            end
+        end
+
+        -- Enumerate simple container contents by touch
+        if obj.container and obj.contents and #obj.contents > 0 then
+            local items = {}
+            for _, id in ipairs(obj.contents) do
+                local item = ctx.registry:get(id)
+                items[#items + 1] = item and item.name or id
+            end
+            print("Inside you feel:")
+            for _, item_name in ipairs(items) do
+                print("  " .. item_name)
+            end
+        end
     end
     handlers["touch"] = handlers["feel"]
     handlers["grope"] = handlers["feel"]
