@@ -111,18 +111,18 @@ function loader.load_template(source)
 end
 
 -- resolve_instance(instance, base_classes, templates) -> resolved_object, nil | nil, error_string
--- Takes an instance definition (with base_guid and optional overrides),
+-- Takes an instance definition (with type_id and optional overrides),
 -- looks up the base class by GUID, deep-merges overrides on top,
 -- and prepares the object for registration.
 -- Contents arrays are cleared — they are rebuilt from the instance tree.
 function loader.resolve_instance(instance, base_classes, templates)
-  if not instance.base_guid then
-    return nil, "instance '" .. tostring(instance.id) .. "' missing base_guid"
+  if not instance.type_id then
+    return nil, "instance '" .. tostring(instance.id) .. "' missing type_id"
   end
 
-  local base = base_classes[instance.base_guid]
+  local base = base_classes[instance.type_id]
   if not base then
-    return nil, "base class not found for guid '" .. instance.base_guid
+    return nil, "base class not found for guid '" .. instance.type_id
         .. "' (instance '" .. tostring(instance.id) .. "')"
   end
 
@@ -140,7 +140,7 @@ function loader.resolve_instance(instance, base_classes, templates)
 
   -- Instance identity overrides base identity
   resolved.id = instance.id
-  resolved.base_guid = instance.base_guid
+  resolved.type_id = instance.type_id
   resolved.guid = nil  -- guid belongs to the base class, not the instance
 
   -- Clear contents — these are rebuilt from the instance tree.

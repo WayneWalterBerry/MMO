@@ -30,13 +30,13 @@ return {
 
 ## Instances
 
-Instances are defined inside room files. Each references a `base_guid` and can carry sparse `overrides` for properties that differ from the base.
+Instances are defined inside room files. Each references a `type_id` (the engine-resolvable GUID of the base class) and can carry sparse `overrides` for properties that differ from the base. The `type` field is a human-readable name for the base class — it exists purely for readability and is not used by the engine.
 
 ```lua
 -- Inside a room definition
 instances = {
-    { id = "candle",        base_guid = "992df7f3-...", location = "nightstand.top" },
-    { id = "poison-bottle", base_guid = "a1043287-...", location = "nightstand.top",
+    { id = "candle",        type = "Candle",        type_id = "992df7f3-...", location = "nightstand.top" },
+    { id = "poison-bottle", type = "Poison Bottle", type_id = "a1043287-...", location = "nightstand.top",
       overrides = {
           description = "A cracked bottle with a faded label."
       }
@@ -46,7 +46,8 @@ instances = {
 
 **Instance fields:**
 - `id` — unique within the room, used as the registry key
-- `base_guid` — which base class this instance is built from
+- `type` — human-readable name of the base class (for code readability, not used by the engine)
+- `type_id` — which base class this instance is built from (engine-resolvable GUID)
 - `location` — where in the room this instance lives (see Containment below)
 - `overrides` — optional sparse table of properties that differ from the base
 
@@ -69,7 +70,7 @@ The `resolve_instance()` function in `engine/loader/init.lua` handles this:
 1. Look up base class by GUID
 2. Deep-merge base with instance overrides (instance wins for any key it defines)
 3. Strip `guid` (it belongs to the base, not the instance)
-4. Set `base_guid` on the resolved object for future reference
+4. Set `type_id` on the resolved object for future reference
 5. Clear `contents` and surface `contents` arrays (rebuilt from instance locations)
 
 ## Room as Uber-Container
@@ -116,12 +117,12 @@ Mutations change the **instance**, never the base class:
 
 | Action | What changes on the instance |
 |---|---|
-| Break mirror | `base_guid` → broken-mirror GUID |
-| Light candle | `base_guid` → candle-lit GUID |
+| Break mirror | `type_id` → broken-mirror GUID |
+| Light candle | `type_id` → candle-lit GUID |
 | Write on paper | `overrides.written_text = "hello"`, `overrides.description` updated |
 | Consume match | Instance removed from matchbox contents and room instances |
 
-The current V1 mutation system still uses source-code-based hot-swap (`engine/mutation/init.lua`). Future versions will use GUID-based mutation: change the instance's `base_guid` and re-resolve against the new base class.
+The current V1 mutation system still uses source-code-based hot-swap (`engine/mutation/init.lua`). Future versions will use GUID-based mutation: change the instance's `type_id` and re-resolve against the new base class.
 
 ## Loading Pipeline
 
@@ -140,7 +141,7 @@ The current V1 mutation system still uses source-code-based hot-swap (`engine/mu
 The instance/base-class split enables a streaming download architecture:
 
 1. Player enters a room → **download room GUID** → get room definition with instances
-2. For each instance → check if `base_guid` is in local cache
+2. For each instance → check if `type_id` is in local cache
 3. **Download missing base GUIDs** → only fetch base classes the client doesn't have
 4. Resolve instances locally → game ready
 

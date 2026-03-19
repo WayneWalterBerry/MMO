@@ -11,53 +11,53 @@ return {
     -- room.contents is rebuilt at load time from instance locations.
     instances = {
         -- Room-level furniture
-        { id = "bed",           base_guid = "b8e37cb6-cba7-48a6-bec9-5bca5f53b73c", location = "room" },
-        { id = "nightstand",    base_guid = "d40b15e6-7d64-489e-9324-ea00fb915602", location = "room" },
-        { id = "vanity",        base_guid = "eda1257d-8240-4c75-9c1b-a7be349a60f5", location = "room" },
-        { id = "wardrobe",      base_guid = "9c4701d1-4cc4-49e7-9c4a-041e1e37caf1", location = "room" },
-        { id = "rug",           base_guid = "7275e1d9-5837-4f39-b3be-d64ee6d667c9", location = "room" },
-        { id = "window",        base_guid = "4ecd1058-5cbe-4601-a98e-c994631f7d6b", location = "room" },
-        { id = "curtains",      base_guid = "cc981807-a74e-4ecc-8d52-903cc4fc5bd6", location = "room" },
-        { id = "chamber-pot",   base_guid = "9a9ff109-93a0-4dcf-9d6e-0f0f4b83f4ba", location = "room" },
+        { id = "bed",           type = "Four-Poster Bed",    type_id = "b8e37cb6-cba7-48a6-bec9-5bca5f53b73c", location = "room" },
+        { id = "nightstand",    type = "Nightstand",         type_id = "d40b15e6-7d64-489e-9324-ea00fb915602", location = "room" },
+        { id = "vanity",        type = "Oak Vanity",         type_id = "eda1257d-8240-4c75-9c1b-a7be349a60f5", location = "room" },
+        { id = "wardrobe",      type = "Wardrobe",           type_id = "9c4701d1-4cc4-49e7-9c4a-041e1e37caf1", location = "room" },
+        { id = "rug",           type = "Rug",                type_id = "7275e1d9-5837-4f39-b3be-d64ee6d667c9", location = "room" },
+        { id = "window",        type = "Window",             type_id = "4ecd1058-5cbe-4601-a98e-c994631f7d6b", location = "room" },
+        { id = "curtains",      type = "Curtains",           type_id = "cc981807-a74e-4ecc-8d52-903cc4fc5bd6", location = "room" },
+        { id = "chamber-pot",   type = "Chamber Pot",        type_id = "9a9ff109-93a0-4dcf-9d6e-0f0f4b83f4ba", location = "room" },
 
         -- Bed surfaces
-        { id = "pillow",        base_guid = "f973058d-5410-4c02-b643-b7cab713aaf4", location = "bed.top" },
-        { id = "bed-sheets",    base_guid = "6bb22862-b68a-47bf-a50b-34e6b3d9a724", location = "bed.top" },
-        { id = "blanket",       base_guid = "7eb14362-a55d-4a89-a8ea-ec2098d952ff", location = "bed.top" },
-        { id = "knife",         base_guid = "b0c650c6-497a-440c-a83a-545ee8789284", location = "bed.underneath" },
+        { id = "pillow",        type = "Pillow",             type_id = "f973058d-5410-4c02-b643-b7cab713aaf4", location = "bed.top" },
+        { id = "bed-sheets",    type = "Bed Sheets",         type_id = "6bb22862-b68a-47bf-a50b-34e6b3d9a724", location = "bed.top" },
+        { id = "blanket",       type = "Blanket",            type_id = "7eb14362-a55d-4a89-a8ea-ec2098d952ff", location = "bed.top" },
+        { id = "knife",         type = "Knife",              type_id = "b0c650c6-497a-440c-a83a-545ee8789284", location = "bed.underneath" },
 
         -- Pillow contents (hidden — accessible = false)
-        { id = "pin",           base_guid = "f5cd5850-2020-4483-b17f-972eb9242701", location = "pillow.inside" },
+        { id = "pin",           type = "Pin",                type_id = "f5cd5850-2020-4483-b17f-972eb9242701", location = "pillow.inside" },
 
         -- Nightstand surfaces
-        { id = "candle",        base_guid = "992df7f3-1b8e-4164-939a-3415f8f6ffe3", location = "nightstand.top" },
-        { id = "poison-bottle", base_guid = "a1043287-aeeb-4eb7-91c4-d0fcd11f86e3", location = "nightstand.top" },
-        { id = "matchbox",      base_guid = "41eb8a2f-972f-4245-a1fb-bbfdcaad4868", location = "nightstand.inside" },
+        { id = "candle",        type = "Candle",             type_id = "992df7f3-1b8e-4164-939a-3415f8f6ffe3", location = "nightstand.top" },
+        { id = "poison-bottle", type = "Poison Bottle",      type_id = "a1043287-aeeb-4eb7-91c4-d0fcd11f86e3", location = "nightstand.top" },
+        { id = "matchbox",      type = "Matchbox",           type_id = "41eb8a2f-972f-4245-a1fb-bbfdcaad4868", location = "nightstand.inside" },
 
         -- Matchbox contents (7 matches)
-        { id = "match-1",       base_guid = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
-        { id = "match-2",       base_guid = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
-        { id = "match-3",       base_guid = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
-        { id = "match-4",       base_guid = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
-        { id = "match-5",       base_guid = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
-        { id = "match-6",       base_guid = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
-        { id = "match-7",       base_guid = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
+        { id = "match-1",       type = "Match",              type_id = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
+        { id = "match-2",       type = "Match",              type_id = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
+        { id = "match-3",       type = "Match",              type_id = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
+        { id = "match-4",       type = "Match",              type_id = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
+        { id = "match-5",       type = "Match",              type_id = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
+        { id = "match-6",       type = "Match",              type_id = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
+        { id = "match-7",       type = "Match",              type_id = "009b0347-2ba3-45d1-a733-7a587ad1f5c9", location = "matchbox" },
 
         -- Vanity surfaces
-        { id = "paper",         base_guid = "e7409390-d4c4-4315-9768-72df1b3702e6", location = "vanity.top" },
-        { id = "pen",           base_guid = "4d35b030-0b8c-4159-b646-d669909133a3", location = "vanity.top" },
-        { id = "pencil",        base_guid = "07e76701-ebb5-4b5d-adc0-c8012e7ff809", location = "vanity.inside" },
+        { id = "paper",         type = "Paper",              type_id = "e7409390-d4c4-4315-9768-72df1b3702e6", location = "vanity.top" },
+        { id = "pen",           type = "Pen",                type_id = "4d35b030-0b8c-4159-b646-d669909133a3", location = "vanity.top" },
+        { id = "pencil",        type = "Pencil",             type_id = "07e76701-ebb5-4b5d-adc0-c8012e7ff809", location = "vanity.inside" },
 
         -- Wardrobe contents
-        { id = "wool-cloak",    base_guid = "ecdccb0f-134d-436f-9f1c-d53911ac1445", location = "wardrobe.inside" },
-        { id = "sack",          base_guid = "4720ace5-baed-4133-b5db-977257f5b680", location = "wardrobe.inside" },
+        { id = "wool-cloak",    type = "Wool Cloak",         type_id = "ecdccb0f-134d-436f-9f1c-d53911ac1445", location = "wardrobe.inside" },
+        { id = "sack",          type = "Sack",               type_id = "4720ace5-baed-4133-b5db-977257f5b680", location = "wardrobe.inside" },
 
         -- Sack contents
-        { id = "needle",        base_guid = "07b9daaf-ee36-408e-8c66-d794bc175ed1", location = "sack" },
-        { id = "thread",        base_guid = "8a7edb7e-9dff-4587-a104-4710cb270058", location = "sack" },
+        { id = "needle",        type = "Needle",             type_id = "07b9daaf-ee36-408e-8c66-d794bc175ed1", location = "sack" },
+        { id = "thread",        type = "Thread",             type_id = "8a7edb7e-9dff-4587-a104-4710cb270058", location = "sack" },
 
         -- Rug surface (hidden — must lift rug to find)
-        { id = "brass-key",     base_guid = "4586b2cd-3240-46de-8fb8-5216ad9d4830", location = "rug.underneath" },
+        { id = "brass-key",     type = "Brass Key",          type_id = "4586b2cd-3240-46de-8fb8-5216ad9d4830", location = "rug.underneath" },
     },
 
     exits = {
