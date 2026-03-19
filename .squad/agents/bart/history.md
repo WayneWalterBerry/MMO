@@ -203,3 +203,28 @@ When the embedding parser encounters a miss, fail visibly. Do not fall back to l
 The 32.5MB gzipped index is too large for browser assets. Trim it down, then play test empirically. If parser quality drops, that means too much was trimmed — iterate from there. Prefer data-driven decisions over theoretical coverage.
 
 **Implication for Your Work:** Ship the current index as-is (already meets size constraint after gzip). Validate parser quality through play testing. Only expand if empirical testing reveals gaps.
+
+---
+
+## Learnings
+
+### Tier 2 Parser Implementation (2026-03-22)
+
+**Index Trimming:**
+- `--max-variations N` flag on `generate_parser_data.py` caps phrases per verb+object combo
+- Round-robin synonym distribution is critical — naive first-N picks only the canonical verb form
+- With max-variations=3: 29,582 → 4,337 phrases, gzip 34MB → 4.9MB
+- Some verb labels (eat, light, slash, stitch, touch, wear) deduplicate into synonym verbs (e.g., "eat" text appears under "consume" verb). This is fine — handlers are aliased.
+
+**Tier 2 Runtime (Lua):**
+- Can't run GTE-tiny inference in Lua — phrase-text matching (Jaccard + prefix bonus) is the right approach for the REPL
+- Embedding vectors are dead weight in the JSON for Lua but needed for browser ONNX Runtime Web later
+- The embedding index serves dual purpose: phrase dictionary (Lua) + vector index (browser)
+- JSON parsing 16MB in Lua is slow (~seconds) — acceptable for startup, but worth noting for future optimization (binary format, pre-tokenized index)
+- Threshold 0.40 is correct: below this, matches tend to be wrong-verb (same noun tokens but different verb). Lowering would cause incorrect dispatch.
+- Diagnostic output (`[Parser] No match found. Input: "..." | Best: "..." (score: X.XX)`) is invaluable for playtesting — shows exactly what the parser tried
+
+**Architecture Decision:**
+- No graceful fallback past Tier 2 — misses fail visibly with diagnostic output
+- Tier 2 is activated only when Tier 1 (exact verb match) has no handler
+- Natural language preprocessing (question patterns) runs before both tiers
