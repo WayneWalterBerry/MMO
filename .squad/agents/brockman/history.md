@@ -93,3 +93,35 @@ Refined vocabulary v1.2 across all 24 architecture decisions; consolidated 12+ u
 **Verb Documentation Pattern:** The 31-verb system is now well-documented in both vocabulary.md and new verb-system.md. Verb-system.md serves as the canonical player reference; vocabulary.md serves as design reference.
 
 **Structure Stability:** Core src/ structure is stable and reflects intended architecture. No major refactors needed; documentation now accurate to code.
+
+---
+
+## Cross-Agent Update: Feel Verb Bug Fix + Skills Design (2026-03-19T16-23-38Z)
+
+**From:** Bart (Architect) & Comic Book Guy (Game Designer)  
+**Impact:** Documentation, design reference  
+
+Two major completions affecting your documentation work:
+
+### 1. Feel Verb Container Enumeration Fix (Bart)
+- FEEL verb now enumerates accessible contents after sensory text
+- Fixes darkness puzzle solvability — players can discover matchbox by touch
+- **Documentation impact:** verb-system.md feel verb entry should note this enumeration behavior (already documented correctly)
+
+### 2. Player Skills System Design Complete (Comic Book Guy)
+- Binary skills model with discovery-based acquisition
+- Multi-path unlocking: find manual, practice, NPC teaching, puzzle solve
+- Skill gates + consumable failure states
+- **Documentation impact:** New design memo filed in decisions.md; affects future verb documentation (skill gates will be part of verb descriptions)
+
+### 3. Decision Merge Complete (Scribe)
+- 7 inbox decisions merged into decisions.md canonical log
+- Decisions now include: feel verb fix, skills design, parser architecture, Wasmoon PWA, embedding hybrid parser, play test results
+- **Documentation impact:** decisions.md is now comprehensive reference for all architecture + design choices since 2026-03-18
+
+**Action items for you:**
+- decisions.md is live; link to it from design docs for architectural rationale
+- Verb-system.md is accurate; maintain as new verbs are added
+- Consider creating decision-summary.md if decisions.md exceeds 20KB (currently ~1500 lines, ~80KB)
+
+**Team coordination note:** Skills system will require verb handler integration (skill gates before tool gates). Bart has the pattern documented in his history; share with engineers implementing skill verbs.

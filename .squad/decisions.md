@@ -1476,3 +1476,371 @@ You don't know how to 'what'.
 
 #### Severity: HIGH — game is unsolvable as-is at dawn.
 
+
+
+---
+
+# Decision: Feel Verb Enumerates Container/Surface Contents (2026-03-19)
+
+**Author:** Bart (Architect)  
+**Date:** 2026-03-19  
+**Status:** IMPLEMENTED  
+**Impact:** Verb system, gameplay progression  
+
+## Context
+
+The "feel {object}" verb handler printed only the object's on_feel text but never enumerated accessible contents of containers or surfaces. This broke the darkness gameplay loop — players couldn't discover the matchbox inside the open nightstand drawer by touch.
+
+## Decision
+
+After printing the sensory description, the feel handler now enumerates:
+
+1. **Surface zones** (obj.surfaces) — each zone where ccessible ~= false and contents exist. Prefix: "Your fingers find {zone_name}:"
+2. **Simple containers** (obj.container + obj.contents) — if container has contents. Prefix: "Inside you feel:"
+
+Both use ctx.registry:get(id) to resolve item names, falling back to raw ID.
+
+## Rationale
+
+- Matches the progressive disclosure design: "feel around" = summary (object names), "feel {object}" = detail + accessible contents.
+- Tactile language ("Your fingers find", "Inside you feel") stays consistent with darkness atmosphere.
+- Respects the ccessible == false gate — closed drawers hide contents from touch, same as from sight.
+- Follows the same enumeration pattern already established in the LOOK handler.
+
+## Files Changed
+
+- src/engine/verbs/init.lua — feel handler (~20 lines added after line 841)
+
+---
+
+# Decision Memo: Player Skills System Architecture (2026-03-21)
+
+**Author:** Comic Book Guy (Game Designer)  
+**Date:** 2026-03-21  
+**Decision Level:** 1 (Design-level, ready for implementation review)  
+**Status:** Proposed (awaiting team consensus)  
+
+## Summary
+
+Binary skills model with discovery-based acquisition, integrated as a second gate in verb handler dispatch. Supports emergent gameplay while respecting dark, tactile aesthetic.
+
+## Key Design Decisions Ratified
+
+### 1. Binary Skills (Have / Don't Have) in V1
+
+\\\lua
+player.skills = {
+  lockpicking = false,  -- Player cannot PICK LOCK yet
+  sewing = false,       -- Player cannot SEW yet
+}
+\\\
+
+**Rationale:** Simplicity + discovery. Skills are milestones, not XP bars. When the player reads the lockpicking manual or practices packing enough times, the skill becomes available.
+
+### 2. Skills Unlock Alternatives, Not Replacements
+
+A pin can **always** be used to prick and draw blood (no skill required). With lockpicking skill, it **also** picks locks.
+
+**Rationale:** Respects player agency. No puzzle becomes unsolvable without a skill. Skills accelerate, don't gatekeep.
+
+### 3. Skill + Tool + Verb Gating (Double Dispatch)
+
+Verb handlers enforce two requirements in series: skill gate → tool gate.
+
+**Rationale:** Separation of concerns. Engine code remains simple.
+
+### 4. Failure Has Consumable Consequences
+
+When a player attempts a skilled action without the skill, the tool is consumed:
+- **Failed lock pick:** Pin bends (bent-pin.lua created)
+- **Failed sewing:** Thread tangles (tangled-mess.lua created)
+
+**Rationale:** Teaches design language through play. Resources are finite.
+
+### 5. Blood Writing Is Transgressive and Costly
+
+\\\
+PRICK SELF WITH pin → Player loses 5 HP → Blood object created (time-limited, ~5 game-minutes) → WRITE "text" ON paper WITH blood → Paper becomes permanent
+\\\
+
+**Rationale:** Embodies the dark, tactile tone. Blood is not a convenience—it's a desperate measure.
+
+### 6. Paper Mutations Are File-Per-State
+
+When the player writes on paper, the engine creates \paper-with-writing.lua\ with embedded player text.
+
+**Rationale:** Code-as-state. Player text persists across saves. Designer can inspect player-authored papers.
+
+### 7. Skill Discovery Is Multi-Path, Not Gated by Progression
+
+Four acquisition methods:
+1. Find & Read manuals
+2. Practice (use pin multiple times)
+3. NPC Teaching (future)
+4. Puzzle Solve (future)
+
+**Rationale:** No forced order. Player discovers skills naturally.
+
+## Implementation Notes
+
+**For Engineers:**
+- Add \player.skills\ table (hash of skill_id → boolean)
+- Verb handlers check \player.skills[required_skill]\ before allowing action
+- Tool lookup validates both \provides_tool\ AND skill requirement
+
+**For Designers:**
+- Create skill manuals as readable objects in rooms
+- Mark blood writes as disturbing in design docs
+- Test that every puzzle has a no-skill solution
+
+## Risk Assessment
+
+| Risk | Likelihood | Severity | Mitigation |
+|------|-----------|----------|-----------|
+| Players ignore skills | Low | Low | Design multiple paths |
+| Blood writing alienates players | Medium | Medium | Document dark tone upfront |
+| Consumable failures frustrate players | Low | Medium | Make failures recoverable |
+| Input sanitization fails | Low | High | Whitelist chars, escape quotes |
+
+## Decision Authority
+
+**Level 1** (design-level decision). Requires Wayne + Bart + Game Design team approval.
+
+## Timeline
+
+Proposal → Review (3–5 days) → Approval/Iteration → Implementation (1 week for MVP)
+
+## Open Questions for Team
+
+1. **Paper mutations:** File-per-state or in-place?
+2. **Proficiency levels:** Prototype now or defer to V2?
+3. **NPC teaching:** Reserve verb gate for future?
+4. **Blood availability:** Time-limited or persistent across rooms?
+
+## Related Decisions
+
+**Supports:** Decision D-28 (Multi-Sensory Convention). Skills discovered by feeling/smelling objects.
+
+---
+
+# Decision: Tier 2 Embedding Parser Implementation Plan Approved for Review (2026-03-20)
+
+**Author:** Chalmers (Project Manager)  
+**Date:** 2026-03-20  
+**Status:** Ready for Wayne Review  
+**Related Decisions:** D-19 (Parser approach), D-17 (Build-time LLM)  
+**Decision Authority:** Level 2 (Architecture-affecting)
+
+## Summary
+
+Comprehensive implementation plan for Tier 2 embedding-based parser fallback system. Plan covers all 6 phases needed to integrate GTE-tiny ONNX embeddings into game loop, with ~10 working days timeline.
+
+**Deliverable:** \plan/llm-slm-parser-plan.md\ (445 lines, committed to main)
+
+## Key Decisions
+
+### 1. Embedding Model Choice: GTE-tiny ONNX INT8
+- 5.5MB model size
+- No GPU required (ONNX Runtime Web + WASM)
+- 10–30ms inference latency per phrase
+
+**Rationale:** Balances semantic understanding with PWA constraints.
+
+### 2. Index Strategy: Pre-Computed, Updatable
+- ~2,000 canonical phrases encoded at build time
+- JSON lookup table (~400KB compressed)
+- Regenerated automatically when verbs/objects change
+
+**Rationale:** Decouples content changes from model tuning.
+
+### 3. Fallback Chain: Tier 1 → Tier 2 → Fail
+- Tier 1 (rule-based) remains at 85% coverage, unchanged
+- Tier 2 only invoked after Tier 1 miss
+- Threshold: 0.75 score → execute, 0.50–0.75 → disambiguate, <0.50 → fail
+
+**Rationale:** Preserves existing reliability, zero Tier 1 regressions.
+
+### 4. Test Coverage Target: 90%+ Accuracy
+- Canonical command set + edge cases
+- Latency targets: p50 <30ms, p99 <100ms
+
+### 5. CI/CD Automation
+- Automatic rebuild of embedding index on verb/object change
+- LLM cost ~\.05 per rebuild
+
+## Open Questions for Wayne
+
+1. **Accuracy Threshold:** Should threshold be 0.65 (lenient), 0.75 (moderate), or 0.85 (strict)?
+2. **Training Data Volume:** 2,000 phrases sufficient, or scale to 5,000–10,000?
+3. **Disambiguation UX:** Show "Did you mean...?" or use context to pick best match?
+4. **Tier 3 (Optional):** Reserve room for future Qwen2.5 SLM (~350MB)?
+5. **Fallback on Error:** Silently degrade to Tier 1 or fail game startup?
+
+## Timeline
+
+| Phase | Duration | Owner |
+|-------|----------|-------|
+| 1–2 | 2 days | LLM/Pipeline |
+| 3 | 3 days | Runtime Engineer |
+| 4 | 2 days | Engine Lead |
+| 5 | 2 days | DevOps |
+| 6 | 3 days | QA |
+| **Total** | **~10 days** | **6 people** |
+
+## Success Metrics
+
+- ✅ Tier 2 handles 12%+ of Tier 1 misses
+- ✅ Latency <100ms p99, median ~30ms
+- ✅ Accuracy 90%+ on canonical test set
+- ✅ Index <500KB, model <10MB memory
+- ✅ Zero Tier 1 regressions
+
+## Recommendation
+
+**APPROVE.** Plan is concrete, actionable, de-risks the embedding approach. Ready for Week 1 kickoff pending Wayne's answers to open questions.
+
+---
+
+# Decision Proposal: Embedding-Primary Hybrid Parser Architecture (2026-07-23)
+
+**Filed by:** Frink (Researcher)  
+**Date:** 2026-07-23  
+**Related to:** D-17, D-19  
+
+## Proposal
+
+Replace two-tier parser (rule-based + 350MB SLM) with three-tier architecture inserting **5.5MB embedding similarity layer** between rule-based parser and optional SLM.
+
+## Architecture
+
+| Tier | Method | Coverage | Latency | Size | GPU? |
+|------|--------|----------|---------|------|------|
+| 1 | Rule-based synonyms | ~85% | <1ms | 0 | No |
+| 2 | Embedding similarity (GTE-tiny ONNX INT8) | ~12% | 10–30ms | 5.5MB | No (WASM) |
+| 3 | Generative SLM (Qwen2.5-0.5B, optional) | ~3% | 200–1500ms | 350MB | Yes (WebGPU) |
+
+## Why
+
+- Tier 2 handles 80% of what SLM was supposed to handle, at 70× less size and 20× less latency
+- No WebGPU dependency — works on all browsers via WASM
+- Trivial to update: appending embedding vectors requires no GPU, no retraining, ~35 seconds
+- Integrates into CI/CD as CPU-only build step
+- Annual cost: ~\ (LLM training + occasional retrain)
+
+## Impact
+
+- D-17 still satisfied: zero per-player token cost
+- D-19 improves: smart parser drops from 350MB optional to 5.5MB near-mandatory
+- Build pipeline gains automatic parser training data generation
+
+## Action Needed
+
+Wayne to review and decide whether to adopt three-tier architecture or stay with two-tier.
+
+---
+
+# Decision: Wasmoon PWA Deployment Path (2025-07-24)
+
+**Author:** Frink (Researcher)  
+**Date:** 2025-07-24  
+**Status:** Proposed  
+**Impact:** Architecture — adds browser deployment path  
+
+## Recommendation
+
+Adopt Wasmoon (Lua 5.4 → WASM) as the browser deployment path for the MMO engine, wrapped as a vanilla PWA.
+
+## Key Points
+
+1. **Wasmoon runs our Lua engine with minimal adaptation.** Only \io.popen\ (directory listing), blocking REPL loop, and \print\/\io.write\ need browser-specific alternatives. All 6 engine modules and all game content run unmodified.
+
+2. **Create \main_browser.lua\ as parallel entry point.** Don't modify \main.lua\ — terminal REPL continues. Browser variant replaces filesystem scanning with JS-provided file lists and replaces blocking loop with \process_command()\ function.
+
+3. **Use \mountFile\ + build-time bundling.** Node.js build script reads all \.lua\ files, embeds as JS constants, mounts into Wasmoon VFS. Standard \equire()\ works against VFS.
+
+4. **Vanilla PWA, no framework.** HTML + CSS + ~100 lines of JS. Service worker for offline play. Manifest for installability. Total: ~168KB gzipped.
+
+5. **Prototype effort: ~5-7 hours.** Hello-world to fully playable browser REPL with PWA wrapper.
+
+## Constraints
+
+- Wasmoon WASM requires modern browser (96%+ coverage, no IE11)
+- \io.popen\ permanently unavailable in browser
+- No async Lua→JS callbacks (not needed for synchronous game model)
+
+## Decision Authority
+
+Level 2 — architecture-affecting, team review recommended.
+
+---
+
+# User Directive: Summary vs Detail Descriptions (2026-03-19T153051Z)
+
+**By:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-19  
+**Status:** Active  
+
+## Directive
+
+When doing a room sweep (FEEL AROUND, LOOK), show **SHORT summaries only** — not full detailed descriptions. Detailed text is too much for a list. Players should EXAMINE or FEEL {specific object} for deep description.
+
+## Two Tiers of Description
+
+**Summary** (room sweep / FEEL AROUND / LOOK):
+- Brief, 5-10 words max
+- Examples: "a small nightstand", "a ceramic chamber pot", "heavy velvet curtains"
+
+**Detail** (EXAMINE {object} / FEEL {object}):
+- Full rich description
+- Example: "Smooth wooden surface, crusted with hardened wax drippings. A small drawer handle protrudes from the front."
+
+## Implementation
+
+- Objects need \summary\ or short \
+ame\ field for list view
+- \on_feel\ / \description\ remain DETAILED versions (shown on direct examination only)
+- Room sweep: "Your hands find: a small nightstand, heavy velvet curtains, a ceramic chamber pot..."
+- FEEL nightstand → shows full on_feel text
+- Same principle for LOOK: room description brief, EXAMINE gives detail
+
+## Rationale
+
+Information hierarchy. Don't dump everything at once. Progressive disclosure. Let player drill down.
+
+---
+
+# Play Test Log #3 — 2026-03-19
+
+**By:** Wayne "Effe" Berry  
+**Build:** Post summary fix (commit 1f98cbe)  
+**Status:** FINDINGS LOGGED  
+
+## Session Notes
+
+Player attempted darkness gameplay loop: feel around room, discover nightstand, open drawer by feel, discover matchbox.
+
+## Issues Found
+
+1. **OPEN blocked by darkness** [SEVERITY: HIGH]
+   - Player felt the drawer handle but couldn't OPEN it
+   - Physical actions (OPEN, CLOSE, TAKE from felt containers) should work in dark
+   - You don't need eyes to pull a drawer
+
+2. **EXAMINE fails in dark, should fall back to FEEL** [SEVERITY: MEDIUM]
+   - EXAMINE in darkness should give on_feel description, not dead end
+   - Current: "You can't see it"
+   - Expected: "You can't see it, but you feel: {on_feel}"
+
+3. **Parser strips "the" inconsistently** [SEVERITY: LOW]
+   - "feel the nightstand" works, so parser handles articles
+   - Marked as working as intended
+
+## Impact
+
+Puzzle unsolvable: player finds drawer by feel but can't open it. Blocks core darkness gameplay loop.
+
+## Recommendations
+
+- Implement tactile gating: OPEN/CLOSE/TAKE work in darkness from felt objects
+- Implement EXAMINE fallback: if object can't be seen, show on_feel instead
+- Consider "touch-to-interact" model: any verb requiring fine motor control (OPEN, CLOSE, TAKE, WRITE, CUT, PRICK, SEW, PICK LOCK) should work by feel

@@ -96,3 +96,25 @@ Infinite loops, memory exhaustion, state corruption, universe contamination, pri
 6. **CL-LoRA enables incremental fine-tuning** (CVPR 2025), but for our small domain (~2000 examples), full retrain is fast enough that incremental methods aren't necessary.
 
 **Recommendation:** Embedding-primary hybrid. Tier 2 (5.5MB embedding matcher) replaces most of the 350MB SLM's job. Tier 3 SLM becomes purely optional for complex NLP. This drops the "smart parser" download from 350MB to 5.5MB while maintaining 97% coverage.
+
+### 2025-07-24: PWA + Wasmoon Prototype Research
+
+**Report:** `.squad/agents/frink/research-pwa-wasmoon.md`
+
+**Key findings:**
+
+1. **Wasmoon is highly viable for this engine.** It compiles official Lua 5.4 to WASM — exact version match. Our engine is pure Lua with only 6 self-contained `require` calls and no C extensions. ~90% of code runs unmodified.
+
+2. **Module loading solved via `mountFile`.** Wasmoon's `LuaFactory.mountFile()` writes files into Emscripten's in-memory VFS. Standard `require()` and `io.open()` work against this VFS. A build-time script bundles all `.lua` files as JS string constants.
+
+3. **Three things need browser adaptation:** (a) `io.popen` for directory listing → replaced by build-time manifest, (b) blocking REPL loop → replaced by event-driven `process_command()` function, (c) `print`/`io.write` → overridden to write to DOM.
+
+4. **Performance is a non-issue.** Total download: ~168KB gzipped. Cold start: ~100-200ms. Per-command latency: <5ms. Memory: ~5MB. Smaller and faster than most web pages.
+
+5. **No framework needed.** Vanilla HTML/JS PWA with service worker for offline play. ~100 lines of JS total.
+
+6. **No prior game art with Wasmoon.** We'd be pioneering. But the technical foundation is proven (lua-in-browser demo, LiveCodes playground).
+
+7. **Prototype: 5-7 hours total.** Phase 0 (hello world, 30min) → Phase 1 (one module, 1hr) → Phase 2 (all modules, 1-2hr) → Phase 3 (browser REPL, 2-3hr) → Phase 4 (PWA wrapper, 1hr).
+
+**Recommendation:** Proceed with prototype. High confidence, low risk. Create `main_browser.lua` as parallel entry point — don't modify existing `main.lua`.

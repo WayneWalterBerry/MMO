@@ -192,3 +192,68 @@
 - Functions in Lua tables are copied by reference during deep_merge — multiple instances sharing a base class safely share function references since they access state through `self`
 - Verb handlers that interact with objects should always check for both `obj.surfaces` (multi-zone) and `obj.container`/`obj.contents` (simple) patterns — they are independent containment models that can coexist
 - The `accessible == false` gate on surface zones is the canonical pattern for hiding contents behind state (closed drawers, locked compartments). Always respect it in any verb that enumerates contents.
+
+---
+
+## Cross-Agent Update: Player Skills System Design (2026-03-19T16-23-38Z)
+
+**From:** Comic Book Guy (Game Designer)  
+**Impact:** Verb system architecture, gameplay progression  
+
+Comic Book Guy completed the player skills system design. Key implications for your work:
+
+1. **Double Dispatch Gating:** Verb handlers will need to check TWO gates in sequence:
+   - Skill gate: `if not player.skills[required_skill] then return "[BLOCKED]" end`
+   - Tool gate: (your existing tool resolution pattern — no changes needed)
+
+2. **Skill Discovery Multi-Path:** Your verbs don't change, but designers will add:
+   - Skill manuals (readable objects triggering skill unlock)
+   - Practice triggers (e.g., pricking self 3+ times unlocks blood-drawing skill)
+   - Future: NPC teaching, puzzle-solve triggers
+
+3. **Consumable Failures:** Skills can fail; failed attempts have consequences:
+   - Failed lock pick → bent-pin.lua created (your mutation pattern, no changes)
+   - Failed sewing → tangled-mess.lua created
+   - You already support dynamic mutation; no new engine work
+
+4. **Blood Writing System:** Your blood-as-virtual-tool design aligns perfectly:
+   - PRICK SELF WITH pin → blood created
+   - WRITE "text" ON paper WITH blood → paper-with-writing.lua (player text embedded)
+   - Blood persists ~5 min, limited resource
+
+5. **Integration Point:** Verb handlers (your domain) will be the dispatch layer for skill gating. No new module needed — skill check goes before tool check in each verb.
+
+**Decision filed:** `.squad/decisions.md` - "Decision Memo: Player Skills System Architecture"
+
+**Next steps for you:** When implementing new verbs, add skill gate check pattern at top of handler. Example pattern to establish:
+```lua
+-- Check skill gate first
+if verb_requires_skill and not player.skills[verb_required_skill] then
+  return string.format("[BLOCKED] %s", verb_blocked_reason)
+end
+
+-- Then check tool gate (your existing pattern)
+local tool = find_tool_in_inventory(ctx, required_capability)
+if not tool then
+  return "[BLOCKED] You need the right tool for that."
+end
+
+-- Then proceed with action
+```
+
+---
+
+## Cross-Agent Update: Documentation Sweep Complete (2026-03-19T16-23-38Z)
+
+**From:** Brockman (Documentation)  
+**Impact:** Documentation accuracy, team reference  
+
+Brockman completed post-integration documentation sweep:
+- README.md updated with current architecture status
+- `docs/verb-system.md` created — 31 verbs documented
+- `docs/src-structure.md` updated with accurate file paths
+- All cross-references verified against actual code
+
+The verb-system.md doc now lists all your implemented verbs. Helpful for designers onboarding and game design reference.
+
+**Note:** Your feel verb container enumeration (feel-around fix) is now documented with full rationale in verb-system.md.

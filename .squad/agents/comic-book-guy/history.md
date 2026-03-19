@@ -125,3 +125,47 @@ Darkness is not a wall — it's a different mode of play. Every sense gives diff
 - **Binary skills scale better than XP bars.** Proficiency levels are designed but not needed for V1. Discovery is the reward, not a number going up.
 - **Failure costs teach design language.** Bent pins, tangled threads—consumable failure states teach: "Resources are finite. Think before you act."
 - **Blood is design shorthand for consequence.** Writing in blood feels transgressive because it IS transgressive (health cost, permanent, disturbing). Mechanics mirror mood.
+
+---
+
+## Cross-Agent Update: Feel Verb Container Enumeration Fix (2026-03-19T16-23-38Z)
+
+**From:** Bart (Architect)  
+**Impact:** Gameplay loop, puzzle solvability  
+
+Bart fixed a critical bug in the FEEL verb handler: it wasn't enumerating accessible contents of containers/surfaces after printing the sensory description. This broke darkness gameplay — players felt the nightstand but couldn't discover the matchbox inside.
+
+**What Changed:**
+- FEEL verb now lists surface zones and container contents after the on_feel text
+- Tactile language: "Your fingers find {zone_name}:" for surfaces, "Inside you feel:" for containers
+- Respects accessibility gates: closed drawers hide contents from touch, just like from sight
+
+**Impact on your design:**
+1. **Progressive disclosure works now.** FEEL AROUND (room summary) → FEEL {object} (detail + contents). Players naturally discover containers by touch.
+2. **Multi-surface objects are fully playable.** Nightstand: drawer feels closed/empty (accessible=false) vs. open/shows matchbox (accessible=true)
+3. **Darkness is solvable without light.** Your sensory descriptions are now the COMPLETE information source. Players win by feeling, not by finding light.
+
+**Design verification needed:** Test that every object's sensory description (on_feel) + its structure (surfaces/containers) provides enough info for blind solving. Example: "Smooth wooden surface, small drawer handle protrudes" + "Your fingers find: an open drawer" + "Inside you feel: a matchbox" is complete puzzle guidance.
+
+**Related decision:** `.squad/decisions.md` - "Decision: Feel Verb Enumerates Container/Surface Contents"
+
+---
+
+## Cross-Agent Update: Documentation Sweep & Verb System Published (2026-03-19T16-23-38Z)
+
+**From:** Brockman (Documentation)  
+**Impact:** Team reference, onboarding  
+
+Brockman completed post-integration documentation:
+- `docs/verb-system.md` created — 31 verbs documented with categories and usage
+- All verb descriptions cross-checked against code
+- README.md updated with current architecture
+
+**For you (designer):**
+- Your multi-sensory object convention (D-28) is now documented in verb-system.md
+- Sensory hierarchy (FEEL=primary dark sense, SMELL=safe ID, LISTEN=mechanics, TASTE=danger) is published
+- 37 objects with sensory coverage are listed as reference
+
+**Useful for design team onboarding:** New designers can read verb-system.md to understand what verbs exist and how they interact with your object definitions.
+
+**Next:** When designing new objects, refer to verb-system.md sensory hierarchy to ensure consistent coverage.
