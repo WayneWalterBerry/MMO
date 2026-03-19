@@ -1,10 +1,10 @@
 # MMO Text Adventure Engine: Project Vocabulary
 
-**Version:** 1.2  
+**Version:** 1.3  
 **Purpose:** A living glossary of terms from interactive fiction, modern game architecture, and code-as-data languages. Use this when discussing design decisions and implementation.
 
-**Last Updated:** 2026-03-19  
-**Refined:** 2026-03-20 (aligned with architecture decisions; added missing terms for light system, time system, mutations, surfaces, ghosts, registry, sandbox loader)
+**Last Updated:** 2026-03-21  
+**Refined:** 2026-03-21 (added terms: Compound Tool, Consumable, Sensory Description, Two-Hand Inventory, Hand Slot, Burn Timer, Poison Effect, Dynamic Mutation, Prime Directive, Striker Surface, Container vs. State Machine distinction)
 
 ---
 
@@ -34,8 +34,14 @@ An object visible from multiple rooms simultaneously without being physically lo
 **Container**  
 An object that holds other objects "in" it; has capacity constraints and open/locked states. Core to the containment hierarchy that underpins the entire world model. Implemented via surfaces: a container has an "inside" surface. A sophisticated container might have multiple surfaces (e.g., a desk: top, inside, underneath).
 
+**Container vs. State Machine Distinction**  
+Design pattern distinguishing between containers (objects whose state is their contents list, unchanged when items are removed) and state machines (objects that fundamentally transform when certain verbs are applied). A matchbox holding matches is a container — taking a match just empties the `contents` array; no new file is needed. A candle is a state machine — when lit, it becomes an entirely different object (`candle-lit`) with `casts_light = true`. Containers use single `.lua` files; state machines use file-per-variant. Clarifies when to use mutations. (From latest directive)
+
 **Enterable**  
 An object type the player can enter (e.g., beds, cages). Part of Inform 7's spatial relationship system; relevant to supporting varied object interactions.
+
+**Hand Slot**  
+One of the player's two base inventory slots (left hand, right hand). Both hands are required for compound tool actions (e.g., striking a match requires one hand for the match and one for the matchbox). When a hand is occupied, compound actions are unavailable until the hand is freed. Items can be held in hand slots, worn (backpack), or in bags. (From latest directive)
 
 **Fixture**  
 An object permanently part of a room; cannot be moved. Used in Inform 7 to model immovable features like fireplaces, windows, or door frames.
@@ -43,11 +49,17 @@ An object permanently part of a room; cannot be moved. Used in Inform 7 to model
 **Room**  
 A top-level container representing a location; nodes in the world graph where scenes occur. The foundational unit of spatial organization; rooms connect via exits.
 
+**Striker Surface**  
+The textured surface of objects like matchboxes that provide friction for striking matches. Objects with `provides_tool = "striker_surface"` enable the STRIKE verb (e.g., STRIKE match ON matchbox). Distinct from fire_source — the matchbox is the striker surface, the lit match becomes the fire_source. (From latest directive)
+
 **Supporter**  
 An object that holds other objects "on" it (like a table holds items on its surface). Distinct from container (in/on relationship). Critical for modeling realistic object placement. Implemented via the `Surface` concept: a supporter has a "top" surface. Multi-surface objects (desk with top and inside) have multiple surfaces defined.
 
 **Thing**  
 The base entity type for all game objects in IF engines. In Inform 7, all in-game entities inherit from Thing; establishes common interface.
+
+**Two-Hand Inventory**  
+Inventory system where the player has exactly two hand slots as their base carrying capacity. Items held in hands, items worn (backpack), and items in bags are tracked separately. Compound tool actions (e.g., striking a match) require both hands to be free. Creates strategic depth: drop one item to use two-handed tools, or wear a backpack for permanent hand freedom. (From latest directive)
 
 ### Spatial Organization
 
@@ -597,6 +609,12 @@ Story with multiple paths influenced by player choices. Multiple endings; player
 **Choice-Based Framework**  
 Narrative engine where player selects from presented choices (Twine, Ink, ChoiceScript). Simpler than parser-based; explicit choice presentation.
 
+**Compound Tool**  
+An interaction requiring two tools used together, where the complexity is having BOTH objects rather than having a skill. Examples: striking a match (match + matchbox), sewing (needle + thread). The engine needs `requires_tools` (plural) fields to track multiple capability requirements. Adds puzzle depth without requiring learned skills. (From latest directive)
+
+**Consumable**  
+An object that is DESTROYED when consumed, removed entirely from the universe with no variant file or replacement. Examples: candles burn down over time (consumed by burning), matches are consumed when struck, food is eaten, paper is burned. Distinct from mutation (object becomes something else). Registry must support full `destroy()` or `remove()` calls for consumables. Adds resource scarcity and urgency to gameplay. (From latest directive)
+
 **Dialogue**  
 Conversation system with conditionals and branching. NPC interaction; narrative branch point.
 
@@ -629,6 +647,9 @@ Dynamically adjusting narrative to maintain tension and pacing. Narrative AI; ma
 **Dynamic Exits**  
 Exits added/removed during game (e.g., cave-in blocks a passage). Dynamic topology; world changes.
 
+**Dynamic Mutation**  
+Runtime rewriting of object code to reflect gameplay state changes. Core to the mutation model: when a player breaks a mirror, the engine completely rewrites the mirror object's definition to `mirror-broken`, not just setting a flag. Enables emergent behavior where the world's actual code evolves as the player plays. Distinct from state flags. (From latest directive)
+
 **Event Handler**  
 Function triggered when specific event occurs. Callback mechanism; enables reactive programming.
 
@@ -643,6 +664,9 @@ Character controlled by AI, not by player. Populates world; adds interactivity.
 
 **Procedural Narrative**  
 Narrative generated algorithmically from rules and constraints. Scales narrative; requires careful design.
+
+**Sensory Description**  
+A field describing what an object is like to a specific sense: `on_look` (visual), `on_feel` (touch), `on_smell` (olfactory), `on_taste` (gustatory), `on_listen` (auditory). In dark rooms, non-visual sensory descriptions enable navigation without light. Sensory effects like `on_taste_effect = "poison"` trigger engine-level state changes. Every object should have `on_feel` at minimum. (From latest directive)
 
 **Game Clock**  
 The accelerated time system where 1 real-world hour = 1 in-game day. Time progresses in the player's universe independently, affecting daytime/nighttime cycles. Impacts lighting (rooms need light sources or windows during nighttime), NPC schedules, and time-based events. Enables temporal narrative pacing without real-time sync overhead. (From latest directive)
@@ -703,6 +727,9 @@ UPenn system for procedural world generation using LLMs. Research system; explor
 **Backward Chaining**  
 Inference strategy starting from goal, working backward to find facts; used in Prolog. Goal-driven; used in theorem proving.
 
+**Burn Timer**  
+Duration value tracking how long a lit consumable (e.g., candle) remains before being consumed/destroyed. After N turns of being `lit = true`, the candle's burn timer expires and the object is removed from the registry entirely, returning darkness to the room. Enables resource scarcity without player oversight. (From latest directive)
+
 **Forward Chaining**  
 Inference strategy starting from known facts, applying rules to derive new facts. Data-driven; used in production systems.
 
@@ -737,6 +764,12 @@ Functional programming abstraction for composing operations with side effects. E
 
 **Persistent Data Structure**  
 Structure preserving old versions after modifications; enables efficient undo/versioning. Copy-on-write; enables history without memory overhead.
+
+**Poison Effect**  
+A sensory effect triggered when a player interacts with a dangerous object. When `on_taste_effect = "poison"` is triggered (player tastes poison bottle), the engine immediately applies the poison effect (e.g., instant death). Teaches consequence-driven design: smelling the bottle is safe, tasting is deadly. Part of the dark-room mechanic where player must explore sensory-safely. (From latest directive)
+
+**Prime Directive**  
+The governing principle: ALWAYS honor Wayne's design directives and work toward playtesting. Every decision, every implementation, every architecture choice serves two masters: (1) maintaining fidelity to Wayne's vision and (2) reaching a playable state as fast as possible. When in doubt, ask: "Does this honor the design? Does this get us to playtesting?" If both are yes, do it. (From latest directive)
 
 **Tail Call**  
 Function call as last operation; optimizable into jump (tail call optimization). Enables recursive functions without stack overflow; critical in functional languages.
@@ -776,6 +809,7 @@ When a ghost player joins another universe as a full participant, their home uni
 | 1.0 | 2026-03-18 | Initial vocabulary extracted from three research reports. Organized by category; 200+ terms. |
 | 1.1 | 2026-03-19 | Added 11 terms from architecture decisions session (D-14 through D-21). Added two new sections: Engine & Mutation Architecture, Multiverse & Universe Architecture. |
 | 1.2 | 2026-03-20 | Refined vocabulary against all 24 decisions. Updated terms with decision cross-references; removed speculative language about TypeScript/Kotlin/Swift (engine is Lua only, D-16). Added new terms: Mutation Variant, Room Presence, Template, Surface, Light Source, Game Clock, Ghost, Universe Fork, Registry, Sandbox Loader. Updated State Flags term to emphasize code mutation is authoritative (D-22). Marked ECS as superseded by containment hierarchy. |
+| 1.3 | 2026-03-21 | Added 11 new terms from today's directive session: Compound Tool, Consumable, Sensory Description, Two-Hand Inventory, Hand Slot, Burn Timer, Poison Effect, Dynamic Mutation, Prime Directive, Striker Surface, Container vs. State Machine distinction. Updated version and timestamps. |
 
 ---
 

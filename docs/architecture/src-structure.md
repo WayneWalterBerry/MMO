@@ -34,11 +34,12 @@ src/
 ├── meta/
 │   ├── world/        — room graph: canonical room definitions and exit topology
 │   ├── objects/      — canonical object definitions with self-describing mutations
+│   │                    (includes: paper, pen, pencil, knife, pin, needle, matchbox, match, match-lit, thread, poison-bottle)
 │   ├── templates/    — base object templates for inheritance (sheet, furniture, container, small-item)
 │   └── npcs/         — NPC definitions (behaviour, dialogue, state)
 │
 ├── parser/
-│   ├── verbs/        — verb handlers: each verb (break, open, take, look…) as a module
+│   ├── verbs/        — verb handlers (~20 canonical verbs: look, take, drop, open, close, light, strike, write, cut, prick, feel, smell, taste, listen, break, examine, inventory, help, etc.)
 │   └── synonyms/     — synonym tables mapping player input to canonical verbs/nouns
 │
 ├── multiverse/
@@ -78,7 +79,7 @@ The canonical authored world — the source of truth before any player touches i
 ### `parser/`
 Intentionally thin. The team decision is: **no per-interaction LLM tokens**. This is a fast, local lookup.
 
-- **verbs/** — one file per canonical verb. `break.lua` knows how to resolve `break <noun>` into an engine call.
+- **verbs/** — one file per canonical verb (~20 verbs implemented: LOOK, TAKE, DROP, OPEN, CLOSE, LIGHT, STRIKE, WRITE, CUT, PRICK, FEEL, SMELL, TASTE, LISTEN, BREAK, EXAMINE, INVENTORY, HELP, etc.). Each verb file knows how to resolve `verb <noun>` into an engine call.
 - **synonyms/** — tables like `{ smash=break, shatter=break, destroy=break }`. Loaded once at startup.
 
 ### `multiverse/`
@@ -188,6 +189,22 @@ src/
 
 Total: ~215 lines of Lua to reach a runnable "break mirror" demo.  
 No cloud. No multiverse. No ghosts. Just the mutation engine proving itself.
+
+---
+
+## Documentation: Puzzle Architecture
+
+A new folder `docs/puzzles/` contains design documentation for each puzzle in the game. Game designers document:
+
+- Puzzle name and location
+- Prerequisite knowledge / skills required
+- Solution path(s)
+- Objects involved
+- Sensory / timing constraints
+- Teach-value (what the player learns)
+- Consequence if failed
+
+**Purpose:** Makes puzzle design collaborative and auditable. New designers onboard by reading puzzle docs before implementation. Each puzzle's design is preserved and referenced alongside code.
 
 ---
 
