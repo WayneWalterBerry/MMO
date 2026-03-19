@@ -1,34 +1,43 @@
 ---
-updated_at: 2026-03-19T12:51:15.395Z
-focus_area: Play test iteration — fixing blockers + new objects
+updated_at: 2026-03-19T16:28:39Z
+focus_area: Planning + research complete — ready for engineering phase
 active_issues: []
 ---
 
 # What We're Focused On
 
-V1 REPL is playable (`lua src/main.lua`). Next: integrate tool system (requires_tool/provides_tool) into verb handlers, resolve new object designs (paper, pen, knife, pin, needle), implement player skills system (lockpicking, sewing), and debate state model confirmed as file-per-state.
+V1 REPL is playable and tested. Foundation work (engine, verbs, tools, skills system) delivered. New planning phase complete:
+- ✅ Feel verb bug fixed, container/surface enumeration working
+- ✅ All batch 1 pending items addressed (blockers fixed, objects designed, skills system designed, docs swept)
+- ✅ Parser plan delivered (Tier 2 embedding-based, 6 phases, 10 working days)
+- ✅ PWA+Wasmoon research complete (5–7hr prototype, high confidence)
 
-## Agents In Flight (session ended with background work running)
-- 🏗️ Bart: fixing play test blockers (dawn+dark contradiction, FEEL verb, error msgs, tool integration)
-- 🎮 Comic Book Guy: designing paper/pen/knife/pin/needle objects + crafting patterns
-- 📝 Brockman: March 19 newspaper
+**Next decisions needed from Wayne:**
+1. Chalmers' open questions: accuracy threshold, Tier 3 optional SLM, training volume
+2. Greenlight Frink's PWA prototype (5–7hr)
 
-## When You Return — Check These First
-1. Did Bart's play test fix land? Check git log for commits after bd9c55a
-2. Did Comic Book Guy's objects land? Check src/meta/objects/ for paper.lua, pen.lua, knife.lua, pin.lua, needle.lua
-3. Did Brockman's newspaper land? Check newspaper/2026-03-19.md
-4. Run `lua src/main.lua` and re-test: can you LOOK at dawn? FEEL around? Open curtains?
+## Artifacts Generated (Batch 2)
 
-## Still Pending (not yet started)
-- Bart: wire WRITE, CUT, SEW, PICK LOCK verbs after new objects land
-- Player skills system architecture (lockpicking, sewing)
-- Frink: PWA + Wasmoon prototype
-- Brockman: docs sweep after integration pass
+- `plan/llm-slm-parser-plan.md` — Tier 2 embedding parser implementation (445 lines, 17.6KB)
+- `.squad/agents/frink/research-pwa-wasmoon.md` — PWA + Wasmoon feasibility study (28.5KB)
+- `docs/design/player-skills.md` — Skills system architecture (24.3KB)
+
+## Decisions Filed
+
+- **D-42:** Tier 2 Embedding Parser (references D-19, D-17)
+- **D-43:** PWA + Wasmoon Prototype Feasibility
+
+## Still Pending (engineering phase)
+
+- Chalmers: Phase 1 LLM data generation (pending Wayne approval)
+- Frink: PWA prototype (5–7hr, pending greenlight)
+- Bart: Wire WRITE, CUT, SEW, PICK LOCK verbs (blocked until Chalmers Phase 1 begins)
+- Comic Book Guy: New object designs (paper, pen, knife, pin, needle) awaiting integration
+- Brockman: Ongoing newspaper/docs as engineering progresses
 
 ## Recent Directives Not Yet Implemented
+
 - Paper mutates with written words (dynamic mutation)
 - Knife/pin as injury tools → blood for writing
-- Player skills (lockpicking, sewing) unlock tool+verb combos
 - Sewing: cloth → clothing with needle
 - Puzzles are first-class design goal
-- File-per-state confirmed
