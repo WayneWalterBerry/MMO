@@ -785,12 +785,7 @@ function verbs.create()
             for _, obj_id in ipairs(room.contents or {}) do
                 local obj = ctx.registry:get(obj_id)
                 if obj and not obj.hidden then
-                    local desc
-                    if obj.on_feel then
-                        desc = (obj.name or obj.id) .. " (" .. obj.on_feel .. ")"
-                    else
-                        desc = (obj.name or obj.id)
-                    end
+                    local desc = obj.name or obj.id
                     found[#found + 1] = desc
                 end
             end
