@@ -775,19 +775,30 @@ function verbs.create()
     -- FEEL / TOUCH / GROPE — works even in total darkness
     ---------------------------------------------------------------------------
     handlers["feel"] = function(ctx, noun)
-        if noun == "" then
+        -- Treat "around", "room", "here" the same as bare feel (room sweep)
+        local sweep_words = { [""] = true, ["around"] = true, ["room"] = true, ["here"] = true,
+                              ["around me"] = true, ["surroundings"] = true }
+        if sweep_words[noun] then
             -- Feel around the room
             local room = ctx.current_room
             local found = {}
             for _, obj_id in ipairs(room.contents or {}) do
                 local obj = ctx.registry:get(obj_id)
                 if obj and not obj.hidden then
-                    found[#found + 1] = obj.name or obj.id
+                    local desc
+                    if obj.on_feel then
+                        desc = (obj.name or obj.id) .. " (" .. obj.on_feel .. ")"
+                    else
+                        desc = (obj.name or obj.id)
+                    end
+                    found[#found + 1] = desc
                 end
             end
             if #found > 0 then
                 print("You reach out in the darkness, feeling around you...")
-                print("Your hands find: " .. table.concat(found, ", ") .. ".")
+                for _, entry in ipairs(found) do
+                    print("  " .. entry)
+                end
             else
                 print("You feel around but find nothing within reach.")
             end

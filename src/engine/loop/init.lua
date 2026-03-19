@@ -108,6 +108,12 @@ local function preprocess_natural_language(input)
     return "help", ""
   end
 
+  -- Grope/feel compound phrases → feel (room sweep)
+  if lower:match("^grope%s+around%s+")
+    or lower:match("^feel%s+around%s+") then
+    return "feel", ""
+  end
+
   return nil, nil
 end
 
@@ -156,7 +162,13 @@ function loop.run(context)
     if handler then
       handler(context, noun)
     else
-      print("I don't understand '" .. verb .. "'. Try 'look', 'examine', 'take', 'open', or type 'help' for a full list.")
+      -- Helpful hints for natural-language question words
+      local question_words = { what = true, where = true, how = true, who = true, why = true }
+      if question_words[verb] then
+        print("Try 'feel' to explore by touch, or 'look' if you have light. Type 'help' for a full list of commands.")
+      else
+        print("I don't understand '" .. verb .. "'. Try 'look', 'examine', 'take', 'open', or type 'help' for a full list.")
+      end
     end
 
     -- Post-command tick (flame countdown, candle burn, etc.)
