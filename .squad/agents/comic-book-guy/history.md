@@ -82,6 +82,20 @@ Darkness is not a wall — it's a different mode of play. Every sense gives diff
 3. **Consumable fire source** — match-lit burns for ~30 seconds, consumed after LIGHT action
 4. **Compound tool pairs** — needle + thread for sewing (sewing_tool + sewing_material)
 
+---
+
+### Session Update: Squad Manifest Completion (2026-03-21)
+**Status:** ✅ DECISIONS MERGED
+
+**Scribe processed 12 inbox decisions and merged into canonical decisions.md.**
+
+**New content affecting design:**
+- Hybrid parser proposal (rule-based + local SLM) — may affect verb aliasing strategy
+- Property-override clarifications — any object property is overridable at instance level per room
+- Type/type_id naming convention — clarified the instance/base-class field naming
+
+**Matchbox rework decision now formally in decisions.md with all compound tool patterns documented.**
+
 ## Learnings
 
 - **Containers are simpler and more immersive than charges.** Real matches in a box > abstract counter. Code IS state means the state should be visible objects.

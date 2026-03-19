@@ -45,3 +45,18 @@ Refined vocabulary v1.2 across all 24 architecture decisions; consolidated 12+ u
 - Newspaper serves as daily communication hub — established comic strip and op-ed as recurring sections
 - Puzzle documentation establishes design methodology — puzzles are first-class artifacts
 - Team decisions now consolidated in decisions.md (14 inbox files merged)
+
+---
+
+### Session Update: Squad Manifest Completion (2026-03-21)
+**Status:** ✅ DECISIONS MERGED
+
+**Scribe processed all 12 inbox decision files into canonical decisions.md.**
+
+**Decisions affecting documentation:**
+- Hybrid Parser (Frink proposal) — adds parser architecture to decisions
+- Property-override clarification — emphasizes extensibility of instance model
+- Type/type_id rename — clarifies instance/base-class field naming
+- Playtest Log #2 — documents FEEL verb edge cases for future fixes
+
+**All documentation should reference updated decisions.md for current architecture state. No stale copies exist after merge.**

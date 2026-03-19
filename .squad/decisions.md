@@ -1178,6 +1178,111 @@ All objects now carry multi-sensory description fields (`on_feel`, `on_smell`, `
 **Why:** User decision — resolves architecture question. File-per-state stays. No refactoring needed.
 
 ---
+
+### 2026-03-19T140600Z: Architecture clarification — Any meta property overridable
+**By:** Wayne "Effe" Berry (via Copilot)
+**What:** ANY meta property of a base object can be overridden at the instance level. This isn't limited to descriptions — size, weight, capacity, categories, sensory descriptions, tool capabilities, ANYTHING.
+
+**Example:** The base `bed` class defines a standard bed. But:
+- Bedroom instance: `overrides = { size = 4, description = "A massive four-poster bed..." }`
+- Servant's quarters instance: `overrides = { size = 2, description = "A narrow cot with a thin mattress." }`
+- King's chamber instance: `overrides = { size = 6, weight = 200, description = "An enormous canopied bed..." }`
+
+Same base class GUID, completely different feel per room. The base provides defaults. The instance makes it unique.
+
+This applies to EVERY property: weight, size, capacity, on_feel, on_smell, on_taste, on_listen, room_presence, categories, requires_tool, provides_tool, surfaces, contents, keywords — all overridable.
+
+**Why:** Clarification of instance model. Designers define base objects once, then customize per room via lightweight overrides. Massive content reuse with room-specific character.
+
+---
+
+### 2026-03-19T141309Z: Architecture directive — Field naming: type and type_id
+**By:** Wayne "Effe" Berry (via Copilot)
+**What:** Rename instance fields:
+- `name` → `type` (human-readable type name, e.g., "Matchbox", "Poison Bottle")
+- `base_guid` → `type_id` (the GUID that references the base class definition)
+
+**Final instance field convention:**
+```lua
+{
+  id = "matchbox-1",                              -- unique instance ID within this room
+  type = "Matchbox",                              -- human-readable type (what kind of thing)
+  type_id = "a1b2c3d4-e5f6-4a7b-8c9d-...",       -- GUID of the base class definition
+  location = "nightstand-1.inside",
+  overrides = {},
+  contents = {}
+}
+```
+
+**Rationale:** 
+- `type` is more accurate than `name` — it describes WHAT KIND of thing this is, not what this specific instance is called. A room might have "Grandmother's Rocking Chair" (instance display name) but its TYPE is "Chair".
+- `type_id` clearly communicates "this is the ID that resolves the type definition"
+- `id` remains the instance's unique identifier within the room
+
+This applies everywhere:
+- All instance definitions in room files
+- The loader/resolver uses `type_id` to find the base class
+- Architecture docs should use this terminology
+
+**IMPORTANT:** Capture all of this (instance model, overrides, type/type_id, room as container, GUID resolution) in docs/architecture/instance-model.md.
+
+**Why:** User request — clearer naming convention. Type describes the class, type_id is the resolvable reference.
+
+---
+
+### 2026-03-22T120000Z: Hybrid Parser Architecture (Rule-Based + Local SLM)
+**Proposed by:** Frink (Researcher)
+**Status:** Proposed
+**Requested by:** Wayne "Effe" Berry
+**Related Decisions:** D-17 (No per-player LLM cost), D-19 (Parser: NLP or Rich Synonyms)
+
+**Summary:** Resolves Decision 19 (Parser approach — currently "Deferred/SOFT") with a hybrid architecture:
+
+1. **Primary:** Rule-based rich synonym parser handles ~85% of commands instantly (<1ms). Zero download, zero battery cost, works on all devices.
+2. **Secondary (progressive enhancement):** Local SLM (Qwen2.5-0.5B-Instruct, Q4 quantized, ~350MB) handles ambiguous natural language as fallback, running entirely in-browser via WebLLM + WebGPU. Zero cloud tokens.
+
+**Rationale:**
+- Satisfies Decision 17: no per-player LLM token cost (everything on-device)
+- Rule-based parser is the MVP; SLM is the stretch goal from D-19
+- 350MB model download is only for capable devices on WiFi — game works without it
+- Grammar-constrained JSON generation guarantees valid command output
+- Fine-tuning via LoRA on 500 build-time-generated training pairs is cheap (~1 hour, ~$2–5)
+
+**Impact:**
+- Parser engine needs a fallback chain: rule-based → SLM → ask player to rephrase
+- WebLLM dependency added as optional (not required for gameplay)
+- Need to generate 500 training pairs for fine-tuning (build-time LLM cost)
+- CDN hosting for model weights (~350MB, one-time per player)
+
+**Full Research:** `resources/research/architecture/local-slm-parser.md`
+
+---
+
+### Play Test Log #2 (2026-03-19)
+**By:** Wayne "Effe" Berry
+**Build:** Post compound-tools (commit 50c9021)
+
+**Transcript:**
+```
+> grope around what is around me
+You can't feel anything like that nearby.
+
+> feel around
+You can't feel anything like that nearby.
+
+> what is around me?
+It is too dark to see. You need a light source.
+(Try 'feel' to grope around in the darkness.)
+```
+
+**Issues:**
+1. **"feel around" doesn't work** — "around" is parsed as noun, handler looks for object called "around" and fails. FEEL with no noun or "around" should trigger room-sweep (list reachable objects by touch).
+2. **"grope around" same problem** — alias of feel, same bug.
+3. **Multi-word natural language still fails** — "what is around me" parsed as verb="what". Need either better parsing or friendlier error pointing to FEEL.
+
+**Fix needed:** FEEL with no noun, "around", or "room" should trigger the ambient feel-around behavior.
+
+---
 ### 2026-03-19T125251Z: User directive — Matchbox/Match Interaction Rethink
 **By:** Wayne "Effe" Berry (via Copilot)
 **What:** The matchbox interaction needs to be richer and more realistic:

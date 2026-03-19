@@ -59,3 +59,20 @@ Infinite loops, memory exhaustion, state corruption, universe contamination, pri
 7. **Decision 17 (no per-player token cost) is fully satisfied.** Everything runs on-device. Only cost is CDN bandwidth for model weights (~$0.001 per player).
 
 **Recommendation:** Build rule-based parser now (Phase 1). Add local SLM as progressive enhancement post-MVP (Phase 2). This resolves Decision 19's stretch goal.
+
+---
+
+### Session Update: Hybrid Parser Proposal (2026-03-21)
+**Status:** PROPOSED / SQUAD MANIFEST PROCESSED
+
+**Decision filed:** Hybrid Parser Architecture (Rule-Based + Local SLM) — merged into canonical decisions.md
+
+**Key addition:** This research proposal formally transitions Decision 19 from "Deferred/SOFT" to "Proposed with hybrid approach."
+
+**Summary:**
+- Primary: Rule-based synonym parser (~85% of commands, <1ms)
+- Secondary: Local SLM fallback (Qwen2.5-0.5B, ~350MB, runs in-browser)
+- Cost: Zero per-player token cost; satisfies Decision 17
+- Timeline: Rule-based MVP (Phase 1), SLM enhancement (Phase 2)
+
+**Full research:** `resources/research/architecture/local-slm-parser.md`

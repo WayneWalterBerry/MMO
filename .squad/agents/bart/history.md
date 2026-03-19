@@ -161,6 +161,18 @@
 
 **Decision filed at:** `.squad/decisions/inbox/bart-instance-model.md`
 
+### 2026-03-21 — Squad Manifest Completion: Decisions Merged
+
+**Session:** Scribe processing squad spawn manifest  
+**Decisions merged into canonical:** `.squad/decisions.md`  
+**Decision details:**
+- D-40: Hybrid Parser (Frink proposal)
+- D-40a: Property-override clarifications
+- D-40b: Type/type_id field renaming (deduped)
+- Playtest Log #2: FEEL verb edge cases
+
+**All 12 inbox files processed and deleted.**
+
 ## Learnings
 
 - When deep-merging base classes with instance overrides, contents arrays must be explicitly cleared and rebuilt from the instance tree — otherwise base class contents leak into instances
