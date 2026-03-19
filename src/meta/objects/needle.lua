@@ -5,9 +5,9 @@ return {
     id = "needle",
     name = "a sewing needle",
     keywords = {"needle", "sewing needle", "steel needle", "darning needle"},
-    description = "A fine steel sewing needle, slightly curved from long use. The eye is just large enough to thread, and the point could pierce leather. Someone took good care of this — there is not a spot of rust on it.",
+    description = "A fine steel sewing needle, slightly curved from long use. The eye is just large enough to thread, and the point could pierce leather. Someone took good care of this -- there is not a spot of rust on it.",
 
-    on_feel = "Thin metal, slightly curved. A sharp point at one end, a tiny eye at the other. No rust — smooth and well-kept.",
+    on_feel = "Thin metal, slightly curved. A sharp point at one end, a tiny eye at the other. No rust -- smooth and well-kept.",
 
     size = 1,
     weight = 0.05,

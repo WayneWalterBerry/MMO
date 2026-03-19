@@ -4,10 +4,10 @@ return {
     name = "a heavy wardrobe (open)",
     keywords = {"wardrobe", "armoire", "closet", "cabinet", "clothes", "open"},
     room_presence = "A towering wardrobe stands open in the corner, its carved doors flung wide like wings.",
-    description = "The massive wardrobe stands open, its carved doors flung wide like wings. The interior is lined with cedar — you can smell it, sharp and sweet beneath the must. A few wooden pegs jut from the back wall, most empty.",
+    description = "The massive wardrobe stands open, its carved doors flung wide like wings. The interior is lined with cedar -- you can smell it, sharp and sweet beneath the must. A few wooden pegs jut from the back wall, most empty.",
 
     on_feel = "A massive wooden frame, smooth and cold. The doors swing wide on iron hinges. Wooden pegs jut from the back wall.",
-    on_smell = "Cedar — sharp and sweet, now released into the room. Beneath it, the faintest trace of moth-eaten wool.",
+    on_smell = "Cedar -- sharp and sweet, now released into the room. Beneath it, the faintest trace of moth-eaten wool.",
 
     size = 9,
     weight = 60,

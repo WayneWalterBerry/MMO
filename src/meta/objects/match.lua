@@ -5,7 +5,7 @@ return {
     id = "match",
     name = "a wooden match",
     keywords = {"match", "stick", "matchstick", "lucifer", "wooden match"},
-    description = "A small wooden match with a bulbous red-brown tip. The head is slightly rough to the touch and smells faintly of sulphur. Unlit and inert — it needs a striker surface to ignite.",
+    description = "A small wooden match with a bulbous red-brown tip. The head is slightly rough to the touch and smells faintly of sulphur. Unlit and inert -- it needs a striker surface to ignite.",
 
     on_feel = "A small wooden stick with a bulbous, slightly rough tip.",
     on_smell = "Faintly sulfurous.",
@@ -29,7 +29,7 @@ return {
             becomes = "match-lit",
             requires = "matchbox",
             requires_property = "has_striker",
-            message = "You drag the match head across the striker strip. It sputters once, twice — then catches with a sharp hiss and a curl of sulphur smoke. A tiny flame dances at the tip.",
+            message = "You drag the match head across the striker strip. It sputters once, twice -- then catches with a sharp hiss and a curl of sulphur smoke. A tiny flame dances at the tip.",
             fail_message = "You need a rough surface to strike it on. A matchbox striker, perhaps.",
         },
     },

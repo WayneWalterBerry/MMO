@@ -30,7 +30,7 @@ local function cmd_look(context)
   -- Part 1: Room description (permanent architectural features).
   parts[#parts + 1] = room.description or ""
 
-  -- Part 2: Object presences — each visible object contributes its room_presence.
+  -- Part 2: Object presences -- each visible object contributes its room_presence.
   local presences = {}
   local contents_list = room.contents or {}
   for _, obj_id in ipairs(contents_list) do
@@ -104,9 +104,18 @@ local function preprocess_natural_language(input)
     return "inventory", ""
   end
 
-  -- Question patterns → examine (contextual container queries)
-  if lower:match("^what'?s%s+inside")
-    or lower:match("^what%s+is%s+inside") then
+  -- Question patterns → look in (container queries with noun)
+  local container_noun = lower:match("^what'?s%s+in%s+(.+)")
+    or lower:match("^what%s+is%s+in%s+(.+)")
+    or lower:match("^what'?s%s+inside%s+(.+)")
+    or lower:match("^what%s+is%s+inside%s+(.+)")
+  if container_noun then
+    return "look", "in " .. container_noun
+  end
+
+  -- Bare "what's inside" (no noun) → look
+  if lower:match("^what'?s%s+inside$")
+    or lower:match("^what%s+is%s+inside$") then
     return "look", ""
   end
 
@@ -127,10 +136,10 @@ end
 
 -- run(context)
 -- context fields:
---   registry     — live registry instance
---   current_room — room table (must have .id, .name, .description)
---   verbs        — table of { [verb_string] = handler_function }
---   on_quit      — optional callback fired before exit
+--   registry     -- live registry instance
+--   current_room -- room table (must have .id, .name, .description)
+--   verbs        -- table of { [verb_string] = handler_function }
+--   on_quit      -- optional callback fired before exit
 function loop.run(context)
   assert(context and context.registry, "loop: context.registry is required")
   context.verbs = context.verbs or {}
@@ -152,39 +161,69 @@ function loop.run(context)
     local trimmed = input:match("^%s*(.-)%s*$")
     if trimmed == "" then goto continue end
 
-    -- Try natural language preprocessing first
-    local verb, noun = preprocess_natural_language(trimmed)
-    if not verb then
-      verb, noun = parse(trimmed)
+    -- Strip trailing question marks before parsing
+    trimmed = trimmed:gsub("%?+$", ""):match("^%s*(.-)%s*$")
+    if trimmed == "" then goto continue end
+
+    -- Split compound commands on " and " (e.g., "get a match and light it")
+    local sub_commands = {}
+    local remaining = trimmed
+    while true do
+      local before, after = remaining:match("^(.-)%s+and%s+(.+)$")
+      if before and after then
+        local b = before:match("^%s*(.-)%s*$")
+        if b ~= "" then sub_commands[#sub_commands + 1] = b end
+        remaining = after
+      else
+        local r = remaining:match("^%s*(.-)%s*$")
+        if r ~= "" then sub_commands[#sub_commands + 1] = r end
+        break
+      end
     end
 
-    if verb == "" then goto continue end
+    local should_quit = false
+    for _, sub_input in ipairs(sub_commands) do
+      -- Try natural language preprocessing first
+      local verb, noun = preprocess_natural_language(sub_input)
+      if not verb then
+        verb, noun = parse(sub_input)
+      end
 
-    if verb == "quit" then
+      if verb == "" then goto next_sub end
+
+      if verb == "quit" then
+        should_quit = true
+        break
+      end
+
+      local handler = context.verbs[verb]
+      if handler then
+        handler(context, noun)
+      elseif context.parser then
+        -- Tier 2 fallback: try embedding-based phrase matching
+        local parser_mod = require("engine.parser")
+        local handled = parser_mod.fallback(context.parser, sub_input, context)
+        if not handled then
+          -- Tier 2 failed -- no graceful fallback past this point
+          goto next_sub
+        end
+      else
+        -- No Tier 2 available -- original behaviour
+        local question_words = { what = true, where = true, how = true, who = true, why = true }
+        if question_words[verb] then
+          print("Try 'feel' to explore by touch, or 'look' if you have light. Type 'help' for a full list of commands.")
+        else
+          print("I don't understand '" .. verb .. "'. Try 'look', 'examine', 'take', 'open', or type 'help' for a full list.")
+        end
+      end
+
+      ::next_sub::
+    end
+
+    if should_quit then
       if context.on_quit then context.on_quit() end
       print("Goodbye.")
       break
-    end
-
-    local handler = context.verbs[verb]
-    if handler then
-      handler(context, noun)
-    elseif context.parser then
-      -- Tier 2 fallback: try embedding-based phrase matching
-      local parser_mod = require("engine.parser")
-      local handled = parser_mod.fallback(context.parser, trimmed, context)
-      if not handled then
-        -- Tier 2 failed — no graceful fallback past this point
-        goto continue
-      end
-    else
-      -- No Tier 2 available — original behaviour
-      local question_words = { what = true, where = true, how = true, who = true, why = true }
-      if question_words[verb] then
-        print("Try 'feel' to explore by touch, or 'look' if you have light. Type 'help' for a full list of commands.")
-      else
-        print("I don't understand '" .. verb .. "'. Try 'look', 'examine', 'take', 'open', or type 'help' for a full list.")
-      end
     end
 
     -- Post-command tick (flame countdown, candle burn, etc.)

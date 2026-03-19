@@ -1,7 +1,7 @@
 -- engine/parser/json.lua
 -- Minimal JSON decoder for loading the embedding index.
 -- Supports: objects, arrays, strings, numbers, booleans, null.
--- Not a general-purpose JSON library — just enough for our index format.
+-- Not a general-purpose JSON library -- just enough for our index format.
 
 local json = {}
 
@@ -29,7 +29,7 @@ local function decode_string(s, i)
       elseif esc == 'b' then parts[#parts + 1] = '\b'
       elseif esc == 'f' then parts[#parts + 1] = '\f'
       elseif esc == 'u' then
-        -- Basic \uXXXX — just pass through as-is for ASCII range
+        -- Basic \uXXXX -- just pass through as-is for ASCII range
         local hex = s:sub(j + 1, j + 4)
         local cp = tonumber(hex, 16)
         if cp and cp < 128 then

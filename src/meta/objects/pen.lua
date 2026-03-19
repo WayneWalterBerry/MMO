@@ -7,7 +7,7 @@ return {
     keywords = {"pen", "ink pen", "quill", "writing pen", "nib", "fountain pen"},
     description = "A slender pen with a steel nib, stained permanently blue-black from years of use. The wooden barrel is smooth from handling, the brass clip tarnished but functional. A faint ink smell clings to it.",
 
-    on_feel = "A thin rod — wooden barrel, smooth from handling. One end narrows to a metal nib, sharp but not dangerous.",
+    on_feel = "A thin rod -- wooden barrel, smooth from handling. One end narrows to a metal nib, sharp but not dangerous.",
     on_smell = "Ink. Faint but unmistakable.",
 
     size = 1,

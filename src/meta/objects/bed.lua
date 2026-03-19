@@ -6,7 +6,7 @@ return {
     room_presence = "A massive four-poster bed dominates the center of the room, its heavy curtains hanging in moth-eaten folds.",
     description = "A massive four-poster bed with a dark wooden frame carved with twisting vines and half-seen faces. The mattress is stuffed thick with straw and wool, sagging slightly in the middle where countless sleepers have left their impression. Heavy curtains hang from the posts, moth-eaten but still grand.",
 
-    on_feel = "A soft mattress beneath thick coverings, warm even in this cold room. The wooden frame is smooth and carved — your fingers trace twisting vines and half-seen faces in the dark.",
+    on_feel = "A soft mattress beneath thick coverings, warm even in this cold room. The wooden frame is smooth and carved -- your fingers trace twisting vines and half-seen faces in the dark.",
     on_smell = "Musty linen and old straw, with a ghost of lavender from the pillow.",
 
     size = 10,

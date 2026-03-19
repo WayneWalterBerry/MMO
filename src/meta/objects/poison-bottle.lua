@@ -6,7 +6,7 @@ return {
     name = "a small glass bottle",
     keywords = {"bottle", "glass bottle", "poison", "vial", "potion", "flask", "small bottle"},
     room_presence = "A small glass bottle sits on the nightstand.",
-    description = "A small glass bottle with a skull and crossbones label. The liquid inside is a deep, murky green, shifting like something alive. The cork stopper is wedged tight, but the label's warning is clear — even to those who cannot read, the skull speaks volumes.",
+    description = "A small glass bottle with a skull and crossbones label. The liquid inside is a deep, murky green, shifting like something alive. The cork stopper is wedged tight, but the label's warning is clear -- even to those who cannot read, the skull speaks volumes.",
 
     on_feel = "Smooth glass, cold to the touch. A cork stopper on top. The bottle is small enough to close your hand around.",
     on_smell = "Even through the cork, you detect something acrid and chemical. Dangerous.",

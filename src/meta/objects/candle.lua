@@ -6,7 +6,7 @@ return {
     description = "A stubby tallow candle, melted into a brass dish crusted with old wax. The wick is blackened but intact, curling like a burnt finger. It is not lit.",
 
     on_feel = "A smooth wax cylinder, slightly greasy. It tapers to a blackened wick at the top. The brass dish beneath is cold.",
-    on_smell = "Faintly waxy — old tallow and a memory of smoke.",
+    on_smell = "Faintly waxy -- old tallow and a memory of smoke.",
 
     size = 1,
     weight = 1,

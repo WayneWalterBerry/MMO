@@ -171,7 +171,7 @@ function matcher.new(index_path)
     return self
   end
 
-  -- Build phrase dictionary (we skip the embedding vectors — Lua doesn't use them)
+  -- Build phrase dictionary (we skip the embedding vectors -- Lua doesn't use them)
   for _, entry in ipairs(index.phrases or {}) do
     self.phrases[#self.phrases + 1] = {
       text = entry.text,

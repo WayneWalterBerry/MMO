@@ -7,9 +7,9 @@ return {
     keywords = {"matchbox", "match box", "box of matches", "tinderbox", "lucifers"},
     description = "A battered little cardboard matchbox of thin cardboard. The sliding tray is closed. One long side bears a rough brown striker strip, worn but functional.",
 
-    on_feel = "A small cardboard box. One side is rough — a striker strip.",
-    on_smell = "Faintly sulfurous — the promise of fire, dormant.",
-    on_listen = "Something rattles inside — small wooden sticks.",
+    on_feel = "A small cardboard box. One side is rough -- a striker strip.",
+    on_smell = "Faintly sulfurous -- the promise of fire, dormant.",
+    on_listen = "Something rattles inside -- small wooden sticks.",
 
     size = 1,
     weight = 0.3,

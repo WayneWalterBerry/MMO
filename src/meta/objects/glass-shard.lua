@@ -4,7 +4,7 @@ return {
     id = "glass-shard",
     name = "a glass shard",
     keywords = {"shard", "glass", "glass shard", "sliver", "fragment"},
-    description = "A long, wicked sliver of mirror glass. One side still holds a ghost of a reflection — a fragment of a face, perhaps yours. The edge is razor-sharp.",
+    description = "A long, wicked sliver of mirror glass. One side still holds a ghost of a reflection -- a fragment of a face, perhaps yours. The edge is razor-sharp.",
 
     on_feel = "SHARP! The edge bites into your finger before you realize what you're holding. Smooth glass on the flat side, razor-keen at the edge.",
     on_feel_effect = "cut",

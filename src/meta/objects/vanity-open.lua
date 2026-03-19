@@ -7,7 +7,7 @@ return {
     description = "A solid oak vanity, its surface darkened by years of candle smoke and spilled cosmetics. An ornate mirror rises from the back, framed in tarnished gilt scrollwork. The brass-handled drawer hangs open, its dark interior exposed.",
 
     on_feel = "Smooth oak surface, slightly sticky with old cosmetics. The mirror glass is cold and flat. The drawer hangs open.",
-    on_smell = "Faint perfume — rosewater and something powdery, now mingling with the musty air of the open drawer.",
+    on_smell = "Faint perfume -- rosewater and something powdery, now mingling with the musty air of the open drawer.",
 
     size = 8,
     weight = 40,

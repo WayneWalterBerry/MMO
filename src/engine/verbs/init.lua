@@ -165,6 +165,29 @@ local function find_visible(ctx, keyword)
     return nil
 end
 
+-- Wrap find_visible with pronoun resolution ("it", "one", "that") and
+-- last-object tracking for compound command support.
+do
+    local _find_visible = find_visible
+    find_visible = function(ctx, keyword)
+        if not keyword or keyword == "" then return nil end
+        local kw = keyword:lower()
+            :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+        if (kw == "it" or kw == "one" or kw == "that") and ctx.last_object then
+            return ctx.last_object, ctx.last_object_loc or "room",
+                   ctx.last_object_parent, ctx.last_object_surface
+        end
+        local obj, loc, parent, surface = _find_visible(ctx, keyword)
+        if obj then
+            ctx.last_object = obj
+            ctx.last_object_loc = loc
+            ctx.last_object_parent = parent
+            ctx.last_object_surface = surface
+        end
+        return obj, loc, parent, surface
+    end
+end
+
 ---------------------------------------------------------------------------
 -- Helper: find object in player's carried items (hands + bags + worn)
 ---------------------------------------------------------------------------
@@ -446,7 +469,7 @@ local function time_of_day_desc(hour)
 end
 
 ---------------------------------------------------------------------------
--- Helper: light system — tri-state: "lit", "dim", "dark"
+-- Helper: light system -- tri-state: "lit", "dim", "dark"
 --   "lit"  = full light (open curtains + daytime, or artificial light)
 --   "dim"  = filtered daylight through closed curtains during daytime
 --   "dark" = no light at all (nighttime, no candle)
@@ -603,7 +626,7 @@ function verbs.create()
     -- LOOK (room view) / LOOK AT / LOOK IN / LOOK UNDER / EXAMINE
     ---------------------------------------------------------------------------
     handlers["look"] = function(ctx, noun)
-        -- Bare "look" — show room
+        -- Bare "look" -- show room
         if noun == "" then
             local light = get_light_level(ctx)
             if light == "dark" then
@@ -620,7 +643,7 @@ function verbs.create()
 
             -- Dim light preamble
             if light == "dim" then
-                parts[#parts + 1] = "Dim light seeps through the curtains — enough to make out shapes, but details are lost in shadow."
+                parts[#parts + 1] = "Dim light seeps through the curtains -- enough to make out shapes, but details are lost in shadow."
             end
 
             -- Room description (permanent features)
@@ -732,7 +755,7 @@ function verbs.create()
                     return
                 end
             end
-            -- No matching surface — fall through to general examine
+            -- No matching surface -- fall through to general examine
             if obj.on_look then
                 print(obj.on_look(obj))
             else
@@ -797,7 +820,7 @@ function verbs.create()
     end
 
     ---------------------------------------------------------------------------
-    -- FEEL / TOUCH / GROPE — works even in total darkness
+    -- FEEL / TOUCH / GROPE -- works even in total darkness
     ---------------------------------------------------------------------------
     handlers["feel"] = function(ctx, noun)
         -- Treat "around", "room", "here" the same as bare feel (room sweep)
@@ -875,7 +898,7 @@ function verbs.create()
     handlers["grope"] = handlers["feel"]
 
     ---------------------------------------------------------------------------
-    -- SMELL / SNIFF — works in darkness AND light
+    -- SMELL / SNIFF -- works in darkness AND light
     ---------------------------------------------------------------------------
     handlers["smell"] = function(ctx, noun)
         if noun == "" then
@@ -905,7 +928,7 @@ function verbs.create()
     handlers["sniff"] = handlers["smell"]
 
     ---------------------------------------------------------------------------
-    -- TASTE / LICK — works in darkness AND light (DANGEROUS)
+    -- TASTE / LICK -- works in darkness AND light (DANGEROUS)
     ---------------------------------------------------------------------------
     handlers["taste"] = function(ctx, noun)
         if noun == "" then
@@ -933,7 +956,7 @@ function verbs.create()
                 print("The world tilts. Your knees buckle.")
                 print("A spreading numbness crawls from your stomach to your fingertips.")
                 print("")
-                print("You collapse to the floor. The darkness — already absolute — becomes eternal.")
+                print("You collapse to the floor. The darkness -- already absolute -- becomes eternal.")
                 print("")
                 print("*** YOU HAVE DIED ***")
                 ctx.player.state = ctx.player.state or {}
@@ -952,7 +975,7 @@ function verbs.create()
     handlers["lick"] = handlers["taste"]
 
     ---------------------------------------------------------------------------
-    -- LISTEN / HEAR — works in darkness AND light
+    -- LISTEN / HEAR -- works in darkness AND light
     ---------------------------------------------------------------------------
     handlers["listen"] = function(ctx, noun)
         if noun == "" then
@@ -961,7 +984,7 @@ function verbs.create()
             if room.on_listen then
                 print(room.on_listen)
             else
-                print("You hold your breath and listen. Silence — save for your own heartbeat.")
+                print("You hold your breath and listen. Silence -- save for your own heartbeat.")
             end
             return
         end
@@ -992,7 +1015,7 @@ function verbs.create()
         -- "pick up X"
         local target = noun:match("^up%s+(.+)") or noun
 
-        -- "get X from Y" — extract from a bag/container the player holds
+        -- "get X from Y" -- extract from a bag/container the player holds
         local from_item, from_container = target:match("^(.+)%s+from%s+(.+)$")
         if from_item then
             local bag = find_in_inventory(ctx, from_container)
@@ -1100,7 +1123,7 @@ function verbs.create()
         end
 
         if not obj then
-            -- Check if it's in a bag — give a helpful message
+            -- Check if it's in a bag -- give a helpful message
             local bag_item = find_in_inventory(ctx, noun)
             if bag_item then
                 print("You'll need to get that out of the bag first, or drop the bag itself.")
@@ -1323,7 +1346,7 @@ function verbs.create()
     handlers["rip"] = handlers["tear"]
 
     ---------------------------------------------------------------------------
-    -- INVENTORY — shows hands, worn items, and bag contents
+    -- INVENTORY -- shows hands, worn items, and bag contents
     ---------------------------------------------------------------------------
     handlers["inventory"] = function(ctx, noun)
         local reg = ctx.registry
@@ -1429,7 +1452,7 @@ function verbs.create()
             return
         end
 
-        -- No tool required — original behavior
+        -- No tool required -- original behavior
         if perform_mutation(ctx, obj, mut_data) then
             local mutated = ctx.registry:get(obj.id)
             print(mut_data.message
@@ -1504,7 +1527,7 @@ function verbs.create()
             return
         end
 
-        -- Find target — check visible objects and inventory
+        -- Find target -- check visible objects and inventory
         local target = find_visible(ctx, target_word)
         if not target then
             target = find_in_inventory(ctx, target_word)
@@ -1565,7 +1588,7 @@ function verbs.create()
         end
 
         -- DYNAMIC MUTATION: generate new Lua source with written text baked in.
-        -- This is runtime code generation — the paper's definition is rewritten
+        -- This is runtime code generation -- the paper's definition is rewritten
         -- to include the player's words as part of the object's identity.
         local esc_written = string.format("%q", written)
         local new_source = string.format(
@@ -1604,7 +1627,7 @@ function verbs.create()
         local new_obj, err = ctx.mutation.mutate(
             ctx.registry, ctx.loader, target.id, new_source, ctx.templates)
         if not new_obj then
-            print("Something goes wrong — the ink smears illegibly.")
+            print("Something goes wrong -- the ink smears illegibly.")
             return
         end
 
@@ -1638,7 +1661,7 @@ function verbs.create()
         local target_word, tool_word = noun:match("^(.+)%s+with%s+(.+)$")
         if not target_word then target_word = noun end
 
-        -- CUT SELF — self-injury with a blade
+        -- CUT SELF -- self-injury with a blade
         if target_word == "self" or target_word == "myself"
            or target_word == "me" or target_word == "hand"
            or target_word == "palm" then
@@ -1726,7 +1749,7 @@ function verbs.create()
         local target_word, tool_word = noun:match("^(.+)%s+with%s+(.+)$")
         if not target_word then target_word = noun end
 
-        -- PRICK SELF — minor self-injury with any sharp point
+        -- PRICK SELF -- minor self-injury with any sharp point
         if target_word == "self" or target_word == "myself"
            or target_word == "me" or target_word == "finger"
            or target_word == "thumb" then
@@ -1761,7 +1784,7 @@ function verbs.create()
     end
 
     ---------------------------------------------------------------------------
-    -- SEW {material} WITH {tool} — STUB (requires future skill system)
+    -- SEW {material} WITH {tool} -- STUB (requires future skill system)
     ---------------------------------------------------------------------------
     handlers["sew"] = function(ctx, noun)
         print("You don't know how to sew. Perhaps you could learn this skill somehow.")
@@ -1771,7 +1794,7 @@ function verbs.create()
     handlers["mend"] = handlers["sew"]
 
     ---------------------------------------------------------------------------
-    -- PUT X IN/ON Y — supports furniture surfaces AND held/worn bags
+    -- PUT X IN/ON Y -- supports furniture surfaces AND held/worn bags
     ---------------------------------------------------------------------------
     handlers["put"] = function(ctx, noun)
         if noun == "" then
@@ -1796,7 +1819,7 @@ function verbs.create()
             return
         end
 
-        -- Find item — must be in hands
+        -- Find item -- must be in hands
         local item = nil
         local item_hand = nil
         local kw = item_word:lower()
@@ -1823,7 +1846,7 @@ function verbs.create()
             return
         end
 
-        -- Find target — could be a held bag, worn bag, or room object
+        -- Find target -- could be a held bag, worn bag, or room object
         local target = find_visible(ctx, target_word)
         if not target then
             print("You don't see " .. target_word .. " here.")
@@ -1897,10 +1920,10 @@ function verbs.create()
     handlers["place"] = handlers["put"]
 
     ---------------------------------------------------------------------------
-    -- STRIKE {A} ON {B} — compound tool verb for fire-making
+    -- STRIKE {A} ON {B} -- compound tool verb for fire-making
     -- Design: A (match/striker) is consumed from the matchbox.
     --   B (the matchbox) can be in your hand OR on any reachable surface.
-    --   You don't need to hold both — you strike the match against whatever
+    --   You don't need to hold both -- you strike the match against whatever
     --   is within reach.
     ---------------------------------------------------------------------------
     handlers["strike"] = function(ctx, noun)
@@ -1913,7 +1936,7 @@ function verbs.create()
         local a_word, b_word = noun:match("^(.+)%s+on%s+(.+)$")
         if not a_word then a_word = noun end
 
-        -- Find the fire_source (matchbox) — the thing with charges
+        -- Find the fire_source (matchbox) -- the thing with charges
         local matchbox = nil
         if b_word then
             -- Explicit target: check carried then visible
@@ -1922,7 +1945,7 @@ function verbs.create()
                 matchbox = find_visible(ctx, b_word)
             end
         else
-            -- "strike match" or "strike matchbox" — auto-find fire_source
+            -- "strike match" or "strike matchbox" -- auto-find fire_source
             -- First check if they named the matchbox directly
             matchbox = find_in_inventory(ctx, a_word)
             if not matchbox or not provides_capability(matchbox, "fire_source") then
@@ -1965,7 +1988,7 @@ function verbs.create()
     end
 
     ---------------------------------------------------------------------------
-    -- WEAR / PUT ON — equip an item from hand to worn slot
+    -- WEAR / PUT ON -- equip an item from hand to worn slot
     ---------------------------------------------------------------------------
     handlers["wear"] = function(ctx, noun)
         if noun == "" then
@@ -2009,7 +2032,7 @@ function verbs.create()
     handlers["don"] = handlers["wear"]
 
     ---------------------------------------------------------------------------
-    -- REMOVE / TAKE OFF — move worn item to hand
+    -- REMOVE / TAKE OFF -- move worn item to hand
     ---------------------------------------------------------------------------
     handlers["remove"] = function(ctx, noun)
         if noun == "" then
@@ -2047,7 +2070,7 @@ function verbs.create()
     end
 
     ---------------------------------------------------------------------------
-    -- EAT — stub for consumables
+    -- EAT -- stub for consumables
     ---------------------------------------------------------------------------
     handlers["eat"] = function(ctx, noun)
         if noun == "" then
@@ -2080,7 +2103,7 @@ function verbs.create()
     handlers["devour"] = handlers["eat"]
 
     ---------------------------------------------------------------------------
-    -- BURN — stub for consumables
+    -- BURN -- stub for consumables
     ---------------------------------------------------------------------------
     handlers["burn"] = function(ctx, noun)
         if noun == "" then

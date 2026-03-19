@@ -26,7 +26,7 @@ return {
         { id = "blanket",       type = "Blanket",            type_id = "7eb14362-a55d-4a89-a8ea-ec2098d952ff", location = "bed.top" },
         { id = "knife",         type = "Knife",              type_id = "b0c650c6-497a-440c-a83a-545ee8789284", location = "bed.underneath" },
 
-        -- Pillow contents (hidden — accessible = false)
+        -- Pillow contents (hidden -- accessible = false)
         { id = "pin",           type = "Pin",                type_id = "f5cd5850-2020-4483-b17f-972eb9242701", location = "pillow.inside" },
 
         -- Nightstand surfaces
@@ -56,7 +56,7 @@ return {
         { id = "needle",        type = "Needle",             type_id = "07b9daaf-ee36-408e-8c66-d794bc175ed1", location = "sack" },
         { id = "thread",        type = "Thread",             type_id = "8a7edb7e-9dff-4587-a104-4710cb270058", location = "sack" },
 
-        -- Rug surface (hidden — must lift rug to find)
+        -- Rug surface (hidden -- must lift rug to find)
         { id = "brass-key",     type = "Brass Key",          type_id = "4586b2cd-3240-46de-8fb8-5216ad9d4830", location = "rug.underneath" },
     },
 
@@ -187,7 +187,7 @@ return {
                         type = "hole in wall",
                         name = "a shattered window frame",
                         keywords = {"window", "broken window", "shattered window", "window frame"},
-                        description = "Jagged shards of leaded glass cling to the stone frame like broken teeth. Cold air howls through the gap. The courtyard is visible far below — a dangerous drop.",
+                        description = "Jagged shards of leaded glass cling to the stone frame like broken teeth. Cold air howls through the gap. The courtyard is visible far below -- a dangerous drop.",
                         open = true,
                         locked = false,
                         breakable = false,

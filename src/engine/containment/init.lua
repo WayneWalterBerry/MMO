@@ -2,10 +2,10 @@
 -- Four-layer containment validator with weight checking and multi-surface support.
 --
 -- Layers:
---   1. Container identity — is the target a container at all?
---   2. Physical size — does the item physically fit?
---   3. Capacity — is there room (by size and weight)?
---   4. Category accept/reject — does the container allow this type of item?
+--   1. Container identity -- is the target a container at all?
+--   2. Physical size -- does the item physically fit?
+--   3. Capacity -- is there room (by size and weight)?
+--   4. Category accept/reject -- does the container allow this type of item?
 --
 -- Multi-surface: when a container has `surfaces`, the validator targets a
 -- specific surface (top, inside, underneath, etc.) instead of root-level fields.
@@ -26,7 +26,7 @@ local function get_zone(container_obj, surface_name)
     return zone, nil
   end
 
-  -- No surfaces defined or no surface specified — fall back to root-level fields
+  -- No surfaces defined or no surface specified -- fall back to root-level fields
   if container_obj.surfaces and not surface_name then
     return nil, "you need to specify where on " .. (container_obj.name or container_obj.id) .. " (e.g. top, inside)"
   end

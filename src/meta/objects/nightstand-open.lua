@@ -16,7 +16,7 @@ return {
 
     surfaces = {
         top = { capacity = 3, max_item_size = 2, contents = {"candle", "poison-bottle"} },
-        inside = { capacity = 2, max_item_size = 1, contents = {"matchbox"} },
+        inside = { capacity = 2, max_item_size = 1, contents = {"matchbox"}, accessible = true },
     },
 
     location = nil,

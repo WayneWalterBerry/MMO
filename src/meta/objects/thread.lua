@@ -5,7 +5,7 @@ return {
     id = "thread",
     name = "a spool of thread",
     keywords = {"thread", "spool", "cotton", "string", "cotton thread", "sewing thread", "spool of thread"},
-    description = "A small wooden spool wound tight with cream-coloured cotton thread. The thread is fine but strong — the kind used for mending clothes or stitching wounds. A loose end trails from the spool like a pale worm.",
+    description = "A small wooden spool wound tight with cream-coloured cotton thread. The thread is fine but strong -- the kind used for mending clothes or stitching wounds. A loose end trails from the spool like a pale worm.",
 
     on_feel = "A thin, smooth strand. Thread or string.",
     on_smell = "Faintly of cotton and old wood.",

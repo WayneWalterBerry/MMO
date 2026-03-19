@@ -1,7 +1,7 @@
 -- engine/loader/init.lua
 -- Sandboxed loader: accepts a Lua source string, returns a live table.
 -- The sandbox deliberately excludes os, io, and other dangerous globals.
--- Also handles template resolution — merging base templates under instances.
+-- Also handles template resolution -- merging base templates under instances.
 
 local loader = {}
 
@@ -114,7 +114,7 @@ end
 -- Takes an instance definition (with type_id and optional overrides),
 -- looks up the base class by GUID, deep-merges overrides on top,
 -- and prepares the object for registration.
--- Contents arrays are cleared — they are rebuilt from the instance tree.
+-- Contents arrays are cleared -- they are rebuilt from the instance tree.
 function loader.resolve_instance(instance, base_classes, templates)
   if not instance.type_id then
     return nil, "instance '" .. tostring(instance.id) .. "' missing type_id"
@@ -143,7 +143,7 @@ function loader.resolve_instance(instance, base_classes, templates)
   resolved.type_id = instance.type_id
   resolved.guid = nil  -- guid belongs to the base class, not the instance
 
-  -- Clear contents — these are rebuilt from the instance tree.
+  -- Clear contents -- these are rebuilt from the instance tree.
   -- Preserve the field if the base class defined it (for on_look etc.)
   if resolved.contents ~= nil then
     resolved.contents = {}

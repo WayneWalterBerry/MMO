@@ -188,7 +188,7 @@ end
 ---------------------------------------------------------------------------
 local player = {
     hands = { nil, nil },    -- two hand slots (object IDs)
-    worn = {},               -- worn items (backpack, cloak — don't use hand slots)
+    worn = {},               -- worn items (backpack, cloak -- don't use hand slots)
     skills = {},             -- learned skills (future use)
     location = "start-room",
     state = {
@@ -235,7 +235,7 @@ context.on_tick = function(ctx)
         end
     end
 
-    -- Candle burn tick — check room, surfaces, and player hands
+    -- Candle burn tick -- check room, surfaces, and player hands
     local room = ctx.current_room
     local reg = ctx.registry
 
@@ -302,7 +302,7 @@ context.verbs = verbs_mod.create()
 -- Welcome
 ---------------------------------------------------------------------------
 print("================================================================")
-print("  THE BEDROOM — A Text Adventure")
+print("  THE BEDROOM -- A Text Adventure")
 print("  V1 Playtest")
 print("================================================================")
 print("")

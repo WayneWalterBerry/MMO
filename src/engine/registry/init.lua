@@ -11,7 +11,7 @@ function registry.new()
   return setmetatable({ _objects = {}, _guid_index = {} }, registry)
 end
 
--- register(id, object) — adds or replaces an object; stamps the id onto the object.
+-- register(id, object) -- adds or replaces an object; stamps the id onto the object.
 -- Also indexes by guid if the object has one.
 function registry:register(id, object)
   assert(type(id) == "string" and id ~= "", "registry: id must be a non-empty string")
