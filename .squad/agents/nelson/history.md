@@ -94,6 +94,18 @@
 - **BUG-029 (MINOR): Iron door not examinable.** Exit shows "a heavy iron-bound door (locked)" but `look at door` / `look at iron door` → "You don't see that here."
 - **BUG-030 (MAJOR): No unlock verb exists.** `unlock door`, `use key on door` all fail. Brass key + locked door = dead end. **Next critical-path blocker for Room 3.**
 
+### Playtest 007 Findings (2026-03-20)
+- **GOAP Tier 3 backward-chaining parser is TRANSFORMATIVE.** "light candle" from cold start (absolute darkness, nothing opened) auto-chains 5 prerequisite actions: open drawer → open matchbox → take match → strike match → light candle. One command replaces the entire 7-step manual critical path. "You'll need to prepare first..." intro text is perfect player feedback.
+- **GOAP variants tested:** `light candle` ✅, `light the candle` ✅, `light candle with match` ✅, `ignite candle` ✅. Articles and synonyms handled correctly.
+- **UNLOCK verb is polished.** Three phrasings work: `unlock door`, `unlock door with key`, `use key on door`. Auto-detects key in inventory. "You don't have a key for that." when no key held. "It isn't locked." for already-unlocked. Door description updates dynamically (padlock open/closed).
+- **4 previous bugs FIXED:** BUG-015 (wardrobe IDs), BUG-028 ("key" noun resolution), BUG-029 (door not examinable), BUG-030 (no unlock verb).
+- **Zero regressions.** All basic verbs, matchbox chain, wardrobe, curtains, spatial puzzle, wearables, multi-room navigation, inventory persistence — all working.
+- **BUG-031 (MINOR):** Compound "and" commands show confusing mixed output — first half fails, GOAP succeeds for second half.
+- **BUG-032 (MINOR):** "burn candle" doesn't trigger GOAP (says "no flame") but "light candle" and "ignite candle" do. Inconsistent synonym coverage.
+- **Multi-room navigation remains solid.** Inventory (held items + worn items) carries perfectly. Room state persists. Light sources travel. Time advances across rooms. Dawn at 6:15 AM observed.
+- **Critical path now:** feel → `light candle` (GOAP!) → push bed → pull rug → get key → open trap door → down → unlock door → open door → [Room 3 needed].
+- **57 tests run, 50 passed, 3 failed (minor), 4 edge cases.** Strongest build yet.
+
 ## Cross-Agent Updates (2026-03-20)
 - **From Bart:** Wearable engine implementation complete (WEAR/REMOVE verbs, slot conflicts, vision blocking). All wear operations validated in pass-002 — system is solid and ready for content expansion.
 - **From Frink:** MUD verb research identifies that multiplayer verbs should be first-class primitives. Strategic recommendations include 50-100 predefined socials for MVP (retention drivers). Competitive analysis shows tap-to-suggest UI is critical for mobile parsing UX.
