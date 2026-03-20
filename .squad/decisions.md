@@ -1,8 +1,9 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-20T22:00Z  
+**Last Updated:** 2026-03-20T22:40Z  
 **Merger:** Scribe  
-**Source:** 27 inbox files + existing decisions.md (deduplicated, reorganized by category)
+**Source:** 32 inbox files + existing decisions.md (deduplicated, reorganized by category)  
+**Merged:** brockman-daily-editions.md, brockman-directive-sweep.md, brockman-doc-maintenance.md, brockman-puzzle-docs.md, nelson-pass-008-bugs.md
 
 ---
 
@@ -945,4 +946,109 @@ When Wayne gives a directive, classify it into one of three categories and route
 
 ---
 
-**Last Merge:** 2026-03-20T22:15Z (Scribe)
+**Last Merge:** 2026-03-20T22:40Z (Scribe)
+
+---
+
+## SQUAD PROCESS DIRECTIVES (Swept 2026-03-21)
+
+### DIRECTIVE: Daily Edition Requirements (Comic Strip + Op-Ed)
+**Author:** Brockman (Documentation)  
+**Date:** 2026-03-21  
+**Status:** SQUAD PROCESS DIRECTIVE
+
+Every daily newspaper edition must include two recurring sections:
+
+| Section | Content | Frequency |
+|---------|---------|-----------|
+| **Comic Strip** | Daily comic panel or short sequence | Every edition |
+| **Op-Ed Piece** | Editorial opinion, developer commentary, in-character article | Every edition |
+
+**Current editions:** See `newspaper/` folder (2026-03-20-morning.md, etc.)
+
+**See also:** Design Directives in `../design/design-directives.md`
+
+---
+
+### DIRECTIVE: Documentation Maintenance
+**Author:** Brockman (Documentation)  
+**Date:** 2026-03-21  
+**Status:** SQUAD PROCESS DIRECTIVE
+
+Keep architecture and design docs up to date as decisions and implementation progress. Docs should reflect current state, not lag.
+
+| Document | Owner | Cadence |
+|----------|-------|---------|
+| Design directives | Game designers | Update as new directives added |
+| Tool taxonomy | Architects | Update as new tool categories discovered |
+| Architecture | Lead engineer | Update as decisions locked in |
+| Game design foundations | Designer lead | Quarterly or as pillars shift |
+
+**Key principle:** Documentation is a living artifact. Stale docs create ambiguity and design drift.
+
+**Current cadence:**
+- README.md: Updated after each major feature release
+- Design docs in `docs/design/`: Updated as new directives captured
+- Architecture docs in `docs/architecture/`: Updated as implementation decisions lock in
+- Vocabulary.md: Synced with codebase after each session
+
+---
+
+### DIRECTIVE: Puzzle Documentation
+**Author:** Brockman (Documentation)  
+**Date:** 2026-03-21  
+**Status:** SQUAD PROCESS DIRECTIVE
+
+Keep an authoritative folder of puzzle documentation at `docs/puzzles/` where game designers document the logic, state, and learning outcomes of each puzzle.
+
+**Contents per puzzle:**
+- Puzzle name and location
+- Prerequisite knowledge/skills
+- Solution path(s)
+- Objects involved
+- Sensory/timing constraints
+- Teach-value (what player learns)
+- Consequence if failed
+
+**Current puzzles:** 001-light-the-room.md, 002-poison-bottle.md, 003-write-in-blood.md, 004-inventory-management.md, 005-bedroom-escape.md
+
+**See also:** Design Directives in `../design/design-directives.md`
+
+---
+
+## BUG REPORTS & TEST FINDINGS (Pass-008)
+
+### Nelson — Pass-008 Test Report
+**Date:** 2026-03-20T22:40Z  
+**Pass:** test-pass/2026-03-20-pass-008.md  
+**Tests Run:** 29 | **Tests Passed:** 25
+
+### New Bugs Discovered
+
+#### BUG-033 (MEDIUM): GOAP Relight Fails When Spent Match in Hand
+- **Impact:** Blocks extinguish→relight cycle without manual workaround
+- **Repro:** `light candle` → `blow candle` → `light candle` → FAILS ("hands full", tries spent match)
+- **Root cause:** GOAP planner doesn't auto-drop spent matches before acquiring fresh ones
+- **Workaround:** Player must manually `drop match` before relighting
+- **Owner:** Assigned to Bart for Pass-009
+
+#### BUG-034 (MINOR): "put out candle" Parsed as PUT Verb
+- **Impact:** Common phrasing for extinguish doesn't work
+- **Repro:** Light candle → `put out candle` → "Put what where?"
+- **Root cause:** Parser matches "put" verb before recognizing "put out" phrasal verb
+- **Fix:** Add "put out" as extinguish synonym or handle phrasal verb splitting
+- **Owner:** Assigned to Bart for Pass-009
+
+### Fixed Bugs Verified
+- **BUG-031:** ✅ FIXED — compound `and` commands produce clean output
+- **BUG-032:** ✅ FIXED — `burn candle` triggers full GOAP chain
+
+### Content Gap (Not a Bug)
+- **Candle holder** object exists in code but is not placed in any room
+- **Action:** Include placement in Pass-009 object sweeps or next room expansion
+
+---
+
+**End of Pass-008 & Docs Cleanup Merge**  
+**Total Active Decisions:** 52  
+**Last Merge:** 2026-03-20T22:40Z (Scribe)
