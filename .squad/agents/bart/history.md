@@ -975,3 +975,30 @@ Root cause: fake Y/N prompt that just exited. Fix: replaced with honest "Game ov
 - ✅ No stray file references
 
 **Files changed:** `src/meta/objects/window.lua` (merged), deleted window-open.lua and wardrobe-open.lua
+
+---
+
+## Archive: Pre-Object-Batch Work (2026-03-18 to 2026-03-20T21:45Z)
+
+**Completed Sessions (7):**
+1. **SLEEP Verb Implementation** — Clock-advance mechanic, duration parsing, FSM ticking during sleep
+2. **Parser Pipeline Completion** — Phase 1/2 GTE-tiny embedding, 29.5K training pairs, index.json shipped
+3. **Cross-Agent: Skills System Design** — Double dispatch gating, skill discovery multi-path, consumable failures
+4. **Wearable Armor/Cloak System** — WEAR/REMOVE verbs, slot conflicts, vision blocking on sack-on-head
+5. **Composite Object Architecture** — Drawer detachable, poison-bottle corks, parts pattern established
+6. **FSM Window Consolidation** — Merged window-open.lua into window.lua single-file FSM pattern
+7. **GOAP Tier 3 Implementation** — UNLOCK verb, backward-chaining prerequisites, pass-007 tested
+
+**Key Architectural Patterns (Established):**
+- Objects use FSM states (initial_state + _state fields) with per-state sensory text
+- `engine/mutation/` is ONLY code that hot-swaps objects via loadstring()
+- Registry uses instance pattern (not singleton) for multiverse support
+- Tool resolution uses capabilities (not tool IDs)
+- Blood is a virtual tool generated on-demand when `player.state.bloody == true`
+- Containment uses 4-layer validator (identity, size, capacity, categories)
+- Sensory verbs (FEEL, SMELL, TASTE, LISTEN) all work in darkness
+- Player skills use double-dispatch gating (skill gate + tool gate)
+
+**Pre-Object-Batch Status:**
+All foundational systems complete. Parser embedded, GOAP chaining working, wearables polished, composite architecture proven. Ready for content expansion (objects, rooms, puzzles).
+

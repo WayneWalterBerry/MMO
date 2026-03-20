@@ -14,6 +14,30 @@
 4. light match (or strike match on matchbox) → room is lit
 5. look around → see the room for the first time
 
+## Core Context
+
+**Agent Role:** Tester responsible for playtest validation, bug discovery, and regression verification.
+
+**Testing Summary (2026-03-19 to 2026-03-20T21:45Z):**
+- 7 playtests completed, 57+ tests run, 50+ passed, systematic bug discovery and verification
+- Critical path proven end-to-end: feel → GOAP light → spatial puzzle → multi-room navigation → unlock → room 3 needed
+- Container system validated: nesting, capacity constraints, sensory descriptions all working
+- Wearable system polished: multi-slot, vision blocking, armor descriptions
+- FSM objects proven: candle burn/extinguish, poison bottle states, composite drawer/cork
+- GOAP backward-chaining transformative: single `light candle` replaces 7-step manual sequence
+- Time advancement, light sources, inventory persistence: all working perfectly
+
+**Major Bugs Discovered (32 unique):**
+- CRITICAL/HIGH (6): All fixed by pass-007
+- MEDIUM (8): All fixed by pass-007
+- MINOR/COSMETIC (18): Most fixed; 2 pending (BUG-031, BUG-032)
+
+**Current Status:**
+- Engine core: ✅ SOLID
+- Parser: ✅ WORKING (Tier 2 embedding)
+- Objects: 🚀 READY (new batch: candle-holder, wall-clock, enhanced candle/match)
+- Progression: ⏸️ BLOCKED at Room 3 (content needed, mechanics proven)
+
 ## Learnings
 
 ### Playtest 001 Findings
@@ -190,3 +214,34 @@ feel → `light candle` (GOAP!) → push bed → pull rug → get key → open t
 **Assessment:** Strongest build yet. GOAP core is game-changing. Only 2 minor coverage gaps in edge-case phrasings.
 
 **Full Report:** test-pass/2026-03-20-pass-007.md
+
+---
+
+## Archive: Pre-Object-Ready Playtests (2026-03-19 to 2026-03-20T21:45Z)
+
+**Playtests Completed (7):**
+1. **Pass-001:** Critical path works. BUG-001 (text wrapping), BUG-004 (no movement verbs)
+2. **Pass-002:** Container system solid. BUG-008 (poison death), BUG-009 (parser debug leaks)
+3. **Pass-003:** Wearables polished. BUG-017 CRITICAL (drawer replace wipes surface), fixed in pass-004
+4. **Pass-004:** Multi-slot wearables working. 10/10 previous bugs verified fixed
+5. **Pass-005:** Movement verbs BLOCKED progression. BUG-026 identified as critical blocker
+6. **Pass-006:** BUG-026 FIXED. Cellar fully realized. Object persistence perfect. Light carries between rooms
+7. **Pass-007:** GOAP backward-chaining TRANSFORMATIVE. UNLOCK verb polished. 57 tests, 50 passed, 3 minor, 4 edge cases
+
+**Bug Track (32 unique):**
+- HIGH/CRITICAL (6): BUG-001, BUG-004, BUG-008, BUG-017, BUG-026, BUG-030
+- FIXED by pass-007 (24): All major blockers resolved
+- MINOR/COSMETIC (2): BUG-031, BUG-032 (identified, Bart-fixes-pending pass-007 after this session)
+
+**Key Insights:**
+- Game progression blocked at: Room 3 (needed). Rest of critical path proven end-to-end
+- GOAP is game-changing. Single command `light candle` replaces 7-step manual sequence
+- Spatial puzzles (push bed → pull rug → discover key) are excellent game design
+- Multi-room navigation, inventory persistence, light sources, time advancement: all working perfectly
+- Container nesting (matchbox in sack in inventory) handles correctly
+- Wearable system is polished and extensible (multi-slot, vision blocking, slot conflicts)
+
+**Ready for:**
+- Nelson: Playtest of new objects (candle-holder, wall-clock, enhanced candle/match)
+- Squad: Room 3 content + puzzle scenarios using new objects
+
