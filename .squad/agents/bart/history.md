@@ -485,3 +485,74 @@ The 32.5MB gzipped index is too large for browser assets. Trim it down, then pla
 - `on_feel` can be string OR function — feel handler dispatches based on `type()`
 - `ctx.game_over` flag — clean game-ending mechanism checked by loop, extensible for future death causes
 - `--debug` CLI flag — gated diagnostic output, keeps player experience clean
+
+---
+
+## Cross-Agent Update: Composite Object System Design (2026-03-20T03:40:00Z)
+
+**From:** Comic Book Guy (Game Designer)  
+**Status:** Design Complete, Approved for Implementation  
+**Impact:** Object architecture, puzzle design, player agency  
+
+**What Happened:** Comic Book Guy completed comprehensive design for composite/detachable object system (39.5 KB, 8 decision sections in docs/design/composite-objects.md).
+
+**Key Decisions You'll Implement:**
+
+1. **Single-File Architecture** — All parts + parent logic in one `.lua` file (nightstand.lua defines nightstand, drawer, legs, FSM states)
+
+2. **Part Factory Pattern** — Each detachable part has factory function that instantiates it as independent object:
+   ```lua
+   parts = {
+       drawer = {
+           factory = function(parent)
+               return { id = "nightstand-drawer", ... }
+           end
+       }
+   }
+   ```
+
+3. **FSM State Naming** — `{base_state}_with_PART` and `{base_state}_without_PART`:
+   ```lua
+   states = {
+       closed_with_drawer = { ... },
+       open_with_drawer = { ... },
+       closed_without_drawer = { ... }
+   }
+   ```
+
+4. **Verb Dispatch for Parts** — Parts define detachable_verbs; engine adds them to parent's verb dict when part accessible
+
+5. **Two-Handed Carry System** — Objects have `hands_required` (0/1/2 hands). Player has 2 hands total. Enforce during TAKE.
+
+6. **Contents Preservation** — Detached containers carry their contents (by default)
+
+7. **Reversibility as Design Choice** — Each part decides if it can be re-attached (drawer: yes, cork: no)
+
+8. **Non-Detachable Parts Valid** — Parts can have `detachable = false` for description-only (nightstand legs)
+
+**Next Phase (for you):**
+- Implementation Phase 1: Part instantiation + FSM state transitions
+- Implementation Phase 2: Verb dispatch routing for parts
+- Precondition system: `parent:can_detach_part(part_id)`
+- Two-handed carry tracking + enforcement
+
+**Design Document:** `docs/design/composite-objects.md` (comprehensive, 8 sections, implementation examples)
+
+**Success Criteria:** Nightstand drawer detachment, poison bottle cork detachment, two-handed carry, dark playability, no existing content breakage
+
+---
+
+## Directives Captured This Session
+
+### Directive 3: Newspaper editions separate (2026-03-20T03:40Z)
+**Source:** Wayne "Effe" Berry (via Copilot)  
+Morning and evening newspaper editions should be in separate files. Brockman has created `newspaper/2026-03-20-morning.md`.
+
+### Directive 4: Room layout and movable furniture (2026-03-20T03:43Z)
+**Source:** Wayne "Effe" Berry (via Copilot)  
+- Bed is ON rug; rug COVERS trap door
+- Players should move objects (PUSH bed, PULL rug, etc.)
+- Trap door invisible until rug moved (discovery mechanic)
+- Stacking rules: objects declare stackability and weight/size support
+- Next playtest (pass-003): Nelson focuses on movement, furniture, spatial discovery
+

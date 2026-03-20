@@ -156,3 +156,59 @@ Multiple editions per day (morning/evening/late evening) are working well. They 
 3. **Night Shift Productivity:** Six bug fixes + three major systems (composite objects, two-hand carry, competitive analysis) in one night shift validates the team structure.
 4. **QA Validation:** Nelson's play tests are catching real issues (poison doesn't kill) that force scope clarification (health system). Play-test-driven design is proving its value.
 5. **Whitespace Confirmation:** Parser + multiplayer + mobile-first occupies genuine market gap. No competitor does all three. This isn't a feature gap; it's a category definition.
+
+---
+
+## Session 3 Status Summary (2026-03-20T03:40:00Z)
+
+**Session:** 3 — Bugfix & Composite Design  
+**Status:** ✅ COMPLETE
+
+**Your Deliverable:**
+- Created `newspaper/2026-03-20-morning.md` — morning edition with team updates, bugfix summary, composite design announcement
+- Captured 4 design directives from Wayne:
+  1. Newspaper editions in separate files
+  2. Room layout with spatial relationships
+  3. Movable furniture mechanics
+  4. Hidden objects and stacking rules
+
+**Team Outputs:**
+- Bart: Fixed 7 bugs (BUG-008 through BUG-014), established 4 engine conventions
+- Comic Book Guy: Designed composite/detachable object system (8 core decisions, 39.5 KB)
+- Scribe: Created orchestration logs + session log, merged inbox decisions
+
+**Impact on Documentation:**
+- Design directives now in `.squad/decisions.md` (decisions 3-4)
+- Engine conventions in `.squad/decisions.md` (decision 1)
+- Composite object system in `.squad/decisions.md` (decision 2)
+- Orchestration logs created for each agent
+- Session 3 log completed
+
+**Next Phase (pass-003):**
+- **Bart:** Implement composite object system (part instantiation, FSM state transitions, verb dispatch, two-handed carry)
+- **CBG:** Create detachable versions of existing objects (drawer, cork, curtains)
+- **Brockman:** Update design docs with movable furniture specs, stacking rules, spatial relationships
+- **Nelson:** Playtest movement, furniture interactions, spatial discovery
+
+---
+
+## Directives Captured This Session
+
+### Directive 1: Newspaper editions in separate files (2026-03-20T03:40Z)
+**Source:** Wayne "Effe" Berry (via Copilot)  
+**Action:** Created `newspaper/2026-03-20-morning.md` as separate file from evening edition. Establishes pattern: each day can have multiple editions (morning, evening, late), each in separate file.
+
+### Directive 2: Room layout and movable furniture (2026-03-20T03:43Z)
+**Source:** Wayne "Effe" Berry (via Copilot)  
+**Details:**
+- Bed is ON rug; rug COVERS trap door (layered spatial positioning)
+- Players should move objects: PUSH bed, PULL rug (movable furniture mechanics)
+- Trap door invisible until rug moved (discovery mechanic / hidden objects)
+- Objects declare stackability and weight/size support (stacking rules)
+- Next test pass (pass-003): Nelson tests movement, furniture, spatial discovery
+
+**Documentation TODO:**
+- Add movable furniture verb specs (PUSH, PULL, MOVE, etc.)
+- Document stacking rules system (properties: stackable, stackable_max_weight, stackable_items)
+- Document spatial positioning system (ON, UNDER, INSIDE, BEHIND)
+- Document hidden object mechanics (visibility gates)

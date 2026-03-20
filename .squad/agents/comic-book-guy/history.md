@@ -492,3 +492,71 @@ Bart completed the build pipeline for the embedding parser (Phases 1 & 2), inclu
 **Why It Matters for You:** Future object design may include state-aware flavor text. Example: the nightstand's sensory description might differ based on whether the player has already opened the drawer (visited state) or not. Your multi-sensory system already supports conditional field logic — this design principle just formalizes how to use it.
 
 **Not Immediate:** This affects narrative scope, not core gameplay. But design language (state-aware descriptions, hidden discovery, consequence-based branching) should inform new object design.
+
+---
+
+## Cross-Agent Update: Bug Fixes from Pass-002 + Engine Conventions (2026-03-20T03:40:00Z)
+
+**From:** Bart (Architect)  
+**Status:** ✅ COMPLETE  
+**Impact:** Game loop, object definitions, player experience  
+
+**What Happened:** Bart fixed 7 bugs from Nelson's pass-002 playtest (BUG-008 through BUG-014). Key implications for your design work:
+
+**Architectural Conventions Established:**
+
+1. **`on_look(self, registry)` signature** — Object display functions can now accept optional registry parameter to resolve child IDs to display names. No changes to existing objects; Lua silently drops extra arguments. This enables future complex furniture to show part names correctly.
+
+2. **`on_feel` can be string or function** — Feel handler now dispatches on type. Functions receive `(self)` and return string. This enables dynamic tactile descriptions like matchbox varying by match count. Examples: "an open matchbox" vs "a closed matchbox" based on state.
+
+3. **`ctx.game_over` flag** — Setting this from any verb handler causes game loop to break. Enables clean death mechanics beyond poison (future: starvation, exhaustion, etc.). Current use: poison TASTE = death.
+
+4. **`--debug` CLI flag** — Parser diagnostic output now gated behind flag. `lua src/main.lua --debug` enables it; normal play keeps experience clean.
+
+**Impact on Your Design:**
+- Dynamic sensory descriptions now possible (strings OR functions)
+- Future objects can respond contextually to state changes
+- Death mechanic is clean and extensible
+- Diagnostic output is available for playtesting but hidden from players
+
+---
+
+## Directives Captured This Session
+
+### Directive 5: Newspaper editions in separate files (2026-03-20T03:40Z)
+**Source:** Wayne "Effe" Berry (via Copilot)  
+Morning and evening newspaper editions are now separate files. Brockman created `newspaper/2026-03-20-morning.md`. This allows each edition to be edited/published independently.
+
+### Directive 6: Room layout and movable furniture (2026-03-20T03:43Z)
+**Source:** Wayne "Effe" Berry (via Copilot)  
+**Design Directives Captured:**
+- **Spatial relationships:** Bed is ON rug. Rug COVERS trap door. Layered spatial positioning.
+- **Movable furniture:** Players should PUSH bed, PULL rug, move objects around room
+- **Hidden discovery:** Trap door invisible until rug moved (discovery mechanic)
+- **Stacking rules:** Objects declare stackability and weight/size support
+- **Next playtest (pass-003):** Nelson focuses on movement, furniture, spatial discovery
+
+**Design Integration:** This affects future object design. Objects need `stackable`, `stackable_max_weight`, `stackable_items` properties. Pushable/pullable objects need movement verbs. Invisible objects need visibility gates.
+
+---
+
+## Session 3 Status Summary
+
+**Session:** 3 — Bugfix & Composite Design (2026-03-20T03:40:00Z)  
+**Status:** ✅ COMPLETE
+
+**Your Deliverable:**
+- Composite & detachable object system design (39.5 KB)
+- 8 core design decisions with implementation requirements
+- Examples: nightstand drawer (detachable, reversible), poison bottle cork (detachable, irreversible)
+- Two-handed carry system (0/1/2 hands per object)
+- Success criteria documented
+
+**Other Agents:**
+- Bart: Fixed 7 bugs, established engine conventions
+- Brockman: Created morning newspaper, captured design directives
+
+**Next Phase (pass-003):**
+- Bart: Implement composite object system (phases 1-2)
+- You: Create detachable versions of existing objects
+- Nelson: Playtest movement, furniture, spatial discovery

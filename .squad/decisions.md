@@ -2,7 +2,102 @@
 
 ## Active Decisions
 
-### 1. Newspaper Format & Purpose (2026-03-18)
+### 1. Engine Conventions from Pass-002 Bugfixes (2026-03-22)
+
+**Author:** Bart (Architect)  
+**Date:** 2026-03-22  
+**Status:** Approved  
+**Affects:** Object display functions, feel handler, game loop, CLI flags
+
+#### Conventions Established
+
+1. **`on_look(self, registry)` signature** — Object `on_look` functions may now accept optional second argument: the registry instance. This allows display functions to resolve child object IDs to display names. Existing functions that only accept `(self)` are unaffected — Lua silently drops extra arguments.
+
+2. **`on_feel` can be string or function** — The feel handler now dispatches based on `type(obj.on_feel)`. Functions receive `(self)` and return a string. This enables dynamic tactile descriptions (e.g., matchbox varying by match count).
+
+3. **`ctx.game_over` flag for death/ending** — Setting `ctx.game_over = true` from any verb handler causes the game loop to break after the current tick cycle. The loop prints a "Play again?" prompt and exits. Extensible for future death causes beyond poison.
+
+4. **`--debug` CLI flag** — Parser diagnostic output is now off by default. Pass `--debug` to `lua src/main.lua` to re-enable `[Parser]` matching diagnostics on stderr/stdout. Keeps player experience clean during normal play.
+
+**Team Impact:** QA testing with parser analysis should use `lua src/main.lua --debug`. Content creators can use either `on_feel = "static text"` or `on_feel = function(self) ... end`. Any lethal interaction should set the game_over flag.
+
+---
+
+### 2. Design Decision: Composite & Detachable Object System (2026-03-25)
+
+**Author:** Comic Book Guy (Game Designer)  
+**Date:** 2026-03-25  
+**Status:** Ready for Team Review  
+**Impact:** Object architecture, puzzle design, player agency
+
+**Summary:** Objects in MMO are not always singular. A nightstand has a drawer. A poison bottle has a cork. These **sub-objects (parts) can sometimes be detached**, becoming independent objects.
+
+**Core Solution:** Single-file architecture where one `.lua` file defines parent + all parts. Parts detach via factory functions, becoming independent. Parent transitions to new FSM state reflecting missing parts.
+
+#### Key Design Decisions
+
+1. **Single-File Architecture** — All parts and parent logic live in one Lua file (nightstand.lua defines nightstand, drawer, legs, FSM states)
+2. **Part Factory Pattern** — Each detachable part has a factory function that instantiates it as independent object
+3. **FSM State Naming** — `{base_state}_with_PART` and `{base_state}_without_PART` (e.g., closed_with_drawer, closed_without_drawer)
+4. **Verb Dispatch for Parts** — General verbs trigger detachment; parts define verb aliases (uncork, remove cork, pull cork)
+5. **Contents Preservation** — Container parts carry contents when detached (by default)
+6. **Two-Handed Carry System** — Objects have `hands_required` (0/1/2); player has 2 hands total
+7. **Reversibility as Design Choice** — Each part's reversibility is design-time decision (drawer reversible, cork irreversible)
+8. **Non-Detachable Parts Valid** — Parts can have `detachable = false` for description-only (nightstand legs, bed posts)
+
+#### Implementation Requirements (For Bart)
+
+1. Part instantiation via factory; FSM state transitions
+2. Verb dispatch routing for parts
+3. Precondition system for detachment constraints
+4. Two-handed carry tracking and enforcement
+
+#### Success Criteria
+
+- Nightstand + drawer detachment works end-to-end
+- Poison bottle + cork detachment works
+- Two-handed carry enforced
+- Dark playability maintained
+- No existing content breakage
+
+**Approved by:** Comic Book Guy (Author), Wayne Berry (Lead Designer)  
+**Ready for Implementation:** Bart (Architect)
+
+---
+
+### 3. User Directive: Newspaper editions in separate files (2026-03-20T03:40Z)
+
+**Author:** Wayne Berry (via Copilot)  
+**Status:** Active  
+**Type:** Design Directive
+
+The morning edition and late/evening edition of the newspaper should be in different files, not the same file. Keeps editions distinct and readable.
+
+---
+
+### 4. User Directive: Room layout and movable furniture (2026-03-20T03:43Z)
+
+**Author:** Wayne Berry (via Copilot)  
+**Status:** Active  
+**Type:** Design Directive
+
+**Room Layout & Spatial Relationships:**
+- Bed is ON the rug
+- Rug COVERS a trap door
+- Layered spatial positioning — objects on top of other objects
+- Moving top object reveals what's underneath
+
+**Movable Furniture:** Players should be able to move objects around the room (push bed, pull rug, etc.)
+
+**Hidden Objects:** Trap door is hidden under rug. Moving the rug reveals it (discovery mechanic).
+
+**Stacking Rules:** Some objects stackable, some not. Objects declare stackability and weight/size support.
+
+**Next Test Pass (pass-003):** Nelson should test moving things, discovering what's underneath, interacting with spatial relationships.
+
+---
+
+### 1-OLD. Newspaper Format & Purpose (2026-03-18)
 **Author:** Brockman  
 **Status:** Approved  
 
