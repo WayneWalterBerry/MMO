@@ -719,3 +719,24 @@ Root cause: fake Y/N prompt that just exited. Fix: replaced with honest "Game ov
 
 **Files Modified:** `src/engine/verbs/init.lua`, `src/engine/loop/init.lua`, `src/main.lua`, `src/meta/objects/sack.lua`, `src/meta/objects/wardrobe.lua`, `src/meta/world/start-room.lua`
 **Files Created:** `src/meta/objects/sewing-manual.lua`
+
+---
+
+## Learnings
+
+### Split-Screen Terminal UI (2026-07-18)
+
+**What was built:** A pure-Lua ANSI terminal UI module (`src/engine/ui/init.lua`) that provides a classic IF split-screen layout: status bar (reverse video, line 1), scrollable output window (lines 2..H-2), delimiter (line H-1), and input prompt (line H).
+
+**Key architectural decisions:**
+1. **Manual redraw over ANSI scroll regions.** Scroll regions are set to the output area to prevent Enter-on-input-line from scrolling the whole screen. But actual output rendering is done by full redraw from a scrollback buffer. This gives us complete control over scrollback navigation without fighting terminal quirks.
+2. **Print interception via display module.** Rather than patching `print` again, the UI hooks into `display.ui` — a reference checked by `display.install()`'s wrapped print. All 390+ `print()` calls in verb handlers route through the UI automatically. Zero changes to verb code (except the one `io.write`/`io.read` in the WRITE verb).
+3. **Scrollback via commands (`/up`, `/down`, `/bottom`).** Pure Lua `io.read()` can't capture special keys (Page Up/Down) without C extensions. Scroll commands are intercepted in the game loop before verb dispatch. Any normal command auto-scrolls to bottom.
+4. **`--no-ui` flag.** Graceful fallback to plain print/read mode. Critical for piped input, testing, and terminals without ANSI support.
+5. **Status bar.** Room name + game time on left, match count + candle state on right. Updated each turn by a `context.update_status` callback set in main.lua.
+6. **pcall wrapper.** `loop.run()` is wrapped in pcall so `ui.cleanup()` always runs, even on errors. Terminal state is restored before any error output.
+
+**Windows compatibility:** Terminal size detected via `mode con` output parsing. VT processing enabled by `os.execute("")` (triggers Windows 10+ ANSI support). Tested on Windows.
+
+**Files created:** `src/engine/ui/init.lua`
+**Files modified:** `src/engine/display.lua`, `src/engine/loop/init.lua`, `src/main.lua`, `src/engine/verbs/init.lua`

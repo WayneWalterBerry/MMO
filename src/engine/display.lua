@@ -2,10 +2,18 @@
 -- Word-wrap utility for clean terminal output.
 -- Wraps long lines at word boundaries to prevent terminal-level character
 -- splitting (which can duplicate characters at wrap points on some terminals).
+--
+-- When display.ui is set to an active UI module, print() routes through
+-- ui.output() instead of the raw terminal.  This lets the split-screen UI
+-- own all output without changing any verb handler code.
 
 local display = {}
 
 display.WIDTH = 78
+
+-- Set this to the engine.ui module after ui.init() succeeds.
+-- When non-nil and ui.is_enabled(), print() routes through ui.output().
+display.ui = nil
 
 -- word_wrap(text, width) -> string
 -- Splits text at word boundaries. Preserves existing newlines and leading
@@ -53,6 +61,7 @@ function display.word_wrap(text, width)
 end
 
 -- install() — replaces the global print with a word-wrapping version.
+-- When display.ui is active, output routes through the split-screen UI.
 -- Call once at startup (before the game loop).
 function display.install()
     local original_print = _G.print
@@ -63,7 +72,13 @@ function display.install()
             parts[i] = tostring(select(i, ...))
         end
         local text = table.concat(parts, "\t")
-        original_print(display.word_wrap(text))
+
+        if display.ui and display.ui.is_enabled() then
+            -- Route through split-screen UI (it does its own word-wrap)
+            display.ui.output(text)
+        else
+            original_print(display.word_wrap(text))
+        end
     end
 end
 

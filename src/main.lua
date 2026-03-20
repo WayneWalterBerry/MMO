@@ -12,8 +12,10 @@ package.path = script_dir .. "/?.lua;"
 
 -- Parse command-line flags
 local debug_mode = false
+local no_ui = false
 for _, a in ipairs(arg or {}) do
     if a == "--debug" then debug_mode = true end
+    if a == "--no-ui" then no_ui = true end
 end
 
 ---------------------------------------------------------------------------
@@ -27,9 +29,20 @@ local loop        = require("engine.loop")
 local verbs_mod   = require("engine.verbs")
 local parser_mod  = require("engine.parser")
 local display     = require("engine.display")
+local ui          = require("engine.ui")
 
 -- Install word-wrapping print before any game output
 display.install()
+
+-- Initialise the split-screen terminal UI (unless --no-ui)
+local ui_active = false
+if not no_ui then
+    ui_active = ui.init()
+    if ui_active then
+        display.ui = ui   -- route print() through the UI output window
+        display.WIDTH = ui.get_width()  -- sync wrap width with terminal
+    end
+end
 
 ---------------------------------------------------------------------------
 -- Helpers
@@ -230,6 +243,7 @@ local context = {
     parser         = parser_instance,
     game_start_time = os.time(),
     game_start_hour = 2,
+    ui             = ui_active and ui or nil,
 }
 
 ---------------------------------------------------------------------------
@@ -328,6 +342,53 @@ end
 context.verbs = verbs_mod.create()
 
 ---------------------------------------------------------------------------
+-- Status bar updater (called by the game loop each turn when UI is active)
+---------------------------------------------------------------------------
+local GAME_SECONDS_PER_REAL_SECOND = 24
+local GAME_STATUS_START_HOUR = 2
+
+context.update_status = function(ctx)
+    if not ctx.ui then return end
+
+    -- Compute game time
+    local real_elapsed = os.time() - ctx.game_start_time
+    local total_hours  = (real_elapsed * GAME_SECONDS_PER_REAL_SECOND) / 3600
+    local abs_hour     = GAME_STATUS_START_HOUR + total_hours
+    local hour   = math.floor(abs_hour % 24)
+    local minute = math.floor((abs_hour * 60) % 60)
+    local period = hour >= 12 and "PM" or "AM"
+    local dh     = hour % 12
+    if dh == 0 then dh = 12 end
+    local time_str = string.format("%d:%02d %s", dh, minute, period)
+
+    -- Room name
+    local room_name = "UNKNOWN"
+    if ctx.current_room and ctx.current_room.name then
+        room_name = ctx.current_room.name:upper()
+    end
+
+    -- Right side: match / candle status (best-effort from game state)
+    local match_count = "?"
+    local candle_icon = "○"
+    local p = ctx.player
+    if p then
+        -- Count matches in matchbox (if it exists)
+        local matchbox = ctx.registry:get("matchbox")
+        if matchbox and matchbox.contents then
+            match_count = tostring(#matchbox.contents)
+        end
+        -- Candle lit?
+        if p.state.has_flame and p.state.has_flame > 0 then
+            candle_icon = "●"
+        end
+    end
+
+    local left  = " " .. room_name .. "  " .. time_str
+    local right = "Matches: " .. match_count .. "  Candle: " .. candle_icon .. " "
+    ctx.ui.status(left, right)
+end
+
+---------------------------------------------------------------------------
 -- Welcome
 ---------------------------------------------------------------------------
 print("================================================================")
@@ -342,6 +403,17 @@ print("Type 'help' for commands. Try 'feel' to explore the darkness.")
 print("")
 
 ---------------------------------------------------------------------------
--- Run
+-- Run (with cleanup on exit)
 ---------------------------------------------------------------------------
-loop.run(context)
+local ok, err = pcall(loop.run, context)
+
+-- Restore terminal before printing any error
+if ui_active then
+    display.ui = nil
+    ui.cleanup()
+end
+
+if not ok then
+    io.stderr:write("Fatal: " .. tostring(err) .. "\n")
+    os.exit(1)
+end

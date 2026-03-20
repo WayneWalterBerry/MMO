@@ -2775,9 +2775,15 @@ function verbs.create()
         end
 
         if not text or text == "" then
-            io.write("What do you want to write? > ")
-            io.flush()
-            text = io.read()
+            local prompt_text
+            if context.ui and context.ui.is_enabled() then
+                prompt_text = context.ui.prompt("What do you want to write? > ")
+            else
+                io.write("What do you want to write? > ")
+                io.flush()
+                prompt_text = io.read()
+            end
+            text = prompt_text
             if not text or text:match("^%s*$") then
                 print("Never mind.")
                 return

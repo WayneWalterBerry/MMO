@@ -204,6 +204,7 @@ end
 --   registry     -- live registry instance
 --   current_room -- room table (must have .id, .name, .description)
 --   verbs        -- table of { [verb_string] = handler_function }
+--   ui           -- (optional) engine.ui module instance
 --   on_quit      -- optional callback fired before exit
 function loop.run(context)
   assert(context and context.registry, "loop: context.registry is required")
@@ -215,16 +216,40 @@ function loop.run(context)
   end
 
   print("Type 'look' to look around. Type 'quit' to exit.")
+  if context.ui and context.ui.is_enabled() then
+    print("Scroll: /up  /down  /bottom")
+  end
   print("")
 
   while true do
-    io.write("> ")
-    io.flush()
-    local input = io.read()
+    -- Update status bar if UI is active
+    if context.ui and context.ui.is_enabled() and context.update_status then
+      context.update_status(context)
+    end
+
+    -- Read input (UI-aware or fallback)
+    local input
+    if context.ui and context.ui.is_enabled() then
+      input = context.ui.input()
+    else
+      io.write("> ")
+      io.flush()
+      input = io.read()
+    end
     if not input then break end -- EOF / piped input exhausted
 
     local trimmed = input:match("^%s*(.-)%s*$")
     if trimmed == "" then goto continue end
+
+    -- Handle scroll commands before game processing
+    if context.ui and context.ui.handle_scroll(trimmed) then
+      goto continue
+    end
+
+    -- Echo command into the output window
+    if context.ui and context.ui.is_enabled() then
+      context.ui.output("> " .. trimmed)
+    end
 
     -- Strip trailing question marks before parsing
     trimmed = trimmed:gsub("%?+$", ""):match("^%s*(.-)%s*$")
