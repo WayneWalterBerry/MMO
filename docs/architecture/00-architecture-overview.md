@@ -1,9 +1,86 @@
 # Architecture Overview
 
-**Version:** 1.0  
-**Last Updated:** 2026-03-21  
+**Version:** 1.1  
+**Last Updated:** 2026-03-21
 **Author:** Brockman (Documentation)  
 **Purpose:** High-level map of how all systems fit together. Detailed specs are in linked docs.
+
+---
+
+## Core Principle: Code-Derived Mutable Objects
+
+This engine operates on a fundamental architectural principle: **all game objects are mutable Lua tables derived from immutable source code**. Understanding this principle is essential to understanding how the entire system works.
+
+### The Pattern: Code → Live Instances → Mutations
+
+#### Load Phase
+At startup, the engine reads all `.lua` object files from disk exactly once. For each object file (e.g., `src/meta/world/candle.lua`):
+
+1. **Store as string:** The entire source code is stored in memory as a Lua string
+2. **Parse into table:** The source string is parsed (via `load()`) into a live Lua table and registered in the object registry
+3. **Ready for mutation:** The object is now a live, mutable data structure in RAM
+
+Example:
+```lua
+-- candle.lua on disk
+{
+    id = "candle",
+    name = "A tapered candle",
+    provides_tool = "fire_source",
+    mutations = { light = { becomes = "candle-lit", message = "..." } }
+}
+
+-- At runtime (after load phase):
+-- registry["candle"] = { id="candle", name="...", mutations={...}, ... }
+-- This live table is now ready to be mutated
+```
+
+#### Runtime Mutation: Two Strategies
+
+When the engine mutates an object during gameplay, it employs two strategies:
+
+**Strategy 1: Direct Table Mutation (FSM State Swap)**  
+For transitions within the same state family (e.g., `candle` → `candle-lit`), the engine modifies the live table directly:
+- Looks up the target state from the `mutations` table
+- Applies new properties from the target state definition into the live table
+- The registry entry is updated in-place; no reload needed
+- Example: Lighting a candle swaps its `provides_tool` capability and message text
+
+**Strategy 2: Code Re-parsing (`becomes` Mutation)**  
+For terminal transitions or complex state changes, the engine re-parses source code into a fresh table:
+- Retrieves the stored source string for the new state (e.g., `candle-lit.lua` source)
+- Calls `load()` to parse the source into a new table
+- Swaps the registry entry: old table removed, new table inserted
+- All references to the object now point to the fresh definition
+- Example: A candle transitioning to `candle-spent` (terminal state) gets a complete object definition swap
+
+### The Key Insight
+
+The engine is **always operating on objects that originated as .lua code**. The .lua files are the **source of truth** for what objects ARE. At runtime:
+
+- The engine creates **living instances** from those source definitions
+- It **mutates these instances freely** — they're just Lua tables in memory
+- The mutations are **code-semantics** (swapping properties, changing FSM state), not flag-setting
+- Objects can transition, transform, break, burn, and be consumed — all through table mutation and definition swapping
+
+This is **not a static data-driven system**. It's a **code-derived mutable world**: source code defines the template, the engine creates living instances, and mutations reshape those instances during gameplay.
+
+### Ephemeral State: The Current Design
+
+All object mutations exist **in-memory only**. Restarting the game:
+- Loads fresh `.lua` files from disk
+- Creates new live instances from source
+- Player progress is lost (unless explicitly persisted)
+
+**Future Perspective:** The architecture does not preclude persistence (save/load to disk or cloud). However, that remains a future concern. The current principle is: **objects are temporary instances derived from eternal source code**. When you quit, you dissolve back to the source.
+
+### Why This Matters
+
+1. **Flexibility:** Objects can transition through arbitrary FSM states without engine code changes
+2. **Composability:** Complex behavior (multi-part objects, conditional transitions) is data, not hard-coded
+3. **Debuggability:** Object state is always just a Lua table; inspect it at any point
+4. **Extensibility:** New object types are .lua files + registry entries; no engine modifications needed
+5. **Determinism:** Mutations are reproducible; the same source + same game history = same world state
 
 ---
 
@@ -139,6 +216,38 @@ NORTH, SOUTH, EAST, WEST, UP, DOWN, GO, ENTER, EXIT, DESCEND, CLIMB (all route t
 
 #### Meta (2)
 HELP, QUIT
+
+**Architecture: Generic Handlers + Object-Owned FSM**
+
+Verb handlers in `src/engine/verbs/init.lua` are generic infrastructure — they dispatch commands but contain NO object-specific logic. 
+
+Example: The OPEN handler doesn't have special cases for "wooden doors," "drawers," "cursed gates," or "time-locked safes." Instead, each object declares its own transitions and prerequisites in its FSM metadata:
+
+```lua
+-- In src/meta/world/bedroom-door.lua
+mutations = {
+    open = {
+        requires_tool = "key",       -- Only object knows it needs a key
+        requires_skill = nil,
+        becomes = "bedroom-door-open",
+        message = "The door swings inward.",
+        timed_revert = 30            -- Door auto-closes after 30 ticks
+    }
+}
+```
+
+When the OPEN handler runs:
+1. Engine finds the target object (bedroom-door)
+2. Looks up the object's transition rules (mutations.open)
+3. Checks prerequisites from the **object's FSM**, not engine code
+4. Executes the mutation (replaces object definition)
+5. Returns the object's message
+
+**Result:** The engine is truly generic. Objects own their state machines. This enables:
+- Cursed interactions (object FSM returns nonsense messages)
+- Room-specific verb behavior (via object-specific mutations)
+- Dynamic verb adaptation (object mutations change based on universe state)
+- No engine changes needed for new object types
 
 **Movement Handler Unification:**
 - All movement verbs route through `handle_movement(ctx, direction)`
