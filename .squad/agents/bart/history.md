@@ -623,3 +623,37 @@ Team spawned Bart composite implementation patterns + CBG spatial design decisio
 - Nelson playtests both composite detachment + spatial mechanics when Phase 1 ready
 
 **Decisions Filed:** `.squad/decisions.md` entries 28 & 29 (Composite Implementation + Spatial System)
+
+---
+
+## Learnings
+
+### Session: Spatial Relationships & Rug/Trap Door Puzzle (2026-03-20T06:08:13Z)
+**Status:** ✅ COMPLETE
+
+**What was built:**
+1. **Spatial Movement System** — `move_spatial_object()` helper handles push/pull/move for furniture with data-driven properties (`movable`, `moved`, `resting_on`, `covering`)
+2. **Rug + Trap Door Puzzle** — Full puzzle chain: push bed off rug → pull rug aside → trap door revealed → open trap door → down exit appears
+3. **Trap Door Object** — FSM with hidden/revealed/open states; `reveals_exit` property unhides room exit on open
+4. **Movement Verbs** — PUSH, MOVE, SHIFT, SLIDE, SHOVE, LIFT handlers; NLP for "roll up X", "pull back X"
+5. **Blocking Relationships** — Objects with `resting_on` block movement of the object they sit on; "The bed is sitting on the rug. Move it first."
+6. **Covering System** — Objects with `covering` list reveal hidden objects when moved; surface underneath contents dump to floor
+7. **Hidden Object Reveal** — Covered objects with `hidden=true` become visible via FSM reveal transition + discovery_message
+
+**Key Architecture Decisions:**
+- Spatial relationships are per-object properties (`movable`, `resting_on`, `covering`), not a separate spatial graph module — keeps it simple, data-driven, extensible
+- Blocking check is dynamic: scans room.contents for objects with `resting_on == this.id` — no separate blocked_by list to maintain
+- `move_spatial_object` is a verb-layer helper (not engine module) — matches existing architecture where verb logic lives in verbs/init.lua
+- Covering objects that are moved dump their `surfaces.underneath` contents to room floor AND reveal their `covering` list objects — two different mechanisms for two different things
+- Trap door FSM `reveal` transition is triggered programmatically by `move_spatial_object`, not by player verb — player moves the rug, engine reveals the trap door
+- `reveals_exit` on objects ties FSM open transitions to room exit visibility — clean data-driven approach
+
+**Files Created:**
+- src/meta/objects/trap-door.lua — FSM object (hidden→revealed→open) with reveals_exit
+
+**Files Changed:**
+- src/meta/objects/rug.lua — Added movable, covering, moved state tracking, updated descriptions
+- src/meta/objects/bed.lua — Added movable, resting_on, push_message, moved_room_presence
+- src/meta/world/start-room.lua — Added trap-door instance, hidden "down" exit to cellar
+- src/engine/verbs/init.lua — Added move_spatial_object helper, PUSH/MOVE/SHIFT/SLIDE/SHOVE/LIFT handlers, modified PULL for spatial movement, modified OPEN for reveals_exit
+- src/engine/loop/init.lua — Added NLP preprocessing for "roll up X", "pull back X"

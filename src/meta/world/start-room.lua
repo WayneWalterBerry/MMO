@@ -16,6 +16,7 @@ return {
         { id = "vanity",        type = "Oak Vanity",         type_id = "eda1257d-8240-4c75-9c1b-a7be349a60f5", location = "room" },
         { id = "wardrobe",      type = "Wardrobe",           type_id = "9c4701d1-4cc4-49e7-9c4a-041e1e37caf1", location = "room" },
         { id = "rug",           type = "Rug",                type_id = "7275e1d9-5837-4f39-b3be-d64ee6d667c9", location = "room" },
+        { id = "trap-door",    type = "Trap Door",          type_id = "a3f8c7d1-e592-4b6a-8d3e-f1c7a4b92e05", location = "room" },
         { id = "window",        type = "Window",             type_id = "4ecd1058-5cbe-4601-a98e-c994631f7d6b", location = "room" },
         { id = "curtains",      type = "Curtains",           type_id = "cc981807-a74e-4ecc-8d52-903cc4fc5bd6", location = "room" },
         { id = "chamber-pot",   type = "Chamber Pot",        type_id = "9a9ff109-93a0-4dcf-9d6e-0f0f4b83f4ba", location = "room" },
@@ -199,6 +200,32 @@ return {
                     message = "The window explodes inward in a shower of glass! Shards skitter across the stone floor.",
                 },
             },
+        },
+
+        down = {
+            target = "cellar",
+            type = "trap_door",
+            passage_id = "bedroom-cellar-trapdoor",
+            name = "the trap door",
+            keywords = {"trap door", "trapdoor", "hatch", "down", "stairway", "stairs"},
+            description = "A narrow stone stairway spirals down into darkness through the open trap door.",
+
+            max_carry_size = 3,
+            max_carry_weight = 30,
+            requires_hands_free = false,
+            player_max_size = 5,
+
+            open = false,
+            locked = false,
+            key_id = nil,
+            hidden = true,
+            broken = false,
+
+            one_way = false,
+            direction_hint = "down",
+            breakable = false,
+
+            mutations = {},
         },
     },
 

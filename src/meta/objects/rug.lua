@@ -14,6 +14,15 @@ return {
     room_position = "covers the cold stone floor",
     portable = false,
 
+    -- Spatial properties
+    movable = true,
+    moved = false,
+    covering = {"trap-door"},
+    move_message = "You grab the edge of the threadbare rug and pull it aside, bunching it against the wall.",
+    moved_room_presence = "The threadbare rug lies bunched against the wall, its faded crimson and gold pattern crumpled.",
+    moved_description = "The threadbare rug has been pulled aside and lies bunched against the wall. Its crimson and gold pattern is crumpled and folded.",
+    moved_on_feel = "The rug is bunched against the wall, its rough weave folded over itself.",
+
     surfaces = {
         underneath = { capacity = 3, max_item_size = 2, contents = {"brass-key"} },
     },
@@ -22,7 +31,8 @@ return {
 
     on_look = function(self)
         local text = self.description
-        if #self.surfaces.underneath.contents > 0 then
+        if not self.moved and self.surfaces and self.surfaces.underneath
+            and #self.surfaces.underneath.contents > 0 then
             text = text .. "\n\nOne corner is slightly raised, as if something is beneath it."
         end
         return text

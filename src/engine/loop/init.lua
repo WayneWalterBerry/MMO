@@ -139,6 +139,19 @@ local function preprocess_natural_language(input)
     return "pull", pull_target
   end
 
+  -- Spatial movement phrases: "roll up X" → move X
+  local roll_target = lower:match("^roll%s+up%s+(.+)")
+    or lower:match("^roll%s+(.+)%s+up$")
+  if roll_target then
+    return "move", roll_target
+  end
+
+  -- "pull back X" → move X
+  local pullback_target = lower:match("^pull%s+back%s+(.+)")
+  if pullback_target then
+    return "move", pullback_target
+  end
+
   -- "uncork X", "pop cork" → uncork
   local uncork_target = lower:match("^pop%s+(.+)")
   if uncork_target and uncork_target:match("cork") then

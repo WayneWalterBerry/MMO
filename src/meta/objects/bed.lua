@@ -15,6 +15,13 @@ return {
     room_position = "dominates the center of the room",
     portable = false,
 
+    -- Spatial properties
+    movable = true,
+    moved = false,
+    resting_on = "rug",
+    push_message = "You brace yourself against the heavy bedframe and push. The four-poster bed scrapes across the flagstones with a grinding shriek of wood on stone, sliding off the threadbare rug.",
+    moved_room_presence = "A massive four-poster bed has been shoved to one side of the room, its heavy curtains still swaying.",
+
     surfaces = {
         top = { capacity = 8, max_item_size = 5, contents = {"pillow", "bed-sheets", "blanket"} },
         underneath = { capacity = 4, max_item_size = 3, contents = {"knife"} },

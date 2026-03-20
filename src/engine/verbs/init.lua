@@ -949,6 +949,107 @@ local function inventory_weight(ctx)
 end
 
 ---------------------------------------------------------------------------
+-- Spatial movement: push/pull/move objects with spatial relationships
+---------------------------------------------------------------------------
+local function move_spatial_object(ctx, obj, verb)
+    local room = ctx.current_room
+    local reg = ctx.registry
+
+    -- Not movable
+    if not obj.movable then
+        if obj.weight and obj.weight >= 50 then
+            print("You strain against " .. (obj.name or "it") .. ", but it won't budge. It's far too heavy to move.")
+        else
+            print("You can't move " .. (obj.name or "that") .. ".")
+        end
+        return
+    end
+
+    -- Already moved
+    if obj.moved then
+        print("You've already moved " .. (obj.name or "that") .. ".")
+        return
+    end
+
+    -- Check if anything is resting on this object (prevents movement)
+    for _, obj_id in ipairs(room.contents or {}) do
+        local other = reg:get(obj_id)
+        if other and other.resting_on == obj.id and not other.moved then
+            print((other.name or "Something") .. " is sitting on " .. (obj.name or "it") .. ". You need to move it first.")
+            return
+        end
+    end
+
+    -- Perform the move
+    obj.moved = true
+
+    -- Print movement message
+    if verb == "push" and obj.push_message then
+        print(obj.push_message)
+    elseif obj.move_message then
+        print(obj.move_message)
+    else
+        print("You " .. verb .. " " .. (obj.name or "it") .. " aside.")
+    end
+
+    -- Clear resting_on relationship
+    if obj.resting_on then
+        obj.resting_on = nil
+    end
+
+    -- Update description/presence for moved state
+    if obj.moved_room_presence then
+        obj.room_presence = obj.moved_room_presence
+    end
+    if obj.moved_description then
+        obj.description = obj.moved_description
+    end
+    if obj.moved_on_feel then
+        obj.on_feel = obj.moved_on_feel
+    end
+
+    -- If this is a covering object, dump underneath surface items to floor
+    if obj.covering and obj.surfaces and obj.surfaces.underneath then
+        local underneath = obj.surfaces.underneath
+        for i = #(underneath.contents or {}), 1, -1 do
+            local item_id = underneath.contents[i]
+            room.contents[#room.contents + 1] = item_id
+            local item = reg:get(item_id)
+            if item then
+                item.location = room.id
+                print("Something clatters to the floor -- " .. (item.name or item_id) .. "!")
+            end
+            table.remove(underneath.contents, i)
+        end
+    end
+
+    -- Reveal covered objects
+    if obj.covering then
+        for _, covered_id in ipairs(obj.covering) do
+            local covered = reg:get(covered_id)
+            if covered and covered.hidden then
+                -- FSM reveal transition
+                if covered.states and covered._state == "hidden" then
+                    for _, t in ipairs(covered.transitions or {}) do
+                        if t.from == "hidden" and t.to == "revealed" then
+                            fsm_mod.transition(reg, covered_id, "revealed", {})
+                            break
+                        end
+                    end
+                else
+                    covered.hidden = false
+                end
+                -- Discovery message
+                if covered.discovery_message then
+                    print("")
+                    print(covered.discovery_message)
+                end
+            end
+        end
+    end
+end
+
+---------------------------------------------------------------------------
 -- Verb handler creation
 ---------------------------------------------------------------------------
 function verbs.create()
@@ -1780,6 +1881,12 @@ function verbs.create()
         -- Fall through: try FSM "pull" transition on a visible object
         local obj = find_visible(ctx, target)
         if obj then
+            -- Spatial movement for movable objects
+            if obj.movable then
+                move_spatial_object(ctx, obj, "pull")
+                return
+            end
+
             if obj.states then
                 local transitions = fsm_mod.get_transitions(obj)
                 local target_trans
@@ -1813,6 +1920,78 @@ function verbs.create()
     handlers["yank"] = handlers["pull"]
     handlers["tug"] = handlers["pull"]
     handlers["extract"] = handlers["pull"]
+
+    ---------------------------------------------------------------------------
+    -- PUSH / SHOVE — move heavy objects aside
+    ---------------------------------------------------------------------------
+    handlers["push"] = function(ctx, noun)
+        if noun == "" then print("Push what?") return end
+
+        -- Strip trailing "aside" / "away" / "over"
+        local target = noun:gsub("%s+aside$", ""):gsub("%s+away$", ""):gsub("%s+over$", "")
+
+        local obj = find_visible(ctx, target)
+        if not obj then
+            print("You don't see that here.")
+            return
+        end
+
+        move_spatial_object(ctx, obj, "push")
+    end
+
+    handlers["shove"] = handlers["push"]
+
+    ---------------------------------------------------------------------------
+    -- MOVE / SHIFT — general spatial movement
+    ---------------------------------------------------------------------------
+    handlers["move"] = function(ctx, noun)
+        if noun == "" then print("Move what?") return end
+
+        -- Strip trailing "aside" / "away" / "over"
+        local target = noun:gsub("%s+aside$", ""):gsub("%s+away$", ""):gsub("%s+over$", "")
+
+        local obj = find_visible(ctx, target)
+        if not obj then
+            print("You don't see that here.")
+            return
+        end
+
+        move_spatial_object(ctx, obj, "move")
+    end
+
+    handlers["shift"] = handlers["move"]
+    handlers["slide"] = handlers["move"]
+
+    ---------------------------------------------------------------------------
+    -- LIFT — pick up or reveal what's under something
+    ---------------------------------------------------------------------------
+    handlers["lift"] = function(ctx, noun)
+        if noun == "" then print("Lift what?") return end
+
+        local obj = find_visible(ctx, noun)
+        if not obj then
+            print("You don't see that here.")
+            return
+        end
+
+        -- If it's movable, treat like pull
+        if obj.movable then
+            move_spatial_object(ctx, obj, "lift")
+            return
+        end
+
+        -- If portable, try to pick it up
+        if obj.portable then
+            handlers["take"](ctx, noun)
+            return
+        end
+
+        if obj.weight and obj.weight >= 50 then
+            print("You strain to lift " .. (obj.name or "it") .. ", but it won't budge. It's far too heavy.")
+        else
+            print("You can't lift " .. (obj.name or "that") .. ".")
+        end
+    end
 
     ---------------------------------------------------------------------------
     -- UNCORK / UNSTOP / UNSEAL — shorthand for detaching cork-type parts
@@ -1957,6 +2136,14 @@ function verbs.create()
                     if trans then
                         print(trans.message or ("You open " .. (obj.name or obj.id) .. "."))
                         if trans.spawns then spawn_objects(ctx, trans.spawns) end
+                        -- Reveal exits when opening spatial objects (e.g., trap door)
+                        if obj.reveals_exit then
+                            local room = ctx.current_room
+                            if room.exits and room.exits[obj.reveals_exit] then
+                                room.exits[obj.reveals_exit].hidden = false
+                                room.exits[obj.reveals_exit].open = true
+                            end
+                        end
                     else
                         print("You can't open " .. (obj.name or "that") .. ".")
                     end
