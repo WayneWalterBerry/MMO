@@ -29,3 +29,23 @@
 - **Parser strengths:** "grab the knife" → take, "examine" → look at, compound commands, pronoun "it" — all work.
 - **No feedback on failed parses.** Player sees nothing when input doesn't match. Needs "I don't understand" message.
 - **Time passes too fast.** ~7-8 minutes per action; 3 hours pass in 25 commands.
+
+### Playtest 002 Findings (2026-03-20)
+- **Matchbox container inventory works correctly.** Count tracks when taking/returning matches. "Inside: N wooden matches" shown with light. Non-match items rejected as "too heavy."
+- **Poison bottle FSM is excellent.** 4 visual states (sealed, open+full, empty), 3 smell states, all distinct. Opening/drinking transitions clean.
+- **Container nesting works.** Matchbox inside sack, sack in inventory — all renders correctly.
+- **Wear system works.** Cloak equips and shows in "Worn:" section of inventory. ✅ **Coordinated with Bart's wearable engine implementation** (WEAR/REMOVE verbs, slot conflicts, vision blocking).
+- **Sack had hidden items.** Sewing needle and thread inside burlap sack in wardrobe — not mentioned in sack description.
+- **BUG-008 (MAJOR): Drinking poison doesn't kill or harm the player.** "World goes dark" then continue playing 4 hours later, completely fine.
+- **BUG-009 (MED): Parser debug output leaks to player** on unrecognized commands. `[Parser] No match found...` shown directly.
+- **BUG-010 (MINOR): Internal object IDs shown** in nightstand surface listing ("candle", "poison-bottle" instead of display names).
+- **BUG-011 (MINOR): "help" keyword intercepts write sub-prompt.** Writing "help..." on paper triggers help command instead.
+- **BUG-012 (MINOR): "take match" prefers spent match on floor** over fresh match in matchbox in hand.
+- **BUG-013 (COSMETIC): Tactile matchbox examine doesn't vary by count** — same text whether 6 or 1 matches remain.
+- **BUG-014 (COSMETIC): "poison bottle" not recognized** — only "bottle" works as noun.
+- **Note:** BUG-003 from pass 001 is still present — "help" intercepts in write sub-prompt too.
+- **Note:** BUG-009 replaces the "no feedback on failed parses" observation from pass 001 — there IS now output, but it's the raw parser debug, not player-facing text.
+
+## Cross-Agent Updates (2026-03-20)
+- **From Bart:** Wearable engine implementation complete (WEAR/REMOVE verbs, slot conflicts, vision blocking). All wear operations validated in pass-002 — system is solid and ready for content expansion.
+- **From Frink:** MUD verb research identifies that multiplayer verbs should be first-class primitives. Strategic recommendations include 50-100 predefined socials for MVP (retention drivers). Competitive analysis shows tap-to-suggest UI is critical for mobile parsing UX.

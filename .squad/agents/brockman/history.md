@@ -94,6 +94,16 @@ Refined vocabulary v1.2 across all 24 architecture decisions; consolidated 12+ u
 
 **Structure Stability:** Core src/ structure is stable and reflects intended architecture. No major refactors needed; documentation now accurate to code.
 
+**Newspaper as Living Document:** The MMO Gazette has emerged as the primary team communication hub. Multiple editions (morning, evening, late evening) for the same day are working well — they segment work phases while keeping the narrative continuous. Comic + op-ed pattern is proving engaging. Read retention is high; the newspaper is becoming the *default* place team members share findings.
+
+**Wearables as Sensory Modifiers:** Major design insight from tonight: wearables aren't just inventory cosmetics. A sack on the head *blocks vision entirely*. This cascades through the verb system. The early investment in FEEL, LISTEN, SMELL verbs paid off — blindness becomes a puzzle, not a dead end. Documented this in op-ed form so the insight sticks.
+
+**Testing Validates Research:** Nelson's seven bugs (BUG-008 through BUG-014) proved that systematic play testing catches first-contact issues. One critical gap emerged: poison has no lethal consequence (no HP system). This validates our approach to play-test-driven design but exposed a major scope item for the health system.
+
+**Research Scales with Infrastructure:** Reorganizing 16 competitor files into subfolders isn't code or features, but it's *organizational infrastructure*. At 50 competitors, the flat structure would be unmanageable. Documentation scales when you invest in structure early.
+
+**Design Directives as North Star:** Capturing Wayne's three directives (detachable parts, two-hand carry, wearables) in written form creates alignment. Wearables shipped in one session because the design was clear. Directives → implementation clarity.
+
 ---
 
 ## Cross-Agent Update: Feel Verb Bug Fix + Skills Design (2026-03-19T16-23-38Z)

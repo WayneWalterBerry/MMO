@@ -2522,3 +2522,373 @@ This means `wearable = true` and `container = true` can coexist on the same obje
 Chamber-pot is a type of pot (inherits from pot base class). Pots can be worn on your head as improvised head armor. So: chamber-pot is wearable (wear_slot = "head", wear_layer = "outer"). Yes, this means you can wear a chamber pot on your head. It's a terrible helmet but it works. The object hierarchy matters here -- pot is a base type, chamber-pot inherits pot's wearability.
 
 **Why:** Establishes object inheritance (base class → subtype) and confirms pots-as-helmets gameplay. The chamber pot on head is both functional (head protection) and hilarious (it's a chamber pot).
+
+
+---
+
+### 28. Nelson — Play Test Pass 002 Bug Report (2026-03-20)
+# Nelson — Play Test Pass 002 Bug Report
+**Date:** 2026-03-20  
+**Author:** Nelson (Tester)
+
+## Key Finding: Poison Has No Consequence
+
+**BUG-008** is the highest priority finding. Drinking poison produces great narrative text ("the world goes dark...") but the player suffers no actual consequence — they wake up 4 hours later and continue playing. This needs a design decision:
+
+1. **Option A:** Poison kills the player → game over screen
+2. **Option B:** Poison causes lasting debilitation (blurred vision, weakness, countdown timer)
+3. **Option C:** Current "blackout + time skip" is intentional (if so, needs clearer wakeup text)
+
+## Parser Debug Leaking (BUG-009)
+
+The `[Parser] No match found...` diagnostic output is being shown to players when commands don't match. This should be suppressed and replaced with a player-friendly "I don't understand" message. This was noted as "no feedback on failed parses" in pass 001 — it's actually the opposite problem now: *too much* raw feedback.
+
+## Full Bug List: BUG-008 through BUG-014
+
+See `test-pass/2026-03-20-pass-002.md` for complete reproduction steps.
+
+## What's Working Well
+
+- Matchbox container inventory tracking is solid
+- Poison bottle FSM has 4 distinct visual states and 3 smell states
+- Container nesting (matchbox in sack) works
+- Wear system works
+- "take match from matchbox" prepositional parsing works
+- "put match in matchbox" returns match and count updates
+
+
+---
+
+### 29. Frink — MUD Verb Research & Strategic Implications (2026-03-20)
+# Frink's MUD Verb Research — Strategic Implications for Our Multiplayer Game
+
+**Date:** 2026-07-25  
+**Research Report:** `resources/research/competitors/mud-clients/verbs.md` (27KB)
+
+## Executive Summary
+
+MUDs represent the most mature multiplayer text adventure verb system in existence. Our research revealed a critical insight: **multiplayer text adventures require 5-10× more verbs than single-player IF**, not because mechanics are more complex, but because social coordination (party, guild, chat channels) and commerce introduce entirely new verb categories.
+
+This research identifies three strategic decisions for our game design:
+
+1. **Multiplayer Verbs as First-Class Primitives** — Party, guild, and economy verbs should be designed into the core system from day one, not bolted on later.
+2. **Social Verbs Drive Retention** — A small catalog of predefined socials (50+) enables roleplay and significantly increases engagement.
+3. **Natural Language Parsing Enables Better UX** — Accept multiple phrasings of the same command (e.g., `get apple`, `take the apple`, `pick up the apple`).
+
+---
+
+## Key Findings
+
+### Multiplayer MUDs Have 300-500+ Verbs vs. 20-40 in Single-Player IF
+
+| Game Type | Typical Count | Breakdown |
+|-----------|---------------|-----------|
+| Classic IF (Infocom) | 20-40 | Core verbs only |
+| CircleMUD | 170+ | 40 base + 50 socials + 80 spells |
+| Discworld MUD | 300-500+ | 80 core + 150 standard + 200+ socials + 50-100 guild/skill |
+| Achaea (Modern) | 250-400+ | 100 universal + 50-100 class-specific + 100+ skill-based |
+
+**The Gap:** Multiplayer verbs account for 30-40% of the total. These include:
+- **Party verbs:** party create, invite, accept, leave, info, chat, assist, follow, rescue (9 verbs)
+- **Guild verbs:** guild create, invite, join, leave, info, chat, promote, demote, disband, tribute, withdraw (11 verbs)
+- **Economy verbs:** auction, bid, bank, trade, offer, accept trade (6 verbs)
+- **PvP verbs:** challenge, duel, pvp toggle, track, yield, surrender (6 verbs)
+- **Social verbs:** emotes and roleplay commands (200+ in Discworld MUD)
+
+**Single-Player IF has zero of these verb categories.**
+
+---
+
+### Social Verbs Drive Long-Term Retention
+
+**Finding:** Discworld MUD features 200+ predefined "soul" commands (emotes) with minimal mechanical impact.
+
+- Examples: wave, smile, laugh, bow, nod, shrug, hug, kiss, slap, bite, punch, dance, prance, cower, salute, wink, and dozens more
+- These verbs provide **zero mechanical reward** (no XP, no damage, no progression)
+- Yet they are used frequently and enable core roleplay functionality
+- MUSH games (social-focused MUDs) prioritize socials; some have zero combat verbs but 200+ emotes
+
+**Implication:** Our game should include 50-100 predefined socials from MVP. They are retention drivers, not after-thoughts.
+
+---
+
+### Natural Language Parsing Enables Superior UX
+
+**Finding:** LPMud-based systems (Discworld MUD, Islands of Myth) accept multiple phrasings of the same command.
+
+**Example:** All of these work identically:
+- `get apple`
+- `take the apple`
+- `pick up the apple`
+- `get all apples`
+- `get all but the knife`
+
+**Contrast:** CircleMUD (C-based, rigid dispatch) requires exact syntax. Phrasings like "pick up" fail silently.
+
+**Implication:** Our Tier 2 embedding parser should aim for this flexibility. It's a UX multiplier—especially on mobile where typing is painful. Combined with tap-to-suggest UI, this could be a differentiator vs. competitors.
+
+---
+
+### Abbreviations Are Mandatory, Not Optional
+
+**Finding:** Every successful MUD supports single-letter abbreviations for frequent verbs.
+
+- Movement: `n`, `s`, `e`, `w`, `u`, `d` (never typed out in practice)
+- Inventory: `i` (for inventory), `l` (for look)
+- Combat: `k` (for kill), `a` (for attack)
+
+**Why They Matter:**
+1. **Speed** — Single letter vs. full word during high-stress combat
+2. **Muscle Memory** — Enables rapid reflexive patterns
+3. **Accessibility** — Reduces cognitive load for new players
+
+**Implication:** Design abbreviations into the verb system from day one. Don't retrofit them later.
+
+---
+
+### Verb Systems Vary Dramatically by Architecture
+
+Three dominant architectures emerged:
+
+#### 1. C-Based (DikuMUD / CircleMUD): ~170 Verbs
+- Fixed command dispatch model
+- No natural language parsing
+- Rigid syntax requirements
+- Adding verbs often requires recompile
+
+#### 2. LPC-Based (LPMud / MudOS): ~300+ Verbs
+- Natural language parser built into driver
+- Verbs registered with parsing rules
+- Dynamic verb registration (no recompile)
+- Flexible syntax; multiple phrasings accepted
+- **Modern Example:** Discworld MUD (300-500 verbs)
+
+#### 3. Social-Focused (MUSH/MOO): ~200-300 Verbs
+- Minimalist mechanical verb set
+- Extensive predefined socials (100-200+)
+- Emphasis on roleplay over mechanics
+- Often zero combat verbs
+
+**Implication:** Our architecture should lean toward LPC-style natural language parsing. This enables both rich mechanical depth (for combat, crafting) and social expression (for roleplay).
+
+---
+
+### Multiplayer Verbs Require New Game State
+
+**Critical Insight:** Party, guild, PvP, and economy verbs cannot be tacked on to a single-player engine. They require new game state and persistence semantics:
+
+- **Party verbs** require: party roster, group-wide buffs/debuffs, shared loot rules, tactical targeting
+- **Guild verbs** require: guild roster, persistent guild treasury, permission hierarchy, guild chat channels
+- **PvP verbs** require: PvP flags, faction alignment, guard rules, murder reputation
+- **Economy verbs** require: shared auction house, player-to-player trades, market history, transaction logs
+
+**Implication:** These should be **designed into the core architecture from day one**, not retrofitted as expansions. Their absence in single-player IF is the key difference between IF and MUDs.
+
+---
+
+### Alias System Enables Power-User Customization
+
+**Finding:** MUDs provide an `alias` command allowing custom shortcuts and command chaining.
+
+**Examples:**
+- `alias loot get all from corpse; put all in bag; sit` (loot automation)
+- `alias setup inv; eq; score; who` (quick status check)
+- `alias flee cast feetwings; west; north; south` (tactical escape)
+
+**Implication:** A post-MVP alias system could be a differentiator. Top MUD players maintain 50+ aliases for rapid responses. This could drive engagement and power-user retention.
+
+---
+
+## Strategic Recommendations
+
+### Phase 1: Core Verbs (MVP)
+Implement a minimal verb set; no multiplayer verbs yet:
+
+**Navigation:** north, south, east, west, up, down, enter, leave, go, look, examine (11)  
+**Inventory:** get, drop, inventory, wear, remove, take, put, give (8)  
+**Interaction:** open, close, push, pull, read (5)  
+**Information:** score, help, commands, look, search (5)  
+**Social:** say, emote, shout (3)
+
+**Total MVP:** ~30 verbs
+
+**Design Commitment:** Abbreviations (`n`, `i`, `l`, etc.) must be built into the system from day one.
+
+---
+
+### Phase 2: Multiplayer Additions
+Add multiplayer-specific verbs and basic socials:
+
+**Communication:** tell, reply, gossip (3)  
+**Multiplayer Mechanics:** 
+- Party: party create, party invite, party accept, party leave, party chat, follow, assist (7)
+- Guild: guild create, guild invite, guild leave, guild chat (4)
+- Trade: trade, auction, bid (3)
+- PvP: challenge, duel (2)
+
+**Social/Emotes:** 50 predefined socials (wave, smile, laugh, bow, hug, etc.) (50)
+
+**Total Phase 2:** ~70 new verbs (100 cumulative)
+
+**Design Commitment:** Multiplayer verbs should be first-class, not bolted-on. Party and guild systems should feel integrated from day one.
+
+---
+
+### Phase 3: Expansion (Post-MVP)
+Deepen verb system as content scales:
+
+**Crafting:** craft, brew, forge, cook, weave, enchant, disenchant, smith, carve (9)  
+**Magic:** cast, chant, invoke, memorize, scribe, summon, conjure (7)  
+**Advanced Socials:** Expand emote library to 100+ variants (50 additional)  
+**Economy:** Guild treasury, faction rep, specialized trading, banking verbs (10+)  
+**Aliases:** Support custom alias creation and chaining (system addition)
+
+**Total Phase 3:** ~100 new verbs (200+ cumulative)
+
+---
+
+### Design Philosophy
+1. **Abbreviations First:** Every verb must have a designed abbreviation.
+2. **Multiplayer as First-Class:** Party and guild verbs are core, not optional.
+3. **Social Verbs Matter:** 50-100 predefined socials enable roleplay and retention.
+4. **Scalable Discovery:** Verbs unlock progressively (fresh character ~30 verbs, max-level ~200+ verbs).
+5. **Natural Language Parsing:** Accept multiple phrasings (our Tier 2 embedding parser should target this).
+
+---
+
+## Questions for the Squad
+
+1. **Multiplayer-First Architecture:** Should our core engine be designed for multiplayer from day one, even if MVP is single-player? (Our recommendation: Yes—retrofitting multiplayer verbs later would be painful.)
+
+2. **Social Verb Investment:** How much effort should go into predefined socials for MVP? (Our recommendation: 50 minimal; 100 preferred. They're retention drivers.)
+
+3. **Natural Language Parsing:** Should Tier 2 embedding parser accept multiple phrasings, or stick to exact match only? (Our recommendation: Multiple phrasings—UX multiplier, especially on mobile.)
+
+4. **Abbreviation System:** Should we build abbreviations into the verb system from day one, or retrofit them later? (Our recommendation: From day one; retrofitting is error-prone and confusing.)
+
+5. **Alias System:** Should this be a Phase 2 or Phase 3 feature? (Our recommendation: Phase 3, post-MVP. Post-MVP feature for power-user retention.)
+
+---
+
+## Implementation Notes
+
+- **Verb Dispatch:** Consider LPC-style natural language parser (see Discworld MUD, Islands of Myth)
+- **Verb Registration:** Dynamic registration (no recompile for new verbs) enables rapid iteration
+- **Parsing Rules:** Specify allowed syntax patterns (at LIV, in OBJ, with OBJ) for flexibility
+- **Verb Aliases:** Build into verb system natively; don't bolt on as afterthought
+- **Social Verbs:** Pre-populate with 50-100 socials; enable builder creation of custom socials post-MVP
+
+---
+
+## References
+
+- Full report: `resources/research/competitors/mud-clients/verbs.md`
+- Discworld MUD Wiki: https://dwwiki.mooo.com/wiki/Category:Commands
+- CircleMUD GitHub: https://github.com/Yuffster/CircleMUD/blob/master/lib/text/help/commands.hlp
+- Islands of Myth LPC Parser: http://islandsofmyth.org/wiz/parser_guide.html
+- Achaea Wiki: https://wiki.achaea.com/Newbie_Guide
+
+---
+
+## Next Steps
+
+1. **Team Review:** Review this decision and strategic recommendations with squad.
+2. **Verb Planning:** Create detailed verb registry for Phase 1 MVP.
+3. **Parser Design:** Specify natural language parsing rules and abbreviation system.
+4. **Social Verb Library:** Curate 50-100 predefined socials for launch.
+5. **Multiplayer Design:** Architect party/guild systems with verb dispatch in mind.
+
+
+---
+
+### 30. Frink — Competitive Landscape Findings (2026-03-20)
+# Decision: Competitive Landscape Findings — Strategic Implications
+
+**Agent:** Frink (Researcher)  
+**Date:** 2026-07-24  
+**Status:** PROPOSED  
+**Relates to:** Decisions 17, 19; Parser architecture; Multiplayer design
+
+## Context
+
+Completed competitive analysis of 16 mobile text adventure / interactive fiction competitors across parser-based, choice-based, MUD/multiplayer, and narrative game categories.
+
+## Key Strategic Decisions Proposed
+
+### 1. Tap-to-Suggest UI Is Required (Not Optional)
+
+Every parser game on mobile suffers from "typing on phones sucks." Choice-based games dominate downloads *specifically because* they eliminated typing. Our embedding parser solves the NLP problem, but we still need a **tap-to-suggest interface** that displays contextual verb/noun options alongside the text input. This makes the parser feel like a choice game for casual players while preserving free-form input for power users.
+
+**Evidence:** Frotz (4.8★ but keyboards are top complaint), Son of Hunky Punk (word-tap feature is most praised UX), Choice of Games (240K downloads with zero typing).
+
+### 2. Async Multiplayer First, Real-Time Later
+
+80 Days' asynchronous multiplayer (seeing other players on a globe without direct interaction) is the most elegant solution studied. Low server cost, high emotional impact. Our first multiplayer feature should be async — show other players' universe states, discoveries, or progress. Real-time MUD-style multiplayer is expensive and fragile.
+
+**Evidence:** 80 Days (BAFTA-nominated, 4.5★), Torn City (1M+ downloads but clunky), MUDs (decades of server maintenance burden).
+
+### 3. Ship Complete Experiences
+
+Magium's #1 complaint is unfinished content despite 1.3M downloads and 4.9★ rating. Players hate waiting for incomplete stories. Each release should be a **complete, self-contained experience** — even if small. Better to ship a perfect 2-hour game than a 20-hour game missing its ending.
+
+### 4. A Dark Room's Progression Model Is the Template
+
+A Dark Room's genre-evolution (idle → resource management → exploration RPG) is the most successful text game structure ever created (#1 App Store). Our "start in darkness" should similarly transform — from tactile exploration to puzzle-solving to world-building to multiplayer discovery. Each phase should feel like a new game.
+
+### 5. Our Biggest Risk Is Discovery, Not Quality
+
+As a PWA without app store presence, we face the same discovery problem as Twine games (thousands exist, nobody can find them) and Kingdom of Loathing (20-year community but zero mobile presence). We need a distribution strategy beyond "build it and they'll come."
+
+## Recommendation
+
+Proceed with current architecture (Lua engine, Wasmoon PWA, embedding parser). Add tap-to-suggest UI to parser roadmap. Design first multiplayer feature as async. Plan content releases as complete chapters.
+
+
+---
+
+### 31. Copilot Directive — Detachable Parts & Two-Handed Carry (2026-03-20T01:26Z)
+### 2026-03-20T01:26Z: User directive — Detachable object parts + two-handed carry
+**By:** Wayne Berry (via Copilot)
+**What:**
+1. **Detachable parts:** Instances of objects can come apart and become their own independent object instances. Examples:
+   - The nightstand drawer can be pulled out entirely and carried as a container.
+   - The poison bottle has a cork; when removed, the cork becomes its own object instance (with a backing object file). The cork could later be used as a fishing float, etc.
+   - Each detached part has its own object file defining its properties.
+2. **Two-handed carry:** Some objects require two hands to carry. This implies a hand-slot system where the player has two hands and some objects occupy both.
+
+**Why:** User request — enables emergent gameplay through object decomposition. Parts become puzzle pieces in new contexts (cork → fishing float). Two-handed carry adds tactical inventory decisions.
+
+
+---
+
+### 32. Bart — Wearable Object System Architecture (2026-03-20)
+# Decision: Wearable Object System Architecture
+
+**Author:** Bart (Architect)
+**Date:** 2026-03-25
+**Status:** Implemented
+**Impact:** Engine architecture, object metadata, verb system
+
+## Decision
+
+Wearable items use **object-owned metadata** (`wear = { slot, layer }`). The engine enforces conflicts but never hardcodes slot names — any string is a valid slot. This means new body locations can be invented by content authors without engine changes.
+
+## Key Rules
+
+1. **One inner + one outer per slot** — accessories are unlimited (up to `max_per_slot`)
+2. **Vision blocking** is a wear property (`blocks_vision = true`), checked separately from room darkness
+3. **Legacy support** — objects with `wearable = true` but no `wear` table default to `torso/outer`
+4. **Player.worn** is a flat list (same pattern as `player.hands`) — slot queries iterate it
+
+## Rationale
+
+- Matches D-14 (objects own their own state) — wear metadata lives in the object file
+- No enum of valid slots means content can grow without engine PRs
+- Flat worn list is simple and sufficient — slot-indexed maps would add complexity for marginal gain at current scale
+
+## Files Changed
+
+- `src/engine/verbs/init.lua` — wear/remove handlers, conflict algorithm, vision blocking
+- `src/engine/loop/init.lua` — NLP preprocessing for put on/take off
+- `src/meta/objects/` — wool-cloak, sack, chamber-pot, terrible-jacket wear metadata
+

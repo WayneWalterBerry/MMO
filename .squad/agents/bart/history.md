@@ -451,3 +451,11 @@ The 32.5MB gzipped index is too large for browser assets. Trim it down, then pla
 - src/meta/objects/sack.lua — wear metadata (head/outer/blocks_vision)
 - src/meta/objects/chamber-pot.lua — wear metadata (head/outer/armor)
 - src/meta/objects/terrible-jacket.lua — wear metadata (torso/outer)
+
+## Cross-Agent Updates (2026-03-20)
+
+**From Nelson (Tester):** Play test pass-002 validates wearable system implementation. All wear operations (equip, dequip, slot conflicts, vision blocking) work correctly. Confirmed that Comic Book Guy's design documentation aligns with your engine implementation. Ready for content expansion.
+
+**From Comic Book Guy:** Design documentation for wearable system published to docs/design/wearable-system.md. Provides comprehensive spec for content creators. System allows dual wearable+container objects (backpacks, sacks with vision-blocking), inheritance patterns (chamber-pot as pot subclass), and emergent behavior from combined properties.
+
+**From Frink (Researcher):** Strategic verb research identifies that wearable system is foundational for Phase 2 multiplayer verbs. Party/guild/economy verbs will layer on top of your core architecture. Recommends designing slot system to support future multiplayer gear constraints (shared inventory, buffs/debuffs on worn items).

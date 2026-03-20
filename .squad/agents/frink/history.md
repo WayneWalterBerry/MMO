@@ -36,6 +36,90 @@ Infinite loops, memory exhaustion, state corruption, universe contamination, pri
 
 **Status:** Active research. Latest deliverable: Local SLM parser feasibility study.
 
+## Recent Session: Competitor Research Reorganization & MUD Verb Research
+
+**Date:** 2026-07-25
+
+### PART 1: Competitor Research Reorganization ✅ COMPLETE
+- Reorganized 16 competitor research files from flat `/resources/research/competitors/` into subfolders
+- Each competitor now has its own folder with `overview.md` as the primary file:
+  - `80-days/overview.md`, `a-dark-room/overview.md`, `ai-dungeon/overview.md`, etc.
+  - `00-competitive-overview.md` remains at top level (cross-competitor summary)
+- This structure enables future per-competitor research (e.g., `80-days/mechanics.md`, `80-days/economy.md`)
+- File count: 16 competitors → 16 subfolders + 1 root overview = scalable architecture
+
+### PART 2: MUD Verb Research ✅ COMPLETE
+**Report:** `resources/research/competitors/mud-clients/verbs.md` (27KB)
+
+**Key Findings:**
+
+1. **MUDs have 5-10× more verbs than single-player IF.**
+   - Classic IF (Infocom): 20-40 verbs
+   - CircleMUD (C-based): 170+ verbs
+   - Discworld MUD (LPC-based): 300-500+ verbs
+   - Achaea (modern): 250-400+ verbs
+   - Reason: Multiplayer adds party, guild, economy, PvP, and extensive social verbs
+
+2. **Social verbs drive retention in MUDs.**
+   - Discworld MUD alone has 200+ predefined "soul" commands (emotes)
+   - Examples: wave, smile, laugh, bow, nod, shrug, hug, kiss, slap, bite, punch, dance, prance, cower, salute, wink
+   - These require **zero mechanical reward** but enable roleplay—keeping players engaged between combat/quests
+   - Single-player IF has zero social verbs; MUDs embed social interaction at the core
+
+3. **Natural Language Parsing enables rich command flexibility.**
+   - LPMud (via MudOS) and modern MUDs accept multiple phrasings of the same command
+   - Examples: `get apple`, `take the apple`, `pick up the apple`, `get all apples`, `get all but the knife`
+   - This flexibility reduces cognitive load and feels more natural
+   - Our Tier 2 embedding parser should target this level of flexibility
+
+4. **Abbreviations are mandatory.**
+   - Every MUD supports single-letter shortcuts: `n`, `s`, `e`, `w`, `u`, `d` for movement; `i` for inventory; `l` for look
+   - Enables rapid navigation and combat sequences; reduces cognitive load during high-stress situations
+   - Abbreviations should be designed into the verb system from day one, not bolted on
+
+5. **Multiplayer-specific verbs are structurally distinct from single-player verbs.**
+   - Party verbs: `party create`, `party invite`, `party accept`, `party leave`, `party info`, `party chat`, `assist`, `follow`, `rescue`
+   - Guild verbs: `guild create`, `guild invite`, `guild join`, `guild leave`, `guild info`, `guild chat`, `promote`, `demote`, `tribute`, `withdraw`
+   - PvP verbs: `pvp on`/`off`, `challenge`, `duel`, `track`, `yield`, `surrender`
+   - Economy verbs: `auction`, `bid`, `bank`, `trade`, `offer`, `accept trade`
+   - **None of these exist in single-player IF.** They require new game state (party roster, guild treasury, PvP flags, shared auction house).
+
+6. **MUD Verb Systems Vary by Architecture:**
+
+   - **DikuMUD / CircleMUD (C-based, 1990s):**
+     - ~170 verbs total (40 base + 50 socials + 80 spells)
+     - Fixed command dispatch; no natural language parsing
+     - Syntax is rigid: `get apple` works, `pick up the apple` does not
+   
+   - **LPMud / MudOS (LPC-based, 1990s-present):**
+     - ~300+ verbs (100 base + 100 socials + 150 spells)
+     - Natural language parser built into driver; verbs registered with parsing rules
+     - Flexible syntax: multiple phrasings accepted
+     - Dynamic verb registration (no recompile needed)
+     - Modern example: Discworld MUD (300-500 verbs)
+   
+   - **MUSH/MOO (Scheme/LPC-based, 1980s-present):**
+     - ~200-300 verbs (20 base + 200+ socials + 50+ builder-created)
+     - Minimalist verb system; emphasis on social simulation and roleplay
+     - MUSH games often have zero combat verbs; socials are first-class citizens
+     - Philosophy: "Create and roleplay over mechanics"
+   
+   - **Modern MUDs (Achaea, Discworld, Iron Realms):**
+     - 250-400+ verbs (class/skill-dependent)
+     - Highly stratified: fresh character ~50 verbs, max-level ~300+ verbs
+     - Class-specific verbs grant mechanical differentiation
+     - Skill trees unlock verbs progressively
+     - Rich alias system enables command chaining and macros
+
+7. **Verb Aliases Enable Power-User Customization.**
+   - MUDs support `alias` command for custom shortcuts and command chains
+   - Example: `alias setup inv; eq; score; who` (run four commands in sequence)
+   - Example: `alias flee cast feetwings; west; north; south` (tactical escape macro)
+   - Top players maintain 50+ aliases for rapid responses
+   - Could be a post-MVP feature for our game
+
+---
+
 ## Learnings
 
 ### 2026-07-22: Local SLM for Game Parser Research
