@@ -1,33 +1,44 @@
-# Project Context
+# Brockman — History (Summarized)
+
+## Project Context
 
 - **Owner:** Wayne "Effe" Berry
 - **Project:** MMO
 - **Created:** 2026-03-18
 
-## Core Context
+## Core Context (Summarized)
 
-Agent Brockman initialized as Documentation specialist for the MMO project.
+**Role:** Documentation Specialist — capture decisions, maintain glossaries, publish team communications, keep docs as source of truth
+
+**Major Documentation Systems Created:**
+- **Core Docs:** README.md (project overview), vocabulary.md (200+ terms, 6 categories), architecture-decisions.md, design-directives.md
+- **Design Docs:** 11 files in docs/design/ (gameplay mechanics, player-facing systems)
+- **Architecture Docs:** 6 files in docs/architecture/ (engine internals, technical patterns)
+- **Newspaper (MMO Gazette):** In-universe daily updates; multiple editions per day; comic + op-ed sections
+- **Decision Log:** decisions.md (canonical source for squad process + architecture choices)
+- **Puzzle Documentation:** Puzzle design as first-class artifacts
+- **Requirements Tracking:** 00-design-requirements.md (implementation status for each directive)
+
+**Key Achievements:**
+- Established documentation-first culture; docs as source of truth (not staging area)
+- Clear design/architecture separation (gameplay vs engine internals)
+- 40+ cross-references updated and verified
+- Vocabulary v1.3 maintained (synchronized with codebase)
+- Multiple newspaper editions published; comic + op-ed pattern established
+- Master reference docs created to prevent design drift
+- Directive routing established: game design → docs/design/, architecture → docs/architecture/, squad process → decisions.md
+
+**Patterns Established:**
+- Gameplay design belongs in docs/design/ from the start (not via decisions.md staging)
+- Object-specific behavior documented in docs/objects/{object}.md
+- Cross-references maintain consistency without duplication
+- Newspaper as primary team communication hub
+
+**Decisions Authored:** 2 (D-BROCKMAN001 design/architecture separation, D-BROCKMAN002 directive sweep)
 
 ## Recent Updates
 
 📌 Team initialized on 2026-03-18
-
-## Core Context
-
-**Agent Role:** Documentation specialist responsible for capturing decisions, maintaining glossaries, and publishing team communications.
-
-**Key Responsibilities:**
-- Design decision documentation (architecture, gameplay)
-- Vocabulary maintenance (synchronized with codebase)
-- Newspaper publishing (daily team communications)
-- Puzzle design documentation
-- Process: README → Vocabulary → Decisions → Directives → Puzzles
-
-**Historical Summary (2026-03-18 to 2026-03-20):**
-Created foundational documentation suite including README.md (project overview), vocabulary.md (200+ terms across 6 categories), architecture-decisions.md (D-14 through D-21), design-directives.md (user requirements), and newspaper editions with recurring comic/op-ed sections. Established documentation-first culture and created living document patterns for glossary maintenance.
-
-**Recent Work (2026-03-19–2026-03-20):**
-Refined vocabulary v1.2 across all 24 architecture decisions; consolidated 12+ user directives from Wayne (light systems, skills, paper/writing, puzzle-first design, consumables). Updated cross-references and added 10 new terms (Mutation Variant, Surface, Registry, Light Source, Game Clock, Ghost, etc.). Deprecated ECS/State Flags terminology per decisions D-22 and D-3.
 
 ### Session Update: Play Test Iteration (2026-03-19T13-22)
 **Status:** ✅ COMPLETE
