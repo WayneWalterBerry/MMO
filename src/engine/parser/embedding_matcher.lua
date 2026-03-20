@@ -58,20 +58,26 @@ local function correct_typos(tokens, known_verbs)
     if known_verbs[token] then
       corrected[#corrected + 1] = token
     else
-      local best_verb, best_dist = nil, 3
-      for verb in pairs(known_verbs) do
-        if math.abs(#token - #verb) <= 2 then
-          local dist = levenshtein(token, verb)
-          if dist < best_dist then
-            best_dist = dist
-            best_verb = verb
+      -- Short words (≤4 chars): require exact match only — no fuzzy correction.
+      -- A 1-char edit on a 4-char word is 25% change, too aggressive (kick→lick).
+      if #token <= 4 then
+        corrected[#corrected + 1] = token
+      else
+        local best_verb, best_dist = nil, 3
+        for verb in pairs(known_verbs) do
+          if math.abs(#token - #verb) <= 2 then
+            local dist = levenshtein(token, verb)
+            if dist < best_dist then
+              best_dist = dist
+              best_verb = verb
+            end
           end
         end
-      end
-      if best_verb then
-        corrected[#corrected + 1] = best_verb
-      else
-        corrected[#corrected + 1] = token
+        if best_verb then
+          corrected[#corrected + 1] = best_verb
+        else
+          corrected[#corrected + 1] = token
+        end
       end
     end
   end
@@ -150,11 +156,11 @@ end
 ---------------------------------------------------------------------------
 -- Constructor
 ---------------------------------------------------------------------------
-function matcher.new(index_path)
+function matcher.new(index_path, debug)
   local self = setmetatable({}, matcher)
   self.phrases = {}
   self.loaded = false
-  self.diagnostic = true -- diagnostic mode on by default during playtesting
+  self.diagnostic = debug or false
 
   local f = io.open(index_path, "r")
   if not f then
@@ -190,7 +196,9 @@ function matcher.new(index_path)
   end
 
   self.loaded = true
-  io.stderr:write("[Parser] Tier 2 loaded: " .. #self.phrases .. " phrases from index\n")
+  if self.diagnostic then
+    io.stderr:write("[Parser] Tier 2 loaded: " .. #self.phrases .. " phrases from index\n")
+  end
   return self
 end
 

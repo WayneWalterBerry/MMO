@@ -65,7 +65,7 @@ return {
         },
 
         open_with_drawer = {
-            name = "a small nightstand (drawer open)",
+            name = "a small nightstand",
             description = "A squat nightstand of knotted pine. Wax drippings cascade down its side in frozen rivulets. The small drawer is pulled open.",
             room_presence = "A small nightstand with an open drawer sits against the wall, its top crusted with wax.",
             on_feel = "Smooth wooden surface, crusted with hardened wax drippings. The drawer slides open under your fingers.",
@@ -92,7 +92,7 @@ return {
         },
 
         closed_without_drawer = {
-            name = "a small nightstand (drawer missing)",
+            name = "a small nightstand",
             description = "A squat nightstand of knotted pine, its top crusted with wax drippings. The front has an empty rectangular slot where a drawer used to be.",
             room_presence = "A small nightstand sits against the wall, a dark slot gaping where its drawer used to be.",
             on_feel = "Smooth wooden surface, crusted with hardened wax drippings. Your fingers find an empty slot at the front where the drawer was.",
@@ -105,7 +105,7 @@ return {
         },
 
         open_without_drawer = {
-            name = "a small nightstand (drawer missing)",
+            name = "a small nightstand",
             description = "A squat nightstand of knotted pine, its top crusted with wax drippings. The front has an empty rectangular slot where a drawer used to be.",
             room_presence = "A small nightstand sits against the wall, a dark slot gaping where its drawer used to be.",
             on_feel = "Smooth wooden surface, crusted with hardened wax drippings. Your fingers find an empty slot at the front where the drawer was.",

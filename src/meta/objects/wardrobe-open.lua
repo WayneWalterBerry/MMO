@@ -20,14 +20,15 @@ return {
 
     location = nil,
 
-    on_look = function(self)
+    on_look = function(self, registry)
         local text = self.description
         if #self.surfaces.inside.contents == 0 then
             text = text .. "\n\nThe wardrobe is empty. Not even a moth."
         else
             text = text .. "\n\nHanging inside:"
             for _, id in ipairs(self.surfaces.inside.contents) do
-                text = text .. "\n  " .. id
+                local item = registry and registry:get(id)
+                text = text .. "\n  " .. (item and item.name or id)
             end
         end
         return text

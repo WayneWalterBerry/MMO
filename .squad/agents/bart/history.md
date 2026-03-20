@@ -657,3 +657,42 @@ Team spawned Bart composite implementation patterns + CBG spatial design decisio
 - src/meta/world/start-room.lua — Added trap-door instance, hidden "down" exit to cellar
 - src/engine/verbs/init.lua — Added move_spatial_object helper, PUSH/MOVE/SHIFT/SLIDE/SHOVE/LIFT handlers, modified PULL for spatial movement, modified OPEN for reveals_exit
 - src/engine/loop/init.lua — Added NLP preprocessing for "roll up X", "pull back X"
+
+## Bug Fix Session — Pass-003 (8 Bugs)
+
+**Date:** 2026-03-20
+**Scope:** Nelson's 8 bugs from test-pass/2026-03-20-pass-003.md
+
+### Fixes Applied
+
+**BUG-017 (CRITICAL): Drawer reattach destroyed surface objects.**
+Root cause: `reattach_part` in verbs/init.lua wiped `parent.surfaces` (old state cleanup) BEFORE saving surface contents for the new state. Fix: save surface contents BEFORE the cleanup phase.
+
+**BUG-015: Wardrobe showed raw IDs.**
+Root cause: `wardrobe-open.lua` `on_look` didn't accept `registry` parameter — printed raw IDs instead of display names. Fix: add `registry` param, look up display names (same pattern as nightstand fix from BUG-010).
+
+**BUG-016: "put sack on head" failed.**
+Root cause: parser treated "head" as a room object. Fix: detect body part names (head, back, feet, etc.) as targets in `put X on Y` and route to wear handler.
+
+**BUG-018: "kick" parsed as "lick".**
+Root cause: Levenshtein fuzzy match in `correct_typos` accepted 1-char edit on 4-char words (25% change). Fix: skip fuzzy correction entirely for words ≤4 chars — exact match only.
+
+**BUG-019: FSM state suffix leaked into player text.**
+Root cause: nightstand state names included debug suffixes like "(drawer open)", "(drawer missing)". Fix: removed suffixes from all state `name` fields — state info is tracked internally by `_state`.
+
+**BUG-020: Lowercase "no room" message.**
+Root cause: containment engine returned lowercase generic message. Fix: capitalized and made specific — "There is not enough room on {name}."
+
+**BUG-021: Parser startup debug line without --debug.**
+Root cause: `embedding_matcher.new` always printed startup message. Fix: passed `debug` flag through `parser.init → matcher.new`, gated startup print behind it.
+
+**BUG-022: "Play again?" didn't restart.**
+Root cause: fake Y/N prompt that just exited. Fix: replaced with honest "Game over. Thanks for playing." message — no false promises.
+
+## Learnings
+
+- FSM state transitions that touch `surfaces` are dangerous — always save containment data BEFORE any cleanup phase, never after. The `apply_state` function in fsm/init.lua does this correctly, but the inline transition in `reattach_part` didn't.
+- Fuzzy matching thresholds must scale with word length. Levenshtein distance of 1 means 25% change on a 4-char word but only 12.5% on an 8-char word. Short words need exact match.
+- State labels in object names are an anti-pattern. Internal state metadata should never pollute the `name` field — keep it clean for player-facing display. State is tracked by `_state`, expressed through `description` and `on_look`.
+- Debug output should be gated at construction time, not just at runtime. If a constructor prints diagnostics, the flag must be passed in — can't set it after the fact.
+- "Coming soon" UI promises (like restart) should never ship. Either implement the feature or display honest text. False affordances are worse than no affordance.

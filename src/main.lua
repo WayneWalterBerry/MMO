@@ -212,7 +212,7 @@ local player = {
 -- Build the game context
 ---------------------------------------------------------------------------
 local assets_root = script_dir .. SEP .. "assets"
-local parser_instance = parser_mod.init(assets_root)
+local parser_instance = parser_mod.init(assets_root, debug_mode)
 if debug_mode then
     parser_instance.diagnostic = true
 end

@@ -322,6 +322,14 @@ local function reattach_part(ctx, drawer_obj, parent)
 
     -- Transition parent directly using the reattach transition
     if parent.states and parent.states[reattach_trans.to] then
+        -- Save surface contents BEFORE cleanup (prevents BUG-017 data loss)
+        local saved_surface_contents = {}
+        if parent.surfaces then
+            for sname, zone in pairs(parent.surfaces) do
+                saved_surface_contents[sname] = zone.contents or {}
+            end
+        end
+
         -- Remove old state keys
         if parent._state and parent.states[parent._state] then
             for k in pairs(parent.states[parent._state]) do
@@ -334,12 +342,6 @@ local function reattach_part(ctx, drawer_obj, parent)
         for k, v in pairs(parent.states[reattach_trans.to]) do
             if k ~= "on_tick" and k ~= "terminal" then
                 if k == "surfaces" then
-                    local saved = {}
-                    if parent.surfaces then
-                        for sname, zone in pairs(parent.surfaces) do
-                            saved[sname] = zone.contents or {}
-                        end
-                    end
                     parent.surfaces = {}
                     for sname, zone in pairs(v) do
                         parent.surfaces[sname] = {}
@@ -348,7 +350,7 @@ local function reattach_part(ctx, drawer_obj, parent)
                                 parent.surfaces[sname][zk] = zv
                             end
                         end
-                        parent.surfaces[sname].contents = saved[sname] or {}
+                        parent.surfaces[sname].contents = saved_surface_contents[sname] or {}
                     end
                 else
                     parent[k] = v
@@ -3019,6 +3021,21 @@ function verbs.create()
         if not item_word or not target_word then
             print("Put what where? (Try: put <item> in/on <target>)")
             return
+        end
+
+        -- "put X on {body_part}" → route to wear handler
+        if prep == "on" then
+            local body_parts = {
+                head = true, back = true, hands = true, feet = true,
+                torso = true, body = true, arms = true, legs = true,
+                wrist = true, finger = true, neck = true, waist = true,
+                face = true, shoulders = true, chest = true,
+            }
+            local tw = target_word:lower():gsub("^my%s+", "")
+            if body_parts[tw] then
+                handlers["wear"](ctx, item_word)
+                return
+            end
         end
 
         -- Find item -- must be in hands

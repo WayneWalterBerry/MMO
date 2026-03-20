@@ -335,14 +335,7 @@ function loop.run(context)
     -- Game over check (death by poison, etc.)
     if context.game_over then
       print("")
-      io.write("Play again? (y/n) > ")
-      io.flush()
-      local answer = io.read()
-      if not answer or not answer:lower():match("^y") then
-        print("Goodbye.")
-      else
-        print("\nRestart the game to play again.")
-      end
+      print("Game over. Thanks for playing.")
       break
     end
 

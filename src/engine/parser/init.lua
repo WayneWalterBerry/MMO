@@ -15,13 +15,13 @@ parser.THRESHOLD = 0.40
 -- init(assets_root) -> parser instance with matcher loaded
 -- assets_root: path to src/assets (e.g., script_dir .. "/assets")
 ---------------------------------------------------------------------------
-function parser.init(assets_root)
+function parser.init(assets_root, debug)
   local SEP = package.config:sub(1, 1)
   local index_path = assets_root .. SEP .. "parser" .. SEP .. "embedding-index.json"
   local instance = {
-    matcher = embedding_matcher.new(index_path),
+    matcher = embedding_matcher.new(index_path, debug),
     threshold = parser.THRESHOLD,
-    diagnostic = false,
+    diagnostic = debug or false,
   }
   return instance
 end
