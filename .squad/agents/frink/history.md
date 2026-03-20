@@ -11,255 +11,88 @@
 **Agent Role:** Research and analysis specialist providing architectural guidance and technical feasibility studies.
 
 **Research Delivered (2026-03-18 to 2026-03-20):**
+1. **Text Adventure Architecture** — Parent-child containment tree, rooms as graph nodes, standard verb-noun pipeline
+2. **Lua as Primary Language** — Homoiconicity, prototype inheritance, production pedigree (200+ games), small runtime
+3. **Multiverse Architecture** — Per-universe Lua VMs, event sourcing, copy-on-write, procedural generation
+4. **Self-Modifying Code & Sandbox Security** — 6 sandbox layers, 8 threat classes mitigated
+5. **Parser Pipeline** — Classic IF pipeline, three-tier hybrid (rule-based + embedding + optional SLM)
 
-1. **Text Adventure Architecture** — Established that parent-child containment tree is proven standard across all classic IF (Zork, Inform 7, TADS). Rooms as graph nodes; exits as edges. Standard verb-noun parsing pipeline.
+**Key Reports:** 5 architecture reports, local SLM parser, parser distillation, PWA/Wasmoon, CYOA analysis (14 files), competitive analysis (16 competitors), MUD verb research
 
-2. **Lua as Primary Language** — Recommended Lua for its homoiconicity (code IS data), prototype-based inheritance, production game pedigree (200+ games), small runtime (~200KB), live reload capability, and C embedding API.
+## Archives
 
-3. **Multiverse Architecture** — Proposed per-universe Lua VMs with event sourcing, copy-on-write snapshots, procedural generation. Infinite scalability without resource contention; per-player narrative pacing; opt-in multiplayer; Git-compatible DAG history.
-
-4. **Self-Modifying Code & Homoiconicity** — Universe IS a Lua program; player actions become code mutations; saves are modified source files. Safety via sandboxing + capability-based APIs (not arbitrary injection).
-
-5. **Parser Pipeline & Sandbox Security** — Classic IF pipeline (tokenize → parse → disambiguate → action resolve → snapshot → mutate → validate → execute). Six sandbox layers: (1) Capability API, (2) AST validation, (3) Sandboxed environment, (4) Instruction limiting, (5) Transaction semantics, (6) Invariant validation.
-
-**Key Reports Generated:**
-- `resources/research/architecture/text-adventure-architecture.md`
-- `resources/research/architecture/modern-text-adventure-data-structures.md`
-- `resources/research/architecture/multiverse-mmo-architecture.md` (52KB)
-- `resources/research/architecture/self-modifying-game-languages.md` (45KB)
-- `resources/research/architecture/parser-pipeline-and-sandbox-security.md` (54KB)
-
-**Security Mitigation (8 threat classes):**
-Infinite loops, memory exhaustion, state corruption, universe contamination, privilege escalation, cross-universe access, filesystem breaches, DoS on merge.
+- `history-archive-2026-03-20T22-40Z-frink.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): all research deliverables, architecture reports, parser studies, PWA feasibility, CYOA analysis, competitive landscape, MUD verbs
 
 ## Recent Updates
 
-**Status:** Active research. Latest deliverable: Local SLM parser feasibility study.
-
-## Recent Session: Competitor Research Reorganization & MUD Verb Research
-
-**Date:** 2026-07-25
-
-### PART 1: Competitor Research Reorganization ✅ COMPLETE
-- Reorganized 16 competitor research files from flat `/resources/research/competitors/` into subfolders
-- Each competitor now has its own folder with `overview.md` as the primary file:
-  - `80-days/overview.md`, `a-dark-room/overview.md`, `ai-dungeon/overview.md`, etc.
-  - `00-competitive-overview.md` remains at top level (cross-competitor summary)
-- This structure enables future per-competitor research (e.g., `80-days/mechanics.md`, `80-days/economy.md`)
-- File count: 16 competitors → 16 subfolders + 1 root overview = scalable architecture
-
-### PART 2: MUD Verb Research ✅ COMPLETE
+### MUD Verb Research (2026-03-25)
+**Status:** ✅ COMPLETE
 **Report:** `resources/research/competitors/mud-clients/verbs.md` (27KB)
 
 **Key Findings:**
+- MUDs have 5-10× more verbs than single-player IF (170-500+ vs 20-40)
+- Social verbs drive retention (200+ predefined emotes in Discworld)
+- Natural language parsing enables rich command flexibility
+- Abbreviations mandatory (n/s/e/w/u/d, i, l)
+- Multiplayer verbs structurally distinct (party, guild, PvP, economy)
+- Verb aliases enable power-user customization
 
-1. **MUDs have 5-10× more verbs than single-player IF.**
-   - Classic IF (Infocom): 20-40 verbs
-   - CircleMUD (C-based): 170+ verbs
-   - Discworld MUD (LPC-based): 300-500+ verbs
-   - Achaea (modern): 250-400+ verbs
-   - Reason: Multiplayer adds party, guild, economy, PvP, and extensive social verbs
+### Competitor Research Reorganization (2026-03-25)
+- Reorganized 16 competitor files into per-competitor subfolders
+- Scalable architecture for future deep dives
 
-2. **Social verbs drive retention in MUDs.**
-   - Discworld MUD alone has 200+ predefined "soul" commands (emotes)
-   - Examples: wave, smile, laugh, bow, nod, shrug, hug, kiss, slap, bite, punch, dance, prance, cower, salute, wink
-   - These require **zero mechanical reward** but enable roleplay—keeping players engaged between combat/quests
-   - Single-player IF has zero social verbs; MUDs embed social interaction at the core
+### CYOA Branching Analysis (2026-03-24)
+**Report:** `resources/research/choose-your-own-adventure/` (14 files)
+- 6 branching patterns across 184 books
+- Inside UFO 54-40's unreachable ending most applicable
+- Recommendation: bottleneck/diamond branching + hidden content
 
-3. **Natural Language Parsing enables rich command flexibility.**
-   - LPMud (via MudOS) and modern MUDs accept multiple phrasings of the same command
-   - Examples: `get apple`, `take the apple`, `pick up the apple`, `get all apples`, `get all but the knife`
-   - This flexibility reduces cognitive load and feels more natural
-   - Our Tier 2 embedding parser should target this level of flexibility
+### PWA + Wasmoon Feasibility (2026-03-24)
+**Report:** `.squad/agents/frink/research-pwa-wasmoon.md`
+- Wasmoon highly viable: Lua 5.4 to WASM, ~90% unmodified
+- Three adaptations needed (io.popen, blocking REPL, print/io.write)
+- Performance: ~168KB gzipped, <5ms per command
+- Prototype: 5-7 hours. Decision D-43 filed.
 
-4. **Abbreviations are mandatory.**
-   - Every MUD supports single-letter shortcuts: `n`, `s`, `e`, `w`, `u`, `d` for movement; `i` for inventory; `l` for look
-   - Enables rapid navigation and combat sequences; reduces cognitive load during high-stress situations
-   - Abbreviations should be designed into the verb system from day one, not bolted on
+### Competitive Analysis (2026-03-24)
+**Report:** `resources/research/competitors/` (16 files + overview)
+- Mobile IF market: $1.85B (2024), 13.2% CAGR
+- Parser input #1 barrier on mobile
+- "Starts in darkness" commercially validated (A Dark Room hit #1 iOS)
+- Multiplayer text adventure on mobile is whitespace
+- Premium one-time purchase preferred
 
-5. **Multiplayer-specific verbs are structurally distinct from single-player verbs.**
-   - Party verbs: `party create`, `party invite`, `party accept`, `party leave`, `party info`, `party chat`, `assist`, `follow`, `rescue`
-   - Guild verbs: `guild create`, `guild invite`, `guild join`, `guild leave`, `guild info`, `guild chat`, `promote`, `demote`, `tribute`, `withdraw`
-   - PvP verbs: `pvp on`/`off`, `challenge`, `duel`, `track`, `yield`, `surrender`
-   - Economy verbs: `auction`, `bid`, `bank`, `trade`, `offer`, `accept trade`
-   - **None of these exist in single-player IF.** They require new game state (party roster, guild treasury, PvP flags, shared auction house).
+### Model Distillation Research (2026-03-23)
+**Report:** `resources/research/architecture/parser-distillation.md`
+- Embedding-based (GTE-tiny ~5MB, 92-95% accuracy) beats generative (350MB, ~3% more)
+- Three-tier hybrid optimal: Tier 1 rule-based, Tier 2 embedding, Tier 3 optional SLM
+- Re-distillation trivial: ~35s, ~$0.05 per new verb
 
-6. **MUD Verb Systems Vary by Architecture:**
+### Local SLM Parser Research (2026-03-22)
+**Report:** `resources/research/architecture/local-slm-parser.md`
+- Browser SLMs viable: Qwen2.5-0.5B, WebGPU
+- Hybrid: rule-based (~85%, <1ms) + SLM fallback (~15%)
+- Decision 17 satisfied (zero per-player token cost)
 
-   - **DikuMUD / CircleMUD (C-based, 1990s):**
-     - ~170 verbs total (40 base + 50 socials + 80 spells)
-     - Fixed command dispatch; no natural language parsing
-     - Syntax is rigid: `get apple` works, `pick up the apple` does not
-   
-   - **LPMud / MudOS (LPC-based, 1990s-present):**
-     - ~300+ verbs (100 base + 100 socials + 150 spells)
-     - Natural language parser built into driver; verbs registered with parsing rules
-     - Flexible syntax: multiple phrasings accepted
-     - Dynamic verb registration (no recompile needed)
-     - Modern example: Discworld MUD (300-500 verbs)
-   
-   - **MUSH/MOO (Scheme/LPC-based, 1980s-present):**
-     - ~200-300 verbs (20 base + 200+ socials + 50+ builder-created)
-     - Minimalist verb system; emphasis on social simulation and roleplay
-     - MUSH games often have zero combat verbs; socials are first-class citizens
-     - Philosophy: "Create and roleplay over mechanics"
-   
-   - **Modern MUDs (Achaea, Discworld, Iron Realms):**
-     - 250-400+ verbs (class/skill-dependent)
-     - Highly stratified: fresh character ~50 verbs, max-level ~300+ verbs
-     - Class-specific verbs grant mechanical differentiation
-     - Skill trees unlock verbs progressively
-     - Rich alias system enables command chaining and macros
+### Hybrid Parser Proposal (2026-03-21)
+**Status:** PROPOSED — merged into canonical decisions.md
 
-7. **Verb Aliases Enable Power-User Customization.**
-   - MUDs support `alias` command for custom shortcuts and command chains
-   - Example: `alias setup inv; eq; score; who` (run four commands in sequence)
-   - Example: `alias flee cast feetwings; west; north; south` (tactical escape macro)
-   - Top players maintain 50+ aliases for rapid responses
-   - Could be a post-MVP feature for our game
+## Decisions Filed
+- D-43: PWA + Wasmoon Prototype Feasibility
+- Hybrid Parser Architecture (Rule-Based + Local SLM)
 
----
+## Recommendations Summary
+- Build rule-based parser now, add local SLM post-MVP
+- Embedding-primary hybrid (5.5MB) replaces most of 350MB SLM
+- Proceed with Wasmoon prototype (high confidence, low risk)
+- Bottleneck/diamond branching for narrative structure
+- Tap-to-suggest UI for mobile, async multiplayer first
+- 50-100 predefined socials for MVP retention
 
 ## Learnings
-
-### 2026-07-22: Local SLM for Game Parser Research
-
-**Report:** `resources/research/architecture/local-slm-parser.md`
-
-**Key findings:**
-
-1. **Browser SLMs are real and practical.** Qwen2.5-0.5B-Instruct (Q4, ~350MB) runs in-browser via WebLLM with WebGPU acceleration. Parses commands in 200–500ms on flagship phones. Grammar-constrained JSON generation (XGrammar) guarantees valid output.
-
-2. **Hybrid parser is the right architecture.** Rule-based rich synonym parser handles ~85% of commands instantly (<1ms). Local SLM handles the ambiguous ~15% as a fallback. Game works perfectly without the SLM — it's a progressive enhancement.
-
-3. **Fine-tuning is cheap and fast.** LoRA fine-tuning on 500 command pairs (generated by build-time LLM) takes ~1 hour on a consumer GPU. The fine-tuned model learns our verb vocabulary and object names.
-
-4. **350MB download is the main obstacle.** Acceptable as a WiFi-only background download, but not viable as a launch requirement. Rule-based parser must be the baseline.
-
-5. **WebGPU is now universal.** Chrome 121+ (Android 12+), Safari 26+ (iOS 26+). Budget/older phones are the only gap — they use rule-based only.
-
-6. **Gemini Nano (Chrome Prompt API) is free but Chrome-only.** Not suitable as primary strategy for a cross-browser PWA, but a nice opportunistic bonus.
-
-7. **Decision 17 (no per-player token cost) is fully satisfied.** Everything runs on-device. Only cost is CDN bandwidth for model weights (~$0.001 per player).
-
-**Recommendation:** Build rule-based parser now (Phase 1). Add local SLM as progressive enhancement post-MVP (Phase 2). This resolves Decision 19's stretch goal.
-
----
-
-### Session Update: Hybrid Parser Proposal (2026-03-21)
-**Status:** PROPOSED / SQUAD MANIFEST PROCESSED
-
-**Decision filed:** Hybrid Parser Architecture (Rule-Based + Local SLM) — merged into canonical decisions.md
-
-**Key addition:** This research proposal formally transitions Decision 19 from "Deferred/SOFT" to "Proposed with hybrid approach."
-
-**Summary:**
-- Primary: Rule-based synonym parser (~85% of commands, <1ms)
-- Secondary: Local SLM fallback (Qwen2.5-0.5B, ~350MB, runs in-browser)
-- Cost: Zero per-player token cost; satisfies Decision 17
-- Timeline: Rule-based MVP (Phase 1), SLM enhancement (Phase 2)
-
-**Full research:** `resources/research/architecture/local-slm-parser.md`
-
-### 2026-07-23: Model Distillation for Custom Tiny Parser
-
-**Report:** `resources/research/architecture/parser-distillation.md`
-
-**Key findings:**
-
-1. **Embedding-based intent matching beats generative distillation for our domain.** A quantized GTE-tiny (~5MB ONNX) with pre-computed command vectors gives 92–95% accuracy at 10–30ms latency. Generative distillation (350MB Qwen2.5-0.5B) only adds ~3% accuracy for 70× the size and 20× the latency.
-
-2. **Three-tier hybrid is the optimal architecture.** Tier 1: rule-based (~85%, <1ms, 0 bytes). Tier 2: embedding similarity (~12%, 10–30ms, ~5.5MB). Tier 3: optional generative SLM (~3%, 200–1500ms, 350MB background download).
-
-3. **Re-distillation is trivial for embeddings.** Adding a new verb = LLM generates 100 phrase pairs ($0.05), encode with GTE-tiny (5 seconds), append to index. No GPU. No retraining. Fully automated in CI. ~35 seconds total.
-
-4. **Full SLM retrain is cheap but rare.** ~$2, ~1 hour, needs GPU. Only needed per-release or major expansion. Can be automated in GitHub Actions with a GPU runner.
-
-5. **Build pipeline integration is natural.** Same LLM call that generates room content also generates parser training phrases. Parser accuracy scales automatically with content. Total annual cost: ~$65.
-
-6. **CL-LoRA enables incremental fine-tuning** (CVPR 2025), but for our small domain (~2000 examples), full retrain is fast enough that incremental methods aren't necessary.
-
-**Recommendation:** Embedding-primary hybrid. Tier 2 (5.5MB embedding matcher) replaces most of the 350MB SLM's job. Tier 3 SLM becomes purely optional for complex NLP. This drops the "smart parser" download from 350MB to 5.5MB while maintaining 97% coverage.
-
-### 2025-07-24: PWA + Wasmoon Prototype Research
-
-**Report:** `.squad/agents/frink/research-pwa-wasmoon.md`
-
-**Key findings:**
-
-1. **Wasmoon is highly viable for this engine.** It compiles official Lua 5.4 to WASM — exact version match. Our engine is pure Lua with only 6 self-contained `require` calls and no C extensions. ~90% of code runs unmodified.
-
-2. **Module loading solved via `mountFile`.** Wasmoon's `LuaFactory.mountFile()` writes files into Emscripten's in-memory VFS. Standard `require()` and `io.open()` work against this VFS. A build-time script bundles all `.lua` files as JS string constants.
-
-3. **Three things need browser adaptation:** (a) `io.popen` for directory listing → replaced by build-time manifest, (b) blocking REPL loop → replaced by event-driven `process_command()` function, (c) `print`/`io.write` → overridden to write to DOM.
-
-4. **Performance is a non-issue.** Total download: ~168KB gzipped. Cold start: ~100-200ms. Per-command latency: <5ms. Memory: ~5MB. Smaller and faster than most web pages.
-
-5. **No framework needed.** Vanilla HTML/JS PWA with service worker for offline play. ~100 lines of JS total.
-
-6. **No prior game art with Wasmoon.** We'd be pioneering. But the technical foundation is proven (lua-in-browser demo, LiveCodes playground).
-
-7. **Prototype: 5-7 hours total.** Phase 0 (hello world, 30min) → Phase 1 (one module, 1hr) → Phase 2 (all modules, 1-2hr) → Phase 3 (browser REPL, 2-3hr) → Phase 4 (PWA wrapper, 1hr).
-
-**Recommendation:** Proceed with prototype. High confidence, low risk. Create `main_browser.lua` as parallel entry point — don't modify existing `main.lua`.
-
-### 2026-07-24: Choose Your Own Adventure Book Series Research
-
-**Report:** `resources/research/choose-your-own-adventure/` (14 files)
-
-**Key findings:**
-
-1. **Six branching patterns identified across 184 books.** Time Cave (pure branching), Branch-and-Bottleneck (diamond/hourglass), Parallel Tracks, Hub-and-Spoke, Loop/Cycle, and Hidden/Unreachable Node. Our engine needs to support at least the first four natively.
-
-2. **Packard vs. Montgomery = Logic vs. Chaos.** Packard builds tight cause-and-effect trees with ethical dilemmas; Montgomery builds wild, surreal, genre-shifting adventures. Both philosophies serve our game: Packard for puzzle design, Montgomery for wonder and discovery.
-
-3. **Inside UFO 54-40's unreachable ending is the most applicable single design to our project.** A paradise reachable only by "breaking the rules" — directly translatable to hidden rooms/states discoverable through unconventional commands in our text adventure.
-
-4. **Underground Kingdom (#18) is the closest structural analogue to our game.** Vertical descent, escalating commitment, civilizational encounters, and "staying" as a valid ending. Our darkness-exploration game is essentially this structure.
-
-5. **Resource management branching (Survival at Sea #16) maps to survival mechanics.** Tracking resources (light, energy, items) as a survival mechanic creates sustained tension — every action costs something.
-
-6. **Quick failure cycles drive experimentation.** The best-selling CYOA books (#37) had 28 endings with rapid resolution. Cheap failure + many outcomes = high replay. Our game should make death/failure inexpensive.
-
-7. **State tracking is our advantage over print.** CYOA books couldn't track variables or inventory. Our Lua engine can have reconvergent paths that remember prior choices — the key evolution from CYOA to interactive fiction.
-
-**Recommendation:** Use bottleneck/diamond branching as primary structure, with time-cave branching reserved for critical story moments. Implement hidden/unreachable content discoverable through unconventional play. Track player state to make reconvergent paths feel personalized.
-
-### Session Update: FSM Engine Shipping (2026-03-23)
-**Status:** ✅ ENGINE LIVE
-
-**Outcome:** Bart shipped the FSM engine. Design you created for match/nightstand state machine is now live and validated.
-
-**What Shipped:**
-- FSM engine (~130 lines) with lazy-loading definitions, in-place mutation, game-loop tick integration
-- Match FSM: unlit → lit → burned-out (3-turn auto-burn)
-- Nightstand FSM: closed ↔ open with compartment property swapping
-- Verb handler integration with fallback to old mutation system
-- 9 test cases passing; 3 search bugs fixed as side effect
-
-**Your Research Validation:**
-Your research on Lua table-driven approaches and homoiconicity proved invaluable. The FSM definitions are pure Lua tables—code IS data—enabling runtime introspection and declarative state management. This architecture directly implements your findings on self-modifying code safety.
-
-### 2026-07-24: Competitive Analysis — Mobile Text Adventure / IF Games
-
-**Report:** `resources/research/competitors/` (16 files including overview)
-
-**Competitors analyzed:** Frotz, Son of Hunky Punk, Hadean Lands, A Dark Room, The Ensign, Choice of Games, Sorcery!, 80 Days, Lifeline, AI Dungeon, Magium, MUD clients, Torn City, Kingdom of Loathing, Episode, Twine games.
-
-**Key findings:**
-
-1. **The interactive fiction mobile market is $1.85B (2024) growing at 13.2% CAGR.** From niche (Hadean Lands: 15 ratings) to mass market (Episode: 170M downloads), text-based games have proven commercial viability on mobile.
-
-2. **Parser input is the #1 barrier on mobile.** Every parser game (Frotz, MUDs, Hadean Lands) has "typing on phone is painful" as a top complaint. Choice-based games dominate downloads because they eliminated typing. Our Tier 2 embedding parser + tap-to-suggest UI is the correct strategy.
-
-3. **"Starts in darkness" is commercially validated.** A Dark Room used the same starting concept and hit #1 on the iOS App Store. Proof our hook works for mass audiences, not just IF enthusiasts.
-
-4. **Multiplayer text adventure on mobile is a whitespace.** No competitor successfully combines parser IF + multiplayer + mobile-first + on-device play. MUDs have multiplayer but are server-dependent with archaic UX. This is our primary market opportunity.
-
-5. **Premium one-time purchase is the market-preferred model.** Players praise paid-once games (A Dark Room, Sorcery!, Lifeline) and resent subscriptions (AI Dungeon) and freemium gating (Episode). Decision 17 (zero per-player token cost) aligns perfectly.
-
-6. **Content volume drives retention.** Top competitors have massive content: 80 Days (750K words), Magium (hundreds of thousands of words), CoG (100+ titles). Our procedural generation must produce comparable depth.
-
-7. **AI Dungeon validates demand but proves pure AI fails.** Millions of downloads but players hate inconsistency, context loss, and subscriptions. Our deterministic Lua world + AI-assisted parser is the right hybrid.
-
-**Recommendations:** Build tap-to-suggest UI, implement async multiplayer first, add text-rendered room maps, study A Dark Room's progression, ship complete chapters, consider push notifications for multiplayer events, implement undo/rewind (Sorcery! model).
+- Embedding matching beats generative distillation for constrained domains
+- Browser SLMs are real but 350MB download limits adoption
+- Wasmoon enables zero-framework Lua PWA deployment
+- CYOA hidden/unreachable content translates directly to unconventional verb usage
+- MUD social verbs require zero mechanical reward but drive retention
+- Premium one-time purchase is market-preferred for text games
