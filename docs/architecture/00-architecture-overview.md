@@ -1,7 +1,7 @@
 # Architecture Overview
 
-**Version:** 1.1  
-**Last Updated:** 2026-03-21
+**Version:** 1.2  
+**Last Updated:** 2026-03-22
 **Author:** Brockman (Documentation)  
 **Purpose:** High-level map of how all systems fit together. Detailed specs are in linked docs.
 
@@ -601,6 +601,125 @@ When a composite object with multiple inner instances is loaded:
 4. **Player agency:** Players can pick individual matches, move them between containers, light some and leave others. The engine tracks every instance.
 5. **Design flexibility:** Containers (bags, boxes, quivers, chests) are generic. The instancing system handles any multiplicity.
 6. **Debugging clarity:** Every instance has a GUID. The engine can log: "Match instance 6b4e1a9d-... transitioned from lit → spent at tick 450."
+
+---
+
+## Core Principle: Objects Exist in Sensory Space; State Determines Perception
+
+Every object in the world is **perceivable through multiple senses**. When the player interacts with an object, the engine doesn't say "you can't perceive that" — it says "**here's what you perceive given this sense and this object's current state.**" The fundamental insight is that **FSM state drives sensory output**. The same candle in the `lit` state and `unlit` state return entirely different sensory descriptions across all channels: sight, touch, sound, and smell.
+
+### The Multi-Sensory Model
+
+The engine supports five primary perception verbs, each querying the object's current state:
+
+- **LOOK / EXAMINE** — Visual description: "What does this look like?"
+- **FEEL** — Tactile description: "What does this feel like when touched?"
+- **SMELL** — Olfactory description: "What odor does this emit?"
+- **LISTEN** — Auditory description: "What sound does this make?"
+- **TASTE** — Gustatory description (for edibles/drinkables): "What flavor is this?"
+
+Each verb maps to a sensory key in the object's FSM state metadata. The engine reads the state-specific sensory data and returns it to the player. There is no hard-coded "fire smells" logic — the candle's `lit` state **declares** its smell.
+
+### State-Driven Sensory Descriptions
+
+Each FSM state can override sensory descriptions. A candle provides the clearest example:
+
+**Unlit candle (`candle-unlit` state):**
+```lua
+_state = "unlit",
+description = "A white tapered candle, unlit.",
+on_feel = "The wax is cool and hardened, smooth to the touch.",
+on_smell = "A faint trace of old smoke clings to the wick.",
+on_listen = nil,  -- No sound
+on_taste = nil,   -- Not edible
+room_presence = "An unlit candle rests on the nightstand."
+```
+
+**Lit candle (`candle-lit` state):**
+```lua
+_state = "lit",
+description = "A candle burns brightly, flame dancing.",
+on_feel = "Heat radiates from the flame. The wax near the top is warm, almost hot.",
+on_smell = "Melting beeswax mixed with woodsmoke fills the air.",
+on_listen = "A faint crackle comes from the burning wick.",
+on_taste = nil,
+room_presence = "A candle flickers on the nightstand, casting dancing shadows."
+```
+
+**Spent candle (`candle-spent` state):**
+```lua
+_state = "spent",
+description = "A candle burned down to a stub, useless.",
+on_feel = "Cold hardened wax; the wick is black and brittle.",
+on_smell = "The sharp, acrid smell of burnt wax and soot.",
+on_listen = nil,
+on_taste = nil,
+room_presence = "A burned-out candle stub sits on the nightstand."
+```
+
+When a player executes "feel candle" and the candle is `lit`, the engine reads the `lit` state's `on_feel` field and returns it. When the state transitions to `spent`, the same "feel candle" command returns a completely different tactile description.
+
+### The Critical Insight: Stats Override Base Descriptions
+
+As Wayne noted: **"Stats might override a sense, like a burning candle."** The sensory system respects hierarchical overrides:
+
+1. **Base object sensory data** (fallback defaults, defined in base object)
+2. **State-specific sensory data** (override if FSM state declares it)
+3. **Environmental modifiers** (light level, temperature, weather affect perception)
+4. **Player stat modifiers** (future: a blind player has no visual perception; a deaf player has no auditory perception)
+
+Example: A candle in `lit` state is perceivable through **all** senses. But if the player is blind (future mechanic), the LOOK/EXAMINE verbs still work — they return *alternative* sensory fallbacks (touch, smell, sound). The engine never says "you can't look at that." It says "you're blind, but here's what you can touch/smell/hear."
+
+### No Hardcoded Perception; No Object-Specific Code
+
+The engine contains **no object-specific perception logic**. There is no line in the codebase that says "fire smells like smoke" or "water is wet" or "bells make sound." Instead:
+
+- The **LOOK handler** is generic: "Read the target's `description` field for its current state. Display it."
+- The **FEEL handler** is generic: "Read the target's `on_feel` field for its current state. Display it."
+- The **SMELL handler** is generic: "Read the target's `on_smell` field for its current state. Display it."
+- The **LISTEN handler** is generic: "Read the target's `on_listen` field for its current state. Display it."
+
+Each object **owns** its sensory descriptions in its `.lua` metadata. The engine just reads and displays. This is the power of the data-driven architecture: new sensory behaviors require no engine changes.
+
+### Environmental Conditions & Sensory Filters
+
+Environmental conditions act as **sensory filters**, not object properties:
+
+- **Darkness** blocks visual perception (LOOK returns "It is too dark to see") but does NOT block touch, smell, or sound.
+- **Silence** (future mechanic) blocks auditory perception but not other senses.
+- **Odorless air** (future mechanic) blocks smell but not other senses.
+
+The light system, for example, is implemented as a **filter applied during verb handling**, not as a property of the object:
+
+```lua
+-- Generic LOOK handler
+function handle_look(target_obj)
+    if not is_lit(target_obj.location) then
+        return "It is too dark to see anything."
+    end
+    return target_obj[target_obj._state .. ".description"]
+end
+```
+
+The candle doesn't have a `brightness` property. The room has a **light state**. When the candle is `lit`, it affects the room's light state. When the player issues LOOK, the engine checks room lighting and decides whether to grant visual perception.
+
+### Linking to Principle #3: State Determines Everything
+
+This principle makes explicit what Principle #3 implies: **An object's FSM state determines not just its behavior, but also how it is perceived.**
+
+- Principle #3 says: "State determines behavior (transitions, timers, capabilities)."
+- Principle #6 says: "State also determines sensory output (description, feel, smell, listen)."
+
+The two principles are unified under a single truth: **The world is not static. Objects transform, and perception transforms with them.**
+
+### Why This Matters
+
+1. **Multi-sensory engagement:** Players don't just see the world; they feel, smell, hear, and (occasionally) taste it. A text adventure becomes a **sensory experience**, not a visual-only game.
+2. **Accessibility foundation:** Blind players (future) can fully experience the world through non-visual senses. The architecture supports this from the ground up.
+3. **Immersion:** When players interact with objects, they receive **state-appropriate sensory feedback**. A candle doesn't "look" lit while "feeling" cold. All senses reflect the current state.
+4. **Designer freedom:** Content creators don't edit engine code to add new sensory behaviors. They edit object metadata (`.lua` files). New object types are pure content, no engineering required.
+5. **Composability:** Sensory descriptions can reference object properties dynamically. A lantern's `on_feel` can read its fuel level: "The lamp is warm; it feels full." State-driven descriptions enable context-aware messaging.
+6. **Debugging clarity:** Every perception query is logged. The engine tracks which sense was used, which state was active, and what description was returned. Sensory bugs are easy to trace.
 
 ---
 
