@@ -1,5 +1,6 @@
--- match.lua — FSM-managed consumable (3-turn burn)
--- States: unlit → lit → spent (terminal). One file, one object, one FSM.
+-- match.lua — FSM-managed consumable (single-use, no relight)
+-- States: unlit → lit → spent (terminal). Once out, it's done.
+-- Key difference from candle: extinguishing goes to SPENT, not to a relightable state.
 return {
     guid = "009b0347-2ba3-45d1-a733-7a587ad1f5c9",
 
@@ -18,6 +19,9 @@ return {
     casts_light = false,
 
     location = nil,
+
+    -- Timer metadata
+    burn_duration = 30,        -- ~30 seconds game time
 
     -- FSM
     initial_state = "unlit",
@@ -42,27 +46,20 @@ return {
             provides_tool = "fire_source",
             casts_light = true,
             light_radius = 1,
-            burn_remaining = 3,
 
-            on_tick = function(obj)
-                obj.burn_remaining = obj.burn_remaining - 1
-                if obj.burn_remaining <= 0 then
-                    return { trigger = "duration_expired" }
-                elseif obj.burn_remaining == 1 then
-                    return { warning = "The match flame flickers dangerously low..." }
-                else
-                    return { warning = "The match burns steadily. (" .. obj.burn_remaining .. " turns remaining)" }
-                end
-            end,
+            timed_events = {
+                { event = "transition", delay = 30, to_state = "spent" },
+            },
         },
 
         spent = {
             name = "a spent match",
-            description = "A blackened match stub, cold and inert.",
-            on_feel = "A cold, blackened stick. Dead.",
+            description = "A blackened match stub, cold and inert. The head has crumbled away entirely.",
+            on_feel = "A cold, blackened stick. Fragile. Dead.",
             on_smell = "Charred wood, and nothing else.",
             casts_light = false,
             terminal = true,
+            consumable = true,
         },
     },
 
@@ -75,13 +72,16 @@ return {
             fail_message = "You need a rough surface to strike it on. A matchbox striker, perhaps.",
         },
         {
-            from = "lit", to = "unlit", verb = "extinguish",
-            message = "You pinch the flame out. A thin ribbon of smoke rises from the blackened tip, then nothing. Darkness returns.",
+            from = "lit", to = "spent", verb = "extinguish",
+            aliases = {"blow", "put out"},
+            message = "You blow out the match. The blackened head crumbles. It's useless now.",
         },
         {
             from = "lit", to = "spent", trigger = "auto",
-            condition = "duration_expired",
-            message = "The match flame dies. Your fingers are cold and dark.",
+            condition = "timer_expired",
+            message = "The match flame reaches your fingers and dies. You drop the blackened stub.",
         },
     },
+
+    mutations = {},
 }

@@ -39,6 +39,41 @@
 
 ## Recent Updates
 
+### Session: Object Lua Batch + Bugfix Pass-007 (2026-03-20T22:00Z)
+**Status:** ✅ COMPLETE  
+**Outcome:** 4 object .lua files shipped + 2 minor bugs fixed
+
+**Object Batch Deliverables:**
+1. `src/meta/objects/candle-holder.lua` — composite object, detachable candle (parts pattern)
+2. `src/meta/objects/wall-clock.lua` — 24-state cyclic FSM (hour_1 → hour_24 → hour_1, 3600s per state)
+3. `src/meta/objects/candle.lua` — enhanced (extinguish/partial burn/timed_events)
+4. `src/meta/objects/match.lua` — enhanced (no-relight path, timed_events)
+
+**Architectural Decisions (6 filed):**
+- D-OBJ001: timed_events replaces on_tick for timer-driven objects
+- D-OBJ002: Candle uses remaining_burn for pause/resume timer
+- D-OBJ003: Match extinguish → spent (terminal), NOT unlit
+- D-OBJ004: Wall clock = 24-state cyclic FSM (no engine special-case code)
+- D-OBJ005: Candle holder uses parts pattern for detachable candle
+- D-OBJ006: Terminal spent states carry consumable flag
+
+**Bugfix Pass-007:**
+- **BUG-031 FIXED:** Compound "and" + GOAP clean output
+  - Location: `src/engine/loop/init.lua` — new block detects if last sub-command has GOAP plan, skips earlier prerequisites
+  - Impact: "get match from matchbox and light candle" now routes to GOAP for clean, coherent output
+  
+- **BUG-032 FIXED:** "burn" as GOAP synonym for "light"
+  - Locations: `src/engine/parser/goal_planner.lua` (VERB_SYNONYMS), `src/engine/verbs/init.lua` (burn handler), `src/engine/loop/init.lua` (prepositional stripping)
+  - Impact: Player can now `burn candle` and trigger GOAP backward-chaining like `light candle`
+
+**Testing:** Pass-007 verified both fixes; zero regressions. Objects ready for Nelson playtest.
+
+**User Directives Captured:**
+- UD-2026-03-20T21:54Z: No special-case objects; clock as 24-state FSM (architectural purity)
+- UD-2026-03-20T21:57Z: Wall clock supports misset time for puzzles (instance-level time_offset)
+
+**Key Pattern:** All objects use standard FSM + timed_events + composite reference. Engine remains generic and untouched.
+
 ### Session: SLEEP Verb Implementation
 **Status:** ✅ COMPLETE
 **Outcome:** Clock-advance SLEEP mechanic fully implemented

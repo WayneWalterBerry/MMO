@@ -1,8 +1,8 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-20T21:15Z  
+**Last Updated:** 2026-03-20T22:00Z  
 **Merger:** Scribe  
-**Source:** 23 inbox files + existing decisions.md (deduplicated, reorganized by category)
+**Source:** 27 inbox files + existing decisions.md (deduplicated, reorganized by category)
 
 ---
 
@@ -615,3 +615,177 @@ This is NOT about adding an LLM to the parser — it's about building smarter NL
 **End of Merged Decisions**
 **Total Decisions:** 47 active + archived  
 **Last Merge:** 2026-03-20T21:15Z (Scribe)
+
+---
+
+### D-GOAP-MINOR-BUGS: Two Minor GOAP Coverage Gaps (2026-03-20)
+
+**Author:** Nelson (Tester)  
+**Date:** 2026-03-20  
+**Status:** Identified, Bart-Fixes-Pending  
+**Affects:** goal_planner.lua, verbs/init.lua, loop/init.lua
+
+**Issue 1 (BUG-031):** Compound "and" commands show confusing mixed output  
+- Command: `get match from matchbox and light candle`  
+- Behavior: First half fails, GOAP succeeds for second half  
+- Desired: If the last sub-command has a GOAP plan, skip earlier sub-commands entirely (they're redundant prerequisites GOAP will resolve)  
+
+**Issue 2 (BUG-032):** "burn candle" doesn't trigger GOAP backward-chaining  
+- Commands that work: `light candle`, `ignite candle`  
+- Commands that don't: `burn candle` (says "no flame")  
+- Root cause: "burn" verb not recognized as synonym for "light" in goal planner  
+- Fix: Add `VERB_SYNONYMS` table mapping "burn" → "light", update burn verb handler to check for FSM "light" transition first  
+
+---
+
+### D-BUG031: Compound "and" + GOAP Clean Output
+**Author:** Bart (Architect)  
+**Date:** 2026-03-20  
+**Status:** Implemented (Pass-007 verified)  
+**Affects:** src/engine/loop/init.lua
+
+When a compound "and" command is entered, check if the last sub-command has a GOAP plan. If GOAP can handle the final goal end-to-end, skip earlier sub-commands entirely — they're redundant prerequisites that GOAP will resolve automatically.
+
+**Where:** New block between compound splitting and the sub-command processing loop.
+
+**Rationale:** Player typing "get match from matchbox and light candle" expresses ONE goal ("light candle"). GOAP already knows how to backward-chain through prerequisites (open drawer → open matchbox → take match → strike match). Processing the first half independently produces confusing error because it bypasses GOAP's planning. Letting GOAP own the entire chain produces clean, coherent output.
+
+**Scope:** Only triggers when the last sub-command actually has a non-empty GOAP plan. Compound commands without GOAP involvement (e.g., "take sword and go north") still split and process normally.
+
+---
+
+### D-BUG032: "burn" as GOAP Synonym for "light"
+**Author:** Bart (Architect)  
+**Date:** 2026-03-20  
+**Status:** Implemented (Pass-007 verified)  
+**Affects:** goal_planner.lua, verbs/init.lua, loop/init.lua
+
+Register "burn" as a GOAP synonym for "light" via a `VERB_SYNONYMS` table in `goal_planner.lua`, and redirect the burn verb handler to the light handler for objects with FSM "light" transitions.
+
+**Where:**
+- `src/engine/parser/goal_planner.lua` — `VERB_SYNONYMS` table + canonical verb lookup in `plan()`
+- `src/engine/verbs/init.lua` — burn handler checks for "light" FSM transition before its own logic
+- `src/engine/loop/init.lua` — added "burn" to prepositional "with" stripping
+
+**Rationale:** The burn handler was a standalone "destroy flammable things" verb with no awareness of FSM-based lightable objects (candles). Goal planner only matched exact verbs or aliases. Adding a synonym layer in the planner is the right abstraction — keeps candle data clean (no need to add "burn" to every object's aliases) and makes the mapping explicit and extensible.
+
+**Design note:** `VERB_SYNONYMS` is intentionally a simple 1:1 map, not many-to-many. If we need many-to-many later, we can expand it, but right now simplicity wins.
+
+---
+
+## OBJECT DESIGN DECISIONS
+
+### D-OBJ001: timed_events replaces on_tick for timer-driven objects
+**Author:** Bart (Architect)  
+**Date:** 2026-03-21  
+**Status:** Implemented  
+**Affects:** candle.lua, match.lua, wall-clock.lua
+
+All timer-driven FSM objects now use declarative `timed_events` tables inside their states instead of `on_tick` callback functions.
+
+**Pattern:** `{ event = "transition", delay = N, to_state = "state_name" }`
+
+The engine will read this metadata and schedule accordingly. This keeps timer behavior in metadata (not imperative code) and aligns with the "code IS the state" principle.
+
+---
+
+### D-OBJ002: Candle uses remaining_burn for pause/resume timer
+**Author:** Bart (Architect)  
+**Date:** 2026-03-21  
+**Status:** Implemented  
+**Affects:** candle.lua
+
+The candle carries `burn_duration` (max) and `remaining_burn` (current) at the object level. When transitioning lit→extinguished, the engine saves remaining time to `remaining_burn`. When transitioning extinguished→lit, the engine uses `remaining_burn` as the timed_event delay.
+
+This makes pause/resume a metadata concern, not engine special-case code.
+
+---
+
+### D-OBJ003: Match extinguish goes to spent, not unlit
+**Author:** Bart (Architect)  
+**Date:** 2026-03-21  
+**Status:** Implemented  
+**Affects:** match.lua
+
+A blown-out match transitions lit→spent (terminal), NOT lit→unlit. There is no "extinguished" state and no relight path. This is the key behavioral difference between match and candle. Conservation of matches matters.
+
+---
+
+### D-OBJ004: Wall clock uses 24-state cyclic FSM
+**Author:** Bart (Architect)  
+**Date:** 2026-03-21  
+**Status:** Implemented  
+**Affects:** wall-clock.lua
+
+The wall clock is a standard FSM object with 24 states (hour_1 through hour_24), each transitioning to the next via a 3600-second timed_event. hour_24 wraps to hour_1. No special engine code required — the clock is just another FSM object.
+
+States and transitions are generated programmatically via Lua loop. Initial state is hour_2 (game starts at 2 AM).
+
+---
+
+### D-OBJ005: Candle holder uses parts pattern for detachable candle
+**Author:** Bart (Architect)  
+**Date:** 2026-03-21  
+**Status:** Implemented  
+**Affects:** candle-holder.lua
+
+The candle holder follows the nightstand/poison-bottle composite pattern: a `parts` table with `detachable = true, reversible = true` for the candle. The candle already exists as an independent object (candle.lua), so the factory returns a minimal reference. The holder's FSM tracks with_candle/empty states.
+
+---
+
+### D-OBJ006: consumable flag on terminal spent states
+**Author:** Bart (Architect)  
+**Date:** 2026-03-21  
+**Status:** Implemented  
+**Affects:** candle.lua, match.lua
+
+Terminal spent states now carry `consumable = true` to signal the engine that the object has been fully consumed. This is metadata the engine can use for cleanup, descriptions, or gameplay logic.
+
+---
+
+## USER DIRECTIVES & STRATEGIC DECISIONS
+
+### UD-2026-03-20T21-54Z: No special-case objects; clock as 24-state FSM
+**Author:** Wayne Berry (via Copilot)  
+**Date:** 2026-03-20  
+**Status:** Policy  
+
+Objects must NOT require special-case engine code. Everything must be expressible through the standard .lua metadata patterns (FSM states, transitions, timers, sensory descriptions). The engine should be generic — objects define their own behavior entirely in their .lua files.
+
+**Example:** The wall clock could have 24 states (hour-1 through hour-24), each with its own transition on a timer. This keeps the clock as a normal FSM object — the engine just ticks transitions like any other object. No special "clock" code in the engine.
+
+**Pattern:** `hour_1 → (timer: 3600s) → hour_2 → ... → hour_24 → hour_1` (cyclic FSM)
+
+Each hour state can have:
+- Different `room_presence` text ("The clock reads one o'clock")
+- Chime sound on transition (`transition_message`: "The clock strikes two")
+- `casts_light = false` (no light, just ambient sound)
+
+This is the same timer mechanism candles and matches use — just with 24 states instead of 2-3.
+
+**Why:** Architectural purity. The engine stays generic; objects own ALL their behavior. No special cases means any new object can be created purely in .lua without engine changes.
+
+---
+
+### UD-2026-03-20T21-57Z: Wall clock supports misset time for puzzles
+**Author:** Wayne Berry (via Copilot)  
+**Date:** 2026-03-20  
+**Status:** Policy
+
+The wall clock object must support being "misset" — its displayed time can differ from the actual game time. Key points:
+
+1. **Instance-level mutable offset:** Each clock instance has a `time_offset` (or `initial_hour`) in its mutable metadata that determines what hour it displays. Bedroom clock has offset 0 (correct time). Puzzle room clock might start at hour_7 when game time is hour_3.
+
+2. **Setting the clock as a puzzle trigger:** The act of adjusting/setting a misset clock to the correct time (or a specific target time) triggers an event — unlocking a door, revealing a passage, etc. This is a transition with a `trigger` or `on_transition` callback.
+
+3. **SET verb interaction:** Player needs to be able to "set clock to 3" or "turn hands to midnight" — a new verb/interaction pattern for adjustable objects.
+
+4. **The concept lives in the base clock object.** The clock.lua defines the FSM states, the ability to be set, and the trigger mechanism. Individual room instances provide the mutable offset and what the trigger does.
+
+5. **Bedroom clock = correct time.** The first clock the player encounters shows accurate game time. The puzzle clock is in a different room.
+
+**Why:** Future puzzle design. Clock-setting as puzzle mechanic. Instance-level mutation keeps the base object generic.
+
+---
+
+**Last Merge:** 2026-03-20T22:00Z (Scribe)

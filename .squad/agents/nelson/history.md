@@ -109,6 +109,13 @@
 ## Cross-Agent Updates (2026-03-20)
 - **From Bart:** Wearable engine implementation complete (WEAR/REMOVE verbs, slot conflicts, vision blocking). All wear operations validated in pass-002 — system is solid and ready for content expansion.
 - **From Frink:** MUD verb research identifies that multiplayer verbs should be first-class primitives. Strategic recommendations include 50-100 predefined socials for MVP (retention drivers). Competitive analysis shows tap-to-suggest UI is critical for mobile parsing UX.
+- **From Bart (2026-03-20T22:00Z):** ✅ **4 new objects ready for testing**
+  - `src/meta/objects/candle-holder.lua` — composite, detachable candle
+  - `src/meta/objects/wall-clock.lua` — 24-state cyclic FSM (hour-based time)
+  - `src/meta/objects/candle.lua` — enhanced (timed_events, pause/resume)
+  - `src/meta/objects/match.lua` — enhanced (timed_events, terminal spent state)
+  - **Bugfixes:** BUG-031 (compound "and" + GOAP), BUG-032 ("burn" GOAP synonym)
+  - **Next:** Nelson playtest validation of new objects + Bart fixes
 
 ---
 
