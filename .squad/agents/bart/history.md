@@ -901,3 +901,42 @@ Root cause: fake Y/N prompt that just exited. Fix: replaced with honest "Game ov
 - Add implicit rules (auto-infer "holding" prerequisite for hand-capacity-dependent verbs)
 - Tag additional objects with prerequisites (lantern, fireplace, additional craftables)
 - Pass-007 GOAP test execution (Nelson)
+
+---
+
+## Session: Window & Wardrobe FSM Consolidation (2026-03-20T21:45Z)
+
+**Status:** ✅ COMPLETE  
+**Outcome:** Single-file FSM pattern established for all openable objects
+
+**What was done:**
+
+1. **window.lua** — Merged `window.lua` + `window-open.lua` into single unified FSM
+   - `closed` state: intact glass, can break, sunlight blocked
+   - `open` state: opened, fresh air, no break option
+   - GUID preserved: `4ecd1058-5cbe-4601-a98e-c994631f7d6b`
+   - Per-state sensory text (on_feel, on_listen, on_smell)
+
+2. **window-open.lua** — DELETED
+   - All content merged into window.lua's `open` state
+   - No remaining file-system split
+
+3. **wardrobe-open.lua** — DELETED
+   - Already superseded by wardrobe.lua's complete FSM
+   - No code referenced it
+
+**Engine Impact:** ZERO. The engine's open/close verb handlers already check FSM before trying mutations. Window now takes the FSM path automatically without code changes.
+
+**Pattern Established:** All openable objects (window, wardrobe, drawer) follow single-file FSM architecture:
+- `initial_state` + `_state` fields
+- `states` table with per-state properties (name, description, room_presence, sensory text)
+- `transitions` table with verb-driven state changes
+- No separate `-open` files
+- No mutation `becomes` references
+
+**Verification:**
+- ✅ `open window` / `close window` — correct transitions, correct descriptions
+- ✅ `open wardrobe` / `close wardrobe` — still works perfectly, contents displayed
+- ✅ No stray file references
+
+**Files changed:** `src/meta/objects/window.lua` (merged), deleted window-open.lua and wardrobe-open.lua

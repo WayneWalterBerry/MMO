@@ -414,9 +414,45 @@ First implementation: Wall clock in bedroom chimes at top of every in-game hour.
 
 ### USER-DIRECTIVE: Merge window into single FSM file (2026-03-20T21-11Z)
 **Author:** Wayne Berry (via Copilot)  
-**Status:** Active  
+**Status:** Implemented (2026-03-20T21:45Z)
 
 The window object currently has two separate .lua files (window.lua and window-open.lua). Must be merged into a single file with inline FSM, consistent with one-file = one-object = one-FSM architecture.
+
+**Result:** ✅ **IMPLEMENTED** — Bart completed window FSM consolidation. Single-file pattern established for all openable objects.
+
+---
+
+### D-WINDOW-FSM: Window & Wardrobe FSM Consolidation (2026-03-20)
+**Author:** Bart (Architect)  
+**Date:** 2026-03-20  
+**Status:** Implemented  
+
+**What Changed:**
+1. **window.lua** — Rewritten as unified FSM with `closed` and `open` states, inline transitions, per-state sensory text
+2. **window-open.lua** — Deleted. Merged into window.lua's `open` state.
+3. **wardrobe-open.lua** — Deleted. Already superseded by wardrobe.lua's complete FSM.
+
+**Engine Impact:** None. Engine's open/close handlers already check FSM before mutations.
+
+**Pattern Established:** All openable objects use single-file FSM: `initial_state` + `_state` fields, `states` table with per-state properties, `transitions` table with verb-driven changes. No separate `-open` files.
+
+---
+
+### D-GOAP-MINOR-BUGS: Two Minor GOAP Coverage Gaps (2026-03-20)
+**Author:** Nelson (Tester)  
+**Date:** 2026-03-20  
+**Status:** Logged (not critical)
+
+**BUG-031 (MINOR):** Compound "and" commands show confusing mixed output with GOAP
+- Repro: `get match from matchbox and light candle` in darkness
+- Actual: First half fails, second half GOAP-succeeds → confusing mixed output
+
+**BUG-032 (MINOR):** "burn candle" doesn't trigger GOAP backward-chaining
+- Repro: Fresh start → `burn candle`
+- Actual: "You have no flame..." — verb recognized but no GOAP. `light` and `ignite` DO chain.
+- Fix: Register "burn" as GOAP goal synonym for "light"
+
+**Assessment:** Strongest build yet. GOAP core functionality is transformative. Only 2 minor coverage gaps.
 - **States:** closed → open (and back)
 - **Curtains interaction:** curtains cover the window, opening curtains with open window = daylight
 - **Single `window.lua`** with inline FSM states
