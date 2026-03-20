@@ -399,3 +399,25 @@ The 32.5MB gzipped index is too large for browser assets. Trim it down, then pla
 - Curtains (2 states: closed/open) — collapsed from 2 files
 
 **New verb handlers:** DRINK, POUR (with FSM alias support for quaff/sip/gulp/spill/dump)
+
+### Playtest Bug Fix Pass (2026-03-20)
+
+**Source:** Nelson's first playtest report (playtest-001.md / test-pass/2026-03-19-pass-001.md)
+
+**Fixes applied (7 bugs):**
+
+1. **Text wrapping (HIGH):** No wrapping code existed — terminal did raw character-level breaks. Created `src/engine/display.lua` with word-wrap at 78 columns. Overrides global `print` via `display.install()` in main.lua. Clean word-boundary breaks, preserved indentation for bullet lists.
+
+2. **Window state after break:** Exit mutations updated the exit table but not the room object. Added sync in break handler: after exit break, copies name/description/keywords/room_presence from `becomes_exit` onto the corresponding room object.
+
+3. **Prepositions:** Added "underneath", "beneath", "inside" to look handler's preposition extraction. Added "under/underneath/beneath" to feel handler for surface inspection (previously only "in/inside" worked for feel).
+
+4. **Bare smell sweep:** Bare "smell" now does a room-level sweep listing all objects with `on_smell` (like "feel" does for touch). Previously only printed a generic room message.
+
+5. **Bare listen sweep:** Same pattern — bare "listen" now sweeps for `on_listen` objects. Both sweeps also check player hands and surface contents.
+
+6. **Match burn countdown:** Match `on_tick` now returns a message at every intermediate turn: "The match burns steadily. (N turns remaining)". Previously only warned at 1 turn remaining.
+
+7. **Drink "from" preposition:** Drink handler now strips "from" preposition so "drink from bottle" correctly finds the target. Previously "from bottle" failed keyword matching.
+
+**Key pattern learned:** Exit mutations and room object state are separate systems. When an exit is broken/modified, the corresponding room-level object must be explicitly synced. This is a gap in the mutation architecture — future consideration: auto-sync exit↔object on mutation.
