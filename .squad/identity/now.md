@@ -1,76 +1,134 @@
 ---
-updated_at: 2026-03-19T14:54:50Z
-focus_area: FSM engine shipped. Match 3-turn consumable live. Nightstand container with state swapping working. Next: candle, wardrobe, vanity FSM. Player skills implementation pending.
-active_issues: []
+updated_at: 2026-03-20T00:50:00Z
+focus_area: FSM-inline architecture complete and live. Nelson first playtest complete (7 bugs found). Bug fixes queued. Wearable system designed (slots, layering, dual properties). Next: critical fixes → pass-002 → wearable implementation.
+active_issues: [window-state-init, match-countdown-trigger, text-wrapping, prepositions-parser, bare-sensory-verbs, drink-verb-alias, typos]
 ---
 
 # What We're Focused On
 
-**Phase 2 Status:** FSM engine implementation complete and tested. Match and nightstand state machines live. Candle, wardrobe, vanity, window, curtains FSM conversions queued. Player skills system pending FSM completion.
+**Phase 3 Status:** FSM-inline consolidation complete. Playtest empirical validation in progress. Wearable system designed but not implemented. Bug fixes are Priority 1.
 
-## Completed (FSM Engine Batch)
+## Completed (Session 2026-03-20)
 
-- ✅ **Bart:** FSM Engine Implementation (shipped)
-  - Built FSM engine (~130 lines) with lazy-loading definitions and in-place mutation
-  - Match FSM: unlit → lit → burned-out (3-turn auto-burn)
-  - Nightstand FSM: closed ↔ open with compartment property swapping
-  - Game loop tick phase after each command
-  - Verb handlers check FSM before old mutation system (backward compatible)
-  - Fixed 3 search bugs (keyword substring, hand/bag priority, bag extraction)
-  - All 9 test cases pass
-  - **Commit:** FSM engine shipped
-  - **Files:** src/engine/fsm/init.lua, src/meta/fsms/match.lua, src/meta/fsms/nightstand.lua
+- ✅ **Bart:** FSM-inline refactor + 4 new FSM objects
+  - Merged match + nightstand FSMs into object files
+  - Created candle (4 states), poison-bottle (3 states), vanity (4 states), curtains (2 states)
+  - Deleted src/meta/fsms/ entirely
+  - FSM engine reads `obj.states` directly
+  - Added FSM transition `aliases` pattern for verb synonyms
+  - **Files:** 12 objects modified/created, 7 state files deleted
   
-- ✅ **Comic Book Guy:** FSM Design Validated
-  - Your FSM object lifecycle design implemented exactly by Bart
-  - Table-driven approach with lazy loading proved clean and extensible
-  - Match lifecycle (urgency teacher) and nightstand reversibility (information gate) validated in play
+- ✅ **Nelson:** First empirical playtest
+  - Played critical path: wake → strike match → nightstand → window
+  - Used LLM intelligence (not scripts) to find unexpected issues
+  - Identified 7 bugs: window state, match countdown, text wrapping, prepositions, bare sensory verbs, drink verb, typos
+  - Output streamed to `test-pass/2026-03-19-pass-001.md`
+  
+- ✅ **Brockman:** Newspaper edition labels
+  - Morning + Evening edition headers added
+  
+- ✅ **CBG:** Wearable system design complete
+  - Wear slot metadata on objects (not engine)
+  - Slot conflict rules documented
+  - Layering system (inner/outer/accessory)
+  - Dual-property support (wearable + container)
+  - Chamber-pot inheritance pattern (pot base class)
 
 ## In Progress
 
-- ⏳ **Frink:** CYOA Book Series Research
-  - Branching patterns documented (Time Cave, Branch-and-Bottleneck, etc.)
-  - Lua table-driven FSM validates homoiconicity research
-  - Awaiting Wayne scope/timeline directive for story module design
-  - Expected completion: Next session
+- ⏳ **Bart (Priority 1):** Bug fixes
+  - Window state initialization (blocks critical path)
+  - Match 3-turn countdown trigger (blocks critical path)
+  - Text wrapping (80 char limit)
+  - Parser prepositions (on, with, from)
+  - Bare sensory verb fallback (look, listen, smell)
 
-## Queued (Ready)
+## Queued
 
-- **Candle FSM** — 3 states (unlit, lit, stub), 100-turn + 20-turn + terminal, drips mechanic
-- **Wardrobe FSM** — hanging space, drawer storage, try-on mechanics
-- **Vanity FSM** — mirror, locked drawer, cosmetics mechanics
-- **Window FSM** — closed ↔ open, breakable state
-- **Curtains FSM** — open ↔ closed, light-blocking mechanic
+- **Nelson pass-002:** Run after Bart's critical fixes
+- **Wearable verb handlers:** WEAR, REMOVE, DROP with slot conflict checking
+- **Wearable-container interactions:** backpack access when worn, sack blindness
+- **Extended playtest (pass-003):** Wearable system validation
 
-## Artifacts Generated (Batch 5)
+## Artifacts Generated (This Session)
 
-- `.squad/orchestration-log/2026-03-19-145450-bart.md` — FSM engine shipping log
-- `.squad/log/2026-03-19-145450-fsm-engine-shipped.md` — Session log with design rationale
-- `.squad/decisions.md#20` — Decision 20: FSM Engine Architecture (merged from inbox)
+- `.squad/orchestration-log/2026-03-20T00-30-00Z-bart-spawn.md` — FSM refactor completion
+- `.squad/orchestration-log/2026-03-20T00-31-00Z-nelson-spawn.md` — Playtest methodology
+- `.squad/orchestration-log/2026-03-20T00-32-00Z-brockman-spawn.md` — Newspaper edition labels
+- `.squad/orchestration-log/2026-03-20T00-33-00Z-cbg-spawn.md` — Wearable system design
+- `.squad/log/2026-03-20T00-45-00Z-fsm-inline-nelson-pass.md` — Session log with all decisions
+- `test-pass/2026-03-19-pass-001.md` — Nelson playtest transcript (product artifact at repo root)
+- `.squad/decisions.md` (merged) — 27 active decisions (inbox merged + deduplicated)
 
 ## Cross-Agent Context
 
-- **Bart → CBG:** FSM engine live. Your design validated. Match 3-turn and nightstand container working as specified.
-- **CBG → Frink:** FSM engine validates table-driven Lua approach. Homoiconicity proved valuable for runtime introspection.
-- **Frink → Bart:** CYOA research continues in parallel. State machine patterns align with branching narrative requirements.
+- **Bart ← Nelson:** Critical bugs: window state, match countdown. Fix required before pass-002.
+- **Nelson ← Bart:** FSM-inline objects ready. All 4 new objects live in their obj files.
+- **CBG ← All:** Wearable design complete. Ready for Bart to implement verb handlers.
+- **All ← CBG:** Wearable slots, layering, dual properties documented. Extensible without engine changes.
+
+## Session Decisions Summary
+
+| Decision | Status | Agents Affected |
+|----------|--------|-----------------|
+| FSM definitions inline (Decision 19) | ✅ Implemented | Bart, Nelson, CBG |
+| FSM transition aliases (Decision 20) | ✅ Implemented | Bart, verbs |
+| Empirical LLM testing (Decision 21) | ✅ Adopted | Nelson |
+| Playtest transcripts at repo root (Decision 22) | ✅ Adopted | Nelson, Wayne |
+| Incremental playtest output (Decision 23) | ✅ Adopted | Nelson |
+| Wearable system architecture (Decision 24) | ✅ Designed | CBG, Bart (implementation) |
+| Wearable slot system (Decision 25) | ✅ Designed | CBG, Bart (implementation) |
+| Wearable-container dual property (Decision 26) | ✅ Designed | CBG, Bart (implementation) |
+| Chamber-pot inheritance (Decision 27) | ✅ Decided | Designers, Bart (implementation) |
 
 ## Immediate Next Steps
 
-1. **Convert remaining 5 FSM objects** (candle, vanity, wardrobe, window, curtains)
-   - Same pattern as match/nightstand (~20 lines each)
-   - Expected: 1 session per 2-3 objects
+1. **Bart critical fixes (Priority 1):**
+   - Window state initialization error
+   - Match 3-turn auto-burn FSM trigger
+   - Expected: 30 min to 1 hour
+   
+2. **Nelson pass-002:**
+   - Run after critical fixes
+   - Verify critical path works end-to-end
+   - Expected: 30 min
+   
+3. **Parser improvements (Priority 2):**
+   - Text wrapping (80 char terminal width)
+   - Prepositions: "on", "with", "from"
+   - Bare sensory verbs: "look", "listen", "smell" room fallback
+   - Expected: 1-2 hours
+   
+4. **Wearable verb implementation (Priority 3):**
+   - WEAR, REMOVE, DROP handlers
+   - Slot conflict detection
+   - Layer conflict detection
+   - Expected: 2-3 hours
+   
+5. **Pass-003:**
+   - Test wearable system
+   - Extended play testing (multiple turns)
+   - Expected: 1-2 hours
 
-2. **Player skills implementation** (pending FSM completion)
-   - Lockpicking skill (pin + PICK LOCK verb)
-   - Sewing skill (needle + thread + SEW verb)
-   - Blood writing (PRICK SELF + WRITE WITH blood)
+## Lessons from This Session
 
-3. **Frink's scope clarification** (pending Wayne)
-   - CYOA research → story module architecture
-   - Timeline and integration points with game engine
+1. **Empirical testing > Scripted tests:** LLM found issues scripts wouldn't think of
+2. **Architecture consolidation works:** FSM-inline cleaner than scattered files
+3. **Hybrid models enable flexibility:** FSM + mutations = reversible + destructible changes
+4. **Object-driven design scales:** Wearable metadata on objects, not engine
+5. **Incremental output resilience:** Streaming to file = robustness against crashes
 
-4. **Advanced mechanics** (blocked until FSM foundation complete)
-   - Paper dynamics (requires paper/ink FSM)
-   - Knife/pin as injury tools (requires safe FSM)
-   - Sewing mechanics (requires wardrobe FSM)
+## Known Issues
+
+- 🔴 **Critical:** Window state not initialized; match countdown trigger not firing (block pass-002)
+- 🟡 **High:** Text wrapping, prepositions, bare verbs (degrade UX but don't block)
+- 🟢 **Low:** Drink verb alias, typos (content polish)
+
+## Team Health
+
+- ✅ Bart: Productive (FSM refactor + alias pattern shipped)
+- ✅ Nelson: Effective (LLM testing finding real bugs)
+- ✅ Brockman: Supporting (newspaper infrastructure)
+- ✅ CBG: Strategic (design work enabling implementation)
+- 🟡 Wayne: Waiting for fixes (pass-002 validation)
 
