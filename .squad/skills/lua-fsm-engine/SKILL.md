@@ -2,23 +2,28 @@
 
 ## What This Solves
 
-Objects that have multiple states (match: unlit/lit/spent, nightstand: closed/open) were managed as separate files with the mutation system hot-swapping entire objects. This caused duplication and made state transitions fragile. The FSM engine provides a single definition per object with declarative state transitions.
+Objects that have multiple states (match: unlit/lit/spent, nightstand: closed/open) need declarative state management. The FSM engine provides inline state definitions within each object file with declarative transitions.
 
 ## Pattern
 
-### FSM Definition Format
+### Object File Format (Inline FSM)
 
 ```lua
--- src/meta/fsms/{object_id}.lua
+-- src/meta/objects/{object_id}.lua
 return {
+    -- Base properties (persist across all states, never in state definitions)
     id = "match",
-    initial_state = "unlit",
+    keywords = {"match", "stick"},
+    size = 1, weight = 0.01, portable = true,
 
-    -- Properties that don't change across states
-    shared = {
-        keywords = {"match", "stick"},
-        size = 1, weight = 0.01, portable = true,
-    },
+    -- Initial state properties (what the object looks like at load time)
+    name = "a wooden match",
+    description = "An unlit match...",
+    casts_light = false,
+
+    -- FSM metadata
+    initial_state = "unlit",
+    _state = "unlit",
 
     -- Per-state property overrides (merged onto object during transition)
     states = {
@@ -66,6 +71,9 @@ return {
 ```lua
 local fsm = require("engine.fsm")
 
+-- Check if an object is FSM-managed
+local def = fsm.load(obj)  -- returns obj if obj.states exists, nil otherwise
+
 -- Query available transitions for verb handlers
 local transitions = fsm.get_transitions(obj)  -- returns non-auto transitions
 
@@ -79,15 +87,24 @@ local msg = fsm.tick(registry, obj_id)  -- returns message string or nil
 ### Verb Handler Integration Pattern
 
 ```lua
-if obj._fsm_id then
+if obj.states then
     local transitions = fsm.get_transitions(obj)
-    local target_state
+    local target_trans
     for _, t in ipairs(transitions) do
-        if t.verb == "open" then target_state = t.to; break end
+        if t.verb == "open" then target_trans = t; break end
+        -- Also check aliases
+        if t.aliases then
+            for _, alias in ipairs(t.aliases) do
+                if alias == "open" then target_trans = t; break end
+            end
+        end
     end
-    if target_state then
-        local trans, err = fsm.transition(registry, obj.id, target_state, {})
-        if trans then print(trans.message) end
+    if target_trans then
+        local trans, err = fsm.transition(registry, obj.id, target_trans.to, {})
+        if trans then
+            print(trans.message)
+            if trans.spawns then spawn_objects(ctx, trans.spawns) end
+        end
     else
         if obj._state == "open" then print("Already open.") end
     end
@@ -98,7 +115,13 @@ end
 
 ## Critical Implementation Details
 
-### 1. Save containment BEFORE cleanup
+### 1. State property convention
+
+- **Properties that CHANGE between states** → defined in EVERY state that uses them
+- **Properties that NEVER change** → only at top level (base), NEVER in any state definition
+- If a state overrides a base property, ALL related states must define it to avoid losing it during transitions
+
+### 2. Save containment BEFORE cleanup
 
 `apply_state` removes old state keys, which includes `surfaces`. Save surface contents at the TOP of the function before any mutation:
 
@@ -112,11 +135,11 @@ end
 -- THEN do cleanup and apply new state
 ```
 
-### 2. Engine-only fields
+### 3. Engine-only fields
 
-`on_tick` and `terminal` exist in the FSM definition but are NEVER applied to the object. The engine reads them from the definition, not from the object. This keeps the object clean.
+`on_tick` and `terminal` exist in the FSM definition but are NEVER applied to the object. The engine reads them from `obj.states[state_name]`, not from `obj` top-level. This keeps the object clean.
 
-### 3. on_tick returns data, doesn't mutate state
+### 4. on_tick returns data, doesn't mutate state
 
 ```lua
 on_tick = function(obj)
@@ -127,15 +150,22 @@ on_tick = function(obj)
 end
 ```
 
-### 4. Backward compatibility
+### 5. Backward compatibility
 
-Objects without `_fsm_id` are invisible to the FSM engine. Old mutation system continues to work. Migration is gradual — convert objects one at a time.
+Objects without `states` are invisible to the FSM engine. Old mutation system continues to work. Objects can have BOTH FSM states AND mutations (hybrid model).
 
-### 5. Avoid double-ticking
+### 6. Avoid double-ticking
 
-If you have an existing tick system (like `tick_burnable` for candles), add a guard:
+If you have an existing tick system (like `tick_burnable`), add a guard:
 ```lua
-if obj._fsm_id then return end  -- FSM handles its own tick
+if obj.states then return end  -- FSM handles its own tick
+```
+
+### 7. Transition spawns
+
+FSM transitions can include a `spawns` field. The engine returns the transition table; the verb handler processes spawns:
+```lua
+if trans.spawns then spawn_objects(ctx, trans.spawns) end
 ```
 
 ## When to Use
@@ -144,9 +174,10 @@ if obj._fsm_id then return end  -- FSM handles its own tick
 - States have transitions triggered by verbs or time/duration
 - Consumable objects with burn/use counters
 - Container objects with accessibility gates (open/closed)
+- Multi-axis states (vanity: drawer × mirror = 4 states)
 
 ## When NOT to Use
 
 - Single-state objects (bed, pillow, knife) — no benefit
 - Dynamic mutations where the new object is generated at runtime (WRITE text on paper)
-- Objects where the mutation creates a fundamentally different thing (breaking a mirror)
+- Destructive transformations (use `mutations` alongside FSM instead)

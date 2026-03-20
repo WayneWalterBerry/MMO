@@ -370,3 +370,32 @@ The 32.5MB gzipped index is too large for browser assets. Trim it down, then pla
 **Why It Matters for You:** The engine's narrative scaffolding will eventually integrate with your verb system. If future work includes state-aware content (NPC reactions based on history), your verb handlers may need to query state. Not immediate, but architectural awareness.
 
 **Decision:** Lua engine can implement hidden nodes (UFO 54-40 pattern) — unconventional verb usage unlocking secret content. Your tool resolution + capability-based dispatch already supports this design pattern.
+
+---
+
+## Learnings
+
+### FSM-Inline Refactor (2026-03-20)
+
+**Directive:** Wayne mandated one file = one object = one FSM. FSM definitions must live inside the object file, not in separate `src/meta/fsms/` files.
+
+**Key Architectural Decisions:**
+1. **`fsm.load(obj)` reads `obj.states` directly.** No more `require("meta.fsms." .. id)`. The object IS the definition.
+2. **No `shared` key needed.** Base properties (keywords, size, weight, etc.) persist at the top level of the object and are never touched by state transitions. Each state defines only the properties that change.
+3. **`obj.states` replaces `obj._fsm_id` as the FSM detection check.** If an object has a `states` table, it's FSM-driven.
+4. **apply_state uses `obj.states[state_name]` directly** — no separate definition table needed since `obj.states` is a nested sub-table that's never modified by top-level property changes.
+5. **Hybrid model works:** Objects can have BOTH `states`/`transitions` (FSM) AND `mutations` (destructive). Curtains use FSM for open/close but mutations for tear. The verb handlers try FSM first, then mutations.
+
+**Pattern for state property management:**
+- Properties that CHANGE between states → defined in every state that uses them
+- Properties that NEVER change → only at top level (base), never in any state definition
+- If a state overrides a base property, ALL states that transition between each other must define that property
+
+**Objects migrated/created:**
+- Match (3 states), Nightstand (2 states) — migrated from separate FSMs
+- Candle (4 states: unlit/lit/stub/spent, 100+20 turn burn) — new
+- Poison Bottle (3 states: sealed/open/empty) — new
+- Vanity (4 states: closed/open × mirror intact/broken) — collapsed from 4 files
+- Curtains (2 states: closed/open) — collapsed from 2 files
+
+**New verb handlers:** DRINK, POUR (with FSM alias support for quaff/sip/gulp/spill/dump)
