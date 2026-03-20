@@ -369,7 +369,7 @@ context.update_status = function(ctx)
 
     -- Right side: match / candle status (best-effort from game state)
     local match_count = "?"
-    local candle_icon = "○"
+    local candle_icon = "o"
     local p = ctx.player
     if p then
         -- Count matches in matchbox (if it exists)
@@ -379,7 +379,7 @@ context.update_status = function(ctx)
         end
         -- Candle lit?
         if p.state.has_flame and p.state.has_flame > 0 then
-            candle_icon = "●"
+            candle_icon = "*"
         end
     end
 

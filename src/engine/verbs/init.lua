@@ -3230,7 +3230,7 @@ function verbs.create()
             }
             local tw = target_word:lower():gsub("^my%s+", "")
             if body_parts[tw] then
-                handlers["wear"](ctx, item_word)
+                handlers["wear"](ctx, item_word .. " on " .. tw)
                 return
             end
         end
