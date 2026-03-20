@@ -841,3 +841,63 @@ Root cause: fake Y/N prompt that just exited. Fix: replaced with honest "Game ov
 
 **Files created:** `src/meta/world/cellar.lua`, `src/meta/objects/barrel.lua`, `src/meta/objects/torch-bracket.lua`
 **Files modified:** `src/main.lua`, `src/engine/verbs/init.lua`, `src/engine/loop/init.lua`, `src/meta/objects/trap-door.lua`
+
+---
+
+## Session: GOAP Tier 3 Backward-Chaining Implementation (2026-03-20T21:15Z)
+**Status:** ✅ COMPLETE
+**Outcome:** Goal-oriented action planning with automatic prerequisite resolution
+
+**What was built:**
+1. **Backward-chaining prerequisite resolver** in `src/engine/parser/goal_planner.lua` (~220 lines)
+   - Recursively resolves tool prerequisites via `requires_tool` metadata
+   - Supports 3-level nested containment search (hands → room → containers → surfaces)
+   - Cycle detection via visited-set; MAX_DEPTH=5 prevents runaway planning
+   - Returns action sequence as step array
+
+2. **Integration into game loop** in `src/engine/loop/init.lua`
+   - Planner runs BETWEEN Tier 1 verb dispatch and Tier 2 fallback
+   - Pre-check mechanism: if verb handler would fail due to missing tool, plan auto-executes
+   - Narrated execution: "You'll need to prepare first..." then each step's output
+   - Stop-on-failure: if any step fails, plan aborts, world state consistent
+
+3. **UNLOCK verb for exits (doors)**
+   - Operates on exits, not objects (matches OPEN handler pattern)
+   - Takes `key_id` from exit metadata
+   - Checks player inventory for matching key, then opens locked door
+   - Exit examine/feel support for locked door descriptions
+
+4. **Prerequisite metadata on objects**
+   - Candle FSM transition: `requires_tool = "fire_source"` with prerequisites table
+   - Match, matchbox tagged with prerequisite chains
+   - Pattern: objects declare what they need via `requires_tool`; planner reads and executes
+
+**Design decisions:**
+- **Pre-check vs post-failure:** Pre-check avoids retrofitting return codes to 40+ verb handlers
+- **In-place containers:** Containers opened without pickup, preserving hand capacity during plan
+- **Narrated execution:** Players learn the chain and can repeat manually next time
+- **Stop-on-failure:** Real verb execution means world state is always consistent
+
+**Files created:** `src/engine/parser/goal_planner.lua`
+**Files modified:**
+- `src/engine/loop/init.lua` — planner integration, prepositional parsing, context tracking
+- `src/engine/verbs/init.lua` — UNLOCK handler, exit examine/feel, help text
+- `src/meta/objects/candle.lua` — prerequisites table added
+- `src/meta/world/cellar.lua` — iron door: key_id, state descriptions, open mutation, on_feel
+
+**Bugs fixed:**
+- BUG-029: Iron door in cellar now examinable ("You see a heavy iron-bound door, locked from this side")
+- BUG-030: UNLOCK verb now works; brass key unlocks cellar iron door
+- Previous GOAP architecture research (D-GOAP-1) fully realized
+
+**Tests verified:**
+- Candle-match-matchbox chain: full resolution with in-place container ops ✅
+- Nested containment: matchbox in drawer on nightstand ✅
+- UNLOCK + iron door: brass key under rug → unlocks north door ✅
+- Goal-oriented commands ("light the candle") work with auto-planning ✅
+
+**Next priorities:**
+- Extend `requires_property` prerequisites (not just `requires_tool`)
+- Add implicit rules (auto-infer "holding" prerequisite for hand-capacity-dependent verbs)
+- Tag additional objects with prerequisites (lantern, fireplace, additional craftables)
+- Pass-007 GOAP test execution (Nelson)
