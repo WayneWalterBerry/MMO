@@ -1339,26 +1339,52 @@ function verbs.create()
             return
         end
 
-        -- Find the object to check for skill-granting properties
-        local obj = find_visible(ctx, noun)
+        -- Find the object: inventory first (more natural), then room
+        local obj = find_in_inventory(ctx, noun)
         if not obj then
-            obj = find_in_inventory(ctx, noun)
+            obj = find_visible(ctx, noun)
         end
 
-        if obj and obj.grants_skill then
+        if not obj then
+            print("You don't see any " .. noun .. " to read.")
+            return
+        end
+
+        -- Check if object is on fire
+        if obj._state and obj._state == "burning" then
+            print("The flames make it impossible to read!")
+            return
+        end
+
+        -- Check if object is readable (categories contains "readable")
+        local is_readable = false
+        if obj.categories and type(obj.categories) == "table" then
+            for _, cat in ipairs(obj.categories) do
+                if cat == "readable" then is_readable = true; break end
+            end
+        end
+
+        if not is_readable and not obj.grants_skill then
+            print("That's not something you can read.")
+            return
+        end
+
+        -- Skill-granting readable
+        if obj.grants_skill then
             local skill = obj.grants_skill
-            if ctx.player.skills[skill] then
+            if obj.skill_granted or (ctx.player.skills and ctx.player.skills[skill]) then
                 print(obj.already_learned_message
                     or ("You read it again, but you already know this."))
             else
                 ctx.player.skills[skill] = true
+                obj.skill_granted = true
                 print(obj.skill_message
                     or ("You read carefully and learn something new."))
             end
             return
         end
 
-        -- Default: delegate to examine
+        -- Readable but no skill: delegate to examine for description
         handlers["look"](ctx, "at " .. noun)
     end
     handlers["search"] = function(ctx, noun)
@@ -4008,6 +4034,17 @@ function verbs.create()
             return
         end
 
+        -- If the object has a "light" FSM transition, redirect to the light handler
+        if obj.states then
+            local transitions = fsm_mod.get_transitions(obj)
+            for _, t in ipairs(transitions) do
+                if t.from == obj._state and (t.verb == "light" or t.verb == "ignite") then
+                    handlers["light"](ctx, noun)
+                    return
+                end
+            end
+        end
+
         -- Need a flame
         local has_fire = (ctx.player.state.has_flame and ctx.player.state.has_flame > 0)
             or find_tool_in_inventory(ctx, "fire_source") ~= nil
@@ -4171,6 +4208,8 @@ function verbs.create()
 
         -- Tick all FSM objects for elapsed ticks, collecting messages
         local sleep_messages = {}
+        -- Each sleep tick = 1/10 game hour = 360 game seconds
+        local SLEEP_SECONDS_PER_TICK = 360
         for tick = 1, sleep_ticks do
             for _, obj_id in ipairs(tick_targets) do
                 local obj = reg:get(obj_id)
@@ -4180,6 +4219,11 @@ function verbs.create()
                         sleep_messages[#sleep_messages + 1] = msg
                     end
                 end
+            end
+            -- Tick timed events engine during sleep
+            local timer_msgs = fsm_mod.tick_timers(reg, SLEEP_SECONDS_PER_TICK)
+            for _, entry in ipairs(timer_msgs) do
+                sleep_messages[#sleep_messages + 1] = entry.message
             end
             -- Also fire on_tick for non-FSM burnables
             if ctx.on_tick then
@@ -4398,6 +4442,84 @@ function verbs.create()
     end
 
     ---------------------------------------------------------------------------
+    -- SET / ADJUST — advance adjustable clocks (puzzle mechanic)
+    ---------------------------------------------------------------------------
+    handlers["set"] = function(ctx, noun)
+        if noun == "" then print("Set what?") return end
+
+        -- Find the target object (room or inventory)
+        local obj = find_visible(ctx, noun)
+        if not obj then obj = find_in_inventory(ctx, noun) end
+        if not obj then
+            print("You don't see any " .. noun .. " to set.")
+            return
+        end
+
+        -- Only adjustable clocks respond to SET
+        if not obj.adjustable then
+            print("You can't set that.")
+            return
+        end
+
+        -- Must have light to fiddle with clock hands
+        if not has_some_light(ctx) then
+            print("It is too dark to see the clock face.")
+            return
+        end
+
+        -- Extract current hour from state name (hour_N)
+        local cur_hour = obj._state and tonumber(obj._state:match("hour_(%d+)"))
+        if not cur_hour then
+            print("You can't figure out how to set that.")
+            return
+        end
+
+        -- Advance to next hour
+        local next_hour = (cur_hour % 24) + 1
+        local next_state = "hour_" .. next_hour
+
+        -- Apply the state change directly (manual adjustment, not timed)
+        local fsm_set = require("engine.fsm")
+        fsm_set.stop_timer(obj.id or "wall-clock")
+        local old_state = obj._state
+        if obj.states and obj.states[next_state] then
+            -- Apply new state properties
+            if obj.states[old_state] then
+                for k in pairs(obj.states[old_state]) do
+                    if k ~= "on_tick" and k ~= "terminal" and k ~= "timed_events" then
+                        obj[k] = nil
+                    end
+                end
+            end
+            for k, v in pairs(obj.states[next_state]) do
+                if k ~= "on_tick" and k ~= "terminal" and k ~= "timed_events" then
+                    obj[k] = v
+                end
+            end
+            obj._state = next_state
+        end
+
+        -- Restart the hourly timer for the new state
+        fsm_set.start_timer(ctx.registry, obj.id or "wall-clock")
+
+        -- Display the new hour
+        local display_h = ((next_hour - 1) % 12) + 1
+        local number_words = {
+            "one", "two", "three", "four", "five", "six",
+            "seven", "eight", "nine", "ten", "eleven", "twelve",
+        }
+        print("You turn the clock hands. The clock now reads " .. number_words[display_h] .. " o'clock.")
+
+        -- Check if puzzle target_hour is reached
+        if obj.target_hour and next_hour == obj.target_hour then
+            if obj.on_correct_time then
+                obj.on_correct_time(obj, ctx)
+            end
+        end
+    end
+    handlers["adjust"] = handlers["set"]
+
+    ---------------------------------------------------------------------------
     -- HELP
     ---------------------------------------------------------------------------
     handlers["help"] = function(ctx, noun)
@@ -4443,6 +4565,7 @@ function verbs.create()
         print("  drink <thing>     - drink from a container")
         print("  pour <thing>      - pour out a liquid")
         print("  burn <thing>      - set something flammable on fire")
+        print("  set <clock>       - advance an adjustable clock by one hour")
         print("  north/south/east/west  - move in a direction (n/s/e/w)")
         print("  up / down         - move up or down (u/d)")
         print("  go <direction>    - move (go north, go through door)")

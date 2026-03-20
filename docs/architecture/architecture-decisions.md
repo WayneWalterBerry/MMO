@@ -414,7 +414,7 @@ D-21 (No Merge)    ─────┴► together define inter-universe interact
 ## Cross-References
 
 - **Vocabulary:** [`docs/architecture/vocabulary.md`](../architecture/vocabulary.md) — definitions for all terms used here
-- **Game Design Foundations:** [`docs/design/game-design-foundations.md`](game-design-foundations.md) — verbs, objects, player model
+- **Game Design Foundations:** [`game-design-foundations.md`](../design/game-design-foundations.md) — verbs, objects, player model
 - **Full Decision Log:** [`.squad/decisions.md`](../../.squad/decisions.md) — canonical record of all numbered decisions
 - **Research — Language Architecture:** `resources/research/architecture/code-data-blended-languages.md`
 - **Research — Modern Structures:** `resources/research/architecture/modern-text-adventure-data-structures.md`

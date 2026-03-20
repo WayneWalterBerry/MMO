@@ -253,7 +253,7 @@ Tree representation of program structure; each node represents a syntactic const
 Intermediate representation between source code and machine code; platform-independent. Used by VMs like Z-machine, Java, Lua; enables portability.
 
 **Build-Time LLM**  
-Using a large language model as a build tool — generating content once at build time — rather than as a runtime dependency. Eliminates per-player or per-interaction LLM token costs. In this project, the LLM generates the universe template once; players receive unique worlds through procedural variation, not individual LLM calls. See [D-17] in `docs/design/architecture-decisions.md`.
+Using a large language model as a build tool — generating content once at build time — rather than as a runtime dependency. Eliminates per-player or per-interaction LLM token costs. In this project, the LLM generates the universe template once; players receive unique worlds through procedural variation, not individual LLM calls. See [D-17] in `architecture-decisions.md`.
 
 **C API (Lua C API)**
 Clean, low-overhead interface for calling C from Lua or embedding Lua in C. Enables tight integration of Lua scripting in C/C++ engines.
@@ -337,7 +337,7 @@ Delaying computation until its result is actually needed. Enables infinite data 
 Component splitting source code into tokens (atomic units like keywords, identifiers). First stage of parsing.
 
 **loadstring()**  
-Lua function (also spelled `load()` in Lua 5.2+) that parses a string as Lua code and returns it as an executable function. The primary mechanism by which the engine rewrites world object definitions at runtime. Enables true code mutation: the engine generates a new object definition as a string and loads it into the running environment. See [D-14], [D-16] in `docs/design/architecture-decisions.md`.
+Lua function (also spelled `load()` in Lua 5.2+) that parses a string as Lua code and returns it as an executable function. The primary mechanism by which the engine rewrites world object definitions at runtime. Enables true code mutation: the engine generates a new object definition as a string and loads it into the running environment. See [D-14], [D-16] in `architecture-decisions.md`.
 
 **Lexical Scope / Lexical Binding**
 Variable scope determined by program text structure (vs. dynamic scope). Standard in modern languages; enables closures.
@@ -349,13 +349,13 @@ Updating code/data at runtime without restarting application. Essential for MUD 
 Program construct generating code; often extends language syntax; powerful in Lisp. Enables syntactic abstraction; meta-level programming.
 
 **Meta-Code**  
-The Lua code that defines world objects and their behavior. Meta-code is simultaneously code and data — a Lua table holding properties, functions, and mutation logic for a game entity. When the engine rewrites a broken mirror into `broken_mirror`, it is rewriting meta-code. The engine and its meta-code are the same language (Lua), with no boundary between them. See [D-15], [D-16] in `docs/design/architecture-decisions.md`.
+The Lua code that defines world objects and their behavior. Meta-code is simultaneously code and data — a Lua table holding properties, functions, and mutation logic for a game entity. When the engine rewrites a broken mirror into `broken_mirror`, it is rewriting meta-code. The engine and its meta-code are the same language (Lua), with no boundary between them. See [D-15], [D-16] in `architecture-decisions.md`.
 
 **Metaprogramming**
 Code that manipulates, generates, or inspects other code. Enables DSLs, frameworks, and runtime customization.
 
 **Meta-Code Rewrite** (also: **True Code Rewrite**)  
-The mutation model where the engine replaces an object's definition entirely rather than toggling flags on the existing definition. When a player breaks a mirror, the engine does not set `mirror.is_broken = true`; it rewrites the object into a new entity (`broken_mirror`) with different properties, descriptions, and available verbs. The original definition is gone. This is the project's core design mechanic. See [D-14] in `docs/design/architecture-decisions.md`.
+The mutation model where the engine replaces an object's definition entirely rather than toggling flags on the existing definition. When a player breaks a mirror, the engine does not set `mirror.is_broken = true`; it rewrites the object into a new entity (`broken_mirror`) with different properties, descriptions, and available verbs. The original definition is gone. This is the project's core design mechanic. See [D-14] in `architecture-decisions.md`.
 
 **Metaclass**
 Class whose instances are classes; enables metaprogramming. Used in Python; rarely needed in dynamic languages.
@@ -551,7 +551,7 @@ Part-of-speech tagging identifying nouns vs. verbs. NLP technique; aids parsing.
 Resolving "it", "him", "that" to previously mentioned objects. Context-dependent interpretation.
 
 **Rich Synonym Mapping**  
-Parser approach using extensive alias tables to make structured commands feel natural. Instead of simple verb-noun dispatch, a broad synonym dictionary maps player input variations ("grab", "snatch", "take", "get") to canonical verbs. Our chosen approach for making structured commands feel like natural language without runtime LLM cost. See [D-19] in `docs/design/architecture-decisions.md`.
+Parser approach using extensive alias tables to make structured commands feel natural. Instead of simple verb-noun dispatch, a broad synonym dictionary maps player input variations ("grab", "snatch", "take", "get") to canonical verbs. Our chosen approach for making structured commands feel like natural language without runtime LLM cost. See [D-19] in `architecture-decisions.md`.
 
 **Tokenization**
 Splitting input text into individual tokens (words). First parsing step.
@@ -565,7 +565,7 @@ Mapping user input verbs to handler functions; handles synonyms. Normalizes verb
 ### State Management
 
 **Flags/Counters**  
-Boolean or numeric state tracking game progression (e.g., has_visited_library, items_collected). Simple flags; easy to query. ⚠️ **SUPERSEDED:** Per Decision 22 (Code Mutation Over State Flags), our engine does NOT use flags for state. Instead, state IS mutated code. When a mirror breaks, the object definition itself is rewritten into `broken_mirror`, not flagged as `is_broken = true`. See [D-22], [D-14] in `docs/design/architecture-decisions.md`.
+Boolean or numeric state tracking game progression (e.g., has_visited_library, items_collected). Simple flags; easy to query. ⚠️ **SUPERSEDED:** Per Decision 22 (Code Mutation Over State Flags), our engine does NOT use flags for state. Instead, state IS mutated code. When a mirror breaks, the object definition itself is rewritten into `broken_mirror`, not flagged as `is_broken = true`. See [D-22], [D-14] in `architecture-decisions.md`.
 
 **Global Variables**  
 State tracking overall game progression and story flags. Quick to access; can become messy.
@@ -628,7 +628,7 @@ Twine architecture where each scene/choice point is a passage node. Graph-based 
 Algorithmic generation of game content (worlds, scenarios, rules). Creates variety; hard to ensure quality.
 
 **Procedural Variation**  
-The system that creates unique multiverse instances for each player by applying deterministic seeds and parameter ranges to a shared universe template. Distinct from full procedural generation in that it starts from a hand-tuned canonical template rather than generating from scratch. Ensures uniqueness without per-player LLM cost. See [D-17] in `docs/design/architecture-decisions.md`.
+The system that creates unique multiverse instances for each player by applying deterministic seeds and parameter ranges to a shared universe template. Distinct from full procedural generation in that it starts from a hand-tuned canonical template rather than generating from scratch. Ensures uniqueness without per-player LLM cost. See [D-17] in `architecture-decisions.md`.
 
 ### World Simulation
 
@@ -780,7 +780,7 @@ Function call as last operation; optimizable into jump (tail call optimization).
 Specialized system for multiplayer text worlds using LPC. Industry standard for LPC-based MUDs; proven architecture.
 
 **Fog of War (Ghost Context)**  
-Ghost visibility model where inter-universe observers only see the current room or immediate area, not the whole host universe. Chosen for efficiency: only current room state needs to be streamed to the ghost player. Also limits scouting and reduces information overload. See [D-20] in `docs/design/architecture-decisions.md`.
+Ghost visibility model where inter-universe observers only see the current room or immediate area, not the whole host universe. Chosen for efficiency: only current room state needs to be streamed to the ghost player. Also limits scouting and reduces information overload. See [D-20] in `architecture-decisions.md`.
 
 **Hot-Reloadable**
 Code and data updated while world runs; used in DGD/LPC MUD systems. No server restart; live code updates.
@@ -792,13 +792,13 @@ Specialized system for multiplayer text worlds; objects as fundamental unit. MUD
 Multiplayer text-based game environment; precursor to MMORPGs. Historic significance; technical proof-of-concept for persistent worlds.
 
 **No-Merge Model**  
-The design decision that universe interaction does not blend or merge universe states. When a ghost becomes a full participant in a host's universe, they simply join as-is; their home universe pauses separately. Eliminates the need for CRDTs, OT, or conflict resolution. The host universe is canonical. See [D-21] in `docs/design/architecture-decisions.md`.
+The design decision that universe interaction does not blend or merge universe states. When a ghost becomes a full participant in a host's universe, they simply join as-is; their home universe pauses separately. Eliminates the need for CRDTs, OT, or conflict resolution. The host universe is canonical. See [D-21] in `architecture-decisions.md`.
 
 **Procedurally Driven Drama Management (DODM)**
 Using complex state representations to model story futures and enable proactive narrative management. Advanced narrative AI; enables foresight.
 
 **Universe Pause**  
-When a ghost player joins another universe as a full participant, their home universe freezes in place. The paused universe is not destroyed or merged — it is suspended and resumable when the player returns. Persisted in cloud storage. See [D-21] in `docs/design/architecture-decisions.md`.
+When a ghost player joins another universe as a full participant, their home universe freezes in place. The paused universe is not destroyed or merged — it is suspended and resumable when the player returns. Persisted in cloud storage. See [D-21] in `architecture-decisions.md`.
 
 ---
 
@@ -836,13 +836,13 @@ This is a **living document**. As the project evolves:
 - **Modern Data Structures:** `resources/research/architecture/modern-text-adventure-data-structures.md`
 - **Code-Data Languages:** `resources/research/architecture/code-data-blended-languages.md`
 - **Architecture Decisions:** `.squad/decisions.md`
-- **Architecture Decisions (detailed):** `docs/design/architecture-decisions.md`
+- **Architecture Decisions (detailed):** `architecture-decisions.md`
 
 ---
 
 ## Engine & Mutation Architecture
 
-Terms specific to this project's self-modifying engine design. See `docs/design/architecture-decisions.md` for the full decisions behind these concepts.
+Terms specific to this project's self-modifying engine design. See `architecture-decisions.md` for the full decisions behind these concepts.
 
 **loadstring()** → see [Languages & Runtime Systems > Language Features & Concepts](#language-features--concepts)
 
@@ -853,7 +853,7 @@ Terms specific to this project's self-modifying engine design. See `docs/design/
 **Build-Time LLM** → see [Languages & Runtime Systems > Language Features & Concepts](#language-features--concepts)
 
 **The Company**  
-In-game meta-entity and analytics pipeline that observes how player worlds evolve over time. Enabled by cloud persistence: "The Company" reads universe snapshots to track mutations, divergence from the template, and emergent player behaviors. The Company is both a narrative element (in-world observer) and a technical pipeline (out-of-world analytics). See [D-18] in `docs/design/architecture-decisions.md`.
+In-game meta-entity and analytics pipeline that observes how player worlds evolve over time. Enabled by cloud persistence: "The Company" reads universe snapshots to track mutations, divergence from the template, and emergent player behaviors. The Company is both a narrative element (in-world observer) and a technical pipeline (out-of-world analytics). See [D-18] in `architecture-decisions.md`.
 
 **Mutation Variant**  
 The pattern of multiple object definition files representing different states of the same logical object. Example: `vanity.lua` (original), `vanity-open.lua` (opened), `vanity-open-mirror-broken.lua` (mirror broken). Each variant is a complete replacement definition, not a modification. Implements the true code rewrite model (D-14). The engine reloads the appropriate variant as the object's state changes. Each variant has its own hooks (`on_look`, `on_take`, etc.) appropriate to that state.
@@ -874,15 +874,15 @@ The Lua execution environment that safely loads and executes object definitions 
 
 ## Multiverse & Universe Architecture
 
-Terms specific to this project's multiverse and inter-universe interaction model. See `docs/design/architecture-decisions.md` for the full decisions behind these concepts.
+Terms specific to this project's multiverse and inter-universe interaction model. See `architecture-decisions.md` for the full decisions behind these concepts.
 
 **Fog of War (Ghost Context)** → see [Advanced Concepts > Multiplayer Systems](#multiplayer-systems)
 
 **Ghost**  
-A player from another universe who appears in the host's universe as a semi-transparent, non-interactive observer. Ghosts can see and explore but cannot pick up items or modify objects. Ghosts are visible only within the current room (fog of war). Host players can transform a ghost into a full participant via a deliberate action, granting them the ability to interact. See [D-13], [D-20], [D-21] in `docs/design/architecture-decisions.md`.
+A player from another universe who appears in the host's universe as a semi-transparent, non-interactive observer. Ghosts can see and explore but cannot pick up items or modify objects. Ghosts are visible only within the current room (fog of war). Host players can transform a ghost into a full participant via a deliberate action, granting them the ability to interact. See [D-13], [D-20], [D-21] in `architecture-decisions.md`.
 
 **Universe Fork**  
-The process of creating a new per-player universe from the base universe template. Each player's instance is a fork: the canonical template (hand-tuned, procedurally varied) becomes the root of that player's universe tree. From that point forward, all mutations are player-specific and affect only their universe. See [D-10], [D-17] in `docs/design/architecture-decisions.md`.
+The process of creating a new per-player universe from the base universe template. Each player's instance is a fork: the canonical template (hand-tuned, procedurally varied) becomes the root of that player's universe tree. From that point forward, all mutations are player-specific and affect only their universe. See [D-10], [D-17] in `architecture-decisions.md`.
 
 **No-Merge Model** → see [Advanced Concepts > Multiplayer Systems](#multiplayer-systems)
 
@@ -893,3 +893,4 @@ The process of creating a new per-player universe from the base universe templat
 **Universe Template** → see [Narrative & World Logic > Narrative Structures](#narrative-structures)
 
 **Rich Synonym Mapping** → see [Game Loop & Command Execution > Command Processing Pipeline](#command-processing-pipeline)
+

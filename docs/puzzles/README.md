@@ -107,7 +107,8 @@ All puzzles in this game follow these core principles:
 
 ## See Also
 
-- **Design Directives:** `docs/design/design-directives.md`
-- **Tool Objects:** `docs/design/tool-objects.md`
-- **Game Design Foundations:** `docs/design/game-design-foundations.md`
+- **Design Directives:** `../design/design-directives.md`
+- **Tool Objects:** `../design/tool-objects.md`
+- **Game Design Foundations:** `../design/game-design-foundations.md`
 - **Architecture Decisions:** `.squad/decisions.md`
+

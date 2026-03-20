@@ -1239,9 +1239,9 @@ Let players set error reporting level:
 
 ## 12. REFERENCES
 
-- **Architecture Overview:** `docs/design/00-architecture-overview.md`
+- **Architecture Overview:** `00-architecture-overview.md`
 - **Parser Implementation Plan:** `plan/llm-slm-parser-plan.md`
-- **Command Variations:** `docs/design/command-variation-matrix.md`
+- **Command Variations:** `../design/command-variation-matrix.md`
 - **MUD Verb Systems:** `resources/research/competitors/mud-clients/verbs.md`
 - **Decision D-19:** Parser approach (embedding vs. SLM)
 - **Newspaper 2026-03-20:** Morning edition (verb scale research)

@@ -3,7 +3,7 @@
 **Author:** Comic Book Guy (Game Designer)  
 **Date:** 2026-03-21  
 **Status:** Design Complete (Ready for implementation review)  
-**Related:** `design-directives.md`, `tool-objects.md`, `containment-constraints.md`
+**Related:** `design-directives.md`, `tool-objects.md`, `../architecture/containment-constraints.md`
 
 ---
 
@@ -527,3 +527,4 @@ For quick lookup during implementation:
 **End of Document**
 
 *"Worst. Skills. System. Ever. Just kidding—I'm actually quite proud of this one. It's elegant, it teaches through play, and it respects the darkness. Mmm, darkness." — Comic Book Guy*
+

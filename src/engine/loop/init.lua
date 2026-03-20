@@ -232,6 +232,20 @@ local function preprocess_natural_language(input)
     return "up", ""
   end
 
+  -- Clock adjustment phrases: "turn hands", "set clock", "adjust clock"
+  local clock_target = lower:match("^turn%s+hands%s*(.*)$")
+    or lower:match("^turn%s+the%s+hands%s*(.*)$")
+  if clock_target then
+    local target = clock_target ~= "" and clock_target or "clock"
+    return "set", target
+  end
+  if lower:match("^adjust%s+the%s+clock") or lower:match("^adjust%s+clock") then
+    return "set", "clock"
+  end
+  if lower:match("^set%s+the%s+clock") or lower:match("^set%s+clock") then
+    return "set", "clock"
+  end
+
   return nil, nil
 end
 
@@ -311,6 +325,23 @@ function loop.run(context)
       end
     end
 
+    -- If compound command's last part has a GOAP plan, let GOAP handle everything.
+    -- e.g. "get match from matchbox and light candle" → GOAP plans "light candle"
+    -- end-to-end, making the first part redundant.
+    if #sub_commands > 1 and goal_planner then
+      local last = sub_commands[#sub_commands]
+      local lv, ln = preprocess_natural_language(last)
+      if not lv then lv, ln = parse(last) end
+      if lv == "light" or lv == "ignite" or lv == "burn" then
+        local clean = ln:match("^(.-)%s+with%s+.+$")
+        if clean and clean ~= "" then ln = clean end
+      end
+      local plan = goal_planner.plan(lv, ln, context)
+      if plan and #plan > 0 then
+        sub_commands = { last }
+      end
+    end
+
     local should_quit = false
     for _, sub_input in ipairs(sub_commands) do
       -- Try natural language preprocessing first
@@ -327,7 +358,7 @@ function loop.run(context)
       end
 
       -- Prepositional parsing: strip "with Y" for verbs that auto-find tools
-      if verb == "light" or verb == "ignite" then
+      if verb == "light" or verb == "ignite" or verb == "burn" then
         local clean_noun = noun:match("^(.-)%s+with%s+.+$")
         if clean_noun and clean_noun ~= "" then noun = clean_noun end
       end
@@ -403,7 +434,7 @@ function loop.run(context)
           end
         end
       end
-      -- Tick all FSM objects
+      -- Tick all FSM objects (legacy on_tick callbacks)
       for _, obj_id in ipairs(tick_targets) do
         local obj = reg:get(obj_id)
         if obj and obj._state then
@@ -413,6 +444,15 @@ function loop.run(context)
             print(msg)
           end
         end
+      end
+
+      -- Timed events engine: each command tick = 360 game seconds
+      -- (consistent with SLEEP: 10 ticks per game hour = 3600s / 10 = 360s)
+      local SECONDS_PER_TICK = 360
+      local timer_msgs = fsm_mod.tick_timers(reg, SECONDS_PER_TICK)
+      for _, entry in ipairs(timer_msgs) do
+        print("")
+        print(entry.message)
       end
     end
 

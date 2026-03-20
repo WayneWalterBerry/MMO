@@ -225,7 +225,7 @@ Without surfaces, a designer must create three separate "desk" objects (desk-top
 
 ### Surface Visibility Rules
 
-Surfaces interact with the visibility system for room descriptions (see `docs/design/dynamic-room-descriptions.md`). Objects on surfaces are NOT shown in the room view — only top-level objects in `room.contents` appear. When a player examines an object, its `on_look` handler reveals surface contents selectively:
+Surfaces interact with the visibility system for room descriptions (see `dynamic-room-descriptions.md`). Objects on surfaces are NOT shown in the room view — only top-level objects in `room.contents` appear. When a player examines an object, its `on_look` handler reveals surface contents selectively:
 
 | Surface Type | Default Visibility | Player Action Required |
 |---|---|---|

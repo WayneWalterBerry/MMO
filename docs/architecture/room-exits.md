@@ -416,7 +416,7 @@ This is a parser concern, not an architecture concern, but the exit structure su
 
 ### The `on_look` Function
 
-Room `on_look` is now handled dynamically by the engine (see `docs/design/dynamic-room-descriptions.md`). The engine's `cmd_look` composes the room view from three sources: room description (permanent features), object `room_presence` fields (dynamic), and visible exits (auto-composed from exit data). Hidden exits are excluded automatically.
+Room `on_look` is now handled dynamically by the engine (see `dynamic-room-descriptions.md`). The engine's `cmd_look` composes the room view from three sources: room description (permanent features), object `room_presence` fields (dynamic), and visible exits (auto-composed from exit data). Hidden exits are excluded automatically.
 
 Rooms should NOT define custom `on_look` for standard description — the engine handles it. Custom `on_look` is reserved for truly special rooms (magical visions, darkness, rooms that defy normal description). If a room defines `on_look`, the engine calls it instead of composing.
 
@@ -431,7 +431,7 @@ src/meta/templates/room.lua          — base room template
 src/meta/world/start-room.lua        — updated with rich exits
 src/meta/world/*.lua                 — future rooms use same format
 src/engine/traversal/init.lua        — exit validation (future)
-docs/design/room-exits.md            — this document
+docs/architecture/room-exits.md            — this document
 ```
 
 ---
@@ -441,4 +441,4 @@ docs/design/room-exits.md            — this document
 1. **Inventory model.** `requires_hands_free` needs an inventory system that distinguishes "held" from "stored in container." Not yet designed.
 2. **NPC traversal.** Do NPCs check exit constraints? Probably yes, but NPC movement isn't designed yet.
 3. **Vehicle traversal.** Can a player push a cart through a doorway? Needs `portable = "heavy"` + exit size check. The framework supports it.
-4. **Exit descriptions in `look`.** Now resolved: auto-generated from exit data by the engine's dynamic room composition system. See `docs/design/dynamic-room-descriptions.md`.
+4. **Exit descriptions in `look`.** Now resolved: auto-generated from exit data by the engine's dynamic room composition system. See `dynamic-room-descriptions.md`.

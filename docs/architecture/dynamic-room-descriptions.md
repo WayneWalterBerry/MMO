@@ -3,7 +3,7 @@
 **Author:** Bart (Architect)  
 **Date:** 2026-03-20  
 **Status:** Proposed — awaiting team review  
-**Related:** `docs/design/containment-constraints.md`, `docs/design/room-exits.md`, `docs/architecture/src-structure.md`
+**Related:** `containment-constraints.md`, `room-exits.md`, `src-structure.md`
 
 ---
 
@@ -143,7 +143,7 @@ Objects with `hidden = true` do not contribute their `room_presence` to the room
 
 ## 5. Part 3: Exit Rendering
 
-Exits are auto-composed from the room's `exits` table. This is already partially implemented in `start-room.lua` and documented in `docs/design/room-exits.md`.
+Exits are auto-composed from the room's `exits` table. This is already partially implemented in `start-room.lua` and documented in `room-exits.md`.
 
 The engine iterates `room.exits`, skips hidden exits, and renders each visible exit with its current state (open, closed, locked).
 
@@ -362,8 +362,8 @@ All objects that appear in rooms need a `room_presence` field:
 
 ### Documentation Updates
 - `docs/architecture/src-structure.md` — note dynamic composition pattern
-- `docs/design/containment-constraints.md` — add surface visibility rules
-- `docs/design/room-exits.md` — update section 9 about `on_look`
+- `containment-constraints.md` — add surface visibility rules
+- `room-exits.md` — update section 9 about `on_look`
 - `docs/contributing/objects.md` — add `room_presence` field, authoring rules
 
 ---

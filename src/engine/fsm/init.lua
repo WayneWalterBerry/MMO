@@ -6,6 +6,13 @@
 
 local fsm = {}
 
+-- Active timed events: keyed by object ID
+-- Each entry: { state, remaining, event, to_state }
+fsm.active_timers = {}
+
+-- Paused timers for objects in unloaded rooms
+fsm.paused_timers = {}
+
 -- Check if an object has inline FSM data.
 -- Returns the object itself as the definition, or nil.
 function fsm.load(obj)
@@ -118,8 +125,12 @@ function fsm.transition(registry, obj_id, target_state, context)
     end
 
     local old_state = obj._state
+    -- Stop timer for the old state (extinguish, etc.)
+    fsm.stop_timer(obj_id)
     apply_state(obj, target_state, old_state)
     if trans.on_transition then trans.on_transition(obj, context) end
+    -- Start timer for the new state if it has timed_events
+    fsm.start_timer(registry, obj_id)
     return trans
 end
 
@@ -149,6 +160,142 @@ function fsm.tick(registry, obj_id)
         end
     end
     return nil
+end
+
+-- Start a timed event for an object if its current state has timed_events.
+-- Uses remaining_burn for candle-style partial timers, otherwise the delay from metadata.
+function fsm.start_timer(registry, obj_id)
+    local obj = registry:get(obj_id)
+    if not obj or not obj.states or not obj._state then return end
+
+    local state = obj.states[obj._state]
+    if not state or not state.timed_events then return end
+
+    local te = state.timed_events[1]  -- first timed event
+    if not te then return end
+
+    -- Use remaining_burn if the object tracks partial burn (candle pattern)
+    local delay = te.delay
+    if obj.remaining_burn and obj.remaining_burn > 0 then
+        delay = obj.remaining_burn
+    end
+
+    fsm.active_timers[obj_id] = {
+        state = obj._state,
+        remaining = delay,
+        event = te.event,
+        to_state = te.to_state,
+    }
+end
+
+-- Stop/remove the timer for an object (e.g., on extinguish or room unload).
+function fsm.stop_timer(obj_id)
+    fsm.active_timers[obj_id] = nil
+end
+
+-- Pause a timer, preserving remaining time for later resume.
+function fsm.pause_timer(obj_id)
+    local timer = fsm.active_timers[obj_id]
+    if timer then
+        fsm.paused_timers[obj_id] = timer
+        fsm.active_timers[obj_id] = nil
+    end
+end
+
+-- Resume a paused timer.
+function fsm.resume_timer(obj_id)
+    local timer = fsm.paused_timers[obj_id]
+    if timer then
+        fsm.active_timers[obj_id] = timer
+        fsm.paused_timers[obj_id] = nil
+    end
+end
+
+-- Scan all objects in a room and start timers for any with timed_events.
+-- Called on room load.
+function fsm.scan_room_timers(registry, room)
+    if not room or not room.contents then return end
+    for _, obj_id in ipairs(room.contents) do
+        -- Resume paused timer if available, otherwise start fresh
+        if fsm.paused_timers[obj_id] then
+            fsm.resume_timer(obj_id)
+        else
+            fsm.start_timer(registry, obj_id)
+        end
+        -- Also check surface/container contents
+        local obj = registry:get(obj_id)
+        if obj and obj.surfaces then
+            for _, zone in pairs(obj.surfaces) do
+                for _, item_id in ipairs(zone.contents or {}) do
+                    if fsm.paused_timers[item_id] then
+                        fsm.resume_timer(item_id)
+                    else
+                        fsm.start_timer(registry, item_id)
+                    end
+                end
+            end
+        end
+        if obj and obj.contents then
+            for _, item_id in ipairs(obj.contents) do
+                if fsm.paused_timers[item_id] then
+                    fsm.resume_timer(item_id)
+                else
+                    fsm.start_timer(registry, item_id)
+                end
+            end
+        end
+    end
+end
+
+-- Pause all timers for objects in a room. Called on room unload.
+function fsm.pause_room_timers(room)
+    if not room or not room.contents then return end
+    for _, obj_id in ipairs(room.contents) do
+        fsm.pause_timer(obj_id)
+    end
+end
+
+-- Tick all active timers by delta_seconds.
+-- Fires auto-transitions when timers expire.
+-- Returns a list of { obj_id, message } for any transitions that fired.
+function fsm.tick_timers(registry, delta_seconds)
+    local messages = {}
+    for obj_id, timer in pairs(fsm.active_timers) do
+        timer.remaining = timer.remaining - delta_seconds
+        if timer.remaining <= 0 then
+            local obj = registry:get(obj_id)
+            if obj and obj._state == timer.state then
+                -- Update remaining_burn if object tracks it
+                if obj.remaining_burn then
+                    obj.remaining_burn = 0
+                end
+                -- Fire the auto-transition
+                for _, t in ipairs(obj.transitions or {}) do
+                    if t.from == timer.state and t.trigger == "auto"
+                       and t.condition == "timer_expired" then
+                        apply_state(obj, t.to, timer.state)
+                        if t.message then
+                            messages[#messages + 1] = { obj_id = obj_id, message = t.message }
+                        end
+                        break
+                    end
+                end
+                -- Start new timer if the new state also has timed_events
+                fsm.active_timers[obj_id] = nil
+                fsm.start_timer(registry, obj_id)
+            else
+                -- Object changed state externally; discard stale timer
+                fsm.active_timers[obj_id] = nil
+            end
+        else
+            -- Update remaining_burn on the object for save/resume fidelity
+            local obj = registry:get(obj_id)
+            if obj and obj.remaining_burn then
+                obj.remaining_burn = timer.remaining
+            end
+        end
+    end
+    return messages
 end
 
 return fsm

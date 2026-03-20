@@ -258,6 +258,14 @@ local context = {
 }
 
 ---------------------------------------------------------------------------
+-- Initialize timed events for all objects in the starting room
+---------------------------------------------------------------------------
+local fsm_init_ok, fsm_init = pcall(require, "engine.fsm")
+if fsm_init_ok and fsm_init then
+    fsm_init.scan_room_timers(reg, room)
+end
+
+---------------------------------------------------------------------------
 -- Post-command tick: match flame, candle burn
 ---------------------------------------------------------------------------
 context.on_tick = function(ctx)

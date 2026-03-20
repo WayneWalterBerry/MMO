@@ -44,12 +44,80 @@ The engine is a **self-modifying Lua interpreter**. All game state is represente
 - **Examples:** "examine the chair" → matches "x", "look at chair" → matches "examine"
 - **Success Rate:** ~90% of player input
 
-#### Tier 3: NOT IMPLEMENTED
-- If Tier 2 misses, fail visibly with diagnostic output
-- No fallback to Tier 3 (design directive)
-- Enables empirical parser QA
+#### Tier 3: NOT YET IMPLEMENTED
+- If Tier 2 misses, **Goal-Oriented Action Planning (GOAP) backward-chaining parser** engages
+- Detects missing prerequisites: "Light candle" fails → planner checks candle's prerequisite table
+- Builds action chain: [open matchbox, get match, strike match, light candle]
+- Executes chain step-by-step through Tier 1
+- Stops on first failure
+- **Cost:** ~125 object scans per plan, sub-millisecond in Lua
+- **Design:** Prerequisite chains object-owned (not centralized). Each transition can declare prerequisites.
+- **Performance:** Estimated 3 days of implementation (half day planning, half day content tagging, 1 day tests)
 
-**Key Insight:** No per-interaction LLM. All lookup-table based. Real embedding similarity available in browser via ONNX Runtime (future).
+**Key Insight:** Tier 3 is a recovery mechanism, not mind-reading. It asks: "The player wanted X. X failed because Y is missing. Can I satisfy Y?" It does NOT ask: "What might they want to do next?"
+
+**Example:**
+```lua
+-- User types: "light the candle"
+-- Tier 1 routes to LIGHT handler
+-- Handler finds: no fire_source in inventory
+-- Tier 3 engages:
+--   Check candle's prerequisites: needs fire_source
+--   Search for fire_source providers: match-1 (state: unlit)
+--   Plan needed: get match, strike match
+--   Check match's prerequisites: needs holding match (in inventory)
+--   Subplan: open matchbox, get match
+--   Execute: [open matchbox → get match → strike match → light candle]
+--   Player sees: rapid narration of all steps
+-- Result: candle is lit (player achieved their goal in one command)
+```
+
+---
+
+### Layer 2.5: Terminal UI (Split-Screen Display)
+
+**Design:** Classic IF split-screen: output window (scrollable, top), status bar (top line), input line (bottom).
+
+**Components:**
+- **Output Window:** Renders all game output (action results, sensory descriptions). Scrollback buffer holds 500 lines. User can scroll up/down with `/up`, `/down`, `/bottom` commands.
+- **Status Bar:** Single-line display at screen top. Left-justified (player name, location) / right-justified (light state, health, etc.). Updates per turn.
+- **Input Line:** Bottom line where player types commands. Cursor visible. Separate from output — no game output mixes with user input.
+- **ANSI Escape Codes:** Pure Lua implementation, no C libraries. Windows-compatible. Uses scroll regions to isolate status bar.
+
+**Implementation:**
+- `src/engine/ui/init.lua` — Terminal UI module
+- `display.ui` hook intercepts all `print()` calls
+- `--no-ui` flag for fallback to simple REPL (test mode, piped input)
+
+**See Also:** Detailed design in (future: `docs/design/terminal-ui.md`)
+
+---
+
+### Layer 2.75: Timed Events & Ambient Output
+
+**Design:** Objects declare embedded timers that emit ambient events to the output window.
+
+**Types:**
+- **One-shot timers:** Fire once after N time units (time bomb, timed door unlock)
+- **Recurring timers:** Fire repeatedly every N time units (clock chime, dripping water, creaking floorboards)
+
+**Example (Wall Clock in Bedroom):**
+```lua
+timers = {
+  {
+    name = "hourly_chime",
+    interval = 3600,  -- 1 in-game hour in seconds
+    recurring = true,
+    message = function(self, now)
+      local hour = math.floor((now % 86400) / 3600)
+      local chime_count = (hour == 0) and 12 or (hour % 12)
+      return ("The clock chimed %d time%s."):format(chime_count, chime_count == 1 and "" or "s")
+    end
+  }
+}
+```
+
+**Output:** Emitted regardless of player action. Creates sense of world simulation.
 
 ---
 
@@ -66,8 +134,16 @@ TAKE, DROP, INVENTORY, WEAR, PUT, OPEN, CLOSE
 #### Object Interaction (8)
 LIGHT, STRIKE, EXTINGUISH, BREAK, TEAR, WRITE, CUT, SEW, PRICK
 
+#### Movement (6+)
+NORTH, SOUTH, EAST, WEST, UP, DOWN, GO, ENTER, EXIT, DESCEND, CLIMB (all route through unified `handle_movement`)
+
 #### Meta (2)
 HELP, QUIT
+
+**Movement Handler Unification:**
+- All movement verbs route through `handle_movement(ctx, direction)`
+- Handles: direction alias resolution, keyword search, exit accessibility checks (locked doors)
+- Room transition: updates `ctx.current_room`, loads room contents, resets view
 
 **Verb Handler Pattern:**
 ```lua
@@ -82,6 +158,35 @@ end
 ```
 
 **Tool Resolution:** Verbs can request capabilities (`requires_tool`). Engine searches player inventory for matching `provides_tool`. First match wins.
+
+---
+
+### Layer 2.5.5: Multi-Room System
+
+**Design:** World is multi-room. All rooms load at startup. Objects persist across room boundaries.
+
+**Architecture:**
+- **Room Registry:** `context.rooms = { bedroom = {...}, cellar = {...}, ... }`
+- **Object Registry:** Single shared registry across all rooms
+- **Room Contents:** Each room has `room.contents` array (which objects are in this room)
+- **Player Location:** `ctx.current_room` tracks current room ID
+
+**Loading:**
+- Startup: Load all `.lua` files from `src/meta/world/`
+- Each room returns: `{ id, name, description, contents, ...}`
+- Rooms instantiated into `context.rooms` table
+
+**Movement:**
+- Player types: "go north"
+- `handle_movement` looks up north exit in current room
+- Checks accessibility (locked door? key in inventory?)
+- Transitions player to new room: `ctx.current_room = "cellar"`
+- Resets view: shows room description, contents
+
+**Object Persistence:**
+- Drop item in bedroom → item stays in registry with `location = "bedroom"`
+- Move to cellar → return to bedroom → item still there
+- Objects tick only in current room + player hands (prevents resource burn in other rooms)
 
 ---
 
@@ -307,7 +412,9 @@ ctx = {
 ```
 Player Types "light candle"
     ↓
-Parser (Tier 1): "light" exact match
+Parser (Tier 1): "light" exact match? No.
+    ↓
+Parser (Tier 2): Phrase similarity to "light"? Yes (score 0.85)
     ↓
 Verb Handler: verb.LIGHT(ctx, "candle", nil)
     ↓
@@ -317,19 +424,42 @@ Check: Mutations.light requires_tool = "fire_source"
     ↓
 Search: Player inventory for provides_tool = "fire_source"
     ↓
-Found: match-lit (fire_source provider)
+Result: No fire_source found
     ↓
-FSM Transition: candle → candle-lit (full code rewrite in registry)
+[NEW: Tier 3 Goal Decomposition Engages]
     ↓
-Object Mutation: candle-lit now has casts_light = true
+Planner: Query candle's prerequisites
     ↓
-Room Brightens: LOOK now succeeds (room is lit)
+Found: prerequisites = [{ need = "fire_source", sources = [{ object = "match", state = "lit" }] }]
     ↓
-Output: "The candle flame catches the match light. Soft glow fills the room."
+Backward Chaining: Plan to light a match
     ↓
-Tick: match-lit burns 1 tick (30 → 29 remaining)
+Check match's prerequisites: needs holding match, has_striker surface
     ↓
-Return: Continue game loop
+Plan: [open matchbox → get match → strike match → light candle]
+    ↓
+Execute Each Step via Tier 1:
+  1. OPEN matchbox → success
+  2. GET match → success
+  3. STRIKE match → success (match-lit obtained)
+  4. LIGHT candle (now fire_source available) → success
+    ↓
+Output: "You slide the matchbox tray open. You take a match and strike it against 
+the strip — it catches with a hiss. The wick catches the flame and curls to life, 
+casting a warm amber glow."
+    ↓
+Game State: candle-lit, match-lit, matchbox-open
+    ↓
+Continue game loop
+```
+
+**Without Tier 3 (old flow):**
+```
+Player Types "light candle"
+  → Tier 1 + Tier 2 route to LIGHT handler
+  → Handler finds no fire_source
+  → Failure: "You have nothing to light it with."
+  → Player must manually: open matchbox → take match → strike match → light candle (4 more commands)
 ```
 
 ---
@@ -386,13 +516,16 @@ Return: Continue game loop
 ## Cross-References
 
 - **Parser Details:** `verb-system.md`, `command-variation-matrix.md`
+- **Goal-Oriented Parser:** `intelligent-parser.md` (existing), `docs/design/goal-decomposition.md` (planned)
 - **Object Details:** `fsm-object-lifecycle.md`, `composite-objects.md`
 - **Container Details:** `containment-constraints.md`
 - **Wearable Details:** `wearable-system.md`
 - **Verb Reference:** `verb-system.md`
 - **Tool Patterns:** `tool-objects.md`
 - **Skills Design:** `player-skills.md`
-- **Room Design:** `dynamic-room-descriptions.md`, `room-exits.md`
+- **Room Design:** `dynamic-room-descriptions.md`, `room-exits.md`, `spatial-system.md`
+- **Terminal UI:** `docs/design/terminal-ui.md` (planned)
+- **Timed Events:** `docs/design/timed-events.md` (planned)
 - **Architecture Decisions:** `architecture-decisions.md`, `.squad/decisions.md`
 
 ---

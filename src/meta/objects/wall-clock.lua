@@ -106,6 +106,17 @@ return {
     initial_state = "hour_2",
     _state = "hour_2",
 
+    -- Puzzle support: instance-level overrides for misset clocks
+    -- time_offset: hours the clock is ahead/behind game time (default 0 = correct)
+    -- initial_hour: derived from game time + offset on room load (nil = use _state)
+    -- adjustable: if true, SET verb advances clock to next hour (default false)
+    -- target_hour: when reached via SET, fires on_correct_time (nil = no puzzle)
+    -- on_correct_time: callback fired when clock is manually set to target_hour
+    time_offset = 0,
+    adjustable = false,
+    target_hour = nil,
+    on_correct_time = nil,
+
     states = states,
     transitions = transitions,
 

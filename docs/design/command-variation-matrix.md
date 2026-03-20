@@ -1199,7 +1199,7 @@ For each verb, this document includes:
 ## MOVEMENT VERBS
 
 ### GO / DIRECTION SHORTHAND
-**Note:** Movement is NOT a verb dispatch in the traditional sense. It's handled by exit traversal system (room-exits.md).
+**Note:** Movement is NOT a verb dispatch in the traditional sense. It's handled by exit traversal system (../architecture/room-exits.md).
 
 **Canonical:** `go {direction}` or `{direction}` (shorthand)  
 **Directions:** north, south, east, west, up, down, northeast, northwest, southeast, southwest  
@@ -1236,7 +1236,7 @@ For each verb, this document includes:
 - **Exit visibility:** Hidden exits don't appear in LOOK or HELP. Player must discover them.
 - **Exit constraints:** Player must fit through exit, carry weight/size constraints. Objects might not fit.
 - **In darkness:** "You move cautiously into the darkness. (You arrive in [room]). The darkness here feels different." Sensory feedback of arrival.
-- **Traversal validation:** Engine checks exit visibility, accessibility (locked/open), player fit, carry constraints (all five layers from room-exits.md).
+- **Traversal validation:** Engine checks exit visibility, accessibility (locked/open), player fit, carry constraints (all five layers from ../architecture/room-exits.md).
 
 **Design note:** Movement is core navigation. Variations are primarily direction shortcuts. Parser job to handle "go X" → extract direction X and validate exit.
 
@@ -1413,4 +1413,5 @@ This matrix documents 31 verbs and ~400+ natural language variations. The embedd
 5. **Pronouns and context matter.** Parser must track last-examined object for "it" resolution and understand container state.
 
 The embedding matcher will validate that all these variations successfully parse back to their canonical verbs, enabling the Tier 2 parser to handle natural player language while staying true to the game's design intent: **a playable, consequence-driven text adventure that works in complete darkness.**
+
 

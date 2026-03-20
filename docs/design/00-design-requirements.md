@@ -35,7 +35,7 @@
 - **Source:** D-14 (Mutation Model: True Code Rewrite), D-8.2 (Code Mutation Over State Flags)
 - **Status:** ✅ Implemented
 - **Details:** Mutation variants stored as dormant strings; verb triggers full code swap. No separate state flags. Uses immutable baseline + mutable overlay pattern.
-- **Related Docs:** `fsm-object-lifecycle.md`, `architecture-decisions.md`
+- **Related Docs:** `fsm-object-lifecycle.md`, `../architecture/architecture-decisions.md`
 
 ### REQ-005: Type System with IS-A Inheritance
 - **Directive:** Objects inherit from base types via `type_id` (chamber-pot IS-A pot). Base class behavior flows down unless overridden.
@@ -74,7 +74,7 @@
 - **Source:** General design
 - **Status:** ⏳ Partially Implemented (design clear, sack not configured yet)
 - **Details:** Backpack is both worn and has `contents`. Worn containers contribute to inventory weight calculation.
-- **Related Docs:** `wearable-system.md`, `containment-constraints.md`
+- **Related Docs:** `wearable-system.md`, `../architecture/containment-constraints.md`
 
 ---
 
@@ -85,28 +85,28 @@
 - **Source:** D-4 (Room layout and movable furniture)
 - **Status:** ✅ Implemented
 - **Details:** Bed ON rug; rug COVERS trap door. Multi-surface containment model in engine. Each zone has own capacity and accessibility.
-- **Related Docs:** `containment-constraints.md`, `dynamic-room-descriptions.md`
+- **Related Docs:** `../architecture/containment-constraints.md`, `../architecture/dynamic-room-descriptions.md`
 
 ### REQ-011: Movable Furniture
 - **Directive:** Players can move furniture (PUSH bed, PULL rug). Movement reveals hidden objects beneath.
 - **Source:** D-4 (Room layout and movable furniture)
 - **Status:** ✅ Implemented
 - **Details:** Movable furniture has `stackable = true`. Players move via verb handlers (PUSH/PULL/MOVE). Removal chain: move rug → reveal trap door.
-- **Related Docs:** `dynamic-room-descriptions.md`, `room-exits.md`
+- **Related Docs:** `../architecture/dynamic-room-descriptions.md`, `../architecture/room-exits.md`
 
 ### REQ-012: Hidden Objects & Discovery Mechanic
 - **Directive:** Objects can be hidden under/behind other objects. Moving top object reveals hidden item (discovery puzzle).
 - **Source:** D-4 (Room layout and movable furniture)
 - **Status:** ✅ Implemented
 - **Details:** Trap door hidden under rug. `on_look` function hints without revealing. Separate verbs (LOOK UNDER) expose.
-- **Related Docs:** `dynamic-room-descriptions.md`, `composite-objects.md`
+- **Related Docs:** `../architecture/dynamic-room-descriptions.md`, `composite-objects.md`
 
 ### REQ-013: Stacking Rules & Weight Capacity
 - **Directive:** Some objects stackable, some not. Weight limits enforced per surface. Objects declare `stackable` and `weight_capacity`.
 - **Source:** D-4 (Room layout and movable furniture)
 - **Status:** ✅ Implemented (engine layer)
 - **Details:** Containers have `weight_capacity`. Items have `weight`. Verb handlers check limits before placing items.
-- **Related Docs:** `containment-constraints.md`, `composite-objects.md`
+- **Related Docs:** `../architecture/containment-constraints.md`, `composite-objects.md`
 
 ---
 
@@ -117,21 +117,21 @@
 - **Source:** D-3 (Text Adventure Containment Architecture)
 - **Status:** ✅ Implemented
 - **Details:** Each object has `.location` (parent) and `.contents` (children list). Prevents circular containment, enforces weight/size limits.
-- **Related Docs:** `containment-constraints.md`, `architecture-decisions.md`
+- **Related Docs:** `../architecture/containment-constraints.md`, `../architecture/architecture-decisions.md`
 
 ### REQ-015: Surfaces with Multiple Zones
 - **Directive:** Objects can define multiple containment zones (bed: top + underneath; nightstand: top + inside; vanity: top + inside + mirror_shelf).
 - **Source:** D-22 (Object Inheritance / Template System), D-24 (Bedroom Design Patterns)
 - **Status:** ✅ Implemented
 - **Details:** `surfaces = { top = {...}, inside = {...} }` structure. Each zone has own capacity, max_item_size, weight_capacity, accessibility.
-- **Related Docs:** `composite-objects.md`, `containment-constraints.md`
+- **Related Docs:** `composite-objects.md`, `../architecture/containment-constraints.md`
 
 ### REQ-016: Container Accessibility
 - **Directive:** Some containers are accessible (open drawer), others not (closed drawer). Accessibility gates whether items can be retrieved.
 - **Source:** General design
 - **Status:** ✅ Implemented
 - **Details:** Containers use `accessible` flag. Locked/closed containers still have contents (not destroyed), just unretrievable.
-- **Related Docs:** `containment-constraints.md`
+- **Related Docs:** `../architecture/containment-constraints.md`
 
 ### REQ-017: Player Two-Handed Carry
 - **Directive:** Player has 2 hand slots. Objects declare `hands_required` (0/1/2). Can't carry more objects than hands allow.
@@ -163,7 +163,7 @@
 - **Source:** D-26 (Light and Time Systems), game design
 - **Status:** ✅ Implemented
 - **Details:** Triggers `ctx.game_over = true` in loop. Game over state with "Play again?" prompt.
-- **Related Docs:** `fsm-object-lifecycle.md`, `architecture-decisions.md`
+- **Related Docs:** `fsm-object-lifecycle.md`, `../architecture/architecture-decisions.md`
 
 ### REQ-021: Game Clock (24x Real Time)
 - **Directive:** Game has internal clock. 1 real-time hour = 1 full in-game day (24x speed).
@@ -252,7 +252,7 @@
 - **Source:** D-26 (Light and Time Systems), game start time decision
 - **Status:** ✅ Implemented
 - **Details:** Darkness at start forces candle puzzle. Sensory verbs (FEEL, SMELL, LISTEN) work in dark. LOOK fails in dark.
-- **Related Docs:** `fsm-object-lifecycle.md`, `dynamic-room-descriptions.md`
+- **Related Docs:** `fsm-object-lifecycle.md`, `../architecture/dynamic-room-descriptions.md`
 
 ### REQ-032: Light Sources Emit Light
 - **Directive:** Objects with `casts_light = true` (lit candle, torch) illuminate room. LOOK only works in lit room or with EXAMINE/sensory verbs.
@@ -266,7 +266,7 @@
 - **Source:** D-26 (Light and Time Systems)
 - **Status:** ⏳ Partially Implemented (logic exists, curtains not wired)
 - **Details:** Curtains can be opened (allows_daylight) or closed (blocks daylight). Window position affects light propagation.
-- **Related Docs:** `dynamic-room-descriptions.md`, `composite-objects.md`
+- **Related Docs:** `../architecture/dynamic-room-descriptions.md`, `composite-objects.md`
 
 ---
 
@@ -277,14 +277,14 @@
 - **Source:** D-26 (Light and Time Systems)
 - **Status:** ✅ Implemented
 - **Details:** Extensible for future death causes (fall damage, starvation, etc.). Currently only poison triggers death.
-- **Related Docs:** `fsm-object-lifecycle.md`, `architecture-decisions.md`
+- **Related Docs:** `fsm-object-lifecycle.md`, `../architecture/architecture-decisions.md`
 
 ### REQ-035: Play Again Prompt
 - **Directive:** On game over, display "Play again? (y/n)" and exit game if user chooses no. If yes, restart with fresh universe.
 - **Source:** General design
 - **Status:** ✅ Designed
 - **Details:** Implementation detail for game loop. Restart clears universe state, reloads fresh templates.
-- **Related Docs:** `architecture-decisions.md`
+- **Related Docs:** `../architecture/architecture-decisions.md`
 
 ---
 
@@ -359,6 +359,111 @@
 ## System: Tools & Capabilities
 
 ### REQ-044: Tool Convention (requires_tool / provides_tool)
+- **Directive:** Objects and verbs use matching `requires_tool` / `provides_tool` convention for capability matching.
+- **Source:** D-25 (Tool Object Convention)
+- **Status:** ✅ Implemented
+- **Details:** Tool capabilities declared as strings ("fire_source", "sewing_tool", "writing_instrument"). Verb requires capability; engine finds provider in inventory.
+- **Related Docs:** `tool-objects.md`, `verb-system.md`
+
+---
+
+## System: Terminal UI & Display
+
+### REQ-049: Split-Screen Terminal UI
+- **Directive:** Classic IF split-screen interface: output window (top, scrollable), status bar (top line, left/right justified), input line (bottom). ANSI escape codes, pure Lua, Windows-compatible.
+- **Source:** D-UI (Terminal UI Architecture) — Wayne directive 2026-03-20T17:28Z
+- **Status:** ✅ Implemented
+- **Details:** Output intercepts via `display.ui` hook. No C extensions. `--no-ui` flag for fallback. Scrollback buffer (500 lines) with `/up`, `/down`, `/bottom` commands. Status bar updates per turn.
+- **Related Docs:** None yet (new system)
+
+---
+
+## System: Movement & Multi-Room
+
+### REQ-050: SLEEP Verb (Clock Advance Mechanic)
+- **Directive:** SLEEP command advances game clock. Allows players to skip time, wait for events, burn resources deliberately. Timed objects (clock, torch) continue ticking.
+- **Source:** Wayne directive (implicit from timed events and temporal design)
+- **Status:** ❌ Not Started
+- **Details:** SLEEP N (N in-game hours) advances clock by N hours × 3600 game seconds. Objects tick during sleep. Candles burn down, clocks chime. Used for puzzle solutions (wait for nightfall, burn match until spent, etc.).
+- **Related Docs:** To be added
+
+### REQ-051: Movement Verbs (go/down/up/north/south + Aliases)
+- **Directive:** Player can move between rooms using direction verbs: NORTH, SOUTH, EAST, WEST, UP, DOWN, ENTER, EXIT, GO, DESCEND, CLIMB, etc.
+- **Source:** D-42 (Movement Handler Architecture) — Bart implementation 2026-07-18
+- **Status:** ✅ Implemented
+- **Details:** Single `handle_movement(ctx, direction)` function. Direction aliases and keyword search. Exit accessibility checks (locked doors). Room transition updates `ctx.current_room` and resets room contents view.
+- **Related Docs:** `../architecture/room-exits.md`, `../architecture/dynamic-room-descriptions.md`
+
+### REQ-052: Multi-Room System (Room Registry, State Persistence, Light Carry)
+- **Directive:** Game world is multi-room. All rooms load at startup into `context.rooms` table. Objects and room state persist across room transitions. Player carries light sources between rooms.
+- **Source:** D-43, D-44, D-45 (Multi-Room Loading & FSM Tick Scope) — Bart implementation 2026-07-18
+- **Status:** ✅ Implemented
+- **Details:** Shared object registry across all rooms. Per-room `contents` arrays. FSM ticks only on current room + player inventory. Moving object between rooms updates room contents and registry.
+- **Related Docs:** `../architecture/room-exits.md`, `../architecture/dynamic-room-descriptions.md`
+
+### REQ-053: UNLOCK Verb + Key-Door Interaction
+- **Directive:** Locked exits require matching key. UNLOCK verb handles key-door interaction. Doors can be locked/unlocked, open/closed.
+- **Source:** D-46 (Cellar Room Design notes locked doors as future expansion)
+- **Status:** ❌ Not Started
+- **Details:** Door object declares `lockable = true`, `requires_key = "key_id"`. Key object provides matching key capability. UNLOCK checks key in inventory, mutates door to unlocked state. Open/close independent of lock state.
+- **Related Docs:** To be added
+
+---
+
+## System: Goal-Oriented Parser (Tier 3)
+
+### REQ-054: Timed Event Objects (One-Shot Timers, Recurring Timers, Wall Clock)
+- **Directive:** Objects can have embedded timers that trigger ambient events. One-shot timers fire once (bomb, timed door). Recurring timers fire repeatedly (clock chime, dripping water).
+- **Source:** D-UI-? (Timed Events) — Wayne directive 2026-03-20T19:05Z
+- **Status:** ⏳ Planned
+- **Details:** Object declares `timers = { { event = "chime", interval = 3600 (1 hour), recurring = true }, ... }`. Engine reads schedule, triggers events during game loop. Output emitted to output window regardless of player action. Wall clock in bedroom chimes hourly; chime count = hour of day.
+- **Related Docs:** To be added (`docs/design/timed-events.md`)
+
+### REQ-055: Intelligent NLP Parser (Goal-Oriented, Action Chain Inference, GOAP)
+- **Directive:** Tier 3 parser handles goal-oriented input. Player states goal; engine decomposes into action chain. "Light candle" triggers: open matchbox → get match → strike match → light candle (if prerequisites unsatisfied).
+- **Source:** D-3 (Goal Decomposition) — Bart proposal 2026-03-25
+- **Status:** ⏳ Proposed (analysis complete, ready for implementation)
+- **Details:** Backward-chaining prerequisite resolver. Engages when Tier 1 dispatch fails with known missing prerequisite. Scans object metadata for `prerequisites` tables. Executes plan step-by-step through Tier 1. Stops on first failure. Prerequisites object-owned, not centralized.
+- **Related Docs:** `../architecture/intelligent-parser.md` (existing), `docs/design/goal-decomposition.md` (to be added)
+
+---
+
+## System: Composite & Detachable Objects
+
+### REQ-056: Detachable Object Parts (Drawer, Cork, Curtains)
+- **Directive:** Objects can have sub-objects that detach and become independent. Nightstand → nightstand without drawer. Cork → cork (independent). Reversibility is design-time choice.
+- **Source:** D-2 (Composite & Detachable Object System), confirmed in D-SKILL-05
+- **Status:** ✅ Implemented
+- **Details:** Single-file architecture (parent + parts in one .lua file). Parts detach via factory functions. Parent transitions to `{base}_without_{PART}`. Reversibility means drawer can be reattached (reversible) or cork stays detached (irreversible). FSM state names reflect presence/absence.
+- **Related Docs:** `composite-objects.md`, `fsm-object-lifecycle.md`
+
+### REQ-057: Two-Handed Carry
+- **Directive:** Player has 2 hand slots. Objects declare `hands_required` (0, 1, or 2). Large objects tie up both hands, preventing dual-wielding.
+- **Source:** D-2 (Composite & Detachable Object System), D-17 (Two-Handed Carry Spec)
+- **Status:** ✅ Implemented
+- **Details:** TAKE verb checks available hand slots. PUT verb checks slot count. Worn items don't consume hand slots. Inventory UI shows hands + worn + containers separately.
+- **Related Docs:** `composite-objects.md`, `../architecture/containment-constraints.md`
+
+### REQ-058: Stacking Rules & Spatial Layers
+- **Directive:** Objects nest in spatial layers (ON, UNDER, COVERING). Some objects stackable (bed, rug), others not (poison bottle). Weight + size limits enforced per surface.
+- **Source:** D-4 (Room layout and movable furniture), D-29 (Spatial Relationships)
+- **Status:** ✅ Implemented
+- **Details:** Movable objects declare `movable = true`. Spatial blocking via `resting_on` (object A sits on B prevents B from moving). Covering objects hide contents until moved. Discovery message displays when revealed.
+- **Related Docs:** `../architecture/containment-constraints.md`, `../architecture/dynamic-room-descriptions.md`, `spatial-system.md`
+
+### REQ-059: Hidden Objects (Invisible Until Revealed)
+- **Directive:** Objects can be hidden (not visible in room description) until a condition is met (object moved, container opened, specific verb used).
+- **Source:** D-4 (Room layout and movable furniture), general design
+- **Status:** ✅ Implemented
+- **Details:** Hidden objects handled via room_presence = false initially. PUSH/PULL/MOVE parent object triggers FSM reveal on child. LOOK UNDER finds hidden objects. Trap door hidden under rug.
+- **Related Docs:** `../architecture/dynamic-room-descriptions.md`, `composite-objects.md`
+
+### REQ-060: Newspaper Editions in Separate Files
+- **Directive:** Newspaper editions (morning, evening, late evening) stored as separate .md files, not all in one file. Format: YYYY-MM-DD-{edition}.md.
+- **Source:** D-3 (User Directive: Newspaper editions in separate files) — Wayne directive 2026-03-20T03:40Z
+- **Status:** ✅ Implemented
+- **Details:** Each edition is independent readable artifact. Segments work phases. Comic + op-ed sections in each edition. High reader retention; becomes team communication hub.
+- **Related Docs:** (newspaper/ folder)
 - **Directive:** Objects declare capabilities via `provides_tool = "capability"`. Verbs declare requirements via `requires_tool = "capability"`.
 - **Source:** D-25 (Tool Object Convention)
 - **Status:** ✅ Implemented
@@ -418,11 +523,12 @@
 
 - **Object Lifecycle:** See `fsm-object-lifecycle.md`
 - **Wearable Details:** See `wearable-system.md`
-- **Container Model:** See `containment-constraints.md`
-- **Room Design:** See `dynamic-room-descriptions.md`
+- **Container Model:** See `../architecture/containment-constraints.md`
+- **Room Design:** See `../architecture/dynamic-room-descriptions.md`
 - **Verb Reference:** See `verb-system.md`
-- **Architectural Decisions:** See `architecture-decisions.md` and `.squad/decisions.md`
+- **Architectural Decisions:** See `../architecture/architecture-decisions.md` and `.squad/decisions.md`
 - **Command Variations:** See `command-variation-matrix.md`
 - **Tool Patterns:** See `tool-objects.md`
 - **Skills Design:** See `player-skills.md`
+
 

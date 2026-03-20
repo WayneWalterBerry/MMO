@@ -6,6 +6,9 @@
 local goal_planner = {}
 local MAX_DEPTH = 5
 
+-- Verb synonyms: verbs that should trigger the same GOAP prerequisite chain
+local VERB_SYNONYMS = { burn = "light" }
+
 ---------------------------------------------------------------------------
 -- Helpers: keyword matching (mirrors verbs module)
 ---------------------------------------------------------------------------
@@ -288,16 +291,18 @@ function goal_planner.plan(verb, noun, ctx)
     if not target then return nil end
 
     -- Check explicit prerequisites table on the object
-    local prereqs = target.prerequisites and target.prerequisites[verb]
+    local canonical = VERB_SYNONYMS[verb] or verb
+    local prereqs = target.prerequisites and
+        (target.prerequisites[verb] or target.prerequisites[canonical])
 
     -- Infer from FSM transitions if no explicit prerequisites
     if not prereqs and target.transitions and target._state then
         for _, t in ipairs(target.transitions) do
             if t.from == target._state and t.trigger ~= "auto" then
-                local vm = (t.verb == verb)
+                local vm = (t.verb == verb) or (t.verb == canonical)
                 if not vm and t.aliases then
                     for _, a in ipairs(t.aliases) do
-                        if a == verb then vm = true; break end
+                        if a == verb or a == canonical then vm = true; break end
                     end
                 end
                 if vm and t.requires_tool then

@@ -564,10 +564,10 @@ Easy difficulty is intentional because:
 
 ## Related Systems & Documentation
 
-- **Light System:** Defined in `docs/design/design-directives.md` (Light & Time System)
-- **Tool Convention:** Defined in `docs/design/design-directives.md` (Tools System)
-- **Compound Tool Actions:** Defined in `docs/design/tool-objects.md`
-- **Consumable Pattern:** Defined in `docs/design/tool-objects.md` (Consumables)
+- **Light System:** Defined in `../design/design-directives.md` (Light & Time System)
+- **Tool Convention:** Defined in `../design/design-directives.md` (Tools System)
+- **Compound Tool Actions:** Defined in `../design/tool-objects.md`
+- **Consumable Pattern:** Defined in `../design/tool-objects.md` (Consumables)
 - **Composite Object System:** Decision D-25 in `.squad/decisions.md`
 - **Multi-Sensory Convention:** Decision D-28 in `.squad/decisions.md`
 - **Room 1 Objects:** 37+ object definitions in `src/meta/objects/` (nightstand.lua, match.lua, candle.lua, etc.)
@@ -601,3 +601,4 @@ This design doc is intended for both designers AND QA. Nelson should use this as
 **Comic Book Guy, Game Designer**
 **MMO Project — Room 1 Complete Documentation**
 **Date:** 2026-03-25
+

@@ -549,6 +549,7 @@ This is a **living document**. Refer to `.squad/decisions.md` and `.squad/decisi
 
 - **Game Design Foundations:** `docs/design/game-design-foundations.md`
 - **Tool Objects Design:** `docs/design/tool-objects.md`
-- **Containment Constraints:** `docs/design/containment-constraints.md`
+- **Containment Constraints:** `../architecture/containment-constraints.md`
 - **Full Decisions Archive:** `.squad/decisions.md`
 - **Recent Directives Inbox:** `.squad/decisions/inbox/`
+
