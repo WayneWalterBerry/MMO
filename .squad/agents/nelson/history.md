@@ -60,6 +60,20 @@
 - **BUG-021: Parser startup debug line** `[Parser] Tier 2 loaded...` leaks without --debug flag.
 - **BUG-022: "Play again?" prompt** says yes but exits instead of restarting.
 
+### Playtest 004 Findings (2026-03-20)
+- **Massive regression pass — 10 previous bugs verified FIXED.** BUG-009, BUG-010, BUG-012, BUG-015, BUG-016, BUG-017, BUG-019, BUG-021 all confirmed resolved.
+- **Sleep verb works great.** Default duration, specific hours, "take a nap" alias, too-long/too-short rejection, clock advancement, time-of-day descriptions. All solid.
+- **Player skills system works.** Sewing manual in sack in wardrobe. Skill gate before reading: "don't know how to sew." After reading: "don't see cloth to sew." Different error confirms unlock. No sewable cloth found in room.
+- **Spatial puzzle is polished.** push bed → pull rug → brass key + trap door. Descriptions update dynamically. "down" exit appears after trap door opens. Immovable wardrobe/nightstand handled correctly.
+- **Curtains + daylight work.** Open/close curtains toggles room light descriptions. Morning light floods in at 7:53 AM.
+- **Terminal UI renders** but has Unicode encoding issue (candle icon shows as `Γùï`). Status bar shows room name + time. Scrollback commands shown.
+- **BUG-017 (CRITICAL) FIXED.** Drawer replace no longer destroys surface objects. Candle + bottle survive.
+- **Composite objects work.** Drawer detaches, requires 2 hands, reattaches. Cork uncorks, becomes independent pickable object with description.
+- **BUG-023 (COSMETIC): UI Unicode encoding** — candle icon garbled in Windows terminal.
+- **BUG-024 (MINOR): Sack-on-head regression** — `put sack on head` now equips to shoulder as "backpack", not head. No vision blocking. Worked in pass-003.
+- **BUG-025 (MINOR): Single-slot wearable system** — wearing cloak blocks wearing sack (different body parts should coexist). May be intentional simplification.
+- **Not tested:** Blood/writing, sleep-until-dawn, candle burn-out during sleep, poison death.
+
 ## Cross-Agent Updates (2026-03-20)
 - **From Bart:** Wearable engine implementation complete (WEAR/REMOVE verbs, slot conflicts, vision blocking). All wear operations validated in pass-002 — system is solid and ready for content expansion.
 - **From Frink:** MUD verb research identifies that multiplayer verbs should be first-class primitives. Strategic recommendations include 50-100 predefined socials for MVP (retention drivers). Competitive analysis shows tap-to-suggest UI is critical for mobile parsing UX.

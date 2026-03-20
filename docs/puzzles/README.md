@@ -2,6 +2,16 @@
 
 This directory documents all known puzzles in the MMO. Each puzzle teaches core mechanics, introduces game systems, or creates challenge scenarios through interaction with objects and tools.
 
+## Naming Convention
+
+**Files MUST use 3-digit zero-padded numbers:** `NNN-slug.md`
+
+Examples: `001-light-the-room.md`, `005-bedroom-escape.md`
+
+**DO NOT use 1 or 2 digit prefixes** (e.g., `1-`, `01-`). Always pad to 3 digits so files sort correctly up to 999 puzzles.
+
+Next available number: **006**
+
 ## Format Convention
 
 Each puzzle is documented with this structure:
@@ -36,11 +46,22 @@ Implementation status: Implemented / Designed / Concept
 
 ## Puzzle Index
 
+### 005 — The Bedroom Escape
+**COMPREHENSIVE ROOM 1 DESIGN** — The complete bedroom environment, escape puzzle, and all related mechanics.
+
+**Core Mechanics:** Darkness, sensory exploration, tools, spatial discovery, inventory management, composites, crafting.  
+**Status:** Fully Designed  
+**See:** [005-bedroom-escape.md](005-bedroom-escape.md) — **PRIMARY REFERENCE FOR BEDROOM**
+
+This is the master document for Room 1. It encompasses all sub-puzzles (light, poison, writing, crafting, optional interactions) and serves as both design spec and QA testing reference.
+
+---
+
 ### 001 — Light the Room
-The first puzzle the player encounters when waking in total darkness.
+The core puzzle: find light source to escape darkness.
 
 **Core Mechanic:** Tool chains and light systems.  
-**Status:** Designed  
+**Status:** Designed (detail subset of 01-bedroom-escape.md)  
 **See:** [001-light-the-room.md](001-light-the-room.md)
 
 ---
