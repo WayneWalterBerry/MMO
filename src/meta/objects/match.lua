@@ -50,6 +50,8 @@ return {
                     return { trigger = "duration_expired" }
                 elseif obj.burn_remaining == 1 then
                     return { warning = "The match flame flickers dangerously low..." }
+                else
+                    return { warning = "The match burns steadily. (" .. obj.burn_remaining .. " turns remaining)" }
                 end
             end,
         },

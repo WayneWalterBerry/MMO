@@ -20,6 +20,10 @@ local containment = require("engine.containment")
 local loop        = require("engine.loop")
 local verbs_mod   = require("engine.verbs")
 local parser_mod  = require("engine.parser")
+local display     = require("engine.display")
+
+-- Install word-wrapping print before any game output
+display.install()
 
 ---------------------------------------------------------------------------
 -- Helpers

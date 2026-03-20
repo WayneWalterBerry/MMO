@@ -728,7 +728,10 @@ function verbs.create()
 
         -- "look in/under/on X" → inspect surface
         local prep, surface_target = noun:match("^(under)%s+(.+)$")
+        if not prep then prep, surface_target = noun:match("^(underneath)%s+(.+)$") end
+        if not prep then prep, surface_target = noun:match("^(beneath)%s+(.+)$") end
         if not prep then prep, surface_target = noun:match("^(in)%s+(.+)$") end
+        if not prep then prep, surface_target = noun:match("^(inside)%s+(.+)$") end
         if not prep then prep, surface_target = noun:match("^(on)%s+(.+)$") end
         if not prep then prep, surface_target = noun:match("^(behind)%s+(.+)$") end
 
@@ -744,7 +747,7 @@ function verbs.create()
             end
             if obj.surfaces then
                 local surface_name =
-                    (prep == "under" or prep == "underneath") and "underneath"
+                    (prep == "under" or prep == "underneath" or prep == "beneath") and "underneath"
                     or (prep == "in" or prep == "inside") and "inside"
                     or (prep == "on" or prep == "top") and "top"
                     or (prep == "behind") and "behind"
@@ -862,8 +865,18 @@ function verbs.create()
             return
         end
 
-        -- Handle "feel in/inside {container}" prepositional phrases
+        -- Handle "feel in/inside/under/underneath/beneath {target}" prepositional phrases
         local container_noun = noun:match("^in%s+(.+)") or noun:match("^inside%s+(.+)")
+        local surface_prep = nil
+        if not container_noun then
+            local p, t = noun:match("^(under)%s+(.+)")
+            if not p then p, t = noun:match("^(underneath)%s+(.+)") end
+            if not p then p, t = noun:match("^(beneath)%s+(.+)") end
+            if p then
+                surface_prep = "underneath"
+                container_noun = t
+            end
+        end
         -- Bare "feel inside" / "feel in" → use last-interacted container
         if not container_noun and (noun == "inside" or noun == "in") then
             if ctx.last_object and (ctx.last_object.surfaces or (ctx.last_object.container and ctx.last_object.contents)) then
@@ -880,6 +893,24 @@ function verbs.create()
                 return
             end
             local found_anything = false
+            -- If a specific surface prep was given (under/beneath), check only that surface
+            if surface_prep and cobj.surfaces and cobj.surfaces[surface_prep] then
+                local zone = cobj.surfaces[surface_prep]
+                if zone.accessible == false then
+                    print("You can't reach " .. noun:match("^(%S+)") .. " " .. (cobj.name or "that") .. ".")
+                    return
+                end
+                if #(zone.contents or {}) > 0 then
+                    print("Your fingers find " .. surface_prep .. " " .. (cobj.name or "that") .. ":")
+                    for _, id in ipairs(zone.contents) do
+                        local item = ctx.registry:get(id)
+                        print("  " .. (item and item.name or id))
+                    end
+                else
+                    print("You feel " .. noun:match("^(%S+)") .. " " .. (cobj.name or "that") .. " but find nothing.")
+                end
+                return
+            end
             -- Check surface contents (e.g., nightstand "inside" zone)
             if cobj.surfaces then
                 for zone_name, zone in pairs(cobj.surfaces) do
@@ -982,13 +1013,50 @@ function verbs.create()
     ---------------------------------------------------------------------------
     handlers["smell"] = function(ctx, noun)
         if noun == "" then
-            -- Ambient room smell
+            -- Room-level smell sweep (like feel does for touch)
             local room = ctx.current_room
             if room.on_smell then
                 print("You smell the air around you.")
                 print(room.on_smell)
             else
                 print("You smell the air around you. Dust and stillness.")
+            end
+            -- Sweep objects for individual smells
+            local reg = ctx.registry
+            local found = {}
+            for _, obj_id in ipairs(room.contents or {}) do
+                local obj = reg:get(obj_id)
+                if obj and not obj.hidden and obj.on_smell then
+                    found[#found + 1] = { name = obj.name or obj.id, smell = obj.on_smell }
+                end
+                if obj and obj.surfaces then
+                    for _, zone in pairs(obj.surfaces) do
+                        if zone.accessible ~= false then
+                            for _, item_id in ipairs(zone.contents or {}) do
+                                local item = reg:get(item_id)
+                                if item and item.on_smell then
+                                    found[#found + 1] = { name = item.name or item.id, smell = item.on_smell }
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            -- Also check player hands
+            for i = 1, 2 do
+                local hid = ctx.player.hands[i]
+                if hid then
+                    local hobj = reg:get(hid)
+                    if hobj and hobj.on_smell then
+                        found[#found + 1] = { name = hobj.name or hobj.id, smell = hobj.on_smell }
+                    end
+                end
+            end
+            if #found > 0 then
+                print("Your nose picks up:")
+                for _, entry in ipairs(found) do
+                    print("  " .. entry.name .. " -- " .. entry.smell)
+                end
             end
             return
         end
@@ -1059,12 +1127,48 @@ function verbs.create()
     ---------------------------------------------------------------------------
     handlers["listen"] = function(ctx, noun)
         if noun == "" then
-            -- Ambient room sounds
+            -- Room-level listen sweep (like feel does for touch)
             local room = ctx.current_room
             if room.on_listen then
                 print(room.on_listen)
             else
                 print("You hold your breath and listen. Silence -- save for your own heartbeat.")
+            end
+            -- Sweep objects for individual sounds
+            local reg = ctx.registry
+            local found = {}
+            for _, obj_id in ipairs(room.contents or {}) do
+                local obj = reg:get(obj_id)
+                if obj and not obj.hidden and obj.on_listen then
+                    found[#found + 1] = { name = obj.name or obj.id, sound = obj.on_listen }
+                end
+                if obj and obj.surfaces then
+                    for _, zone in pairs(obj.surfaces) do
+                        if zone.accessible ~= false then
+                            for _, item_id in ipairs(zone.contents or {}) do
+                                local item = reg:get(item_id)
+                                if item and item.on_listen then
+                                    found[#found + 1] = { name = item.name or item.id, sound = item.on_listen }
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            for i = 1, 2 do
+                local hid = ctx.player.hands[i]
+                if hid then
+                    local hobj = reg:get(hid)
+                    if hobj and hobj.on_listen then
+                        found[#found + 1] = { name = hobj.name or hobj.id, sound = hobj.on_listen }
+                    end
+                end
+            end
+            if #found > 0 then
+                print("You catch faint sounds:")
+                for _, entry in ipairs(found) do
+                    print("  " .. entry.name .. " -- " .. entry.sound)
+                end
             end
             return
         end
@@ -1496,6 +1600,20 @@ function verbs.create()
                 if mut.becomes_exit then
                     for k, v in pairs(mut.becomes_exit) do
                         exit[k] = v
+                    end
+                end
+                -- Sync the room object so "look at" reflects the broken state
+                for _, obj_id in ipairs(room.contents or {}) do
+                    if exit_matches(exit, dir, obj_id) then
+                        local robj = ctx.registry:get(obj_id)
+                        if robj then
+                            if mut.becomes_exit.name then robj.name = mut.becomes_exit.name end
+                            if mut.becomes_exit.description then robj.description = mut.becomes_exit.description end
+                            if mut.becomes_exit.keywords then robj.keywords = mut.becomes_exit.keywords end
+                            if mut.becomes_exit.room_presence then robj.room_presence = mut.becomes_exit.room_presence end
+                            robj.on_look = function(self) return self.description end
+                        end
+                        break
                     end
                 end
                 if mut.spawns then
@@ -2465,8 +2583,11 @@ function verbs.create()
     handlers["drink"] = function(ctx, noun)
         if noun == "" then print("Drink what?") return end
 
-        local obj = find_in_inventory(ctx, noun)
-        if not obj then obj = find_visible(ctx, noun) end
+        -- Strip "from" preposition: "drink from bottle" → "bottle"
+        local target = noun:match("^from%s+(.+)") or noun
+
+        local obj = find_in_inventory(ctx, target)
+        if not obj then obj = find_visible(ctx, target) end
         if not obj then
             print("You don't see that here.")
             return
