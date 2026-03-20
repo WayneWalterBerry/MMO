@@ -324,6 +324,87 @@ Both use the same FSM mechanism. The engine is agnostic about whether a state ch
 
 ---
 
+## Core Principle: Composite Objects Encapsulate Inner Objects
+
+Complex game objects often consist of multiple components—a poison-bottle has a cork, a candle-holder has a candle, a nightstand has a drawer, a matchbox has matches. The architecture handles this through **composite objects**: a single `.lua` file that defines both the outer object and all its inner objects as nested Lua tables. Inner objects are not referenced by ID in separate files; they are defined **inline and encapsulated** in the parent object's file.
+
+### Encapsulation Pattern: One File, Multiple Objects
+
+A composite object is authored as a single `.lua` file containing:
+
+1. **The outer object:** The main entity (e.g., `poison-bottle`)
+2. **Inner object definitions:** Nested tables defining detachable components (e.g., the `cork`)
+
+Example structure:
+
+```lua
+-- src/meta/objects/poison-bottle.lua (ONE file)
+return {
+    id = "poison-bottle",
+    name = "a poison bottle",
+    description = "A small glass bottle filled with iridescent liquid.",
+    contains = {
+        cork = {
+            id = "cork",
+            name = "a glass cork",
+            description = "A small glass stopper.",
+            type_id = "cork-guid",
+            -- cork has its own base object definition, FSM states, mutations
+            mutations = {
+                insert = { becomes = "poison-bottle", message = "You stopper the bottle." }
+            }
+        }
+    }
+}
+```
+
+### Inner Objects Become Independent on Detachment
+
+When an inner object is detached (e.g., the player removes the cork), the engine:
+
+1. **Extracts the inner object** from the `contains` table
+2. **Registers it as a live instance** with its own mutable state and FSM
+3. **Gives it its own location** (e.g., on the floor, in inventory)
+4. **It becomes a full object** — no longer "part of" the bottle, now a standalone entity
+
+Example at runtime:
+
+```lua
+-- Before detachment:
+bottle = { id = "poison-bottle", contains = { cork = { ... } } }
+
+-- Player removes the cork:
+-- Engine extracts inner object, registers it
+bottle = { id = "poison-bottle", contains = {} }
+cork = { id = "cork", location = "nightstand.floor", _state = "cork", ... }
+```
+
+### Why Encapsulation, Not Referential Composition
+
+The architecture does **not** use referential composition (e.g., "this bottle references cork.lua by ID"). Instead:
+
+- **All related objects are in one file** — authoring is streamlined. You design the bottle and its cork together.
+- **No ID cross-references** — simplifies loading and prevents orphaned objects.
+- **Inner objects have full definitions** — each inner object is a complete base object with its own GUID, FSM, mutations, and sensory descriptions.
+- **Extraction is transparent** — when an inner object detaches, it's no different from any other object instance in the registry.
+
+### Implemented Examples
+
+- **`poison-bottle.lua`** → contains `cork` (removable)
+- **`candle-holder.lua`** → contains `candle` (removable)
+- **`nightstand.lua`** → contains `drawer` (removable, lockable)
+- **`matchbox.lua`** → contains `matches` (consumable)
+
+### Why This Matters
+
+1. **Authoring clarity:** Complex objects are designed in one place. The bottle, its cork, and its cork's FSM all live in `poison-bottle.lua`.
+2. **Composability:** Multi-part objects don't require engine changes or special cases. The registry and mutation system handle extraction naturally.
+3. **Reusability:** Inner object definitions can be reused. Multiple bottles might contain the same cork definition.
+4. **State encapsulation:** The inner object's mutable state (whether it's inserted, removed, broken) is tracked independently once extracted.
+5. **Design ergonomics:** Developers think in terms of whole objects, not distributed ID references. Complex puzzles, containers, and multi-part tools are data, not code.
+
+---
+
 ## The System Stack
 
 ### Layer 1: Engine Core
