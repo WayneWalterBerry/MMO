@@ -12,7 +12,13 @@ return {
     weight = 3,
     categories = {"fabric", "warm", "wearable"},
     portable = true,
-    wearable = true,
+
+    wear = {
+        slot = "back",
+        layer = "outer",
+        provides_warmth = true,
+        wear_quality = "normal",
+    },
 
     location = nil,
 

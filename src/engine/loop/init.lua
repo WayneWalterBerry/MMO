@@ -131,6 +131,24 @@ local function preprocess_natural_language(input)
     return "feel", ""
   end
 
+  -- Wear/equip phrases: "put on X", "dress in X" → wear
+  local wear_target = lower:match("^put%s+on%s+(.+)")
+    or lower:match("^dress%s+in%s+(.+)")
+  if wear_target then
+    return "wear", wear_target
+  end
+
+  -- Remove/unequip phrases: "take off X" → remove
+  local remove_target = lower:match("^take%s+off%s+(.+)")
+  if remove_target then
+    return "remove", remove_target
+  end
+
+  -- Wear query: "what am i wearing" → inventory
+  if lower:match("^what%s+am%s+i%s+wear") then
+    return "inventory", ""
+  end
+
   return nil, nil
 end
 

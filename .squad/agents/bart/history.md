@@ -421,3 +421,33 @@ The 32.5MB gzipped index is too large for browser assets. Trim it down, then pla
 7. **Drink "from" preposition:** Drink handler now strips "from" preposition so "drink from bottle" correctly finds the target. Previously "from bottle" failed keyword matching.
 
 **Key pattern learned:** Exit mutations and room object state are separate systems. When an exit is broken/modified, the corresponding room-level object must be explicitly synced. This is a gap in the mutation architecture — future consideration: auto-sync exit↔object on mutation.
+
+---
+
+### Session: Wearable Object System Implementation (2026-03-19T18:27:34Z)
+**Status:** ✅ COMPLETE
+**Outcome:** Full wearable system with slot/layer conflicts, vision blocking, and NLP aliases
+
+**What was built:**
+1. **Slot/Layer conflict engine** in src/engine/verbs/init.lua — reads wear = { slot, layer } from objects, enforces one inner + one outer per slot, accessories don't conflict
+2. **Vision blocking** — worn items with locks_vision = true (e.g., sack on head) prevent all visual verbs (look, examine, look in/on/under)
+3. **Wear metadata** on 4 existing objects: wool-cloak (back/outer/warmth), sack (head/outer/blocks_vision), chamber-pot (head/outer/makeshift armor), terrible-jacket (torso/outer)
+4. **NLP preprocessing** — "put on X", "take off X", "dress in X", "what am I wearing" all route correctly
+5. **Verb aliases** — wear/don/put on for equip; remove/doff/take off for unequip
+6. **Inventory display** — worn items now show slot in parentheses: "a wool cloak (back)"
+7. **Flavor messages** — vision-blocking items get darkness messages, armor items get comedic feedback, warmth items note coziness
+
+**Architecture decisions:**
+- Objects own wear metadata (slot/layer) — engine never hardcodes slots
+- Legacy wearable = true objects fall back to torso/outer defaults
+- Vision blocking integrates with existing light/dark system as a separate check (worn item blindness is distinct from room darkness)
+- player.worn is a flat list of object IDs (same pattern as hands); slot queries iterate over it
+- Accessory layer items can coexist with inner/outer items on the same slot
+
+**Key files modified:**
+- src/engine/verbs/init.lua — wear/remove handlers, vision_blocked_by_worn helper, inventory slot display, look/examine vision checks
+- src/engine/loop/init.lua — NLP preprocessing for put on/take off/dress in
+- src/meta/objects/wool-cloak.lua — wear metadata (back/outer/warmth)
+- src/meta/objects/sack.lua — wear metadata (head/outer/blocks_vision)
+- src/meta/objects/chamber-pot.lua — wear metadata (head/outer/armor)
+- src/meta/objects/terrible-jacket.lua — wear metadata (torso/outer)

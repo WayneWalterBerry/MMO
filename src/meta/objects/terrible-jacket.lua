@@ -21,6 +21,12 @@ return {
 
     categories = {"fabric", "wearable"},
 
+    wear = {
+        slot = "torso",
+        layer = "outer",
+        wear_quality = "makeshift",
+    },
+
     on_look = function(self)
         return self.description
     end,

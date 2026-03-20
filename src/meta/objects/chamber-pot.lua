@@ -11,11 +11,19 @@ return {
 
     size = 2,
     weight = 3,
-    categories = {"ceramic", "container", "fragile"},
+    categories = {"ceramic", "container", "fragile", "wearable"},
     room_position = "sits discreetly in the far corner",
     portable = true,
     container = true,
     capacity = 2,
+
+    -- Wearable as makeshift head armor (pot-on-head trope)
+    wear = {
+        slot = "head",
+        layer = "outer",
+        provides_armor = 1,
+        wear_quality = "makeshift",
+    },
 
     contents = {},
     location = nil,

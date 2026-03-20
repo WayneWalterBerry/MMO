@@ -529,6 +529,20 @@ local function has_some_light(ctx)
 end
 
 ---------------------------------------------------------------------------
+-- Helper: check if player's vision is blocked by a worn item
+---------------------------------------------------------------------------
+local function vision_blocked_by_worn(ctx)
+    local reg = ctx.registry
+    for _, worn_id in ipairs(ctx.player.worn or {}) do
+        local obj = reg:get(worn_id)
+        if obj and obj.wear and obj.wear.blocks_vision then
+            return true, obj
+        end
+    end
+    return false, nil
+end
+
+---------------------------------------------------------------------------
 -- Helper: find a mutation entry on an object for a given verb
 -- Checks exact match first, then verb_* patterns (e.g. "break" → "break_mirror")
 ---------------------------------------------------------------------------
@@ -640,6 +654,13 @@ function verbs.create()
     handlers["look"] = function(ctx, noun)
         -- Bare "look" -- show room
         if noun == "" then
+            -- Vision blocked by worn item (sack on head, etc.)
+            local blocked, blocker = vision_blocked_by_worn(ctx)
+            if blocked then
+                print("You can't see a thing -- " .. (blocker.name or "something") .. " is covering your eyes.")
+                return
+            end
+
             local light = get_light_level(ctx)
             if light == "dark" then
                 print(ctx.current_room.name or "Unknown room")
@@ -709,6 +730,11 @@ function verbs.create()
         -- "look at X" → examine
         local target = noun:match("^at%s+(.+)")
         if target then
+            local blocked = vision_blocked_by_worn(ctx)
+            if blocked then
+                print("You can't see anything with your vision blocked.")
+                return
+            end
             if not has_some_light(ctx) then
                 print("It is too dark to see anything.")
                 return
@@ -736,6 +762,11 @@ function verbs.create()
         if not prep then prep, surface_target = noun:match("^(behind)%s+(.+)$") end
 
         if prep and surface_target then
+            local blocked = vision_blocked_by_worn(ctx)
+            if blocked then
+                print("You can't see anything with your vision blocked.")
+                return
+            end
             if not has_some_light(ctx) then
                 print("It is too dark to see anything.")
                 return
@@ -780,6 +811,11 @@ function verbs.create()
         end
 
         -- "look X" → examine (shorthand for "look at X")
+        local blocked2 = vision_blocked_by_worn(ctx)
+        if blocked2 then
+            print("You can't see anything with your vision blocked.")
+            return
+        end
         if not has_some_light(ctx) then
             print("It is too dark to see anything.")
             return
@@ -798,6 +834,17 @@ function verbs.create()
 
     handlers["examine"] = function(ctx, noun)
         if noun == "" then print("Examine what?") return end
+        local blocked = vision_blocked_by_worn(ctx)
+        if blocked then
+            -- Vision blocked but player knows what they're holding
+            local obj = find_in_inventory(ctx, noun)
+            if obj then
+                print("You know " .. (obj.name or "it") .. " is there, but you can't see it.")
+            else
+                print("You can't see anything with your vision blocked.")
+            end
+            return
+        end
         if has_some_light(ctx) then
             handlers["look"](ctx, "at " .. noun)
         else
@@ -1195,6 +1242,13 @@ function verbs.create()
     ---------------------------------------------------------------------------
     handlers["take"] = function(ctx, noun)
         if noun == "" then print("Take what?") return end
+
+        -- "take off X" → remove (unequip worn item)
+        local off_target = noun:match("^off%s+(.+)")
+        if off_target then
+            handlers["remove"](ctx, off_target)
+            return
+        end
 
         -- "pick up X"
         local target = noun:match("^up%s+(.+)") or noun
@@ -1688,12 +1742,16 @@ function verbs.create()
             end
         end
 
-        -- Worn items
+        -- Worn items (grouped by slot when wear metadata is available)
         if #(ctx.player.worn or {}) > 0 then
             print("  Worn:")
             for _, worn_id in ipairs(ctx.player.worn) do
                 local obj = reg:get(worn_id)
-                print("    " .. (obj and obj.name or worn_id))
+                local label = obj and obj.name or worn_id
+                if obj and obj.wear and obj.wear.slot then
+                    label = label .. " (" .. obj.wear.slot .. ")"
+                end
+                print("    " .. label)
                 if obj and obj.container and obj.contents and #obj.contents > 0 then
                     print("    (contains:)")
                     for _, item_id in ipairs(obj.contents) do
@@ -2208,6 +2266,15 @@ function verbs.create()
             return
         end
 
+        -- "put on X" → wear X (intercepted before container logic)
+        local wear_target = noun:match("^on%s+(.+)")
+        if wear_target then
+            -- Check if it's actually "put X on Y" by seeing if there's an "on" in the middle
+            -- "put on cloak" vs "put sword on table" — if noun starts with "on ", it's wear
+            handlers["wear"](ctx, wear_target)
+            return
+        end
+
         -- Parse "X in Y" or "X on Y"
         local item_word, prep, target_word
         item_word, target_word = noun:match("^(.+)%s+in%s+(.+)$")
@@ -2463,7 +2530,8 @@ function verbs.create()
     end
 
     ---------------------------------------------------------------------------
-    -- WEAR / PUT ON -- equip an item from hand to worn slot
+    -- WEAR / PUT ON / DON -- equip an item from hand to worn slot
+    -- Checks object wear metadata for slot/layer conflicts.
     ---------------------------------------------------------------------------
     handlers["wear"] = function(ctx, noun)
         if noun == "" then
@@ -2471,10 +2539,13 @@ function verbs.create()
             return
         end
 
+        -- Strip leading "on " for "put on X" passthrough
+        local target = noun:lower():match("^on%s+(.+)") or noun
+
         -- Find item in hands
         local obj = nil
         local hand_slot = nil
-        local kw = noun:lower()
+        local kw = target:lower()
             :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
         for i = 1, 2 do
             local hand_id = ctx.player.hands[i]
@@ -2493,21 +2564,86 @@ function verbs.create()
             return
         end
 
-        if not obj.wearable then
+        -- Check wearability: object must have a wear table or legacy wearable flag
+        local wear = obj.wear
+        if not wear and not obj.wearable then
             print("You can't wear " .. (obj.name or "that") .. ".")
             return
         end
 
+        -- Legacy support: objects with wearable=true but no wear table
+        -- get a minimal default (torso/outer) so they still work
+        if not wear then
+            wear = { slot = "torso", layer = "outer" }
+        end
+
+        local slot = wear.slot or "torso"
+        local layer = wear.layer or "outer"
+        local max_per_slot = wear.max_per_slot or 1
+
+        -- Slot/layer conflict check against currently worn items
+        local reg = ctx.registry
+        for _, worn_id in ipairs(ctx.player.worn or {}) do
+            local worn_obj = reg:get(worn_id)
+            if worn_obj then
+                local worn_wear = worn_obj.wear or {}
+                local worn_slot = worn_wear.slot or "torso"
+                local worn_layer = worn_wear.layer or "outer"
+
+                if worn_slot == slot then
+                    if layer == "accessory" and worn_layer == "accessory" then
+                        -- Count accessories already on this slot
+                        local count = 0
+                        for _, wid in ipairs(ctx.player.worn) do
+                            local w = reg:get(wid)
+                            if w and w.wear and w.wear.slot == slot
+                               and w.wear.layer == "accessory" then
+                                count = count + 1
+                            end
+                        end
+                        if count >= max_per_slot then
+                            print("You're already wearing too many things on your " .. slot .. ".")
+                            return
+                        end
+                        break -- accessories don't conflict further
+                    elseif layer == "accessory" or worn_layer == "accessory" then
+                        -- Accessories don't conflict with inner/outer layers
+                    elseif worn_layer == layer then
+                        -- Same layer on same slot = conflict
+                        print("You're already wearing " .. (worn_obj.name or worn_id) .. ". Remove it first.")
+                        return
+                    end
+                    -- Different layers on same slot (inner vs outer) = OK
+                end
+            end
+        end
+
+        -- Equip: move from hand to worn list
         ctx.player.hands[hand_slot] = nil
+        ctx.player.worn = ctx.player.worn or {}
         ctx.player.worn[#ctx.player.worn + 1] = obj.id
         obj.location = "player"
-        print("You put on " .. (obj.name or obj.id) .. ".")
+
+        -- Flavor messages based on wear metadata
+        if wear.blocks_vision then
+            print("You pull " .. (obj.name or obj.id) .. " over your head. Everything goes dark.")
+        elseif wear.provides_armor and wear.provides_armor > 0 then
+            if wear.wear_quality == "makeshift" then
+                print("You place " .. (obj.name or obj.id) .. " on your " .. slot .. ". It makes a ridiculous helmet, but you feel... slightly tougher?")
+            else
+                print("You put on " .. (obj.name or obj.id) .. ". You feel better protected.")
+            end
+        elseif wear.provides_warmth then
+            print("You put on " .. (obj.name or obj.id) .. ". Its warmth immediately envelops you.")
+        else
+            print("You put on " .. (obj.name or obj.id) .. ".")
+        end
     end
 
     handlers["don"] = handlers["wear"]
 
     ---------------------------------------------------------------------------
-    -- REMOVE / TAKE OFF -- move worn item to hand
+    -- REMOVE / TAKE OFF / DOFF -- move worn item to hand
     ---------------------------------------------------------------------------
     handlers["remove"] = function(ctx, noun)
         if noun == "" then
@@ -2515,7 +2651,10 @@ function verbs.create()
             return
         end
 
-        local kw = noun:lower()
+        -- Strip leading "off " for "take off X" passthrough
+        local target = noun:lower():match("^off%s+(.+)") or noun
+
+        local kw = target:lower()
             :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
         local obj = nil
         local worn_idx = nil
@@ -2529,7 +2668,13 @@ function verbs.create()
         end
 
         if not obj then
-            print("You aren't wearing that.")
+            -- Check if the player is holding it (not worn)
+            local held = find_in_inventory(ctx, target)
+            if held then
+                print("You're not wearing " .. (held.name or "that") .. ".")
+            else
+                print("You aren't wearing that.")
+            end
             return
         end
 
@@ -2539,10 +2684,19 @@ function verbs.create()
             return
         end
 
+        local had_vision_block = obj.wear and obj.wear.blocks_vision
+
         table.remove(ctx.player.worn, worn_idx)
         ctx.player.hands[slot] = obj.id
-        print("You remove " .. (obj.name or obj.id) .. ".")
+
+        if had_vision_block then
+            print("You pull " .. (obj.name or obj.id) .. " off your head. Light floods back in.")
+        else
+            print("You remove " .. (obj.name or obj.id) .. ".")
+        end
     end
+
+    handlers["doff"] = handlers["remove"]
 
     ---------------------------------------------------------------------------
     -- EAT -- stub for consumables
@@ -2756,8 +2910,11 @@ function verbs.create()
         print("  prick self with <tool>   - prick yourself with something sharp")
         print("  write <text> on <thing>  - write on a writable surface")
         print("  sew <thing> with <tool>  - sew materials together (requires skill)")
-        print("  wear <thing>      - put on a wearable item (backpack, cloak)")
+        print("  wear <thing>      - put on a wearable item (cloak, hat, armor)")
+        print("  put on <thing>    - same as 'wear'")
         print("  remove <thing>    - take off a worn item")
+        print("  take off <thing>  - same as 'remove'")
+        print("  doff <thing>      - same as 'remove'")
         print("  eat <thing>       - eat something edible")
         print("  drink <thing>     - drink from a container")
         print("  pour <thing>      - pour out a liquid")

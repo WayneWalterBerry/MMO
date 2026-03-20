@@ -21,7 +21,16 @@ return {
     contents = {"needle", "thread"},
     location = nil,
 
-    categories = {"fabric", "container"},
+    categories = {"fabric", "container", "wearable"},
+
+    -- Wearable: can be worn on head, but blocks vision
+    wear = {
+        slot = "head",
+        layer = "outer",
+        blocks_vision = true,
+        container_access_when_worn = false,
+        wear_quality = "makeshift",
+    },
 
     on_look = function(self)
         if #self.contents == 0 then
