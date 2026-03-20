@@ -6,6 +6,10 @@
 
 local loop = {}
 
+-- Tier 3: goal-oriented prerequisite planner (optional module)
+local planner_ok, goal_planner = pcall(require, "engine.parser.goal_planner")
+if not planner_ok then goal_planner = nil end
+
 -- Built-in verb: look
 -- Composes the room view dynamically from three sources:
 --   1. Room description (permanent features only)
@@ -164,6 +168,9 @@ local function preprocess_natural_language(input)
     if use_tool:match("needle") or use_tool:match("thread") then
       return "sew", use_target .. " with " .. use_tool
     end
+    if use_tool:match("key") then
+      return "unlock", use_target .. " with " .. use_tool
+    end
   end
 
   -- "push X back" / "put X back in Y" → put
@@ -239,6 +246,10 @@ function loop.run(context)
   assert(context and context.registry, "loop: context.registry is required")
   context.verbs = context.verbs or {}
 
+  -- Context tracking for Tier 3 planner
+  context.last_tool = context.last_tool or nil
+  context.known_objects = context.known_objects or {}
+
   -- Register built-ins (can be overridden by context.verbs).
   if not context.verbs["look"] then
     context.verbs["look"] = cmd_look
@@ -313,6 +324,22 @@ function loop.run(context)
       if verb == "quit" then
         should_quit = true
         break
+      end
+
+      -- Prepositional parsing: strip "with Y" for verbs that auto-find tools
+      if verb == "light" or verb == "ignite" then
+        local clean_noun = noun:match("^(.-)%s+with%s+.+$")
+        if clean_noun and clean_noun ~= "" then noun = clean_noun end
+      end
+
+      -- Tier 3: goal-oriented prerequisite planning
+      if goal_planner then
+        local plan = goal_planner.plan(verb, noun, context)
+        if plan then
+          if not goal_planner.execute(plan, context) then
+            goto next_sub
+          end
+        end
       end
 
       local handler = context.verbs[verb]

@@ -568,6 +568,45 @@ The 32.5MB gzipped index is too large for browser assets. Trim it down, then pla
 **Source:** Wayne "Effe" Berry (via Copilot)  
 Morning and evening newspaper editions should be in separate files. Brockman has created `newspaper/2026-03-20-morning.md`.
 
+## Learnings
+
+### Tier 3 Goal-Oriented Parser + UNLOCK Verb + Bug Fixes (2026-07-18)
+
+**What was built:** A backward-chaining prerequisite resolver (Tier 3) that automatically plans multi-step action chains when a verb handler would fail due to missing tools. Plus UNLOCK verb handler and iron door examinability fixes.
+
+**Tier 3 Goal Planner (`src/engine/parser/goal_planner.lua`):**
+- ~220 lines of backward-chaining planner that fires between Tier 1 dispatch and Tier 2 fallback
+- Given verb+object, checks FSM transitions for `requires_tool`, then builds a plan to satisfy the requirement
+- Handles nested containment: match inside matchbox inside nightstand drawer (3 levels deep)
+- "light candle" from cold start produces: open nightstand → open matchbox → take match → strike match → light candle
+- "light candle with match" strips the "with" clause via prepositional parsing, same chain fires
+- Plan execution prints "You'll need to prepare first..." then dispatches each step through Tier 1
+- Stops on first failure — partial progress is preserved (player is further along)
+
+**Key architecture decisions:**
+1. **Pre-check, not post-failure.** The planner runs BEFORE the verb handler, not after. It checks if prerequisites are unmet and plans proactively. This avoids needing verb handlers to return failure codes.
+2. **In-place container opening.** The planner opens containers in place (on surfaces) rather than picking them up. This avoids hand-capacity conflicts mid-plan.
+3. **Object-owned prerequisites.** Added `prerequisites` table to candle.lua. The planner also infers from FSM `requires_tool` on transitions, so explicit prerequisites are optional documentation.
+4. **Depth limit = 5.** The nightstand→matchbox→match chain is 4 steps. MAX_DEPTH prevents infinite loops.
+
+**UNLOCK verb (BUG-030):**
+- Handler checks exits for matching keywords, verifies `key_id` matches held key
+- Iron door in cellar: `key_id = "brass-key"`, state-dependent descriptions (locked/unlocked/open)
+- Open mutation added so door can be opened after unlocking
+- NLP: "use key on door" → "unlock door with key" via preprocess_natural_language
+
+**BUG-029 fix (iron door not examinable):**
+- Added exit examination to look/examine/feel handlers — when `find_visible` fails, searches exits by keyword
+- Iron door has `description_unlocked`, `description_open`, and `on_feel` fields
+- Works in light (examine) and darkness (feel)
+
+**Context tracking extensions:**
+- `ctx.known_objects` — tracks all objects the player has interacted with via find_visible
+- `ctx.last_tool` — infrastructure for tool tracking (planner groundwork)
+
+**Files created:** `src/engine/parser/goal_planner.lua`
+**Files modified:** `src/engine/loop/init.lua`, `src/engine/verbs/init.lua`, `src/meta/objects/candle.lua`, `src/meta/world/cellar.lua`
+
 ### Directive 4: Room layout and movable furniture (2026-03-20T03:43Z)
 **Source:** Wayne "Effe" Berry (via Copilot)  
 - Bed is ON rug; rug COVERS trap door

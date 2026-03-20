@@ -19,6 +19,14 @@ return {
 
     location = nil,
 
+    -- Tier 3 goal planner prerequisites
+    prerequisites = {
+        light = {
+            requires = { "fire_source" },
+            auto_steps = { "strike match" },
+        },
+    },
+
     -- FSM
     initial_state = "unlit",
     _state = "unlit",

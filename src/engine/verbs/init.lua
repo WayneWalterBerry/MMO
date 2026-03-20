@@ -503,6 +503,8 @@ do
             ctx.last_object_loc = loc
             ctx.last_object_parent = parent
             ctx.last_object_surface = surface
+            ctx.known_objects = ctx.known_objects or {}
+            ctx.known_objects[obj.id] = true
         end
         return obj, loc, parent, surface
     end
@@ -1150,6 +1152,25 @@ function verbs.create()
             end
             local obj = find_visible(ctx, target)
             if not obj then
+                -- BUG-029: check exits (iron door, etc.)
+                local room = ctx.current_room
+                for dir, exit in pairs(room.exits or {}) do
+                    if type(exit) == "table" and not exit.hidden
+                        and exit_matches(exit, dir, target) then
+                        local desc
+                        if exit.locked then
+                            desc = exit.description or ("A " .. (exit.name or "passage") .. ".")
+                        elseif not exit.open and exit.description_unlocked then
+                            desc = exit.description_unlocked
+                        elseif exit.open and exit.description_open then
+                            desc = exit.description_open
+                        else
+                            desc = exit.description or ("A " .. (exit.name or "passage") .. ".")
+                        end
+                        print(desc)
+                        return
+                    end
+                end
                 print("You don't see that here.")
                 return
             end
@@ -1231,6 +1252,25 @@ function verbs.create()
         end
         local obj = find_visible(ctx, noun)
         if not obj then
+            -- BUG-029: check exits
+            local room = ctx.current_room
+            for dir, exit in pairs(room.exits or {}) do
+                if type(exit) == "table" and not exit.hidden
+                    and exit_matches(exit, dir, noun) then
+                    local desc
+                    if exit.locked then
+                        desc = exit.description or ("A " .. (exit.name or "passage") .. ".")
+                    elseif not exit.open and exit.description_unlocked then
+                        desc = exit.description_unlocked
+                    elseif exit.open and exit.description_open then
+                        desc = exit.description_open
+                    else
+                        desc = exit.description or ("A " .. (exit.name or "passage") .. ".")
+                    end
+                    print(desc)
+                    return
+                end
+            end
             print("You don't see that here.")
             return
         end
@@ -1260,6 +1300,21 @@ function verbs.create()
             -- Dark: fall back to feel description
             local obj = find_visible(ctx, noun)
             if not obj then
+                -- BUG-029: check exits by feel in darkness
+                local room = ctx.current_room
+                for dir, exit in pairs(room.exits or {}) do
+                    if type(exit) == "table" and not exit.hidden
+                        and exit_matches(exit, dir, noun) then
+                        if exit.on_feel then
+                            local feel = type(exit.on_feel) == "function"
+                                and exit.on_feel(exit) or exit.on_feel
+                            print("It's too dark to see, but you feel: " .. feel)
+                        else
+                            print("You sense " .. (exit.name or "a passage") .. " leading " .. dir .. ".")
+                        end
+                        return
+                    end
+                end
                 print("You can't find anything like that in the darkness.")
                 return
             end
@@ -1439,6 +1494,21 @@ function verbs.create()
 
         local obj = find_visible(ctx, noun)
         if not obj then
+            -- BUG-029: check exits by touch (iron door, etc.)
+            local room = ctx.current_room
+            for dir, exit in pairs(room.exits or {}) do
+                if type(exit) == "table" and not exit.hidden
+                    and exit_matches(exit, dir, noun) then
+                    if exit.on_feel then
+                        local feel = type(exit.on_feel) == "function"
+                            and exit.on_feel(exit) or exit.on_feel
+                        print(feel)
+                    else
+                        print("You feel " .. (exit.name or "a passage") .. ". It leads " .. dir .. ".")
+                    end
+                    return
+                end
+            end
             print("You can't feel anything like that nearby.")
             return
         end
@@ -2352,6 +2422,68 @@ function verbs.create()
     end
 
     handlers["shut"] = handlers["close"]
+
+    ---------------------------------------------------------------------------
+    -- UNLOCK — unlock a locked exit (door) with the correct key (BUG-030)
+    ---------------------------------------------------------------------------
+    handlers["unlock"] = function(ctx, noun)
+        if noun == "" then print("Unlock what?") return end
+
+        -- Parse "unlock X with Y"
+        local target_word, key_word = noun:match("^(.+)%s+with%s+(.+)$")
+        if not target_word then target_word = noun end
+
+        -- Search exits for a matching locked door
+        local room = ctx.current_room
+        for dir, exit in pairs(room.exits or {}) do
+            if type(exit) == "table" and exit_matches(exit, dir, target_word) then
+                if not exit.locked then
+                    if exit.open then
+                        print("It is already open.")
+                    else
+                        print("It isn't locked.")
+                    end
+                    return
+                end
+                if not exit.key_id then
+                    print((exit.name or "The lock") .. " has no visible keyhole.")
+                    return
+                end
+
+                -- Find the key
+                local key_obj
+                if key_word then
+                    key_obj = find_in_inventory(ctx, key_word)
+                else
+                    key_obj = find_in_inventory(ctx, "key")
+                end
+                if not key_obj then
+                    print("You don't have a key for that.")
+                    return
+                end
+                if key_obj.id ~= exit.key_id then
+                    print("That key doesn't fit this lock.")
+                    return
+                end
+
+                -- Unlock
+                exit.locked = false
+                local door_name = exit.name or "The door"
+                local nice_name = door_name:sub(1,1):upper() .. door_name:sub(2)
+                print("You insert " .. (key_obj.name or "the key")
+                    .. " into the lock. *click* " .. nice_name .. " unlocks.")
+                return
+            end
+        end
+
+        -- Check objects (future: locked chests)
+        local obj = find_visible(ctx, target_word)
+        if obj then
+            print("You can't unlock " .. (obj.name or "that") .. ".")
+        else
+            print("You don't see that here.")
+        end
+    end
 
     ---------------------------------------------------------------------------
     -- BREAK
@@ -4292,6 +4424,7 @@ function verbs.create()
         print("  put <x> on <y>    - put something on a surface")
         print("  open <thing>      - open a container or door")
         print("  close <thing>     - close something")
+        print("  unlock <thing>    - unlock a locked door (use key on door)")
         print("  break <thing>     - break something breakable")
         print("  tear <thing>      - tear fabric apart")
         print("  strike match on <x>  - strike a match (compound tool)")

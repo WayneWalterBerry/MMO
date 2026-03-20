@@ -41,6 +41,9 @@ return {
             name = "a heavy iron-bound door",
             keywords = {"door", "iron door", "heavy door", "north door", "iron-bound door"},
             description = "A heavy door of black iron-bound oak stands against the north wall. A massive padlock secures it shut. Whatever lies beyond, someone went to great lengths to keep it sealed.",
+            description_unlocked = "A heavy door of black iron-bound oak stands against the north wall. The padlock hangs open, its hasp pulled aside. The door is closed but no longer secured.",
+            description_open = "The heavy iron-bound door stands open, revealing a dark passage leading north into deeper darkness.",
+            on_feel = "Your hands find cold iron bands wrapped around heavy oak planks. A massive padlock hangs from a thick hasp -- the keyhole is small, meant for a brass key. The door does not budge.",
 
             max_carry_size = 4,
             max_carry_weight = 50,
@@ -49,13 +52,18 @@ return {
 
             open = false,
             locked = true,
-            key_id = nil,
+            key_id = "brass-key",
             hidden = false,
             broken = false,
             one_way = false,
             breakable = false,
 
-            mutations = {},
+            mutations = {
+                open = {
+                    becomes_exit = { open = true },
+                    message = "You push the heavy door. It swings open with a long, low groan of iron hinges, revealing darkness beyond.",
+                },
+            },
         },
     },
 
