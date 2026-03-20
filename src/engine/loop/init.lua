@@ -185,6 +185,13 @@ local function preprocess_natural_language(input)
     return "put", put_back_item .. " in " .. put_back_target2
   end
 
+  -- Extinguish phrases: "put out X", "blow out X" → extinguish
+  local extinguish_target = lower:match("^put%s+out%s+(.+)")
+    or lower:match("^blow%s+out%s+(.+)")
+  if extinguish_target then
+    return "extinguish", extinguish_target
+  end
+
   -- Wear/equip phrases: "put on X", "dress in X" → wear
   local wear_target = lower:match("^put%s+on%s+(.+)")
     or lower:match("^dress%s+in%s+(.+)")

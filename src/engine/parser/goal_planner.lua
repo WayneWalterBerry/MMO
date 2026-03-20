@@ -240,10 +240,28 @@ local function plan_for_tool(capability, ctx, visited, depth)
     visited = visited or {}
 
     if capability == "fire_source" then
+        -- Drop any spent matches from hands (they're useless, just blocking a slot)
+        local spent_drops = {}
+        for i = 1, 2 do
+            local id = ctx.player.hands[i]
+            if id then
+                local obj = ctx.registry:get(id)
+                if obj and kw_match(obj, "match") and obj._state == "spent" then
+                    spent_drops[#spent_drops + 1] = { verb = "drop", noun = "match" }
+                end
+            end
+        end
+
         local candidates = find_all(ctx, "match")
         for _, entry in ipairs(candidates) do
             local result = try_plan_match(entry, ctx, visited)
-            if result then return result end
+            if result then
+                -- Prepend spent-match drops so the hand slot is free
+                for j = #spent_drops, 1, -1 do
+                    table.insert(result, 1, spent_drops[j])
+                end
+                return result
+            end
         end
     end
 
@@ -271,6 +289,13 @@ local function resolve_target(ctx, noun)
                 if zone.accessible ~= false then
                     for _, cid in ipairs(zone.contents or {}) do
                         local item = reg:get(cid)
+                        -- Search inside surface item contents first
+                        if item and item.contents then
+                            for _, inner_id in ipairs(item.contents) do
+                                local inner = reg:get(inner_id)
+                                if inner and kw_match(inner, kw) then return inner end
+                            end
+                        end
                         if item and kw_match(item, kw) then return item end
                     end
                 end

@@ -31,7 +31,8 @@ return {
         { id = "pin",           type = "Pin",                type_id = "f5cd5850-2020-4483-b17f-972eb9242701", location = "pillow.inside" },
 
         -- Nightstand surfaces
-        { id = "candle",        type = "Candle",             type_id = "992df7f3-1b8e-4164-939a-3415f8f6ffe3", location = "nightstand.top" },
+        { id = "candle-holder", type = "Candle Holder",      type_id = "0aeaff45-e2d0-4e58-b47c-139874a218df", location = "nightstand.top" },
+        { id = "candle",        type = "Candle",             type_id = "992df7f3-1b8e-4164-939a-3415f8f6ffe3", location = "candle-holder" },
         { id = "poison-bottle", type = "Poison Bottle",      type_id = "a1043287-aeeb-4eb7-91c4-d0fcd11f86e3", location = "nightstand.top" },
         { id = "matchbox",      type = "Matchbox",           type_id = "41eb8a2f-972f-4245-a1fb-bbfdcaad4868", location = "nightstand.inside" },
 

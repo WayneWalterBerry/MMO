@@ -393,6 +393,16 @@ local function find_visible(ctx, keyword)
                 if zone.accessible ~= false then
                     for _, item_id in ipairs(zone.contents or {}) do
                         local item = reg:get(item_id)
+                        -- Search inside a surface item's contents first
+                        -- (e.g., candle inside candle-holder on nightstand)
+                        if item and item.contents then
+                            for _, inner_id in ipairs(item.contents) do
+                                local inner = reg:get(inner_id)
+                                if inner and matches_keyword(inner, kw) then
+                                    return inner, "container", item, nil
+                                end
+                            end
+                        end
                         if item and matches_keyword(item, kw) then
                             return item, "surface", obj, sname
                         end
@@ -809,6 +819,13 @@ local function get_light_level(ctx)
             for _, zone in pairs(obj.surfaces) do
                 for _, item_id in ipairs(zone.contents or {}) do
                     local item = reg:get(item_id)
+                    -- Check contents of surface items (e.g., candle inside holder)
+                    if item and item.contents then
+                        for _, inner_id in ipairs(item.contents) do
+                            local inner = reg:get(inner_id)
+                            if inner and inner.casts_light then return "lit" end
+                        end
+                    end
                     if item and item.casts_light then return "lit" end
                 end
             end
