@@ -23,23 +23,34 @@ return {
 
     categories = {"fabric", "container", "wearable"},
 
-    -- Wearable: can be worn on head, but blocks vision
+    -- Wearable: defaults to back (backpack), can also be worn on head
     wear = {
-        slot = "head",
+        slot = "back",
         layer = "outer",
-        blocks_vision = true,
-        container_access_when_worn = false,
+        blocks_vision = false,
+        container_access_when_worn = true,
         wear_quality = "makeshift",
     },
 
-    on_look = function(self)
+    -- Alternate wear mode: pulling it over your head blocks vision
+    wear_alternate = {
+        head = {
+            slot = "head",
+            layer = "outer",
+            blocks_vision = true,
+            container_access_when_worn = false,
+        },
+    },
+
+    on_look = function(self, registry)
         if #self.contents == 0 then
             return self.description .. "\n\nIt is empty."
         end
 
         local lines = {self.description, "\nInside the sack:"}
         for _, id in ipairs(self.contents) do
-            table.insert(lines, "  " .. id)
+            local item = registry and registry:get(id)
+            table.insert(lines, "  " .. (item and item.name or id))
         end
         return table.concat(lines, "\n")
     end,

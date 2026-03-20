@@ -158,6 +158,14 @@ local function preprocess_natural_language(input)
     return "uncork", "bottle"
   end
 
+  -- "use X on Y" → sew Y with X (crafting shorthand)
+  local use_tool, use_target = lower:match("^use%s+(.+)%s+on%s+(.+)$")
+  if use_tool and use_target then
+    if use_tool:match("needle") or use_tool:match("thread") then
+      return "sew", use_target .. " with " .. use_tool
+    end
+  end
+
   -- "push X back" / "put X back in Y" → put
   local push_back_target = lower:match("^push%s+(.+)%s+back")
   if push_back_target then

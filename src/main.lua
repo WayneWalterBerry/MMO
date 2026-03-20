@@ -238,6 +238,20 @@ local context = {
 context.on_tick = function(ctx)
     local p = ctx.player
 
+    -- Blood tick-down: wound stops bleeding after N turns
+    if p.state.bloody and p.state.bleed_ticks then
+        p.state.bleed_ticks = p.state.bleed_ticks - 1
+        if p.state.bleed_ticks <= 0 then
+            p.state.bloody = false
+            p.state.bleed_ticks = nil
+            print("")
+            print("The bleeding has stopped. The blood on your hands is drying.")
+        elseif p.state.bleed_ticks == 2 then
+            print("")
+            print("Your wound is still bleeding, but it's slowing.")
+        end
+    end
+
     -- Match flame countdown (legacy -- FSM objects handle their own tick)
     if p.state.has_flame and p.state.has_flame > 0 then
         p.state.has_flame = p.state.has_flame - 1

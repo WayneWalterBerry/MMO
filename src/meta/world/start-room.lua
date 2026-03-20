@@ -56,6 +56,7 @@ return {
         -- Sack contents
         { id = "needle",        type = "Needle",             type_id = "07b9daaf-ee36-408e-8c66-d794bc175ed1", location = "sack" },
         { id = "thread",        type = "Thread",             type_id = "8a7edb7e-9dff-4587-a104-4710cb270058", location = "sack" },
+        { id = "sewing-manual", type = "Sewing Manual",      type_id = "3f8a1c9d-7e52-4b6f-a831-9d4e6f2c8b71", location = "sack" },
 
         -- Rug surface (hidden -- must lift rug to find)
         { id = "brass-key",     type = "Brass Key",          type_id = "4586b2cd-3240-46de-8fb8-5216ad9d4830", location = "rug.underneath" },

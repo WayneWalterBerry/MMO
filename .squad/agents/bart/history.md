@@ -696,3 +696,26 @@ Root cause: fake Y/N prompt that just exited. Fix: replaced with honest "Game ov
 - State labels in object names are an anti-pattern. Internal state metadata should never pollute the `name` field — keep it clean for player-facing display. State is tracked by `_state`, expressed through `description` and `on_look`.
 - Debug output should be gated at construction time, not just at runtime. If a constructor prints diagnostics, the flag must be passed in — can't set it after the fact.
 - "Coming soon" UI promises (like restart) should never ship. Either implement the feature or display honest text. False affordances are worse than no affordance.
+- Skills as binary table lookup (`player.skills[name] = true`) is the right level of complexity for V1. No proficiency, no XP, no leveling. The gate check is one line.
+- Crafting recipes belong ON the material object (e.g., `cloth.crafting.sew`), not on the tool or in a global table. This keeps content self-describing and avoids external registries.
+- Alternate wear modes need careful lifecycle: save original config before override, restore on remove. Otherwise the object's `wear` table gets permanently mutated.
+- "Take X from Y" must handle both `container + contents` and `surfaces` with `accessible` checks. Surface-based containers (wardrobe, nightstand) are common enough to warrant first-class support.
+- Curtains daylight toggle was already fully implemented via FSM + light system flags. Always check existing code before implementing — sometimes the architecture already handles it.
+
+---
+
+### Session: Player Skills System + Gap Fixes (2026-03-26)
+**Status:** ✅ COMPLETE
+**Outcome:** 7 deliverables implemented across verb system, object model, and player state
+
+**Changes Made:**
+1. **Player Skills System:** Skill gate checking in verb handlers. READ verb grants skills from objects with `grants_skill` field.
+2. **SEW Verb:** Full crafting implementation — skill gate, tool resolution, material consumption, product spawning.
+3. **Skill Discovery:** Sewing manual object created, placed in sack (wardrobe). READ manual → learn sewing.
+4. **Curtains FSM:** Already working — confirmed `allows_daylight`/`filters_daylight` wired through FSM + light system.
+5. **Wearable Container (Sack):** Defaults to back (backpack), supports "wear on head" for vision blocking. Alternate wear mode system.
+6. **Blood Persistence:** Bleed ticks count down per turn. Warning at tick 2, stops at tick 0.
+7. **Wardrobe FSM:** Refactored from mutation-based to inline FSM. Single file, closed/open states, surface contents preserved.
+
+**Files Modified:** `src/engine/verbs/init.lua`, `src/engine/loop/init.lua`, `src/main.lua`, `src/meta/objects/sack.lua`, `src/meta/objects/wardrobe.lua`, `src/meta/world/start-room.lua`
+**Files Created:** `src/meta/objects/sewing-manual.lua`

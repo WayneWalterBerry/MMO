@@ -19,21 +19,21 @@
 ### REQ-002: Finite State Machine (FSM) Inline
 - **Directive:** Each object manages its own state transitions via built-in FSM (match: unlit → lit → spent; nightstand: closed ↔ open)
 - **Source:** D-7, D-14 (FSM Object Lifecycle System Design)
-- **Status:** ✅ Designed, ⏳ partially implemented
+- **Status:** ✅ Implemented (engine complete, not all objects converted yet — wardrobe pending)
 - **Details:** One logical object per FSM. State transitions are event-driven (1 tick = 1 player command). Terminal states prevent impossible actions.
 - **Related Docs:** `fsm-object-lifecycle.md`
 
 ### REQ-003: Composite Objects with Detachable Parts
 - **Directive:** Objects can have sub-objects (parts) that sometimes detach, becoming independent objects
 - **Source:** D-2 (Composite & Detachable Object System)
-- **Status:** ✅ Designed, ⏳ partially implemented
+- **Status:** ✅ Implemented (core works, reversibility inconsistent)
 - **Details:** Single-file architecture; parts detach via factory functions. Parent transitions to `{base_state}_without_PART`. Reversibility is design-time choice.
 - **Related Docs:** `composite-objects.md`, `fsm-object-lifecycle.md`
 
 ### REQ-004: Code Mutation Model (True Rewrite)
 - **Directive:** When object state changes, the object's code is literally rewritten. Old definition replaced by new one. Code IS state.
 - **Source:** D-14 (Mutation Model: True Code Rewrite), D-8.2 (Code Mutation Over State Flags)
-- **Status:** ✅ Designed, ⏳ partially implemented
+- **Status:** ✅ Implemented
 - **Details:** Mutation variants stored as dormant strings; verb triggers full code swap. No separate state flags. Uses immutable baseline + mutable overlay pattern.
 - **Related Docs:** `fsm-object-lifecycle.md`, `architecture-decisions.md`
 
@@ -51,14 +51,14 @@
 ### REQ-006: Wearable Slot System
 - **Directive:** Objects can be worn on specific body parts (head, hands, torso, feet, etc.). Each worn item occupies one slot.
 - **Source:** D-33 (Player Skills System), general design
-- **Status:** ✅ Designed
+- **Status:** ✅ Implemented
 - **Details:** Player has finite worn slots. Conflicts detected when trying to wear items to occupied slots. Wearables affect vision/sensory state.
 - **Related Docs:** `wearable-system.md`, `player-skills.md`
 
 ### REQ-007: Wearable Layers & Conflicts
 - **Directive:** Some wearables conflict with each other (can't wear both hat and helmet). System enforces wear_layer and slot constraints.
 - **Source:** General design, `wearable-system.md`
-- **Status:** ✅ Designed
+- **Status:** ✅ Implemented
 - **Details:** Each wearable declares its wear_slot and optional wear_layer. Layer conflicts prevent simultaneous wear.
 - **Related Docs:** `wearable-system.md`
 
@@ -72,7 +72,7 @@
 ### REQ-009: Container as Wearable (e.g., Backpack)
 - **Directive:** Some wearables are containers (backpack, sack). Can wear AND store items simultaneously.
 - **Source:** General design
-- **Status:** ✅ Designed
+- **Status:** ⏳ Partially Implemented (design clear, sack not configured yet)
 - **Details:** Backpack is both worn and has `contents`. Worn containers contribute to inventory weight calculation.
 - **Related Docs:** `wearable-system.md`, `containment-constraints.md`
 
@@ -83,21 +83,21 @@
 ### REQ-010: Spatial Relationships (ON/UNDER/BEHIND/COVERING)
 - **Directive:** Objects exist in spatial layers: ON top of something, UNDER something, BEHIND something, COVERING something.
 - **Source:** D-4 (Room layout and movable furniture)
-- **Status:** ✅ Designed, ⏳ partially implemented
+- **Status:** ✅ Implemented
 - **Details:** Bed ON rug; rug COVERS trap door. Multi-surface containment model in engine. Each zone has own capacity and accessibility.
 - **Related Docs:** `containment-constraints.md`, `dynamic-room-descriptions.md`
 
 ### REQ-011: Movable Furniture
 - **Directive:** Players can move furniture (PUSH bed, PULL rug). Movement reveals hidden objects beneath.
 - **Source:** D-4 (Room layout and movable furniture)
-- **Status:** ✅ Designed
+- **Status:** ✅ Implemented
 - **Details:** Movable furniture has `stackable = true`. Players move via verb handlers (PUSH/PULL/MOVE). Removal chain: move rug → reveal trap door.
 - **Related Docs:** `dynamic-room-descriptions.md`, `room-exits.md`
 
 ### REQ-012: Hidden Objects & Discovery Mechanic
 - **Directive:** Objects can be hidden under/behind other objects. Moving top object reveals hidden item (discovery puzzle).
 - **Source:** D-4 (Room layout and movable furniture)
-- **Status:** ✅ Designed
+- **Status:** ✅ Implemented
 - **Details:** Trap door hidden under rug. `on_look` function hints without revealing. Separate verbs (LOOK UNDER) expose.
 - **Related Docs:** `dynamic-room-descriptions.md`, `composite-objects.md`
 
@@ -218,28 +218,28 @@
 ### REQ-027: Player Skills (Binary, Discovery-Based)
 - **Directive:** Player learns skills through gameplay (find manual, practice, NPC teaching, puzzle solve). Binary: have skill or don't.
 - **Source:** D-33 (Player Skills System)
-- **Status:** ✅ Designed, ⏳ partially implemented
+- **Status:** ⏳ In Progress
 - **Details:** Skills gate verb+tool combinations. Without lockpicking, pin is just a pin. WITH lockpicking, pin → lock pick tool.
 - **Related Docs:** `player-skills.md`, `composite-objects.md`
 
 ### REQ-028: Skill Gates on Verbs
 - **Directive:** Some verbs (PICK_LOCK, SEW, WRITE) require a prerequisite skill. Engine checks skill before allowing mutation.
 - **Source:** D-33 (Player Skills System)
-- **Status:** ✅ Designed
+- **Status:** ⏳ In Progress
 - **Details:** Verb handler checks `player.skills[required_skill]` before proceeding. Graceful fail message if skill missing.
 - **Related Docs:** `player-skills.md`, `verb-system.md`
 
 ### REQ-029: Consumable Failure States (Poison, Injury)
 - **Directive:** Some verbs can fail in dangerous ways. TASTE poison → death. PRICK with needle → blood source.
 - **Source:** D-32 (Blood as Writing Instrument), D-33 (Player Skills System)
-- **Status:** ✅ Designed
+- **Status:** ⏳ Partially Implemented (blood state set but doesn't persist)
 - **Details:** Objects can declare `on_taste_effect = "poison"` or provide `injury_source` capability.
 - **Related Docs:** `player-skills.md`, `tool-objects.md`
 
 ### REQ-030: Sewing as Crafting Skill
 - **Directive:** Player with sewing skill + needle (tool) can transform cloth into wearable items. Cloth becomes raw material when skill unlocked.
 - **Source:** D-36 (Sewing as Crafting Skill)
-- **Status:** ✅ Designed
+- **Status:** ⏳ In Progress
 - **Details:** Needle provides `sewing_tool` capability. SEW verb requires skill gate + tool. Mutates cloth → garment.
 - **Related Docs:** `player-skills.md`, `composite-objects.md`
 
@@ -264,7 +264,7 @@
 ### REQ-033: Daylight Through Windows
 - **Directive:** Outside areas during daytime (6 AM to 6 PM) have natural light via `allows_daylight = true`. Inside areas need fire source OR window to daylight.
 - **Source:** D-26 (Light and Time Systems)
-- **Status:** ✅ Designed, ⏳ partially implemented
+- **Status:** ⏳ Partially Implemented (logic exists, curtains not wired)
 - **Details:** Curtains can be opened (allows_daylight) or closed (blocks daylight). Window position affects light propagation.
 - **Related Docs:** `dynamic-room-descriptions.md`, `composite-objects.md`
 
@@ -329,28 +329,28 @@
 ### REQ-040: Sheet of Paper Object
 - **Directive:** Game includes paper object. Words can be written on it.
 - **Source:** D-30 (Paper and Writing System)
-- **Status:** ✅ Designed, ⏳ partially implemented
+- **Status:** ✅ Implemented
 - **Details:** `paper.lua` object defined. Can be examined and written on.
 - **Related Docs:** `composite-objects.md`, `tool-objects.md`
 
 ### REQ-041: WRITE Verb (Requires Writing Instrument)
 - **Directive:** WRITE ON paper WITH pen/pencil/blood. Writing requires tool (pen, pencil, or blood source).
 - **Source:** D-30 (Paper and Writing System)
-- **Status:** ✅ Designed
+- **Status:** ✅ Implemented
 - **Details:** `requires_tool = "writing_instrument"`. Pen, pencil, blood all provide this capability.
 - **Related Docs:** `tool-objects.md`, `verb-system.md`
 
 ### REQ-042: Paper Mutation on Writing
 - **Directive:** When text written on paper, paper object mutates to `paper-with-writing`. Code rewrite includes written text in description.
 - **Source:** D-31 (Paper Mutation on Writing)
-- **Status:** ✅ Designed
+- **Status:** ✅ Implemented
 - **Details:** Engine generates variant file `paper-with-{content}` or directly mutates paper object. Text becomes permanent part of paper's definition.
 - **Related Docs:** `fsm-object-lifecycle.md`, `composite-objects.md`
 
 ### REQ-043: Blood as Writing Instrument
 - **Directive:** Player can cut/prick self with knife/pin to draw blood. Blood is writing instrument. Creates tool chain: knife/pin → blood → write.
 - **Source:** D-32 (Blood as Writing Instrument)
-- **Status:** ✅ Designed
+- **Status:** ⏳ Partially Implemented (works but blood doesn't decay)
 - **Details:** Knife/pin provide `injury_source` capability. Using them triggers blood state. Player must actively choose to injure self. Dark, consequential.
 - **Related Docs:** `player-skills.md`, `tool-objects.md`
 
@@ -375,21 +375,21 @@
 ### REQ-046: Sharp Tool Capability
 - **Directive:** Objects that cut (knife, glass shard, needle) provide `sharp_tool` capability. CUT verb requires it.
 - **Source:** General design
-- **Status:** ✅ Designed
+- **Status:** ✅ Implemented
 - **Details:** Enables multiple sharp tool implementations. Integrates with craft system.
 - **Related Docs:** `tool-objects.md`, `player-skills.md`
 
 ### REQ-047: Writing Instrument Capability
 - **Directive:** Objects that write (pen, pencil, blood) provide `writing_instrument` capability. WRITE verb requires it.
 - **Source:** D-30, D-41 (Paper and Writing System)
-- **Status:** ✅ Designed
+- **Status:** ✅ Implemented
 - **Details:** Enables extensibility (pencil, charcoal, blood all provide same capability). Different sensory qualities.
 - **Related Docs:** `tool-objects.md`, `player-skills.md`
 
 ### REQ-048: Sewing Tool Capability
 - **Directive:** Needle provides `sewing_tool` capability. SEW verb requires it + sewing skill.
 - **Source:** D-36 (Sewing as Crafting Skill)
-- **Status:** ✅ Designed
+- **Status:** ✅ Implemented
 - **Details:** Skill gate + tool gate = double-gated verb. Prevents crafting without training.
 - **Related Docs:** `tool-objects.md`, `player-skills.md`
 
@@ -399,17 +399,17 @@
 
 | Category | Designed | Implemented | Tested | Status |
 |----------|----------|-------------|--------|--------|
-| Object FSM | ✅ | ⏳ | ⏳ | Phase 2 |
-| Wearables | ✅ | ⏳ | ⏳ | Phase 2 |
-| Spatial | ✅ | ⏳ | ⏳ | Phase 2 |
+| Object FSM | ✅ | ✅ | ⏳ | Phase 2 |
+| Wearables | ✅ | ✅ | ⏳ | Phase 2 |
+| Spatial | ✅ | ✅ | ⏳ | Phase 2 |
 | Containers | ✅ | ✅ | ✅ | Ready |
 | Consumables | ✅ | ✅ | ⏳ | Phase 2 |
 | Parser | ✅ | ✅ | ✅ | Ready |
-| Skills | ✅ | ⏳ | ⏳ | Phase 2 |
+| Skills | ✅ | ⏳ | ⏳ | In Progress |
 | Light/Dark | ✅ | ✅ | ⏳ | Phase 2 |
 | Death/Game Over | ✅ | ✅ | ✅ | Ready |
 | Newspaper | ✅ | ✅ | ✅ | Ready |
-| Paper/Writing | ✅ | ⏳ | ⏳ | Phase 2 |
+| Paper/Writing | ✅ | ✅ | ⏳ | Phase 2 |
 | Tools/Capabilities | ✅ | ✅ | ✅ | Ready |
 
 ---

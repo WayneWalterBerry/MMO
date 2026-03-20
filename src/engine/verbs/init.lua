@@ -1283,6 +1283,27 @@ function verbs.create()
             print("It is too dark to read anything.")
             return
         end
+
+        -- Find the object to check for skill-granting properties
+        local obj = find_visible(ctx, noun)
+        if not obj then
+            obj = find_in_inventory(ctx, noun)
+        end
+
+        if obj and obj.grants_skill then
+            local skill = obj.grants_skill
+            if ctx.player.skills[skill] then
+                print(obj.already_learned_message
+                    or ("You read it again, but you already know this."))
+            else
+                ctx.player.skills[skill] = true
+                print(obj.skill_message
+                    or ("You read carefully and learn something new."))
+            end
+            return
+        end
+
+        -- Default: delegate to examine
         handlers["look"](ctx, "at " .. noun)
     end
     handlers["search"] = function(ctx, noun)
@@ -1671,7 +1692,10 @@ function verbs.create()
             if not bag then
                 -- Also check visible containers (detached drawer on floor, etc.)
                 local visible_bag = find_visible(ctx, from_container)
-                if visible_bag and visible_bag.container and visible_bag.contents then
+                if visible_bag and (visible_bag.container and visible_bag.contents) then
+                    bag = visible_bag
+                elseif visible_bag and visible_bag.surfaces then
+                    -- Surface-based container (wardrobe, etc.)
                     bag = visible_bag
                 elseif visible_bag then
                     print((visible_bag.name or "That") .. " is not a container.")
@@ -1681,20 +1705,39 @@ function verbs.create()
                     return
                 end
             end
-            if not bag.container or not bag.contents then
+
+            -- Determine where to search: regular contents or surfaces
+            local search_lists = {}
+            if bag.container and bag.contents then
+                search_lists[#search_lists + 1] = { source = bag.contents, type = "contents" }
+            end
+            if bag.surfaces then
+                for sname, zone in pairs(bag.surfaces) do
+                    if zone.accessible ~= false and zone.contents then
+                        search_lists[#search_lists + 1] = { source = zone.contents, type = "surface", name = sname }
+                    end
+                end
+            end
+
+            if #search_lists == 0 then
                 print((bag.name or "That") .. " is not a container.")
                 return
             end
+
             local kw = from_item:lower()
                 :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
-            local found_idx, found_id
-            for i, item_id in ipairs(bag.contents) do
-                local item = ctx.registry:get(item_id)
-                if item and matches_keyword(item, kw) then
-                    found_idx = i
-                    found_id = item_id
-                    break
+            local found_idx, found_id, found_list
+            for _, sl in ipairs(search_lists) do
+                for i, item_id in ipairs(sl.source) do
+                    local item = ctx.registry:get(item_id)
+                    if item and matches_keyword(item, kw) then
+                        found_idx = i
+                        found_id = item_id
+                        found_list = sl.source
+                        break
+                    end
                 end
+                if found_id then break end
             end
             if not found_id then
                 print("There is no " .. from_item .. " in " .. (bag.name or "that") .. ".")
@@ -1705,7 +1748,7 @@ function verbs.create()
                 print("Your hands are full. Drop something first.")
                 return
             end
-            table.remove(bag.contents, found_idx)
+            table.remove(found_list, found_idx)
             ctx.player.hands[slot] = found_id
             local item = ctx.registry:get(found_id)
             item.location = "player"
@@ -2882,6 +2925,7 @@ function verbs.create()
 
             ctx.player.state = ctx.player.state or {}
             ctx.player.state.bloody = true
+            ctx.player.state.bleed_ticks = 10
             print("You draw the blade across your palm. Blood wells up, dark and warm.")
             print("Your hands are now bloody.")
             return
@@ -2970,6 +3014,7 @@ function verbs.create()
 
             ctx.player.state = ctx.player.state or {}
             ctx.player.state.bloody = true
+            ctx.player.state.bleed_ticks = 8
             print("You prick your finger with " .. (tool.name or "the sharp point") .. ". A bead of blood forms.")
             print("Your hands are now bloody.")
             return
@@ -2979,10 +3024,156 @@ function verbs.create()
     end
 
     ---------------------------------------------------------------------------
-    -- SEW {material} WITH {tool} -- STUB (requires future skill system)
+    -- SEW {material} WITH {tool} -- crafting verb (requires sewing skill)
     ---------------------------------------------------------------------------
     handlers["sew"] = function(ctx, noun)
-        print("You don't know how to sew. Perhaps you could learn this skill somehow.")
+        if noun == "" then
+            print("Sew what? (Try: sew cloth with needle)")
+            return
+        end
+
+        if not has_some_light(ctx) then
+            print("It is too dark to sew anything. You'd stab yourself.")
+            return
+        end
+
+        -- Skill gate: must know sewing
+        if not ctx.player.skills or not ctx.player.skills.sewing then
+            print("You don't know how to sew. Perhaps you could find instructions somewhere.")
+            return
+        end
+
+        -- Parse: "sew X with Y" or just "sew X"
+        local material_word, tool_word = noun:match("^(.+)%s+with%s+(.+)$")
+        if not material_word then material_word = noun end
+
+        -- Strip articles
+        material_word = material_word:lower()
+            :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+        if tool_word then
+            tool_word = tool_word:lower()
+                :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+        end
+
+        -- Find the material (must be visible or in inventory)
+        local material = find_in_inventory(ctx, material_word)
+        if not material then
+            material = find_visible(ctx, material_word)
+        end
+        if not material then
+            print("You don't see any " .. material_word .. " to sew.")
+            return
+        end
+
+        -- Check if material has crafting.sew recipe
+        if not material.crafting or not material.crafting.sew then
+            print("You can't sew " .. (material.name or "that") .. ".")
+            return
+        end
+
+        local recipe = material.crafting.sew
+
+        -- Find the sewing tool (needle)
+        local tool = nil
+        if tool_word then
+            tool = find_in_inventory(ctx, tool_word)
+            if not tool then
+                print("You don't have " .. tool_word .. ".")
+                return
+            end
+            if not provides_capability(tool, recipe.requires_tool or "sewing_tool") then
+                print("You can't sew with " .. (tool.name or "that") .. ".")
+                return
+            end
+        else
+            tool = find_tool_in_inventory(ctx, recipe.requires_tool or "sewing_tool")
+            if not tool then
+                print(recipe.fail_message_no_tool or "You have nothing to sew with.")
+                return
+            end
+        end
+
+        -- Check for sewing material (thread)
+        local thread = find_tool_in_inventory(ctx, "sewing_material")
+        if not thread then
+            print("You need thread to sew with.")
+            return
+        end
+
+        -- Check we have enough materials (recipe.consumes lists required material IDs)
+        local consumes = recipe.consumes or {material.id}
+        local consumed_objs = {}
+        local available = {}
+
+        -- Build list of all reachable objects matching consumed IDs
+        for _, need_id in ipairs(consumes) do
+            local found = false
+            -- Search inventory
+            for i = 1, 2 do
+                local hand_id = ctx.player.hands[i]
+                if hand_id then
+                    local obj = ctx.registry:get(hand_id)
+                    if obj and obj.id:match("^" .. need_id) and not available[hand_id] then
+                        available[hand_id] = obj
+                        consumed_objs[#consumed_objs + 1] = obj
+                        found = true
+                        break
+                    end
+                    -- Check bag contents
+                    if not found and obj and obj.container and obj.contents then
+                        for _, item_id in ipairs(obj.contents) do
+                            local item = ctx.registry:get(item_id)
+                            if item and item.id:match("^" .. need_id) and not available[item_id] then
+                                available[item_id] = item
+                                consumed_objs[#consumed_objs + 1] = item
+                                found = true
+                                break
+                            end
+                        end
+                    end
+                end
+                if found then break end
+            end
+            -- Search room if not found in inventory
+            if not found then
+                for _, obj_id in ipairs(ctx.current_room.contents or {}) do
+                    local obj = ctx.registry:get(obj_id)
+                    if obj and obj.id:match("^" .. need_id) and not available[obj_id] then
+                        available[obj_id] = obj
+                        consumed_objs[#consumed_objs + 1] = obj
+                        found = true
+                        break
+                    end
+                end
+            end
+            if not found then
+                print("You don't have enough " .. need_id .. " to sew with.")
+                return
+            end
+        end
+
+        -- Print tool use message
+        if tool.on_tool_use and tool.on_tool_use.use_message then
+            print(tool.on_tool_use.use_message)
+        end
+
+        -- Consume materials
+        for _, obj in ipairs(consumed_objs) do
+            remove_from_location(ctx, obj)
+            ctx.registry:remove(obj.id)
+        end
+
+        -- Spawn the product
+        local product_id = recipe.becomes
+        if product_id then
+            spawn_objects(ctx, {product_id})
+        end
+
+        -- Consume tool charge if applicable
+        consume_tool_charge(ctx, tool)
+
+        -- Success message
+        print(recipe.message or ("You sew the materials together."))
     end
 
     handlers["stitch"] = handlers["sew"]
@@ -3313,6 +3504,14 @@ function verbs.create()
         -- Strip leading "on " for "put on X" passthrough
         local target = noun:lower():match("^on%s+(.+)") or noun
 
+        -- Parse "wear X on Y" for slot selection (e.g., "wear sack on head")
+        local slot_override = nil
+        local item_kw, slot_spec = target:match("^(.+)%s+on%s+(%S+)$")
+        if item_kw then
+            slot_override = slot_spec:lower()
+            target = item_kw
+        end
+
         -- Find item in hands
         local obj = nil
         local hand_slot = nil
@@ -3346,6 +3545,17 @@ function verbs.create()
         -- get a minimal default (torso/outer) so they still work
         if not wear then
             wear = { slot = "torso", layer = "outer" }
+        end
+
+        -- Apply alternate slot if requested and available
+        if slot_override and obj.wear_alternate and obj.wear_alternate[slot_override] then
+            local alt = obj.wear_alternate[slot_override]
+            wear = {}
+            for k, v in pairs(obj.wear) do wear[k] = v end
+            for k, v in pairs(alt) do wear[k] = v end
+        elseif slot_override and not (obj.wear_alternate and obj.wear_alternate[slot_override]) then
+            print("You can't wear " .. (obj.name or "that") .. " on your " .. slot_override .. ".")
+            return
         end
 
         local slot = wear.slot or "torso"
@@ -3395,9 +3605,22 @@ function verbs.create()
         ctx.player.worn[#ctx.player.worn + 1] = obj.id
         obj.location = "player"
 
+        -- Store the active wear config on the object (for slot overrides)
+        -- Save original wear for restoration on remove
+        if not obj._base_wear then
+            obj._base_wear = obj.wear
+        end
+        obj.wear = wear
+
         -- Flavor messages based on wear metadata
         if wear.blocks_vision then
             print("You pull " .. (obj.name or obj.id) .. " over your head. Everything goes dark.")
+        elseif slot == "back" then
+            if obj.container then
+                print("You sling " .. (obj.name or obj.id) .. " over your shoulder. It makes a serviceable, if ugly, backpack.")
+            else
+                print("You put " .. (obj.name or obj.id) .. " on your back.")
+            end
         elseif wear.provides_armor and wear.provides_armor > 0 then
             if wear.wear_quality == "makeshift" then
                 print("You place " .. (obj.name or obj.id) .. " on your " .. slot .. ". It makes a ridiculous helmet, but you feel... slightly tougher?")
@@ -3482,6 +3705,12 @@ function verbs.create()
 
         table.remove(ctx.player.worn, worn_idx)
         ctx.player.hands[slot] = obj.id
+
+        -- Restore original wear config if it was overridden by slot selection
+        if obj._base_wear then
+            obj.wear = obj._base_wear
+            obj._base_wear = nil
+        end
 
         if had_vision_block then
             print("You pull " .. (obj.name or obj.id) .. " off your head. Light floods back in.")
@@ -3685,7 +3914,7 @@ function verbs.create()
         print("  look at <thing>   - examine something closely")
         print("  look in/on/under  - inspect a surface")
         print("  examine <thing>   - same as 'look at'")
-        print("  read <thing>      - read text on an object")
+        print("  read <thing>      - read text on an object (may teach skills)")
         print("  find <thing>      - same as 'examine'")
         print("  feel              - grope around (works in darkness)")
         print("  feel <thing>      - feel an object by touch")
