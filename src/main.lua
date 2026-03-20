@@ -353,7 +353,7 @@ context.update_status = function(ctx)
     -- Compute game time
     local real_elapsed = os.time() - ctx.game_start_time
     local total_hours  = (real_elapsed * GAME_SECONDS_PER_REAL_SECOND) / 3600
-    local abs_hour     = GAME_STATUS_START_HOUR + total_hours
+    local abs_hour     = GAME_STATUS_START_HOUR + total_hours + (ctx.time_offset or 0)
     local hour   = math.floor(abs_hour % 24)
     local minute = math.floor((abs_hour * 60) % 60)
     local period = hour >= 12 and "PM" or "AM"

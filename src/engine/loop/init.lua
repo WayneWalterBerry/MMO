@@ -196,6 +196,21 @@ local function preprocess_natural_language(input)
     return "inventory", ""
   end
 
+  -- Sleep phrases: "take a nap", "go to sleep", "lie down", "go to bed"
+  if lower:match("^take%s+a%s+nap") then
+    return "sleep", ""
+  end
+  local go_sleep_noun = lower:match("^go%s+to%s+sleep%s*(.*)")
+  if go_sleep_noun then
+    return "sleep", go_sleep_noun
+  end
+  if lower:match("^go%s+to%s+bed") then
+    return "sleep", ""
+  end
+  if lower:match("^lie%s+down") then
+    return "sleep", ""
+  end
+
   return nil, nil
 end
 

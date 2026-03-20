@@ -39,6 +39,26 @@
 
 ## Recent Updates
 
+### Session: SLEEP Verb Implementation
+**Status:** ✅ COMPLETE
+**Outcome:** Clock-advance SLEEP mechanic fully implemented
+
+**What was built:**
+- SLEEP / REST / NAP verb handler in `src/engine/verbs/init.lua`
+- `ctx.time_offset` field added for game clock advancement (both `get_game_time` and `update_status` updated)
+- Duration parsing: "sleep for 2 hours", "sleep for 30 minutes", "sleep until dawn", "sleep until night"
+- NLP preprocessing in `src/engine/loop/init.lua`: "take a nap", "go to sleep", "go to bed", "lie down"
+- FSM objects tick during sleep (~10 ticks per game hour) — candles burn down, matches expire, blood dries
+- Candle-burnout-during-sleep detection with flavor text
+- Dawn-crossing detection with curtains-open/closed variants
+- Safety: min 10 min, max 12 hours, with rejection messages
+- Help text updated
+
+**Files modified:**
+- `src/engine/verbs/init.lua` — SLEEP handler + time_offset in get_game_time
+- `src/engine/loop/init.lua` — NLP sleep phrase patterns
+- `src/main.lua` — time_offset in status bar calculation
+
 ### Session: Parser Pipeline Completion (2026-03-19T18:12:24Z)
 **Status:** ✅ COMPLETE  
 **Outcome:** End-to-end parser pipeline (Phase 1 & 2) completed
