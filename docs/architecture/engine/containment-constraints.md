@@ -3,7 +3,7 @@
 **Author:** Bart (Architect)  
 **Date:** 2026-03-19  
 **Status:** Proposed — awaiting team review  
-**Related:** `docs/architecture/src-structure.md`, `.squad/decisions.md` (Decision 3)
+**Related:** `src-structure.md`, `../../.squad/decisions.md` (Decision 3)
 
 ---
 

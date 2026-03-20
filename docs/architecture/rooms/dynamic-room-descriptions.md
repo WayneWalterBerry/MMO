@@ -3,7 +3,7 @@
 **Author:** Bart (Architect)  
 **Date:** 2026-03-20  
 **Status:** Proposed — awaiting team review  
-**Related:** `containment-constraints.md`, `room-exits.md`, `src-structure.md`
+**Related:** `../engine/containment-constraints.md`, `room-exits.md`, `../engine/src-structure.md`
 
 ---
 

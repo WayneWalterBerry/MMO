@@ -3,7 +3,7 @@
 **Author:** Bart (Architect)  
 **Date:** 2026-03-19  
 **Status:** Proposed — awaiting team review  
-**Related:** `docs/design/containment-constraints.md`, `copilot-directive-exits-as-objects.md`, `copilot-directive-room-exits.md`
+**Related:** `../engine/containment-constraints.md`, `copilot-directive-exits-as-objects.md`, `copilot-directive-room-exits.md`
 
 ---
 

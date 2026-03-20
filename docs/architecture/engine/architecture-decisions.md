@@ -11,7 +11,7 @@
 
 This document captures the eight architectural decisions made on 2026-03-19 that define the engine's core shape. These decisions should be read as a package — they reinforce each other. Understanding one in isolation risks missing the design intent.
 
-Cross-references to prior decisions use the format **[D-N]** where N matches the decision number in [`.squad/decisions.md`](../../.squad/decisions.md).
+Cross-references to prior decisions use the format **[D-N]** where N matches the decision number in [`.squad/decisions.md`](../../../.squad/decisions.md).
 
 ---
 
@@ -413,9 +413,8 @@ D-21 (No Merge)    ─────┴► together define inter-universe interact
 
 ## Cross-References
 
-- **Vocabulary:** [`docs/architecture/vocabulary.md`](../architecture/vocabulary.md) — definitions for all terms used here
-- **Game Design Foundations:** [`game-design-foundations.md`](../design/game-design-foundations.md) — verbs, objects, player model
-- **Full Decision Log:** [`.squad/decisions.md`](../../.squad/decisions.md) — canonical record of all numbered decisions
+- **Game Design Foundations:** [`game-design-foundations.md`](../../docs/design/game-design-foundations.md) — verbs, objects, player model
+- **Full Decision Log:** [`.squad/decisions.md`](../../../.squad/decisions.md) — canonical record of all numbered decisions
 - **Research — Language Architecture:** `resources/research/architecture/code-data-blended-languages.md`
 - **Research — Modern Structures:** `resources/research/architecture/modern-text-adventure-data-structures.md`
 
