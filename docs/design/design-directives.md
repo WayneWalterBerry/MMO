@@ -45,132 +45,19 @@
 
 ## Tools System
 
-### Tool Convention (requires_tool / provides_tool)
-
-**Core Pattern:** Tools enable verb actions on other objects via **capability matching**, not item-ID matching.
-
-- **`requires_tool = "capability"`** — Declared on a mutation target; declares that this verb/mutation needs a tool with a specific capability.
-- **`provides_tool = "capability"`** — Declared on a tool object; declares what capability this tool provides.
-
-The engine resolves tool requirements by searching the player's inventory for any object whose `provides_tool` matches the target's `requires_tool`.
-
-#### Tool Categories & Examples
-
-| Tool Capability | Examples | Use Case |
-|-----------------|----------|----------|
-| **fire_source** | Match, matchbox, lighter, flint | Light candles, torches, fire |
-| **cutting_tool** | Knife, sword, razor | Cut paper, rope, cloth; self-injury |
-| **writing_tool** | Pen, pencil | Write on paper (WRITE ON paper WITH pen) |
-| **prying_tool** | Crowbar, chisel | Open sealed containers, doors |
-| **injury_source** | Knife, pin | Draw blood for use as writing instrument |
-
-#### Consumable Tools
-
-Tools can be consumable — destroyed after a single use or after a timed duration:
-
-```lua
--- match-lit.lua (lit match, provides fire_source temporarily)
-provides_tool = "fire_source",
-consumable = true,
-burn_remaining = 30,
-on_consumed = {
-    message = "The match flame reaches your fingers...",
-    becomes = nil,
-},
-```
-
-When a consumable tool is used (e.g., LIGHT candle WITH match-lit), the tool is destroyed after the action. Timed consumables (like burning matches) also auto-consume when `burn_remaining` reaches 0.
-
-#### Compound Tool Actions
-
-Some actions require two objects working together. Neither alone produces the result:
-
-```lua
--- match.lua (unlit match — NOT a fire_source)
-mutations = {
-    strike = {
-        becomes = "match-lit",
-        requires = "matchbox",
-        requires_property = "has_striker",
-        message = "You drag the match head across the striker strip...",
-        fail_message = "You need a rough surface to strike it on.",
-    },
-},
-```
-
-STRIKE match ON matchbox → match becomes match-lit (now provides fire_source). The matchbox is a container with `has_striker = true`; it holds the matches and provides the striking surface.
-
-#### Tool Matching vs. Item-ID Matching
-
-| Pattern | Matches by | Example | Use |
-|---------|-----------|---------|-----|
-| `requires = "item-id"` | Specific item ID | `requires = "brass-key"` → bedroom door | Unique keys; one-to-one relationships |
-| `requires_tool = "capability"` | Any provider of capability | `requires_tool = "fire_source"` → any match, lighter, etc. | Interchangeable tools; flexibility |
-
-**Design Rule:** Use `requires = "item-id"` for unique items (specific key fits specific lock). Use `requires_tool = "capability"` for interchangeable tools (any fire source lights any candle).
+See **[tools-system.md](tools-system.md)** for comprehensive tool design reference.
 
 ---
 
 ## Writing & Paper
 
-### Paper Object
-
-**Core Mechanic:** Sheet of paper is a writable object. Writing on paper requires a writing tool: pen, pencil, or blood. The paper mutates when written on to include the written words.
-
-| Directive | Details | Source |
-|-----------|---------|--------|
-| **Paper Object** | `sheet-paper.lua` or similar | Wayne (2026-03-19T014604Z) |
-| **Writing Tools** | Pen, pencil, or blood | Wayne (2026-03-19T014604Z) |
-| **Interaction Pattern** | WRITE ON {paper} WITH {pen\|pencil\|blood} | Wayne (2026-03-19T014604Z) |
-| **Mutation Behavior** | When words are written, the paper object's code MUTATES to include those words. The paper literally becomes a different object (paper-with-writing) via the mutation engine. | Wayne (2026-03-19T014629Z) |
-| **Reading** | LOOK AT paper shows what was written | Wayne (2026-03-19T014629Z) |
-
-**Implementation Note:** The paper is a beautiful application of the true code rewrite mutation model (D-14) to player-generated content. The paper's code IS its state, including whatever the player wrote.
-
----
-
-## Injury & Blood
-
-### Blood as Writing Instrument
-
-**Core Mechanic:** Players can injure themselves to draw blood, which can be used as a writing instrument on paper.
-
-| Tool | Method | Verb | Result |
-|------|--------|------|--------|
-| **Knife** | Cut self | CUT SELF WITH knife | Draw blood; provides writing capability |
-| **Pin** | Prick self | PRICK SELF WITH pin | Draw blood; provides writing capability |
-
-**Constraint:** Blood is a dark, consequential resource. Players must actively choose to injure themselves to get this writing material. This creates moral/physical stakes around writing.
-
-**Design Note:** Pin and knife are in the `injury_source` tool category. They are also in other categories (pin is a lock-picking tool with the right skill; knife is a cutting/weapon tool).
+See **[writing-paper-system.md](writing-paper-system.md)** for complete writing and paper system reference.
 
 ---
 
 ## Player Skills System
 
-### Skills Mechanics
-
-**Core Pattern:** Players can learn skills (e.g., lockpicking) through gameplay. A skill unlocks new tool+verb combinations that weren't available before. Skills are learned by finding books, practicing, being taught by NPCs, or other narrative triggers.
-
-**Key Design Insight:** The same tool can have different uses depending on the player's skills. A pin without lockpicking skill = prick yourself to draw blood. A pin WITH lockpicking skill = pick a lock (alternative to using brass key) OR prick yourself.
-
-### Skill-Enabled Tool Combinations
-
-| Skill | Tool | Normal Use | Skill-Enabled Use | Replaces |
-|-------|------|-----------|-------------------|----------|
-| **Lockpicking** | Pin | Prick self (injury_source) | Pick lock on door | Brass key (one-time use) |
-| **Weaponry** | Knife | Cut paper (writing tool) | Combat attack | (N/A for V1) |
-
-**Design Rule:** Skills unlock alternative verb→tool combinations, creating emergent puzzle solutions and replay value. A skill doesn't replace the base use; it adds new capabilities.
-
-### Learning Skills
-
-| Method | Example | Design Note |
-|--------|---------|-------------|
-| **Find a book** | "Lockpicking Manual" in library | Player reads book → learns skill |
-| **Practice** | Use lockpicking multiple times → proficiency | Skill grows through repetition |
-| **NPC Teaching** | NPC mentor teaches skill | Narrative trigger; relationship-based |
-| **Puzzle Solution** | Solve puzzle with tool → unlock related skill | Emergent learning |
+See **[player-skills-system.md](player-skills-system.md)** for skill mechanics, learning pathways, and tool combinations.
 
 ---
 
