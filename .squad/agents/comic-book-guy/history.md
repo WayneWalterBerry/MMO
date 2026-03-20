@@ -264,6 +264,132 @@ Bart fixed a critical bug in the FEEL verb handler: it wasn't enumerating access
 **Impact on your design:**
 1. **Progressive disclosure works now.** FEEL AROUND (room summary) → FEEL {object} (detail + contents). Players naturally discover containers by touch.
 2. **Multi-surface objects are fully playable.** Nightstand: drawer feels closed/empty (accessible=false) vs. open/shows matchbox (accessible=true)
+
+---
+
+## Session Update: Composite & Detachable Object System Design (2026-03-25)
+**Status:** ✅ DESIGN COMPLETE
+
+**Deliverable:** `docs/design/composite-objects.md` — comprehensive system for decomposable furniture and parts.
+
+**What I Designed:**
+
+1. **Core Architecture:**
+   - Single-file design: parent + all parts in one `.lua` file (e.g., `nightstand.lua` defines nightstand + drawer)
+   - Part factories: each detachable part has a factory function that instantiates it as an independent object
+   - Detachable parts have unique IDs, sensory descriptions, and properties
+   - Non-detachable parts (legs, structure) are for description only
+
+2. **Detachment Mechanics:**
+   - PULL/REMOVE/UNCORK verbs trigger detachment (general pattern, not per-object)
+   - Detachment creates new object instance in same room as parent
+   - Parent transitions to new FSM state reflecting missing part(s)
+   - State naming: `closed_with_drawer` → `closed_without_drawer`
+
+3. **Single-File Data Structure:**
+   ```lua
+   parts = {
+       drawer = {
+           id = "nightstand-drawer",
+           detachable = true,
+           factory = function(parent) return {...} end
+       }
+   }
+   ```
+   - Part has full properties (keywords, description, weight, size, etc.)
+   - Factory instantiates part as independent object with same location as parent
+   - Supports `carries_contents` flag: drawer keeps its contents when detached
+
+4. **State Model:**
+   - FSM states reflect part presence: `full`, `missing_left`, `missing_all`
+   - Each state has different description, surfaces, accessibility
+   - Transitions triggered by detachment change parent's playable state
+   - Example: nightstand with drawer has `inside` surface (accessible); without drawer has no drawer surface
+
+5. **Verb System for Detachment:**
+   - PULL: generic detachment (PULL DRAWER, PULL CORK)
+   - REMOVE: explicit separation (REMOVE CORK, REMOVE CURTAIN)
+   - UNCORK: cork/stopper-specific (UNCORK BOTTLE)
+   - OPEN/CLOSE: state transitions (not detachment)
+   - Parts can define custom `detachable_verbs` for aliasing
+
+6. **Part Inheritance & Reversibility:**
+   - Containers carry contents through detachment by default (`carries_contents = true`)
+   - Reversibility is design-time choice, not automatic
+   - Drawer: conceptually reversible (future re-attachment verb)
+   - Cork: irreversible (becomes independent object, possibly repurposed)
+
+7. **Two-Handed Carry System:**
+   - Player has 2 hands; `hands_required` property on objects
+   - Matches: 0 hands (pocket-able)
+   - Swords: 1 hand
+   - Longbow: 2 hands
+   - Drawer full of stuff: 2 hands (bulky)
+   - Constraint: both hands must be free to carry 2-handed object
+   - Interaction with wearables: gloves don't consume carrying capacity
+
+8. **Design Examples:**
+   - **Poison Bottle + Cork:** Cork detachable via UNCORK verb. Detachment creates cork object, transitions bottle state (sealed → open).
+   - **Nightstand + Drawer:** Drawer detachable via PULL verb. Detachment creates drawer object (portable, 2-handed carry). Nightstand transitions `closed_with_drawer` → `closed_without_drawer`. Drawer carries its contents.
+   - **Four-Poster Bed + 4 Curtains:** Each curtain is separate part. Removing some = state like `missing_front`, `missing_all`. Each transitions independently.
+
+9. **Edge Cases Addressed:**
+   - Parts with own containers (drawer + items): contents preserved
+   - Partial detachment (4 curtains, remove 2): state tracks combinations
+   - Nested composites (future): part contains sub-parts (wardrobe door with hinges)
+   - Weight redistribution (future): parent weight changes when heavy parts removed
+
+10. **Implementation Notes for Bart:**
+    - Add `parts` table to composite objects
+    - Implement `detach_part(part_id)` method: calls factory, instantiates object, transitions state
+    - Implement `can_detach_part(part_id)` callback: precondition check
+    - Add verb dispatch for parts: recognize part targets, dispatch to detach_part()
+    - Implement two-handed carry: track `hands_required`, enforce limits in TAKE
+    - FSM states: support `_with_PART` and `_without_PART` naming
+
+**Key Design Philosophy:**
+Objects are not static containers — they're **constructed systems** that can be deconstructed. A player discovers hidden compartments by removing drawers, finds makeshift light sources by separating corked bottles, and solves puzzles by understanding what comes apart. Single-file architecture keeps all part data together, enabling Lua to handle all internal logic without scattering definitions.
+
+**This enables:**
+- **Puzzle mechanics:** Remove drawers to access hidden items
+- **Resource reuse:** Cork becomes fishing float or light source
+- **World reactivity:** Objects change when disassembled
+- **Player agency:** Deconstruct the environment
+
+**Design grounded in proven patterns:** *Resident Evil 4* (inventory tetris, item management), *Silent Hill* (object examination + puzzle decomposition), *Zork* (interactive fiction object interaction).
+
+**Next Steps:**
+1. Bart implements part instantiation and factory pattern
+2. Bart implements FSM state transitions for parts
+3. Bart implements verb dispatch for detachable parts
+4. Bart implements two-handed carry system
+5. Comic Book Guy creates detachable versions of existing objects (drawer, cork, curtains, doors, mirrors)
+
+---
+
+## Learnings
+
+**Composite Object Design:**
+- Single-file architecture (parent + parts) is cleaner than file-per-part scattering
+- Factory pattern enables clean instantiation of detached parts as independent objects
+- FSM state naming with `_with_PART`/`_without_PART` suffixes tracks part presence elegantly
+- Part preconditions (can_detach_part callbacks) allow state-dependent detachment (e.g., can't remove drawer from empty bottle)
+- Contents preservation (carries_contents flag) maintains logical integrity (drawer keeps items when carried away)
+
+**Integration Points:**
+- Composite objects extend existing FSM system; no breaking changes
+- Verb dispatch naturally flows: PULL target → recognize target as part → dispatch to parent.detach_part()
+- Two-handed carry integrates with existing wearables/equipment system
+- Sensory descriptions on parts ensure dark-playability (parts are describable even in darkness)
+
+**Future Extensibility:**
+- Nested composites (part contains sub-parts) requires recursive factory pattern
+- Reversible attachment (PUT DRAWER IN NIGHTSTAND) needs inverse factory and state check
+- Part mutations (cork → fishing float) handled by factory function defining new properties
+- Dynamic discovery (part visible only after state change) via conditional detachable flag
+
+**Puzzle Design Insight:**
+Decomposable objects create emergent puzzles: player must examine the world, discover parts, understand what detaches, reason about consequences. No explicit objective needed — curiosity drives exploration. This aligns with dark-room design philosophy: interact with the world tactilely, learn by experimentation.
 3. **Darkness is solvable without light.** Your sensory descriptions are now the COMPLETE information source. Players win by feeling, not by finding light.
 
 **Design verification needed:** Test that every object's sensory description (on_feel) + its structure (surfaces/containers) provides enough info for blind solving. Example: "Smooth wooden surface, small drawer handle protrudes" + "Your fingers find: an open drawer" + "Inside you feel: a matchbox" is complete puzzle guidance.
