@@ -143,6 +143,187 @@ kitchen_candle = { id = "candle", name = "A tapered candle", provides_tool = "fi
 
 ---
 
+## Core Principle: Objects Have FSM; Instances Know Their State
+
+Every object in the world is a **finite state machine (FSM)**. Base objects define the FSM blueprint—states, transitions, sensory descriptions per state, and timed events. Object instances track the current state. The engine is a **generic FSM executor**: it reads the FSM metadata from objects and executes state transitions without any object-specific code.
+
+### The FSM Architecture
+
+#### Base Objects: The FSM Blueprint
+
+Base objects authored in `src/meta/objects/*.lua` define the complete FSM for a class of objects:
+
+```lua
+-- src/meta/objects/candle.lua (FSM blueprint)
+return {
+    id = "candle",
+    name = "a tallow candle",
+    description = "An unlit tallow candle",
+    provides_tool = nil,
+    casts_light = false,
+    mutations = {
+        light = {
+            requires_tool = "fire_source",
+            becomes = "candle-lit",
+            message = "The candle flares to life."
+        }
+    }
+}
+
+-- src/meta/objects/candle-lit.lua (another FSM state)
+return {
+    id = "candle",
+    name = "a tallow candle",
+    description = "A lit tallow candle with a bright flame",
+    provides_tool = "fire_source",
+    casts_light = true,
+    mutations = {
+        extinguish = {
+            becomes = "candle",
+            message = "The flame gutters out."
+        }
+    }
+}
+```
+
+Each state file defines:
+- **Properties:** name, description, weight, capabilities (`provides_tool`, `casts_light`)
+- **Sensory descriptions:** what the player sees (description), hears (on_listen), feels (on_feel)
+- **Transitions:** the available state transitions as `mutations` (verb → next state)
+- **Timed events:** ambient messages that fire on intervals (clock chimes, dripping water)
+
+**The FSM is the authored, immutable part** — designed by game developers, stored in source code, and loaded once at startup.
+
+#### Object Instances: The Needle on the Record
+
+When a room loads, instances are created from base objects. Each instance has a `_state` field tracking the current FSM state:
+
+```lua
+-- At room load time:
+instance_candle = {
+    id = "candle",
+    type_id = "992df7f3-...",
+    location = "nightstand.top",
+    _state = "candle",  -- <-- Which FSM state are we in?
+    
+    -- Runtime state (merged from current FSM state):
+    name = "a tallow candle",
+    description = "An unlit tallow candle",
+    provides_tool = nil,
+    casts_light = false,
+    mutations = { light = { ... } }
+}
+
+-- After player lights the candle:
+instance_candle._state = "candle-lit"
+-- Properties updated from candle-lit state:
+instance_candle.description = "A lit tallow candle..."
+instance_candle.provides_tool = "fire_source"
+instance_candle.casts_light = true
+instance_candle.mutations = { extinguish = { ... } }
+```
+
+**The instance is the "needle on the record"** — the FSM defines the grooves (possible states and transitions), and the instance tracks which groove the needle is in right now.
+
+### The Engine as Generic FSM Executor
+
+The engine does NOT contain special-case code for individual object types. Instead:
+
+1. **Player acts:** Types a command (e.g., "light the candle")
+2. **Handler dispatches:** Verb handler routes to the object
+3. **Engine reads FSM metadata:** Looks up `mutations.light` from the object's current state
+4. **Engine checks prerequisites:** Confirms the player has a `fire_source` tool
+5. **Engine executes transition:** Mutates the instance (swaps the `_state`, updates properties)
+6. **Engine narrates:** Prints the transition message
+
+No special-case objects. A candle with 2 states, a wall clock with 24 states, and a door with 2 states all work identically from the engine's perspective.
+
+**Example: Generic LIGHT Handler**
+
+```lua
+verb.LIGHT = function(ctx, target, tool)
+    -- 1. Resolve target object (generic, works for any lightable object)
+    local obj = registry:get(target)
+    
+    -- 2. Check if current state has a "light" transition (generic FSM query)
+    local transition = obj.mutations and obj.mutations.light
+    if not transition then
+        return false, target .. " can't be lit"
+    end
+    
+    -- 3. Check prerequisites from the object's FSM metadata (generic)
+    if transition.requires_tool then
+        tool = inventory:find_by_capability(transition.requires_tool)
+        if not tool then
+            return false, "You need a " .. transition.requires_tool
+        end
+    end
+    
+    -- 4. Execute the transition (generic code rewrite)
+    -- Mutate the instance: _state → next state, properties updated
+    registry:mutate(target, transition.becomes)
+    
+    -- 5. Narrate (generic)
+    print(transition.message)
+    return true
+end
+```
+
+### State Determines Everything
+
+Everything about an object in a given moment is determined by its current FSM state:
+
+- **What the player sees:** `description` (updated per state)
+- **What the player feels:** `on_feel` handler (per state)
+- **What the player hears:** `on_listen` handler and `timers` (per state)
+- **Object capabilities:** `provides_tool`, `casts_light` (per state)
+- **Available actions:** `mutations` table (per state) determines which verbs are valid
+- **Ambient behavior:** `timers` array fires timed events (per state)
+
+There are no flags like `is_lit = true` or `is_open = false`. **The entire object IS its current state.**
+
+### Transitions: Verb-Driven and Timer-Driven
+
+Transitions can be triggered two ways:
+
+**Verb-driven:** Player action triggers a transition.
+```lua
+mutations.light = { becomes = "candle-lit", ... }
+-- Player types "light candle" → handler finds mutations.light → executes
+```
+
+**Timer-driven:** Engine's timer system triggers a transition.
+```lua
+timers = {
+    {
+        name = "auto_close",
+        interval = 30,
+        recurring = false,
+        on_fire = function(self)
+            -- Auto-transition: door-open → door
+            registry:mutate(self.id, "door")
+            print("The door swings shut.")
+        end
+    }
+}
+```
+
+Both use the same FSM mechanism. The engine is agnostic about whether a state change came from player action or an internal timer.
+
+### Why This Matters
+
+1. **Behavioral complexity without engine growth:** A candle that needs flint and steel to light, a door that locks itself after 1 minute, a clock that chimes on the hour — all work without engine changes. The complexity is **data** (FSM metadata), not code.
+
+2. **Composability:** Objects can have arbitrary state counts. A light switch has 2 states. A staircase might have 4 (normal, flooded, collapsed, under repair). A puzzle box might have 16. The engine treats them all identically.
+
+3. **Debuggability:** At any moment, the truth about an object is in its `_state` field and the properties merged from that state's definition. No hidden flags or state variables. Inspect the registry to see the whole truth.
+
+4. **Determinism:** The same sequence of player actions, starting from the same world state, always produces the same results — because transitions are purely state-driven, not probabilistic.
+
+5. **Extensibility:** New object types are new `.lua` files with FSM definitions. Zero engine changes needed.
+
+---
+
 ## The System Stack
 
 ### Layer 1: Engine Core
