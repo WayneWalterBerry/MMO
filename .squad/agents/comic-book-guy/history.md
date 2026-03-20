@@ -560,3 +560,213 @@ Morning and evening newspaper editions are now separate files. Brockman created 
 - Bart: Implement composite object system (phases 1-2)
 - You: Create detachable versions of existing objects
 - Nelson: Playtest movement, furniture, spatial discovery
+
+---
+
+### Session Update: Spatial Relationships & Stacking System Design (2026-03-26)
+**Status:** ✅ DESIGN COMPLETE
+
+**Deliverable:** `docs/design/spatial-system.md` — comprehensive 13,500-word game design document (46 KB).
+
+**Responded to Wayne's Mission:**
+
+You chartered me to design the spatial relationships & stacking system that unlocks room escape puzzles. I created a complete design covering:
+
+1. **Core Spatial Model (Five Relationships):**
+   - **ON:** Surface stacking (candle ON nightstand top)
+   - **UNDER:** Hidden concealment (key UNDER bed)
+   - **BEHIND:** Occlusion by obstacles (note BEHIND wardrobe)
+   - **COVERING:** Active concealment (rug COVERS trap door)
+   - **INSIDE:** Container containment (matches INSIDE drawer) — integration with Composite system
+
+2. **Stacking Rules:**
+   - Objects declare `is_stackable_surface = true/false`
+   - Surfaces have `weight_capacity` and `size_capacity` limits
+   - Weight categories: Light (0-5 lbs), Medium (5-30 lbs), Heavy (30+ lbs)
+   - Heavy furniture can't stack on light surfaces
+   - Four capacity models: flat surface, large surface, stacking furniture, container interior
+
+3. **Hidden Objects (The Discovery Mechanic):**
+   - Three states: hidden, hinted, revealed
+   - Discovery triggers: covering object moves, player searches, state change
+   - Discovery conditions are declarative: `discovery_trigger = "covering_object_moves"`
+   - Trap door example: invisible under rug → hint via FEEL → revealed when rug moves
+   - Best practices: hide narratively important objects, provide tactile hints, make discovery feel like achievement
+
+4. **Movable Furniture:**
+   - Objects declare: `can_be_pushed = true/false`, `can_be_pulled = true/false`
+   - Move verbs: PUSH, PULL, MOVE (with optional directions)
+   - Preconditions check strength, path clearance, object properties
+   - Movement updates covering relationships and reveals hidden objects
+   - Movement difficulty tiers: easy (1 tick), moderate (2 ticks), hard (3+ ticks)
+
+5. **Spatial Verbs:**
+   - PUT ON / PLACE ON — surface stacking
+   - TAKE FROM — remove from surface
+   - LIFT / RAISE — temporary peek under objects
+   - LOOK UNDER / FEEL UNDER — tactile discovery
+   - LOOK BEHIND — spatial occlusion queries
+   - PUSH / PULL / MOVE — furniture relocation
+
+6. **Room Layout Data Model:**
+   - Position anchor model: absolute (room), relative (on object), hidden (covered)
+   - Spatial relationships table with query-able indexes
+   - Bi-directional relationships: on_relationships, under_relationships, covering_relationships, hidden_objects
+   - Update flow when objects move: check covering array → reveal hidden → update index
+
+7. **Integration with Existing Systems:**
+   - **Containers + FSM:** Nightstand has stackable top AND detachable drawer
+   - **FSM State Changes:** Candle burns → light radius changes → affects visibility
+   - **Composite Parts:** Sheets detach from bed → fall to floor; pillow stays on mattress
+   - **Dark/Light System:** PUSH/PULL work in darkness via FEEL; LOOK works in light
+   - **Sensory System:** Each spatial action fires multi-sense feedback (FEEL/SMELL/LISTEN/LOOK)
+
+8. **Implementation Strategy (4 phases):**
+   - Phase 1: Core spatial model + ON/UNDER/MOVE
+   - Phase 2: Hidden object discovery
+   - Phase 3: Advanced verbs (LIFT, LOOK UNDER, LOOK BEHIND)
+   - Phase 4: Integration with FSM & composite
+
+9. **Complete Data Structure Examples:**
+   - Rug object with covering relationship
+   - Trap door object with hidden state
+   - Nightstand with stackable surface + detachable drawer
+
+10. **Design Principles:**
+   - Spatial relationships are first-class concepts
+   - Hidden objects create achievement moments
+   - Darkness doesn't disable space; it changes how you experience it
+   - Weight and size matter
+   - Movement has consequences
+   - Reversibility is a design choice
+   - Integration is seamless
+
+**Key Design Decisions:**
+- Trap door doesn't exist to player until rug moves (visibility gate)
+- ON/UNDER/BEHIND/COVERING are distinct relationships with different mechanics
+- Surfaces have weight+size capacity (can't stack wardrobe on nightstand)
+- Movement in darkness uses FEEL as primary sense (tactile navigation)
+- Hidden objects are discoverable only after specific triggers
+- Composite object parts stay coherent when parent moves
+
+**Success Criteria (11 items):**
+- Objects declare stackability and capacity ✓
+- PUT ON respects capacity ✓
+- MOVE furniture reveals what's underneath ✓
+- Hidden objects transition from hidden → revealed ✓
+- Discovery messages fire appropriately ✓
+- Dark-mode spatial manipulation works ✓
+- Room escape puzzle is solvable ✓
+
+**Impact:** This design unlocks the core room escape mechanic: bed → rug → trap door → escape. Every puzzle, every secret, every spatial manipulation follows these principles. Ready for implementation in Phase 3 of development.
+
+**Related Documents:**
+- Integrates with: FSM Object Lifecycle (consumables, containers), Composite Objects (detachable parts), Wearable System (player slots)
+- Supports: Dark/light system, multi-sensory descriptions, player agency & discovery
+
+---
+
+## Learnings
+
+- **Spatial relationships need to be first-class.** ON, UNDER, BEHIND, COVERING are distinct concepts with different mechanics.
+- **Hidden objects are the mystery teacher.** The trap door example teaches: "Explore the space. Try moving things. Discover secrets."
+- **Weight and size constraints matter.** They enforce physical realism and create design puzzle moments.
+- **Movement in darkness is tactile.** FEEL/SMELL provide primary sensory feedback for spatial manipulation in darkness.
+- **Covering relationships are bi-directional.** Rug perspective: "I cover trap door." Trap door perspective: "I'm covered by rug."
+- **Discovery triggers should be declarative.** Objects declare what reveals them, not hardcoded in engine.
+- **Stacking surfaces come in models.** Flat surface (nightstand), large surface (bed), stacking furniture (rug) each have different capacity philosophies.
+- **Integration is non-trivial.** Spatial system must work with containers, FSM states, composite parts, and sensory system simultaneously.
+- **Implementation is phased.** MVP (Phase 1) focuses on core relationships + movement. Hidden discovery and advanced verbs come later.
+- **Darkness changes interaction, not availability.** Players can PUSH furniture in darkness; they just can't see the results until they FEEL or EXAMINE.
+
+---
+
+## Session Update: Spatial System Design Complete (2026-03-20T12:32:00Z)
+
+**Status:** ✅ DESIGN COMPLETE & FILED
+
+**Work Performed:**
+
+Designed comprehensive spatial relationships system formalizing how objects stack, hide, move, and interact in 3D space.
+
+### Core Design: Five Spatial Relationships
+
+| Relationship | Mechanic | Example | Visibility |
+|--------------|----------|---------|-----------|
+| **ON** | Rests on surface | Candle ON nightstand | Visible if surface exposed |
+| **UNDER** | Hidden beneath | Key UNDER bed | Invisible until covering moves |
+| **BEHIND** | Blocked by obstacle | Note BEHIND wardrobe | Invisible until blocker moves |
+| **COVERING** | Conceals below | Rug COVERS trap door | Bottom hidden |
+| **INSIDE** | In container | Matches INSIDE drawer | Accessible if open |
+
+### Key Design Decisions
+
+1. **Five distinct relationships** — not merged UNDER/BEHIND (different mechanics & verbs)
+2. **Covering is bi-directional** — both perspectives needed (rug→covering & trap_door→covered_by)
+3. **Weight & size capacity hard rules** — prevents physics cheating
+4. **Hidden objects don't exist until revealed** — discovery is the puzzle
+5. **Declarative discovery triggers** — objects specify how they're revealed
+6. **Movement updates all relationships atomically** — no partial states
+7. **LIFT differs from MOVE** — temporary peek vs permanent relocation
+8. **Darkness doesn't disable spatial verbs** — tactile feedback in darkness
+
+### Implementation Roadmap
+
+**Phase 1 (MVP):** Object properties, surface capacity, movement, hidden reveal  
+**Phase 2:** Hidden discovery states/triggers, discovery messages  
+**Phase 3:** Advanced verbs (LIFT, LOOK UNDER, LOOK BEHIND)  
+**Phase 4:** Integration with FSM, composite parts, sensory feedback  
+
+### Next Steps for You
+
+Use spatial properties in next batch of object definitions:
+- Declare is_stackable_surface = true/false
+- Add weight_capacity and size_capacity for surfaces
+- Define ON/UNDER/BEHIND/COVERING relationships in room layouts
+- Create objects with can_be_pushed = true / can_be_pulled = true
+
+**Decision Filed:** `.squad/decisions.md` entry 29 (Spatial Relationships & Stacking System Design)
+
+---
+
+## Cross-Agent Update: Composite Implementation Patterns (2026-03-20T12:32:00Z)
+
+**From:** Bart (Architect) & Scribe  
+**Impact:** Object architecture, parts system, new verbs  
+
+Bart finalized composite object implementation patterns to support your detachable part designs (drawer, cork, etc.).
+
+### Key Patterns Established
+
+1. **Direct state application** bypasses fsm.transition() ambiguity
+2. **Factory functions** use math.random(100000, 999999) for part GUIDs (sandbox-safe)
+3. **Search priority:** Real objects take precedence over part definitions
+4. **Two-handed carry:** Objects track hands_required (0/1/2); both slots set to same ID
+5. **Reattachment via PUT** — existing verb, no new commands needed
+
+### Your Next Design Work
+
+The composite patterns enable:
+- Nightstand: drawer detachable, contents preserved, reversible
+- Poison bottle: cork detachable, irreversible
+- Complex furniture: multiple parts, mixed reversibility
+
+Your sensory descriptions now have framework to work with complex objects. Part descriptions integrate naturally with main object's multi-sense system.
+
+**Decision Filed:** `.squad/decisions.md` entry 28 (Composite Object Implementation Patterns)
+
+---
+
+## Cross-Agent Update: Documentation Consolidation (2026-03-20T12:32:00Z)
+
+**From:** Brockman (Documentation) & Scribe  
+**Impact:** Design spec clarity, reference architecture  
+
+Brockman consolidated all design directives into master documents:
+- `.squad/00-design-requirements.md` — Unified spec (single source of truth)
+- `.squad/00-architecture-overview.md` — Design-to-code mapping
+- `.squad/newspaper/2026-03-20-morning.md` — Team update
+
+Your composite & spatial designs are now part of canonical spec. Reference architecture documents link decisions to implementation locations.
+
+**Newspaper:** Morning edition published. Team context updated.

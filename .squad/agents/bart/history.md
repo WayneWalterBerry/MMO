@@ -584,3 +584,42 @@ Morning and evening newspaper editions should be in separate files. Brockman has
 - src/meta/objects/poison-bottle.lua — Added parts table with cork
 - src/engine/verbs/init.lua — Added detach_part/reattach_part/find_part/count_hands_used helpers; PULL/UNCORK/UNSTOP/UNSEAL verbs; modified REMOVE/OPEN/CLOSE/TAKE/DROP/PUT for composite+two-handed support
 - src/engine/loop/init.lua — NLP preprocessing for "take out X", "pull out X", "pop cork", "push X back"
+---
+
+## Cross-Agent Update: Composite Objects & Spatial System (2026-03-20T12:32:00Z)
+
+**From:** Comic Book Guy (Game Designer) & Scribe  
+**Impact:** Engine architecture, detachable parts system, spatial verb implementation  
+
+Team spawned Bart composite implementation patterns + CBG spatial design decisions.
+
+### Key Architectural Patterns for Composite Objects
+
+1. **Direct state application** for part transitions (bypass fsm.transition() ambiguity)
+2. **Factory functions** return independent part objects with math.random() GUIDs
+3. **Search priority:** Real objects > parts (prevents stale descriptions masking actuals)
+4. **Two-handed items** atomically occupy both hand slots (simpler than separate tracking)
+5. **Reattachment via PUT** — no new verb needed, delegates to reattach_part()
+
+### Spatial System Integration (5 Relationships)
+
+- ON / UNDER / BEHIND / COVERING / INSIDE with distinct mechanics per relationship
+- Hard weight/size capacity validation (physical realism)
+- Hidden objects declaratively specify triggers: covering_object_moves, player_searches, state_change
+- Movable furniture (PUSH/PULL/MOVE) updates all relationships atomically
+- New verbs: LIFT, LOOK UNDER, LOOK BEHIND integrate with your verb system
+
+### Affected Your Work
+
+- Part factory functions should use math.random(100000, 999999) for GUIDs (sandbox-safe)
+- FSM transitions for part detachment bypass normal transition() ambiguity resolution
+- Spatial movement verbs will need integration with your containment + mutation patterns
+- Two-hand carry system already in place; spatial system leverages existing hands[] tracking
+
+### Next Phase (Parallel)
+
+- Comic Book Guy creates object definitions using composite + spatial patterns
+- You begin Phase 1 spatial system implementation (object properties, surfaces, basic movement)
+- Nelson playtests both composite detachment + spatial mechanics when Phase 1 ready
+
+**Decisions Filed:** `.squad/decisions.md` entries 28 & 29 (Composite Implementation + Spatial System)

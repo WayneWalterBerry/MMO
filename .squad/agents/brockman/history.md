@@ -88,6 +88,8 @@ Refined vocabulary v1.2 across all 24 architecture decisions; consolidated 12+ u
 
 ## Learnings
 
+**Documentation Consolidation (2026-03-21):** Created two master reference documents (`00-design-requirements.md` and `00-architecture-overview.md`) that consolidate all design directives from Wayne, team decisions, and existing design docs. Key insight: Wayne's directives scattered across decisions.md, inbox files, and agent histories. Consolidating into a single source of truth with implementation status (designed/implemented/untested) prevents design drift and enables teams to work from unified spec. Cross-referencing existing docs prevents duplication while providing architectural overview for newcomers.
+
 **Documentation Timing:** Post-integration sweep revealed significant drift in summary docs (README, src-structure). Learned to update foundational docs immediately after major features land, not in bulk sweeps later.
 
 **Verb Documentation Pattern:** The 31-verb system is now well-documented in both vocabulary.md and new verb-system.md. Verb-system.md serves as the canonical player reference; vocabulary.md serves as design reference.
@@ -212,3 +214,62 @@ Multiple editions per day (morning/evening/late evening) are working well. They 
 - Document stacking rules system (properties: stackable, stackable_max_weight, stackable_items)
 - Document spatial positioning system (ON, UNDER, INSIDE, BEHIND)
 - Document hidden object mechanics (visibility gates)
+
+---
+
+## Session Update: Design Consolidation & Manifest Completion (2026-03-20T12:32:00Z)
+
+**Status:** ✅ COMPLETED
+
+**Work Performed:**
+
+### 1. Master Reference Documents Created
+
+Created two consolidating documents to prevent design drift:
+
+** 0-design-requirements.md** — Unified spec with implementation status
+- Captures Wayne's scattered directives in single source of truth
+- Tracks status: designed / implemented / untested
+- Cross-references prevent duplication
+
+** 0-architecture-overview.md** — Design-to-code mapping
+- Links architectural decisions to code locations
+- Provides roadmap for newcomers
+- Maintains consistency across team documentation
+
+### 2. Morning Newspaper Edition
+
+**
+ewspaper/2026-03-20-morning.md** — Team update & context
+- Recaps overnight team spawns
+- Scribe consolidated three major design decisions
+- Maintains in-universe voice + comic/op-ed sections
+
+### 3. Decision Merge Process
+
+**Inbox Decisions Merged into decisions.md:**
+- Decision 28: Composite Object Implementation Patterns (Bart)
+- Decision 29: Spatial Relationships & Stacking System (Comic Book Guy)
+
+**Process Completed:**
+- Merges deduplicated (no overlaps found)
+- Inbox files deleted (bart-composite-impl.md, comic-book-guy-spatial-design.md)
+- Orchestration logs created per agent
+- Session log documented
+
+### Key Learnings
+
+**Documentation Consolidation Works:** Wayne's directives scattered across multiple locations. Consolidating into unified spec with implementation status prevents design drift. This pattern should continue for future design phases.
+
+**Newspaper Pattern Effective:** Multiple editions (morning/evening/late evening) segment work phases while maintaining narrative. Team communication hub fully established.
+
+**Decision Archival:** At 30+ decisions, consider archival strategy. Current decisions.md is ~2100 lines; approaching threshold for archival of decisions older than 30 days.
+
+### Next Phase Enablement
+
+✅ Composite object patterns finalized → Bart can implement Phase 1
+✅ Spatial system designed → CBG can create next batch of objects
+✅ Documentation consolidated → Team has unified reference
+✅ Morning edition published → Team synchronized
+
+**Team Coordination:** All agents' histories updated with cross-agent context. Parallel work can proceed with full awareness of decisions.

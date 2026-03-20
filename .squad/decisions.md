@@ -2090,6 +2090,157 @@ Comprehensive implementation plan for Tier 2 embedding-based parser fallback sys
 
 ---
 
+### 28. Composite Object Implementation Patterns (2026-03-25)
+
+**Author:** Bart (Architect)  
+**Date:** 2026-03-25  
+**Status:** Implemented  
+**Affects:** Object architecture, verb dispatch, hand/carry system
+
+#### Decisions Made
+
+**1. Direct State Application for Part Transitions**  
+Detach/reattach transitions bypass `fsm.transition()` and apply state directly. Reason: FSM's `transition()` finds the first from→to match, which is ambiguous when multiple transitions share the same from/to states (e.g., both "open" and "detach_part" go from sealed→open on the bottle). The detach helpers know exactly which transition they want, so they apply state properties directly.
+
+**2. Factory GUIDs Use math.random**  
+Factory functions in object files run inside the sandbox (no `os` access). GUIDs for instantiated parts use `math.random(100000, 999999)`. Sufficient for single-player; multiverse will need proper UUID generation at the engine level.
+
+**3. Search Priority: Real Objects > Parts**  
+`find_visible` returns real objects (room, surface, hand) before parts. This means a detached drawer on the floor takes priority over the nightstand's drawer part definition. This prevents stale part descriptions from masking the actual independent object.
+
+**4. Two-Handed Items Occupy Both Hand Slots**  
+A two-handed item sets both `ctx.player.hands[1]` and `[2]` to the same object ID. DROP and PUT clear both. This is simpler than a separate tracking field and naturally blocks all single-hand operations.
+
+**5. Reattachment Via PUT Verb**  
+Reattachment uses the existing PUT verb handler. When `item.reattach_to == target.id`, the handler delegates to `reattach_part()` instead of containment logic. No new verb needed.
+
+#### Team Impact
+
+- **Content creators:** Composite objects define `parts = {}` table. Each detachable part needs a `factory` function, `detach_verbs` list, and appropriate FSM states on the parent.
+- **QA:** Test `pull drawer` only after `open drawer`. Test `uncork bottle` directly. Test two-handed carry blocks with full hands.
+- **Game designer:** Reversibility is per-part (`reversible = true/false`). Cork is irreversible. Drawer is reversible.
+
+---
+
+### 29. Spatial Relationships & Stacking System Design Decision (2026-03-26)
+
+**Author:** Comic Book Guy (Game Designer)  
+**Date:** 2026-03-26  
+**Status:** Ready for Team Review  
+**Impact:** Puzzle design, player interaction, room escape mechanics
+
+#### Decision Summary
+
+Objects in MMO exist in three-dimensional space. This design formalizes how they stack, hide, move, and interact spatially.
+
+**Core Contribution:** Five distinct spatial relationships (ON/UNDER/BEHIND/COVERING/INSIDE) with separate mechanics for each. Stacking rules enforced via weight/size capacity. Hidden objects created via covering relationships. Movable furniture reveals what's underneath.
+
+#### Design Scope
+
+##### Five Spatial Relationships
+
+| Relationship | Mechanic | Example | Visibility |
+|--------------|----------|---------|-----------|
+| **ON** | Object rests on surface | Candle ON nightstand | Visible if surface exposed |
+| **UNDER** | Hidden beneath something | Key UNDER bed | Invisible until covering moves |
+| **BEHIND** | Blocked by obstacle | Note BEHIND wardrobe | Invisible until blocker moves |
+| **COVERING** | Object conceals what's below | Rug COVERS trap door | Bottom object hidden |
+| **INSIDE** | In a container | Matches INSIDE drawer | Accessible if container open |
+
+##### Stacking Rules
+
+- **Stackable declaration:** Objects declare `is_stackable_surface = true/false`
+- **Capacity limits:** Surfaces have `weight_capacity` and `size_capacity`
+- **Weight categories:** Light (0-5 lbs), Medium (5-30), Heavy (30+)
+- **Hard rule:** Heavy furniture cannot stack on light surfaces (physical realism)
+- **Four surface models:** Flat (nightstand: 3 items), large (bed: 10+), stacking (rug: furniture), container (drawer: 4 items)
+
+##### Hidden Object Discovery
+
+- **Three states:** Hidden (not discoverable) → Hinted (tactile clue) → Revealed (fully interactive)
+- **Triggers:** Covering object moves, player searches, state change
+- **Declarative:** Objects specify `discovery_trigger = "covering_object_moves"`
+- **Example:** Trap door under rug invisible until rug moves; discovery message fires on reveal
+
+##### Movable Furniture
+
+- **Declarations:** `can_be_pushed = true`, `can_be_pulled = true`
+- **Move verbs:** PUSH, PULL, MOVE (with optional directions)
+- **Consequences:** Moving object updates covering relationships, reveals hidden objects
+- **Difficulty tiers:** Easy (1 tick), Moderate (2 ticks), Hard (3+ ticks)
+
+##### Spatial Verbs
+
+**New/Modified verbs:**
+- LIFT / RAISE — Temporary peek without full removal
+- LOOK UNDER / FEEL UNDER — Tactile discovery (works in darkness)
+- LOOK BEHIND — Spatial occlusion queries
+- PUSH — Furniture movement
+- PULL — Furniture movement (may reveal)
+- MOVE — Generic relocation with direction
+
+#### Eight Core Design Decisions
+
+1. **Five Distinct Relationships** — Why not merge UNDER and BEHIND? Different mechanics: UNDER is concealment by mass above (rug covers trap door); BEHIND is concealment by occlusion (wardrobe blocks note). Different verbs: LOOK BEHIND vs. PULL RUG.
+
+2. **Covering is Bi-Directional** — Both perspectives needed: Rug perspective: `covering = ["trap_door"]`; Trap door perspective: `covered_by = "rug"`. Redundancy acceptable for clarity; queries check both sides.
+
+3. **Weight & Size Capacity are Hard Rules** — Can a player cheat by stacking wardrobe on nightstand? No. Hard validation prevents this. Player must find alternative.
+
+4. **Hidden Objects Don't Exist Until Revealed** — Can player EXAMINE trap door while under rug? No. Hidden objects not in room.contents. Only after rug moves does trap door exist. Discovery is the puzzle.
+
+5. **Discovery Triggers Are Declarative** — Objects declare their triggers (`covering_object_moves`, `player_searches`, `state_change`). Allows designer flexibility without engine changes.
+
+6. **Movement Updates All Relationships Atomically** — When bed moves off rug, all relationships update in one transaction. No partial states.
+
+7. **LIFT is Different from MOVE** — LIFT: Temporary peek; object returns to position. MOVE: Permanent relocation. LIFT enables discovery without commitment.
+
+8. **Darkness Doesn't Disable Spatial Verbs** — Player can PUSH furniture in complete darkness with tactile feedback. PUSH bed in dark: "The bed scrapes against the floor." (no visual detail). Results are tactile not visual.
+
+#### Integration Points
+
+**With Composite Objects (Detachable Parts):**
+- Drawer detaches from nightstand → becomes independent object
+- Drawer has `surfaces.contents` (container) + `surfaces.on_top` (stacking)
+
+**With FSM (Object Lifecycle):**
+- Candle burns → light_radius changes → affects spatial visibility
+- Mirror breaks → covering relationship changes
+
+**With Sensory System:**
+- PUSH bed: multi-sense feedback (on_feel, on_listen, on_look if light)
+- FEEL UNDER bed: tactile discovery, works in darkness
+
+#### Success Criteria (MVP)
+
+✅ Objects declare stackability and capacity  
+✅ Surfaces reject items exceeding capacity  
+✅ Players can PUT ON surfaces  
+✅ Players can MOVE furniture (PUSH/PULL)  
+✅ Moving furniture reveals what's underneath  
+✅ Hidden objects transition hidden → revealed  
+✅ Discovery messages fire appropriately  
+✅ LIFT, LOOK UNDER, LOOK BEHIND verbs work  
+✅ Spatial integrates with FSM  
+✅ Spatial integrates with composite parts  
+✅ Dark/light supports spatial manipulation  
+
+#### Implementation Roadmap
+
+**Phase 1 (MVP):** Core spatial model, surfaces, movement, hidden reveal  
+**Phase 2:** Hidden object discovery states, triggers, discovery messages  
+**Phase 3:** Advanced verbs (LIFT, LOOK UNDER, LOOK BEHIND)  
+**Phase 4:** Integration with FSM, composite parts, sensory feedback  
+
+#### Next Steps
+
+1. Bart: Review implementation roadmap; propose Phase 1 timeline
+2. Team: Approve spatial design principles
+3. Content creators: Create object definitions using spatial properties
+4. Nelson: Playtest spatial interactions once Phase 1 is live
+
+---
+
 # Decision Proposal: Embedding-Primary Hybrid Parser Architecture (2026-07-23)
 
 **Filed by:** Frink (Researcher)  
