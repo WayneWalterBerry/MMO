@@ -74,6 +74,26 @@
 - **BUG-025 (MINOR): Single-slot wearable system** — wearing cloak blocks wearing sack (different body parts should coexist). May be intentional simplification.
 - **Not tested:** Blood/writing, sleep-until-dawn, candle burn-out during sleep, poison death.
 
+### Playtest 005 Findings (2026-03-20)
+- **Pass-004 fixes verified: BUG-024 (sack vision blocking) and BUG-025 (multi-slot wearables) both FIXED.** Sack on head → "Everything goes dark" + blocks look. Cloak (back) + sack (head) coexist in inventory. Multi-slot system is solid.
+- **BUG-026 (CRITICAL): Movement verbs completely unimplemented.** `go down`, `down`, `descend`, `climb down`, `enter trap door`, `go north`, `north`, `walk down`, `go through trap door`, `use trap door`, `go west` — ALL fail. Parser has zero movement verb recognition. Exits are displayed but unusable. This is the #1 blocker for game progression.
+- **BUG-027: FSM state labels leak on trap door.** `close trap door` → "You can't close a trap door (open)." Same class as BUG-019, not fixed for trap door object.
+- **BUG-028: "key" doesn't resolve to "brass key".** Parser requires full adjective for noun resolution. Same class as BUG-014.
+- **Room escape puzzle works beautifully.** push bed → pull rug → brass key + trap door → open trap door. All descriptions update dynamically. Trap door has rich multi-sensory descriptions (visual, smell). The content design is ahead of the engine.
+- **Help text is comprehensive** — 40+ verbs listed, accurately reflects parser capabilities. No movement verbs listed because none exist.
+- **Multi-room testing blocked.** Sections 4-7 of the test plan (room transitions, object persistence, candle carry, Room 2 exploration) could not be tested. Entire test plan needs re-run once movement is implemented.
+
+### Playtest 006 Findings (2026-03-20)
+- **BUG-026 (CRITICAL) FIXED.** Movement verbs fully implemented. 8+ verb forms work: `down`, `d`, `go down`, `descend`, `climb down`, `enter trap door`, `up`, `u`, `go up`, `ascend`, `climb up`. This was THE critical blocker from pass-005.
+- **The Cellar is a fully realized second room.** Rich atmospheric descriptions: rough-hewn granite, dripping water, cobwebs, cold damp air. Objects: barrel (sealed), iron torch bracket (empty). Exits: up (stairway), north (locked iron door).
+- **Object persistence across rooms works perfectly.** Drop brass key in cellar → go up → go back down → key still there. Bedroom state (moved bed, open trap door, dropped matchbox) all preserved across transitions.
+- **Light carries between rooms.** Lit candle in hand illuminates cellar. Transition text is atmospheric and distinct for each direction.
+- **Transition text is excellent.** Down: "each step taking you deeper into cold, damp air." Up: "The floorboards creak beneath your feet, and the shadows seem to lean in closer."
+- **Invalid directions handled cleanly.** `go south` in cellar → "You can't go that way." No crashes.
+- **Time advances across rooms.** Clock keeps ticking, dawn transition observed at 6:10 AM.
+- **BUG-029 (MINOR): Iron door not examinable.** Exit shows "a heavy iron-bound door (locked)" but `look at door` / `look at iron door` → "You don't see that here."
+- **BUG-030 (MAJOR): No unlock verb exists.** `unlock door`, `use key on door` all fail. Brass key + locked door = dead end. **Next critical-path blocker for Room 3.**
+
 ## Cross-Agent Updates (2026-03-20)
 - **From Bart:** Wearable engine implementation complete (WEAR/REMOVE verbs, slot conflicts, vision blocking). All wear operations validated in pass-002 — system is solid and ready for content expansion.
 - **From Frink:** MUD verb research identifies that multiplayer verbs should be first-class primitives. Strategic recommendations include 50-100 predefined socials for MVP (retention drivers). Competitive analysis shows tap-to-suggest UI is critical for mobile parsing UX.
