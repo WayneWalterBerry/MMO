@@ -723,6 +723,146 @@ The two principles are unified under a single truth: **The world is not static. 
 
 ---
 
+## Core Principle: Objects Exist in Spatial Relationships
+
+Objects don't just exist in a room — **they exist relative to other objects**. A bed sits ON a rug. A rug COVERS a trap door. A candle holder sits ON a nightstand. A key is INSIDE a drawer. These relationships are **first-class metadata**, not derived from container hierarchies or hardcoded physics engines.
+
+### The Spatial Graph Model
+
+The game world is not a flat list of objects. It's a **spatial graph** where each object may declare its position relative to other objects. The engine traverses this graph to determine:
+
+- **Visibility:** Is an object perceivable? (It's invisible if covered by another object)
+- **Accessibility:** Can an object be interacted with? (A drawer's contents are inaccessible until opened)
+- **Movement consequences:** When you push or move an object, what's revealed or hidden?
+
+Spatial relationships are declared in `.lua` metadata using relationship fields:
+
+```lua
+-- rug.lua
+{
+    id = "rug",
+    name = "A Persian rug",
+    resting_on = "bed",           -- This rug sits ON the bed
+    surfaces = {
+        top = { capacity = 5, objects = { "candle_holder" } },
+    },
+    -- When moved, the rug may reveal what's beneath it
+    on_move = function(self, direction)
+        if self.covering then
+            return "You move the rug, revealing " .. self.covering .. " beneath!"
+        end
+    end,
+    mutations = {
+        move = { becomes = "rug", message = "You shift the rug." }
+    }
+}
+
+-- trap_door.lua
+{
+    id = "trap_door",
+    name = "A hidden trap door",
+    covering_by = "rug",           -- This trap door is covered BY the rug
+    accessible = false,            -- Can't open while covered
+    on_uncover = function(self)
+        self.accessible = true
+        return "The trap door is now visible!"
+    end
+}
+
+-- nightstand.lua
+{
+    id = "nightstand",
+    name = "A wooden nightstand",
+    surfaces = {
+        top = { capacity = 3, objects = { "candle_holder" } },
+        inside = { capacity = 5, accessible = false, objects = { "key" } }  -- drawer not yet opened
+    }
+}
+```
+
+### Spatial Relationships as Metadata, Not Code
+
+The engine does **not hardcode** "beds go on rugs" or "rugs cover trap doors." Instead:
+
+- Each object **declares** its spatial position in `.lua` metadata
+- Relationship fields: `resting_on`, `covering`, `covered_by`, `surfaces`
+- The engine reads these declarations and enforces the spatial graph
+- No engine code changes needed to create new spatial scenarios
+
+### Engine Traversal: Graph Resolution
+
+When a player interacts with an object, the engine **resolves the spatial graph**:
+
+1. **Visibility check:** Is the target covered? Traverse `covering` relationships. If covered, return "It's hidden under X."
+2. **Accessibility check:** Is the target accessible? Check `accessible` flag and parent objects. A drawer's contents are inaccessible until `container.inside.accessible = true`.
+3. **Movement resolution:** When an object is moved/pushed/lifted, traverse reverse relationships. Push the bed → check what's on it (rug) → move rug → check what's beneath it (trap door).
+
+Example: Player "move rug"
+
+```
+1. Engine looks up "rug" → finds resting_on = "bed" (position context)
+2. Checks cover status → rug is covering "trap_door"
+3. Executes move → trap_door.accessible = true, trap_door becomes visible
+4. Returns: "You move the rug, revealing a trap door beneath!"
+```
+
+### Surfaces as Typed Containers
+
+Objects can have **multiple surfaces**, each with distinct properties:
+
+```lua
+nightstand = {
+    surfaces = {
+        top = { 
+            capacity = 3, 
+            weight_capacity = 10, 
+            accessible = true,
+            objects = {}
+        },
+        inside = { 
+            capacity = 5, 
+            weight_capacity = 15, 
+            accessible = false,  -- Locked until drawer is opened
+            objects = { "key", "letter" }
+        }
+    }
+}
+```
+
+- **`top` surface:** Always accessible. Items can be placed/taken freely.
+- **`inside` surface:** Locked until `accessible = true` (e.g., after "open drawer").
+- Each surface has independent capacity, weight limits, and item size restrictions.
+
+### Movement Verbs Interact with Spatial Position
+
+Verbs like PUSH, PULL, MOVE, SHIFT, and LIFT manipulate spatial relationships:
+
+- **PUSH BED:** Engine checks for objects `resting_on = "bed"`. If rug is there, bed can't move. Or: push succeeds, and rug slides with it. (Game design choice per object.)
+- **MOVE RUG:** Engine checks `covering` list. Rug moves → trap door is uncovered → trap door becomes visible.
+- **LIFT CANDLE HOLDER:** Engine checks what surface it's on. If on `top`, lifts freely. If inside a drawer (inside surface), check if drawer is open.
+
+### Already Demonstrated: The Bedroom Puzzle
+
+The current game demonstrates this principle in action:
+
+1. Player enters bedroom → sees bed, sees rug on floor
+2. "PUSH BED" → Bed moves, rug stays visible (design choice)
+3. "MOVE RUG" → Rug is moved, trap door revealed beneath
+4. "EXAMINE TRAP DOOR" → Now visible and perceivable
+5. "OPEN TRAP DOOR" → Opens, revealing cellar entrance
+
+Each step is driven by spatial relationship resolution, not hardcoded puzzle logic. The engine doesn't know about "bedroom puzzle." It knows about spatial graphs.
+
+### Why This Matters
+
+1. **Compositional puzzle design:** Complex environments are built by declaring spatial relationships. No engine code per puzzle.
+2. **Visibility is spatial:** Objects are invisible when covered/inside/locked, not because of `visible = false` flags. Perception derives from position.
+3. **Player agency:** Moving/pushing/lifting objects has **causal effects** on the world. It's not just flavor — it reshapes accessibility.
+4. **Scalability:** Any object can participate in spatial graphs. A book on a shelf, a ring in a chest, a portrait on a wall — all follow the same spatial model.
+5. **Debuggability:** Spatial relationships are traceable. "Why can't I see the trap door?" → "It's covered by the rug." Engine can report this clearly.
+
+---
+
 ## The System Stack
 
 ### Layer 1: Engine Core
