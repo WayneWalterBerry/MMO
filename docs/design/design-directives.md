@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-03-21  
 **Audience:** Game Designers (Comic Book Guy et al.)  
-**Purpose:** Consolidated reference for all game design directives when building objects, rooms, and mechanics.
+**Purpose:** Consolidated reference for core game mechanics and directives when building objects, rooms, and interactions.
 
 ---
 
@@ -197,114 +197,6 @@ STRIKE match ON matchbox → match becomes match-lit (now provides fire_source).
 
 ---
 
-## Newspaper
-
-### Daily Edition Requirements
-
-**Core Directive:** Every daily newspaper edition must include two recurring sections:
-
-| Section | Content | Frequency | Design Note |
-|---------|---------|-----------|-------------|
-| **Comic Strip** | Daily comic panel or short comic sequence | Every edition | Thematic to game/team |
-| **Op-Ed Piece** | Editorial opinion, developer commentary, or in-character article | Every edition | Voice of the game world |
-
-**Architecture Note:** These are not one-off features; they are recurring structural elements that must be updated daily. See `newspaper/` folder for current editions.
-
-### Documentation Maintenance
-
-**Core Directive:** Keep architecture and design docs up to date as decisions and implementation progress. Docs should reflect current state, not lag behind.
-
-| Document | Owner | Cadence |
-|----------|-------|---------|
-| Design directives | Game designers | Update as new directives added |
-| Tool taxonomy | Architects | Update as new tool categories discovered |
-| Architecture | Lead engineer | Update as decisions locked in |
-| Game design foundations | Designer lead | Quarterly or as pillars shift |
-
----
-
-## Object Design Patterns
-
-### Multi-Surface Containment Model
-
-**Pattern:** Objects with multiple interaction zones use `surfaces` instead of flat `contents`. Each surface has `capacity`, `max_item_size`, `weight_capacity`, and `accessible` flag.
-
-**Examples:**
-- **Bed:** `top` (where you sleep), `underneath` (storage)
-- **Nightstand:** `top` (surface), `inside` (drawer)
-- **Vanity:** `top` (surface), `inside` (drawer), `mirror_shelf`
-- **Rug:** `top` (visible), `underneath` (hidden)
-
-**Design Rule:** Never hide critical-path items without a hint. Example: rug description says "one corner is slightly raised" → hints at LOOK UNDER without spoiling.
-
-### Composite Mutation Matrix (Multi-State Objects)
-
-**Pattern:** When an object has N independent toggleable properties, it requires 2^N mutation files.
-
-**Example - Vanity (2 axes: drawer open/closed × mirror intact/broken = 4 files):**
-- `vanity.lua` — drawer closed, mirror intact
-- `vanity-open.lua` — drawer open, mirror intact
-- `vanity-mirror-broken.lua` — drawer closed, mirror broken
-- `vanity-open-mirror-broken.lua` — drawer open, mirror broken
-
-**Trade-off:** File count grows exponentially with independent states. For most objects (1 axis), this is fine. For 3+ axes, consider whether some states can be collapsed or chained.
-
-### Template Inheritance
-
-**Pattern:** Objects that share a base type use `template = "sheet"` to inherit default properties from `src/meta/templates/sheet.lua`. Instance overrides win.
-
-**Template Examples:**
-- `sheet.lua` — Fabric/cloth family (size 1, weight 0.2, portable, tearable)
-- `furniture.lua` — Heavy immovable (size 5, weight 30, not portable)
-- `container.lua` — Bags, boxes, chests (capacity 4, weight_capacity 10)
-- `small-item.lua` — Tiny items (size 1, weight 0.1, portable)
-
-**Design Rule:** Template resolution happens at load time. Instance fields override template fields. Nested tables (mutations, surfaces) are replaced wholesale, not deep-merged.
-
-### Room Object Hierarchy
-
-**Pattern:** Room `contents` lists only top-level furniture. Portable items live inside furniture surfaces, not directly in the room. This creates a natural discovery hierarchy: enter room → see furniture → examine furniture → find items.
-
-**Example - Bedroom start state:**
-```
-Bedroom
-├── bed (furniture)
-│   ├── top (surface) → bed-sheets, pillow
-│   └── underneath (surface) → wool-cloak
-├── nightstand (furniture)
-│   ├── top → candle
-│   └── inside → (empty)
-├── vanity (furniture)
-│   ├── top → (empty)
-│   └── inside → (empty)
-├── wardrobe (furniture)
-│   ├── inside → (empty)
-├── curtains (furniture)
-│   └── window behind
-├── rug (furniture)
-│   └── underneath → brass-key (hidden)
-```
-
----
-
-## Skill Interaction Matrix
-
-Use this matrix when designing new tools and deciding whether a skill should unlock new interactions:
-
-| Skill | Tool | Verb | Requirement | Alternative to |
-|-------|------|------|-------------|-----------------|
-| (none) | Knife | CUT | Tool exists | Required item |
-| (none) | Pin | PRICK | Tool exists | Required item |
-| (none) | Pen/Pencil | WRITE | Tool exists | Required item |
-| (none) | Match + Matchbox | STRIKE / LIGHT | Match + matchbox (compound), then match-lit = fire_source | Required item |
-| (none) | Thread + Needle | SEW | Both tools exist (compound: sewing_tool + sewing_material) | Required items |
-| **Lockpicking** | Pin | PICK LOCK | Tool exists + skill learned | Brass key (specific ID) |
-| **Crafting** | Knife + Wood | CARVE | Tools exist + skill learned | (N/A for V1) |
-
-**Design Note:** Blanks in this table are opportunities for new skills. Each skill should have at least one tool+verb combination that no other skill provides.
-
----
-
 ## Compound Tools
 
 ### Compound Tool Interactions
@@ -456,7 +348,7 @@ When player takes a match, contents array shrinks. No new file needed.
 
 ### Guiding Principle: Honor Design, Pursue Playtesting
 
-**Core Principle:** The main goal is ALWAYS to honor Effe's directives and designs AND work towards play testing. This is the team's prime directive.
+**Core Principle:** The main goal is ALWAYS to honor Wayne's directives and designs AND work towards play testing. This is the team's prime directive.
 
 **Decision Framework:**
 When in doubt, ask:
@@ -471,51 +363,21 @@ If both answers are YES → do it.
 
 ---
 
-## Puzzle Documentation
+## Skill Interaction Matrix
 
-### Puzzle Architecture & Design
+Use this matrix when designing new tools and deciding whether a skill should unlock new interactions:
 
-**Core Directive:** Keep an authoritative folder of puzzle documentation at `docs/puzzles/` where game designers document the logic, state, and learning outcomes of each puzzle in the game.
+| Skill | Tool | Verb | Requirement | Alternative to |
+|-------|------|------|-------------|-----------------|
+| (none) | Knife | CUT | Tool exists | Required item |
+| (none) | Pin | PRICK | Tool exists | Required item |
+| (none) | Pen/Pencil | WRITE | Tool exists | Required item |
+| (none) | Match + Matchbox | STRIKE / LIGHT | Match + matchbox (compound), then match-lit = fire_source | Required item |
+| (none) | Thread + Needle | SEW | Both tools exist (compound: sewing_tool + sewing_material) | Required items |
+| **Lockpicking** | Pin | PICK LOCK | Tool exists + skill learned | Brass key (specific ID) |
+| **Crafting** | Knife + Wood | CARVE | Tools exist + skill learned | (N/A for V1) |
 
-**Contents:** Each puzzle gets a design document covering:
-- Puzzle name and location
-- Prerequisite knowledge / skills
-- Solution path(s)
-- Objects involved
-- Sensory / timing constraints
-- Teach-value (what the player learns)
-- Consequence if failed
-
-**Why:** Makes puzzle design collaborative and auditable. New designers can onboard by reading puzzle docs.
-
-**Source:** Wayne (2026-03-19T130200Z)
-
----
-
-## Verbs as Meta-Code
-
-### Architecture Question: Are Verbs World Data?
-
-**Status:** OPEN QUESTION — Wayne exploring, not directing yet.
-
-**Question:** Should verbs be defined in `src/meta/verbs/` (as Lua data files) rather than hardcoded in `src/engine/verbs/init.lua`?
-
-**Rationale:**
-- If verbs are part of the world definition, each verb = a `.lua` file returning a table with handler, aliases, prerequisites
-- Engine just loads and dispatches verbs; doesn't know their internals
-- Verbs become mutable — a cursed room could change how LOOK works
-- New verbs = new files; no engine changes
-- Aligns with "code IS the world" philosophy
-
-**Implication:** If objects are meta-code, why aren't verbs? Could enable:
-- Room-specific verbs (this room has a TASTE verb that others don't)
-- Cursed interactions (LOOK returns nonsense)
-- Per-universe verb sets (magic realm has different verbs than mundane realm)
-- Dynamic verb creation (new tools unlock new verbs)
-
-**Needs:** Bart (Architect) analysis and decision.
-
-**Source:** Wayne (2026-03-19T130100Z)
+**Design Note:** Blanks in this table are opportunities for new skills. Each skill should have at least one tool+verb combination that no other skill provides.
 
 ---
 
@@ -547,9 +409,20 @@ This is a **living document**. Refer to `.squad/decisions.md` and `.squad/decisi
 
 ## See Also
 
-- **Game Design Foundations:** `docs/design/game-design-foundations.md`
-- **Tool Objects Design:** `docs/design/tool-objects.md`
+- **Game Design Foundations:** `game-design-foundations.md`
+- **Tool Objects Design:** `tool-objects.md`
+- **Object Design Patterns:** `object-design-patterns.md` (NEW: container design, mutation matrices, templates)
+- **Open Questions:** `open-questions.md` (NEW: exploratory ideas Wayne is considering)
 - **Containment Constraints:** `../architecture/containment-constraints.md`
 - **Full Decisions Archive:** `.squad/decisions.md`
 - **Recent Directives Inbox:** `.squad/decisions/inbox/`
 
+---
+
+## Squad Process Documentation
+
+*Squad process items (team workflow, documentation maintenance, publication cadence) have been moved out of this design document into the squad decision inbox for clarity.*
+
+- **Daily Edition Requirements:** `.squad/decisions/inbox/brockman-daily-editions.md`
+- **Documentation Maintenance:** `.squad/decisions/inbox/brockman-doc-maintenance.md`
+- **Puzzle Documentation:** `.squad/decisions/inbox/brockman-puzzle-docs.md`
