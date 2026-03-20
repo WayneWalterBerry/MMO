@@ -40,7 +40,7 @@ return {
         },
         open = {
             hidden = false,
-            name = "a trap door (open)",
+            name = "a trap door",
             description = "The trap door yawns open, revealing a narrow stone stairway that spirals down into darkness. Cool, damp air rises from below, carrying the smell of earth and old stone.",
             room_presence = "A trap door stands open in the floor, revealing a dark stairway descending into the earth.",
             on_feel = "The trap door is propped open. Your hand finds the edge of a narrow stone stairway, spiraling down into cool, damp air.",

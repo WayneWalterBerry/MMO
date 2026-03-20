@@ -134,74 +134,84 @@ for _, fname in ipairs(object_files) do
 end
 
 ---------------------------------------------------------------------------
--- Load the start room
+-- Load all rooms from meta/world/
 ---------------------------------------------------------------------------
-local room_path = meta_root .. SEP .. "world" .. SEP .. "start-room.lua"
-local room_source = read_file(room_path)
-if not room_source then
-    io.stderr:write("Fatal: cannot read " .. room_path .. "\n")
-    os.exit(1)
-end
-
-local room, err = loader.load_source(room_source)
-if not room then
-    io.stderr:write("Fatal: " .. tostring(err) .. "\n")
-    os.exit(1)
-end
-room, err = loader.resolve_template(room, templates)
-if not room then
-    io.stderr:write("Fatal: " .. tostring(err) .. "\n")
-    os.exit(1)
-end
-
----------------------------------------------------------------------------
--- Create the registry and populate from room instances
----------------------------------------------------------------------------
-local reg = registry.new()
-
--- Phase 1: Resolve all instances against their base classes and register
-for _, inst in ipairs(room.instances or {}) do
-    local resolved, inst_err = loader.resolve_instance(inst, base_classes, templates)
-    if resolved then
-        reg:register(inst.id, resolved)
-    else
-        io.stderr:write("Warning: " .. tostring(inst_err) .. "\n")
+local rooms = {}
+local room_dir = meta_root .. SEP .. "world"
+local room_files = list_lua_files(room_dir)
+for _, fname in ipairs(room_files) do
+    local path = room_dir .. SEP .. fname
+    local source = read_file(path)
+    if source then
+        local rm, rm_err = loader.load_source(source)
+        if rm then
+            rm, rm_err = loader.resolve_template(rm, templates)
+            if rm then
+                rooms[rm.id] = rm
+            else
+                io.stderr:write("Warning: failed to resolve room " .. fname .. ": " .. tostring(rm_err) .. "\n")
+            end
+        else
+            io.stderr:write("Warning: failed to load room " .. fname .. ": " .. tostring(rm_err) .. "\n")
+        end
     end
 end
 
--- Phase 2: Build containment tree from instance locations
-room.contents = {}
-for _, inst in ipairs(room.instances or {}) do
-    local loc = inst.location
-    local obj = reg:get(inst.id)
+local room = rooms["start-room"]
+if not room then
+    io.stderr:write("Fatal: start-room not found in " .. room_dir .. "\n")
+    os.exit(1)
+end
 
-    if loc == "room" then
-        -- Top-level room object
-        room.contents[#room.contents + 1] = inst.id
-        if obj then obj.location = room.id end
-    else
-        local parent_id, surface_name = loc:match("^(.-)%.(.+)$")
-        if parent_id and surface_name then
-            -- Surface location: "parent.surface"
-            local parent = reg:get(parent_id)
-            if parent and parent.surfaces and parent.surfaces[surface_name] then
-                local zone = parent.surfaces[surface_name]
-                zone.contents = zone.contents or {}
-                zone.contents[#zone.contents + 1] = inst.id
-            else
-                io.stderr:write("Warning: surface '" .. loc .. "' not found for instance '" .. inst.id .. "'\n")
-            end
-            if obj then obj.location = parent_id end
+---------------------------------------------------------------------------
+-- Create the registry and populate from all room instances
+---------------------------------------------------------------------------
+local reg = registry.new()
+
+-- Phase 1: Resolve all instances across all rooms
+for _, rm in pairs(rooms) do
+    for _, inst in ipairs(rm.instances or {}) do
+        local resolved, inst_err = loader.resolve_instance(inst, base_classes, templates)
+        if resolved then
+            reg:register(inst.id, resolved)
         else
-            -- Container location: just a parent id (e.g., "matchbox", "sack")
-            local parent = reg:get(loc)
-            if parent then
-                parent.contents = parent.contents or {}
-                parent.contents[#parent.contents + 1] = inst.id
+            io.stderr:write("Warning: " .. tostring(inst_err) .. "\n")
+        end
+    end
+end
+
+-- Phase 2: Build containment trees for all rooms
+for _, rm in pairs(rooms) do
+    rm.contents = {}
+    for _, inst in ipairs(rm.instances or {}) do
+        local loc = inst.location
+        local obj = reg:get(inst.id)
+
+        if loc == "room" then
+            rm.contents[#rm.contents + 1] = inst.id
+            if obj then obj.location = rm.id end
+        else
+            local parent_id, surface_name = loc:match("^(.-)%.(.+)$")
+            if parent_id and surface_name then
+                local parent = reg:get(parent_id)
+                if parent and parent.surfaces and parent.surfaces[surface_name] then
+                    local zone = parent.surfaces[surface_name]
+                    zone.contents = zone.contents or {}
+                    zone.contents[#zone.contents + 1] = inst.id
+                else
+                    io.stderr:write("Warning: surface '" .. loc .. "' not found for instance '" .. inst.id .. "'\n")
+                end
+                if obj then obj.location = parent_id end
             else
-                io.stderr:write("Warning: container '" .. loc .. "' not found for instance '" .. inst.id .. "'\n")
+                local parent = reg:get(loc)
+                if parent then
+                    parent.contents = parent.contents or {}
+                    parent.contents[#parent.contents + 1] = inst.id
+                else
+                    io.stderr:write("Warning: container '" .. loc .. "' not found for instance '" .. inst.id .. "'\n")
+                end
+                if obj then obj.location = loc end
             end
-            if obj then obj.location = loc end
         end
     end
 end
@@ -233,6 +243,7 @@ end
 local context = {
     registry       = reg,
     current_room   = room,
+    rooms          = rooms,
     player         = player,
     templates      = templates,
     base_classes   = base_classes,

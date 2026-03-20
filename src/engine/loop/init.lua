@@ -211,6 +211,20 @@ local function preprocess_natural_language(input)
     return "sleep", ""
   end
 
+  -- Movement phrases: stairs, through, into
+  if lower:match("^go%s+down%s+the%s+stair")
+    or lower:match("^climb%s+down%s+the%s+stair")
+    or lower:match("^descend%s+the%s+stair")
+    or lower:match("^descend%s+stair") then
+    return "down", ""
+  end
+  if lower:match("^go%s+up%s+the%s+stair")
+    or lower:match("^climb%s+up%s+the%s+stair")
+    or lower:match("^ascend%s+the%s+stair")
+    or lower:match("^ascend%s+stair") then
+    return "up", ""
+  end
+
   return nil, nil
 end
 

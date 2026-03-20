@@ -4130,6 +4130,142 @@ function verbs.create()
     handlers["nap"]   = do_sleep
 
     ---------------------------------------------------------------------------
+    -- MOVEMENT -- direction commands, go, enter, descend, ascend, climb
+    ---------------------------------------------------------------------------
+    local DIRECTION_ALIASES = {
+        n = "north", s = "south", e = "east", w = "west",
+        u = "up",    d = "down",
+        north = "north", south = "south", east = "east", west = "west",
+        up = "up", down = "down",
+        upstairs = "up", downstairs = "down",
+        above = "up", below = "down",
+    }
+
+    local function handle_movement(ctx, direction)
+        -- Strip common prepositions
+        local clean = direction:lower()
+            :gsub("^through%s+", "")
+            :gsub("^to%s+the%s+", "")
+            :gsub("^to%s+", "")
+            :gsub("^into%s+", "")
+            :gsub("^towards?%s+", "")
+        if clean == "" then
+            print("Go where?")
+            return
+        end
+
+        -- Resolve direction alias
+        local dir = DIRECTION_ALIASES[clean]
+
+        -- If not a known direction, search exits by keyword
+        if not dir then
+            local room = ctx.current_room
+            for d, exit in pairs(room.exits or {}) do
+                if type(exit) == "table" and exit_matches(exit, d, clean) then
+                    dir = d
+                    break
+                end
+            end
+        end
+        if not dir then
+            print("You can't go that way.")
+            return
+        end
+
+        local room = ctx.current_room
+        local exit = room.exits and room.exits[dir]
+        if not exit then
+            print("You can't go that way.")
+            return
+        end
+
+        if type(exit) == "table" then
+            if exit.hidden then
+                print("You can't go that way.")
+                return
+            end
+            if not exit.open then
+                if exit.locked then
+                    print((exit.name or "The way") .. " is locked.")
+                else
+                    print((exit.name or "The exit") .. " is closed.")
+                end
+                return
+            end
+        end
+
+        local target_id = type(exit) == "table" and exit.target or exit
+        local target_room = ctx.rooms and ctx.rooms[target_id]
+        if not target_room then
+            print("That way leads somewhere you cannot yet reach.")
+            return
+        end
+
+        -- Move player
+        ctx.player.location = target_id
+        ctx.current_room = target_room
+
+        -- Print arrival
+        print("")
+        if target_room.on_enter then
+            print(target_room.on_enter(target_room))
+        else
+            print("You arrive at " .. (target_room.name or "a new area") .. ".")
+        end
+        print("")
+
+        -- Auto-look on arrival
+        ctx.verbs["look"](ctx, "")
+    end
+
+    -- Cardinal and vertical directions
+    for _, dir in ipairs({"north", "south", "east", "west", "up", "down"}) do
+        handlers[dir] = function(ctx, noun) handle_movement(ctx, dir) end
+    end
+    handlers["n"] = handlers["north"]
+    handlers["s"] = handlers["south"]
+    handlers["e"] = handlers["east"]
+    handlers["w"] = handlers["west"]
+    handlers["u"] = handlers["up"]
+    handlers["d"] = handlers["down"]
+
+    -- GO {direction}
+    handlers["go"] = function(ctx, noun)
+        if noun == "" then
+            print("Go where?")
+            return
+        end
+        handle_movement(ctx, noun)
+    end
+    handlers["walk"]   = handlers["go"]
+    handlers["run"]    = handlers["go"]
+    handlers["head"]   = handlers["go"]
+    handlers["travel"] = handlers["go"]
+
+    -- ENTER {thing} -- move through an exit matched by keyword
+    handlers["enter"] = function(ctx, noun)
+        if noun == "" then
+            print("Enter what?")
+            return
+        end
+        handle_movement(ctx, noun)
+    end
+
+    -- DESCEND / ASCEND / CLIMB
+    handlers["descend"] = function(ctx, noun) handle_movement(ctx, "down") end
+    handlers["ascend"]  = function(ctx, noun) handle_movement(ctx, "up") end
+    handlers["climb"]   = function(ctx, noun)
+        local n = (noun or ""):lower()
+        if n == "down" or n == "downstairs" or n:match("down%s+") then
+            handle_movement(ctx, "down")
+        elseif n == "up" or n == "upstairs" or n:match("up%s+") or n == "" then
+            handle_movement(ctx, "up")
+        else
+            handle_movement(ctx, noun)
+        end
+    end
+
+    ---------------------------------------------------------------------------
     -- HELP
     ---------------------------------------------------------------------------
     handlers["help"] = function(ctx, noun)
@@ -4174,6 +4310,12 @@ function verbs.create()
         print("  drink <thing>     - drink from a container")
         print("  pour <thing>      - pour out a liquid")
         print("  burn <thing>      - set something flammable on fire")
+        print("  north/south/east/west  - move in a direction (n/s/e/w)")
+        print("  up / down         - move up or down (u/d)")
+        print("  go <direction>    - move (go north, go through door)")
+        print("  enter <thing>     - enter through an exit (enter trap door)")
+        print("  descend / ascend  - go down / go up")
+        print("  climb up/down     - climb stairs or ladders")
         print("  inventory (i)     - see what you're carrying / wearing")
         print("  time              - check the time of day")
         print("  sleep             - sleep for 1 hour (or: sleep for 2 hours, sleep until dawn)")
