@@ -46,6 +46,20 @@
 - **Note:** BUG-003 from pass 001 is still present — "help" intercepts in write sub-prompt too.
 - **Note:** BUG-009 replaces the "no feedback on failed parses" observation from pass 001 — there IS now output, but it's the raw parser debug, not player-facing text.
 
+### Playtest 003 Findings (2026-03-20)
+- **Pass-002 bug fixes: 5/5 tested FIXED.** BUG-008 (poison death), BUG-009 (parser debug), BUG-010 (nightstand IDs), BUG-012 (spent match priority), BUG-014 ("poison bottle" noun). All solid.
+- **Wearable system is polished.** Cloak wear/remove, sack-on-head vision blocking, chamber pot helmet with flavor text, slot conflicts ("Already wearing X. Remove it first."), inventory shows Worn section with slots. All work.
+- **Composite objects mostly work.** Drawer detaches, becomes independent 2-handed object, can be put back. Cork uncorks and becomes pickable. BUT:
+- **BUG-017 (CRITICAL): Replacing drawer destroys surface objects.** Putting drawer back into nightstand deletes the candle and bottle from the surface. Room goes dark. Unrecoverable. FSM state transition wipes children.
+- **BUG-015: Wardrobe shows internal IDs** ("wool-cloak", "sack" instead of display names). Same class as BUG-010, just not fixed in wardrobe container.
+- **BUG-018: "kick" → "lick" parser confusion.** 1-char edit distance triggers false Tier 2 match.
+- **BUG-019: FSM state labels leak** into player text — "(drawer open)" shown in move/put messages.
+- **Furniture movement works well.** Push bed, pull rug, discover trap door + brass key. Wardrobe too heavy. "look under bed" reveals hidden knife.
+- **Trap door discovery sequence is excellent game design.** push bed → pull rug → find key + trap door → open trap door. Multi-step environmental puzzle.
+- **Movement verbs still not implemented.** "go down", "down" don't work for trap door stairs. "unlock" not recognized. Expected for current build.
+- **BUG-021: Parser startup debug line** `[Parser] Tier 2 loaded...` leaks without --debug flag.
+- **BUG-022: "Play again?" prompt** says yes but exits instead of restarting.
+
 ## Cross-Agent Updates (2026-03-20)
 - **From Bart:** Wearable engine implementation complete (WEAR/REMOVE verbs, slot conflicts, vision blocking). All wear operations validated in pass-002 — system is solid and ready for content expansion.
 - **From Frink:** MUD verb research identifies that multiplayer verbs should be first-class primitives. Strategic recommendations include 50-100 predefined socials for MVP (retention drivers). Competitive analysis shows tap-to-suggest UI is critical for mobile parsing UX.
