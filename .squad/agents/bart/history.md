@@ -556,3 +556,31 @@ Morning and evening newspaper editions should be in separate files. Brockman has
 - Stacking rules: objects declare stackability and weight/size support
 - Next playtest (pass-003): Nelson focuses on movement, furniture, spatial discovery
 
+
+---
+
+## Learnings
+
+### Session: Composite/Detachable Object System (2026-03-20T05:52:36Z)
+**Status:** ✅ COMPLETE
+
+**What was built:**
+1. **Composite Object Engine** — Objects can now define parts table with detachable/non-detachable sub-objects
+2. **Detachment System** — PULL/REMOVE/UNCORK verbs detach parts via factory pattern; parent FSM transitions track part presence
+3. **Reattachment** — PUT X IN Y reattaches reversible parts (drawer → nightstand)
+4. **Two-Handed Carry** — hands_required property on objects; TAKE/DROP/PUT all respect hand slot limits
+5. **Nightstand refactored** — 4-state FSM (closed/open × with/without drawer); drawer is a portable container that keeps contents
+6. **Poison bottle refactored** — Cork is a detachable part; uncorking creates an independent cork object in the world
+
+**Key Architecture Decisions:**
+- Factory functions run in sandbox (no os access — use math.random for GUIDs)
+- Detach transitions bypass sm.transition() and apply state directly (avoids ambiguous from→to matching when multiple transitions share endpoints)
+- ind_part and ind_visible search room objects, surface contents, AND their parts
+- Parts are found after real objects in search order — detached drawer on floor takes priority over nightstand's drawer part definition
+- Non-detachable parts (legs) still return sensory descriptions but block removal attempts
+
+**Files Changed:**
+- src/meta/objects/nightstand.lua — Complete rewrite as composite
+- src/meta/objects/poison-bottle.lua — Added parts table with cork
+- src/engine/verbs/init.lua — Added detach_part/reattach_part/find_part/count_hands_used helpers; PULL/UNCORK/UNSTOP/UNSEAL verbs; modified REMOVE/OPEN/CLOSE/TAKE/DROP/PUT for composite+two-handed support
+- src/engine/loop/init.lua — NLP preprocessing for "take out X", "pull out X", "pop cork", "push X back"

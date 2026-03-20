@@ -85,9 +85,286 @@ local function get_all_carried_ids(ctx)
 end
 
 ---------------------------------------------------------------------------
+-- Helper: count hands used by carried objects (for two-handed carry)
+-- Returns: hands_used, free_hands
+---------------------------------------------------------------------------
+local function count_hands_used(ctx)
+    local used = 0
+    local reg = ctx.registry
+    for i = 1, 2 do
+        if ctx.player.hands[i] then
+            local obj = reg:get(ctx.player.hands[i])
+            local hr = (obj and obj.hands_required) or 1
+            if hr >= 2 then
+                return 2, 0  -- two-hand item uses both slots
+            end
+            used = used + 1
+        end
+    end
+    return used, 2 - used
+end
+
+---------------------------------------------------------------------------
+-- Helper: find a detachable part on any reachable object matching keyword
+-- Returns: part_def, parent_obj, part_key  (or nil)
+---------------------------------------------------------------------------
+local function find_part(ctx, keyword)
+    if not keyword or keyword == "" then return nil end
+    local room = ctx.current_room
+    local reg = ctx.registry
+    local kw = keyword:lower()
+        :gsub("^the%s+", "")
+        :gsub("^a%s+", "")
+        :gsub("^an%s+", "")
+
+    -- Search room objects for parts
+    for _, obj_id in ipairs(room.contents or {}) do
+        local obj = reg:get(obj_id)
+        if obj and obj.parts then
+            for part_key, part in pairs(obj.parts) do
+                if matches_keyword(part, kw) then
+                    return part, obj, part_key
+                end
+            end
+        end
+        -- Also search surface contents of room objects for composite parts
+        if obj and obj.surfaces then
+            for _, zone in pairs(obj.surfaces) do
+                if zone.accessible ~= false then
+                    for _, item_id in ipairs(zone.contents or {}) do
+                        local item = reg:get(item_id)
+                        if item and item.parts then
+                            for part_key, part in pairs(item.parts) do
+                                if matches_keyword(part, kw) then
+                                    return part, item, part_key
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    -- Search held objects for parts
+    for i = 1, 2 do
+        local hand_id = ctx.player.hands[i]
+        if hand_id then
+            local obj = reg:get(hand_id)
+            if obj and obj.parts then
+                for part_key, part in pairs(obj.parts) do
+                    if matches_keyword(part, kw) then
+                        return part, obj, part_key
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+---------------------------------------------------------------------------
+-- Helper: detach a part from its parent — factory + FSM + room placement
+-- Returns: new_obj (or nil, error_msg)
+---------------------------------------------------------------------------
+local function detach_part(ctx, parent, part_key)
+    local part = parent.parts and parent.parts[part_key]
+    if not part then return nil, "No such part." end
+    if not part.detachable then return nil, "That can't be removed." end
+    if not part.factory then return nil, "That can't be separated." end
+
+    -- Check state precondition
+    if part.requires_state_match then
+        if parent._state ~= part.requires_state_match then
+            return nil, part.blocked_message or ("You can't remove that right now.")
+        end
+    end
+
+    -- Find the detach_part transition on the parent
+    local detach_trans = nil
+    for _, t in ipairs(parent.transitions or {}) do
+        if t.verb == "detach_part" and t.part_id == part_key then
+            if t.from == parent._state then
+                detach_trans = t
+                break
+            end
+        end
+    end
+
+    -- Create the new independent object via factory
+    local new_obj = part.factory(parent)
+    if not new_obj then return nil, "Something went wrong." end
+
+    -- Set location to same room as parent
+    local room = ctx.current_room
+    new_obj.location = room.id
+
+    -- Register the new object
+    local new_id = new_obj.id
+    if ctx.registry:get(new_id) then
+        local n = 2
+        while ctx.registry:get(new_id .. "-" .. n) do n = n + 1 end
+        new_id = new_id .. "-" .. n
+        new_obj.id = new_id
+    end
+    ctx.registry:register(new_id, new_obj)
+    room.contents[#room.contents + 1] = new_id
+
+    -- If the part carries contents, clear the parent's surface
+    if part.carries_contents and parent.surfaces and parent.surfaces.inside then
+        parent.surfaces.inside.contents = {}
+    end
+
+    -- Transition the parent's FSM state directly (bypass fsm.transition to use our specific transition)
+    local message = part.detach_message or ("You remove " .. (part.name or part_key) .. ".")
+    if detach_trans then
+        -- Apply state change directly using the detach_part transition we found
+        local fsm_m = require("engine.fsm")
+        -- Use the FSM's apply_state through a transition call, but only if our exact
+        -- detach_part transition matches. Since fsm.transition picks the first from→to,
+        -- we must set the state directly when we already know the target.
+        local old_state = parent._state
+        if parent.states and parent.states[detach_trans.to] then
+            -- Apply new state properties
+            for k, v in pairs(parent.states[detach_trans.to]) do
+                if k ~= "on_tick" and k ~= "terminal" then
+                    if k == "surfaces" then
+                        -- Preserve surface contents
+                        local saved = {}
+                        if parent.surfaces then
+                            for sname, zone in pairs(parent.surfaces) do
+                                saved[sname] = zone.contents or {}
+                            end
+                        end
+                        parent.surfaces = {}
+                        for sname, zone in pairs(v) do
+                            parent.surfaces[sname] = {}
+                            for zk, zv in pairs(zone) do
+                                if zk ~= "contents" then
+                                    parent.surfaces[sname][zk] = zv
+                                end
+                            end
+                            parent.surfaces[sname].contents = saved[sname] or {}
+                        end
+                    else
+                        parent[k] = v
+                    end
+                end
+            end
+            parent._state = detach_trans.to
+        end
+        message = detach_trans.message or message
+    end
+
+    return new_obj, message
+end
+
+---------------------------------------------------------------------------
+-- Helper: reattach a part to its parent
+-- Returns: true, message (or nil, error_msg)
+---------------------------------------------------------------------------
+local function reattach_part(ctx, drawer_obj, parent)
+    if not parent or not parent.parts then return nil, "That doesn't go there." end
+
+    -- Find which part this object can reattach as
+    local part_key = nil
+    for pk, part in pairs(parent.parts) do
+        if part.reversible and part.id == drawer_obj.id then
+            part_key = pk
+            break
+        end
+        -- Also check by reattach_to on the detached object
+        if part.reversible and drawer_obj.reattach_to == parent.id then
+            part_key = pk
+            break
+        end
+    end
+    if not part_key then return nil, "That doesn't fit there." end
+
+    -- Find the reattach transition
+    local reattach_trans = nil
+    for _, t in ipairs(parent.transitions or {}) do
+        if t.verb == "reattach_part" and t.part_id == part_key then
+            if t.from == parent._state then
+                reattach_trans = t
+                break
+            end
+        end
+    end
+    if not reattach_trans then return nil, "You can't put that back right now." end
+
+    -- Transfer contents back to parent if applicable
+    local part = parent.parts[part_key]
+    if part.carries_contents and drawer_obj.contents then
+        if parent.surfaces then
+            parent.surfaces.inside = parent.surfaces.inside or { capacity = 2, max_item_size = 1, contents = {} }
+            parent.surfaces.inside.contents = {}
+            for _, id in ipairs(drawer_obj.contents) do
+                parent.surfaces.inside.contents[#parent.surfaces.inside.contents + 1] = id
+            end
+        end
+    end
+
+    -- Remove drawer from world (inline to avoid forward-reference)
+    local room = ctx.current_room
+    for i, id in ipairs(room.contents or {}) do
+        if id == drawer_obj.id then
+            table.remove(room.contents, i)
+            break
+        end
+    end
+    -- Also check player hands
+    for i = 1, 2 do
+        if ctx.player.hands[i] == drawer_obj.id then
+            ctx.player.hands[i] = nil
+        end
+    end
+    ctx.registry:remove(drawer_obj.id)
+
+    -- Transition parent directly using the reattach transition
+    if parent.states and parent.states[reattach_trans.to] then
+        -- Remove old state keys
+        if parent._state and parent.states[parent._state] then
+            for k in pairs(parent.states[parent._state]) do
+                if k ~= "on_tick" and k ~= "terminal" then
+                    parent[k] = nil
+                end
+            end
+        end
+        -- Apply new state properties
+        for k, v in pairs(parent.states[reattach_trans.to]) do
+            if k ~= "on_tick" and k ~= "terminal" then
+                if k == "surfaces" then
+                    local saved = {}
+                    if parent.surfaces then
+                        for sname, zone in pairs(parent.surfaces) do
+                            saved[sname] = zone.contents or {}
+                        end
+                    end
+                    parent.surfaces = {}
+                    for sname, zone in pairs(v) do
+                        parent.surfaces[sname] = {}
+                        for zk, zv in pairs(zone) do
+                            if zk ~= "contents" then
+                                parent.surfaces[sname][zk] = zv
+                            end
+                        end
+                        parent.surfaces[sname].contents = saved[sname] or {}
+                    end
+                else
+                    parent[k] = v
+                end
+            end
+        end
+        parent._state = reattach_trans.to
+    end
+    local message = reattach_trans.message or "You put it back."
+    return true, message
+end
+
+---------------------------------------------------------------------------
 -- Helper: find an object the player can see or reach
 -- Returns: obj, location_type, parent_obj, surface_name
---   location_type: "room" | "surface" | "hand" | "bag" | "worn"
+--   location_type: "room" | "surface" | "hand" | "bag" | "worn" | "part"
 ---------------------------------------------------------------------------
 local function find_visible(ctx, keyword)
     if not keyword or keyword == "" then return nil end
@@ -128,6 +405,35 @@ local function find_visible(ctx, keyword)
                 local item = reg:get(item_id)
                 if item and matches_keyword(item, kw) then
                     return item, "container", obj, nil
+                end
+            end
+        end
+    end
+
+    -- 2b. Parts of room objects and their surface contents
+    for _, obj_id in ipairs(room.contents or {}) do
+        local obj = reg:get(obj_id)
+        if obj and obj.parts then
+            for part_key, part in pairs(obj.parts) do
+                if matches_keyword(part, kw) then
+                    return part, "part", obj, part_key
+                end
+            end
+        end
+        -- Also check parts of objects on surfaces
+        if obj and obj.surfaces then
+            for _, zone in pairs(obj.surfaces) do
+                if zone.accessible ~= false then
+                    for _, item_id in ipairs(zone.contents or {}) do
+                        local item = reg:get(item_id)
+                        if item and item.parts then
+                            for part_key, part in pairs(item.parts) do
+                                if matches_keyword(part, kw) then
+                                    return part, "part", item, part_key
+                                end
+                            end
+                        end
+                    end
                 end
             end
         end
@@ -1255,13 +1561,22 @@ function verbs.create()
         -- "pick up X"
         local target = noun:match("^up%s+(.+)") or noun
 
-        -- "get X from Y" -- extract from a bag/container the player holds
+        -- "get X from Y" -- extract from a bag/container (carried or visible)
         local from_item, from_container = target:match("^(.+)%s+from%s+(.+)$")
         if from_item then
             local bag = find_in_inventory(ctx, from_container)
             if not bag then
-                print("You don't have " .. from_container .. ".")
-                return
+                -- Also check visible containers (detached drawer on floor, etc.)
+                local visible_bag = find_visible(ctx, from_container)
+                if visible_bag and visible_bag.container and visible_bag.contents then
+                    bag = visible_bag
+                elseif visible_bag then
+                    print((visible_bag.name or "That") .. " is not a container.")
+                    return
+                else
+                    print("You don't see " .. from_container .. " here.")
+                    return
+                end
             end
             if not bag.container or not bag.contents then
                 print((bag.name or "That") .. " is not a container.")
@@ -1375,6 +1690,22 @@ function verbs.create()
             return
         end
 
+        -- Two-handed carry check
+        local hr = obj.hands_required or 1
+        if hr >= 2 then
+            local used, free = count_hands_used(ctx)
+            if free < 2 then
+                print("You need both hands free to carry " .. (obj.name or "that") .. ".")
+                return
+            end
+            remove_from_location(ctx, obj)
+            ctx.player.hands[1] = obj.id
+            ctx.player.hands[2] = obj.id
+            obj.location = "player"
+            print("You take " .. (obj.name or obj.id) .. " with both hands.")
+            return
+        end
+
         local slot = first_empty_hand(ctx)
         if not slot then
             print("Your hands are full. Drop something first.")
@@ -1402,6 +1733,147 @@ function verbs.create()
         handlers["take"](ctx, noun)
     end
     handlers["grab"] = handlers["take"]
+
+    ---------------------------------------------------------------------------
+    -- PULL / YANK / TUG / EXTRACT — detach composite parts
+    ---------------------------------------------------------------------------
+    handlers["pull"] = function(ctx, noun)
+        if noun == "" then print("Pull what?") return end
+
+        -- Strip "out" preposition: "pull out drawer" → "drawer"
+        local target = noun:match("^out%s+(.+)") or noun
+        -- "pull X out of Y" → just use X
+        target = target:match("^(.+)%s+out%s+of%s+") or target
+        -- "pull X from Y" → just use X
+        target = target:match("^(.+)%s+from%s+") or target
+
+        -- First: check if the noun matches a detachable part
+        local part, parent_obj, part_key = find_part(ctx, target)
+        if part and part.detachable then
+            -- Check if this verb is valid for this part
+            local valid_verb = false
+            if part.detach_verbs then
+                for _, v in ipairs(part.detach_verbs) do
+                    if v == "pull" then valid_verb = true; break end
+                end
+            else
+                valid_verb = true  -- default: PULL always works
+            end
+
+            if valid_verb then
+                local new_obj, msg = detach_part(ctx, parent_obj, part_key)
+                if new_obj then
+                    print(msg)
+                else
+                    print(msg or "You can't pull that out.")
+                end
+                return
+            end
+        end
+
+        -- Non-detachable part: descriptive response
+        if part and not part.detachable then
+            print("You pull at " .. (part.name or "it") .. ", but it won't budge. It's firmly attached.")
+            return
+        end
+
+        -- Fall through: try FSM "pull" transition on a visible object
+        local obj = find_visible(ctx, target)
+        if obj then
+            if obj.states then
+                local transitions = fsm_mod.get_transitions(obj)
+                local target_trans
+                for _, t in ipairs(transitions) do
+                    if t.verb == "pull" then target_trans = t; break end
+                    if t.verb == "open" then target_trans = t; break end
+                    if t.aliases then
+                        for _, alias in ipairs(t.aliases) do
+                            if alias == "pull" then target_trans = t; break end
+                        end
+                        if target_trans then break end
+                    end
+                end
+                if target_trans then
+                    local trans = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {})
+                    if trans then
+                        print(trans.message or ("You pull " .. (obj.name or obj.id) .. "."))
+                    else
+                        print("You can't pull " .. (obj.name or "that") .. ".")
+                    end
+                    return
+                end
+            end
+            print("You pull at " .. (obj.name or "that") .. ". Nothing happens.")
+            return
+        end
+
+        print("You don't see that here.")
+    end
+
+    handlers["yank"] = handlers["pull"]
+    handlers["tug"] = handlers["pull"]
+    handlers["extract"] = handlers["pull"]
+
+    ---------------------------------------------------------------------------
+    -- UNCORK / UNSTOP / UNSEAL — shorthand for detaching cork-type parts
+    ---------------------------------------------------------------------------
+    handlers["uncork"] = function(ctx, noun)
+        if noun == "" then print("Uncork what?") return end
+
+        local obj = find_visible(ctx, noun)
+        if not obj then
+            print("You don't see that here.")
+            return
+        end
+
+        -- Check if the object has a cork part we can detach
+        if obj.parts then
+            for part_key, part in pairs(obj.parts) do
+                if part.detachable and part.detach_verbs then
+                    for _, v in ipairs(part.detach_verbs) do
+                        if v == "uncork" then
+                            local new_obj, msg = detach_part(ctx, obj, part_key)
+                            if new_obj then
+                                print(msg)
+                            else
+                                print(msg or "You can't uncork that.")
+                            end
+                            return
+                        end
+                    end
+                end
+            end
+        end
+
+        -- Fall through: try FSM "open" transition with uncork alias
+        if obj.states then
+            local transitions = fsm_mod.get_transitions(obj)
+            local target_trans
+            for _, t in ipairs(transitions) do
+                if t.verb == "uncork" then target_trans = t; break end
+                if t.aliases then
+                    for _, alias in ipairs(t.aliases) do
+                        if alias == "uncork" then target_trans = t; break end
+                    end
+                    if target_trans then break end
+                end
+            end
+            if target_trans then
+                local trans = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {})
+                if trans then
+                    print(trans.message or ("You uncork " .. (obj.name or obj.id) .. "."))
+                else
+                    print("You can't uncork " .. (obj.name or "that") .. ".")
+                end
+                return
+            end
+        end
+
+        print("You can't uncork " .. (obj.name or "that") .. ".")
+    end
+
+    handlers["unstop"] = handlers["uncork"]
+    handlers["unseal"] = handlers["uncork"]
 
     ---------------------------------------------------------------------------
     -- DROP
@@ -1437,7 +1909,15 @@ function verbs.create()
             return
         end
 
+        -- Clear both hands if two-handed item
         ctx.player.hands[hand_slot] = nil
+        if obj.hands_required and obj.hands_required >= 2 then
+            for i = 1, 2 do
+                if ctx.player.hands[i] == obj.id then
+                    ctx.player.hands[i] = nil
+                end
+            end
+        end
         ctx.current_room.contents[#ctx.current_room.contents + 1] = obj.id
         obj.location = ctx.current_room.id
 
@@ -1451,7 +1931,13 @@ function verbs.create()
         if noun == "" then print("Open what?") return end
 
         -- Check room objects first
-        local obj = find_visible(ctx, noun)
+        local obj, loc_type, parent_obj = find_visible(ctx, noun)
+
+        -- If we found a part, redirect to the parent object
+        if loc_type == "part" and parent_obj then
+            obj = parent_obj
+        end
+
         if obj then
             -- FSM path: object managed by FSM engine
             if obj.states then
@@ -1475,8 +1961,10 @@ function verbs.create()
                         print("You can't open " .. (obj.name or "that") .. ".")
                     end
                 else
-                    if obj._state == "open" or obj._state == "open_broken" then
+                    if obj._state and (obj._state:match("^open") or obj._state == "open_broken") then
                         print("It is already open.")
+                    elseif obj._state and obj._state:match("without_drawer") then
+                        print("The drawer is gone. There's nothing to open.")
                     else
                         print("You can't open " .. (obj.name or "that") .. ".")
                     end
@@ -1545,7 +2033,13 @@ function verbs.create()
         if noun == "" then print("Close what?") return end
 
         -- Check room objects first
-        local obj = find_visible(ctx, noun)
+        local obj, loc_type, parent_obj = find_visible(ctx, noun)
+
+        -- If we found a part, redirect to the parent object
+        if loc_type == "part" and parent_obj then
+            obj = parent_obj
+        end
+
         if obj then
             -- FSM path
             if obj.states then
@@ -1569,8 +2063,10 @@ function verbs.create()
                         print("You can't close " .. (obj.name or "that") .. ".")
                     end
                 else
-                    if obj._state == "closed" or obj._state == "closed_broken" then
+                    if obj._state and (obj._state:match("^closed") or obj._state == "closed_broken") then
                         print("It is already closed.")
+                    elseif obj._state and obj._state:match("without_drawer") then
+                        print("The drawer is gone. There's nothing to close.")
                     else
                         print("You can't close " .. (obj.name or "that") .. ".")
                     end
@@ -2372,6 +2868,23 @@ function verbs.create()
             return
         end
 
+        -- Reattachment check: if item has reattach_to and target matches
+        if item.reattach_to and target.parts and item.reattach_to == target.id then
+            local ok, msg = reattach_part(ctx, item, target)
+            if ok then
+                -- Clear hand slots (handle two-handed items)
+                for i = 1, 2 do
+                    if ctx.player.hands[i] == item.id then
+                        ctx.player.hands[i] = nil
+                    end
+                end
+                print(msg)
+            else
+                print(msg or "You can't put that back.")
+            end
+            return
+        end
+
         -- If target is a held/worn bag (simple container, no surfaces)
         if target.container and not target.surfaces then
             local ok, reason = ctx.containment.can_contain(
@@ -2419,6 +2932,14 @@ function verbs.create()
 
         -- Move
         ctx.player.hands[item_hand] = nil
+        -- Clear both hands for two-handed items
+        if item.hands_required and item.hands_required >= 2 then
+            for i = 1, 2 do
+                if ctx.player.hands[i] == item.id then
+                    ctx.player.hands[i] = nil
+                end
+            end
+        end
 
         if surface_name and target.surfaces and target.surfaces[surface_name] then
             local zone = target.surfaces[surface_name]
@@ -2689,7 +3210,7 @@ function verbs.create()
     handlers["don"] = handlers["wear"]
 
     ---------------------------------------------------------------------------
-    -- REMOVE / TAKE OFF / DOFF -- move worn item to hand
+    -- REMOVE / TAKE OFF / DOFF -- worn items OR detachable parts
     ---------------------------------------------------------------------------
     handlers["remove"] = function(ctx, noun)
         if noun == "" then
@@ -2700,6 +3221,29 @@ function verbs.create()
         -- Strip leading "off " for "take off X" passthrough
         local target = noun:lower():match("^off%s+(.+)") or noun
 
+        -- First: check if this matches a detachable part (remove cork, remove drawer)
+        local part, parent_obj, part_key = find_part(ctx, target)
+        if part and part.detachable then
+            local valid_verb = false
+            if part.detach_verbs then
+                for _, v in ipairs(part.detach_verbs) do
+                    if v == "remove" then valid_verb = true; break end
+                end
+            else
+                valid_verb = true
+            end
+            if valid_verb then
+                local new_obj, msg = detach_part(ctx, parent_obj, part_key)
+                if new_obj then
+                    print(msg)
+                else
+                    print(msg or "You can't remove that.")
+                end
+                return
+            end
+        end
+
+        -- Then: check worn items
         local kw = target:lower()
             :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
         local obj = nil
@@ -2719,7 +3263,7 @@ function verbs.create()
             if held then
                 print("You're not wearing " .. (held.name or "that") .. ".")
             else
-                print("You aren't wearing that.")
+                print("You don't see anything to remove.")
             end
             return
         end
@@ -2949,7 +3493,9 @@ function verbs.create()
         print("  take <thing>      - pick something up (needs a free hand)")
         print("  get <x> from <y>  - take something from a bag or container")
         print("  drop <thing>      - drop something you're holding")
-        print("  put <x> in <y>    - put something in a bag or container")
+        print("  pull <thing>      - pull a part free (drawer, cork, etc.)")
+        print("  uncork <thing>    - remove a cork or stopper")
+        print("  put <x> in <y>    - put something in a container (or reattach a part)")
         print("  put <x> on <y>    - put something on a surface")
         print("  open <thing>      - open a container or door")
         print("  close <thing>     - close something")

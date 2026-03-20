@@ -131,6 +131,32 @@ local function preprocess_natural_language(input)
     return "feel", ""
   end
 
+  -- Composite part phrases: "take out X", "pull out X" → pull
+  local pull_target = lower:match("^take%s+out%s+(.+)")
+    or lower:match("^pull%s+out%s+(.+)")
+    or lower:match("^yank%s+out%s+(.+)")
+  if pull_target then
+    return "pull", pull_target
+  end
+
+  -- "uncork X", "pop cork" → uncork
+  local uncork_target = lower:match("^pop%s+(.+)")
+  if uncork_target and uncork_target:match("cork") then
+    return "uncork", "bottle"
+  end
+
+  -- "push X back" / "put X back in Y" → put
+  local push_back_target = lower:match("^push%s+(.+)%s+back")
+  if push_back_target then
+    return "put", push_back_target .. " in " .. push_back_target
+  end
+
+  -- "put X back" → put X in (context-dependent, let verb handler sort it)
+  local put_back_item, put_back_target2 = lower:match("^put%s+(.+)%s+back%s+in%s+(.+)")
+  if put_back_item then
+    return "put", put_back_item .. " in " .. put_back_target2
+  end
+
   -- Wear/equip phrases: "put on X", "dress in X" → wear
   local wear_target = lower:match("^put%s+on%s+(.+)")
     or lower:match("^dress%s+in%s+(.+)")

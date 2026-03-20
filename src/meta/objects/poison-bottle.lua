@@ -1,5 +1,6 @@
--- poison-bottle.lua — FSM-managed consumable
+-- poison-bottle.lua — Composite FSM-managed consumable
 -- States: sealed → open → empty (terminal)
+-- The cork is a PART that becomes an independent object when removed.
 return {
     guid = "a1043287-aeeb-4eb7-91c4-d0fcd11f86e3",
 
@@ -75,6 +76,13 @@ return {
             aliases = {"uncork", "unstop"},
             message = "You pry the cork free with a soft pop. A wisp of sickly green vapor curls from the bottle's mouth.",
         },
+        -- Detach cork (sealed state) — creates cork object
+        {
+            from = "sealed", to = "open", verb = "detach_part",
+            trigger = "detach_part",
+            part_id = "cork",
+            message = "You twist and pull the cork free with a soft pop. A wisp of sickly green vapor curls from the bottle's mouth.",
+        },
         {
             from = "open", to = "empty", verb = "drink",
             aliases = {"quaff", "sip", "gulp"},
@@ -85,6 +93,49 @@ return {
             from = "open", to = "empty", verb = "pour",
             aliases = {"spill", "dump"},
             message = "You tip the bottle. The green liquid pours out, hissing where it touches the stone floor. A thin vapor rises, and then it is gone.",
+        },
+    },
+
+    -- === COMPOSITE PARTS ===
+    parts = {
+        cork = {
+            id = "poison-cork",
+            detachable = true,
+            reversible = false,
+            keywords = {"cork", "cork stopper", "stopper", "plug", "bottle cork"},
+            name = "a cork stopper",
+            description = "A small cork stopper, slightly stained from the bottle's contents. It smells faintly of chemicals.",
+            size = 0.5,
+            weight = 0.05,
+            categories = {"small-item"},
+            portable = true,
+            carries_contents = false,
+            on_feel = "Cork -- rough, slightly compressed, light as air.",
+            on_smell = "Wine-soaked cork with a chemical tang.",
+            detach_verbs = {"pull", "remove", "uncork", "unstop", "unseal", "yank", "extract", "pop"},
+            detach_message = "You twist and pull the cork free with a soft pop. A wisp of sickly green vapor curls from the bottle's mouth.",
+
+            factory = function(parent)
+                return {
+                    guid = "cork-inst-" .. math.random(100000, 999999),
+                    id = "poison-cork",
+                    keywords = {"cork", "cork stopper", "stopper", "plug"},
+                    name = "a cork stopper",
+                    description = "A small cork stopper, slightly stained. It's roughly cylindrical, about an inch long. Watertight -- could be useful for plugging something.",
+                    size = 0.5,
+                    weight = 0.05,
+                    categories = {"small-item"},
+                    portable = true,
+                    on_feel = "Cork -- rough, slightly compressed, light as air.",
+                    on_smell = "Wine-soaked cork with a faint chemical tang.",
+                    on_taste = "Cork. Slightly bitter. You've tasted worse.",
+                    on_listen = "Silence. It's a cork.",
+                    on_look = function(self)
+                        return self.description
+                    end,
+                    location = parent.location,
+                }
+            end,
         },
     },
 }
