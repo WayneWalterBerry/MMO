@@ -84,6 +84,65 @@ All object mutations exist **in-memory only**. Restarting the game:
 
 ---
 
+## Core Principle: Base Objects → Object Instances
+
+The game world architecture is built on a two-tier object model: **immutable base objects** that define identity and **mutable instances** that hold runtime state.
+
+### Base Objects (The Authored Layer)
+
+Base objects are immutable templates that exist in the **source code**. Each base object:
+
+- **Is an authored artifact:** Designed by game developers, stored as `.lua` files in `src/meta/objects/`
+- **Has a unique GUID:** Enables future downloading from a web service and caching
+- **Defines identity:** Answers the question "what is this thing?" (e.g., "this is a candle")
+- **Is NOT mutable at runtime:** The `.lua` file is read once at load time and defines the permanent blueprint
+- **Can inherit from other base objects:** Enables template hierarchies (e.g., `small-item` template → `candle` base object → `bedroom-candle` instance)
+
+Example hierarchy:
+```
+Template (base): small-item
+  ↓ (inherits from)
+Base Object: candle
+  ↓ (instance created at room load)
+Instance: candle-1 (living table in registry)
+```
+
+### Object Instances (The Runtime Layer)
+
+Object instances are **created at room load time** from base objects. Each instance:
+
+- **Inherits everything from its base object:** Properties, capabilities, mutation definitions
+- **IS mutable at runtime:** FSM state changes, property mutations, timer state, containment changes
+- **Is a live Lua table in the registry:** A mutable data structure in memory
+- **Is ephemeral:** Lives for the duration of the game session; destroyed on restart
+- **Multiple instances can derive from the same base object:** The same candle base object can spawn many candle instances in a room (future work: instancing system)
+
+Example at runtime:
+```lua
+-- Base object (immutable, source of truth)
+base_candle = { id = "candle", name = "A tapered candle", provides_tool = "fire_source" }
+
+-- Instance 1 (mutable, in registry)
+bedroom_candle = { id = "candle", name = "A tapered candle", provides_tool = "fire_source", state = "lit" }
+
+-- Instance 2 (mutable, in registry)
+kitchen_candle = { id = "candle", name = "A tapered candle", provides_tool = "fire_source", state = "unlit" }
+```
+
+### The Principle
+
+**The game world is composed of object instances derived from immutable base objects.** Base objects define identity (what something IS); instances hold state (what's happening to it RIGHT NOW). Base objects are authored artifacts with GUIDs for distribution; instances are ephemeral runtime entities created and destroyed as the player navigates the world.
+
+### Why This Matters
+
+1. **Clean separation of concerns:** Base objects are "what exists"; instances are "what is"
+2. **Scalability:** Many instances can derive from few base objects (efficient memory use)
+3. **Distribution:** Base objects with GUIDs can be downloaded from a web service and cached
+4. **Inheritance flexibility:** Template hierarchies reduce duplication (a "small-item" template can be inherited by many base objects)
+5. **Runtime mutation:** Instances can change freely without affecting the base object blueprint
+
+---
+
 ## The System Stack
 
 ### Layer 1: Engine Core
