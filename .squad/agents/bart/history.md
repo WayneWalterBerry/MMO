@@ -206,6 +206,26 @@ The 32.5MB gzipped index is too large for browser assets. Trim it down, then pla
 
 ---
 
+### Play Test Bug Fixes — Batch 3 (2026-03-23)
+
+**FSM verb aliasing for "light match":**
+- The `light` verb handler only checked mutation path (`find_mutation`). FSM objects like the match use transitions with verb="strike", not mutations. Fix: after mutation check fails, query `fsm_mod.get_transitions()` for transitions whose verb is "strike"/"light" or whose `aliases` table includes "light". Delegates to `handlers["strike"]` which already has full FSM + auto-tool detection logic.
+- Added `aliases = {"light", "ignite"}` field to the match FSM strike transition. The engine doesn't need to interpret this field — the verb handler does the alias lookup.
+- Pattern: FSM transitions can carry an `aliases` array for verb cross-reference. The verb handler is responsible for checking it.
+
+**Prepositional phrase parsing for "feel in/inside":**
+- `feel in drawer` / `feel inside drawer` failed because `find_visible` received "in drawer" as keyword and couldn't match it. Fix: the feel handler now parses `^in%s+(.+)` and `^inside%s+(.+)` from the noun, extracts the container name, and enumerates its accessible surface/container contents.
+- Bare "feel inside" / "feel in" (no noun) falls back to `ctx.last_object` from pronoun tracking. If no last object, prompts "Feel inside what?".
+- Closed containers (surface `accessible == false`) report "It seems closed" instead of showing nothing.
+
+**"check" / "inspect" as examine aliases:**
+- Added `handlers["check"] = handlers["examine"]` and `handlers["inspect"] = handlers["examine"]`. Simple Tier 1 dispatch aliases.
+
+**Consistency: "feel in" now matches "find" for container contents.**
+- The existing `find` → `examine` → `look at` path could find items in containers via `find_visible`. The feel handler now has parallel container-search logic via the prepositional phrase parser.
+
+---
+
 ## Learnings
 
 ### Tier 2 Parser Implementation (2026-03-22)

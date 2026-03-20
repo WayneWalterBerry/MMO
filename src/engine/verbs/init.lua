@@ -1256,21 +1256,28 @@ function verbs.create()
         local obj = find_visible(ctx, noun)
         if obj then
             -- FSM path: object managed by FSM engine
-            if obj._fsm_id then
+            if obj.states then
                 local transitions = fsm_mod.get_transitions(obj)
-                local target_state
+                local target_trans
                 for _, t in ipairs(transitions) do
-                    if t.verb == "open" then target_state = t.to; break end
+                    if t.verb == "open" then target_trans = t; break end
+                    if t.aliases then
+                        for _, alias in ipairs(t.aliases) do
+                            if alias == "open" then target_trans = t; break end
+                        end
+                        if target_trans then break end
+                    end
                 end
-                if target_state then
-                    local trans, err = fsm_mod.transition(ctx.registry, obj.id, target_state, {})
+                if target_trans then
+                    local trans, err = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {})
                     if trans then
                         print(trans.message or ("You open " .. (obj.name or obj.id) .. "."))
+                        if trans.spawns then spawn_objects(ctx, trans.spawns) end
                     else
                         print("You can't open " .. (obj.name or "that") .. ".")
                     end
                 else
-                    if obj._state == "open" then
+                    if obj._state == "open" or obj._state == "open_broken" then
                         print("It is already open.")
                     else
                         print("You can't open " .. (obj.name or "that") .. ".")
@@ -1343,21 +1350,28 @@ function verbs.create()
         local obj = find_visible(ctx, noun)
         if obj then
             -- FSM path
-            if obj._fsm_id then
+            if obj.states then
                 local transitions = fsm_mod.get_transitions(obj)
-                local target_state
+                local target_trans
                 for _, t in ipairs(transitions) do
-                    if t.verb == "close" then target_state = t.to; break end
+                    if t.verb == "close" then target_trans = t; break end
+                    if t.aliases then
+                        for _, alias in ipairs(t.aliases) do
+                            if alias == "close" then target_trans = t; break end
+                        end
+                        if target_trans then break end
+                    end
                 end
-                if target_state then
-                    local trans, err = fsm_mod.transition(ctx.registry, obj.id, target_state, {})
+                if target_trans then
+                    local trans, err = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {})
                     if trans then
                         print(trans.message or ("You close " .. (obj.name or obj.id) .. "."))
+                        if trans.spawns then spawn_objects(ctx, trans.spawns) end
                     else
                         print("You can't close " .. (obj.name or "that") .. ".")
                     end
                 else
-                    if obj._state == "closed" then
+                    if obj._state == "closed" or obj._state == "closed_broken" then
                         print("It is already closed.")
                     else
                         print("You can't close " .. (obj.name or "that") .. ".")
@@ -1422,7 +1436,37 @@ function verbs.create()
         -- Check objects first
         local obj = find_visible(ctx, noun)
         if obj then
+            -- FSM path: check for "break" transition
+            if obj.states then
+                local transitions = fsm_mod.get_transitions(obj)
+                local target_trans
+                for _, t in ipairs(transitions) do
+                    if t.verb == "break" then target_trans = t; break end
+                    if t.aliases then
+                        for _, alias in ipairs(t.aliases) do
+                            if alias == "break" or alias == noun:lower() then target_trans = t; break end
+                        end
+                        if target_trans then break end
+                    end
+                end
+                if target_trans then
+                    local trans, err = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {})
+                    if trans then
+                        print(trans.message or ("You break " .. (obj.name or obj.id) .. "."))
+                        if trans.spawns then spawn_objects(ctx, trans.spawns) end
+                    else
+                        print("You can't break " .. (obj.name or "that") .. ".")
+                    end
+                    return
+                end
+            end
+
+            -- Mutation path
             local mut_data = find_mutation(obj, "break")
+            if not mut_data then
+                -- Try break_mirror alias
+                mut_data = find_mutation(obj, "break_mirror")
+            end
             if mut_data then
                 if perform_mutation(ctx, obj, mut_data) then
                     print(mut_data.message
@@ -1569,22 +1613,68 @@ function verbs.create()
 
         local mut_data = find_mutation(obj, "light")
         if not mut_data then
-            -- FSM path: check for a "strike" or "light" transition (e.g., match)
-            if obj._fsm_id then
+            -- FSM path: check for "light" or "strike" transitions
+            if obj.states then
                 local transitions = fsm_mod.get_transitions(obj)
+                local found_trans
                 for _, t in ipairs(transitions) do
-                    if t.verb == "strike" or t.verb == "light" then
+                    if t.verb == "light" then found_trans = t; break end
+                    if t.verb == "strike" then found_trans = t; break end
+                    if t.aliases then
+                        for _, alias in ipairs(t.aliases) do
+                            if alias == "light" then found_trans = t; break end
+                        end
+                        if found_trans then break end
+                    end
+                end
+
+                if found_trans then
+                    -- "strike" verb → redirect to STRIKE handler (match-on-matchbox)
+                    if found_trans.verb == "strike" then
                         handlers["strike"](ctx, noun)
                         return
                     end
-                    if t.aliases then
-                        for _, alias in ipairs(t.aliases) do
-                            if alias == "light" then
-                                handlers["strike"](ctx, noun)
-                                return
+
+                    -- "light" verb → direct FSM transition (candle, etc.)
+                    if found_trans.requires_tool then
+                        -- Check player flame first (legacy struck match)
+                        if ctx.player.state.has_flame and ctx.player.state.has_flame > 0 then
+                            ctx.player.state.has_flame = 0
+                            local trans = fsm_mod.transition(ctx.registry, obj.id, found_trans.to, {})
+                            if trans then
+                                print("You touch the match flame to the wick...")
+                                print(trans.message or ("You light " .. (obj.name or obj.id) .. "."))
                             end
+                            return
                         end
+
+                        -- Find fire_source tool in inventory or room
+                        local tool = find_tool_in_inventory(ctx, found_trans.requires_tool)
+                        if not tool then
+                            tool = find_visible_tool(ctx, found_trans.requires_tool)
+                        end
+                        if not tool then
+                            print(found_trans.fail_message or "You have nothing to light it with.")
+                            return
+                        end
+
+                        local trans = fsm_mod.transition(ctx.registry, obj.id, found_trans.to, {})
+                        if trans then
+                            print(trans.message or ("You light " .. (obj.name or obj.id) .. "."))
+                        else
+                            print("You can't light " .. (obj.name or "that") .. ".")
+                        end
+                        return
                     end
+
+                    -- No tool required
+                    local trans = fsm_mod.transition(ctx.registry, obj.id, found_trans.to, {})
+                    if trans then
+                        print(trans.message or ("You light " .. (obj.name or obj.id) .. "."))
+                    else
+                        print("You can't light " .. (obj.name or "that") .. ".")
+                    end
+                    return
                 end
             end
             print("You can't light " .. (obj.name or "that") .. ".")
@@ -1648,14 +1738,20 @@ function verbs.create()
         end
 
         -- FSM path
-        if obj._fsm_id then
+        if obj.states then
             local transitions = fsm_mod.get_transitions(obj)
-            local target_state
+            local target_trans
             for _, t in ipairs(transitions) do
-                if t.verb == "extinguish" then target_state = t.to; break end
+                if t.verb == "extinguish" then target_trans = t; break end
+                if t.aliases then
+                    for _, alias in ipairs(t.aliases) do
+                        if alias == "extinguish" then target_trans = t; break end
+                    end
+                    if target_trans then break end
+                end
             end
-            if target_state then
-                local trans, err = fsm_mod.transition(ctx.registry, obj.id, target_state, {})
+            if target_trans then
+                local trans, err = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {})
                 if trans then
                     print(trans.message or ("You extinguish " .. (obj.name or obj.id) .. "."))
                 else
@@ -2113,7 +2209,7 @@ function verbs.create()
 
     ---------------------------------------------------------------------------
     -- STRIKE {A} ON {B} -- compound tool verb for fire-making
-    -- FSM path: A is a match with _fsm_id, B is something with has_striker.
+    -- FSM path: A is a match with inline states, B is something with has_striker.
     -- Legacy path: matchbox with fire_source charges.
     ---------------------------------------------------------------------------
     handlers["strike"] = function(ctx, noun)
@@ -2133,7 +2229,7 @@ function verbs.create()
         end
 
         -- FSM path: A is an FSM object with a "strike" transition
-        if match_obj and match_obj._fsm_id then
+        if match_obj and match_obj.states then
             local transitions = fsm_mod.get_transitions(match_obj)
             local strike_trans
             for _, t in ipairs(transitions) do
@@ -2364,6 +2460,95 @@ function verbs.create()
     handlers["devour"] = handlers["eat"]
 
     ---------------------------------------------------------------------------
+    -- DRINK -- consume a liquid (FSM or generic)
+    ---------------------------------------------------------------------------
+    handlers["drink"] = function(ctx, noun)
+        if noun == "" then print("Drink what?") return end
+
+        local obj = find_in_inventory(ctx, noun)
+        if not obj then obj = find_visible(ctx, noun) end
+        if not obj then
+            print("You don't see that here.")
+            return
+        end
+
+        -- FSM path: check for "drink" transition
+        if obj.states then
+            local transitions = fsm_mod.get_transitions(obj)
+            local target_trans
+            for _, t in ipairs(transitions) do
+                if t.verb == "drink" then target_trans = t; break end
+                if t.aliases then
+                    for _, alias in ipairs(t.aliases) do
+                        if alias == "drink" then target_trans = t; break end
+                    end
+                    if target_trans then break end
+                end
+            end
+            if target_trans then
+                local trans = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {})
+                if trans then
+                    print(trans.message or ("You drink from " .. (obj.name or obj.id) .. "."))
+                    if trans.effect == "poison" then
+                        ctx.player.state.poisoned = true
+                    end
+                else
+                    print("You can't drink from " .. (obj.name or "that") .. ".")
+                end
+                return
+            end
+        end
+
+        print("You can't drink " .. (obj.name or "that") .. ".")
+    end
+
+    handlers["quaff"] = handlers["drink"]
+    handlers["sip"] = handlers["drink"]
+
+    ---------------------------------------------------------------------------
+    -- POUR -- pour out a liquid (FSM or generic)
+    ---------------------------------------------------------------------------
+    handlers["pour"] = function(ctx, noun)
+        if noun == "" then print("Pour what?") return end
+
+        local obj = find_in_inventory(ctx, noun)
+        if not obj then obj = find_visible(ctx, noun) end
+        if not obj then
+            print("You don't see that here.")
+            return
+        end
+
+        -- FSM path: check for "pour" transition
+        if obj.states then
+            local transitions = fsm_mod.get_transitions(obj)
+            local target_trans
+            for _, t in ipairs(transitions) do
+                if t.verb == "pour" then target_trans = t; break end
+                if t.aliases then
+                    for _, alias in ipairs(t.aliases) do
+                        if alias == "pour" then target_trans = t; break end
+                    end
+                    if target_trans then break end
+                end
+            end
+            if target_trans then
+                local trans = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {})
+                if trans then
+                    print(trans.message or ("You pour out " .. (obj.name or obj.id) .. "."))
+                else
+                    print("You can't pour " .. (obj.name or "that") .. ".")
+                end
+                return
+            end
+        end
+
+        print("You can't pour " .. (obj.name or "that") .. ".")
+    end
+
+    handlers["spill"] = handlers["pour"]
+    handlers["dump"] = handlers["pour"]
+
+    ---------------------------------------------------------------------------
     -- BURN -- stub for consumables
     ---------------------------------------------------------------------------
     handlers["burn"] = function(ctx, noun)
@@ -2453,6 +2638,8 @@ function verbs.create()
         print("  wear <thing>      - put on a wearable item (backpack, cloak)")
         print("  remove <thing>    - take off a worn item")
         print("  eat <thing>       - eat something edible")
+        print("  drink <thing>     - drink from a container")
+        print("  pour <thing>      - pour out a liquid")
         print("  burn <thing>      - set something flammable on fire")
         print("  inventory (i)     - see what you're carrying / wearing")
         print("  time              - check the time of day")

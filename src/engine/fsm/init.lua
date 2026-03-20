@@ -1,26 +1,25 @@
 -- engine/fsm/init.lua
 -- Table-driven FSM engine for object state management.
--- Objects with _fsm_id and _state fields are managed by this system.
+-- Objects with inline `states` and `_state` fields are managed by this system.
+-- FSM definitions live INSIDE the object file (one file = one object = one FSM).
 -- Non-FSM objects are unaffected (backward compatible).
 
 local fsm = {}
-local _cache = {}
 
--- Load an FSM definition by id (e.g., "match" loads meta.fsms.match)
-function fsm.load(fsm_id)
-    if _cache[fsm_id] then return _cache[fsm_id] end
-    local ok, def = pcall(require, "meta.fsms." .. fsm_id)
-    if ok and def then
-        _cache[fsm_id] = def
-        return def
+-- Check if an object has inline FSM data.
+-- Returns the object itself as the definition, or nil.
+function fsm.load(obj)
+    if type(obj) == "table" and obj.states then
+        return obj
     end
     return nil
 end
 
 -- Apply state properties to an object, preserving containment and identity.
--- Removes old state-specific keys, applies shared, then applies new state.
-local function apply_state(obj, def, new_state_name, old_state_name)
-    local new_state = def.states[new_state_name]
+-- Removes old state-specific keys, then applies new state properties.
+-- Base properties (not defined in any state) persist untouched.
+local function apply_state(obj, new_state_name, old_state_name)
+    local new_state = obj.states[new_state_name]
     if not new_state then return false end
 
     -- Save containment data BEFORE cleanup (surfaces, contents, location)
@@ -33,19 +32,13 @@ local function apply_state(obj, def, new_state_name, old_state_name)
     local saved_contents = obj.contents
     local saved_location = obj.location
 
-    -- Remove old state-specific keys (skip engine-only and shared keys)
-    if old_state_name and def.states[old_state_name] then
-        for k in pairs(def.states[old_state_name]) do
-            if k ~= "on_tick" and k ~= "terminal"
-               and (not def.shared or def.shared[k] == nil) then
+    -- Remove old state-specific keys (skip engine-only keys)
+    if old_state_name and obj.states[old_state_name] then
+        for k in pairs(obj.states[old_state_name]) do
+            if k ~= "on_tick" and k ~= "terminal" then
                 obj[k] = nil
             end
         end
-    end
-
-    -- Apply shared properties
-    for k, v in pairs(def.shared or {}) do
-        obj[k] = v
     end
 
     -- Apply new state properties
@@ -80,11 +73,9 @@ end
 
 -- Return available (non-auto) transitions from the object's current state.
 function fsm.get_transitions(obj)
-    if not obj or not obj._fsm_id or not obj._state then return {} end
-    local def = fsm.load(obj._fsm_id)
-    if not def then return {} end
+    if not obj or not obj.states or not obj._state then return {} end
     local result = {}
-    for _, t in ipairs(def.transitions or {}) do
+    for _, t in ipairs(obj.transitions or {}) do
         if t.from == obj._state and t.trigger ~= "auto" then
             result[#result + 1] = t
         end
@@ -96,18 +87,16 @@ end
 -- or nil + error code on failure. Optional context table for guard checks.
 function fsm.transition(registry, obj_id, target_state, context)
     local obj = registry:get(obj_id)
-    if not obj or not obj._fsm_id or not obj._state then
+    if not obj or not obj.states or not obj._state then
         return nil, "not_fsm"
     end
-    local def = fsm.load(obj._fsm_id)
-    if not def then return nil, "no_definition" end
 
-    local cur = def.states[obj._state]
+    local cur = obj.states[obj._state]
     if cur and cur.terminal then return nil, "terminal" end
 
     -- Find a matching transition
     local trans
-    for _, t in ipairs(def.transitions or {}) do
+    for _, t in ipairs(obj.transitions or {}) do
         if t.from == obj._state and t.to == target_state and t.trigger ~= "auto" then
             trans = t
             break
@@ -129,7 +118,7 @@ function fsm.transition(registry, obj_id, target_state, context)
     end
 
     local old_state = obj._state
-    apply_state(obj, def, target_state, old_state)
+    apply_state(obj, target_state, old_state)
     if trans.on_transition then trans.on_transition(obj, context) end
     return trans
 end
@@ -138,11 +127,9 @@ end
 -- Returns a message string if a transition or warning fired, nil otherwise.
 function fsm.tick(registry, obj_id)
     local obj = registry:get(obj_id)
-    if not obj or not obj._fsm_id or not obj._state then return nil end
-    local def = fsm.load(obj._fsm_id)
-    if not def then return nil end
+    if not obj or not obj.states or not obj._state then return nil end
 
-    local state = def.states[obj._state]
+    local state = obj.states[obj._state]
     if not state or not state.on_tick then return nil end
 
     local result = state.on_tick(obj)
@@ -153,10 +140,10 @@ function fsm.tick(registry, obj_id)
 
     -- Auto-transition trigger
     if result.trigger then
-        for _, t in ipairs(def.transitions or {}) do
+        for _, t in ipairs(obj.transitions or {}) do
             if t.from == obj._state and t.trigger == "auto"
                and t.condition == result.trigger then
-                apply_state(obj, def, t.to, obj._state)
+                apply_state(obj, t.to, obj._state)
                 return t.message
             end
         end

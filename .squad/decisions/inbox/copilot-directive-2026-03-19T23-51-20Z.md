@@ -1,0 +1,4 @@
+### 2026-03-19T23:51:20Z: User directive
+**By:** Wayne "Effe" Berry (via Copilot)
+**What:** Nelson (Tester) must use his LLM intelligence to test the game -- NOT predefined scripts or unit tests. He should play the game like a real player would: think about what to try, type natural language commands, react to what happens, try unexpected things. No scripted test sequences, no assert statements, no automation frameworks. Just run `lua src/main.lua`, play, think, and report what breaks. The value is in the LLM's ability to think like a human player and try things a script wouldn't think of.
+**Why:** User request -- the whole point of having an AI tester is that it can improvise, not follow a checklist. Predefined scripts only test what you already thought of. An LLM tester finds what you didn't.

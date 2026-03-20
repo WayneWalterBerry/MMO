@@ -241,7 +241,7 @@ context.on_tick = function(ctx)
 
     local function tick_burnable(obj, obj_id, remove_fn)
         -- Skip FSM-managed objects (they handle their own tick)
-        if obj and obj._fsm_id then return false end
+        if obj and obj.states then return false end
         if obj and obj.casts_light and obj.burn_remaining then
             obj.burn_remaining = obj.burn_remaining - 1
             if obj.burn_remaining <= 0 then
