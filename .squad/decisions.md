@@ -920,4 +920,29 @@ Reorganized the `docs/` folder to reflect a clear distinction between **design**
 
 ---
 
+### UD-2026-03-20T22:20Z: Three-Way Classification of User Directives (Squad Process)
+**Author:** Wayne Berry (via Copilot)  
+**Date:** 2026-03-20  
+**Status:** Policy  
+
+When Wayne gives a directive, classify it into one of three categories and route accordingly:
+
+1. **Squad/Process directive** → `.squad/decisions.md`
+   - How the team operates, workflow rules, agent behavior
+   - Examples: "Always have Nelson test after Bart builds", "Use haiku for docs"
+
+2. **Game Design directive** → directly into `docs/design/` or `docs/objects/`
+   - How the game works from the player's perspective, object behaviors, puzzle mechanics
+   - Examples: "Candle burns down over time", "Match can't be relit", "Clock can be misset"
+
+3. **Architecture directive** → directly into `docs/architecture/`
+   - How the engine is built, technical patterns, code conventions
+   - Examples: "No special-case objects", "Single .lua per object", "FSM for all state"
+
+**Action:** Coordinator acknowledges category detected: "📌 Game design: {summary}" or "📌 Architecture: {summary}" or "📌 Squad process: {summary}"
+
+**Key Point:** Game design and architecture directives go DIRECTLY into the appropriate docs file — not through decisions.md as a staging area. decisions.md is reserved for squad process decisions only. This keeps information flow clean and docs as the source of truth.
+
+---
+
 **Last Merge:** 2026-03-20T22:15Z (Scribe)
