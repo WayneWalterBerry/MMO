@@ -745,7 +745,7 @@ function verbs.create()
                 return
             end
             if obj.on_look then
-                print(obj.on_look(obj))
+                print(obj.on_look(obj, ctx.registry))
             else
                 print(obj.description or "You see nothing special.")
             end
@@ -803,7 +803,7 @@ function verbs.create()
             end
             -- No matching surface -- fall through to general examine
             if obj.on_look then
-                print(obj.on_look(obj))
+                print(obj.on_look(obj, ctx.registry))
             else
                 print(obj.description or "You see nothing special.")
             end
@@ -826,7 +826,7 @@ function verbs.create()
             return
         end
         if obj.on_look then
-            print(obj.on_look(obj))
+            print(obj.on_look(obj, ctx.registry))
         else
             print(obj.description or "You see nothing special.")
         end
@@ -855,7 +855,8 @@ function verbs.create()
                 return
             end
             if obj.on_feel then
-                print("It's too dark to see, but you feel: " .. obj.on_feel)
+                local feel_text = type(obj.on_feel) == "function" and obj.on_feel(obj) or obj.on_feel
+                print("It's too dark to see, but you feel: " .. feel_text)
             elseif obj.touch_description then
                 print("It's too dark to see, but you feel: " .. obj.touch_description)
             else
@@ -1014,7 +1015,8 @@ function verbs.create()
 
         -- Prefer on_feel (rich sensory), fall back to touch_description, then generic
         if obj.on_feel then
-            print(obj.on_feel)
+            local feel_text = type(obj.on_feel) == "function" and obj.on_feel(obj) or obj.on_feel
+            print(feel_text)
         elseif obj.touch_description then
             print(obj.touch_description)
         else
@@ -1297,6 +1299,44 @@ function verbs.create()
         if not obj then
             print("You don't see that here.")
             return
+        end
+
+        -- Prefer non-spent items from carried containers over terminal items on floor
+        if where == "room" and obj._state and obj.states then
+            local cur_state = obj.states[obj._state]
+            if cur_state and cur_state.terminal then
+                local reg = ctx.registry
+                local kw = target:lower()
+                    :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+                local alt_obj, alt_parent
+                for i = 1, 2 do
+                    local hand_id = ctx.player.hands[i]
+                    if hand_id then
+                        local bag = reg:get(hand_id)
+                        if bag and bag.container and bag.contents then
+                            for _, item_id in ipairs(bag.contents) do
+                                local item = reg:get(item_id)
+                                if item and matches_keyword(item, kw) then
+                                    local istate = item.states and item._state
+                                        and item.states[item._state]
+                                    if not istate or not istate.terminal then
+                                        alt_obj = item
+                                        alt_parent = bag
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    if alt_obj then break end
+                end
+                if alt_obj then
+                    obj = alt_obj
+                    where = "bag"
+                    parent = alt_parent
+                    sname = nil
+                end
+            end
         end
 
         if where == "hand" or where == "worn" then
@@ -2007,8 +2047,14 @@ function verbs.create()
         end
 
         if not text or text == "" then
-            print("What do you want to write?")
-            return
+            io.write("What do you want to write? > ")
+            io.flush()
+            text = io.read()
+            if not text or text:match("^%s*$") then
+                print("Never mind.")
+                return
+            end
+            text = text:match("^%s*(.-)%s*$")
         end
 
         -- Find writing instrument
@@ -2766,6 +2812,12 @@ function verbs.create()
                     print(trans.message or ("You drink from " .. (obj.name or obj.id) .. "."))
                     if trans.effect == "poison" then
                         ctx.player.state.poisoned = true
+                        print("")
+                        print("Your body crumples to the cold stone floor. The poison works swiftly --")
+                        print("a spreading numbness, a ringing silence, and then... nothing.")
+                        print("")
+                        print("YOU HAVE DIED.")
+                        ctx.game_over = true
                     end
                 else
                     print("You can't drink from " .. (obj.name or "that") .. ".")

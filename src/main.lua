@@ -10,6 +10,12 @@ package.path = script_dir .. "/?.lua;"
             .. script_dir .. "/?/init.lua;"
             .. package.path
 
+-- Parse command-line flags
+local debug_mode = false
+for _, a in ipairs(arg or {}) do
+    if a == "--debug" then debug_mode = true end
+end
+
 ---------------------------------------------------------------------------
 -- Engine modules
 ---------------------------------------------------------------------------
@@ -207,6 +213,9 @@ local player = {
 ---------------------------------------------------------------------------
 local assets_root = script_dir .. SEP .. "assets"
 local parser_instance = parser_mod.init(assets_root)
+if debug_mode then
+    parser_instance.diagnostic = true
+end
 
 local context = {
     registry       = reg,

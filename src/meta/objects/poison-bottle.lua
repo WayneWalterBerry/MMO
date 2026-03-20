@@ -4,7 +4,7 @@ return {
     guid = "a1043287-aeeb-4eb7-91c4-d0fcd11f86e3",
 
     id = "poison-bottle",
-    keywords = {"bottle", "glass bottle", "poison", "vial", "potion", "flask", "small bottle"},
+    keywords = {"bottle", "glass bottle", "poison", "vial", "potion", "flask", "small bottle", "poison bottle", "poison-bottle"},
     size = 1,
     weight = 0.4,
     categories = {"small-item", "container", "dangerous", "glass", "fragile"},

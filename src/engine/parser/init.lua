@@ -21,7 +21,7 @@ function parser.init(assets_root)
   local instance = {
     matcher = embedding_matcher.new(index_path),
     threshold = parser.THRESHOLD,
-    diagnostic = true,
+    diagnostic = false,
   }
   return instance
 end

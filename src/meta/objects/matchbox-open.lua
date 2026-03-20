@@ -7,7 +7,18 @@ return {
     keywords = {"matchbox", "match box", "box of matches", "tinderbox", "lucifers", "open matchbox"},
     description = "A battered little cardboard matchbox, its sliding tray pulled open. Inside, wooden matches lie in a neat row. One long side bears a rough brown striker strip, worn but functional.",
 
-    on_feel = "A small cardboard box, tray slid open. You can feel the match heads inside -- bulbous and slightly rough.",
+    on_feel = function(self)
+        local count = self.contents and #self.contents or 0
+        if count == 0 then
+            return "A small cardboard box, tray slid open. The box feels empty."
+        elseif count == 1 then
+            return "A small cardboard box, tray slid open. You feel a single match head inside -- bulbous and slightly rough."
+        elseif count == 2 then
+            return "A small cardboard box, tray slid open. You feel a couple of match heads inside -- bulbous and slightly rough."
+        else
+            return "A small cardboard box, tray slid open. You feel several match heads inside -- bulbous and slightly rough."
+        end
+    end,
     on_smell = "Faintly sulfurous -- the promise of fire, now within easy reach.",
     on_listen = "Silence. The matches wait.",
 

@@ -21,7 +21,7 @@ local function cmd_look(context)
   -- If the room defines a custom on_look, use it (escape hatch for special rooms).
   if room.on_look then
     print(room.name or "Unnamed room")
-    print(room.on_look(room))
+    print(room.on_look(room, context.registry))
     return
   end
 
@@ -291,6 +291,20 @@ function loop.run(context)
     -- Post-command tick (flame countdown, candle burn, etc.)
     if context.on_tick then
       context.on_tick(context)
+    end
+
+    -- Game over check (death by poison, etc.)
+    if context.game_over then
+      print("")
+      io.write("Play again? (y/n) > ")
+      io.flush()
+      local answer = io.read()
+      if not answer or not answer:lower():match("^y") then
+        print("Goodbye.")
+      else
+        print("\nRestart the game to play again.")
+      end
+      break
     end
 
     ::continue::

@@ -459,3 +459,29 @@ The 32.5MB gzipped index is too large for browser assets. Trim it down, then pla
 **From Comic Book Guy:** Design documentation for wearable system published to docs/design/wearable-system.md. Provides comprehensive spec for content creators. System allows dual wearable+container objects (backpacks, sacks with vision-blocking), inheritance patterns (chamber-pot as pot subclass), and emergent behavior from combined properties.
 
 **From Frink (Researcher):** Strategic verb research identifies that wearable system is foundational for Phase 2 multiplayer verbs. Party/guild/economy verbs will layer on top of your core architecture. Recommends designing slot system to support future multiplayer gear constraints (shared inventory, buffs/debuffs on worn items).
+
+### Bugfix Pass-002 (2026-03-22)
+
+**Source:** Nelson's pass-002 test report (test-pass/2026-03-20-pass-002.md), 7 bugs
+
+**Fixes applied:**
+
+1. **BUG-008 — Poison death (MAJOR):** Drinking poison now triggers a game-over sequence. Death message prints, player is prompted "Play again? (y/n)", game loop exits. First death mechanic. Added `ctx.game_over` flag checked by loop after each command cycle.
+
+2. **BUG-009 — Parser debug leaks (MEDIUM):** Parser diagnostic output (`[Parser] No match found...`) no longer shown to players. Changed default `diagnostic = false` in parser/init.lua. Added `--debug` CLI flag in main.lua to re-enable for development.
+
+3. **BUG-010 — Nightstand IDs (MINOR):** Nightstand on_look functions now accept `(self, registry)` and resolve object IDs to display names. Updated all on_look callers in verbs and loop to pass registry. Backward-compatible — extra arg ignored by functions that don't use it.
+
+4. **BUG-011 — Help intercepts write (MINOR):** Write handler now uses `io.read()` sub-prompt when text is missing ("write on paper" → "What do you want to write? > "). Raw input bypasses the command parser entirely.
+
+5. **BUG-012 — Take match priority (MINOR):** Take handler now checks if found object is terminal FSM state when on the floor. If so, searches held containers for a non-terminal alternative before picking up the spent one.
+
+6. **BUG-013 — Matchbox tactile (COSMETIC):** Both matchbox.lua and matchbox-open.lua `on_feel` changed from static strings to functions that vary by `#self.contents`: "several" (3+), "a couple" (2), "a single" (1), "empty" (0). Feel handler updated to support callable on_feel.
+
+7. **BUG-014 — Poison bottle keyword (COSMETIC):** Added "poison bottle" and "poison-bottle" to poison-bottle.lua keywords list.
+
+**Architectural patterns established:**
+- `on_look(self, registry)` — backward-compatible convention for object display functions needing registry access
+- `on_feel` can be string OR function — feel handler dispatches based on `type()`
+- `ctx.game_over` flag — clean game-ending mechanism checked by loop, extensible for future death causes
+- `--debug` CLI flag — gated diagnostic output, keeps player experience clean

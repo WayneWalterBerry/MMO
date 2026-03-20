@@ -25,22 +25,21 @@ return {
 
     location = nil,
 
-    on_look = function(self)
+    on_look = function(self, registry)
         local text = self.description
         if self.surfaces and self.surfaces.top then
             local items = self.surfaces.top.contents or {}
             if #items > 0 then
                 text = text .. "\n\nOn top:"
                 for _, id in ipairs(items) do
-                    text = text .. "\n  " .. id
+                    local item = registry and registry:get(id)
+                    text = text .. "\n  " .. (item and item.name or id)
                 end
             end
         end
         text = text .. "\nThe drawer is closed."
         return text
     end,
-
-    -- FSM
     initial_state = "closed",
     _state = "closed",
 
@@ -56,14 +55,15 @@ return {
                 inside = { capacity = 2, max_item_size = 1, contents = {}, accessible = false },
             },
 
-            on_look = function(self)
+            on_look = function(self, registry)
                 local text = self.description
                 if self.surfaces and self.surfaces.top then
                     local items = self.surfaces.top.contents or {}
                     if #items > 0 then
                         text = text .. "\n\nOn top:"
                         for _, id in ipairs(items) do
-                            text = text .. "\n  " .. id
+                            local item = registry and registry:get(id)
+                            text = text .. "\n  " .. (item and item.name or id)
                         end
                     end
                 end
@@ -83,14 +83,15 @@ return {
                 inside = { capacity = 2, max_item_size = 1, contents = {}, accessible = true },
             },
 
-            on_look = function(self)
+            on_look = function(self, registry)
                 local text = self.description
                 if self.surfaces and self.surfaces.top then
                     local items = self.surfaces.top.contents or {}
                     if #items > 0 then
                         text = text .. "\n\nOn top:"
                         for _, id in ipairs(items) do
-                            text = text .. "\n  " .. id
+                            local item = registry and registry:get(id)
+                            text = text .. "\n  " .. (item and item.name or id)
                         end
                     end
                 end
@@ -101,7 +102,8 @@ return {
                     else
                         text = text .. "\nInside the drawer:"
                         for _, id in ipairs(inside) do
-                            text = text .. "\n  " .. id
+                            local item = registry and registry:get(id)
+                            text = text .. "\n  " .. (item and item.name or id)
                         end
                     end
                 end
