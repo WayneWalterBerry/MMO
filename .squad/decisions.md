@@ -892,4 +892,32 @@ Reorganized the `docs/` folder to reflect a clear distinction between **design**
 
 ---
 
+---
+
+### D-BROCKMAN002: Directive Sweep to Permanent Docs (Wall Clock Misset)
+**Author:** Brockman (Documentation)  
+**Date:** 2026-03-21  
+**Status:** Completed  
+**Scope:** Consolidate user directives from decisions.md into permanent docs
+
+**Directives Processed (2):**
+1. **UD-2026-03-20T21-54Z** — Already captured in docs/objects/wall-clock.md (Design Philosophy section)
+2. **UD-2026-03-20T21-57Z** — Wall clock misset time for puzzles (NEW sections added)
+
+**Updates Made:**
+- **docs/objects/wall-clock.md** — NEW SECTION: "Instance-Level Customization: Misset Time for Puzzles"
+  - Explains `time_offset` mutable metadata pattern
+  - Documents `on_set_to_target` trigger mechanism for puzzle events
+  - Describes SET verb interaction (future capability)
+
+- **docs/design/00-design-requirements.md** — NEW REQUIREMENT: REQ-054B
+  - Title: "Clock Misset for Puzzles (Instance-Level Time Offset)"
+  - Source: UD-2026-03-20T21-57Z
+  - Status: In Design
+  - Full specification with Lua code examples
+
+**Pattern Established:** Gameplay design → `docs/design/` + object-specific behavior → `docs/objects/`, with cross-references maintaining consistency. docs/ folder is now the lasting source of truth.
+
+---
+
 **Last Merge:** 2026-03-20T22:15Z (Scribe)
