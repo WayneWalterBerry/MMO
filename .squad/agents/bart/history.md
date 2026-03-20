@@ -760,3 +760,45 @@ Root cause: fake Y/N prompt that just exited. Fix: replaced with honest "Game ov
 
 **Files created:** `src/engine/ui/init.lua`
 **Files modified:** `src/engine/display.lua`, `src/engine/loop/init.lua`, `src/main.lua`, `src/engine/verbs/init.lua`
+
+### Movement Verbs + Room 2 + Multi-Room Engine (2026-07-18)
+
+**What was built:** Complete room-to-room movement system — the most critical missing feature identified in pass-005. Players can now move between rooms using direction commands.
+
+**Movement verb system:**
+- Direction verbs: north/south/east/west/up/down + single-letter aliases (n/s/e/w/u/d)
+- `go {direction}` — "go north", "go down", "go through trap door"
+- `enter {object}` — searches exits by keyword
+- `descend`/`ascend`/`climb up`/`climb down` — vertical movement aliases
+- `walk`/`run`/`head`/`travel` — aliases for `go`
+- NLP preprocessing for stair phrases ("go down the stairs", "climb up the staircase")
+- Exit accessibility checks: hidden exits invisible, closed exits blocked, locked exits report lock
+- Auto-look on arrival + status bar update with new room name
+
+**Multi-room infrastructure in main.lua:**
+- All room files loaded from `src/meta/world/` at startup (not just start-room)
+- Shared registry across rooms — objects persist in the single registry
+- Per-room `contents` list tracks what's in each room
+- `context.rooms` table holds all loaded rooms, `context.current_room` swaps on movement
+- Room state persists when player leaves and returns (dropped items stay where left)
+- Inventory and light state carry between rooms (candle illuminates new room)
+
+**New content:**
+- The Cellar (`src/meta/world/cellar.lua`) — dark stone cellar below the bedroom
+- Accessed via trap door stairs (down from bedroom, up from cellar)
+- Cellar has locked iron-bound door to north (future expansion)
+- Objects: barrel (sealed, atmospheric), torch bracket (empty, wall-mounted)
+- Cellar is naturally dark (no windows) — requires candle to see
+
+**Bug fixes:**
+- BUG-027: Trap door open state name changed from "a trap door (open)" to "a trap door" — FSM state label no longer leaks into display
+- BUG-028: "key" resolves to brass key — verified keywords array `{"key", "brass key", "small key", "brass"}` works in all search paths
+
+**Key design decisions:**
+- Movement handler is a single `handle_movement(ctx, direction)` function that resolves aliases, searches exits by keyword, checks accessibility, and transitions rooms
+- Direction prepositions stripped automatically ("go through X" → "X", "go into X" → "X")
+- All rooms loaded at startup rather than lazy-loading — simpler for V1, objects in shared registry
+- FSM tick only runs on current room objects + player hands (other rooms don't tick while away)
+
+**Files created:** `src/meta/world/cellar.lua`, `src/meta/objects/barrel.lua`, `src/meta/objects/torch-bracket.lua`
+**Files modified:** `src/main.lua`, `src/engine/verbs/init.lua`, `src/engine/loop/init.lua`, `src/meta/objects/trap-door.lua`
