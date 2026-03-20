@@ -1002,3 +1002,36 @@ Root cause: fake Y/N prompt that just exited. Fix: replaced with honest "Game ov
 **Pre-Object-Batch Status:**
 All foundational systems complete. Parser embedded, GOAP chaining working, wearables polished, composite architecture proven. Ready for content expansion (objects, rooms, puzzles).
 
+---
+
+## Session: Timed Events Engine + READ Verb + Wall Clock Misset (2026-03-20T22:15Z)
+
+**Status:** ✅ COMPLETE  
+**Outcome:** FSM timer tracking, skill-granting READ verb, wall clock puzzle support
+
+**Timed Events Engine (D-TIMER001):**
+- FSM timer tracking with two-phase tick pattern (collect expired, then process)
+- Timer lifecycle: start on state entry, stop on state exit (automatic via fsm.transition)
+- Room load/unload: pause timers on unload, resume on re-entry
+- Sleep integration: timers advance per sleep tick (consistent with 10 ticks/hour model)
+- Cyclic state support: wall clock hour transitions (hour_1→hour_24→hour_1)
+- Files modified: `src/engine/fsm/init.lua`, `src/engine/loop/init.lua`, `src/main.lua`
+
+**READ Verb Skill-Granting (D-READ001):**
+- Full skill grant protocol: inventory/visibility check, readable category check, burn state rejection
+- Skill mutation: `player.skills[skill] = true` AND `obj.skill_granted = true` (marker)
+- Already-learned rejection message, burnable manual support
+- Readable objects without skills delegate to LOOK AT for description
+- Files modified: `src/engine/verbs/init.lua`
+
+**Wall Clock Misset Puzzle Support (D-CLOCK001):**
+- Instance-level configuration: `time_offset` (default 0, hours ahead/behind), `adjustable` (default false)
+- `target_hour` (puzzle solution hour), `on_correct_time` (trigger callback)
+- SET/ADJUST verb advances clock by one hour per invocation
+- NLP patterns: "set clock", "turn hands", "adjust clock"
+- Files modified: `src/meta/objects/wall-clock.lua`, `src/engine/verbs/init.lua`, `src/engine/loop/init.lua`
+
+**Pattern Established:** Timed events are entirely data-driven via `timed_events` metadata in FSM states. No special engine code for clocks, candles, or future time-based puzzles. Everything uses the same two-phase tick mechanism.
+
+**Decisions Filed:** D-TIMER001, D-READ001, D-CLOCK001
+

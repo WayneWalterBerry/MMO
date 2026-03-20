@@ -65,13 +65,64 @@ Each state has:
 | Listen | Steady tick-tock. The clock is reliable, if nothing else. |
 | Examine | The clock reads [current game time]. The face is dusty but the mechanism works. |
 
+## Instance-Level Customization: Misset Time for Puzzles
+
+The wall clock can be **misset** at the instance level to display different time than actual game time. This enables puzzle design where players must adjust clocks to solve challenges.
+
+### Mutable Metadata (Per-Instance)
+
+Each clock instance can define:
+
+```lua
+-- Bedroom clock (correct time)
+time_offset = 0,  -- displays actual game time
+
+-- Puzzle room clock (misset)
+time_offset = -4,  -- displays 4 hours behind actual time
+                    -- if game time is hour_8, clock shows hour_4
+```
+
+### Setting the Clock as Puzzle Trigger
+
+The instance can declare what happens when the clock is set to the correct time (or target time):
+
+```lua
+on_set_to_target = {
+    message = "The clock clicks. Something unlocks...",
+    trigger = "unlock_door_puzzle_7",
+}
+```
+
+When player uses SET verb (below) to adjust clock to target time, the trigger fires:
+- Unlock a door
+- Open a passage
+- Reveal a hidden object
+- Start a timed event
+
+### SET Verb Interaction (Future)
+
+Future: Player can adjust misset clocks via SET verb:
+- `set clock to 3` — adjust clock hands to 3 o'clock
+- `turn hands to midnight` — adjust to hour_24
+- `set clock to correct time` — sync to actual game time (triggers puzzle event)
+
+### Design Pattern
+
+Each clock instance owns three pieces:
+1. **Base behavior** — 24-state FSM with chimes (in clock.lua)
+2. **Instance time_offset** — mutable metadata (in bedroom/puzzle room instances)
+3. **Instance on_set_to_target** — puzzle trigger logic (in puzzle room instance)
+
+This keeps the base object generic while enabling puzzle instances to be customized. No special engine code for clock-setting puzzles.
+
 ## Interaction
 
-- **look at clock** — shows current game time
+- **look at clock** — shows current display time (considering time_offset)
 - **listen to clock** — "Tick... tock... tick... tock..."
-- **examine clock** — detailed description + current time
+- **examine clock** — detailed description + displayed time
 - Not takeable (mounted on wall)
 - Not breakable (for now — future: smash for parts?)
+- **set clock to [time]** — future: adjust misset clocks to trigger puzzles
 
 ## Connection to Timed Events System
 

@@ -788,4 +788,108 @@ The wall clock object must support being "misset" — its displayed time can dif
 
 ---
 
-**Last Merge:** 2026-03-20T22:00Z (Scribe)
+<!-- Directives swept to docs on 2026-03-21T23:15Z by Brockman -->
+- UD-2026-03-20T21-54Z: "No special-case objects; clock as 24-state FSM" → docs/objects/wall-clock.md (Design Philosophy section)
+- UD-2026-03-20T21-57Z: "Wall clock supports misset time for puzzles" → docs/objects/wall-clock.md (Instance-Level Customization section) + docs/design/00-design-requirements.md (REQ-054B)
+
+---
+
+---
+
+## TIMED EVENTS ENGINE & PUZZLE SUPPORT (2026-03-20T22:15Z)
+
+### D-TIMER001: Timed Events Engine — FSM Timer Tracking and Lifecycle
+**Author:** Bart (Architect)  
+**Date:** 2026-03-22  
+**Status:** Implemented  
+**Affects:** `src/engine/fsm/init.lua`, `src/engine/loop/init.lua`, `src/main.lua`
+
+The FSM engine now supports timed state transitions. Objects define `timed_events` in their state metadata (already present in candle, match, wall-clock). The engine tracks active timers per object and decrements them each game tick.
+
+**Key design decisions:**
+- **Two-phase tick:** Expired timers are collected first, then processed, avoiding table-mutation-during-iteration bugs.
+- **Timer lifecycle:** `start_timer` on state entry, `stop_timer` on state exit (handled automatically by `fsm.transition()`). Candle extinguish stops the burn timer; relight starts it with `remaining_burn`.
+- **Room load/unload:** `scan_room_timers()` starts timers on room load; `pause_room_timers()` preserves them on unload. Paused timers resume on re-entry.
+- **Tick rate:** Each command tick = 360 game seconds (consistent with SLEEP's 10 ticks/hour model).
+- **Cyclic support:** When a timed transition fires, the engine checks if the new state also has `timed_events` and starts a new timer (wall clock cycles hour_1→hour_24→hour_1).
+- **Sleep integration:** `tick_timers()` is called per sleep tick so timers advance during sleep.
+
+---
+
+### D-READ001: READ Verb Skill-Granting Protocol
+**Author:** Bart (Architect)  
+**Date:** 2026-03-22  
+**Status:** Implemented  
+**Affects:** `src/engine/verbs/init.lua`
+
+The READ verb now follows the full skill-granting protocol:
+
+1. Object must be in inventory OR visible in room
+2. Object must have `categories` containing "readable" (or `grants_skill`)
+3. Non-readable objects get "That's not something you can read."
+4. Objects in "burning" state get "The flames make it impossible to read!"
+5. Skill-granting readables set both `player.skills[skill] = true` AND `obj.skill_granted = true` (mutation marker)
+6. Already-learned skills show `already_learned_message`
+7. Readable objects without skills delegate to LOOK AT for their description
+
+---
+
+### D-CLOCK001: Wall Clock Misset Puzzle Support — Instance-Level Configuration
+**Author:** Bart (Architect)  
+**Date:** 2026-03-22  
+**Status:** Implemented  
+**Affects:** `src/meta/objects/wall-clock.lua`, `src/engine/verbs/init.lua`, `src/engine/loop/init.lua`
+
+Wall clock now supports instance-level puzzle overrides:
+
+- `time_offset` (default 0): hours ahead/behind game time
+- `adjustable` (default false): enables SET verb interaction
+- `target_hour` (default nil): the puzzle solution hour
+- `on_correct_time` (default nil): callback fired when SET reaches target
+
+The SET/ADJUST verb advances an adjustable clock by one hour per invocation. NLP patterns handle "set clock", "turn hands", "adjust clock". Default bedroom clock is unaffected (all defaults = no puzzle behavior).
+
+---
+
+## DOCUMENTATION REORGANIZATION (2026-03-20T22:15Z)
+
+### D-BROCKMAN001: Design vs Architecture Documentation Separation
+**Author:** Brockman (Documentation)  
+**Date:** 2026-03-25  
+**Status:** ✅ COMPLETED  
+**Impacts:** `docs/design/`, `docs/architecture/`, 40+ cross-references
+
+Reorganized the `docs/` folder to reflect a clear distinction between **design** (gameplay from player perspective) and **architecture** (technical implementation and engine internals).
+
+**Moved to docs/architecture/ (6 files):**
+- `00-architecture-overview.md` — Engine layers, system stack, parser architecture
+- `architecture-decisions.md` — D-14 through D-21: mutation model, FSM, parser, persistence
+- `containment-constraints.md` — Five-layer validation engine (technical)
+- `dynamic-room-descriptions.md` — Room rendering engine internals
+- `intelligent-parser.md` — GOAP/Tier 3 parser design, engine internals
+- `room-exits.md` — Exit object structure as implemented in engine; technical constraints
+
+**Remain in docs/design/ (11 files):**
+- `00-design-requirements.md` — Gameplay directives: what players can/can't do
+- `command-variation-matrix.md` — Player-facing natural language variations
+- `composite-objects.md` — Gameplay mechanic (parts, detachment), player perspective
+- `design-directives.md` — Gameplay rules (light, tools, wearables, containers, skills)
+- `fsm-object-lifecycle.md` — Gameplay states (lit/unlit, open/closed) from player POV
+- `game-design-foundations.md` — Verb system, object taxonomy, room design, player model
+- `player-skills.md` — Skill system as gameplay mechanic
+- `spatial-system.md` — Spatial relationships (ON/UNDER/BEHIND) as gameplay mechanic
+- `tool-objects.md` — Tool capability system, player actions
+- `verb-system.md` — Player-facing verb reference (all 31 verbs)
+- `wearable-system.md` — Wear slots, layering, player body mechanics
+
+**Cross-References Updated:** 40+ in affected files (design, architecture, puzzles)
+
+**Key Insight:** The distinction is **perspective**, not content. Both files may discuss the same system, but:
+- **Design** asks: "What can the player do?"
+- **Architecture** asks: "How does the engine make that possible?"
+
+**Result:** Fast discoverability, team alignment (architects/designers navigate different folders), clearer onboarding for new members.
+
+---
+
+**Last Merge:** 2026-03-20T22:15Z (Scribe)

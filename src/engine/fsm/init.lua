@@ -260,39 +260,44 @@ end
 -- Returns a list of { obj_id, message } for any transitions that fired.
 function fsm.tick_timers(registry, delta_seconds)
     local messages = {}
+    local expired = {}
+    -- Phase 1: decrement and collect expired timers
     for obj_id, timer in pairs(fsm.active_timers) do
         timer.remaining = timer.remaining - delta_seconds
         if timer.remaining <= 0 then
-            local obj = registry:get(obj_id)
-            if obj and obj._state == timer.state then
-                -- Update remaining_burn if object tracks it
-                if obj.remaining_burn then
-                    obj.remaining_burn = 0
-                end
-                -- Fire the auto-transition
-                for _, t in ipairs(obj.transitions or {}) do
-                    if t.from == timer.state and t.trigger == "auto"
-                       and t.condition == "timer_expired" then
-                        apply_state(obj, t.to, timer.state)
-                        if t.message then
-                            messages[#messages + 1] = { obj_id = obj_id, message = t.message }
-                        end
-                        break
-                    end
-                end
-                -- Start new timer if the new state also has timed_events
-                fsm.active_timers[obj_id] = nil
-                fsm.start_timer(registry, obj_id)
-            else
-                -- Object changed state externally; discard stale timer
-                fsm.active_timers[obj_id] = nil
-            end
+            expired[#expired + 1] = { id = obj_id, timer = timer }
         else
             -- Update remaining_burn on the object for save/resume fidelity
             local obj = registry:get(obj_id)
             if obj and obj.remaining_burn then
                 obj.remaining_burn = timer.remaining
             end
+        end
+    end
+    -- Phase 2: process expired timers (safe to mutate active_timers now)
+    for _, entry in ipairs(expired) do
+        local obj_id = entry.id
+        local timer = entry.timer
+        fsm.active_timers[obj_id] = nil
+        local obj = registry:get(obj_id)
+        if obj and obj._state == timer.state then
+            -- Update remaining_burn if object tracks it
+            if obj.remaining_burn then
+                obj.remaining_burn = 0
+            end
+            -- Fire the auto-transition
+            for _, t in ipairs(obj.transitions or {}) do
+                if t.from == timer.state and t.trigger == "auto"
+                   and t.condition == "timer_expired" then
+                    apply_state(obj, t.to, timer.state)
+                    if t.message then
+                        messages[#messages + 1] = { obj_id = obj_id, message = t.message }
+                    end
+                    break
+                end
+            end
+            -- Start new timer if the new state also has timed_events (cyclic clocks)
+            fsm.start_timer(registry, obj_id)
         end
     end
     return messages

@@ -419,6 +419,13 @@
 - **Details:** Object declares `timers = { { event = "chime", interval = 3600 (1 hour), recurring = true }, ... }`. Engine reads schedule, triggers events during game loop. Output emitted to output window regardless of player action. Wall clock in bedroom chimes hourly; chime count = hour of day.
 - **Related Docs:** To be added (`docs/design/timed-events.md`)
 
+### REQ-054B: Clock Misset for Puzzles (Instance-Level Time Offset)
+- **Directive:** Wall clock instances can be misset at creation time. Each clock instance has a `time_offset` (mutable metadata) that makes it display time different from actual game time. Setting clock to correct time can trigger puzzle events.
+- **Source:** UD-2026-03-20T21-57Z (Wall clock supports misset time for puzzles)
+- **Status:** ⏳ In Design
+- **Details:** Bedroom clock has offset 0 (correct time). Puzzle room clock can have offset -4 (displays 4 hours behind). SET verb (future) adjusts clock hands; reaching target time fires `on_set_to_target` trigger (unlock door, reveal passage). Keeps base clock generic; instance metadata enables puzzle variety.
+- **Related Docs:** `../objects/wall-clock.md`
+
 ### REQ-055: Intelligent NLP Parser (Goal-Oriented, Action Chain Inference, GOAP)
 - **Directive:** Tier 3 parser handles goal-oriented input. Player states goal; engine decomposes into action chain. "Light candle" triggers: open matchbox → get match → strike match → light candle (if prerequisites unsatisfied).
 - **Source:** D-3 (Goal Decomposition) — Bart proposal 2026-03-25

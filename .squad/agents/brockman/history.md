@@ -273,3 +273,53 @@ ewspaper/2026-03-20-morning.md** — Team update & context
 ✅ Morning edition published → Team synchronized
 
 **Team Coordination:** All agents' histories updated with cross-agent context. Parallel work can proceed with full awareness of decisions.
+
+---
+
+## Session: Documentation Reorganization — Design vs Architecture (2026-03-20T22:15Z)
+
+**Status:** ✅ COMPLETED  
+**Outcome:** Clear separation of gameplay design from technical implementation; 40+ cross-references updated
+
+**User Directive Enacted:**
+Wayne's directive (2026-03-20T22:10Z) requested clear distinction:
+- **Design** = gameplay from player perspective (what players see/do)
+- **Architecture** = technical implementation (engine internals, Lua format, parsers)
+
+**Files Reorganization:**
+
+**Moved to docs/architecture/ (6 files):**
+- `00-architecture-overview.md` — Engine layers, system stack, parser architecture
+- `architecture-decisions.md` — D-14 through D-21: mutation model, FSM, parser, persistence
+- `containment-constraints.md` — Five-layer validation engine (technical)
+- `dynamic-room-descriptions.md` — Room rendering engine internals
+- `intelligent-parser.md` — GOAP/Tier 3 parser design, engine internals
+- `room-exits.md` — Exit structure as implemented; technical constraints
+
+**Remain in docs/design/ (11 files):**
+- `00-design-requirements.md` — Gameplay directives: what players can/can't do
+- `command-variation-matrix.md` — Player-facing natural language variations
+- `composite-objects.md` — Gameplay mechanic (parts, detachment), player perspective
+- `design-directives.md` — Gameplay rules (light, tools, wearables, containers, skills)
+- `fsm-object-lifecycle.md` — Gameplay states (lit/unlit, open/closed) from player POV
+- `game-design-foundations.md` — Verb system, object taxonomy, room design, player model
+- `player-skills.md` — Skill system as gameplay mechanic
+- `spatial-system.md` — Spatial relationships (ON/UNDER/BEHIND) as gameplay mechanic
+- `tool-objects.md` — Tool capability system, player actions
+- `verb-system.md` — Player-facing verb reference (all 31 verbs)
+- `wearable-system.md` — Wear slots, layering, player body mechanics
+
+**Cross-References Updated:** 40+ in affected files (design/, architecture/, puzzles/)
+
+**Key Insight:** The distinction is **perspective**, not content. Both files may discuss the same system, but:
+- **Design** asks: "What can the player do?"
+- **Architecture** asks: "How does the engine make that possible?"
+
+**Decision Filed:** D-BROCKMAN001 in decisions.md (full rationale, benefits, next steps)
+
+**Quality Metrics:**
+- ✅ All 6 files moved successfully
+- ✅ 40+ cross-references verified and updated
+- ✅ Relative paths tested (no broken links)
+- ✅ Git history preserved (used git mv)
+- ✅ Team can now quickly identify where to look for gameplay design vs technical details
