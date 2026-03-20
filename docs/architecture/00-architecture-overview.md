@@ -405,6 +405,205 @@ The architecture does **not** use referential composition (e.g., "this bottle re
 
 ---
 
+## Core Principle: Multiple Instances Per Base Object; Each Instance Has a Unique GUID
+
+The world often contains **many objects of the same type with independent state**. A matchbox holds 6 matches (all instances of the `match` base object). A bag contains 3 coins (all instances of the `coin` base object). A quiver holds 12 arrows. The architecture handles this through **instance multiplicity**: one base object definition can spawn many runtime instances, each with its own unique GUID, independent FSM state, mutation history, and timer state.
+
+### The Problem: Multiple Identical Objects with Different States
+
+Consider a matchbox. It contains 6 matches. Without instancing:
+
+- **Approach A:** Create 6 separate base objects: `match-1.lua`, `match-2.lua`, ..., `match-6.lua` — duplicate definitions, not scalable.
+- **Approach B:** Hard-code matchbox contents in object metadata — lacks flexibility, can't move matches independently, no true FSM state per match.
+
+**Neither works.** The game needs a uniform, scalable system where one `match.lua` template produces many independent instances, each trackable and mutable.
+
+### The Solution: Instance Multiplicity + GUIDs
+
+When a room loads and contains a matchbox, the engine:
+
+1. **Creates the matchbox instance** from `matchbox.lua` base object, assigns instance GUID (e.g., `9a3f2e1d-...`)
+2. **Instantiates inner matches** from the `match.lua` base object **multiple times**, each with its own instance GUID:
+   - Match #1: `instance_guid = "8f2a1b4c-..."`, `_state = "unlit"`
+   - Match #2: `instance_guid = "7c9d3e2f-..."`, `_state = "unlit"`
+   - Match #3: `instance_guid = "6b4e1a9d-..."`, `_state = "lit"`
+   - Match #4: `instance_guid = "5a3d8c2e-..."`, `_state = "spent"`
+   - Match #5: `instance_guid = "4f9b2d1e-..."`, `_state = "unlit"`
+   - Match #6: `instance_guid = "3e8a7c9d-..."`, `_state = "unlit"`
+
+Each match:
+- Derives from the same `match` base object definition
+- Has its own **instance GUID** (runtime identifier, not the base object GUID)
+- Tracks its own **FSM state** (`_state`)
+- Can have its own **timers** (a lit match has a burn timer; spent match has none)
+- Can be manipulated independently (remove match #3, keep the others)
+
+### Instance GUID vs Base Object GUID
+
+**Base Object GUID:** The identifier for the source template.
+- Example: `match` base object GUID = `550e8400-e29b-41d4-a716-446655440000`
+- Stored in source code: `return { id = "match", type_id = "550e8400-...", ... }`
+- Used for: Distribution, caching, version tracking
+- **Not** used for runtime disambiguation
+
+**Instance GUID:** The runtime identifier assigned when an instance is created.
+- Example: Match #3 instance GUID = `6b4e1a9d-88f2-4c7a-9b1e-2a3d4e5f6g7h`
+- Generated at room load time: `registry:create_instance("match", parent_id, position)`
+- Used for: Querying, referencing, disambiguating multiple instances
+- The engine uses instance GUIDs to answer: "Which specific match do you mean?"
+
+### Player-Facing Disambiguation
+
+When the player types "get match" and there are 6 matches in the matchbox, the parser must disambiguate. The system provides multiple layers:
+
+1. **Sensory description per state:** "a lit match" vs "a spent match" — the engine can distinguish matches by their state.
+2. **Ordinal reference:** "get the third match" or "get the first unlit match"
+3. **Adjective-based selection:** "get the burning match" (FSM state = `lit`) vs "get the fresh match" (FSM state = `unlit`)
+4. **Instance GUID as last resort:** If ambiguity persists, the engine internally uses instance GUID to track which specific object was referenced.
+
+Example:
+```
+> get match
+Which match do you mean?
+  1. a lit match
+  2. a spent match
+  3. an unlit match
+  ...
+```
+
+Or, with smarter parsing:
+```
+> get lit match
+You take the lit match.
+```
+
+### Container Scalability Pattern
+
+The instancing system enables containers of arbitrary size:
+
+- **Matchbox:** Contains 6 match instances, all `match` base object
+- **Coin purse:** Contains 15 coin instances, all `coin` base object
+- **Quiver:** Contains 12 arrow instances, all `arrow` base object
+- **Treasure chest:** Contains 50 item instances of mixed types (coins, gems, rings, scrolls)
+
+Containers are defined as composite objects (Principle 4) with `contains` fields. The inner objects can be instantiated multiple times:
+
+```lua
+-- src/meta/objects/matchbox.lua
+return {
+    id = "matchbox",
+    name = "a wooden matchbox",
+    description = "A small box filled with wooden matches.",
+    contains = {
+        matches = {
+            {
+                id = "match",
+                name = "a match",
+                type_id = "match-guid",
+                _state = "unlit"
+            },
+            {
+                id = "match",
+                name = "a match",
+                type_id = "match-guid",
+                _state = "unlit"
+            },
+            {
+                id = "match",
+                name = "a match",
+                type_id = "match-guid",
+                _state = "lit"
+            },
+            -- ... up to 6 matches
+        }
+    }
+}
+```
+
+At runtime, each match gets its own instance GUID. The engine tracks the array index and instance GUID. When a match is extracted, it's removed from the `contains` array and registered as a standalone object in the registry.
+
+### Independent State & Timers
+
+Each instance maintains its own mutable state:
+
+```lua
+-- Match #3 (instance GUID: 6b4e1a9d-...)
+match_instance_3 = {
+    id = "match",
+    type_id = "550e8400-...",
+    instance_guid = "6b4e1a9d-...",
+    location = "matchbox-9a3f2e1d-...",
+    _state = "lit",
+    description = "A lit match with a bright flame",
+    provides_tool = "fire_source",
+    casts_light = true,
+    timers = {
+        {
+            name = "burn_out",
+            interval = 120,     -- Burns for 120 ticks
+            recurring = false,
+            on_fire = function(self)
+                registry:mutate(self.instance_guid, "match-spent")
+            end
+        }
+    }
+}
+
+-- Match #4 (instance GUID: 5a3d8c2e-...)
+match_instance_4 = {
+    id = "match",
+    type_id = "550e8400-...",
+    instance_guid = "5a3d8c2e-...",
+    location = "matchbox-9a3f2e1d-...",
+    _state = "spent",
+    description = "A spent match, blackened and useless",
+    provides_tool = nil,
+    casts_light = false,
+    timers = {}     -- No timers; it's already spent
+}
+```
+
+Lighting match #3 does **not** affect match #4. Timer events are instance-specific. Each instance ticks independently.
+
+### The Generic Instancing Algorithm
+
+When a composite object with multiple inner instances is loaded:
+
+1. **Parse the composite object** (e.g., `matchbox.lua`)
+2. **Iterate the `contains` array** (or nested table of instances)
+3. **For each inner instance:**
+   - Assign a unique instance GUID: `uuid.generate()`
+   - Record the parent relationship: `instance.parent_id = matchbox_guid`
+   - Record position/index: `instance.location = matchbox_guid` (inside container)
+   - Register in the object registry under instance GUID
+   - Initialize FSM state from `_state` field
+   - Initialize timers from `timers` array
+
+4. **Store parent-child relationship** in a mapping table:
+   ```lua
+   registry.containment[matchbox_guid] = {
+       [1] = { instance_guid = "8f2a1b4c-...", object_id = "match" },
+       [2] = { instance_guid = "7c9d3e2f-...", object_id = "match" },
+       ...
+   }
+   ```
+
+5. **On extraction** (player removes a match):
+   - Remove from parent's `contains` array
+   - Update instance location: `instance.location = player.location`
+   - Update containment mapping: remove from parent, add to player inventory
+
+### Why This Matters
+
+1. **Scalability:** A matchbox can hold 1, 6, 100, or 1000 matches — all instances of the same base object. The engine scales linearly.
+2. **Memory efficiency:** One `match.lua` definition serves many instances. No code duplication.
+3. **State independence:** Each match's FSM state, timers, and properties are independent. Lighting one doesn't burn all.
+4. **Player agency:** Players can pick individual matches, move them between containers, light some and leave others. The engine tracks every instance.
+5. **Design flexibility:** Containers (bags, boxes, quivers, chests) are generic. The instancing system handles any multiplicity.
+6. **Debugging clarity:** Every instance has a GUID. The engine can log: "Match instance 6b4e1a9d-... transitioned from lit → spent at tick 450."
+
+---
+
 ## The System Stack
 
 ### Layer 1: Engine Core
