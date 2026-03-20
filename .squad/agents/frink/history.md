@@ -155,3 +155,27 @@ Infinite loops, memory exhaustion, state corruption, universe contamination, pri
 
 **Your Research Validation:**
 Your research on Lua table-driven approaches and homoiconicity proved invaluable. The FSM definitions are pure Lua tables—code IS data—enabling runtime introspection and declarative state management. This architecture directly implements your findings on self-modifying code safety.
+
+### 2026-07-24: Competitive Analysis — Mobile Text Adventure / IF Games
+
+**Report:** `resources/research/competitors/` (16 files including overview)
+
+**Competitors analyzed:** Frotz, Son of Hunky Punk, Hadean Lands, A Dark Room, The Ensign, Choice of Games, Sorcery!, 80 Days, Lifeline, AI Dungeon, Magium, MUD clients, Torn City, Kingdom of Loathing, Episode, Twine games.
+
+**Key findings:**
+
+1. **The interactive fiction mobile market is $1.85B (2024) growing at 13.2% CAGR.** From niche (Hadean Lands: 15 ratings) to mass market (Episode: 170M downloads), text-based games have proven commercial viability on mobile.
+
+2. **Parser input is the #1 barrier on mobile.** Every parser game (Frotz, MUDs, Hadean Lands) has "typing on phone is painful" as a top complaint. Choice-based games dominate downloads because they eliminated typing. Our Tier 2 embedding parser + tap-to-suggest UI is the correct strategy.
+
+3. **"Starts in darkness" is commercially validated.** A Dark Room used the same starting concept and hit #1 on the iOS App Store. Proof our hook works for mass audiences, not just IF enthusiasts.
+
+4. **Multiplayer text adventure on mobile is a whitespace.** No competitor successfully combines parser IF + multiplayer + mobile-first + on-device play. MUDs have multiplayer but are server-dependent with archaic UX. This is our primary market opportunity.
+
+5. **Premium one-time purchase is the market-preferred model.** Players praise paid-once games (A Dark Room, Sorcery!, Lifeline) and resent subscriptions (AI Dungeon) and freemium gating (Episode). Decision 17 (zero per-player token cost) aligns perfectly.
+
+6. **Content volume drives retention.** Top competitors have massive content: 80 Days (750K words), Magium (hundreds of thousands of words), CoG (100+ titles). Our procedural generation must produce comparable depth.
+
+7. **AI Dungeon validates demand but proves pure AI fails.** Millions of downloads but players hate inconsistency, context loss, and subscriptions. Our deterministic Lua world + AI-assisted parser is the right hybrid.
+
+**Recommendations:** Build tap-to-suggest UI, implement async multiplayer first, add text-rendered room maps, study A Dark Room's progression, ship complete chapters, consider push notifications for multiplayer events, implement undo/rewind (Sorcery! model).
