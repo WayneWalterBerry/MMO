@@ -20,17 +20,17 @@ return {
 
     instances = {
         -- Torches and brackets
-        { id = "torch-lit-west",          type = "Lit Torch",     type_id = "85c0daf7-7bf3-450c-930e-22fea3ec881a", location = "room" },
-        { id = "torch-lit-east",          type = "Lit Torch",     type_id = "85c0daf7-7bf3-450c-930e-22fea3ec881a", location = "room" },
+        { id = "torch-lit-west",          type = "Lit Torch",     type_id = "d95glu9s-6077-4a80-c393-e57156345678", location = "room" },
+        { id = "torch-lit-east",          type = "Lit Torch",     type_id = "d95glu9s-6077-4a80-c393-e57156345678", location = "room" },
 
         -- Portraits
-        { id = "portrait-1",              type = "Portrait",      type_id = "e4b50ef9-e997-4d7b-8a8a-5b6c04a6c790", location = "room" },
-        { id = "portrait-2",              type = "Portrait",      type_id = "e4b50ef9-e997-4d7b-8a8a-5b6c04a6c790", location = "room" },
-        { id = "portrait-3",              type = "Portrait",      type_id = "e4b50ef9-e997-4d7b-8a8a-5b6c04a6c790", location = "room" },
+        { id = "portrait-1",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789", location = "room" },
+        { id = "portrait-2",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789", location = "room" },
+        { id = "portrait-3",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789", location = "room" },
 
         -- Furniture
-        { id = "side-table",              type = "Side Table",    type_id = "7289f77a-f37a-4348-9c53-8996b247432e", location = "room" },
-        { id = "vase",                    type = "Vase",          type_id = "c5e8ae7e-1895-4836-a194-011c82f746e2", location = "side-table.top" },
+        { id = "side-table",              type = "Side Table",    type_id = "f17inw1u-8299-4ca2-e5b5-079378567890", location = "room" },
+        { id = "vase",                    type = "Vase",          type_id = "028jox2v-93a0-4db3-f6c6-180489678901", location = "side-table.top" },
     },
 
     exits = {

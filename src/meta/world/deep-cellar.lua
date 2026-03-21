@@ -20,19 +20,19 @@ return {
 
     instances = {
         -- Room-level objects
-        { id = "stone-altar",        type = "Stone Altar",       type_id = "e7d53bc5-b061-48eb-acd0-705714a99316", location = "room" },
-        { id = "unlit-sconce-east",  type = "Unlit Sconce",      type_id = "50da4d97-583b-4e6c-9add-047607b23cb4", location = "room" },
-        { id = "unlit-sconce-west",  type = "Unlit Sconce",      type_id = "50da4d97-583b-4e6c-9add-047607b23cb4", location = "room" },
-        { id = "stone-sarcophagus",  type = "Stone Sarcophagus", type_id = "78a2e19e-e719-4517-857c-c3046798ac19", location = "room" },
-        { id = "chain",              type = "Chain",             type_id = "7826d8c8-eec3-4ad0-a889-ec4e4800358d", location = "room" },
+        { id = "stone-altar",        type = "Stone Altar",       type_id = "5178dm1k-e8f9-420a-451b-6798de567890", location = "room" },
+        { id = "unlit-sconce-east",  type = "Unlit Sconce",      type_id = "6289en2l-f900-431b-562c-780aef678901", location = "room" },
+        { id = "unlit-sconce-west",  type = "Unlit Sconce",      type_id = "6289en2l-f900-431b-562c-780aef678901", location = "room" },
+        { id = "stone-sarcophagus",  type = "Stone Sarcophagus", type_id = "a62dir6p-3d44-475f-9060-b24e23012345", location = "room" },
+        { id = "chain",              type = "Chain",             type_id = "c84fkt8r-5f66-497f-b282-d46045234567", location = "room" },
 
         -- Altar surfaces
-        { id = "incense-burner",     type = "Incense Burner",    type_id = "b49964e5-ba98-489b-8875-a3c3d4c33ec7", location = "stone-altar.top" },
-        { id = "tattered-scroll",    type = "Tattered Scroll",   type_id = "6a3497c7-5fa0-48ff-a769-4c6988fd5cee", location = "stone-altar.top" },
-        { id = "offering-bowl",      type = "Offering Bowl",     type_id = "0d7b6746-3b27-4006-a27b-4e4704028c6d", location = "stone-altar.top" },
+        { id = "incense-burner",     type = "Incense Burner",    type_id = "739afo3m-0a11-442c-673d-891bf0789012", location = "stone-altar.top" },
+        { id = "tattered-scroll",    type = "Tattered Scroll",   type_id = "840bgp4n-1b22-453d-784e-902c01890123", location = "stone-altar.top" },
+        { id = "offering-bowl",      type = "Offering Bowl",     type_id = "b73ejs7q-4e55-486f-a171-c35f34123456", location = "stone-altar.top" },
 
         -- Hidden inside sarcophagus (accessible once lid pushed aside)
-        { id = "silver-key",         type = "Silver Key",        type_id = "f5eeb02c-927a-48f6-9d0a-481c50ea9c0d", location = "stone-sarcophagus.inside" },
+        { id = "silver-key",         type = "Silver Key",        type_id = "951chq5o-2c33-464e-895f-a13d12901234", location = "stone-sarcophagus.inside" },
     },
 
     exits = {

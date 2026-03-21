@@ -20,23 +20,23 @@ return {
 
     instances = {
         -- Room-level objects
-        { id = "large-crate",   type = "Large Crate",    type_id = "a6316151-2450-44a5-bb25-a18e367b1a54", location = "room" },
-        { id = "small-crate",   type = "Small Crate",    type_id = "11b2abb8-4698-4426-b19b-a2d5a024d927", location = "large-crate.top" },
-        { id = "grain-sack",    type = "Grain Sack",     type_id = "d2c3fc03-bb64-473e-8de7-dc5b63c39b03", location = "room" },
-        { id = "wine-rack",     type = "Wine Rack",      type_id = "1f300076-7210-4cee-addb-23356ce0370e", location = "room" },
-        { id = "wine-bottle",   type = "Wine Bottle",    type_id = "5e069d6b-ae15-4eab-8f61-205480a7dbc5", location = "wine-rack" },
-        { id = "oil-lantern",   type = "Oil Lantern",    type_id = "f1bb1287-11e8-4647-ae80-2dc711b25f6f", location = "room" },
-        { id = "rope-coil",     type = "Rope Coil",      type_id = "6bf6fa10-4ab1-478d-8c56-b4f92611a071", location = "room" },
-        { id = "crowbar",       type = "Crowbar",        type_id = "ab42803d-1451-4263-8395-984cf987f659", location = "room" },
-        { id = "rat",           type = "Rat",            type_id = "dbf2539c-da2b-4e01-b9c0-0f33fee2cc16", location = "room" },
-        { id = "oil-flask",     type = "Oil Flask",      type_id = "1afa6416-e891-4547-8370-f0b5df47c9a0", location = "room" },
+        { id = "large-crate",   type = "Large Crate",    type_id = "b7c3d1a2-4e5f-4890-ab12-cdef34567890", location = "room" },
+        { id = "small-crate",   type = "Small Crate",    type_id = "c8d4e2b3-5f60-4901-bc23-def045678901", location = "large-crate.top" },
+        { id = "grain-sack",    type = "Grain Sack",     type_id = "d9e5f3c4-6071-4a12-cd34-ef1056789012", location = "room" },
+        { id = "wine-rack",     type = "Wine Rack",      type_id = "ea06f4d5-7182-4b23-de45-f02167890123", location = "room" },
+        { id = "wine-bottle",   type = "Wine Bottle",    type_id = "fb17g5e6-8293-4c34-ef56-013278901234", location = "wine-rack" },
+        { id = "oil-lantern",   type = "Oil Lantern",    type_id = "2e4aj8h9-b5c6-4f67-1289-3465ab234567", location = "room" },
+        { id = "rope-coil",     type = "Rope Coil",      type_id = "0c28h6f7-93a4-4d45-f067-124389012345", location = "room" },
+        { id = "crowbar",       type = "Crowbar",        type_id = "3f5bk9i0-c6d7-4078-2390-4576bc345678", location = "room" },
+        { id = "rat",           type = "Rat",            type_id = "4067cl0j-d7e8-4189-340a-5687cd456789", location = "room" },
+        { id = "oil-flask",     type = "Oil Flask",      type_id = "ae5df831-7c42-4b19-8e60-f9a3c7d21b54", location = "room" },
 
         -- Inside large crate (hidden until crate broken open)
-        { id = "iron-key",      type = "Iron Key",       type_id = "a091dbb1-2e2e-474e-ab97-b580d4150465", location = "large-crate.inside" },
+        { id = "iron-key",      type = "Iron Key",       type_id = "1d39i7g8-a4b5-4e56-0178-23549a123456", location = "large-crate.inside" },
 
         -- Inside small crate (hidden until crate broken open)
-        { id = "cloth-scraps",  type = "Cloth Scraps",   type_id = "5bd1e52c-0ba8-45dc-b1f7-f8721a9d4932", location = "small-crate.inside" },
-        { id = "candle-stubs",  type = "Candle Stub",    type_id = "ad257f51-e1a0-4f73-adb5-d8a53557078d", location = "small-crate.inside" },
+        { id = "cloth-scraps",  type = "Cloth Scraps",   type_id = "7cb2e194-3d80-4a51-bf63-e8d1c5a40927", location = "small-crate.inside" },
+        { id = "candle-stubs",  type = "Candle Stub",    type_id = "91hsx61e-2c39-4642-8f5f-a19d72567890", location = "small-crate.inside" },
     },
 
     exits = {
