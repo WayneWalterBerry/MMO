@@ -125,7 +125,7 @@
     function executeLua(L, source, name) {
         var lua = fengari.lua;
         var lauxlib = fengari.lauxlib;
-        var to_luastring = lua.to_luastring;
+        var to_luastring = fengari.to_luastring;
 
         var src = to_luastring(source);
         var chunkName = to_luastring('@' + name);
@@ -156,7 +156,7 @@
         var L = lauxlib.luaL_newstate();
         fengari.lualib.luaL_openlibs(L);
         if (fengari.interop && fengari.interop.luaopen_js) {
-            lauxlib.luaL_requiref(L, lua.to_luastring("js"), fengari.interop.luaopen_js, 1);
+            lauxlib.luaL_requiref(L, fengari.to_luastring("js"), fengari.interop.luaopen_js, 1);
             lua.lua_pop(L, 1);
         }
         return L;
