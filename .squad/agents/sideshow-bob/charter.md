@@ -67,6 +67,7 @@ Rating system design doc: `docs/design/puzzles/`
 ## Key Files
 - `docs/architecture/objects/core-principles.md` — THE constitution
 - `docs/architecture/engine/intelligent-parser.md` — GOAP parser (prerequisite chains)
+- `docs/architecture/engine/event-handlers/` — Available mechanics (wind_effect, etc.) — **Read this to see what hooks you can wire into puzzle metadata**
 - `docs/design/` — game design documents
 - `docs/objects/` — object design documents
 - `src/meta/objects/` — existing object implementations (read-only reference)

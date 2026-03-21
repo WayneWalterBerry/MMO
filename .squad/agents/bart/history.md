@@ -450,3 +450,29 @@ Wayne requested GUIDs be added to all room and level .lua files. Audit confirmed
 ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and nested format ({ wind_effect = { ... } }). The nested format is auto-detected by finding a single table-valued key. Ambiguous cases (multiple table keys) are safely rejected.
 - This is better than forcing Moe to rewrite room data — room authors shouldn't need to know engine internals, and the nested format is arguably more readable for non-engineers.
 - Added 3 tests (nested extinguish, nested spared, ambiguous rejection). Total test count: 54.
+
+## Learnings (Engine Hook Architecture Design)
+
+### Session: Engine Hook Architecture Design (2026-07-22)
+**Status:** ✅ COMPLETE (Design only — no code)
+**Outcome:** Formalized the engine hook system as a named, documented architecture separate from FSM.
+
+**Deliverables:**
+1. `docs/architecture/engine/event-handlers.md` — Full architecture doc: naming justification ("Engine Hooks"), 12 hook types cataloged with metadata examples, registry pattern, integration points, implementation guide, design rules, migration plan from traverse_effects.lua.
+2. `D-HOOK001` decision filed — Covers naming, architecture, FSM relationship, migration path.
+
+**Key Design Decisions:**
+- Named "Engine Hooks" (not "Verb Handlers" or "Event Handlers") — precise about origin (engine) and mechanism (hooks into game loop)
+- Same registry pattern as on_traverse: `register(hook_type, subtype, handler_fn)` + `dispatch(hook_type, effect, ctx)`
+- One-way dependency: hooks can trigger FSM, FSM cannot trigger hooks (prevents circular dispatch)
+- Unknown subtypes silently ignored (forward-compatible metadata)
+- Content authors declare hooks in metadata; engine devs implement handlers — clean separation of concerns
+
+**Hooks Cataloged (12 total):**
+- `on_traverse` (implemented), `on_enter_room`, `on_leave_room`, `on_pickup`, `on_drop`, `on_examine`, `on_combine`, `on_use`, `on_timer`, `on_first_visit`, `on_npc_react`, `on_death`
+
+**Learnings:**
+- The on_traverse pattern was already the right abstraction — generalizing it to a unified hook registry is a clean extension, not a redesign
+- FSM vs hooks distinction is critical: FSM is data-driven per-object state machines (content authors), hooks are engine-wide event handlers (engine devs). They collaborate but don't overlap.
+- Timing (before-move vs after-move) matters for narrative order and must be documented per hook type — learned this from on_traverse firing before player moves
+- The normalize_effect() lesson from BUG-060 (accept both flat and nested formats) should be baked into the generic dispatcher from day one
