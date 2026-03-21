@@ -443,3 +443,10 @@ Wayne requested GUIDs be added to all room and level .lua files. Audit confirmed
 - The `extinguishes` list matches against both object IDs and keywords, making room metadata flexible (author can use "candle" regardless of whether that's the id or a keyword)
 - Wind-resistance check is on the object itself (`obj.wind_resistant`), not on the exit metadata — this keeps the data model clean (objects own their properties, exits declare the environmental condition)
 - Type-dispatch pattern (`handlers[effect.type]`) is the right abstraction — each effect type can have completely different fields without the engine caring
+
+## Learnings (BUG-060: on_traverse format mismatch)
+- Schema mismatches between engine and room data are insidious — both sides pass their own unit tests but integration fails silently. The engine's process() just returned early when ffect.type was nil (Moe's format had no 	ype field).
+- Fix: Added 
+ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and nested format ({ wind_effect = { ... } }). The nested format is auto-detected by finding a single table-valued key. Ambiguous cases (multiple table keys) are safely rejected.
+- This is better than forcing Moe to rewrite room data — room authors shouldn't need to know engine internals, and the nested format is arguably more readable for non-engineers.
+- Added 3 tests (nested extinguish, nested spared, ambiguous rejection). Total test count: 54.
