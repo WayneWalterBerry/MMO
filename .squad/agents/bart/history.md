@@ -398,3 +398,18 @@ Wayne requested GUIDs be added to all room and level .lua files. Audit confirmed
 - `search` is aliased to `examine` (with noun) or `look` (bare) — it goes through find_visible, which sets last_object
 - The pronoun resolution wrapper around find_visible works for "it"/"one"/"that" but NOT for empty noun — that's the gap causing the context retention bug
 - Test files must run as subprocesses because the verb module loads the full dependency graph (FSM, containment, presentation, materials)
+
+### Session: Visited Room Tracking + Bold Room Titles (2026-07-24)
+**Status:** ✅ COMPLETE
+**Outcome:** Two engine UX features implemented — visited room tracking with short descriptions on revisit, and bold room title markers.
+
+**Deliverables:**
+1. **Visited room tracking** — `ctx.visited_rooms` (set of room IDs) initialized in `main.lua` and `web/game-adapter.lua`. Starting room marked visited at startup. `handle_movement` in `verbs/init.lua` checks visited set; first visit triggers full auto-look, revisit shows only bold title + `short_description`.
+2. **Bold room titles** — Room titles wrapped in `**markdown bold**` markers in all display paths: bare "look" (lit and dark), and movement arrival. Web layer can detect `**...**` for `<strong>` rendering.
+3. **Short descriptions** — All 7 room files (`start-room`, `hallway`, `cellar`, `storage-cellar`, `deep-cellar`, `courtyard`, `crypt`) now have `short_description` fields. Fallback: if missing, only title shown.
+
+**Key design decisions:**
+- Bold markers use `**text**` (markdown convention) — engine-agnostic, web layer converts to HTML `<strong>`
+- "look" verb ALWAYS shows full description regardless of visit history
+- `visited_rooms` is a flat Lua table used as a set — O(1) lookup, no serialization overhead
+- Room template unchanged — `short_description` is optional metadata on room instances

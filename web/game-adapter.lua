@@ -509,6 +509,7 @@ local ok, err = pcall(function()
         game_start_time = os.time(),
         game_start_hour = presentation.GAME_START_HOUR,
         ui              = nil,
+        visited_rooms   = { [start_room_id] = true },
         -- JS bridge: open URL in a new browser tab (for "report bug")
         open_url        = function(url)
             window:_openUrl(url)
