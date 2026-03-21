@@ -1,0 +1,202 @@
+-- engine/materials/init.lua
+-- Material registry: maps material names to numeric property tables.
+-- Objects reference materials by name (e.g., material = "wax").
+-- The engine resolves properties at runtime via materials.get(name).
+-- Adding new materials or properties requires zero engine changes.
+
+local materials = {}
+
+-- Material property tables.
+-- Units: density (kg/m³), temperatures (°C), hardness (1-10 Mohs-inspired),
+-- normalized ratios (0.0–1.0) for flexibility, absorbency, opacity,
+-- flammability, conductivity, fragility. Value is economic multiplier (1–100).
+materials.registry = {
+    wax = {
+        density = 900,
+        melting_point = 60,
+        ignition_point = 230,
+        hardness = 2,
+        flexibility = 0.8,
+        absorbency = 0.0,
+        opacity = 0.6,
+        flammability = 0.7,
+        conductivity = 0.0,
+        fragility = 0.3,
+        value = 1,
+    },
+    wood = {
+        density = 600,
+        melting_point = nil,
+        ignition_point = 300,
+        hardness = 4,
+        flexibility = 0.2,
+        absorbency = 0.3,
+        opacity = 1.0,
+        flammability = 0.5,
+        conductivity = 0.0,
+        fragility = 0.2,
+        value = 3,
+    },
+    fabric = {
+        density = 300,
+        melting_point = nil,
+        ignition_point = 250,
+        hardness = 1,
+        flexibility = 1.0,
+        absorbency = 0.8,
+        opacity = 0.3,
+        flammability = 0.6,
+        conductivity = 0.0,
+        fragility = 0.0,
+        value = 2,
+    },
+    wool = {
+        density = 350,
+        melting_point = nil,
+        ignition_point = 300,
+        hardness = 1,
+        flexibility = 0.9,
+        absorbency = 0.6,
+        opacity = 0.5,
+        flammability = 0.4,
+        conductivity = 0.0,
+        fragility = 0.0,
+        value = 4,
+    },
+    iron = {
+        density = 7870,
+        melting_point = 1538,
+        ignition_point = nil,
+        hardness = 8,
+        flexibility = 0.3,
+        absorbency = 0.0,
+        opacity = 1.0,
+        flammability = 0.0,
+        conductivity = 0.8,
+        fragility = 0.1,
+        rust_susceptibility = 0.9,
+        value = 5,
+    },
+    steel = {
+        density = 7850,
+        melting_point = 1370,
+        ignition_point = nil,
+        hardness = 9,
+        flexibility = 0.3,
+        absorbency = 0.0,
+        opacity = 1.0,
+        flammability = 0.0,
+        conductivity = 0.7,
+        fragility = 0.05,
+        rust_susceptibility = 0.4,
+        value = 10,
+    },
+    brass = {
+        density = 8500,
+        melting_point = 930,
+        ignition_point = nil,
+        hardness = 6,
+        flexibility = 0.1,
+        absorbency = 0.0,
+        opacity = 1.0,
+        flammability = 0.0,
+        conductivity = 0.6,
+        fragility = 0.1,
+        value = 8,
+    },
+    glass = {
+        density = 2500,
+        melting_point = 1400,
+        ignition_point = nil,
+        hardness = 6,
+        flexibility = 0.0,
+        absorbency = 0.0,
+        opacity = 0.1,
+        flammability = 0.0,
+        conductivity = 0.0,
+        fragility = 0.9,
+        value = 4,
+    },
+    paper = {
+        density = 700,
+        melting_point = nil,
+        ignition_point = 230,
+        hardness = 1,
+        flexibility = 0.7,
+        absorbency = 0.9,
+        opacity = 0.7,
+        flammability = 0.8,
+        conductivity = 0.0,
+        fragility = 0.1,
+        value = 1,
+    },
+    leather = {
+        density = 850,
+        melting_point = nil,
+        ignition_point = 350,
+        hardness = 3,
+        flexibility = 0.6,
+        absorbency = 0.4,
+        opacity = 1.0,
+        flammability = 0.3,
+        conductivity = 0.0,
+        fragility = 0.0,
+        value = 6,
+    },
+    ceramic = {
+        density = 2300,
+        melting_point = 1600,
+        ignition_point = nil,
+        hardness = 7,
+        flexibility = 0.0,
+        absorbency = 0.1,
+        opacity = 1.0,
+        flammability = 0.0,
+        conductivity = 0.0,
+        fragility = 0.7,
+        value = 3,
+    },
+    tallow = {
+        density = 850,
+        melting_point = 45,
+        ignition_point = 200,
+        hardness = 1,
+        flexibility = 0.9,
+        absorbency = 0.0,
+        opacity = 0.5,
+        flammability = 0.8,
+        conductivity = 0.0,
+        fragility = 0.3,
+        value = 1,
+    },
+    cotton = {
+        density = 350,
+        melting_point = nil,
+        ignition_point = 250,
+        hardness = 1,
+        flexibility = 1.0,
+        absorbency = 0.9,
+        opacity = 0.4,
+        flammability = 0.7,
+        conductivity = 0.0,
+        fragility = 0.0,
+        value = 2,
+    },
+}
+
+-- Look up a material's property table by name.
+-- Returns the property table or nil if not found.
+function materials.get(name)
+    if not name then return nil end
+    return materials.registry[name]
+end
+
+-- Look up a specific property for a material.
+-- Returns the property value or nil.
+function materials.get_property(name, property)
+    local mat = materials.registry[name]
+    if not mat then return nil end
+    return mat[property]
+end
+
+return materials

@@ -441,11 +441,18 @@ function loop.run(context)
           end
         end
       end
-      -- Tick all FSM objects (legacy on_tick callbacks)
+      -- Tick all FSM objects (legacy on_tick callbacks + threshold checks)
+      -- Build environment context from room properties for threshold evaluation
+      local env_context = {
+          temperature = room and room.temperature or 20,
+          wetness = room and room.wetness or 0,
+          moisture = room and room.moisture or 0,
+          light_level = room and room.light_level or 0,
+      }
       for _, obj_id in ipairs(tick_targets) do
         local obj = reg:get(obj_id)
         if obj and obj._state then
-          local msg = fsm_mod.tick(reg, obj_id)
+          local msg = fsm_mod.tick(reg, obj_id, env_context)
           if msg then
             print("")
             print(msg)

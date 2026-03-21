@@ -6,6 +6,15 @@
 
 local fsm = {}
 
+-- Material registry (lazy-loaded on first threshold check)
+local _materials
+local function get_materials()
+    if _materials then return _materials end
+    local ok, mod = pcall(require, "engine.materials")
+    if ok then _materials = mod end
+    return _materials
+end
+
 -- Active timed events: keyed by object ID
 -- Each entry: { state, remaining, event, to_state }
 fsm.active_timers = {}
@@ -163,32 +172,92 @@ function fsm.transition(registry, obj_id, target_state, context)
     return trans
 end
 
--- Process auto-transitions (burn countdown, duration expiry).
--- Returns a message string if a transition or warning fired, nil otherwise.
-function fsm.tick(registry, obj_id)
-    local obj = registry:get(obj_id)
-    if not obj or not obj.states or not obj._state then return nil end
+-- Check property thresholds for auto-transitions.
+-- Thresholds are declarative: { property = "temperature", above = 62, transition = "melting" }
+-- The property is checked against env_context values.
+-- Optional: above_material / below_material resolves the limit from the object's material.
+-- Returns a message string if a threshold transition fires, nil otherwise.
+local function check_thresholds(registry, obj, obj_id, env_context)
+    if not obj.thresholds or not env_context then return nil end
 
-    local state = obj.states[obj._state]
-    if not state or not state.on_tick then return nil end
+    local mat = nil
+    if obj.material then
+        local mats = get_materials()
+        if mats then mat = mats.get(obj.material) end
+    end
 
-    local result = state.on_tick(obj)
-    if not result then return nil end
+    for _, threshold in ipairs(obj.thresholds) do
+        local env_value = env_context[threshold.property]
+        if env_value ~= nil then
+            local crossed = false
 
-    -- Warning (non-transition message)
-    if result.warning then return result.warning end
+            -- Direct numeric threshold: above / below
+            if threshold.above and env_value > threshold.above then
+                crossed = true
+            elseif threshold.below and env_value < threshold.below then
+                crossed = true
+            end
 
-    -- Auto-transition trigger
-    if result.trigger then
-        for _, t in ipairs(obj.transitions or {}) do
-            if t.from == obj._state and t.trigger == "auto"
-               and t.condition == result.trigger then
-                apply_state(obj, t.to, obj._state)
-                apply_mutations(obj, t.mutate)
-                return t.message
+            -- Material-referenced threshold: above_material / below_material
+            if not crossed and mat then
+                if threshold.above_material then
+                    local limit = mat[threshold.above_material]
+                    if limit and env_value > limit then crossed = true end
+                elseif threshold.below_material then
+                    local limit = mat[threshold.below_material]
+                    if limit and env_value < limit then crossed = true end
+                end
+            end
+
+            if crossed and threshold.transition then
+                -- Find a matching transition from current state to the threshold target
+                for _, t in ipairs(obj.transitions or {}) do
+                    if t.from == obj._state and t.to == threshold.transition then
+                        local old_state = obj._state
+                        fsm.stop_timer(obj_id)
+                        apply_state(obj, t.to, old_state)
+                        apply_mutations(obj, t.mutate)
+                        if t.on_transition then t.on_transition(obj, env_context) end
+                        fsm.start_timer(registry, obj_id)
+                        return t.message or threshold.message
+                    end
+                end
             end
         end
     end
+    return nil
+end
+
+-- Process auto-transitions (burn countdown, duration expiry, threshold checks).
+-- Returns a message string if a transition or warning fired, nil otherwise.
+-- Optional env_context: room environmental state for threshold checking.
+function fsm.tick(registry, obj_id, env_context)
+    local obj = registry:get(obj_id)
+    if not obj or not obj.states or not obj._state then return nil end
+
+    -- Step 1: existing on_tick callback (legacy burn countdown, etc.)
+    local state = obj.states[obj._state]
+    if state and state.on_tick then
+        local result = state.on_tick(obj)
+        if result then
+            if result.warning then return result.warning end
+            if result.trigger then
+                for _, t in ipairs(obj.transitions or {}) do
+                    if t.from == obj._state and t.trigger == "auto"
+                       and t.condition == result.trigger then
+                        apply_state(obj, t.to, obj._state)
+                        apply_mutations(obj, t.mutate)
+                        return t.message
+                    end
+                end
+            end
+        end
+    end
+
+    -- Step 2: threshold checking (material property-based auto-transitions)
+    local threshold_msg = check_thresholds(registry, obj, obj_id, env_context)
+    if threshold_msg then return threshold_msg end
+
     return nil
 end
 
