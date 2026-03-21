@@ -2,6 +2,7 @@
 
 **Author:** Sideshow Bob (Puzzle Designer)  
 **Date:** 2026-07-23  
+**Revised:** 2026-07-24 (Wayne directive 2026-03-21T19:17Z — injury-specific cures, treatment-matching puzzle)  
 **Status:** DESIGN  
 **Depends On:** Health System (health-system.md), FSM Engine  
 **Audience:** Designers, Bart (engine), Flanders (objects), Nelson (testing)
@@ -14,22 +15,35 @@
 
 An injury is a **stateful condition attached to the player** — like a status effect with its own lifecycle. Each injury:
 - Has an **FSM** (finite state machine) with defined states and transitions
-- Produces **narrative symptoms** (text the player sees)
-- May have **mechanical effects** (blocks actions, drains HP)
-- Requires **specific treatment** (a particular object or action to progress the FSM)
+- Produces **narrative symptoms** (text the player sees via the `injuries` verb)
+- May have **mechanical effects** (blocks actions, worsens over time)
+- Requires a **SPECIFIC treatment** — not a generic cure, but a particular item or action
 - Can **worsen** if untreated (degenerative injuries)
+- Includes **discovery clues** — how the player figures out what treats it
 
-### 1.2 Injury Categories
+### 1.2 The Cure Relationship — The Core Puzzle
 
-| Category | HP Effect | Duration | Worsens? | Example |
-|----------|-----------|----------|----------|---------|
-| **One-Time** | Flat damage on infliction | Heals over time or with treatment | No | Cut, bruise, burn |
-| **Over-Time** | Drains HP each turn | Until treated or fatal | Some | Bleeding, mild poison |
-| **Degenerative** | Escalating drain | Until treated; worsens in stages | Yes | Infection, deep poison |
+**Every injury has a SPECIFIC cure.** This is the central puzzle design surface:
 
-### 1.3 Injury FSM Pattern
+- A bandage stops *bleeding* but does nothing for *poison*
+- A generic antidote cures *mild food poisoning* but not *viper venom*
+- A nightshade antidote cures *nightshade poisoning* specifically — not all poisons
+- Cold water soothes a *burn* but doesn't stop *bleeding*
+- Rest heals *bruises* but won't cure *infection*
 
-Every injury follows a standard FSM structure. Some injuries skip states (a bruise has no "treated" state — it just heals).
+The player must **examine their injury** (via the `injuries` verb), **read the clues** embedded in the description, and **match the correct treatment**. Wrong treatment wastes the item. This matching is what makes healing a puzzle, not a menu.
+
+### 1.3 Injury Categories
+
+| Category | Duration | Worsens? | Example |
+|----------|----------|----------|---------|
+| **One-Time** | Heals naturally or with treatment | No | Cut, bruise, burn |
+| **Over-Time** | Worsens each turn until treated or fatal | Some | Bleeding, mild poison |
+| **Degenerative** | Escalates through stages | Yes | Infection, deep venom |
+
+### 1.4 Injury FSM Pattern
+
+Every injury follows a standard FSM structure:
 
 ```
             [inflicted]
@@ -37,14 +51,14 @@ Every injury follows a standard FSM structure. Some injuries skip states (a brui
                 ▼
           ┌──────────┐
           │  ACTIVE   │◄──── injury starts here
-          │           │      symptoms visible
+          │           │      symptoms visible via `injuries` verb
           │  (ticking)│      mechanical effects active
           └─────┬─────┘
-                │ treatment applied
+                │ SPECIFIC treatment applied
                 ▼
           ┌──────────┐
           │ TREATED   │      symptoms reduced
-          │           │      HP drain stops (if over-time)
+          │           │      worsening stops
           │           │      healing countdown begins
           └─────┬─────┘
                 │ countdown expires
@@ -77,33 +91,11 @@ Every injury follows a standard FSM structure. Some injuries skip states (a brui
                                                    DEATH
 ```
 
-### 1.4 Injury Data Model
-
-```lua
--- Example injury attached to player
-{
-  id = "cut-hand-001",
-  type = "cut",
-  location = "hand",          -- body part affected
-  cause = "glass-shard",      -- what caused it
-  state = "active",           -- FSM state
-  tick_counter = 0,           -- turns since infliction
-  hp_drain_per_tick = 0,      -- 0 for one-time, >0 for over-time
-  treatment_required = "bandage",  -- what cures it
-  mechanical_effects = {},    -- action blocks, stat modifiers
-  messages = {
-    active = "Your hand stings where the glass cut you.",
-    treated = "The bandage on your hand is holding. The pain is fading.",
-    reminder = "Your cut hand throbs as you reach out."
-  }
-}
-```
-
 ---
 
 ## 2. Level 1 Injury Catalog
 
-These injuries are relevant to Level 1 objects and puzzles. They should be implemented first.
+These injuries are relevant to Level 1 objects and puzzles. Each entry defines the injury, its SPECIFIC cure, and how the player discovers the treatment.
 
 ---
 
@@ -114,10 +106,9 @@ These injuries are relevant to Level 1 objects and puzzles. They should be imple
 | **ID** | `minor-cut` |
 | **Category** | One-Time |
 | **Causes** | Glass shard (handle), pin prick, minor trap |
-| **Initial Damage** | 5 HP |
-| **Over-Time Drain** | None |
 | **Body Location** | Hand (usually) |
 | **Mechanical Effect** | None |
+| **Cured By** | Heals naturally (5 turns), or `bandage` (cloth strip) to speed recovery |
 | **Status** | 🔴 Planned (extends existing `bleed_ticks`) |
 
 **FSM:**
@@ -126,17 +117,17 @@ active ──(5 turns)──► healed
 active ──(bandage)──► treated ──(2 turns)──► healed
 ```
 
-**Player Sees:**
+**Player Sees (`injuries` verb):**
 | State | Symptom Text |
 |-------|-------------|
-| Active | *"A small cut on your [hand] stings sharply."* |
+| Active | *"A small cut on your [hand] where the glass caught you. It stings, but the bleeding has mostly stopped on its own."* |
 | Active (reminder) | *"The cut on your [hand] is still tender."* |
 | Treated | *"The bandage on your [hand] is snug. The sting is fading."* |
 | Healed | *"The cut on your hand has closed. Barely a mark remains."* |
 
-**Puzzle Use:** Glass shard hurts to pick up barehanded. Wrapping it in cloth first prevents the injury — teaches "prepare your tools."
+**Discovery Clues:** The injury description mentions "small" and "stings" — this signals it's minor. The player learns that minor cuts heal on their own. Bandaging speeds it up but isn't critical.
 
-**Notes:** This formalizes the existing `bleed_ticks = 8` from the prick/cut self mechanic. The current implementation is the prototype for this injury.
+**Puzzle Use:** Glass shard hurts to pick up barehanded. Wrapping it in cloth first prevents the injury — teaches "prepare your tools."
 
 ---
 
@@ -147,33 +138,37 @@ active ──(bandage)──► treated ──(2 turns)──► healed
 | **ID** | `deep-cut` |
 | **Category** | Over-Time (bleeding) |
 | **Causes** | Knife attack, blade trap, falling onto sharp object |
-| **Initial Damage** | 15 HP |
-| **Over-Time Drain** | 3 HP/turn (bleeding) |
 | **Body Location** | Arm, torso, leg |
-| **Mechanical Effect** | Affected limb actions impaired at Tier 2+ |
+| **Mechanical Effect** | Affected limb impaired. Bleeding creates time pressure. |
+| **Cured By** | **Step 1:** `bandage` (cloth strip) → stops bleeding. **Step 2:** Rest or medicine → wound heals. |
+| **Wrong Treatments** | Antidote does nothing. Salve does nothing. Only pressure/cloth stops this bleeding. |
 | **Status** | 🔴 Planned |
 
 **FSM:**
 ```
-active ──(bleeding each turn)──► [death if HP=0]
-active ──(bandage)──► bandaged ──(no drain)──► [still injured]
-bandaged ──(medicine/rest 10 turns)──► healed
+active ──(bleeding each turn)──► [death if injuries overwhelm]
+active ──(bandage/cloth/pressure)──► bandaged ──(no drain)──► [still injured]
+bandaged ──(rest, 10 turns)──► healed
 active ──(untreated 15 turns)──► infected (see: INFECTION)
 ```
 
-**Player Sees:**
+**Player Sees (`injuries` verb):**
 | State | Symptom Text |
 |-------|-------------|
-| Active | *"Blood flows freely from the deep gash in your [arm]. It won't stop on its own."* |
-| Active (turn) | *"Blood drips steadily from your wound, pooling at your feet. (-3 HP)"* |
-| Bandaged | *"The bandage around your [arm] is holding, but the wound beneath is serious. You need proper rest."* |
+| Active | *"A deep gash in your [arm] (bleeding). Blood flows freely. It won't stop on its own — you need something wrapped tight around it."* |
+| Active (worsening) | *"Blood drips steadily from the gash. Your sleeve is soaked crimson. This is getting worse."* |
+| Bandaged | *"The bandage around your [arm] is holding, but the wound beneath is serious. You need rest."* |
 | Bandaged (reminder) | *"Your bandaged [arm] aches deeply. Movement is difficult."* |
 | Healed | *"The wound on your [arm] has closed, leaving an angry red scar."* |
 
+**Discovery Clues:** 
+- `injuries` says: "It won't stop on its own — you need something wrapped tight around it." → Suggests cloth/bandage
+- If player tries drinking a potion: "The warmth feels good but the gash in your arm still bleeds. This needs something physical, not something you drink."
+
 **Puzzle Use:**
-- **Time pressure:** Player takes a knife wound → must find bandage before bleeding out (~33 turns from 100 HP)
-- **Action gate:** Deep cut on arm → cannot climb, lift heavy objects until bandaged
-- **Resource tension:** Using the blanket for a bandage means it can't be used for a rope later
+- **Time pressure:** Bleeding creates urgency. Must find cloth → tear → bandage before worsening.
+- **Action gate:** Deep cut on arm → cannot climb or lift heavy objects until bandaged.
+- **Resource tension:** Using the blanket for a bandage means it can't be used for a rope later.
 
 ---
 
@@ -184,10 +179,10 @@ active ──(untreated 15 turns)──► infected (see: INFECTION)
 | **ID** | `bruise` |
 | **Category** | One-Time |
 | **Causes** | Fall, blunt impact, heavy object dropped on player |
-| **Initial Damage** | 10–20 HP (scaled by fall height / impact force) |
-| **Over-Time Drain** | None |
 | **Body Location** | Legs (falls), torso (impacts), head (blows) |
 | **Mechanical Effect** | Legs bruised → climbing/running impaired. Head bruised → examine descriptions degraded. |
+| **Cured By** | **Rest** (sit down, sleep). Time heals bruises — no item required. |
+| **Wrong Treatments** | Bandage does nothing (not bleeding). Antidote does nothing (not poison). |
 | **Status** | 🔴 Planned |
 
 **FSM:**
@@ -196,17 +191,19 @@ active ──(8 turns)──► healed
 active ──(rest/sleep)──► recovering ──(4 turns)──► healed
 ```
 
-**Player Sees:**
+**Player Sees (`injuries` verb):**
 | State | Symptom Text |
 |-------|-------------|
-| Active | *"Your bruised [legs] ache with every step. The fall left its mark."* |
+| Active | *"Badly bruised [legs] from the fall. Your ankles and knees throb. Moving is painful. This will heal with rest — time and staying off your feet."* |
 | Active (action blocked) | *"You try to climb, but your bruised legs buckle. Not yet."* |
 | Recovering | *"The bruising is fading. Your [legs] still protest sharp movements, but you can manage."* |
 | Healed | *"The soreness in your [legs] has finally passed."* |
 
+**Discovery Clues:** The `injuries` description says: "This will heal with rest — time and staying off your feet." The clue is in the description itself. No medicine needed.
+
 **Puzzle Use:** 
-- Puzzle 013 (Courtyard Entry): Window jump causes bruised legs → can't climb ivy until recovered → must find ground-level route or wait
-- Falling in the cellar (missed step) → bruised legs → next physical challenge is harder
+- Puzzle 013 (Courtyard Entry): Window jump causes bruised legs → can't climb ivy until rested → must find ground-level route or wait
+- Teaches: rest has value. Stopping to recover is a strategic choice, not wasted time.
 
 ---
 
@@ -217,117 +214,198 @@ active ──(rest/sleep)──► recovering ──(4 turns)──► healed
 | **ID** | `bleeding` |
 | **Category** | Over-Time |
 | **Causes** | Accompanies deep cuts, glass shard wounds, weapon injuries |
-| **Initial Damage** | 0 (damage comes from the causing injury) |
-| **Over-Time Drain** | 2–5 HP/turn depending on wound severity |
 | **Body Location** | Same as causing wound |
-| **Mechanical Effect** | Leaves blood trail (future: trackable by NPCs). Hands slippery (drop chance on handled objects). |
+| **Mechanical Effect** | Leaves blood trail. Hands slippery (drop chance on handled objects). |
+| **Cured By** | `bandage` (cloth strip, cobweb for minor). Pressure applied to wound. |
+| **Wrong Treatments** | Antidote does nothing. Potion doesn't stop the bleeding (body still deteriorates). Salve doesn't stop bleeding. |
 | **Status** | 🟡 Prototype exists (`bleed_ticks` in engine) |
 
 **FSM:**
 ```
-active ──(HP drain each turn)──► [death if HP=0]
+active ──(worsening each turn)──► [death if injuries overwhelm]
 active ──(bandage/cloth/pressure)──► stopped
 stopped ──(wound heals)──► [removed]
 ```
 
-**Player Sees:**
+**Player Sees (`injuries` verb):**
 | State | Symptom Text |
 |-------|-------------|
-| Active (minor, 2/turn) | *"Blood seeps from your wound, a slow but steady trickle."* |
-| Active (major, 5/turn) | *"Blood pours from the gash. Your sleeve is soaked crimson. This is bad."* |
+| Active (minor) | *"Blood seeps from the wound, a slow but steady trickle. Something to stop the flow — cloth, pressure."* |
+| Active (major) | *"Blood pours from the gash. Your sleeve is soaked crimson. You're getting lightheaded. This needs binding — now."* |
 | Active (hands) | *"Blood makes your grip slippery. Objects feel uncertain in your hands."* |
 | Stopped | *"The bleeding has stopped. The bandage holds."* |
 
-**Puzzle Use:**
-- **The classic time puzzle:** Player is bleeding. A bandage exists 2 rooms away. They have ~20 turns. Every command matters.
-- **Resource discovery:** The blanket on the bed can be torn for cloth → cloth becomes bandage → bleeding stops. The player must figure this out under pressure.
-- **Slippery hands:** Bleeding hands make it harder to manipulate objects. Drops become possible. Creates urgency to treat.
+**Discovery Clues:** Every bleeding description mentions pressure, cloth, binding, or wrapping — physical clues pointing to bandage.
 
-**Implementation Note:** The existing `bleed_ticks` system is the prototype. It already decrements per tick and clears `player.state.bloody`. The injury system formalizes this into a proper FSM with HP drain.
+**Puzzle Use:**
+- **The classic time puzzle:** Player is bleeding → bandage exists 2 rooms away → every command matters
+- **Resource discovery:** Blanket → tear → cloth → bandage. Player must figure this out under pressure.
+- **Slippery hands:** Bleeding hands make object manipulation unreliable. Creates urgency to treat.
 
 ---
 
-### 2.5 POISONING (Mild)
+### 2.5 POISONING (Mild — Food/Generic)
 
 | Field | Value |
 |-------|-------|
 | **ID** | `poisoning-mild` |
 | **Category** | Over-Time |
-| **Causes** | Tainted food, weak venom (spider bite, dart trap), spoiled drink |
-| **Initial Damage** | 5 HP (nausea hit) |
-| **Over-Time Drain** | 5 HP/turn |
+| **Causes** | Spoiled food, weak generic venom, tainted drink |
 | **Body Location** | Systemic (whole body) |
 | **Mechanical Effect** | Nausea → intermittent action interruption. Smell/taste senses degraded. |
+| **Cured By** | **Generic antidote** (cures food poisoning / mild toxins). Also: **vomit/purge** (drink salt water) — violent but effective. |
+| **Wrong Treatments** | Bandage does nothing. Viper antivenom is too specific (overkill, still works but wasteful). Rest alone won't cure it. |
 | **Status** | 🔴 Planned |
 
 **FSM:**
 ```
-active ──(HP drain each turn)──► [death if HP=0]
-active ──(antidote)──► neutralized ──(3 turns)──► healed
+active ──(worsening each turn)──► [death if injuries overwhelm]
+active ──(generic antidote)──► neutralized ──(3 turns)──► healed
 active ──(vomit/purge)──► weakened ──(5 turns)──► healed
-                          (but costs 10 HP)
 ```
 
-**Player Sees:**
+**Player Sees (`injuries` verb):**
 | State | Symptom Text |
 |-------|-------------|
-| Active | *"Your stomach churns violently. Something you consumed is poisoning you."* |
-| Active (turn) | *"A wave of nausea hits. The poison burns through your veins. (-5 HP)"* |
-| Active (sensory) | *"Everything tastes like copper. Your sense of smell is shot."* |
+| Active | *"Your stomach churns violently. Something you consumed is poisoning you. The burning is from the inside — you need to neutralize it or get it out of your system."* |
+| Active (worsening) | *"A wave of nausea hits. The poison burns through your veins. Everything tastes like copper."* |
 | Neutralized | *"The antidote works quickly. The burning fades. You feel weak but alive."* |
-| Weakened | *"You retch violently. The poison leaves your system the hard way. You feel hollowed out."* |
+| Weakened (post-purge) | *"You retch violently. The poison leaves your system the hard way. You feel hollowed out."* |
 | Healed | *"The last of the poison has left your body. You won't forget that taste."* |
 
-**Puzzle Use:**
-- **Antidote fetch puzzle:** Player is poisoned by dart trap → must find antidote herb/potion within 20 turns
-- **Purge alternative:** No antidote? Induce vomiting (drink salt water, stick finger down throat) — saves life but costs more HP
-- **Poison identification:** SMELL or TASTE (carefully!) can identify poison type → hints at correct antidote
-- **Contrast with instant poison:** The poison bottle (Puzzle 002) is instant death. Mild poison is survivable-with-treatment. The player learns: "not all poisons are equal — but all are dangerous."
+**Discovery Clues:**
+- `injuries` says: "you need to neutralize it or get it out of your system" → antidote or purge
+- SMELL on antidote bottle: "Sharp and herbal. Medicinal." → Suggests this is a cure
+- TASTE (carefully!): Examining the cause of poisoning can hint at generic vs. specific
 
-**Design Note:** This is NOT the same as the existing poison bottle death. That remains instant and fatal. Mild poisoning is a new mechanic for traps, food, and NPC encounters where death would be unfair.
+**Puzzle Use:**
+- **Antidote fetch puzzle:** Poisoned by dart trap → must find antidote within time limit
+- **Purge alternative:** No antidote? Induce vomiting (salt water, etc.) — saves life but weakens you more
+- **Contrast with venom:** Mild poison responds to GENERIC antidote. Viper venom does NOT. Player learns specificity matters.
 
 ---
 
-### 2.6 BURN
+### 2.6 VIPER VENOM POISONING
+
+| Field | Value |
+|-------|-------|
+| **ID** | `poisoning-viper` |
+| **Category** | Over-Time (specific venom) |
+| **Causes** | Viper bite (snake encounter in cellar, garden, outdoor areas) |
+| **Body Location** | Bite site (ankle, hand) + spreading |
+| **Mechanical Effect** | Spreading numbness from bite site. Affected limb becomes useless. |
+| **Cured By** | **Viper antivenom** ONLY. Not the generic antidote. Not any other medicine. |
+| **Wrong Treatments** | Generic antidote does nothing (consumed and wasted). Bandage doesn't help. Salve doesn't help. Purging doesn't help — the venom is in the blood, not the stomach. |
+| **Status** | 🔴 Planned (Level 2+) |
+
+**FSM:**
+```
+active ──(spreading each turn)──► [death if injuries overwhelm]
+active ──(viper antivenom)──► neutralized ──(5 turns)──► healed
+```
+
+**Player Sees (`injuries` verb):**
+| State | Symptom Text |
+|-------|-------------|
+| Active | *"Two puncture marks on your [ankle]. The skin around them is turning dark, and a burning numbness is spreading up your calf. This is venom — a specific kind. You need a cure made for THIS bite."* |
+| Active (worsening) | *"The numbness has reached your knee. Your foot is dead weight. The venom is winning."* |
+| Neutralized | *"The burning recedes. Feeling slowly returns to your leg. The antivenom is working."* |
+| Healed | *"The bite marks have scabbed over. The numbness is gone. You were lucky."* |
+
+**Discovery Clues:**
+- `injuries` says: "a specific kind... a cure made for THIS bite" → not just any antidote
+- EXAMINE the bite: "The fang marks are narrow and close together — a viper's signature."
+- READ a herbal medicine book (if found): Describes viper antivenom recipe or location
+- NPC healer might identify: "That's viper venom. You need the antivenom from the apothecary's kit."
+
+**Puzzle Use:**
+- **The core matching puzzle:** Generic antidote FAILS. Player must find the specific antivenom. The puzzle is identification + location.
+- **Time pressure:** Venom spreads faster than mild poison. Urgency is higher.
+- **Red herring:** Finding the generic antidote first and wasting it teaches the lesson: read the clues, match the cure.
+
+---
+
+### 2.7 NIGHTSHADE POISONING
+
+| Field | Value |
+|-------|-------|
+| **ID** | `poisoning-nightshade` |
+| **Category** | Over-Time (specific botanical poison) |
+| **Causes** | Eating nightshade berries, drinking tainted wine, consuming nightshade-laced food |
+| **Body Location** | Systemic — affects vision and heart |
+| **Mechanical Effect** | Dilated pupils → vision blurred (examine descriptions degraded). Heart racing → intermittent dizziness. |
+| **Cured By** | **Nightshade antidote** ONLY. A specific herbal preparation. |
+| **Wrong Treatments** | Generic antidote does nothing. Viper antivenom does nothing. Purging helps only slightly (slows but doesn't stop). |
+| **Status** | 🔴 Planned (Level 2+) |
+
+**FSM:**
+```
+active ──(worsening each turn)──► [death if injuries overwhelm]
+active ──(nightshade antidote)──► neutralized ──(4 turns)──► healed
+active ──(purge/vomit)──► slowed ──(still worsening, but slower)──► [death if untreated]
+```
+
+**Player Sees (`injuries` verb):**
+| State | Symptom Text |
+|-------|-------------|
+| Active | *"Your pupils are huge — the room seems painfully bright. Your heart races. You recognize these symptoms: nightshade. You need the specific antidote, not just any remedy."* |
+| Active (worsening) | *"The room pulses with your heartbeat. Shadows crawl at the edges. The nightshade is tightening its grip."* |
+| Neutralized | *"The racing in your chest slows. Your pupils contract. The world stops pulsing. The antidote worked."* |
+
+**Discovery Clues:**
+- `injuries` names the poison: "nightshade" — the player knows WHAT they need to cure
+- EXAMINE berries (if that's the cause): "Small, dark, and deceptively sweet. Nightshade." — identification after the fact
+- Herbal medicine book describes nightshade antidote ingredients
+- The clue "not just any remedy" signals: generic antidote won't work
+
+**Puzzle Use:**
+- **Identification puzzle:** Player must recognize nightshade symptoms → know they need the NIGHTSHADE antidote
+- **Crafting opportunity:** Nightshade antidote might be craftable from specific herbs (belladonna counter-herb + water + preparation)
+- **Knowledge gate:** Player who read the herbalism book knows the cure. Player who didn't must experiment or find a prepared antidote.
+
+---
+
+### 2.8 BURN
 
 | Field | Value |
 |-------|-------|
 | **ID** | `burn` |
 | **Category** | One-Time |
 | **Causes** | Touching lit candle, hot surface, fire trap |
-| **Initial Damage** | 5–15 HP (scaled by heat source) |
-| **Over-Time Drain** | None (unless severe → blistering) |
 | **Body Location** | Hand (touching hot object), face/body (fire trap) |
 | **Mechanical Effect** | Burned hand → reduced grip. Burned face → vision impaired. |
+| **Cured By** | **Cold water** (immediate relief) or **salve** (medicinal treatment). |
+| **Wrong Treatments** | Bandage doesn't help burns. Antidote doesn't help. Rest alone is very slow. |
 | **Status** | 🔴 Planned |
 
 **FSM:**
 ```
 active ──(cold water/salve)──► treated ──(5 turns)──► healed
 active ──(10 turns)──► healed (slow natural healing)
-active (severe) ──(untreated 8 turns)──► blistered ──(medicine)──► treated ──► healed
+active (severe) ──(untreated 8 turns)──► blistered ──(salve required)──► treated ──► healed
 ```
 
-**Player Sees:**
+**Player Sees (`injuries` verb):**
 | State | Symptom Text |
 |-------|-------------|
-| Active (minor) | *"Your fingertips are red and tender where you touched the flame."* |
-| Active (severe) | *"The burn on your [hand] is angry and raw. Even the air hurts."* |
+| Active (minor) | *"Your fingertips are red and tender where you touched the flame. Cool water would soothe this."* |
+| Active (severe) | *"The burn on your [hand] is angry and raw. Even the air hurts. You need something cooling — water or a medicinal salve."* |
 | Treated | *"The cool salve soothes the burn. The throbbing eases."* |
-| Blistered | *"The burn has blistered. Fluid-filled welts cover your [hand]. Don't touch anything."* |
+| Blistered | *"The burn has blistered. Fluid-filled welts cover your [hand]. Don't touch anything. This needs real medicine — a salve."* |
 | Healed | *"The burn has faded to a patch of shiny pink skin."* |
 
+**Discovery Clues:**
+- `injuries` says "cool water would soothe this" → water is the treatment
+- For severe burns: "a medicinal salve" → salve is required
+- Player near water source (rain barrel, well) should connect: water + burn = relief
+
 **Puzzle Use:** 
-- Lit candle is essential for light but dangerous to touch directly (teaches: use the candle-holder, not the candle)
-- Fire trap in future level: player must reach through flame to get an object. Protective glove/wet cloth reduces burn damage.
+- Lit candle teaches: use the holder, not the flame directly
+- Fire trap: protective glove or wet cloth reduces burn severity — preparation puzzle
 
 ---
 
 ## 3. Future Injury Types (Level 2+)
-
-These injuries are designed but not needed for Level 1. Documented here for forward planning.
-
----
 
 ### 3.1 INFECTION
 
@@ -336,31 +414,27 @@ These injuries are designed but not needed for Level 1. Documented here for forw
 | **ID** | `infection` |
 | **Category** | Degenerative |
 | **Causes** | Untreated cut/slash wound after 15+ turns |
-| **Over-Time Drain** | Stage 1: 1/turn. Stage 2: 2/turn. Stage 3: 3/turn. |
-| **Treatment** | Stage 1: Clean wound (water + cloth). Stage 2: Medicine/herb poultice. Stage 3: Requires skilled NPC healer. |
-| **Mechanical Effect** | Fever → intermittent confusion (random action failure). Stage 3 → bedridden. |
+| **Cured By** | **Stage 1:** Clean wound (water + cloth). **Stage 2:** Herb poultice (herbs + cloth + water). **Stage 3:** NPC healer only. |
+| **Wrong Treatments** | Antidote does nothing (it's not poison). Bandage alone is insufficient (wound must be CLEANED). |
+| **Mechanical Effect** | Fever → intermittent confusion. Stage 3 → bedridden. |
 | **Status** | 🔴 Planned (Level 2) |
 
 **FSM:**
 ```
-stage_1 ──(clean wound)──► treated ──(8 turns)──► healed
+stage_1 ──(clean wound: water + cloth)──► treated ──(8 turns)──► healed
 stage_1 ──(untreated 10 turns)──► stage_2
-stage_2 ──(medicine)──► treated ──(12 turns)──► healed
+stage_2 ──(herb poultice)──► treated ──(12 turns)──► healed
 stage_2 ──(untreated 10 turns)──► stage_3
 stage_3 ──(NPC healer)──► treated ──(20 turns)──► healed
 stage_3 ──(untreated 15 turns)──► DEATH
 ```
 
-**Player Sees:**
-| Stage | Symptom Text |
-|-------|-------------|
-| Stage 1 | *"The wound is warm to the touch and slightly swollen. That's not a good sign."* |
-| Stage 2 | *"Fever grips you. The wound has gone bad — red streaks crawl up your arm. You need medicine."* |
-| Stage 3 | *"You can barely stand. The infection has spread. Your skin burns, your thoughts scatter. Without a healer, this will kill you."* |
+**Discovery Clues:** 
+- Stage 1: "The wound is warm to the touch and swollen. That's not a good sign. It needs cleaning — water and a fresh cloth." → water + cloth
+- Stage 2: "Fever grips you. Red streaks crawl up your arm. You need real medicine — an herbal preparation." → herb poultice
+- Stage 3: "You can barely stand. Without a healer, this will kill you." → find NPC
 
-**Puzzle Use:** Infection creates a *multi-stage time puzzle*. The player has ~35 turns from infection to death, but each stage requires a *different* treatment. Finding clean water (stage 1) is easy. Finding medicine (stage 2) is a fetch puzzle. Finding a healer (stage 3) is a relationship/navigation challenge.
-
----
+**Puzzle Use:** Multi-stage time puzzle where each stage requires a DIFFERENT treatment. Finding water is easy. Finding herbs is a fetch puzzle. Finding a healer is a navigation/relationship challenge.
 
 ### 3.2 BROKEN BONE
 
@@ -369,15 +443,12 @@ stage_3 ──(untreated 15 turns)──► DEATH
 | **ID** | `broken-bone` |
 | **Category** | One-Time (with long recovery) |
 | **Causes** | Severe fall, heavy object, combat |
-| **Initial Damage** | 25 HP |
-| **Over-Time Drain** | None (pain, not bleeding) |
-| **Treatment** | Splint (wood + cloth) → slow heal. NPC healer → faster heal. |
-| **Mechanical Effect** | Broken arm → cannot carry objects in that hand, cannot climb. Broken leg → movement slowed (extra turn per room transition). |
+| **Cured By** | **Splint** (wood + cloth binding). NPC healer for faster recovery. |
+| **Wrong Treatments** | Bandage alone insufficient (needs rigid support). Potion doesn't set bones. |
+| **Mechanical Effect** | Broken arm → cannot carry objects, cannot climb. Broken leg → movement slowed. |
 | **Status** | 🔴 Planned (Level 2+) |
 
-**Puzzle Use:** A broken arm gates physical puzzles. The player must find a workaround (one-handed solutions) or get healed first. Creates a "damaged state" puzzle where the challenge is solving problems with reduced capabilities.
-
----
+**Discovery Clues:** "The bone is... wrong. It needs to be set — something rigid alongside it, bound tight." → wood + cloth = splint
 
 ### 3.3 HYPOTHERMIA
 
@@ -385,15 +456,15 @@ stage_3 ──(untreated 15 turns)──► DEATH
 |-------|-------|
 | **ID** | `hypothermia` |
 | **Category** | Over-Time (environmental) |
-| **Causes** | Extended exposure to cold without cloak/fire |
-| **Over-Time Drain** | 2 HP/turn |
-| **Treatment** | Warmth source (fire, cloak, shelter) |
-| **Mechanical Effect** | Shivering → reduced dexterity (fumble chance). Stage 2 → confusion. |
-| **Status** | 🔴 Planned (Level 2+ outdoor areas) |
+| **Causes** | Extended cold exposure without cloak/fire |
+| **Cured By** | **Warmth source** — fire, cloak, shelter, hot drink. |
+| **Wrong Treatments** | Bandage, antidote, salve — all useless against cold. |
+| **Mechanical Effect** | Shivering → reduced dexterity. Stage 2 → confusion. |
+| **Status** | 🔴 Planned (Level 2+) |
 
-**Puzzle Use:** Outdoor winter sections require the wool-cloak (Level 1 optional item). Players who collected it are rewarded; those who didn't must find alternate warmth. The cloak — a seemingly useless flavor item in Level 1 — retroactively proves its value.
+**Discovery Clues:** "You're shivering uncontrollably. You need warmth — a fire, a cloak, shelter from the wind." → explicit warmth-seeking
 
----
+**Puzzle Use:** The wool cloak — seemingly useless flavor item in Level 1 — retroactively proves its value in cold areas.
 
 ### 3.4 EXHAUSTION
 
@@ -402,12 +473,10 @@ stage_3 ──(untreated 15 turns)──► DEATH
 | **ID** | `exhaustion` |
 | **Category** | Degenerative (slow build) |
 | **Causes** | Extended activity without rest, multiple injuries |
-| **Over-Time Drain** | 1 HP/5 turns |
-| **Treatment** | Sleep (full rest), food + drink |
-| **Mechanical Effect** | Stage 1: occasional yawning messages. Stage 2: physical actions slower. Stage 3: collapse (forced rest). |
+| **Cured By** | **Sleep** (full rest). **Food + drink** (partial relief). |
+| **Wrong Treatments** | Medicine, bandage, antidote — none address exhaustion. Only rest and sustenance help. |
+| **Mechanical Effect** | Stage 1: yawning. Stage 2: actions slower. Stage 3: collapse (forced rest). |
 | **Status** | 🔴 Planned (Level 3+) |
-
-**Puzzle Use:** Creates long-term resource pressure. The player needs to balance exploration with rest. Safe rest locations become valuable. Food becomes a strategic resource, not just flavor.
 
 ---
 
@@ -415,42 +484,40 @@ stage_3 ──(untreated 15 turns)──► DEATH
 
 ### 4.1 Stacking
 
-Multiple injuries can be active simultaneously. Each has independent FSM, timers, and effects.
+Multiple injuries can be active simultaneously. Each has independent FSM, timers, and treatment requirements.
 
-**Example compound state:**
+**Example compound state (via `injuries` verb):**
 ```
-Player HP: 52/100 (Wounded)
-Active injuries:
-  - Deep cut (arm): BANDAGED, no HP drain, 6 turns to healed
-  - Bruised ribs: ACTIVE, 3 turns to natural heal
-  - Mild poison: ACTIVE, -5 HP/turn, needs antidote
+> injuries
+"You examine yourself:
+ — A deep cut on your arm (bandaged). The cloth is holding. Needs time.
+ — Bruised ribs from the fall. Every breath aches. Rest will help.
+ — Your stomach churns with poison. The burning hasn't stopped.
+   You need to neutralize it — an antidote, something medicinal.
+   
+ The bandage is handling the cut, but the poison is the urgent problem.
+ The bruised ribs will have to wait."
 ```
 
-**Combined narrative:** *"Your bandaged arm aches. Your ribs protest every breath. And underneath it all, the poison churns in your gut, burning, burning."*
+**Note:** The `injuries` verb helps the player prioritize. The narrative hints at urgency: "the poison is the urgent problem."
 
 ### 4.2 Injury Cascading
 
-Some injuries can trigger other injuries:
+Some injuries trigger other injuries if untreated:
 
 | If This... | And This... | Then... |
 |------------|-------------|---------|
 | Deep cut is untreated | 15+ turns pass | → INFECTION begins |
 | Burn is untreated (severe) | 8+ turns pass | → BLISTERED (worse burn state) |
-| Player at Tier 2 (Critical) | Falls | → Damage increased 50% (weakened body) |
-| Multiple bleeding wounds | Simultaneous | → Drain stacks (2 wounds × 3/turn = 6/turn) |
+| Multiple bleeding wounds | Simultaneous | → Bleeding effects compound |
 
-### 4.3 Body Location Conflicts
+### 4.3 Treatment Priority
 
-Injuries on the same body part compound their effects:
-- **Two hand injuries:** Both affect grip. Total effect is worse than either alone.
-- **Leg injury + bruised ribs:** Movement and climbing both impaired.
-- **Head injury + poisoning:** Confusion effects stack — increased fumble chance.
+When the player has multiple injuries, the `injuries` verb narrative *guides* them toward the most urgent one:
 
-### 4.4 Treatment Priority
+> *"Your arm is bleeding and your ribs ache, but it's the poison in your blood that's the real danger. Treat that first."*
 
-When the player has multiple injuries, the *most dangerous* should be treated first. The game doesn't enforce this — the player chooses — but narrative hints guide them:
-
-> *"Your arm is bleeding and your ribs ache, but it's the poison in your blood that will kill you first."*
+The game doesn't enforce treatment order — the player chooses — but the narrative provides guidance.
 
 ---
 
@@ -458,55 +525,58 @@ When the player has multiple injuries, the *most dangerous* should be treated fi
 
 ### Pattern 1: The Ticking Clock
 **Setup:** Player receives an over-time injury (bleeding, poison).  
-**Puzzle:** Find the treatment before HP runs out.  
-**Tension:** Every command spent exploring costs HP.  
-**Example:** Dart trap poisons player → antidote is 3 rooms away → 20 turns of poison left.
+**Puzzle:** Find the SPECIFIC treatment before the injury overwhelms.  
+**Tension:** Every command matters. Wrong treatment wastes time AND resources.  
+**Example:** Viper bite → generic antidote fails → must find viper antivenom in locked medical kit.
 
 ### Pattern 2: The Capability Gate
 **Setup:** Injury blocks a specific action.  
-**Puzzle:** Find alternate solution or heal first.  
-**Tension:** The obvious path is blocked; lateral thinking required.  
-**Example:** Broken arm → can't climb wall → must find stairs or get healed.
+**Puzzle:** Find alternate solution or find the specific cure.  
+**Example:** Bruised legs → can't climb → must rest (specific cure) or find stairs.
 
 ### Pattern 3: The Risky Shortcut
-**Setup:** An action causes injury but provides a benefit.  
-**Puzzle:** Is the shortcut worth the health cost?  
-**Tension:** Risk/reward calculation.  
-**Example:** Jump from window (bruised legs, saves time) vs. find the key (safe but slower).
+**Setup:** An action causes a specific injury but provides a benefit.  
+**Puzzle:** Is the shortcut worth acquiring an injury that needs specific treatment?  
+**Example:** Jump from window (bruised legs, needs rest) vs. find key (safe but slower).
 
 ### Pattern 4: The Prepared Adventurer
-**Setup:** A hazard ahead is telegraphed.  
-**Puzzle:** Find protective equipment before encountering the hazard.  
-**Tension:** Forewarning vs. preparation.  
-**Example:** "A cold draft from the stairway" → find cloak before descending.
+**Setup:** Environmental clues telegraph a coming hazard.  
+**Puzzle:** Find the specific cure BEFORE encountering the hazard.  
+**Example:** "A cold draft" + finding wool cloak → prepared for hypothermia.
 
-### Pattern 5: The Medical Puzzle
-**Setup:** An injured NPC or player needs treatment.  
-**Puzzle:** Identify the injury → find the correct treatment → apply it.  
-**Tension:** Correct diagnosis required; wrong treatment wastes resources.  
-**Example:** NPC is sick → symptoms suggest poison → antidote herb + water = cure.
+### Pattern 5: The Diagnosis Puzzle
+**Setup:** Injury symptoms don't immediately reveal the cause.  
+**Puzzle:** Investigate symptoms → identify the specific injury → find the specific cure.  
+**Example:** NPC is sick. Symptoms could be food poisoning OR nightshade. SMELL their breath → "A faint sweetness" → nightshade → need nightshade antidote, not generic.
+
+### Pattern 6: The Nested Container Emergency
+**Setup:** The correct healing item exists but is inside a locked container, inside a bag.  
+**Puzzle:** Navigate the container hierarchy under injury time-pressure.  
+**Example:** Antivenom is in the locked medical kit → kit is in the satchel → key is in the NPC's pocket → negotiate/search while the venom spreads.
 
 ---
 
 ## 6. Implementation Priority
 
-| Priority | Injury | Why First |
-|----------|--------|-----------|
-| **P1** | Minor Cut, Bleeding | Extends existing `bleed_ticks`. Minimal new engine work. |
-| **P1** | Bruise | Window jump (Puzzle 013) needs this. |
-| **P2** | Deep Cut | Weapon traps need a survivable wound type. |
-| **P2** | Mild Poison | Dart traps, tainted food — Level 1 content. |
-| **P3** | Burn | Candle interaction. Existing objects cause this. |
-| **P4** | Infection | Requires multi-stage FSM. Level 2 content. |
-| **P4** | Broken Bone | Requires body-part action gating. Level 2 content. |
-| **P5** | Hypothermia, Exhaustion | Environmental systems. Level 3+ content. |
+| Priority | Injury | Why First | Specific Cure |
+|----------|--------|-----------|---------------|
+| **P1** | Minor Cut, Bleeding | Extends existing `bleed_ticks`. Minimal new engine work. | Bandage (cloth strip) |
+| **P1** | Bruise | Window jump (Puzzle 013) needs this. | Rest |
+| **P2** | Deep Cut | Weapon traps need a survivable wound type. | Bandage + rest |
+| **P2** | Mild Poison | Dart traps, tainted food — Level 1 content. | Generic antidote or purge |
+| **P3** | Burn | Candle interaction. Existing objects cause this. | Cold water or salve |
+| **P3** | Viper Venom | Core matching puzzle demonstration. | Viper antivenom (specific) |
+| **P3** | Nightshade Poisoning | Core matching puzzle demonstration. | Nightshade antidote (specific) |
+| **P4** | Infection | Requires multi-stage FSM. Level 2 content. | Water+cloth → poultice → healer |
+| **P4** | Broken Bone | Requires body-part action gating. Level 2 content. | Splint (wood + cloth) |
+| **P5** | Hypothermia, Exhaustion | Environmental systems. Level 3+ content. | Warmth / rest+food |
 
 ---
 
 ## See Also
 
-- [health-system.md](./health-system.md) — Health scale and damage model
-- [healing-items.md](./healing-items.md) — Treatment objects and mechanics
+- [health-system.md](./health-system.md) — Derived health model and the `injuries` verb
+- [healing-items.md](./healing-items.md) — Treatment objects and exactly which injuries they cure
 - [README.md](./README.md) — System overview
 - `docs/design/fsm-object-lifecycle.md` — FSM patterns (injuries follow same architecture)
 - `docs/design/player-skills.md` §8 — Blood writing (existing prick → bleed chain)

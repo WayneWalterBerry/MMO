@@ -337,3 +337,8 @@
 - Oil lantern fueling is BLOCKED by parser: "pour oil flask into lantern", "fill lantern", "fuel lantern with oil flask" all fail. The FSM transition requires `lamp-oil` tool but parser can't resolve two-object pour/fill interactions. Likely same class as BUG-039 ("use X on Y" not understood).
 - Wind effect atmospheric writing is excellent — the stairway gust description is a standout moment
 - Extinguished candle description ("wick is black and still warm, trailing a thin wisp of smoke") is first-rate detail
+- **Inventory unit test suite created** (60 tests): Covers take, drop, put, inventory, containment, registry, find_visible, surfaces, containers, two-handed objects, round-trips, edge cases. All 114 tests pass (60 new + 54 existing).
+- Self-containment guard (BUG-036b) uses object identity (`==`), not ID comparison — two different tables with same `.id` won't be caught. This is by-design since objects are always looked up from registry, but worth knowing for refactoring.
+- `put` verb requires item to be in player's **hands** specifically (not bag/worn) — if you want to move something from a bag to a container, you must first `take` it from the bag.
+- `drop` only works on items directly in hands — items in bags get a helpful "get it out of the bag first" message rather than auto-extracting.
+- Test runner updated to discover tests from multiple subdirectories (parser + inventory), not just parser.

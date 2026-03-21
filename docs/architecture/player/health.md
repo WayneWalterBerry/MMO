@@ -1,69 +1,93 @@
 # Player Health System — Architecture
 
-**Version:** 1.0  
+**Version:** 2.0  
 **Author:** Bart (Architect)  
 **Date:** 2026-07-22  
+**Revised:** 2026-07-22 — Health is derived, not stored (Wayne directive 2026-03-21T19:17Z)  
 **Status:** Design  
-**Purpose:** Technical specification for health tracking, damage application, healing, and death.
+**Purpose:** Technical specification for derived health computation, damage accumulation, healing, and death.
 
 ---
 
 ## Overview
 
-Health is a numeric, mutable property of the player. It declines from injury and recovers from healing. The engine tracks health in `player.lua` and updates it each turn.
+Health is a **derived value**, not a stored field. There is no `health` property in `player.lua`. Instead, health is computed on every read:
+
+```
+current_health = max_health - sum(injury.damage for each active injury)
+```
+
+Health is an **emergent property of injuries**. The player's "health number" reflects the aggregate damage of all active injuries. When an injury is healed (removed), its damage contribution disappears and derived health rises automatically.
 
 ---
 
-## Health Properties
+## Health Computation
+
+### The Formula
 
 ```lua
-player = {
-    health = 100,         -- Current health (0–max_health)
-    max_health = 100,     -- Maximum health (can be modified by effects)
-    injuries = {},        -- Active injury instances (see injuries.md)
-    effects = {},         -- Future: buffs, debuffs, environmental modifiers
-}
+function compute_health(player)
+    local total_damage = 0
+    for _, injury in ipairs(player.injuries) do
+        total_damage = total_damage + (injury.damage or 0)
+    end
+    return math.max(0, player.max_health - total_damage)
+end
 ```
+
+### Properties
+
+| Property | Type | Stored? | Notes |
+|---|---|---|---|
+| `max_health` | number | ✅ Yes, in player.lua | Base maximum health. Default `100`. Can be modified by effects. |
+| `health` | number | ❌ **NOT stored** | Computed: `max_health - sum(injury.damage)`. Never persisted. |
+| `injuries` | array | ✅ Yes, in player.lua | Each injury carries a `damage` field — its contribution to health reduction. |
 
 ### Rules
 
-| Property | Type | Range | Default |
-|---|---|---|---|
-| `health` | number | `0` to `max_health` | `100` |
-| `max_health` | number | `1+` | `100` |
+- Derived health is clamped: never below `0`, never above `max_health`.
+- All damage values are integers. `max_health` is an integer.
+- `max_health` can be temporarily reduced by effects (e.g., disease caps max at 60). Derived health recomputes accordingly.
+- Health is computed **on read** — any system that needs the health value calls `compute_health(player)`.
 
-- Health is clamped: never below `0`, never above `max_health`.
-- Health is an integer. All damage and healing values are integers.
-- `max_health` can be temporarily reduced by effects (e.g., disease caps your max at 60).
+### Player.lua Structure (Health-Related Fields)
+
+```lua
+-- src/meta/player/player.lua (engine-managed)
+return {
+    max_health = 100,
+    -- NO health field. Health is derived.
+
+    injuries = {
+        -- Each injury carries a .damage field: its health cost
+        -- {
+        --     id = "poisoned-nightshade",
+        --     type = "poisoned-nightshade",
+        --     damage = 15,            -- This injury's contribution to health reduction
+        --     turns_active = 3,
+        -- },
+        -- {
+        --     id = "bleeding-arm-1",
+        --     type = "bleeding",
+        --     severity = 1,
+        --     damage = 20,            -- Accumulated over 4 turns at 5/turn
+        --     turns_active = 4,
+        -- },
+    },
+
+    effects = {},
+}
+```
 
 ---
 
-## Damage Sources
+## How Damage Works Under Derived Health
 
-### Principle: Damage is Encoded on the Object, Not the Engine
+Under the old model, damage mutated `player.health`. Under the new model, **damage is recorded on the injury itself**. The injury's `damage` field grows over time (for over-time injuries) or is set once (for one-time injuries). Health is never directly mutated.
 
-This is a foundational design decision. The engine does not contain damage tables. Every damage value originates from an object's `.lua` metadata. Object authors (Flanders) control how much damage their objects deal.
+### Source 1: Verb-Triggered Object Damage (Inflicts an Injury)
 
-The engine's role is to **read the damage declaration and apply it**. Nothing more.
-
-### Source 1: Verb-Triggered Object Damage
-
-When a verb fires against an object that declares damage, the engine applies it.
-
-**Object metadata pattern:**
-
-```lua
--- src/meta/objects/poison-bottle.lua
-return {
-    id = "poison-bottle",
-    name = "a bottle of dark liquid",
-
-    on_drink = {
-        damage = 100,                    -- Flat health reduction
-        message = "The poison burns through you. Everything goes dark.",
-    },
-}
-```
+When a verb fires against an object that declares damage, the engine creates an injury with an initial `damage` value:
 
 ```lua
 -- src/meta/objects/rusty-knife.lua
@@ -72,8 +96,8 @@ return {
     name = "a rusty knife",
 
     on_stab_self = {
-        damage = 25,                     -- Flat health reduction
-        injury = "laceration",           -- Also inflicts an injury (see injuries.md)
+        injury = "bleeding",           -- Inflicts a bleeding injury
+        initial_damage = 25,           -- Injury starts with 25 damage
         message = "You drive the blade into your arm. Blood wells up.",
     },
 }
@@ -82,66 +106,97 @@ return {
 **Engine processing:**
 
 ```lua
--- Pseudocode: verb handler reads object metadata
+-- Verb handler reads object metadata
 local effect = object["on_" .. verb]
-if effect and effect.damage then
-    player.health = math.max(0, player.health - effect.damage)
-end
 if effect and effect.injury then
-    injury_system.inflict(player, effect.injury, effect)
+    injury_system.inflict(player, effect.injury, {
+        initial_damage = effect.initial_damage or 0,
+        source = object.id,
+    })
 end
+-- No player.health mutation. The new injury's .damage field reduces derived health.
 ```
 
-### Source 2: Injury Over-Time Damage
+### Source 2: Injury Over-Time Damage Accumulation
 
-Some injuries cause health to decrease each turn while active. This is NOT encoded on the triggering object — it's encoded on the injury definition in `src/meta/injuries/`.
+Over-time injuries increase their `damage` field each turn:
 
-See [injuries.md](injuries.md) § Over-Time Damage.
+```lua
+-- In injury_system.tick():
+if injury.damage_per_tick and injury.damage_per_tick > 0 then
+    injury.damage = injury.damage + injury.damage_per_tick
+end
+-- Derived health decreases automatically because sum(injury.damage) grew.
+```
 
-### Source 3: Actions Against the Player (Future)
+### Source 3: One-Time Damage (Flat)
 
-In future phases, external actors can damage the player:
+Some objects deal flat damage without a persistent injury (e.g., a lethal poison):
 
-- **NPC attacks:** NPC metadata encodes attack damage
-- **Traps:** Trap object metadata encodes trigger damage
-- **Environmental damage:** Room properties (fire, cold, toxic gas) cause per-turn damage
+```lua
+-- src/meta/objects/poison-bottle.lua
+return {
+    id = "poison-bottle",
+    name = "a bottle of dark liquid",
 
-These follow the same principle: **damage is encoded in the source entity's metadata**, not the engine.
+    on_drink = {
+        injury = "lethal-poison",
+        initial_damage = 100,          -- Injury starts at 100 damage (lethal if max_health = 100)
+        message = "The poison burns through you. Everything goes dark.",
+    },
+}
+```
+
+Even "instant death" works through the injury system. The poison creates an injury with `damage = 100`, which makes `compute_health()` return `0`.
 
 ---
 
-## Damage Application Pipeline
+## Per-Turn Health Tick
 
-Every source of damage flows through a single pipeline:
-
-```
-1. Source declares damage   (object.on_verb.damage = N)
-2. Engine reads declaration  (verb handler extracts damage value)
-3. Modifiers applied         (future: armor reduces damage)
-4. Health reduced            (player.health -= final_damage)
-5. Clamp to zero             (player.health = max(0, player.health))
-6. Injury inflicted          (if source declares an injury type)
-7. Death check               (if health <= 0, trigger death)
-```
-
-### Step 3: Damage Modifiers (Future)
-
-Placeholder for armor, resistances, buffs. Not in Phase 1. When implemented:
+The engine loop computes health each turn after ticking injuries:
 
 ```lua
--- Future: armor reduction
-local armor = get_worn_armor(player)
-local reduction = armor and armor.damage_reduction or 0
-local final_damage = math.max(1, declared_damage - reduction)
-```
+-- In engine loop, after object tick phase:
 
-### Step 7: Death Check
+-- Phase 1: Tick all injuries (advance FSM timers, accumulate damage)
+for i, injury in ipairs(player.injuries) do
+    local injury_def = load_injury_definition(injury.type)
+    local state_def = injury_def.states[injury._state]
 
-After ANY health reduction, the engine checks:
+    -- Skip terminal states
+    if not state_def.terminal then
+        -- Accumulate per-turn damage on the injury
+        if injury.damage_per_tick and injury.damage_per_tick > 0 then
+            injury.damage = injury.damage + injury.damage_per_tick
+        end
 
-```lua
-if player.health <= 0 then
-    trigger_death(player, damage_source)
+        -- Degenerative scaling (increase rate)
+        if injury_def.damage_type == "degenerative" and injury_def.degenerative then
+            local degen = injury_def.degenerative
+            injury.damage_per_tick = math.min(
+                degen.max_damage,
+                injury.damage_per_tick + degen.increment
+            )
+        end
+
+        -- Tick FSM timer, check for auto-transitions
+        injury.turns_active = (injury.turns_active or 0) + 1
+        -- ... timer/transition logic same as before ...
+    end
+end
+
+-- Phase 2: Remove healed injuries
+player.injuries = filter_active(player.injuries)
+
+-- Phase 3: Compute derived health and check death
+local current_health = compute_health(player)
+if current_health <= 0 then
+    trigger_death(player, last_damage_source)
+end
+
+-- Phase 4: Display injury messages
+for _, msg in ipairs(injury_messages) do
+    print(msg)
 end
 ```
 
@@ -151,7 +206,9 @@ end
 
 ### Trigger
 
-`player.health <= 0` after any damage application (verb, injury tick, or environmental).
+`compute_health(player) <= 0` after any injury tick or injury infliction.
+
+Equivalently: `sum(injury.damage) >= max_health`.
 
 ### Behavior
 
@@ -163,15 +220,9 @@ Death is handled by the `on_death` engine hook (see [event-handlers.md](../engin
 
 ### Death Messages
 
-Death messages are contextual. The damage source provides the message:
+Death messages are contextual. The injury or damage source provides the message:
 
 ```lua
--- Object-caused death
-on_drink = {
-    damage = 100,
-    death_message = "The poison claims your life.",
-}
-
 -- Injury-caused death (bleeding out)
 -- Defined in injury FSM terminal state
 states = {
@@ -188,41 +239,38 @@ If no specific death message is provided, the engine uses a generic fallback: `"
 
 ## Healing
 
-### Principle: Healing is Object-Driven
+### Principle: Healing Removes Injury Damage (Not "Adds Health")
 
-Just like damage, healing is encoded on objects. A healing potion's `.lua` file declares how much it heals. The engine reads and applies.
+Under derived health, there is no "add 40 HP" operation. Healing works by:
 
-### Healing Types
+1. **Curing an injury** — removes the injury from `player.injuries[]`, which removes its `damage` contribution. Derived health rises.
+2. **Treating an injury** — transitions the injury FSM to `treated` state, setting `damage_per_tick = 0` so damage stops accumulating. Existing damage remains until the injury reaches `healed` (terminal) state and is removed.
 
-#### Type 1: Flat Health Restore
+### Healing is Injury-Specific
 
-Object restores a fixed amount of health.
+Healing objects cure **specific** injury types. The match is by exact injury `type`:
+
+- `antidote-nightshade` cures `poisoned-nightshade` — NOT `poisoned-spider-venom`.
+- `bandage` treats `bleeding` — NOT `poisoned-nightshade`.
+- `antidote-spider-venom` cures `poisoned-spider-venom` — NOT `poisoned-nightshade`.
+
+There is no generic "heal 40 HP" item. All healing flows through the injury system.
+
+### Object Metadata Pattern
 
 ```lua
--- src/meta/objects/healing-potion.lua
+-- src/meta/objects/antidote-nightshade.lua
 return {
-    id = "healing-potion",
-    name = "a glowing red potion",
+    id = "antidote-nightshade",
+    name = "a vial of nightshade antidote",
 
     on_drink = {
-        heal = 40,                       -- Restore 40 health
-        message = "Warmth floods through you. You feel stronger.",
-        consumable = true,               -- Potion is consumed on use
+        cures = "poisoned-nightshade",   -- Exact injury type this cures
+        message = "The antidote works. The burning subsides.",
+        consumable = true,
     },
 }
 ```
-
-**Engine processing:**
-
-```lua
-if effect.heal then
-    player.health = math.min(player.max_health, player.health + effect.heal)
-end
-```
-
-#### Type 2: Stop Over-Time Drain
-
-Object stops an active injury from draining health each turn, without restoring health.
 
 ```lua
 -- src/meta/objects/bandage.lua
@@ -231,181 +279,78 @@ return {
     name = "a clean linen bandage",
 
     on_use = {
-        stops_drain = true,              -- Stops per-turn damage
-        targets_injury = "bleeding",     -- Only works on bleeding-type injuries
-        transition_to = "treated",       -- Transitions injury FSM to "treated" state
+        cures = "bleeding",              -- Exact injury type this treats
+        transition_to = "treated",       -- Transitions FSM (doesn't fully remove yet)
         message = "You bind the wound tightly. The bleeding slows, then stops.",
         consumable = true,
     },
 }
 ```
 
-**Engine processing:**
+### Engine Processing: Healing
 
 ```lua
-if effect.stops_drain and effect.targets_injury then
-    local injury = find_active_injury(player, effect.targets_injury)
-    if injury then
-        injury_system.transition(injury, effect.transition_to or "treated")
+function injury_system.try_heal(player, healing_object, verb)
+    local effect = healing_object["on_" .. verb]
+    if not effect or not effect.cures then return false end
+
+    -- Find matching active injury by exact type
+    local injury, index = find_injury_by_type(player, effect.cures)
+    if not injury then
+        print("You don't have that kind of injury.")
+        return false
     end
-end
-```
 
-#### Type 3: Cure Specific Injury
-
-Object fully heals a specific injury type, transitioning its FSM to `healed` and restoring associated health.
-
-```lua
--- src/meta/objects/antidote.lua
-return {
-    id = "antidote",
-    name = "a vial of clear antidote",
-
-    on_drink = {
-        cures = "poisoned",             -- Cures poisoned injury type
-        heal = 20,                       -- Also restores some health
-        message = "The antidote works. The burning subsides.",
-        consumable = true,
-    },
-}
-```
-
-**Engine processing:**
-
-```lua
-if effect.cures then
-    local injury = find_active_injury(player, effect.cures)
-    if injury then
-        injury_system.transition(injury, "healed")
-        remove_injury(player, injury)
+    if effect.transition_to then
+        -- Partial healing: transition FSM state (e.g., "active" → "treated")
+        injury_system.transition(injury, effect.transition_to)
+        injury.damage_per_tick = 0  -- Stop further damage accumulation
+    else
+        -- Full cure: remove injury entirely
+        table.remove(player.injuries, index)
+        -- Derived health increases immediately (injury's .damage is gone)
     end
-end
-if effect.heal then
-    player.health = math.min(player.max_health, player.health + effect.heal)
+
+    return true
 end
 ```
 
 ---
 
-## Healing Pipeline
+## Healing Pipeline (Revised)
 
 ```
-1. Object declares healing     (object.on_verb.heal = N, .cures = "type")
-2. Engine reads declaration     (verb handler extracts healing data)
-3. Health restored              (player.health += heal, clamped to max)
-4. Injury cured/transitioned   (if .cures or .targets_injury specified)
-5. Injury removed from array   (if cured to "healed" terminal state)
-6. Object consumed              (if consumable = true)
+1. Object declares healing          (object.on_verb.cures = "injury-type")
+2. Engine reads declaration          (verb handler extracts cures target)
+3. Engine finds matching injury      (exact match on injury.type)
+4. Injury transitioned or removed    (FSM transition or full removal)
+5. Derived health recomputes         (sum of remaining injury.damage)
+6. Object consumed                   (if consumable = true)
+```
+
+Note: There is no "restore N health" step. Health rises because injury damage was removed.
+
+---
+
+## Status Bar
+
+The terminal UI status bar computes health on read:
+
+```
+Health: 75/100 | Room: Kitchen | Injuries: bleeding (active), poisoned-nightshade (active)
+```
+
+```lua
+-- Status bar rendering:
+local health = compute_health(player)
+local status = string.format("Health: %d/%d", health, player.max_health)
 ```
 
 ---
 
-## Per-Turn Health Update
+## Cloud Persistence
 
-The engine loop gains a new phase after object FSM ticking:
-
-```lua
--- In engine loop, after object tick phase:
-
--- Phase: Player Health Tick
-local injury_messages = {}
-for i, injury in ipairs(player.injuries) do
-    local result = injury_system.tick(injury, SECONDS_PER_TICK)
-    if result.damage then
-        player.health = math.max(0, player.health - result.damage)
-    end
-    if result.message then
-        injury_messages[#injury_messages + 1] = result.message
-    end
-    if result.transition then
-        injury_system.transition(injury, result.transition)
-    end
-end
-
--- Remove healed injuries
-player.injuries = filter_active(player.injuries)
-
--- Death check
-if player.health <= 0 then
-    trigger_death(player, last_damage_source)
-end
-
--- Display injury messages
-for _, msg in ipairs(injury_messages) do
-    print(msg)
-end
-```
-
----
-
-## Player File Structure (Complete)
-
-```lua
--- src/meta/player/player.lua (engine-managed)
-return {
-    health = 100,
-    max_health = 100,
-
-    hands = { left = nil, right = nil },
-    worn = { head = nil, torso = nil, feet = nil },
-    skills = { lockpicking = false, sewing = false },
-
-    injuries = {
-        -- Active injury instances (populated at runtime)
-        -- Example:
-        -- {
-        --     type = "bleeding",           -- References src/meta/injuries/bleeding.lua
-        --     _state = "active",           -- Current FSM state
-        --     source = "rusty-knife",      -- What caused this injury
-        --     inflicted_at = 1200,         -- Game time when inflicted
-        --     damage_per_tick = 5,         -- Current per-turn damage
-        -- },
-    },
-
-    effects = {
-        -- Future: buffs, debuffs, environmental modifiers
-    },
-}
-```
-
----
-
-## Integration Points
-
-### Verb Handlers
-
-Verb handlers check for `on_<verb>` metadata on the target object. If damage or healing is declared, they call into the health system:
-
-```lua
--- In verb handler (e.g., drink):
-local effect = target_object.on_drink
-if effect then
-    if effect.damage then
-        health_system.apply_damage(player, effect.damage, target_object)
-    end
-    if effect.heal then
-        health_system.apply_heal(player, effect.heal)
-    end
-    if effect.injury then
-        injury_system.inflict(player, effect.injury, effect)
-    end
-    if effect.cures then
-        injury_system.cure(player, effect.cures)
-    end
-end
-```
-
-### Status Bar
-
-The terminal UI status bar displays current health:
-
-```
-Health: 75/100 | Room: Kitchen | Injuries: bleeding (active)
-```
-
-### Cloud Persistence
-
-Player health, injuries, and effects are persisted to cloud storage each turn, alongside hands, worn items, and skills. The `player.lua` file is the canonical representation.
+Player injuries, inventory, effects, and `max_health` are persisted to cloud storage each turn. Health is NOT persisted — it is recomputed on load from the injury array.
 
 ---
 
@@ -413,17 +358,19 @@ Player health, injuries, and effects are persisted to cloud storage each turn, a
 
 | ID | Decision | Rationale |
 |---|---|---|
-| D-HEALTH001 | Damage encoded on objects, not engine | Object authors control gameplay. Engine stays generic. |
-| D-HEALTH002 | Single damage pipeline for all sources | Consistent behavior. One place for armor/modifier logic. |
-| D-HEALTH003 | Health is integer, clamped 0–max | Simple, deterministic. No floating-point edge cases. |
-| D-HEALTH004 | Death at health ≤ 0 | Clean threshold. No negative health states. |
-| D-HEALTH005 | Healing items declare targets | Bandage targets "bleeding", antidote targets "poisoned". Generic engine, specific objects. |
+| D-HEALTH001 | Health is derived, not stored | Health is an emergent property of injuries. No stale state, no sync bugs, no "health says 50 but injuries say 80 damage." Single source of truth. |
+| D-HEALTH002 | No generic "heal N HP" | All healing flows through injuries. Forces specific remedies (antidote for poison, bandage for bleeding). Supports puzzle design. |
+| D-HEALTH003 | Health computed on read | Any system that needs health calls `compute_health()`. No cache, no staleness. |
+| D-HEALTH004 | Damage recorded on injury instances | Each injury carries its own `.damage` — the running total of damage it has caused. Engine only mutates injury data. |
+| D-HEALTH005 | Death at derived health ≤ 0 | `sum(injury.damage) >= max_health`. Clean threshold. |
+| D-HEALTH006 | Damage encoded on objects, not engine | Object authors control gameplay. Engine stays generic. (Preserved from v1.) |
 
 ---
 
 ## Related
 
-- [injuries.md](injuries.md) — Injury FSM system, over-time damage, degenerative injuries
+- [injuries.md](injuries.md) — Injury FSM system, injury-specific healing, over-time damage
+- [inventory.md](inventory.md) — First-class inventory system
 - [README.md](README.md) — Player system overview
 - [player-model.md](player-model.md) — Existing player entity structure
 - [Engine Event Handlers](../engine/event-handlers.md) — `on_death` hook

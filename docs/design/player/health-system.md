@@ -2,99 +2,180 @@
 
 **Author:** Sideshow Bob (Puzzle Designer)  
 **Date:** 2026-07-23  
+**Revised:** 2026-07-24 (Wayne directive 2026-03-21T19:17Z — derived health, injury-specific healing)  
 **Status:** DESIGN  
 **Depends On:** FSM Engine, Verb Handlers, Game Loop tick system  
 **Audience:** Designers, Bart (engine), Flanders (objects)
 
 ---
 
-## 1. The Health Scale
+## 1. The Core Principle: Health Is Derived from Injuries
 
-### 1.1 Numeric Model
+**There is no HP bar. There is no health number displayed to the player.**
 
-| Property | Value | Notes |
-|----------|-------|-------|
-| **max_hp** | 100 | Matches `game-design-foundations.md` §4 player model |
-| **starting_hp** | 100 | Player begins at full health |
-| **death_threshold** | 0 | HP ≤ 0 = death |
-| **minimum_damage** | 1 | No damage source deals less than 1 HP |
+The player's health is the *aggregate of their active injuries*. A healthy player is one with no injuries. A dying player is a collection of untreated wounds, each worsening independently. The player never sees "HP: 42/100" — they see:
 
-**Why 100?** It's human-readable, divisible, and matches the existing player model in `game-design-foundations.md`. A 100-point scale lets us have fine-grained damage (pin prick = 5 HP, knife slash = 15 HP, poison = instant death) without needing decimals.
+> *"You examine yourself: a deep gash on your forearm (bleeding), a dull ache in your ribs (bruised). Your vision swims when you stand too quickly."*
 
-### 1.2 Health Tiers
+Health is **felt through injuries, not through a number**.
 
-Health tiers are **narrative zones** — they determine what text the player sees and what mechanics activate. The player never sees a number unless they explicitly check status.
+### 1.1 How Health "Works" Without a Visible Number
 
-| Tier | HP Range | Name | Narrative Effect | Mechanical Effect |
-|------|----------|------|-----------------|-------------------|
-| **5** | 100 | Full Health | No messages. Body is invisible. | None. |
-| **4** | 75–99 | Scratched | Occasional pain reminders. | None mechanical. Narrative only. |
-| **3** | 40–74 | Wounded | Persistent pain messages. Actions feel labored. | Some physical checks become harder (future). |
-| **2** | 15–39 | Critical | Desperate prose. Vision blurs. Movement described as staggering. | Cannot perform strenuous actions (climb, lift heavy objects). |
-| **1** | 1–14 | Near-Death | Every action is agony. Descriptions are fragmentary. | Cannot run, fight, or perform any physical exertion. |
-| **0** | 0 | Dead | Game over sequence. | `ctx.game_over = true` |
+Internally, the engine may compute a derived health value from the aggregate of injuries for mechanical purposes (action gating, death threshold). But the player **never sees this number**. What they see is narrative text that describes their *injuries* and how those injuries make them *feel*.
 
-### 1.3 Tier Boundaries — Design Rationale
+The design surface is the injuries themselves and the narrative voice they produce — not health tiers or HP ranges.
 
-- **75 → Scratched:** Most one-time injuries (5–25 HP) drop the player into this zone. It's a warning: "You've been hurt." No gameplay impact — just narrative stakes.
-- **40 → Wounded:** Multiple untreated injuries, or a single serious one (knife wound + bleeding), push the player here. This is the "you should seek treatment" zone.
-- **15 → Critical:** Entering this zone is the "alarm bell." The player is in real danger. Over-time injuries (bleeding, poison) will kill them here within a few turns.
-- **1 → Near-Death:** The player is one bad decision from death. Every turn feels desperate. This zone should be rare and terrifying.
+### 1.2 Injury Severity Levels
+
+Instead of HP-based tiers, the player's condition is described by the aggregate severity of their active injuries:
+
+| Severity | What the Player Has | Narrative Feel |
+|----------|-------------------|----------------|
+| **Uninjured** | No active injuries | Silence. The body is invisible. Player focuses on the world. |
+| **Scratched** | One or two minor injuries (small cut, scrape) | Occasional pain reminders. Body nags but doesn't dominate. |
+| **Hurt** | Multiple minor injuries, or one serious injury | Persistent pain. Physical actions include pain notes. Room descriptions gain a somatic overlay. |
+| **Badly Wounded** | Serious injuries compounding — bleeding, poison, deep cuts | Body dominates every interaction. Sensory descriptions filtered through pain and disorientation. |
+| **Dying** | Untreated critical injuries, aggregate damage overwhelming | Fragmentary, desperate prose. Ellipses and incomplete sentences. Every command is agony. |
+
+The transitions between these levels happen organically as injuries accumulate, worsen, or are treated. There are no hard HP thresholds — the narrative voice shifts based on *what injuries the player has* and *how severe each one is*.
 
 ---
 
-## 2. Narrative Voice by Health Tier
+## 2. The `injuries` Verb — How the Player Reads Their Body
 
-The health system's primary output is **text**. Below are example messages that fire contextually — on room entry, on action, on idle tick. These are *guidelines for writers*; actual text lives in engine metadata.
+The `injuries` verb is the health system's primary interface. It is to the body what `inventory` is to possessions: the player examining what they're carrying — in this case, wounds.
 
-### Tier 5: Full Health (100 HP)
+### 2.1 Design Philosophy
+
+The `injuries` verb returns a **first-person physical assessment**. The player is examining their own body, noting each wound, describing its current state, and (critically) noticing clues about what might treat it.
+
+This is NOT a clinical readout. It's a person looking at themselves and describing what they see and feel.
+
+### 2.2 Example Output by Severity
+
+**Uninjured:**
+```
+> injuries
+"You examine yourself. No injuries. You feel strong and alert."
+```
+
+**Scratched (one minor injury):**
+```
+> injuries
+"You examine yourself:
+ — A small cut on your hand where the glass caught you. It stings,
+   but the bleeding has mostly stopped on its own."
+```
+
+**Hurt (multiple injuries):**
+```
+> injuries
+"You examine yourself:
+ — A deep gash on your forearm (bleeding). Blood seeps steadily.
+   It won't stop without pressure — something wrapped tight.
+ — A dull ache in your ribs (bruised). Breathing hurts.
+   Time will take care of this one.
+ 
+ You feel lightheaded. You need to stop the bleeding soon."
+```
+
+**Badly Wounded (serious, compounding):**
+```
+> injuries
+"You examine yourself:
+ — A deep slash across your side (bleeding heavily). Your shirt
+   is soaked through. You can feel your strength draining.
+ — Your stomach churns with nausea (poisoned — something you ate).
+   The burning hasn't stopped since the spoiled meat.
+ — Bruised ribs from the fall. The least of your worries.
+ 
+ You are in serious trouble. The bleeding and the poison are
+ both killing you, and they need different treatments."
+```
+
+**Dying (critical, overwhelming):**
+```
+> injuries
+"You... examine yourself. It's hard to focus.
+ — The wound in your side... so much blood...
+ — Everything tastes like copper. The poison...
+ — Your ribs... doesn't matter anymore.
+ 
+ You need help. Now. Or this is where it ends."
+```
+
+### 2.3 Embedded Discovery Clues
+
+The `injuries` verb output includes *subtle clues* about treatment. This is the puzzle interface — the player reads their injuries and gets hints:
+
+| Injury Description | Embedded Clue |
+|-------------------|---------------|
+| *"Blood seeps steadily. It won't stop without pressure — something wrapped tight."* | → Bandage / cloth strip needed |
+| *"Your stomach churns. Something you consumed is still burning."* | → Antidote or purge needed |
+| *"The burn is angry and raw. Even the air hurts."* | → Salve or cold water needed |
+| *"The wound is warm to the touch and swollen. That's not a good sign."* | → Clean the wound (water + cloth) |
+| *"Two puncture marks on your ankle. The skin around them is turning dark."* | → Viper antidote specifically (not generic) |
+
+The clues never say "use item X." They describe the injury in terms that *suggest* a treatment. The player must make the connection. **That connection is the puzzle.**
+
+### 2.4 `injuries` vs. Other Health Verbs
+
+| Verb | What It Does |
+|------|-------------|
+| `injuries` | Full assessment — lists all active injuries with descriptions and severity. The primary health verb. |
+| `examine [body part]` | Zooms in on a specific injury. More detail than the `injuries` summary. May reveal additional clues. |
+| `examine self` | Equivalent to `injuries`. |
+
+---
+
+## 3. Narrative Voice by Injury Severity
+
+The health system's primary output is **text tied to specific injuries**. Messages fire contextually — on room entry, on action, on idle tick. These are *guidelines for writers*; actual text lives in engine metadata.
+
+### Uninjured
 No health messages. The body is invisible. The player focuses entirely on the world.
 
-### Tier 4: Scratched (75–99 HP)
-Intermittent reminders, not every turn. The injury nags but doesn't dominate.
+### Scratched (Minor Injuries Only)
+Intermittent reminders tied to the *specific injury*, not generic pain.
 
-> *"Your [injury] throbs dully."*  
-> *"You wince as you reach for the door handle."*  
+> *"Your cut hand throbs dully."*  
+> *"You wince as you reach for the door handle — the scrape on your palm catches."*  
 > *"A twinge of pain reminds you of the cut on your hand."*
 
-**Frequency:** Every 3–5 commands. Tied to the specific injury, not generic.
+**Frequency:** Every 3–5 commands. Always references the actual injury by name and location.
 
-### Tier 3: Wounded (40–74 HP)
-Pain is persistent. Every physical action includes a pain note. Room descriptions gain a pain filter.
+### Hurt (Serious Injuries Present)
+Pain is persistent. Every physical action includes a pain note from the relevant injury. Room descriptions gain a somatic overlay.
 
 > *"Your wounded arm protests as you lift the crate."*  
-> *"Blood seeps through the makeshift bandage. You need proper treatment."*  
+> *"Blood seeps through the makeshift bandage. You need to treat this properly."*  
 > *"Each step sends a jolt through your injured leg."*  
-> *"You lean against the wall, breathing hard. The world tilts momentarily."*
+> *"You lean against the wall, breathing hard. The gash in your side throbs."*
 
-**Frequency:** Every 1–2 commands. Physical actions always mention pain.
+**Frequency:** Every 1–2 commands. Physical actions always mention the relevant injury.
 
-### Tier 3 → Room Description Modifier
-When wounded, room descriptions gain a somatic overlay:
-
+**Room Description Modifier:**
 > **Normal:** *"A cold cellar stretches before you. Barrels line the walls."*  
-> **Wounded:** *"A cold cellar stretches before you. Barrels line the walls. You steady yourself against the door frame, your wounded side aching in the chill."*
+> **Hurt:** *"A cold cellar stretches before you. Barrels line the walls. You steady yourself against the door frame, your wounded side aching in the chill."*
 
-### Tier 2: Critical (15–39 HP)
+### Badly Wounded (Multiple Serious Injuries)
 The player's body dominates every interaction. Sensory descriptions are filtered through pain and disorientation.
 
-> *"Your vision blurs. You stumble. You need help soon."*  
+> *"Your vision blurs. You stumble. You need to treat these wounds."*  
 > *"The room swims before your eyes. Each breath is a conscious effort."*  
 > *"Your hands shake. Picking up the key takes three attempts."*  
 > *"A wave of nausea forces you to pause. The darkness at the edge of your sight is not just the unlit room."*
 
 **Frequency:** Every command. Physical actions may fail or require extra description.
 
-### Tier 2 → Sensory Degradation
-At critical health, sensory verbs return degraded output:
-
+**Sensory Degradation:**
 > **LOOK (normal):** *"An ornate brass key lies on the stone shelf."*  
-> **LOOK (critical):** *"Something metallic glints on the shelf. Your vision is too blurred to make out details."*  
+> **LOOK (badly wounded):** *"Something metallic glints on the shelf. Your vision is too blurred to make out details."*  
 >
 > **FEEL (normal):** *"The stone wall is cool and smooth."*  
-> **FEEL (critical):** *"The wall is cold. Your fingers feel numb and clumsy."*
+> **FEEL (badly wounded):** *"The wall is cold. Your fingers feel numb and clumsy."*
 
-### Tier 1: Near-Death (1–14 HP)
+### Dying (Aggregate Injuries Fatal)
 Fragmentary, desperate prose. The player is dying. Every message reinforces urgency.
 
 > *"The edges of your vision darken. Each step is agony."*  
@@ -105,7 +186,7 @@ Fragmentary, desperate prose. The player is dying. Every message reinforces urge
 
 **Frequency:** Every command. Descriptions are shorter, more fragmented. Ellipses and incomplete sentences.
 
-### Tier 0: Death
+### Dead
 A dramatic, final passage. Then game over.
 
 > *"Your legs give way. The cold stone rushes up to meet you."*  
@@ -114,97 +195,74 @@ A dramatic, final passage. Then game over.
 
 ---
 
-## 3. Damage Model
+## 4. Damage Sources — What Causes Injuries
 
-### 3.1 Damage Sources
+Injuries come from **objects and environmental effects**, never from abstract mechanics. Every injury has a *cause* the player can understand and (usually) avoid.
 
-Damage comes from **objects and environmental effects**, never from abstract mechanics. Every point of HP lost has a *cause* the player can understand and (usually) avoid.
-
-| Category | Source | Damage | Example |
-|----------|--------|--------|---------|
-| **Self-Injury** | Prick self (pin/needle) | 5 HP | Blood writing mechanic (existing) |
-| **Self-Injury** | Cut self (knife/glass shard) | 10 HP | Blood writing mechanic (existing) |
-| **Weapon** | Knife slash (combat or trap) | 15–25 HP | NPC attack, trapped chest |
-| **Environmental** | Fall (short) | 10–20 HP | Jumping from window (Puzzle 013) |
+| Category | Source | Injury Created | Example |
+|----------|--------|---------------|---------|
+| **Self-Injury** | Prick self (pin/needle) | Minor cut (finger) | Blood writing mechanic (existing) |
+| **Self-Injury** | Cut self (knife/glass shard) | Deep cut + bleeding | Blood writing mechanic (existing) |
+| **Weapon** | Knife slash (combat or trap) | Deep slash + heavy bleeding | NPC attack, trapped chest |
+| **Environmental** | Fall (short) | Bruised legs / bruised ribs | Jumping from window (Puzzle 013) |
 | **Environmental** | Fall (long) | Instant death | Falling into pit without rope |
-| **Poison** | Poison ingestion | Instant death | Poison bottle (existing, Puzzle 002) |
-| **Poison** | Mild poison / tainted food | 5 HP/turn | Spoiled food, weak venom |
-| **Trap** | Dart trap | 10 HP + poison | Trapped chest or passage |
-| **Over-Time** | Bleeding (untreated cut) | 3 HP/turn | Unbound knife wound |
-| **Over-Time** | Infection (untreated wound) | 2 HP/turn (escalating) | Cut that wasn't cleaned |
-| **Over-Time** | Mild poison | 5 HP/turn | Ingested toxin with antidote available |
-| **Environmental** | Extreme cold | 2 HP/turn | Outdoors in winter without cloak |
-| **Environmental** | Extreme heat | 3 HP/turn | Fire-adjacent room |
+| **Poison** | Poison ingestion (lethal) | Instant death | Poison bottle (existing, Puzzle 002) |
+| **Poison** | Mild poison / tainted food | Mild poisoning (nausea, over-time) | Spoiled food, weak venom |
+| **Poison** | Viper bite | Viper venom poisoning (specific) | Snake encounter |
+| **Poison** | Nightshade consumption | Nightshade poisoning (specific) | Tainted drink, deceptive berry |
+| **Trap** | Dart trap | Puncture wound + specific poison | Trapped chest or passage |
+| **Over-Time** | Untreated cut (15+ turns) | Infection (degenerative) | Cut that wasn't cleaned |
+| **Thermal** | Touching flame / hot surface | Burn | Lit candle, fire trap |
+| **Environmental** | Extreme cold | Hypothermia (over-time) | Outdoors in winter without cloak |
 
-### 3.2 Damage Application
+### Instant Death vs. Injury
 
-Damage is applied through the existing verb handler system. Objects declare their damage in metadata:
-
-```lua
--- Example: Knife used as weapon (trap or NPC)
-damage_on_hit = {
-  amount = 20,
-  injury_type = "slash",
-  message = "The blade bites deep into your arm.",
-  causes_bleeding = true,
-  bleed_rate = 3  -- HP per turn
-}
-
--- Example: Environmental fall
-on_jump_effect = {
-  type = "fall_damage",
-  amount = 15,
-  injury_type = "bruise",
-  message = "You hit the ground hard. Pain explodes through your legs."
-}
-```
-
-### 3.3 Instant Death vs. Damage
-
-Some hazards bypass HP entirely. This is a *design choice*, not a cop-out:
+Some hazards bypass the injury system entirely. This is a *design choice*:
 
 | Hazard | Effect | Rationale |
 |--------|--------|-----------|
-| **Poison bottle** | Instant death | Teaches "investigate before consuming." No amount of HP should save you from drinking pure poison. |
-| **Long fall** | Instant death | Jumping off a tower isn't survivable. Realism serves the fiction. |
-| **Trapped chest** (dart) | Damage + injury | Survivable but costly. Teaches "check for traps." |
-| **NPC attack** | Damage | Combat is a sustained exchange, not instant death. |
+| **Poison bottle** | Instant death | Teaches "investigate before consuming." |
+| **Long fall** | Instant death | Realism serves the fiction. |
+| **Trapped chest** (dart) | Injury (treatable) | Survivable but creates treatment puzzle. |
 | **Bleeding out** | Death over time | Treatable if the player acts. Creates puzzle urgency. |
 
-**Design Rule:** Instant death should always be *player-initiated* (they chose to drink, jump, etc.) or *clearly telegraphed* (the skull-and-crossbones on the bottle, the bottomless pit). Surprise instant death is cruel and unfun.
+**Design Rule:** Instant death should always be *player-initiated* or *clearly telegraphed*. Surprise instant death is cruel and unfun.
 
 ---
 
-## 4. Death & Game Over Design
+## 5. Death & Game Over Design
 
-### 4.1 Current State
+### 5.1 When Death Occurs
 
-The game currently has one death: poison. It sets `ctx.game_over = true` and the loop exits. There is no restart — just "Game over. Thanks for playing." (per D-BUG022: no false affordances).
+Death happens when the aggregate of untreated injuries overwhelms the body. There is no single "HP = 0" moment the player sees. Instead, the narrative escalates through the severity levels until the injuries become fatal.
 
-### 4.2 Proposed Death Design
+From the player's perspective: they see their injuries worsening, the prose growing more desperate, and then — death.
 
-Death should be **dramatic, instructive, and recoverable** (eventually — restart is V2).
-
-#### The Death Sequence
+### 5.2 The Death Sequence
 
 ```
-1. HP reaches 0
-2. Death narrative plays (cause-specific text)
+1. Injuries accumulate beyond survivable threshold
+2. Death narrative plays (cause-specific text based on worst injury)
 3. Brief pause (dramatic beat)
 4. "YOU HAVE DIED."
-5. Cause of death summary: "Cause: Blood loss from an untreated knife wound."
-6. Optional hint: "Perhaps a bandage could have helped."
-7. Game over. (Future: checkpoint restart)
+5. Cause of death: "The bleeding wouldn't stop. The gash in your side 
+   needed a bandage — tight cloth wrapped around the wound."
+6. Game over. (Future: checkpoint restart)
 ```
 
-#### Cause-Specific Death Text
+Note: the cause-of-death text includes a **treatment hint** — what SPECIFIC treatment might have saved them. This teaches the matching puzzle for next time.
 
-Each death cause has unique flavor text. Examples:
+### 5.3 Cause-Specific Death Text
 
 **Bleeding Out:**
-> *"The blood won't stop. You press your hand against the wound, but your fingers are too cold, too weak. The cellar floor is warm where you lie — or maybe that's just the last of your warmth leaving. The darkness that creeps in from the edges isn't the room. It's deeper than that."*
+> *"The blood won't stop. You press your hand against the wound, but your fingers are too cold, too weak. The cellar floor is warm where you lie — or maybe that's just the last of your warmth leaving."*  
+> Hint: *"A strip of cloth, wrapped tight, might have stopped the bleeding."*
 
-**Poison:**
+**Poison (mild — treatable but untreated):**
+> *"The poison finishes its work. The burning in your veins becomes ice. Your last thought is that somewhere in this place, there was a cure — if only you'd found it in time."*  
+> Hint: *"An antidote for [specific poison] existed somewhere nearby."*
+
+**Poison (lethal — instant):**
 > *"Your body crumples to the cold stone floor. The poison works swiftly — a fire in your veins, then ice, then nothing. Your last thought is of the skull etched on the bottle's label."*  
 *(This text already exists in the engine.)*
 
@@ -215,76 +273,51 @@ Each death cause has unique flavor text. Examples:
 > *"The shivering stopped some time ago. That should worry you, but you can't quite remember why. The snow is so soft. Just rest for a moment..."*
 
 **Infection:**
-> *"The fever took you in the night. Your wound, untreated for too long, brought a sickness that no amount of willpower could fight. The last thing you see is the torchlight dancing on the ceiling, growing dim."*
+> *"The fever took you in the night. Your wound, untreated for too long, brought a sickness that no amount of willpower could fight."*  
+> Hint: *"Clean water on the wound, earlier, might have prevented the infection."*
 
-### 4.3 Recovery Mechanics (Future — Phase 2+)
+### 5.4 Recovery Mechanics (Future)
 
-For V1, death is final (restart the game). For V2, two recovery options are on the table:
-
-#### Option A: Checkpoint Respawn
-- Game auto-saves at room transitions (entering a new room = checkpoint)
-- On death, player restarts from last checkpoint with full HP but injuries cleared
-- Items in inventory are preserved; world state is preserved
-- **Pro:** Forgiving, encourages exploration. **Con:** Reduces stakes.
-
-#### Option B: Near-Death Rescue
-- At 0 HP, player enters "unconscious" state instead of dying
-- If a healing item is in the room or on the player, there's a chance of recovery
-- Recovery costs: wake up with 1 HP, all injuries worsen by one stage
-- **Pro:** Rewards preparation (carry a potion!). **Con:** Complex to implement.
-
-#### Option C: Permadeath with New Game+
-- Death is permanent. Full restart.
-- But: player retains *knowledge* (discovered shortcuts, puzzle solutions)
-- Items/progress lost, but the player is smarter
-- **Pro:** Maximum stakes, matches existing `game_over`. **Con:** Frustrating for casual players.
-
-**Recommendation:** Start with **Option C** (permadeath) — it matches the current engine and creates maximum tension. Implement **Option A** (checkpoints) in V2 when save/load exists. Option B is a design treat for V3.
+For V1, death is final (restart the game). **Recommendation:** Start with permadeath — it matches the current engine and creates maximum tension. Implement checkpoints in V2 when save/load exists.
 
 ---
 
-## 5. Damage Scenarios from Level 1
+## 6. Damage Scenarios from Level 1
 
-These scenarios demonstrate how health and injury interact with existing Level 1 content.
+These scenarios demonstrate how injury-derived health interacts with existing Level 1 content. Note: **no HP numbers are shown to the player** in any scenario.
 
-### Scenario 1: The Blood Writing Chain (Existing Mechanic, Formalized)
+### Scenario 1: The Blood Writing Chain
 
 **Current behavior:** `prick self with pin` → `bleed_ticks = 8` → blood available for writing  
-**With health system:**
+**With injury system:**
 
 ```
 > prick self with pin
-"You press the pin into your fingertip. A bead of dark blood wells up.
- You lose 5 HP." (100 → 95 HP, Tier 4: Scratched)
+"You press the pin into your fingertip. A bead of dark blood wells up."
+(Injury added: pinprick, finger — minor, heals naturally)
 
-> [3 turns later]
-"The pinprick on your finger throbs dully." (Tier 4 reminder)
+> injuries
+"You examine yourself:
+ — A tiny puncture on your fingertip. It stings but it's nothing serious."
 
-> [8 turns later]
+> [8 turns later — injury heals naturally]
 "The bleeding has stopped. The tiny wound is already closing."
-(Bleed_ticks exhausted. No further HP loss — prick is a one-time injury.)
 ```
 
-**Puzzle implication:** Blood writing now has real cost. Pricking yourself 10+ times would push you into Wounded territory. The player must weigh "do I need to write this?" against HP.
+**Puzzle implication:** Blood writing now creates a real (if minor) injury. Pricking yourself many times accumulates minor injuries that shift the narrative tone. The player must weigh "do I need to write this?"
 
 ### Scenario 2: The Knife as Hazard
-
-**Setup:** Player finds knife under bed (existing). Knife has `injury_source` capability.
 
 ```
 > cut self with knife
 "You draw the blade across your palm. Blood flows freely.
- You lose 10 HP." (100 → 90 HP, Tier 4: Scratched)
-"The cut is deep. Blood drips steadily from your hand."
-(Injury: BLEEDING, 3 HP/turn until treated)
+ The cut is deep. Blood drips steadily from your hand."
+(Injuries added: deep cut, hand + bleeding)
 
-> [Turn 1 of bleeding]
-"Blood drips from your hand, spattering the stone floor. (-3 HP)"
-(90 → 87 HP)
-
-> [Turn 2]
-"The bleeding hasn't slowed. Your hand feels cold. (-3 HP)"
-(87 → 84 HP)
+> injuries
+"You examine yourself:
+ — A deep cut across your palm (bleeding). Blood seeps steadily.
+   It won't stop without pressure — something wrapped tight."
 
 > tear cloth from blanket
 "You rip a strip of cloth from the wool blanket."
@@ -292,38 +325,42 @@ These scenarios demonstrate how health and injury interact with existing Level 1
 > bandage hand with cloth
 "You wrap the cloth tightly around your palm. The bleeding slows
  and stops. The makeshift bandage holds." 
-(Bleeding stopped. Injury: CUT → BANDAGED. No more HP drain.)
+(Injury: bleeding → stopped. Deep cut → bandaged.)
+
+> injuries
+"You examine yourself:
+ — A bandaged cut on your palm. The cloth is holding. The sting
+   is fading, but the wound needs time."
 ```
 
-**Puzzle implication:** The knife is both a tool and a hazard. Cutting yourself for blood now requires treatment. The blanket — previously a flavor object — becomes a medical resource.
+**Puzzle implication:** The blanket — previously a flavor object — becomes a medical resource. The `injuries` verb told the player what was wrong ("bleeding... something wrapped tight") and the player figured out cloth → bandage.
 
 ### Scenario 3: Poison Bottle — Preserved Instant Death
-
-**Current behavior:** `taste poison bottle` → instant death → game over  
-**With health system:** *Unchanged.* Poison bypasses HP. This is a design choice.
 
 ```
 > taste poison bottle
 "BITTER! The liquid burns your tongue, your throat, your stomach.
- Your body crumples to the cold stone floor. The poison works swiftly —
- a fire in your veins, then ice, then nothing."
+ Your body crumples to the cold stone floor."
  
 YOU HAVE DIED.
-Cause: Poison ingestion.
+Cause: Lethal poison ingestion.
 Perhaps the skull on the label was a warning.
 ```
 
-### Scenario 4: Window Jump (Puzzle 013 — Courtyard Entry)
-
-**With health system:**
+### Scenario 4: Window Jump → Bruised Legs → Treatment Puzzle
 
 ```
 > jump from window
 "You haul yourself onto the ledge and leap. The ground is further
  than it looked. You hit the cobblestones hard, pain exploding
  through your ankles and knees."
- You lose 15 HP. (100 → 85 HP, Tier 4: Scratched)
- Injury: BRUISED LEGS
+(Injury added: bruised legs)
+
+> injuries
+"You examine yourself:
+ — Badly bruised legs from the fall. Your ankles and knees throb.
+   Moving is painful. This will heal with rest — time and staying 
+   off your feet."
 
 > [In courtyard, trying to climb ivy]
 "You reach for the ivy, but your bruised legs buckle under you.
@@ -332,160 +369,102 @@ Perhaps the skull on the label was a warning.
 > rest
 "You sit against the wall, letting the pain subside.
  After a while, the throbbing eases." 
-(BRUISED LEGS: active → recovering. Climbing re-enabled after 5 turns.)
+(Bruised legs: active → recovering. Climbing re-enabled after rest.)
 ```
 
-**Puzzle implication:** The window jump is no longer free. It creates a temporary physical limitation that affects what the player can do in the courtyard. The "safe" path (finding the key, using the door) avoids this cost.
+### Scenario 5: The Matching Puzzle — Viper Bite
 
-### Scenario 5: Glass Shard Trap
-
-**Setup:** Player breaks vanity mirror (existing). Glass shards appear.
+This scenario demonstrates the CORE puzzle mechanic: injury-specific treatment.
 
 ```
-> take glass shard
-"You pick up a jagged piece of mirror. It bites into your palm.
- You lose 5 HP." (100 → 95 HP)
- Injury: MINOR CUT (hand)
-"Your hand stings where the glass cut you."
+> [Player bitten by viper in cellar passage]
+"Sharp pain lances through your ankle! A snake — quick and dark —
+ slithers away into the shadows. Two puncture marks well with blood."
+(Injury added: viper venom poisoning)
 
-> feel glass shard
-"A wicked shard of mirror, razor-sharp on all edges.
- Your fingers come away slick with blood."
+> injuries
+"You examine yourself:
+ — Two puncture marks on your ankle. The skin around them is turning
+   dark, and a burning numbness is spreading up your calf. This is
+   venom — a specific kind. You need a cure made for this bite, not
+   just any antidote."
+
+> [Player finds a generic antidote]
+> drink antidote
+"You drink the antidote. It's bitter and medicinal — but the burning
+ in your leg doesn't change. This antidote wasn't made for viper venom."
+(Antidote consumed. Injury unchanged. Resource wasted.)
+
+> [Player finds viper antivenom in locked medical kit]
+> drink viper antivenom
+"You drink the dark liquid. It tastes of iron and herbs.
+ Within moments, the burning numbness in your leg begins to recede.
+ The venom is neutralizing. You'll live."
+(Injury: viper venom → neutralized → will heal over time)
 ```
 
-**Puzzle implication:** Glass shard becomes a risk/reward object. It's useful (cutting_edge capability) but hurts to handle. A piece of cloth wrapped around it (future: `wrap shard with cloth`) would prevent the injury — a mini-puzzle teaching "tools need preparation."
+**THIS is the puzzle.** The generic antidote failed. The player had to find the *specific* cure. The `injuries` verb hinted at it: "a specific kind... a cure made for this bite."
 
----
-
-## 6. The `status` Command
-
-### 6.1 Design
-
-A new command lets the player check their condition. It does NOT show a number — it returns *narrative assessment*.
+### Scenario 6: Nested Inventory Under Pressure
 
 ```
-> status
-"You feel strong and alert. No injuries trouble you."
-(Tier 5: Full Health)
+> [Player is poisoned and knows antivenom is in a medical kit]
+> open satchel
+"You open the leather satchel. Inside: a locked medical kit, a candle stub,
+ some twine."
 
-> status
-"Your hand aches where the glass cut you. A cloth bandage,
- slightly bloodstained, is wrapped around your palm. Otherwise,
- you feel reasonably well."
-(Tier 4: Scratched, one bandaged injury)
+> open medical kit
+"The medical kit is locked. A small brass keyhole stares back at you."
 
-> status
-"You are in bad shape. Your side throbs where the blade caught you,
- and the makeshift bandage is soaked through. Your head swims
- when you stand too quickly. You need proper treatment — soon."
-(Tier 2: Critical, untreated slash wound)
+> injuries
+"You examine yourself:
+ — The venom is spreading. Your foot is numb now. The burning reaches
+   your knee. You are running out of time."
 
-> status
-"Everything hurts. Your vision tunnels with each heartbeat.
- Standing takes an act of will. You are dying."
-(Tier 1: Near-Death)
+> [Player must find the key to the medical kit, which is inside 
+   the satchel's inner pocket...]
 ```
 
-### 6.2 Optional: Numeric Mode
-
-If Wayne decides players should see numbers, a `--verbose` flag or `health` command could show:
-
-```
-> health
-HP: 42/100 (Wounded)
-Active injuries: Slash wound (bleeding, -3 HP/turn), Bruised ribs
-```
-
-**Recommendation:** Keep narrative-only as default. Numbers as a debug/accessibility option.
+**Puzzle implication:** Nested containers create layers of access under time pressure. The healing item exists — but reaching it IS the puzzle.
 
 ---
 
 ## 7. Interaction with Game Time
 
-### 7.1 Tick-Based Damage
+### 7.1 Injury Ticking
 
-Over-time injuries (bleeding, poison, cold) deal damage per game tick. The engine already has `tick_timers()` in the game loop — injury ticks plug into the same mechanism.
+Over-time injuries (bleeding, poison, infection) worsen per game tick. The engine already has `tick_timers()` in the game loop — injury ticks plug into the same mechanism.
 
 **Current:** Each command = 1 tick = 360 game seconds  
-**With injuries:** Each tick also processes `player.active_injuries`, decrementing timers and applying per-tick damage.
+**With injuries:** Each tick processes the player's injury list, advancing over-time injuries and checking for cascading effects.
 
-### 7.2 Sleep and Health
+### 7.2 Sleep and Injuries
 
-The existing SLEEP verb advances the game clock. With health:
-- **Sleeping while injured:** Over-time injuries continue ticking during sleep. Sleeping while bleeding is dangerous — you might not wake up.
-- **Sleeping while healthy:** Could provide minor HP regeneration (5–10 HP per sleep hour). Design choice: rest as healing mechanic.
-- **Sleeping while critical:** "You lie down, but the pain won't let you rest. Sleep eludes you." (Sleep blocked at Tier 1–2 unless medicated.)
+- **Sleeping while bleeding:** Bleeding continues. The player might not wake up. "You drift off... and the blood doesn't stop."
+- **Sleeping while treated:** Injuries heal faster during rest. The narrative acknowledges recovery: "You wake feeling better. The wound is closing."
+- **Sleeping with serious untreated injuries:** Sleep may be blocked. "You lie down, but the pain in your side won't let you rest."
 
 ### 7.3 Time Pressure from Injuries
 
-Over-time injuries create **implicit turn limits**:
+Over-time injuries create **implicit turn limits** the player feels through narrative, not numbers:
 
-| Injury | HP Drain | Turns to Death (from 100 HP) | Turns to Death (from 50 HP) |
-|--------|----------|-----------------------------|-----------------------------|
-| Bleeding (minor) | 2/turn | 50 turns | 25 turns |
-| Bleeding (major) | 5/turn | 20 turns | 10 turns |
-| Mild poison | 5/turn | 20 turns | 10 turns |
-| Infection (early) | 1/turn | 100 turns | 50 turns |
-| Infection (late) | 3/turn (escalating) | ~33 turns | ~17 turns |
-| Extreme cold | 2/turn | 50 turns | 25 turns |
+| Injury | Approximate Urgency | What the Player Sees |
+|--------|---------------------|---------------------|
+| Minor bleeding | Many turns (~50) | Slow mentions of blood. "The cut still bleeds, a slow trickle." |
+| Major bleeding | Few turns (~20) | Urgent, desperate. "Blood pours from the gash. You're getting dizzy." |
+| Mild poison | Moderate turns (~20) | Waves of nausea, burning. "The poison churns in your gut." |
+| Viper venom | Moderate turns (~15) | Spreading numbness. "The darkness around the bite is spreading up your leg." |
+| Infection (early) | Many turns (~100) | Subtle warmth, swelling. Easy to ignore — and that's the danger. |
+| Infection (late) | Few turns (~15) | Fever, delirium. "Your thoughts scatter. The wound is killing you." |
 
-**Design note:** These create natural puzzle urgency without artificial timers. The player doesn't see a countdown — they see their character deteriorating and feel the need to act.
-
----
-
-## 8. Engine Integration Notes (For Bart)
-
-### 8.1 Player State Extension
-
-```lua
-ctx.player.hp = 100
-ctx.player.max_hp = 100
-ctx.player.injuries = {}  -- table of active injury objects, each with its own FSM
-ctx.player.health_tier = 5  -- computed from HP, drives narrative
-```
-
-### 8.2 Tick Integration
-
-The game loop's existing tick cycle (after verb dispatch, after FSM tick, after timer tick) gets a new phase:
-
-```
-command → parse → dispatch verb → FSM tick → timer tick → INJURY TICK → game_over check
-```
-
-Injury tick: iterate `player.injuries`, apply per-tick effects (HP drain, status changes), check for auto-transitions (bleeding → infection if untreated for N turns).
-
-### 8.3 Narrative Hook
-
-A new function in the display system checks health tier after each command and optionally appends a health-state message:
-
-```lua
-function health_narrative(player)
-  local tier = compute_health_tier(player.hp)
-  if tier <= 3 then
-    return tier_messages[tier][random_index]
-  end
-  return nil  -- no message at full health
-end
-```
-
-### 8.4 Verb Guard Integration
-
-Strenuous actions check health tier before executing:
-
-```lua
--- In climb verb handler
-if ctx.player.health_tier <= 2 then
-  print("You try to climb, but your body won't cooperate. You're too weak.")
-  return
-end
-```
+**Design note:** The player doesn't see turn counts. They see the prose deteriorating and feel the urgency. The `injuries` verb shows worsening descriptions each time they check.
 
 ---
 
 ## See Also
 
-- [injury-catalog.md](./injury-catalog.md) — Full catalog of injury types and their FSMs
-- [healing-items.md](./healing-items.md) — How healing objects work
+- [injury-catalog.md](./injury-catalog.md) — Full catalog of injury types, their cures, and discovery clues
+- [healing-items.md](./healing-items.md) — Each healing item and exactly which injuries it treats
 - [README.md](./README.md) — System overview and design principles
-- `docs/design/game-design-foundations.md` §4 — Original player model (hp, max_hp, stats)
+- `docs/design/game-design-foundations.md` §4 — Original player model
 - `docs/design/player-skills.md` §8 — Blood writing (existing injury → resource chain)

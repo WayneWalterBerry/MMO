@@ -580,3 +580,53 @@ Designed the complete Player Health & Injury gameplay system across 4 design doc
 - **GOAP should NOT auto-heal.** GOAP can help find/prepare healing items but should never auto-apply treatment. The player must choose when and how to heal — this is the puzzle.
 - **Wine (Puzzle 016) is the first restorative.** The existing DRINK interaction for wine bottles becomes a 5 HP heal + warmth effect. Tutorial gap fix becomes healing system foundation.
 - **Injury cascading (cut → infection if untreated) creates multi-stage puzzles.** This is the "degenerative" pattern that makes health a long-term concern, not just an immediate reaction to damage.
+
+---
+
+### Session: Player Design Docs Revision (Directive 2026-03-21T19:17Z)
+**Date:** 2026-07-24  
+**Requested by:** Wayne Berry  
+**Directive:** copilot-directive-2026-03-21T19-17Z.md
+
+#### What Changed
+Revised all four docs in `docs/design/player/` to incorporate Wayne's directives on derived health, injury-specific healing, and the `injuries` verb.
+
+**README.md** — Rewrote core design principles. Health is derived from injuries, not stored. Added injury-specific healing as core puzzle principle. Added nested inventory (containers) as principle. Removed HP-centric implementation phases. Removed "health visibility" open question (answered: narrative only, always).
+
+**health-system.md** — Major overhaul:
+- Removed the "100 HP scale" with numeric tiers (Tier 5=100, Tier 4=75-99, etc.)
+- Replaced with injury-severity narrative levels (Uninjured → Scratched → Hurt → Badly Wounded → Dying)
+- Added Section 2: the `injuries` verb — full design with example output at every severity level, embedded discovery clues, comparison with other health verbs
+- Narrative voice now tied to specific injuries, not HP ranges
+- Damage model now produces INJURIES (not "X HP" numbers). Table shows injury created, not damage dealt.
+- Added poison specificity: viper venom, nightshade poisoning as distinct from generic
+- Death sequence now includes treatment hints ("a bandage might have saved you")
+- Scenarios rewritten: no HP numbers shown to player. Added Scenario 5 (viper bite — the core matching puzzle) and Scenario 6 (nested container emergency)
+- Removed Section 8 "Engine Integration Notes" (Bart's domain, not design)
+- Removed Section 6.2 "Optional Numeric Mode" (contradicts derived health principle)
+
+**injury-catalog.md** — Added "Cured By" to every injury:
+- Each injury entry now has `Cured By` field listing SPECIFIC treatment and `Wrong Treatments` listing what fails
+- Added new injuries: Viper Venom Poisoning (cured ONLY by viper antivenom), Nightshade Poisoning (cured ONLY by nightshade antidote)
+- Added "Discovery Clues" for each injury — how the player figures out the treatment from `injuries` verb output
+- Injury stacking example now uses `injuries` verb output format
+- Added Pattern 5 (Diagnosis Puzzle) and Pattern 6 (Nested Container Emergency) to puzzle design patterns
+- Implementation priority table now includes "Specific Cure" column
+
+**healing-items.md** — Rewrote around injury-specific matching:
+- Eliminated "Restoratives" category (healing potion, food, water, wine as HP restorers). No item "restores HP."
+- Every item now has `Treats` field (exactly which injuries) and `Does NOT Treat` field (what it can't cure)
+- Added "What Happens If Used on Wrong Injury" scenarios showing wasted items
+- Added viper antivenom, nightshade antidote as specific poison cures
+- Added Section 8: The Treatment Matching Table — master reference showing correct cure for every injury
+- Replaced "Healing Spectrum" (common→rare, weak→powerful in HP terms) with "Treatment Specificity Scale" (broad→targeted→precise)
+- Anti-patterns updated: "healing potion that restores 30 HP" and "antidote that cures all poisons" are now explicitly forbidden
+- Level 1 healing inventory reformulated: no potions/antidotes, just cloth + water + rest
+
+#### Key Design Decisions Made
+1. **`injuries` verb replaces `status` command** — the primary way players read their health is a body-assessment verb that mirrors `inventory`
+2. **Discovery clues embedded in injury descriptions** — the `injuries` output subtly hints at treatment without naming items
+3. **Wrong-treatment feedback teaches** — using wrong item gives a failure message that hints WHY it failed
+4. **Death hints include treatment** — cause-of-death text tells the player what SPECIFIC cure might have saved them
+5. **Viper venom + nightshade = the matching puzzle exemplars** — two specific poisons that generic antidote cannot cure, demonstrating the core mechanic
+6. **Nested container pressure** — the right cure exists but is behind container layers, adding urgency

@@ -5,7 +5,9 @@ Puzzle Designer and Conceptualizer — the specialist who devises ways to use ob
 
 ## Scope
 - Design puzzles that chain objects together in realistic, satisfying ways
+- Design puzzles that use injuries as mechanics: time pressure (bleeding out during puzzle), capability gates (too hurt to climb/jump), treatment matching (finding the right antidote for a specific poison), injury-as-discovery (getting hurt teaches player about the world)
 - Conceptualize new objects specifically needed for puzzle mechanics (hand off to Flanders for implementation)
+- Conceptualize new injury types needed for puzzle mechanics (work with Flanders for implementation)
 - Research puzzles in other games (text adventures, immersive sims, escape rooms), books, and real-life scenarios
 - Design GOAP prerequisite chains that create "aha!" moments for players
 - Ensure puzzles respect the 8 Core Architecture Principles — all puzzle logic lives in object metadata, not engine code
@@ -68,7 +70,9 @@ Rating system design doc: `docs/design/puzzles/`
 - `docs/architecture/objects/core-principles.md` — THE constitution
 - `docs/architecture/engine/intelligent-parser.md` — GOAP parser (prerequisite chains)
 - `docs/architecture/engine/event-handlers/` — Available mechanics (wind_effect, etc.) — **Read this to see what hooks you can wire into puzzle metadata**
+- `docs/architecture/player/injuries.md` — Injury system architecture and implementation details
 - `docs/design/` — game design documents
+- `docs/design/injuries/` — injury design templates and mechanics
 - `docs/objects/` — object design documents
 - `src/meta/objects/` — existing object implementations (read-only reference)
 - `resources/research/competitors/` — competitor analysis

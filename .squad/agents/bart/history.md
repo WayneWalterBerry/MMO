@@ -501,3 +501,37 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 - Degenerative damage needs a cap (max_damage) — without it, infections become instantly fatal after enough turns
 - Dual-sided healing declaration (object declares targets_injury, injury declares healing_interactions) provides both convenience and safety
 - The engine loop needs a clear phase order: verb dispatch → object tick → injury tick → death check. Injury ticking after object ticking prevents one-frame desync
+
+### Session: Player Architecture Revision — Derived Health, First-Class Inventory (2026-07-22)
+**Status:** ✅ COMPLETE
+**Directive:** Wayne directive 2026-03-21T19:17Z — Player architecture refinements
+
+**What Changed:**
+1. **health.md** — Full rewrite. Health is now DERIVED (max_health - sum(injury.damage)), not stored. Removed player.health field. Removed old damage pipeline that mutated health directly. Healing now removes injury damage instead of "adding HP." Death check uses compute_health().
+2. **injuries.md** — Full rewrite. Injury-specific healing: antidote-nightshade cures poisoned-nightshade, NOT poisoned-spider-venom. Dual-side encoding (object cures + injury healing_interactions). Injury types are now specific (e.g., poisoned-nightshade.lua not poisoned.lua). Each injury carries .damage field for derived health computation.
+3. **README.md** — Updated canonical player.lua structure. Added inventory as first-class nested array. Removed health field. Added inventory subsystem link. Revised design philosophy (7 principles).
+4. **inventory.md** — NEW file. First-class inventory architecture: nested array in player.lua, container nesting, engine mutations (pickup/drop/put-in/take-out), recursive traversal, inventory verb reads directly from array, integration with healing and verb systems.
+
+**Key Architectural Shifts:**
+- player.health field is GONE. Health is computed on read: max_health - sum(injury.damage).
+- Healing doesn't "add HP" — it removes injuries, which reduces the damage sum, which raises derived health.
+- Inventory is a nested array in player.lua. Engine mutates directly. No external system.
+- Injury types are specific, not generic. poisoned-nightshade not poisoned. Enables injury-specific healing.
+- player.lua is THE single source of truth. Engine reads/mutates only this file.
+
+**Decisions:**
+- D-HEALTH001 revised: Health is derived, not stored
+- D-HEALTH002 revised: No generic "heal N HP"
+- D-HEALTH003 new: Health computed on read
+- D-HEALTH004 new: Damage recorded on injury instances
+- D-INJURY003 revised: Healing matches by EXACT injury type
+- D-INJURY007 new: Each injury carries .damage field
+- D-INJURY008 new: Dual-side healing validation
+- D-INJURY009 new: Injury types are specific, not generic
+- D-INV001–D-INV006: First-class inventory decisions
+
+**Learnings:**
+- Derived health eliminates an entire class of sync bugs (health says 50 but injuries total 80 damage). Single source of truth pays off.
+- Injury-specific healing creates natural puzzle pressure — finding the RIGHT remedy, not just ANY remedy.
+- Nested inventory (containers within containers) needs recursive traversal but the code stays simple.
+- The compute_health() function is called on every read, which is fine for a text adventure (no performance concern).
