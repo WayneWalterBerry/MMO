@@ -2842,6 +2842,7 @@ function verbs.create()
     end
 
     handlers["ignite"] = handlers["light"]
+    handlers["relight"] = handlers["light"]
 
     ---------------------------------------------------------------------------
     -- EXTINGUISH
@@ -3965,7 +3966,7 @@ function verbs.create()
                 end
             end
             if target_trans then
-                local trans = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {})
+                local trans = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {}, "drink")
                 if trans then
                     print(trans.message or ("You drink from " .. (obj.name or obj.id) .. "."))
                     if trans.effect == "poison" then
@@ -4017,7 +4018,7 @@ function verbs.create()
                 end
             end
             if target_trans then
-                local trans = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {})
+                local trans = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {}, "pour")
                 if trans then
                     print(trans.message or ("You pour out " .. (obj.name or obj.id) .. "."))
                 else

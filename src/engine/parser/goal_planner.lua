@@ -30,6 +30,24 @@ local function strip_articles(noun)
     return noun:lower():gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
 end
 
+--- Comprehensive check: is an object in a terminal/spent/consumed state?
+-- Covers _state == "spent", state.terminal, consumable flag, and "useless" category.
+local function is_spent_or_terminal(obj)
+    if not obj then return true end
+    if obj._state == "spent" then return true end
+    if obj.consumable == true then return true end
+    if obj.states and obj._state then
+        local state_data = obj.states[obj._state]
+        if state_data and state_data.terminal then return true end
+    end
+    if obj.categories then
+        for _, cat in ipairs(obj.categories) do
+            if cat == "useless" then return true end
+        end
+    end
+    return false
+end
+
 ---------------------------------------------------------------------------
 -- State queries
 ---------------------------------------------------------------------------
@@ -172,7 +190,7 @@ end
 ---------------------------------------------------------------------------
 local function try_plan_match(entry, ctx, visited)
     local m = entry.obj
-    if m._state == "spent" then return nil end
+    if is_spent_or_terminal(m) then return nil end
     local key = m.id .. ":fire"
     if visited[key] then return nil end
     visited[key] = true
@@ -184,6 +202,22 @@ local function try_plan_match(entry, ctx, visited)
             steps[#steps + 1] = { verb = "take", noun = "match" }
         end
         return steps
+    end
+
+    -- Count spent matches preceding the fresh one in a container.
+    -- The take verb grabs the first keyword-matching item, so spent
+    -- matches must be removed before the fresh one can be taken.
+    local function spent_before_fresh(parent)
+        if not parent or not parent.contents then return 0 end
+        local count = 0
+        for _, cid in ipairs(parent.contents) do
+            if cid == m.id then break end
+            local item = ctx.registry:get(cid)
+            if item and kw_match(item, "match") and is_spent_or_terminal(item) then
+                count = count + 1
+            end
+        end
+        return count
     end
 
     -- Nested match: inside a container that is inside a surface (e.g., matchbox in nightstand)
@@ -200,14 +234,18 @@ local function try_plan_match(entry, ctx, visited)
                 or entry.parent.id
             steps[#steps + 1] = { verb = "open", noun = pn }
         end
-        -- Take the match from the container
+        -- Clear spent matches then take the fresh one
         if entry.parent then
             local pn = entry.parent.keywords and entry.parent.keywords[1]
                 or entry.parent.id
+            for _ = 1, spent_before_fresh(entry.parent) do
+                steps[#steps + 1] = { verb = "take", noun = "match from " .. pn }
+                steps[#steps + 1] = { verb = "drop", noun = "match" }
+            end
             steps[#steps + 1] = { verb = "take", noun = "match from " .. pn }
         end
     elseif entry.where == "container" then
-        -- Match in a direct container (already partially handled)
+        -- Match in a direct container
         if not entry.accessible and entry.parent then
             local pn = entry.parent.keywords and entry.parent.keywords[1]
                 or entry.parent.id
@@ -216,6 +254,11 @@ local function try_plan_match(entry, ctx, visited)
         if entry.parent then
             local pn = entry.parent.keywords and entry.parent.keywords[1]
                 or entry.parent.id
+            -- Clear spent matches then take the fresh one
+            for _ = 1, spent_before_fresh(entry.parent) do
+                steps[#steps + 1] = { verb = "take", noun = "match from " .. pn }
+                steps[#steps + 1] = { verb = "drop", noun = "match" }
+            end
             steps[#steps + 1] = { verb = "take", noun = "match from " .. pn }
         else
             steps[#steps + 1] = { verb = "take", noun = "match" }
@@ -240,19 +283,55 @@ local function plan_for_tool(capability, ctx, visited, depth)
     visited = visited or {}
 
     if capability == "fire_source" then
-        -- Drop any spent matches from hands (they're useless, just blocking a slot)
+        -- Drop any spent/terminal matches from hands
         local spent_drops = {}
         for i = 1, 2 do
             local id = ctx.player.hands[i]
             if id then
                 local obj = ctx.registry:get(id)
-                if obj and kw_match(obj, "match") and obj._state == "spent" then
+                if obj and kw_match(obj, "match") and is_spent_or_terminal(obj) then
                     spent_drops[#spent_drops + 1] = { verb = "drop", noun = "match" }
                 end
             end
         end
 
         local candidates = find_all(ctx, "match")
+
+        -- Check if any viable candidate needs spent-match container cleanup
+        local needs_free_hand = false
+        if #spent_drops == 0 and ctx.player.hands[1] and ctx.player.hands[2] then
+            for _, entry in ipairs(candidates) do
+                if not is_spent_or_terminal(entry.obj)
+                    and (entry.where == "container" or entry.where == "nested")
+                    and entry.parent and entry.parent.contents then
+                    for _, cid in ipairs(entry.parent.contents) do
+                        if cid == entry.obj.id then break end
+                        local item = ctx.registry:get(cid)
+                        if item and kw_match(item, "match") and is_spent_or_terminal(item) then
+                            needs_free_hand = true
+                            break
+                        end
+                    end
+                    if needs_free_hand then break end
+                end
+            end
+        end
+
+        -- Free a hand by dropping a non-container held item
+        if needs_free_hand then
+            for i = 1, 2 do
+                local id = ctx.player.hands[i]
+                if id then
+                    local obj = ctx.registry:get(id)
+                    if obj and not (obj.container and obj.contents) then
+                        local n = obj.keywords and obj.keywords[1] or obj.id
+                        spent_drops[#spent_drops + 1] = { verb = "drop", noun = n }
+                        break
+                    end
+                end
+            end
+        end
+
         for _, entry in ipairs(candidates) do
             local result = try_plan_match(entry, ctx, visited)
             if result then
