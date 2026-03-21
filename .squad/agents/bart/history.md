@@ -196,3 +196,32 @@ Aligns with user directive: Dwarf Fortress property-bag architecture validates t
 - **D-MUTATE-PROPOSAL:** Generic `mutate` field on FSM transitions
 - **D-PRINCIPLE-GOVERNANCE:** Core principles are hard constraints
 - **D-DF-ARCHITECTURE:** Dwarf Fortress reference model (property-bag over special-casing)
+
+## Level Data Architecture (2026-07-21)
+
+**Status:** ✅ COMPLETE  
+**Requested by:** Wayne "Effe" Berry
+
+### What Was Built
+
+Designed and implemented the level data architecture — a two-layer system for grouping rooms into levels with completion criteria and boundary definitions.
+
+**Deliverables:**
+
+1. **`src/meta/levels/level-01.lua`** — Level 1 definition file (The Awakening). Contains room list, completion criteria (reach hallway from deep-cellar OR courtyard), boundaries (entry: start-room, exit: hallway→north→Level 2), and restricted_objects placeholder.
+
+2. **`level` field on all 7 room .lua files** — Added `level = { number = 1, name = "The Awakening" }` to: start-room, cellar, storage-cellar, deep-cellar, hallway, courtyard, crypt. Smithers' status bar can now read `room.level` directly; the hardcoded `LEVEL_MAP` fallback is obsolete.
+
+3. **`docs/architecture/engine/levels.md`** — Full architecture doc covering both data sources, schema definitions, completion criteria format, boundary enforcement model, and future engine integration points.
+
+**Design Decisions (2 filed):**
+- D-LEVEL001: Two-layer level data model (room field + level definition file)
+- D-LEVEL002: Completion criteria are declarative OR'd conditions; restricted objects are advisory (not auto-enforced)
+
+**Key Design Choices:**
+- Courtyard is Level 1 (per CBG's master plan), not Level 2 (corrects Smithers' interim LEVEL_MAP)
+- Completion criteria use `reach_room` type with optional `from` constraint
+- `restricted_objects` is advisory — designers must build diegetic removal puzzles (per Wayne's directive in level-design-considerations.md)
+- Level file is source of truth; room-level field is denormalized for fast UI reads
+
+**Validated:** Game starts cleanly with `lua src/main.lua --no-ui --room start-room`. All 7 rooms load with level fields intact.

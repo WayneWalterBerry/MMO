@@ -4,6 +4,7 @@ return {
 
     id = "cellar",
     name = "The Cellar",
+    level = { number = 1, name = "The Awakening" },
     keywords = {"cellar", "basement", "underground", "cellar room"},
     description = "You stand at the foot of a narrow stone stairway in a low-ceilinged cellar. The walls are rough-hewn granite, slick with moisture that catches what little light there is. Water drips somewhere in the darkness, a slow and patient rhythm. The air is cold and heavy, thick with the smell of damp earth, old stone, and something faintly metallic. Cobwebs hang in thick curtains from the ceiling, swaying in a draft you cannot feel.",
 
@@ -35,9 +36,9 @@ return {
             one_way = false,
         },
         north = {
-            target = "deep-cellar",
+            target = "storage-cellar",
             type = "door",
-            passage_id = "cellar-deep-door",
+            passage_id = "cellar-storage-door",
             name = "a heavy iron-bound door",
             keywords = {"door", "iron door", "heavy door", "north door", "iron-bound door"},
             description = "A heavy door of black iron-bound oak stands against the north wall. A massive padlock secures it shut. Whatever lies beyond, someone went to great lengths to keep it sealed.",
