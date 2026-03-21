@@ -21,6 +21,7 @@ return {
     guid = "d40b15e6-7d64-489e-9324-ea00fb915602",
 
     id = "nightstand",
+    material = "oak",
     keywords = {"nightstand", "night stand", "bedside table", "side table", "small table"},
     size = 4,
     weight = 15,
@@ -123,10 +124,16 @@ return {
         {
             from = "closed_with_drawer", to = "open_with_drawer", verb = "open",
             message = "You pull the small drawer open. It slides out with a soft wooden scrape.",
+            mutate = {
+                keywords = { add = "open" },
+            },
         },
         {
             from = "open_with_drawer", to = "closed_with_drawer", verb = "close",
             message = "You push the drawer shut with a click.",
+            mutate = {
+                keywords = { remove = "open" },
+            },
         },
         -- Detach drawer (open state only — must open before pulling out)
         {
@@ -134,6 +141,9 @@ return {
             trigger = "detach_part",
             part_id = "drawer",
             message = "You grip the drawer and pull it free from the nightstand. It comes loose with a scrape of wood on wood.",
+            mutate = {
+                weight = function(w) return w - 2 end,
+            },
         },
         -- Reattach drawer
         {
@@ -141,12 +151,18 @@ return {
             trigger = "reattach_part",
             part_id = "drawer",
             message = "You slide the drawer back into the nightstand. It fits snugly with a satisfying click.",
+            mutate = {
+                weight = function(w) return w + 2 end,
+            },
         },
         {
             from = "open_without_drawer", to = "open_with_drawer", verb = "reattach_part",
             trigger = "reattach_part",
             part_id = "drawer",
             message = "You slide the drawer back into the nightstand. It fits with a soft scrape.",
+            mutate = {
+                weight = function(w) return w + 2 end,
+            },
         },
     },
 

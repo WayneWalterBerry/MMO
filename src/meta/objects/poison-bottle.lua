@@ -5,6 +5,7 @@ return {
     guid = "a1043287-aeeb-4eb7-91c4-d0fcd11f86e3",
 
     id = "poison-bottle",
+    material = "glass",
     keywords = {"bottle", "glass bottle", "poison", "vial", "potion", "flask", "small bottle", "poison bottle", "poison-bottle"},
     size = 1,
     weight = 0.4,
@@ -75,6 +76,10 @@ return {
             from = "sealed", to = "open", verb = "open",
             aliases = {"uncork", "unstop"},
             message = "You pry the cork free with a soft pop. A wisp of sickly green vapor curls from the bottle's mouth.",
+            mutate = {
+                weight = function(w) return w - 0.05 end,
+                keywords = { add = "uncorked" },
+            },
         },
         -- Detach cork (sealed state) — creates cork object
         {
@@ -82,17 +87,31 @@ return {
             trigger = "detach_part",
             part_id = "cork",
             message = "You twist and pull the cork free with a soft pop. A wisp of sickly green vapor curls from the bottle's mouth.",
+            mutate = {
+                weight = function(w) return w - 0.05 end,
+                keywords = { add = "uncorked" },
+            },
         },
         {
             from = "open", to = "empty", verb = "drink",
             aliases = {"quaff", "sip", "gulp"},
             message = "You raise the bottle to your lips. The liquid burns like liquid fire. Your vision swims, your knees buckle, and the world goes dark...",
             effect = "poison",
+            mutate = {
+                weight = 0.1,
+                categories = { remove = "dangerous" },
+                keywords = { add = "empty" },
+            },
         },
         {
             from = "open", to = "empty", verb = "pour",
             aliases = {"spill", "dump"},
             message = "You tip the bottle. The green liquid pours out, hissing where it touches the stone floor. A thin vapor rises, and then it is gone.",
+            mutate = {
+                weight = 0.1,
+                categories = { remove = "dangerous" },
+                keywords = { add = "empty" },
+            },
         },
     },
 

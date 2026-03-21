@@ -1,6 +1,7 @@
 return {
     guid = "b8e37cb6-cba7-48a6-bec9-5bca5f53b73c",
     id = "bed",
+    material = "wood",
     name = "a large four-poster bed",
     keywords = {"bed", "four-poster", "poster bed", "four poster", "mattress", "bedframe"},
     room_presence = "A massive four-poster bed dominates the center of the room, its heavy curtains hanging in moth-eaten folds.",

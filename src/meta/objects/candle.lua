@@ -5,6 +5,7 @@ return {
     guid = "992df7f3-1b8e-4164-939a-3415f8f6ffe3",
 
     id = "candle",
+    material = "wax",
     keywords = {"candle", "tallow", "candle stub", "tallow candle"},
     size = 1,
     weight = 1,
@@ -110,6 +111,10 @@ return {
             from = "lit", to = "extinguished", verb = "extinguish",
             aliases = {"blow", "put out", "snuff"},
             message = "You blow out the candle. A thin trail of smoke rises from the wick. Darkness closes in.",
+            mutate = {
+                weight = function(w) return math.max(w * 0.7, 0.1) end,
+                keywords = { add = "half-burned" },
+            },
         },
         {
             from = "extinguished", to = "lit", verb = "light",
@@ -122,6 +127,12 @@ return {
             from = "lit", to = "spent", trigger = "auto",
             condition = "timer_expired",
             message = "The candle flame gutters, sputters, and dies with a final hiss. The last of the tallow is consumed. Darkness returns, absolute and complete.",
+            mutate = {
+                weight = 0.05,
+                size = 0,
+                keywords = { add = "nub" },
+                categories = { remove = "light source" },
+            },
         },
     },
 

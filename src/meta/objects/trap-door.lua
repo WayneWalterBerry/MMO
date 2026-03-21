@@ -51,7 +51,11 @@ return {
         { from = "hidden", to = "revealed", verb = "reveal", trigger = "reveal",
           message = "" },
         { from = "revealed", to = "open", verb = "open",
-          message = "You grasp the iron ring and heave. The trap door swings open with a groan of old hinges, revealing a narrow stone stairway spiraling down into darkness." },
+          message = "You grasp the iron ring and heave. The trap door swings open with a groan of old hinges, revealing a narrow stone stairway spiraling down into darkness.",
+          mutate = {
+              keywords = { add = "open" },
+          },
+        },
     },
 
     mutations = {},

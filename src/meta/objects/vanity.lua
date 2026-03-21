@@ -4,6 +4,7 @@ return {
     guid = "eda1257d-8240-4c75-9c1b-a7be349a60f5",
 
     id = "vanity",
+    material = "oak",
     keywords = {"vanity", "mirror", "vanity mirror", "dressing table", "desk", "table", "looking glass", "oak vanity"},
     size = 8,
     weight = 40,
@@ -165,30 +166,48 @@ return {
         {
             from = "closed", to = "open", verb = "open",
             message = "You pull the brass handle. The drawer slides open with a soft scrape, releasing a breath of old perfume.",
+            mutate = {
+                keywords = { add = "open" },
+            },
         },
         {
             from = "open", to = "closed", verb = "close",
             message = "You push the drawer shut with a click.",
+            mutate = {
+                keywords = { remove = "open" },
+            },
         },
         {
             from = "closed_broken", to = "open_broken", verb = "open",
             message = "You pull the drawer open, careful to avoid the glass shards on the surface.",
+            mutate = {
+                keywords = { add = "open" },
+            },
         },
         {
             from = "open_broken", to = "closed_broken", verb = "close",
             message = "You push the drawer shut, wincing as glass crunches under your fingers.",
+            mutate = {
+                keywords = { remove = "open" },
+            },
         },
         {
             from = "closed", to = "closed_broken", verb = "break",
             aliases = {"smash", "shatter", "break_mirror"},
             spawns = {"glass-shard"},
             message = "You drive your fist into the mirror. It shatters with a crystalline scream, shards cascading across the vanity's surface. Seven years bad luck.",
+            mutate = {
+                keywords = { add = "broken" },
+            },
         },
         {
             from = "open", to = "open_broken", verb = "break",
             aliases = {"smash", "shatter", "break_mirror"},
             spawns = {"glass-shard"},
             message = "You drive your fist into the mirror. It shatters with a crystalline scream, shards cascading across the vanity's surface and into the open drawer. Seven years bad luck.",
+            mutate = {
+                keywords = { add = "broken" },
+            },
         },
     },
 }

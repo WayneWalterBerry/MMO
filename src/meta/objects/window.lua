@@ -3,6 +3,7 @@
 return {
     guid = "4ecd1058-5cbe-4601-a98e-c994631f7d6b",
     id = "window",
+    material = "glass",
     keywords = {"window", "glass", "pane", "leaded glass"},
     room_presence = "A tall leaded glass window is set deep in the stone of the far wall.",
 
@@ -53,10 +54,18 @@ return {
         {
             from = "closed", to = "open", verb = "open",
             message = "You unlatch the iron catch and push the window open. Cool air rushes in, carrying the smell of rain and chimney smoke.",
+            mutate = {
+                keywords = { add = "open" },
+                categories = { add = "ventilation" },
+            },
         },
         {
             from = "open", to = "closed", verb = "close",
             message = "You pull the window shut and latch it. The sounds of the outside world are muffled once more.",
+            mutate = {
+                keywords = { remove = "open" },
+                categories = { remove = "ventilation" },
+            },
         },
     },
 

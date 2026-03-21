@@ -5,6 +5,7 @@ return {
     guid = "009b0347-2ba3-45d1-a733-7a587ad1f5c9",
 
     id = "match",
+    material = "wood",
     keywords = {"match", "stick", "matchstick", "lucifer", "wooden match"},
     size = 1,
     weight = 0.01,
@@ -70,16 +71,29 @@ return {
             requires_property = "has_striker",
             message = "You drag the match head across the striker strip. It sputters once, twice -- then catches with a sharp hiss and a curl of sulphur smoke. A tiny flame dances at the tip.",
             fail_message = "You need a rough surface to strike it on. A matchbox striker, perhaps.",
+            mutate = {
+                keywords = { add = "burning" },
+            },
         },
         {
             from = "lit", to = "spent", verb = "extinguish",
             aliases = {"blow", "put out"},
             message = "You blow out the match. The blackened head crumbles. It's useless now.",
+            mutate = {
+                weight = 0.005,
+                keywords = { add = "blackened" },
+                categories = { add = "useless" },
+            },
         },
         {
             from = "lit", to = "spent", trigger = "auto",
             condition = "timer_expired",
             message = "The match flame reaches your fingers and dies. You drop the blackened stub.",
+            mutate = {
+                weight = 0.005,
+                keywords = { add = "blackened" },
+                categories = { add = "useless" },
+            },
         },
     },
 

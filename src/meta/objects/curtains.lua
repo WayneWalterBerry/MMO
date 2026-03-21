@@ -4,6 +4,7 @@ return {
     guid = "cc981807-a74e-4ecc-8d52-903cc4fc5bd6",
 
     id = "curtains",
+    material = "velvet",
     keywords = {"curtains", "drapes", "curtain", "velvet", "window covering"},
     size = 4,
     weight = 4,
@@ -66,11 +67,17 @@ return {
             from = "closed", to = "open", verb = "open",
             aliases = {"draw", "pull"},
             message = "You grab the heavy velvet and heave the curtains aside. Dust billows. Pale light floods in, and for a moment you can see the room clearly.",
+            mutate = {
+                keywords = { add = "open" },
+            },
         },
         {
             from = "open", to = "closed", verb = "close",
             aliases = {"draw", "pull"},
             message = "You pull the heavy curtains shut. The light dies, and the room returns to its usual gloom.",
+            mutate = {
+                keywords = { remove = "open" },
+            },
         },
     },
 }

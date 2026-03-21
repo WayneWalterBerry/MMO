@@ -3,6 +3,7 @@
 return {
     guid = "9c4701d1-4cc4-49e7-9c4a-041e1e37caf1",
     id = "wardrobe",
+    material = "oak",
     keywords = {"wardrobe", "armoire", "closet", "cabinet", "clothes"},
     room_presence = "A towering wardrobe lurks in the corner like a dark sentinel, its doors firmly shut.",
 
@@ -74,10 +75,16 @@ return {
         {
             from = "closed", to = "open", verb = "open",
             message = "You pull open the heavy wardrobe doors. They swing wide on iron hinges with a groan of old wood. The smell of cedar and moth-eaten wool billows out.",
+            mutate = {
+                keywords = { add = "open" },
+            },
         },
         {
             from = "open", to = "closed", verb = "close",
             message = "You push the wardrobe doors shut. They close with a solid thud.",
+            mutate = {
+                keywords = { remove = "open" },
+            },
         },
     },
 

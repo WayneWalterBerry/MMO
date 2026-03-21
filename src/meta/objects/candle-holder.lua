@@ -66,12 +66,18 @@ return {
             trigger = "detach_part",
             part_id = "candle",
             message = "You twist the candle free from its brass socket. Flakes of old wax crumble away as it comes loose.",
+            mutate = {
+                weight = function(w) return w - 1 end,
+            },
         },
         {
             from = "empty", to = "with_candle", verb = "reattach_part",
             trigger = "reattach_part",
             part_id = "candle",
             message = "You press the candle into the brass socket. It seats firmly in a ring of soft wax.",
+            mutate = {
+                weight = function(w) return w + 1 end,
+            },
         },
     },
 

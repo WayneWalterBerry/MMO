@@ -1,6 +1,7 @@
 return {
     guid = "9a9ff109-93a0-4dcf-9d6e-0f0f4b83f4ba",
     id = "chamber-pot",
+    material = "ceramic",
     name = "a ceramic chamber pot",
     keywords = {"chamber pot", "pot", "ceramic pot", "toilet", "chamberpot", "privy"},
     room_presence = "A ceramic chamber pot sits discreetly in the far corner.",
