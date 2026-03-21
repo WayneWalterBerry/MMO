@@ -15,6 +15,23 @@
 
 ## Learnings
 
+### Session 2026-07-23: HTTP Cache-Aware JIT Loader
+
+**Task:** Implement HTTP cache strategy for the JIT loader per docs/architecture/web/jit-loader.md spec.
+
+**Changes:**
+- `web/bootstrapper.js`: Added `window._cachedFetch(url, etag, lastModified)` JS bridge — synchronous XHR that sends `If-None-Match` and `If-Modified-Since` conditional headers, returns `{ status, content, etag, lastModified }`.
+- `web/game-adapter.lua`: Replaced raw synchronous XHR `fetch_text()` with cache-aware version. On first fetch: stores content + ETag + Last-Modified in `http_cache` table. On subsequent fetch: sends conditional headers. On 304: returns cached content (zero bandwidth). On 200: updates cache. Added `web_loader_api` with `fetch(type, id)`, `invalidate(type, id)`, `clear()` methods.
+- Status messages now show "(cached)" suffix when loading from HTTP 304 responses (e.g. "Loading Room: Cellar... (cached)").
+
+**Key Design Decision:** Used synchronous XHR for the JS bridge (not async fetch) to match the existing Fengari coroutine pattern. The Lua side calls `window:_cachedFetch(url, etag, lm)` which blocks, returning the result directly. This keeps the Lua code simple and compatible with the existing metatable-based JIT loading flow.
+
+**Key Learning:** Fengari JS interop returns JS objects as Lua userdata — accessing properties like `resp.status` returns JS values that need `tonumber(tostring(...))` coercion. Null JS values need explicit nil checks before calling `tostring()`.
+
+**Result:** Deployed to GitHub Pages. First room visit: full fetch as before. Room revisit within same session: conditional fetch → 304 Not Modified → zero-bandwidth cached load. CLI mode verified unaffected.
+
+---
+
 ### Session 2026-07-23: Fix Fengari to_luastring API Error
 
 **Task:** Fix "to_luastring is not a function" error on live web game.
