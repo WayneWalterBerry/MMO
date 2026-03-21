@@ -42,37 +42,56 @@ The engine is a **self-modifying Lua interpreter**. All game state is represente
 
 ### Layer 2: Parser System
 
-**Design:** Three-tier command parsing.
+**Design:** Five-tier hierarchical command parsing.
 
-**Tier 1 & Tier 2:** Fast exact lookup (70%), graceful phrase similarity (20%), visible fail (10%). See `engine/basic-parser.md` for full design.
+#### Parser Tiers
 
-#### Tier 3: NOT YET IMPLEMENTED
-- If Tier 2 misses, **Goal-Oriented Action Planning (GOAP) backward-chaining parser** engages
-- Detects missing prerequisites: "Light candle" fails → planner checks candle's prerequisite table
-- Builds action chain: [open matchbox, get match, strike match, light candle]
-- Executes chain step-by-step through Tier 1
-- Stops on first failure
-- **Cost:** ~125 object scans per plan, sub-millisecond in Lua
-- **Design:** Prerequisite chains object-owned (not centralized). Each transition can declare prerequisites.
-- **Performance:** Estimated 3 days of implementation (half day planning, half day content tagging, 1 day tests)
+1. **Tier 1 (Basic - Exact Dispatch):** ✅ Built  
+   - Fast exact lookup (70% of inputs)
+   - Zero tokens, instant hash table lookup
+   - `engine/parser-tier-1-basic.md`
 
-**Key Insight:** Tier 3 is a recovery mechanism, not mind-reading. It asks: "The player wanted X. X failed because Y is missing. Can I satisfy Y?" It does NOT ask: "What might they want to do next?"
+2. **Tier 2 (Compound - Phrase Similarity):** ✅ Built  
+   - Graceful phrase matching (20% of inputs)
+   - Token-based Jaccard similarity, ~5ms per lookup
+   - `engine/parser-tier-2-compound.md`
 
-**Example:**
+3. **Tier 3 (GOAP - Goal-Oriented Action Planning):** 🔷 Designed, not yet built  
+   - Complex goal decomposition (8% of inputs)
+   - Backward-chaining prerequisite resolution
+   - Auto-handles missing intermediate steps
+   - `engine/parser-tier-3-goap.md`
+
+4. **Tier 4 (Context Window - Memory-Aware):** 🔷 Designed, not yet built  
+   - Context-aware tool inference (1% of inputs)
+   - Remembers recent discoveries and commands
+   - Aging/confidence decay for older context
+   - `engine/parser-tier-4-context.md`
+
+5. **Tier 5 (SLM/LLM - Fallback):** 🔷 Designed, Phase 2+ optional  
+   - On-device small language model fallback (<1% of inputs)
+   - Handles novel phrasings beyond rule-based patterns
+   - 350MB optional download (Qwen2.5-0.5B)
+   - `engine/parser-tier-5-slm.md`
+
+**Key Insight:** The parser is a **recovery mechanism**, not mind-reading. Each tier asks: "The player wanted X. How can I help them achieve it?" when the previous tier fails.
+
+**Example: "Light the candle"**
 ```lua
--- User types: "light the candle"
--- Tier 1 routes to LIGHT handler
--- Handler finds: no fire_source in inventory
--- Tier 3 engages:
---   Check candle's prerequisites: needs fire_source
---   Search for fire_source providers: match-1 (state: unlit)
---   Plan needed: get match, strike match
---   Check match's prerequisites: needs holding match (in inventory)
---   Subplan: open matchbox, get match
---   Execute: [open matchbox → get match → strike match → light candle]
---   Player sees: rapid narration of all steps
--- Result: candle is lit (player achieved their goal in one command)
+-- Tier 1: No exact match for "light the candle"
+-- Tier 2: Phrase similarity finds "light" verb
+-- Router executes LIGHT handler
+-- Handler: No fire_source in inventory
+-- Tier 3 engages (if built):
+--   Goal: candle.casts_light == true
+--   Missing: fire_source tool
+--   Plan: [open matchbox, take match, strike match, light candle]
+--   Tier 4 (if built): Checks recent context → "Player examined matchbox 5 ticks ago"
+--   Execute plan step-by-step, report to player
+-- Result: Player achieved goal in one command
 ```
+
+**Performance:** ~90% of inputs resolve Tier 1-2 in <5ms
 
 ---
 
