@@ -537,3 +537,46 @@ Designed 2 mini-puzzles (015–016) to fill tutorial coverage gaps identified by
 - Frink §2.1 [11] — The Witness scaffolding / progressive complexity
 - Frink §2.4 [17] — Outer Wilds knowledge-gate model
 - Frink §4.1 [26] — Real-world physics in puzzle design
+
+---
+
+## Session: Player Health & Injury System Design (2026-07-23)
+
+### Work Completed
+
+Designed the complete Player Health & Injury gameplay system across 4 design documents. This covers health scale, narrative voice, damage model, death design, injury catalog with FSMs, healing items, and puzzle integration patterns.
+
+#### Documents Created
+
+| Document | Size | Content |
+|----------|------|---------|
+| `docs/design/player/README.md` | 6.3 KB | System overview, design principles, connections to existing systems, implementation priority |
+| `docs/design/player/health-system.md` | 21.0 KB | 100-point HP scale, 5 health tiers, narrative voice per tier, damage model, death design, Level 1 scenarios, status command, engine integration notes |
+| `docs/design/player/injury-catalog.md` | 21.7 KB | 6 Level 1 injuries (minor cut, deep cut, bruise, bleeding, mild poison, burn) + 4 future injuries (infection, broken bone, hypothermia, exhaustion), FSM patterns, stacking rules, 5 puzzle design patterns |
+| `docs/design/player/healing-items.md` | 22.8 KB | Wound dressings (bandage, cobweb), restoratives (potion, food, water, wine), medicines (antidote, salve, poultice), rest mechanics, metadata patterns, design guidelines, Level 1 healing inventory |
+
+#### Key Design Decisions
+
+1. **Health is narrative, not numeric.** Players experience health through prose — pain descriptions, sensory degradation, fragmentary text at near-death. No HUD, no health bar. A `status` command returns narrative assessment, not numbers.
+
+2. **Injuries are independent FSMs.** Each injury has its own state machine (active → treated → healed), independent timers, and specific treatment requirements. This follows Principle 3 (Objects Have FSM; Instances Know Their State) applied to player conditions.
+
+3. **Treatment and healing are separate.** Stopping bleeding (bandage) is not the same as restoring lost HP (potion/rest). The player may need both. This creates a two-step recovery loop that adds strategic depth.
+
+4. **Existing mechanics are the foundation.** The `bleed_ticks` system, `player.state.bloody`, `injury_source` capability, and poison death are all prototypes of the health system. The design formalizes and extends them rather than replacing them.
+
+5. **Level 1 healing is primitive.** No potions, no medicine. Just cloth bandages (torn from blanket/cloak/curtains), wine, water, and rest. This teaches fundamentals before introducing powerful items.
+
+6. **Injuries create puzzle opportunities.** Five documented patterns: Ticking Clock (bleed out timer), Capability Gate (broken arm blocks climbing), Risky Shortcut (jump = fast but costly), Prepared Adventurer (foreshadow + prepare), Medical Puzzle (diagnose + treat).
+
+7. **Instant death preserved for extreme hazards.** Poison bottle and long falls remain instant-kill. These are player-initiated or clearly telegraphed. Survivable injuries use the HP system.
+
+8. **Healing items use existing object metadata patterns.** A bandage declares `healing.stops_bleeding = true`; the engine reads it. No special-casing. Same pattern as `provides_tool`, `casts_light`, etc.
+
+### Learnings
+
+- **The blanket/cloak/curtains are already healing resources.** They can be torn for cloth strips → bandages. This creates resource tension: cloth for sewing vs. cloth for medical supplies vs. cloth for rope. Existing objects, new purpose.
+- **Blood writing is the first health mechanic.** The prick → bleed → write chain already costs HP (conceptually). Formalizing this into the health system means blood writing becomes a strategic choice with real cost.
+- **GOAP should NOT auto-heal.** GOAP can help find/prepare healing items but should never auto-apply treatment. The player must choose when and how to heal — this is the puzzle.
+- **Wine (Puzzle 016) is the first restorative.** The existing DRINK interaction for wine bottles becomes a 5 HP heal + warmth effect. Tutorial gap fix becomes healing system foundation.
+- **Injury cascading (cut → infection if untreated) creates multi-stage puzzles.** This is the "degenerative" pattern that makes health a long-term concern, not just an immediate reaction to damage.

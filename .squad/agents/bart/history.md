@@ -476,3 +476,28 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 - FSM vs hooks distinction is critical: FSM is data-driven per-object state machines (content authors), hooks are engine-wide event handlers (engine devs). They collaborate but don't overlap.
 - Timing (before-move vs after-move) matters for narrative order and must be documented per hook type — learned this from on_traverse firing before player moves
 - The normalize_effect() lesson from BUG-060 (accept both flat and nested formats) should be baked into the generic dispatcher from day one
+
+## Learnings (Player Health & Injury Architecture)
+
+### Session: Player Health & Injury Architecture Design (2026-07-22)
+**Status:** ✅ COMPLETE (Design only — no code)
+**Outcome:** Full architecture for player health, damage, injuries, and healing. Three docs shipped.
+
+**Deliverables:**
+1. `docs/architecture/player/README.md` — Player system overview linking all subsystems (model, movement, sensory, health, injuries)
+2. `docs/architecture/player/health.md` — Health tracking, damage application pipeline, healing types, death condition, per-turn update loop
+3. `docs/architecture/player/injuries.md` — Injury FSM system with three damage types (one-time, over-time, degenerative), full bleeding/poisoned/bruise/infection examples, healing interactions, lifecycle
+
+**Key Design Decisions (6 filed as D-HEALTH001–005, D-INJURY001–006):**
+- Damage encoded on objects, not engine — object authors (Flanders) control damage values in metadata
+- Injuries are FSMs in `src/meta/injuries/` — same pattern as object FSMs (states, transitions, timed_events)
+- Three injury types: one-time (bruise), over-time (bleeding), degenerative (infection with escalating damage)
+- Healing items declare target injury type — bandage targets "bleeding", antidote targets "poisoned"
+- Injury FSM reuses object FSM engine — no duplicate state machine code
+- Fatal injury states trigger death independently of health value
+
+**Learnings:**
+- The object FSM pattern scales cleanly to injuries — same states/transitions/timers, just stored in player.injuries[] instead of registry
+- Degenerative damage needs a cap (max_damage) — without it, infections become instantly fatal after enough turns
+- Dual-sided healing declaration (object declares targets_injury, injury declares healing_interactions) provides both convenience and safety
+- The engine loop needs a clear phase order: verb dispatch → object tick → injury tick → death check. Injury ticking after object ticking prevents one-frame desync

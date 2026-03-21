@@ -1,6 +1,8 @@
 # Engine Event Handlers
 
-Engine Event Handlers are extensible code hooks that fire in response to game events. They are **NOT state machines** — those handle data-driven state transitions on objects. Instead, event handlers are **pre-built mechanics that metadata authors wire into their data files** without writing engine code.
+**Engine Event Handlers** (also called "Engine Hooks") are **a core architecture principle** alongside FSM, the parser pipeline, and JIT delivery. They are extensible code hooks that fire in response to game events. They are **NOT state machines** — those handle data-driven state transitions on objects. Instead, event handlers are **pre-built mechanics that metadata authors wire into their data files** without writing engine code.
+
+**Architecture Status:** Layer 3.5 in the engine (between Verb Dispatch and Object System). See [Architecture Overview](../00-architecture-overview.md#layer-35-engine-hooks-event-driven-extensibility) for how hooks fit into the overall design.
 
 See [Puzzle Designer Guide](./puzzle-designer-guide.md) for how to use these mechanics in your puzzles.
 
@@ -43,7 +45,9 @@ The engine looks up the handler by type, validates the parameters, and runs it. 
 
 ## Architecture Context
 
-For a deep technical dive into how handlers integrate with the event system, see Bart's event architecture doc: `docs/architecture/engine/event-handlers.md` (forthcoming).
+For a deep technical dive into how handlers integrate with the event system, see [Bart's event architecture doc](./about.md).
+
+All future game mechanics that fire on events should be implemented as engine hooks. This is a **design principle**, not a suggestion. Hooks keep the engine simple and the content system powerful.
 
 ---
 

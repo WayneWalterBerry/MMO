@@ -1,15 +1,41 @@
 # Architecture Overview
 
-**Version:** 1.2  
+**Version:** 1.3  
 **Last Updated:** 2026-03-22
 **Author:** Brockman (Documentation)  
 **Purpose:** High-level map of how all systems fit together. Detailed specs are in linked docs.
 
 ---
 
-## 🏛️ Core Principles
+## 🏛️ Core Architecture Principles
 
-**See [Core Architecture Principles](objects/core-principles.md) for the 7 foundational principles governing the object system:**
+The MMO engine is built on **four foundational design patterns**. These are not features bolted on—they are the pillars of engine design:
+
+### 1. **Finite State Machines (FSM)**
+Objects declare all possible states and transitions via metadata. Content authors design states (lit/unlit, open/closed, locked/unlocked), and the engine enforces transitions through consumable ticks and verb handlers. No state is hardcoded—everything is declarative in object `.lua` files.
+
+**See:** [Object System (Layer 4)](#layer-4-object-system), [Layer 9: Consumables & Temporal Effects](#layer-9-consumables--temporal-effects)
+
+### 2. **Parser Pipeline (5-Tier Hierarchical Recovery)**
+Players type natural language commands. The engine doesn't try to AI-guess intentions; instead, it uses a five-tier fallback system: exact dispatch → phrase similarity → goal decomposition → context memory → small language model. Each tier asks: "How can I help the player achieve their goal?"
+
+**See:** [Layer 2: Parser System](#layer-2-parser-system)
+
+### 3. **Engine Hooks (Event-Driven Extensibility)** ⭐ CORE PRINCIPLE
+Game mechanics that fire on events are not hardcoded—they're registered handlers that metadata authors wire into their content. Hooks fire at engine integration points (player movement, inventory changes, timers, room arrivals) and apply effects without engine code changes. This is distinct from FSM: hooks are **game-wide event reactions**, FSM is **per-object state management**. Together they enable complex behaviors: `on_traverse` hook fires → checks inventory → triggers FSM transition.
+
+**See:** [Engine Hooks](#engine-hooks-core-principle) (below), [docs/architecture/engine/event-handlers/](engine/event-handlers/)
+
+### 4. **JIT (Just-In-Time) Web Delivery**
+The engine is too large to ship in a single download. Instead, a 3-layer delivery pipeline bootstraps the game: (1) bootstrapper (entry point), (2) compressed core engine, (3) individual metadata files loaded on-demand as player explores the world.
+
+**See:** [docs/architecture/web/jit-loader.md](web/jit-loader.md)
+
+---
+
+### Object System Principles
+
+**See [Core Architecture Principles](objects/core-principles.md) for the 7 foundational principles governing object behavior:**
 1. Code-Derived Mutable Objects
 2. Base Objects → Object Instances
 3. Objects Have FSM; Instances Know Their State
@@ -211,6 +237,70 @@ end
 ```
 
 **Tool Resolution:** Verbs can request capabilities (`requires_tool`). Engine searches player inventory for matching `provides_tool`. First match wins.
+
+---
+
+### Layer 3.5: Engine Hooks (Event-Driven Extensibility)
+
+**Design:** Game mechanics that react to events are not hardcoded into verb handlers. Instead, they're **registered handlers that fire at engine integration points**, allowing metadata authors to wire them into content without writing engine code.
+
+**Key Distinctions:**
+- **FSM** (Layer 4): Per-object state machines. Objects declare states and transitions. Content authors define what states exist and prerequisites for transitions.
+- **Engine Hooks** (Layer 3.5): Game-wide event reactions. Engine developers build handlers. Content authors wire them via metadata. Hooks can *trigger* FSM transitions but don't *own* object state.
+
+**How It Works:**
+
+1. **Engine registers handlers at startup:**
+   ```lua
+   hooks.register("on_traverse", "wind_effect", wind_effect_handler)
+   ```
+
+2. **Metadata declares which hook to invoke + parameters:**
+   ```lua
+   -- In room metadata
+   exits = {
+       down = {
+           target = "cellar",
+           on_traverse = {
+               type = "wind_effect",
+               extinguishes = { "candle" },
+               message = "A chill updraft snuffs your candle!"
+           }
+       }
+   }
+   ```
+
+3. **Engine dispatches at the right moment:**
+   - Player types "go down" → `handle_movement()` validates exit
+   - Engine calls `hooks.dispatch("on_traverse", exit.on_traverse, ctx)`
+   - Wind handler runs → checks inventory → FSM transitions candle lit→extinguished
+   - Player moves to new room
+
+**Currently Implemented Hooks:**
+- `on_traverse` — Fires when player moves through an exit. Existing: `wind_effect` (extinguishes unprotected items).
+
+**Proposed Hook Types** (12 planned):
+- `on_enter_room` — Room arrival effects (ambiance, traps, discoveries)
+- `on_leave_room` — Room departure effects (locks, collapses)
+- `on_pickup` — Item acquisition (curses, stat changes)
+- `on_drop` — Item drop (fragile breaks, spills)
+- `on_examine` — Examination discovery (secret compartments, knowledge)
+- `on_combine` — Item combination (crafting, reactions)
+- `on_use` — Item usage on target
+- `on_timer` — Threshold-based effects
+- `on_first_visit` — First visit to room
+- `on_death` — Player health reaches zero
+- `on_npc_react` — NPC observes player action
+
+**Architecture:**
+- **Registry:** `src/engine/hooks/init.lua` — Central registry + dispatch logic
+- **Handlers:** Separate modules in `src/engine/hooks/` (e.g., `on_traverse.lua`, future: `on_pickup.lua`)
+- **Integration Points:** Single call to `hooks.dispatch()` at each engine event location
+
+**Why This Matters:**
+Hooks enable puzzle designers to create complex behaviors without touching engine code. All future game mechanics that fire on events should be hooks, not hardcoded verb extensions. This keeps the engine simple, extensible, and content-driven.
+
+**See:** [docs/architecture/engine/event-handlers/](engine/event-handlers/) for detailed hook specifications and [puzzle-designer-guide.md](engine/event-handlers/puzzle-designer-guide.md) for authoring guide.
 
 ---
 
