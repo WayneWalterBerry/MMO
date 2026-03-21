@@ -1,6 +1,12 @@
 # Puzzles
 
-This directory documents all known puzzles in the MMO. Each puzzle teaches core mechanics, introduces game systems, or creates challenge scenarios through interaction with objects and tools.
+Puzzle documentation has been reorganized into per-level subfolders.
+
+## Level 1 Puzzles
+
+See [`docs/levels/01/puzzles/`](../levels/01/puzzles/) for all puzzle documentation for Level 1 (puzzles 001–014).
+
+---
 
 ## Naming Convention
 
@@ -10,9 +16,23 @@ Examples: `001-light-the-room.md`, `005-bedroom-escape.md`
 
 **DO NOT use 1 or 2 digit prefixes** (e.g., `1-`, `01-`). Always pad to 3 digits so files sort correctly up to 999 puzzles.
 
-Next available number: **006**
-
 ## Format Convention
+
+**Why reorganize?** Organizing documentation by level (not by type) makes it easier to:
+- Keep all level-specific content together
+- Understand a level's complete design at a glance
+- Scale to future levels without creating a flat, unmanageable directory
+
+As new levels are developed, their puzzle documentation will live in:
+- `docs/levels/02/puzzles/`
+- `docs/levels/03/puzzles/`
+- ...and so on
+
+---
+
+## Legacy: Original Content Below
+
+### Naming Convention
 
 Each puzzle is documented with this structure:
 
