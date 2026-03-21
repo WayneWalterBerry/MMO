@@ -35,5 +35,10 @@ Every object must have:
 - `docs/objects/` — object design documents
 - `resources/research/competitors/dwarf-fortress/` — DF architecture reference
 
+## Documentation Requirement
+- **Every object MUST be documented in `docs/objects/`** — one .md per object (or per object family)
+- Flanders owns the object docs. He can write them himself or delegate to Brockman, but they must exist and stay up to date.
+- Object docs are a deliverable, not optional.
+
 ## Model
 - Preferred: auto (writes code → sonnet; design docs → haiku)

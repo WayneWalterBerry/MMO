@@ -31,6 +31,11 @@ Every puzzle must have:
 7. **Failure states:** What happens if the player does it wrong? (interesting failures, not dead ends)
 8. **Principle 8 compliance:** All puzzle logic declared in object metadata
 
+## Documentation Requirement
+- **Every puzzle MUST be documented in `docs/puzzles/`** — one .md per puzzle
+- Bob owns the puzzle docs. He can write them himself or delegate to Brockman, but they must exist and stay up to date.
+- Puzzle docs are a deliverable, not optional.
+
 ## Collaboration Model
 - **Flanders:** "I need a rusty padlock that jams after 3 failed picks" → Flanders builds the .lua
 - **Frink:** "Research how escape rooms use red herrings" → Frink investigates
