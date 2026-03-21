@@ -444,6 +444,13 @@ transitions = {
 ### Template Usage
 - `template = "sheet"` → fabric defaults (size 1, weight 0.2, portable, tearable)
 - `template = "furniture"` → heavy immovable (size 5, weight 30, not portable)
+
+### Bug Report Verb Enhancement (2026-07-22)
+- Enhanced `report bug` verb in `src/engine/verbs/init.lua` with richer metadata: level name, room name, build timestamp, last 50 lines of output, and a clearly marked user description section.
+- Level name is read from `ctx.current_room.level` (stored on room objects as `level = { number, name }`). Falls back gracefully if not present.
+- Build timestamp reads from `src/.build-timestamp` (per versioning.md design). Falls back to "dev" when file doesn't exist yet — build pipeline will create it.
+- Expanded transcript buffer in `src/engine/loop/init.lua` from 20 to 50 exchanges to capture more context for bug reports.
+- Issue body format uses markdown headers (##/###) for GitHub rendering. User description section uses `_[Please describe the bug here]_` placeholder.
 - `template = "container"` → bags/boxes (capacity 4, weight_capacity 10)
 - `template = "small-item"` → tiny items (size 1, weight 0.1, portable)
 

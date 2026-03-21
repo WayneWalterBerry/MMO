@@ -41,7 +41,7 @@ function loop.run(context)
   -- BUG-060: last referenced noun for context retention between commands
   context.last_noun = context.last_noun or nil
 
-  -- Session transcript for "report bug" (last 20 exchanges)
+  -- Session transcript for "report bug" (last 50 exchanges)
   context.transcript = context.transcript or {}
 
   print("Type 'look' to look around. Type 'quit' to exit.")
@@ -219,8 +219,8 @@ function loop.run(context)
         }
         local transcript = context.transcript
         transcript[#transcript + 1] = entry
-        -- Keep only last 20 exchanges
-        while #transcript > 20 do
+        -- Keep only last 50 exchanges
+        while #transcript > 50 do
           table.remove(transcript, 1)
         end
       end

@@ -1002,7 +1002,7 @@ function verbs.create()
 
             local light = get_light_level(ctx)
             if light == "dark" then
-                print(ctx.current_room.name or "Unknown room")
+                print("**" .. (ctx.current_room.name or "Unknown room") .. "**")
                 print("\nIt is too dark to see. You need a light source.")
                 print("(Try 'feel' to grope around in the darkness.)")
                 local hour, minute = get_game_time(ctx)
@@ -1065,7 +1065,7 @@ function verbs.create()
             parts[#parts + 1] = time_of_day_desc(hour) ..
                 " It is " .. format_time(hour, minute) .. "."
 
-            print(room.name or "Unnamed room")
+            print("**" .. (room.name or "Unnamed room") .. "**")
             print("")
             print(table.concat(parts, "\n\n"))
             return
@@ -4325,6 +4325,11 @@ function verbs.create()
         ctx.player.location = target_id
         ctx.current_room = target_room
 
+        -- Track visited rooms for short-description-on-revisit
+        ctx.visited_rooms = ctx.visited_rooms or {}
+        local first_visit = not ctx.visited_rooms[target_id]
+        ctx.visited_rooms[target_id] = true
+
         -- Print arrival
         print("")
         if target_room.on_enter then
@@ -4334,8 +4339,15 @@ function verbs.create()
         end
         print("")
 
-        -- Auto-look on arrival
-        ctx.verbs["look"](ctx, "")
+        -- First visit: full auto-look; revisit: short description only
+        if first_visit then
+            ctx.verbs["look"](ctx, "")
+        else
+            print("**" .. (target_room.name or "Unnamed room") .. "**")
+            if target_room.short_description then
+                print(target_room.short_description)
+            end
+        end
     end
 
     -- Cardinal and vertical directions
@@ -4467,7 +4479,7 @@ function verbs.create()
     -- REPORT BUG — opens a pre-filled GitHub issue URL
     ---------------------------------------------------------------------------
     handlers["report_bug"] = function(ctx, noun)
-        -- Build transcript text from recent commands
+        -- Build transcript text from recent output (last 50 exchanges)
         local transcript = ctx.transcript or {}
         local lines = {}
         for _, entry in ipairs(transcript) do
@@ -4477,14 +4489,33 @@ function verbs.create()
         end
         local transcript_text = table.concat(lines, "\n")
 
+        -- Level name (stored on room object as level = { number, name })
+        local level_name = "Unknown"
+        if ctx.current_room and ctx.current_room.level then
+            local lv = ctx.current_room.level
+            if lv.number and lv.name then
+                level_name = "Level " .. lv.number .. ": " .. lv.name
+            elseif lv.name then
+                level_name = lv.name
+            end
+        end
+
         -- Room name
         local room_name = "Unknown"
         if ctx.current_room then
             room_name = ctx.current_room.name or ctx.current_room.id or "Unknown"
         end
 
-        -- Timestamp
-        local timestamp = os.date and os.date("%Y-%m-%d %H:%M") or "unknown"
+        -- Build timestamp (read from src/.build-timestamp if available)
+        local build_timestamp = "dev"
+        local ts_file = io.open("src/.build-timestamp", "r")
+        if ts_file then
+            local content = ts_file:read("*a")
+            ts_file:close()
+            if content and #content > 0 then
+                build_timestamp = content:match("^%s*(.-)%s*$") or "dev"
+            end
+        end
 
         -- URL-encode helper
         local function url_encode(str)
@@ -4496,13 +4527,16 @@ function verbs.create()
             return str
         end
 
+        local timestamp = os.date and os.date("%Y-%m-%d %H:%M") or "unknown"
         local title = "[Bug Report] " .. room_name .. " - " .. timestamp
         local body = "## Bug Report\n\n"
+            .. "**Level:** " .. level_name .. "\n"
             .. "**Room:** " .. room_name .. "\n"
-            .. "**Time:** " .. timestamp .. "\n\n"
-            .. "## Session Transcript (last " .. #transcript .. " commands)\n\n"
-            .. "```\n" .. transcript_text .. "```\n\n"
-            .. "## Description\n\n_Describe the bug here_\n"
+            .. "**Build:** " .. build_timestamp .. "\n\n"
+            .. "### What happened?\n"
+            .. "_[Please describe the bug here]_\n\n"
+            .. "### Session Transcript (last " .. #transcript .. " lines)\n\n"
+            .. "```\n" .. transcript_text .. "```\n"
 
         local url = "https://github.com/WayneWalterBerry/MMO-Issues/issues/new"
             .. "?title=" .. url_encode(title)
