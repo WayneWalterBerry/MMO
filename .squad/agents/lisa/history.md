@@ -306,6 +306,29 @@
 | Parser/Noun Resolution | BUG-003,005,014,028 | Fuzzy matching too aggressive or too lenient; synonyms not recognized; adjectives required when should be optional |
 | FSM State Leakage | BUG-019,027 | Internal state labels like "(drawer open)" or "(open)" leak into player-visible object names |
 | Internal ID Leakage | BUG-010,015 | Display names not used; players see "candle" and "poison-bottle" instead of proper names |
+
+---
+
+## Learnings
+
+### 2026-03-21: Object Update Test Pass
+
+**What I tested:** All 10 FSM objects updated by Flanders (mutate fields + material properties) and Bart (material registry + threshold checking). Ran `lua src/main.lua --no-ui` and exercised transitions, sensory properties, mutate fields, and material verification.
+
+**Bugs found (5):**
+- BUG-101: "relight" verb alias not recognized — GOAP wastes a match, then parser fails. Use "light" instead.
+- BUG-102: "pour bottle" fires the drink transition message instead of pour. Verb-to-transition matching may be first-match or synonym collision.
+- BUG-103: material "oak" not in registry — affects wardrobe, nightstand, vanity. Either add "oak" or change objects to "wood".
+- BUG-104: candle-holder.lua and trap-door.lua missing `material` field entirely.
+- BUG-105: material "velvet" not in registry — affects curtains. Either add "velvet" or change to "fabric".
+
+**Key patterns learned:**
+- Verb alias bugs are a recurring theme (Nelson's BUG-003, BUG-005 were similar parser issues). Aliases defined in transition metadata don't always resolve through the parser/embedding layer.
+- GOAP chain behavior is impressive — it auto-strikes matches before lighting candles — but when the final verb fails, the prerequisite action (match strike) is wasted and irreversible. GOAP needs a way to validate the final verb before executing prerequisites.
+- Material registry has 13 entries but objects use material names that don't match (oak vs wood, velvet vs fabric). Need a naming convention decision: specific materials (oak, velvet, pine) or generic categories (wood, fabric).
+- Mutate field values (weight changes, keyword adds/removes) are not directly observable in the REPL — need a debug/inspect command to verify runtime property values. Testing currently relies on inference from sensory output changes.
+- Match burn_duration of 30 seconds resolves to 0 game ticks in practice — the match auto-expires on the same turn it's struck. This prevents testing the "blow match" verb manually.
+- The `feel` command appears to bypass surface accessibility flags (wardrobe shows inside contents even when closed). May be intentional per D-37 (sensory verbs work in darkness) but could be a containment bug.
 | Missing Features | BUG-004,026 | Movement verbs, unlock verb — critical path blockers |
 | Container/Inventory | BUG-012,017 | "take match" resolves wrong instance; drawer replacement destroys surface objects |
 | Game Mechanics | BUG-008,024 | Poison doesn't kill; sack equips to wrong slot |
