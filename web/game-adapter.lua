@@ -66,6 +66,20 @@ local function vfs_get(path)
 end
 
 ---------------------------------------------------------------------------
+-- Ensure io / os tables exist (Fengari does NOT provide them)
+---------------------------------------------------------------------------
+io = io or {}
+os = os or {}
+
+os.time = os.time or function()
+    return math.floor(window.Date:now() / 1000)
+end
+
+os.clock = os.clock or function()
+    return window.performance:now() / 1000
+end
+
+---------------------------------------------------------------------------
 -- Override standard library for browser environment
 ---------------------------------------------------------------------------
 
