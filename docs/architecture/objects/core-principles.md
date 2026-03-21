@@ -3,7 +3,7 @@
 **Version:** 1.0  
 **Last Updated:** 2026-03-22  
 **Author:** Brockman (Documentation)  
-**Purpose:** The 7 foundational principles that govern how the object system works.
+**Purpose:** The 8 foundational principles that govern how the object system works.
 
 ---
 
