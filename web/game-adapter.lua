@@ -46,7 +46,7 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-21 11:59"
+local BUILD_TIMESTAMP = "2026-03-21 13:07"
 
 local function format_size(bytes)
     if bytes >= 1048576 then

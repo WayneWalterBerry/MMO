@@ -2,7 +2,7 @@
 
 **Author:** Sideshow Bob (Puzzle Designer)  
 **Date:** 2026-07-23  
-**Revised:** 2026-07-24 (Wayne directive 2026-03-21T19:17Z — injury-specific healing, no generic HP restore)  
+**Revised:** 2026-07-25 (Wayne directive 2026-03-21T20:05Z — targeted treatment, consumable/reusable lifecycles, bandage persistence)  
 **Status:** DESIGN  
 **Depends On:** Health System (health-system.md), Injury Catalog (injury-catalog.md)  
 **Audience:** Designers, Flanders (objects), Bart (engine)
