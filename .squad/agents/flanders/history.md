@@ -472,3 +472,12 @@ transitions = {
 - **We're better at:** Sensory depth (5 senses vs visual-only), NLP parser, mobile performance, darkness gameplay
 - **Key adoptable patterns:** Material property tables (for guards/descriptions), threshold-based auto-transitions, wear as numeric property
 - **Avoid:** Full physics simulation, unbounded entity tracking, single-threaded everything simulation
+
+### Mutate + Material Pass (2026-07-20)
+- Applied CBG's audit across all 10 FSM objects (Tier 1 + Tier 2). Mutate fields on transitions follow three forms: direct value, function, list add/remove.
+- `material` field is pure metadata — a string referencing Frink's material registry. Objects don't interpret it; the engine looks it up.
+- iron-door.lua and iron-key.lua were requested for material but don't exist yet. Skipped — noted in commit.
+- "velvet" and "oak" aren't in Frink's material table yet (he has "fabric" and "wood"). Wayne's task specified these names, so they'll need registry entries.
+- Composite objects (poison-bottle, candle-holder, nightstand) need mutate on BOTH the verb-triggered AND the detach_part transitions — same mutation, two paths to the same state change.
+- When adding keywords ±open to open/close patterns, it's a project-wide convention now: window, wardrobe, nightstand, vanity, curtains, trap-door all follow it.
+- Documentation charter: every object gets a .md in docs/objects/. Created 9 new docs, updated 4 existing.
