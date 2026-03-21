@@ -97,7 +97,7 @@ return {
             passage_id = "deep-cellar-hallway-stairway",
             name = "stone steps descending",
             keywords = {"stairs", "stairway", "staircase", "down", "steps", "stone stairs", "descend", "cellar"},
-            description = "Stone steps descend through an archway in the floor, curving down into the cool darkness of the cellars below.",
+            description = "Stone steps descend through an archway in the floor, curving down into the cool darkness of the cellars below. A chill draught rises from the depths.",
 
             max_carry_size = 4,
             max_carry_weight = 50,
@@ -109,6 +109,17 @@ return {
             hidden = false,
             broken = false,
             one_way = false,
+
+            on_traverse = {
+                wind_effect = {
+                    strength = "gust",
+                    extinguishes = { "candle" },
+                    spares = { wind_resistant = true },
+                    message_extinguish = "As you descend, a chill updraft gusts through the stairwell from the cellars below. Your candle flame flattens, sputters — and dies. Cold darkness rushes in.",
+                    message_spared = "A chill updraft gusts up from below as you descend. Your lantern flame shivers behind its glass but holds.",
+                    message_no_light = nil,
+                },
+            },
         },
 
         north = {

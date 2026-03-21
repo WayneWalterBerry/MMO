@@ -13,7 +13,7 @@
             --fg: #c8c8d0;
             --dim: #6a6a7a;
             --prompt: #5f9ea0;
-            --echo: #7a7a8a;
+            --echo: #00e0e0;
             --error: #cc4444;
             --border: #2a2a3d;
         }
@@ -57,6 +57,16 @@
         .input-echo {
             color: var(--echo);
             white-space: pre-wrap;
+        }
+
+        .input-prompt {
+            color: #888;
+            font-weight: bold;
+        }
+
+        .output-line strong {
+            font-weight: bold;
+            color: #e0e0e0;
         }
 
         .error-line {

@@ -420,3 +420,26 @@ Wayne requested GUIDs be added to all room and level .lua files. Audit confirmed
 - Lua string pattern %f[%a] (frontier) is useful for word-boundary matching but tricky for the " then " separator — simpler to rely on the space characters in the literal " then " pattern
 - The fast path (no separators → single command) avoids allocation overhead for 99% of inputs
 - Quoted text protection via character-by-character scan is more reliable than trying to do regex with Lua patterns
+
+### Session: on_traverse Exit-Effect Engine (Puzzle 015 support)
+
+**Status:** ✅ COMPLETE
+**Outcome:** New extensible `on_traverse` exit-effect system implemented. First handler: `wind_effect` for draft-extinguish mechanic.
+
+**Deliverables:**
+1. `src/engine/traverse_effects.lua` — New module: type-dispatched effect handler registry. Registered handlers fire when a player moves through an exit with an `on_traverse` field. Ships with built-in `wind_effect` handler.
+2. Integration in `src/engine/verbs/init.lua` — `traverse_effects.process(exit, ctx)` called in `handle_movement` BEFORE player location changes, AFTER exit validation passes.
+3. `test/parser/test-on-traverse.lua` — 12 tests: normal exits unchanged, wind extinguishes lit items, ignores unlit/already-extinguished, spares wind-resistant, items not in extinguishes list unaffected, custom types registerable, edge cases safe.
+
+**Architecture:**
+- `traverse_effects.register(type, handler_fn)` — open for new effect types (water crossings, narrow passages, etc.)
+- `traverse_effects.process(exit, ctx)` — single integration point in movement handler
+- Wind handler checks `extinguishes` list by obj.id and keywords, respects `wind_resistant` property, uses FSM transition (extinguished or unlit fallback)
+- All 51 tests pass (existing 39 + new 12)
+
+## Learnings (on_traverse)
+
+- Exit effects fire BEFORE player moves — this lets the effect reference the origin room's context and print messages in narrative order (effect → arrival)
+- The `extinguishes` list matches against both object IDs and keywords, making room metadata flexible (author can use "candle" regardless of whether that's the id or a keyword)
+- Wind-resistance check is on the object itself (`obj.wind_resistant`), not on the exit metadata — this keeps the data model clean (objects own their properties, exits declare the environmental condition)
+- Type-dispatch pattern (`handlers[effect.type]`) is the right abstraction — each effect type can have completely different fields without the engine caring

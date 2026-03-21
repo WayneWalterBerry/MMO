@@ -933,4 +933,18 @@ Nelson tested "light candle" in darkness:
 
 ---
 
+### Session: Web UX Styling — Bold Titles + Cyan Input
+
+**Task:** Two web-side presentation changes: (1) render `**...**` markdown-bold markers as `<strong>` in game output, (2) change echoed command styling from gray to cyan per UX doc recommendation.
+
+**Changes:**
+- `web/bootstrapper.js`: Added `escapeHtml()` helper. Modified `appendOutput()` to HTML-escape text first, then replace `**...**` patterns with `<strong>...</strong>` tags (using `innerHTML` instead of `textContent`). Refactored input echo to build DOM directly with separate `<span class="input-prompt">` for the `> ` prefix (gray, bold) and command text inheriting `.input-echo` cyan color.
+- `web/index.html`: Changed CSS `--echo` from `#7a7a8a` (gray) to `#00e0e0` (bright cyan). Added `.input-prompt` rule (gray + bold). Added `.output-line strong` rule (`font-weight: bold`, lighter color `#e0e0e0` for contrast against default `--fg`).
+
+**Key Design Decision:** Using `innerHTML` with HTML escaping (rather than `textContent`) is safe because the only content source is Lua `print()` output — no user-controlled HTML injection path. The regex `\*\*(.+?)\*\*/g` uses non-greedy match to handle multiple bold spans per line correctly.
+
+**Key Learning:** The echo line previously used `appendOutput('> ' + text, 'input-echo')` which would have rendered as cyan `> ` too. Building the DOM directly with a separate span for the prompt character allows independent styling (gray prompt, cyan command text) matching the UX doc's Option B+C recommendation.
+
+---
+
 **END OF LEARNINGS**

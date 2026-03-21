@@ -14,6 +14,7 @@ local verbs = {}
 local fsm_mod = require("engine.fsm")
 local presentation = require("engine.ui.presentation")
 local preprocess = require("engine.parser.preprocess")
+local traverse_effects = require("engine.traverse_effects")
 
 ---------------------------------------------------------------------------
 -- Constants (authoritative source: engine/ui/presentation.lua)
@@ -4320,6 +4321,9 @@ function verbs.create()
             print("That way leads somewhere you cannot yet reach.")
             return
         end
+
+        -- Fire on_traverse exit effects BEFORE moving the player
+        traverse_effects.process(exit, ctx)
 
         -- Move player
         ctx.player.location = target_id

@@ -1,15 +1,17 @@
--- wine-bottle.lua — FSM-managed container (Puzzle 010: oil variant via instance override)
+-- wine-bottle.lua — FSM-managed drinkable bottle (Puzzle 010 + Puzzle 016)
 -- States: sealed → open → empty, any → broken (terminal)
+-- Puzzle 010: SMELL distinguishes wine from oil
+-- Puzzle 016: DRINK teaches the verb, contrasts with Puzzle 002 poison
 return {
     guid = "fb17g5e6-8293-4c34-ef56-013278901234",
-    template = "container",
+    template = "small-item",
 
     id = "wine-bottle",
     material = "glass",
     keywords = {"bottle", "wine bottle", "wine", "glass bottle", "dusty bottle"},
     size = 2,
     weight = 1.5,
-    categories = {"container", "fragile", "glass", "bottle"},
+    categories = {"small-item", "fragile", "glass", "bottle"},
     portable = true,
 
     name = "a dusty wine bottle",
@@ -22,6 +24,7 @@ return {
 
     prerequisites = {
         pour = { requires_state = "open" },
+        drink = { requires_state = "open" },
     },
 
     initial_state = "sealed",
@@ -33,6 +36,7 @@ return {
             description = "A dark green glass bottle, sealed with a wax-dipped cork. Dust furs the shoulders. A faded label clings to the belly -- the text is illegible. Liquid sloshes when tilted.",
             on_feel = "Cool glass, smooth and heavy. Wax seal at the neck. Liquid shifts inside when tilted.",
             on_smell = "Faintly vinegary through the seal.",
+            on_taste = "You lick the wax seal. It tastes of dust, old wax, and nothing useful. You'd need to open it first.",
             on_listen = "Liquid glugs when tilted.",
         },
 
@@ -41,14 +45,16 @@ return {
             description = "An open wine bottle, the cork removed. Dark liquid is visible inside. The neck is stained with drips.",
             on_feel = "Cool glass, open top. Liquid weight still inside. Wine-sticky neck.",
             on_smell = "Sharp vinegar and old grape. The wine has long turned.",
+            on_taste = "Sour, acidic, old -- but recognizably wine, not poison. Your tongue puckers at the vinegar tang.",
             on_listen = "Quiet slosh if tilted.",
         },
 
         empty = {
             name = "an empty wine bottle",
-            description = "An empty wine bottle. A few red-purple dregs stain the inside. The cork sits beside it.",
-            on_feel = "Light glass, hollow. Sticky residue inside.",
+            description = "An empty wine bottle, stained dark inside. A few red-purple dregs cling to the glass. The cork sits beside it.",
+            on_feel = "Light glass, hollow and dry inside. Sticky residue where the wine was.",
             on_smell = "Stale wine residue.",
+            on_taste = "You tip the bottle. A single drop of sour dregs. Not worth the effort.",
             on_listen = "Hollow ring when tapped.",
             terminal = true,
         },
@@ -66,19 +72,29 @@ return {
         {
             from = "sealed", to = "open", verb = "open",
             aliases = {"uncork"},
-            message = "You prise the wax seal and work the cork free with a hollow pop. The sharp smell of old wine rises from the neck.",
+            message = "You peel away the crumbling wax seal and pull the cork free with a soft pop. A sharp, vinegary smell rises from the bottle.",
             mutate = {
                 weight = function(w) return w - 0.05 end,
                 keywords = { add = "open" },
             },
         },
         {
+            from = "open", to = "empty", verb = "drink",
+            aliases = {"quaff", "sip", "swig"},
+            message = "You raise the bottle and take a swig. The wine is sour and old -- turned halfway to vinegar years ago. It's rough, harsh on the throat, and tastes of dust and neglect. But it's unmistakably wine, and it's unmistakably not poison. It warms your belly despite the cellar's chill. You've had worse.",
+            mutate = {
+                contains = nil,
+                weight = 0.5,
+                keywords = { add = "empty" },
+            },
+        },
+        {
             from = "open", to = "empty", verb = "pour",
             message = "You upend the bottle. Dark wine glugs out and splashes across the stone floor, staining it purple-black.",
             mutate = {
+                contains = nil,
                 weight = 0.4,
                 keywords = { add = "empty" },
-                categories = { remove = "container" },
             },
         },
         {

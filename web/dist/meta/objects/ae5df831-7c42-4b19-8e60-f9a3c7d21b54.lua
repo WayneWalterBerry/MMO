@@ -23,6 +23,8 @@ return {
 
     provides_tool = "lamp-oil",
 
+    on_drink_reject = "You gag on the thick, acrid oil. That's lamp fuel, not drink. You spit it out, grimacing.",
+
     on_look = function(self)
         return self.description
     end,

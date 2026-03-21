@@ -554,3 +554,19 @@ Flagged materials NOT in `src/engine/materials/init.lua`:
 - Convention: template field goes after guid, before id (matches bandage.lua etc.)
 - Ambiguous cases resolved: rat→furniture (no creature template), curtains/rug→sheet (fabric nature overrides non-portability), candle-holder→small-item (portable despite 'furniture' category), poison-bottle→small-item (has 'small-item' in categories), barrel/rain-barrel→furniture (heavy immovable despite container categories)
 - All 78 object files pass Lua syntax check after changes
+
+## Learnings
+
+### Wine Bottle FSM — Puzzle 016 (2026-07-22)
+- Added DRINK transition (`open → empty`) to `wine-bottle.lua` with aliases: quaff, sip, swig
+- Added `on_taste` sensory properties to all three interactive states (sealed, open, empty) — TASTE investigates without consuming; DRINK consumes and transitions state
+- Changed template from `container` to `small-item` — wine bottle is holdable/drinkable, not a storage container; matches poison-bottle pattern
+- Updated categories from `{"container", ...}` to `{"small-item", ...}` for consistency
+- Added `drink` prerequisite requiring `open` state — prevents drinking a sealed bottle
+- Updated OPEN message to match puzzle doc spec ("peel away crumbling wax seal")
+- Added `contains = nil` to both drink and pour mutate blocks — empties the bottle content reference
+- Updated empty state descriptions for more sensory detail (dry inside, dark stain)
+- Added `on_drink_reject` to `oil-flask.lua` for when player tries to drink lamp oil
+- Followed puzzle-016 design doc: NO mechanical effect from drinking (no liquid_courage flag, no buff). The design explicitly says "flavor text only" — the teaching is the DRINK verb itself, not a reward system
+- Per-bottle flavor variations (3 different drink messages) are handled via instance overrides in room placement, not in the base object — that's Moe's domain
+- The wine rack already has the 3 bottles in `surfaces.inside.contents` — no room changes needed

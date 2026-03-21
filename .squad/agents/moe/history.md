@@ -389,3 +389,16 @@ Built all 5 new room .lua files in `src/meta/world/`:
 - **Docs updated:** start-room.md, hallway.md, level-01-intro.md.
 
 **Design principle learned:** When gating a door, consider whether a bar or a lock is more appropriate. A bar is one-directional by nature (accessible from one side only) and doesn't require a key item to exist in the world. A lock creates a key-finding puzzle. Choose based on narrative intent: bars for imprisonment, locks for restricted access.
+
+### Puzzle 015 Wind Effect Metadata (2026-07-22)
+
+**Task:** Added on_traverse wind effect metadata to the deep-cellar / hallway stairway for Puzzle 015 (Draft Extinguish).
+
+**Note:** Task referenced "storage cellar" but the actual stairway connects deep-cellar (up) to hallway, not storage-cellar. Followed the actual room topology and puzzle design doc.
+
+**Changes:**
+- **deep-cellar.lua up exit:** Added on_traverse.wind_effect block with strength gust, extinguishes candle, spares wind_resistant objects. Messages for extinguish, spared, and no-light cases. Updated exit description to mention the draught.
+- **hallway.lua down exit:** Added matching on_traverse.wind_effect block with direction-appropriate messages (chill updraft from below vs. warm downdraft from above). Updated exit description to mention the draught.
+- **deep-cellar.lua room description:** Added foreshadowing sentence about the draught from the north wall stairway.
+
+**Design principle learned:** Environmental effects on exits (on_traverse) are a new pattern. The exit declares the effect; the engine resolves it against carried object properties. This is the first instance. Always add the effect to BOTH sides of a bidirectional passage, with direction-appropriate descriptions.

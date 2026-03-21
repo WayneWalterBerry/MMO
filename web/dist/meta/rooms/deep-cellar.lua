@@ -6,7 +6,7 @@ return {
     name = "The Deep Cellar",
     level = { number = 1, name = "The Awakening" },
     keywords = {"deep cellar", "cellar", "chamber", "deep", "vault", "underground"},
-    description = "The architecture changes here. Where the cellars above were rough-hewn and practical, this chamber is built from massive limestone blocks, dry-stacked with a precision that speaks of older and more deliberate hands. The ceiling rises into a ribbed vault, its central boss carved into a face that stares downward with blank stone eyes. Iron sconces line the walls, unlit and cold. Against the south wall stands a stone altar, its surface inscribed with symbols you cannot read. The air is still and heavy with the smell of ancient dust, old wax, and something fainter — incense, or the memory of incense, burned decades or centuries ago.",
+    description = "The architecture changes here. Where the cellars above were rough-hewn and practical, this chamber is built from massive limestone blocks, dry-stacked with a precision that speaks of older and more deliberate hands. The ceiling rises into a ribbed vault, its central boss carved into a face that stares downward with blank stone eyes. Iron sconces line the walls, unlit and cold. Against the south wall stands a stone altar, its surface inscribed with symbols you cannot read. The air is still and heavy with the smell of ancient dust, old wax, and something fainter — incense, or the memory of incense, burned decades or centuries ago. From the north wall, where stone steps ascend into shadow, a faint draught of warmer air descends — just enough to stir the dust motes and remind you that a world above still exists.",
     short_description = "A vaulted limestone chamber with a stone altar and the ghost of incense.",
 
     on_feel = "Smooth stone — worked, polished, precise. Not the rough granite of the cellars. Your fingers find joints between massive blocks, fitted so tightly a knife blade wouldn't pass between them. The ceiling is higher here; you reach up and find only air. The floor is flat and even — large flagstones, some with raised edges that feel like carved borders. Against one wall, your hands find a broad stone surface at waist height — an altar or table, cold as ice, its surface covered in grooves and ridges that might be letters or symbols. The air smells of dust and something older — wax and incense, faint and ancient.",
@@ -80,7 +80,7 @@ return {
             passage_id = "deep-cellar-hallway-stairway",
             name = "a wide stone stairway",
             keywords = {"stairs", "stairway", "staircase", "up", "steps", "stone stairs", "stone stairway"},
-            description = "Wide stone steps ascend through the north wall, curving upward toward a faint warmth and the suggestion of light. The stairway is older than the cellars above — carved from the living rock, worn smooth by centuries of passage.",
+            description = "Wide stone steps ascend through the north wall, curving upward toward a faint warmth and the suggestion of light. The stairway is older than the cellars above — carved from the living rock, worn smooth by centuries of passage. A draught of warmer air gusts intermittently down the stairwell.",
 
             max_carry_size = 4,
             max_carry_weight = 50,
@@ -92,6 +92,17 @@ return {
             hidden = false,
             broken = false,
             one_way = false,
+
+            on_traverse = {
+                wind_effect = {
+                    strength = "gust",
+                    extinguishes = { "candle" },
+                    spares = { wind_resistant = true },
+                    message_extinguish = "Halfway up the stairway, a gust of warm air rushes down from above. Your candle flame gutters, flickers wildly — and goes out. Darkness swallows the stairwell.",
+                    message_spared = "A gust of warm air rushes down the stairway. Your lantern flame dances behind its glass chimney but holds steady.",
+                    message_no_light = nil,
+                },
+            },
         },
 
         west = {
