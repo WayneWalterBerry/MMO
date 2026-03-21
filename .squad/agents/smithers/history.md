@@ -15,6 +15,32 @@
 
 ## Learnings
 
+### Session 2026-03-23: Fengari Web Wrapper (Browser Playtest Build)
+
+**Task:** Build a web wrapper so the game can be played in a browser for beta testing.
+
+**Work Completed:**
+1. Created `web/index.html` — Terminal-style UI (dark theme, monospace, command history, arrow-key recall)
+2. Created `web/game-adapter.lua` — Fengari adapter that bridges game engine to browser:
+   - Virtual File System backed by a JS bundle (replaces io.open, io.popen)
+   - Coroutine-based game loop: `io.read()` yields, JS resumes with player input
+   - Reuses existing `engine.loop` code unchanged (no game modifications needed)
+   - Custom `package.searcher` resolves `require()` against VFS
+   - Stubs `engine.ui` terminal module (browser HTML/CSS replaces it)
+3. Created `web/build-bundle.ps1` — Generates `game-bundle.js` (110 source files, ~16 MB raw / ~3 MB gzipped)
+4. Created `web/README.md` — Architecture docs, deployment guide, known issues
+5. Created `.squad/skills/web-publish/SKILL.md` — Build + deploy workflow
+
+**Key Architecture Decision:** Coroutine bridge pattern. Instead of reimplementing the game loop for event-driven browser, we wrap the existing blocking loop in a Lua coroutine. When `io.read()` is called, it yields. When the player types a command, JS resumes the coroutine. This means zero changes to engine code.
+
+**Bundle Composition:** 15.6 MB is the embedding-index.json (Tier 2 parser phrases). GitHub Pages gzip brings transfer to ~2-3 MB.
+
+**Hidden Link:** `<meta name="robots" content="noindex">`, no nav links. URL shared directly with beta testers.
+
+**Deployment:** `web/` → `WayneWalterBerry.github.io/play/`
+
+---
+
 ### Session 2026-03-22: Initial Training + UI Architecture Documentation
 
 **Task:** Read all project documentation, identify UI domain, create comprehensive UI architecture docs.

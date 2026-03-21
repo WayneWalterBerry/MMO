@@ -19,3 +19,7 @@ Thumbs.db
 
 # Temp files
 temp/
+
+# Generated web bundle (rebuild with: powershell web/build-bundle.ps1)
+web/game-bundle.js
+
