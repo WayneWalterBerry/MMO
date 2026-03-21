@@ -166,6 +166,94 @@ test("unrecognized phrase returns nil (falls through)", function()
 end)
 
 -------------------------------------------------------------------------------
+h.suite("preprocess.split_commands — multi-command input (Issue #1)")
+-------------------------------------------------------------------------------
+
+test("comma-separated commands split into 3", function()
+    local cmds = preprocess.split_commands("move bed, move rug, open trapdoor")
+    eq(3, #cmds)
+    eq("move bed", cmds[1])
+    eq("move rug", cmds[2])
+    eq("open trapdoor", cmds[3])
+end)
+
+test("single command with no separator returns 1", function()
+    local cmds = preprocess.split_commands("look")
+    eq(1, #cmds)
+    eq("look", cmds[1])
+end)
+
+test("empty segments ignored (double comma)", function()
+    local cmds = preprocess.split_commands("move bed, , open trapdoor")
+    eq(2, #cmds)
+    eq("move bed", cmds[1])
+    eq("open trapdoor", cmds[2])
+end)
+
+test("semicolon separator splits commands", function()
+    local cmds = preprocess.split_commands("move bed; open trapdoor")
+    eq(2, #cmds)
+    eq("move bed", cmds[1])
+    eq("open trapdoor", cmds[2])
+end)
+
+test("'then' word separator splits commands", function()
+    local cmds = preprocess.split_commands("move bed then open trapdoor")
+    eq(2, #cmds)
+    eq("move bed", cmds[1])
+    eq("open trapdoor", cmds[2])
+end)
+
+test("trailing comma produces 1 command", function()
+    local cmds = preprocess.split_commands("move bed,")
+    eq(1, #cmds)
+    eq("move bed", cmds[1])
+end)
+
+test("trailing semicolon produces 1 command", function()
+    local cmds = preprocess.split_commands("move bed;")
+    eq(1, #cmds)
+    eq("move bed", cmds[1])
+end)
+
+test("mixed separators (comma + semicolon + then)", function()
+    local cmds = preprocess.split_commands("look, take key; open door then go north")
+    eq(4, #cmds)
+    eq("look", cmds[1])
+    eq("take key", cmds[2])
+    eq("open door", cmds[3])
+    eq("go north", cmds[4])
+end)
+
+test("empty input returns empty list", function()
+    local cmds = preprocess.split_commands("")
+    eq(0, #cmds)
+end)
+
+test("nil input returns empty list", function()
+    local cmds = preprocess.split_commands(nil)
+    eq(0, #cmds)
+end)
+
+test("whitespace-only input returns empty list", function()
+    local cmds = preprocess.split_commands("   ")
+    eq(0, #cmds)
+end)
+
+test("quoted text not split on comma", function()
+    local cmds = preprocess.split_commands('say "hello, world", look')
+    eq(2, #cmds)
+    eq('say "hello, world"', cmds[1])
+    eq("look", cmds[2])
+end)
+
+test("'then' inside a word does not split", function()
+    local cmds = preprocess.split_commands("examine thenardier")
+    eq(1, #cmds)
+    eq("examine thenardier", cmds[1])
+end)
+
+-------------------------------------------------------------------------------
 -- Summary
 -------------------------------------------------------------------------------
 local failures = h.summary()

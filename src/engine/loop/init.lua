@@ -44,7 +44,7 @@ function loop.run(context)
   -- Session transcript for "report bug" (last 50 exchanges)
   context.transcript = context.transcript or {}
 
-  print("Type 'look' to look around. Type 'quit' to exit.")
+  print("Type 'look' to look around. Type 'report bug' to report issues. Type 'quit' to exit.")
   if context.ui and context.ui.is_enabled() then
     print("Scroll: /up  /down  /bottom")
   end
@@ -84,19 +84,24 @@ function loop.run(context)
     trimmed = trimmed:gsub("%?+$", ""):match("^%s*(.-)%s*$")
     if trimmed == "" then goto continue end
 
-    -- Split compound commands on " and " (e.g., "get a match and light it")
+    -- Multi-command splitting: commas, semicolons, "then" (Issue #1)
+    local command_parts = preprocess.split_commands(trimmed)
+
+    -- Expand each part further with the existing " and " compound split
     local sub_commands = {}
-    local remaining = trimmed
-    while true do
-      local before, after = remaining:match("^(.-)%s+and%s+(.+)$")
-      if before and after then
-        local b = before:match("^%s*(.-)%s*$")
-        if b ~= "" then sub_commands[#sub_commands + 1] = b end
-        remaining = after
-      else
-        local r = remaining:match("^%s*(.-)%s*$")
-        if r ~= "" then sub_commands[#sub_commands + 1] = r end
-        break
+    for _, part in ipairs(command_parts) do
+      local remaining = part
+      while true do
+        local before, after = remaining:match("^(.-)%s+and%s+(.+)$")
+        if before and after then
+          local b = before:match("^%s*(.-)%s*$")
+          if b ~= "" then sub_commands[#sub_commands + 1] = b end
+          remaining = after
+        else
+          local r = remaining:match("^%s*(.-)%s*$")
+          if r ~= "" then sub_commands[#sub_commands + 1] = r end
+          break
+        end
       end
     end
 

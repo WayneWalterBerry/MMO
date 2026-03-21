@@ -271,6 +271,67 @@ local function singularize_word(word)
     return forms
 end
 
+--- split_commands(input) -> list of command strings
+--- Splits a raw input line on commas, semicolons, or the word "then" to support
+--- multi-command input (e.g. "move bed, move rug, open trapdoor").
+--- Trims whitespace from each segment and drops empty segments.
+--- Does NOT split on separators inside double-quoted text.
+function preprocess.split_commands(input)
+    if not input then return {} end
+    local trimmed = input:match("^%s*(.-)%s*$")
+    if trimmed == "" then return {} end
+
+    -- Fast path: no separators at all → single command
+    if not trimmed:find("[,;]") and not trimmed:lower():find("%f[%a]then%f[%A]") then
+        return { trimmed }
+    end
+
+    -- Tokenise respecting double-quoted regions
+    local segments = {}
+    local current = {}
+    local in_quote = false
+    local lower = trimmed:lower()
+    local i = 1
+    local len = #trimmed
+
+    while i <= len do
+        local ch = trimmed:sub(i, i)
+
+        -- Toggle quote state
+        if ch == '"' then
+            in_quote = not in_quote
+            current[#current + 1] = ch
+            i = i + 1
+
+        -- Comma or semicolon separator (outside quotes)
+        elseif not in_quote and (ch == ',' or ch == ';') then
+            local seg = table.concat(current):match("^%s*(.-)%s*$")
+            if seg ~= "" then segments[#segments + 1] = seg end
+            current = {}
+            i = i + 1
+
+        -- " then " word separator (outside quotes)
+        elseif not in_quote and lower:sub(i, i + 5) == " then " then
+            local seg = table.concat(current):match("^%s*(.-)%s*$")
+            if seg ~= "" then segments[#segments + 1] = seg end
+            current = {}
+            i = i + 6  -- skip " then "
+
+        else
+            current[#current + 1] = ch
+            i = i + 1
+        end
+    end
+
+    -- Flush last segment
+    local seg = table.concat(current):match("^%s*(.-)%s*$")
+    if seg ~= "" then segments[#segments + 1] = seg end
+
+    -- If splitting produced nothing useful, return original as single command
+    if #segments == 0 then return { trimmed } end
+    return segments
+end
+
 --- singularize(noun) -> table of singular form candidates
 --- For multi-word nouns, also tries singularizing the last word.
 function preprocess.singularize(noun)

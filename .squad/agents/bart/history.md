@@ -413,3 +413,10 @@ Wayne requested GUIDs be added to all room and level .lua files. Audit confirmed
 - "look" verb ALWAYS shows full description regardless of visit history
 - `visited_rooms` is a flat Lua table used as a set — O(1) lookup, no serialization overhead
 - Room template unchanged — `short_description` is optional metadata on room instances
+
+## Learnings
+
+- Multi-command splitting must happen BEFORE the existing " and " compound split in the game loop — the two are layered (outer: commas/semicolons/then, inner: " and ")
+- Lua string pattern %f[%a] (frontier) is useful for word-boundary matching but tricky for the " then " separator — simpler to rely on the space characters in the literal " then " pattern
+- The fast path (no separators → single command) avoids allocation overhead for 99% of inputs
+- Quoted text protection via character-by-character scan is more reliable than trying to do regex with Lua patterns
