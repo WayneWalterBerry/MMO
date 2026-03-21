@@ -110,6 +110,13 @@ function preprocess.natural_language(input)
         return "open", crowbar_target
     end
 
+    -- "report bug" / "report a bug" → report_bug
+    if lower:match("^report%s+a?%s*bug")
+        or lower:match("^bug%s+report")
+        or lower:match("^file%s+a?%s*bug") then
+        return "report_bug", ""
+    end
+
     -- Composite part phrases: "take out X", "pull out X" → pull
     local pull_target = lower:match("^take%s+out%s+(.+)")
         or lower:match("^pull%s+out%s+(.+)")

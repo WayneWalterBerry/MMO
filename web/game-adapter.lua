@@ -35,6 +35,16 @@ local function log_status(msg)
     window:_logStatus(msg)
 end
 
+-- Build version (embedded at build time)
+local BUILD_TIMESTAMP = "2026-03-21 10:38"
+
+local function format_size(bytes)
+    if bytes >= 1048576 then
+        return string.format("%.1f MB", bytes / 1048576)
+    end
+    return string.format("%.1f KB", bytes / 1024)
+end
+
 ---------------------------------------------------------------------------
 -- HTTP cache — stores content + ETag + Last-Modified per URL
 ---------------------------------------------------------------------------
@@ -286,11 +296,12 @@ local ok, err = pcall(function()
     -- Returns (def, was_cached)
     -------------------------------------------------------------------
     local function load_object(guid)
-        if base_classes[guid] then return base_classes[guid], true end
+        if base_classes[guid] then return base_classes[guid], true, 0 end
         local source, was_cached = fetch_text("meta/objects/" .. guid .. ".lua")
-        if not source then return nil, false end
+        if not source then return nil, false, 0 end
+        local content_len = #source
         local def = loader.load_source(source)
-        if not def then return nil, false end
+        if not def then return nil, false, 0 end
         if def.template then
             def = loader.resolve_template(def, templates)
         end
@@ -298,7 +309,7 @@ local ok, err = pcall(function()
             base_classes[def.guid] = def
             if def.id then object_sources[def.id] = source end
         end
-        return def, was_cached
+        return def, was_cached, content_len
     end
 
     -------------------------------------------------------------------
@@ -317,6 +328,8 @@ local ok, err = pcall(function()
         local source, was_cached = fetch_text("meta/rooms/" .. room_id .. ".lua")
         if was_cached then
             log_status("Loading Room: " .. name_hint .. "... (cached)")
+        elseif source then
+            log_status("Loading Room: " .. name_hint .. "... (" .. format_size(#source) .. ")")
         else
             log_status("Loading Room: " .. name_hint .. "...")
         end
@@ -330,10 +343,12 @@ local ok, err = pcall(function()
         -- Fetch all objects referenced by instances
         for _, inst in ipairs(rm.instances or {}) do
             if inst.type_id and not base_classes[inst.type_id] then
-                local obj_def, obj_cached = load_object(inst.type_id)
+                local obj_def, obj_cached, obj_size = load_object(inst.type_id)
                 local obj_label = inst.type or inst.id
                 if obj_cached then
                     log_status("Loading Object: " .. obj_label .. "... (cached)")
+                elseif obj_size and obj_size > 0 then
+                    log_status("Loading Object: " .. obj_label .. "... (" .. format_size(obj_size) .. ")")
                 else
                     log_status("Loading Object: " .. obj_label .. "...")
                 end
@@ -484,6 +499,10 @@ local ok, err = pcall(function()
         game_start_time = os.time(),
         game_start_hour = presentation.GAME_START_HOUR,
         ui              = nil,
+        -- JS bridge: open URL in a new browser tab (for "report bug")
+        open_url        = function(url)
+            window:_openUrl(url)
+        end,
     }
 
     -------------------------------------------------------------------

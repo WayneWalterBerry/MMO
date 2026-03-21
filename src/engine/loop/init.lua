@@ -24,6 +24,12 @@ if not planner_ok then goal_planner = nil end
 --   verbs        -- table of { [verb_string] = handler_function }
 --   ui           -- (optional) engine.ui module instance
 --   on_quit      -- optional callback fired before exit
+-- BUG-060: Pronouns that resolve to the last referenced noun
+local PRONOUNS = {
+  it = true, them = true, that = true, this = true, those = true,
+  ["the same"] = true, ["the same thing"] = true,
+}
+
 function loop.run(context)
   assert(context and context.registry, "loop: context.registry is required")
   context.verbs = context.verbs or {}
@@ -31,6 +37,12 @@ function loop.run(context)
   -- Context tracking for Tier 3 planner
   context.last_tool = context.last_tool or nil
   context.known_objects = context.known_objects or {}
+
+  -- BUG-060: last referenced noun for context retention between commands
+  context.last_noun = context.last_noun or nil
+
+  -- Session transcript for "report bug" (last 20 exchanges)
+  context.transcript = context.transcript or {}
 
   print("Type 'look' to look around. Type 'quit' to exit.")
   if context.ui and context.ui.is_enabled() then
@@ -120,6 +132,27 @@ function loop.run(context)
         break
       end
 
+      -- BUG-060: Context noun resolution — resolve pronouns and empty nouns
+      -- Verbs that operate on the room (no noun expected) are excluded.
+      local no_noun_verbs = {
+        look = true, feel = true, smell = true, listen = true, taste = true,
+        inventory = true, i = true, help = true, time = true, quit = true,
+        sleep = true, rest = true, nap = true, wait = true, score = true,
+        report_bug = true,
+        -- Direction verbs should never inherit a context noun
+        north = true, south = true, east = true, west = true,
+        up = true, down = true, n = true, s = true, e = true, w = true,
+        u = true, d = true, go = true, enter = true, walk = true, run = true,
+        climb = true, ascend = true, descend = true,
+        -- Drop/put verbs inherit noun correctly from their own grammar
+        drop = true,
+      }
+      if noun ~= "" and PRONOUNS[noun] and context.last_noun then
+        noun = context.last_noun
+      elseif noun == "" and context.last_noun and not no_noun_verbs[verb] then
+        noun = context.last_noun
+      end
+
       -- Prepositional parsing: strip "with Y" for verbs that auto-find tools
       if verb == "light" or verb == "ignite" or verb == "burn" then
         local clean_noun = noun:match("^(.-)%s+with%s+.+$")
@@ -136,15 +169,35 @@ function loop.run(context)
         end
       end
 
+      -- Capture print output for transcript recording (BUG-060 / report bug)
+      local old_print = _G.print
+      local response_lines = {}
+      _G.print = function(...)
+        local parts = {}
+        for i = 1, select("#", ...) do
+          parts[i] = tostring(select(i, ...))
+        end
+        local line = table.concat(parts, "\t")
+        response_lines[#response_lines + 1] = line
+        old_print(...)
+      end
+
       local handler = context.verbs[verb]
       if handler then
         handler(context, noun)
+        -- BUG-060: Update last_noun after successful handler with a real noun
+        if noun ~= "" and not no_noun_verbs[verb] then
+          -- Strip prepositions for context: "in wardrobe" → "wardrobe"
+          local bare = noun:match("^%a+%s+(.+)$")
+          context.last_noun = bare or noun
+        end
       elseif context.parser then
         -- Tier 2 fallback: try embedding-based phrase matching
         local parser_fallback = require("engine.parser")
         local handled = parser_fallback.fallback(context.parser, sub_input, context)
         if not handled then
-          -- Tier 2 failed — no graceful fallback past this point
+          -- Tier 2 failed — restore print and skip
+          _G.print = old_print
           goto next_sub
         end
       else
@@ -154,6 +207,21 @@ function loop.run(context)
           print("Try 'feel' to explore by touch, or 'look' if you have light. Type 'help' for a full list of commands.")
         else
           print("I don't understand '" .. verb .. "'. Try 'look', 'examine', 'take', 'open', or type 'help' for a full list.")
+        end
+      end
+
+      -- Restore print and record transcript entry
+      _G.print = old_print
+      if #response_lines > 0 then
+        local entry = {
+          input = sub_input,
+          output = table.concat(response_lines, "\n"),
+        }
+        local transcript = context.transcript
+        transcript[#transcript + 1] = entry
+        -- Keep only last 20 exchanges
+        while #transcript > 20 do
+          table.remove(transcript, 1)
         end
       end
 

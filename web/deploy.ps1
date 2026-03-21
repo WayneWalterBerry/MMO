@@ -43,8 +43,8 @@ Copy-Item (Join-Path $ScriptDir "game-adapter.lua") $DistDir -Force
 # Copy SLM data if it exists
 $slmFile = Join-Path $RepoRoot "src\assets\parser\embedding-index.json"
 if (Test-Path $slmFile) {
-    # Don't copy the raw 15MB file — it's lazy-loaded and handled separately
-    Write-Host "  (SLM data not copied — lazy-loaded separately)"
+    # Don't copy the raw 15MB file - it's lazy-loaded and handled separately
+    Write-Host "  (SLM data not copied - lazy-loaded separately)"
 }
 
 # Step 3: Copy dist to GitHub Pages /play/

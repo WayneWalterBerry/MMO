@@ -4448,6 +4448,62 @@ function verbs.create()
     handlers["adjust"] = handlers["set"]
 
     ---------------------------------------------------------------------------
+    -- REPORT BUG — opens a pre-filled GitHub issue URL
+    ---------------------------------------------------------------------------
+    handlers["report_bug"] = function(ctx, noun)
+        -- Build transcript text from recent commands
+        local transcript = ctx.transcript or {}
+        local lines = {}
+        for _, entry in ipairs(transcript) do
+            lines[#lines + 1] = "> " .. entry.input
+            lines[#lines + 1] = entry.output
+            lines[#lines + 1] = ""
+        end
+        local transcript_text = table.concat(lines, "\n")
+
+        -- Room name
+        local room_name = "Unknown"
+        if ctx.current_room then
+            room_name = ctx.current_room.name or ctx.current_room.id or "Unknown"
+        end
+
+        -- Timestamp
+        local timestamp = os.date and os.date("%Y-%m-%d %H:%M") or "unknown"
+
+        -- URL-encode helper
+        local function url_encode(str)
+            str = str:gsub("\r\n", "\n")
+            str = str:gsub("([^%w%-%.%_%~ ])", function(c)
+                return string.format("%%%02X", string.byte(c))
+            end)
+            str = str:gsub(" ", "+")
+            return str
+        end
+
+        local title = "[Bug Report] " .. room_name .. " - " .. timestamp
+        local body = "## Bug Report\n\n"
+            .. "**Room:** " .. room_name .. "\n"
+            .. "**Time:** " .. timestamp .. "\n\n"
+            .. "## Session Transcript (last " .. #transcript .. " commands)\n\n"
+            .. "```\n" .. transcript_text .. "```\n\n"
+            .. "## Description\n\n_Describe the bug here_\n"
+
+        local url = "https://github.com/WayneWalterBerry/MMO/issues/new"
+            .. "?title=" .. url_encode(title)
+            .. "&body=" .. url_encode(body)
+
+        -- Try web bridge first (opens in new tab), fall back to printing URL
+        if ctx.open_url then
+            ctx.open_url(url)
+            print("Opening bug report in a new tab...")
+        else
+            print("To report a bug, open this URL:")
+            print(url)
+        end
+        print("Thank you for helping improve the game!")
+    end
+
+    ---------------------------------------------------------------------------
     -- HELP
     ---------------------------------------------------------------------------
     handlers["help"] = function(ctx, noun)
@@ -4505,6 +4561,7 @@ function verbs.create()
         print("  sleep             - sleep for 1 hour (or: sleep for 2 hours, sleep until dawn)")
         print("  rest / nap        - same as 'sleep'")
         print("  help              - show this list")
+        print("  report bug        - report a bug (opens GitHub issue)")
         print("  quit              - leave the game")
     end
 
