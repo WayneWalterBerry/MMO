@@ -23,7 +23,7 @@ return {
     surfaces = {
         inside = {
             capacity = 12, max_item_size = 2, weight_capacity = 25,
-            contents = {"wine-bottle-1", "wine-bottle-2", "wine-bottle-3"},
+            contents = {"wine-bottle"},
             accessible = true,
             accepts = {"bottle"},
         },

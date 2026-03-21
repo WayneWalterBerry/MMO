@@ -570,3 +570,7 @@ Flagged materials NOT in `src/engine/materials/init.lua`:
 - Followed puzzle-016 design doc: NO mechanical effect from drinking (no liquid_courage flag, no buff). The design explicitly says "flavor text only" — the teaching is the DRINK verb itself, not a reward system
 - Per-bottle flavor variations (3 different drink messages) are handled via instance overrides in room placement, not in the base object — that's Moe's domain
 - The wine rack already has the 3 bottles in `surfaces.inside.contents` — no room changes needed
+
+### BUG-061 & BUG-062 Fixes — Nelson Pass 016 (2026-07-22)
+- **BUG-061 (HIGH):** Wine rack `surfaces.inside.contents` referenced `{"wine-bottle-1", "wine-bottle-2", "wine-bottle-3"}` but the room instance in `storage-cellar.lua` only places one bottle with `id = "wine-bottle"`. Fixed by updating wine-rack contents to `{"wine-bottle"}` to match the actual instance ID. Lesson: always cross-check rack/container content IDs against room instance IDs — they must match exactly.
+- **BUG-062 (LOW):** Oil flask's `on_drink_reject` field was never checked by the drink verb handler. The handler fell through to the generic "You can't drink..." message. Fixed by adding a check for `obj.on_drink_reject` in `src/engine/verbs/init.lua` before the generic fallback. Lesson: when adding custom rejection fields to objects, always verify the engine verb handler actually reads them — object data is inert without engine support.

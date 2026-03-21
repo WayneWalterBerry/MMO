@@ -39,6 +39,29 @@
 
 ## Recent Updates
 
+### Pass-016: Puzzles & UX Polish Playtest (2026-03-21)
+
+**Status:** ✅ COMPLETE — 26 tests, 15 passed, 11 failed (58%)
+
+| Category | Tests | Passed | Failed | Notes |
+|----------|-------|--------|--------|-------|
+| Multi-Command Input | 6 | 6 | 0 | All separators work perfectly |
+| Visited Room Tracking | 5 | 5 | 0 | Short desc on revisit, full on look |
+| Report Bug Command | 3 | 3 | 0 | URL, intro mention, context-aware |
+| Puzzle 015: Draft Extinguish | 4 | 0 | 4 | 🔴 Schema mismatch — never fires |
+| Puzzle 016: Wine Drink | 6 | 0 | 6 | 🔴 Wine bottles not accessible |
+| Oil Flask Drink Rejection | 2 | 1 | 1 | Generic msg, not custom rejection |
+| **TOTAL** | **26** | **15** | **11** | |
+
+**New Bugs (3):**
+- BUG-060 (CRITICAL): `on_traverse` wind effect schema mismatch — engine vs room data contract broken
+- BUG-061 (HIGH): Wine bottles not instantiated in wine rack — ID mismatch
+- BUG-062 (LOW): Drink verb ignores `on_drink_reject` custom text
+
+**Major Wins:** Multi-command input, visited room tracking, report bug command all PASS
+**Full Report:** test-pass/2026-03-21-pass-016-puzzles-ux.md
+**Bug Report:** .squad/decisions/inbox/nelson-puzzle-test.md
+
 ### Pass-015: Deep Level 1 Playtest (2026-03-21)
 
 **Status:** ✅ COMPLETE — 149 tests, 137 passed, 12 failed (92%)
@@ -228,11 +251,11 @@
 ### GOAP Tier 3 Implementation (2026-03-20T21:15Z)
 **Status:** Ready for testing. Bart delivered UNLOCK verb + auto prerequisite planning.
 
-## Bug Track Summary (59 unique)
-- CRITICAL/HIGH (9): BUG-001, BUG-004, BUG-008, BUG-017, BUG-026, BUG-030 (ALL FIXED), BUG-036 (✅ PARTIALLY FIXED — "I want to..." works), BUG-048 (✅ FIXED), BUG-055 (NEW — spent match stays in hand)
-- MAJOR (5): BUG-037, BUG-038, BUG-039 (parser), BUG-049 (✅ FIXED — pry verb works), BUG-050 (✅ FIXED)
-- MEDIUM (13): Most FIXED; BUG-035 (GOAP spent match), BUG-051 (courtyard moonlight), BUG-052 (sarcophagus ambiguity), BUG-056 (NEW — plural names), BUG-058 (NEW — feel inside drawer)
-- LOW (4): BUG-033, BUG-034, BUG-057 (NEW — rat feel), BUG-059 (NEW — uncork/drink no hold check)
+## Bug Track Summary (62 unique)
+- CRITICAL/HIGH (11): BUG-001, BUG-004, BUG-008, BUG-017, BUG-026, BUG-030 (ALL FIXED), BUG-036 (✅ PARTIALLY FIXED), BUG-048 (✅ FIXED), BUG-055, BUG-060 (NEW — on_traverse schema mismatch), BUG-061 (NEW — wine bottles not instantiated)
+- MAJOR (5): BUG-037, BUG-038, BUG-039 (parser), BUG-049 (✅ FIXED), BUG-050 (✅ FIXED)
+- MEDIUM (13): Most FIXED; BUG-035 (GOAP spent match), BUG-051 (courtyard moonlight), BUG-052 (sarcophagus ambiguity), BUG-056 (plural names), BUG-058 (feel inside drawer)
+- LOW (5): BUG-033, BUG-034, BUG-057 (rat feel), BUG-059 (uncork/drink no hold check), BUG-062 (NEW — drink verb ignores on_drink_reject)
 - MINOR/COSMETIC (28): Most fixed; BUG-040–047 open, BUG-053, BUG-054
 
 ## Learnings
@@ -279,3 +302,13 @@
 - All 7 Level 1 rooms visited and tested: bedroom, cellar, storage-cellar, deep-cellar, hallway, courtyard, crypt
 - Crypt writing is extraordinary — silence description is best-in-class atmospheric text
 - Courtyard smell/listen are world-class — wind, owl, rain, empty manor watching
+- Multi-command input (Issue #1) works perfectly: comma, semicolon, "then" separators all split correctly. Empty segments ignored. 6-command chains execute flawlessly.
+- `--no-ui` flag is essential for reliable automated testing — TUI mode blanks output on complex sequences
+- Visited room tracking is elegant: short_description on revisit, full description on explicit `look`, bold `**Title**` markers throughout
+- `report bug` command generates context-aware GitHub issue URL with room name and timestamp — production quality
+- BUG-060 (CRITICAL): `on_traverse` wind effect never fires — schema mismatch between engine (expects `{type: "wind_effect"}`) and room data (provides `{wind_effect: {...}}`). Both directions broken.
+- BUG-061 (HIGH): Wine bottles not instantiated in wine rack — instance ID mismatch (`wine-bottle` vs `wine-bottle-1/2/3`). Puzzle 016 completely untestable.
+- BUG-062 (LOW): Drink verb uses generic rejection instead of object's `on_drink_reject` custom text
+- Schema mismatches between engine and data are a recurring category — the code patterns are solid but the contracts between layers aren't enforced
+- Multi-command makes speed-running the critical path trivial: `light candle` → 6-command chain → 3-command chain → at deep cellar in 3 inputs
+- Bug count: 62 unique bugs discovered total (BUG-001 through BUG-062)

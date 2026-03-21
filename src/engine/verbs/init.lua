@@ -3912,7 +3912,11 @@ function verbs.create()
             end
         end
 
-        print("You can't drink " .. (obj.name or "that") .. ".")
+        if obj.on_drink_reject then
+            print(obj.on_drink_reject)
+        else
+            print("You can't drink " .. (obj.name or "that") .. ".")
+        end
     end
 
     handlers["quaff"] = handlers["drink"]
