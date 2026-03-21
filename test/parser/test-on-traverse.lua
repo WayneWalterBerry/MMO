@@ -339,6 +339,68 @@ test("custom effect type can be registered and fires", function()
 end)
 
 ---------------------------------------------------------------------------
+h.suite("on_traverse — nested format (BUG-060)")
+---------------------------------------------------------------------------
+
+test("nested wind_effect format extinguishes a lit candle", function()
+    local candle = make_candle("lit")
+    local ctx = make_ctx({candle}, {"candle"})
+    local exit = {
+        target = "hallway",
+        on_traverse = {
+            wind_effect = {
+                strength = "gust",
+                extinguishes = { "candle" },
+                message_extinguish = "A gust snuffs your candle!",
+            },
+        },
+    }
+    start_capture()
+    traverse_effects.process(exit, ctx)
+    local output = stop_capture()
+    eq("extinguished", candle._state, "nested format should extinguish candle")
+    truthy(#output > 0, "should print effect messages")
+end)
+
+test("nested format spares wind-resistant lantern", function()
+    local lantern = make_lantern("lit")
+    local ctx = make_ctx({lantern}, {"oil-lantern"})
+    local exit = {
+        target = "deep-cellar",
+        on_traverse = {
+            wind_effect = {
+                extinguishes = { "lantern" },
+                message_spared = "Your lantern holds steady.",
+            },
+        },
+    }
+    start_capture()
+    traverse_effects.process(exit, ctx)
+    local output = stop_capture()
+    eq("lit", lantern._state, "nested format should spare wind-resistant lantern")
+    local found_spared = false
+    for _, line in ipairs(output) do
+        if line:find("holds steady") then found_spared = true end
+    end
+    truthy(found_spared, "should print spared message")
+end)
+
+test("nested format with ambiguous keys (multiple tables) is safe", function()
+    local exit = {
+        target = "hallway",
+        on_traverse = {
+            wind_effect = { extinguishes = { "candle" } },
+            water_effect = { description = "Splash!" },
+        },
+    }
+    local ctx = make_ctx({}, {})
+    start_capture()
+    traverse_effects.process(exit, ctx)
+    local output = stop_capture()
+    eq(0, #output, "ambiguous nested keys should not fire")
+end)
+
+---------------------------------------------------------------------------
 h.suite("on_traverse — on_traverse with missing fields is safe")
 ---------------------------------------------------------------------------
 

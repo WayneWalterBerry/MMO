@@ -34,15 +34,42 @@ function traverse_effects.register(effect_type, handler_fn)
     handlers[effect_type] = handler_fn
 end
 
+--- Normalize an on_traverse table into { type = ..., ...fields }.
+-- Accepts two formats:
+--   1. Flat:   { type = "wind_effect", extinguishes = {...}, ... }
+--   2. Nested: { wind_effect = { extinguishes = {...}, ... } }
+-- Returns the normalized effect table, or nil if unrecognized.
+local function normalize_effect(raw)
+    if raw.type then return raw end
+
+    -- Nested format: single key whose value is the effect payload
+    local effect_type, payload
+    for k, v in pairs(raw) do
+        if type(v) == "table" then
+            if effect_type then return nil end  -- ambiguous: multiple keys
+            effect_type = k
+            payload = v
+        end
+    end
+    if not effect_type then return nil end
+
+    -- Merge into flat format expected by handlers
+    local flat = { type = effect_type }
+    for k, v in pairs(payload) do flat[k] = v end
+    return flat
+end
+
 --- Process an exit's on_traverse effects, if any.
 -- Called by the movement handler BEFORE the player is moved.
 -- @param exit  table|string  The exit definition from room metadata.
 -- @param ctx   table         The game context (registry, player, etc.)
 function traverse_effects.process(exit, ctx)
     if type(exit) ~= "table" then return end
-    local effect = exit.on_traverse
+    local raw = exit.on_traverse
+    if not raw then return end
+
+    local effect = normalize_effect(raw)
     if not effect then return end
-    if not effect.type then return end
 
     local handler = handlers[effect.type]
     if not handler then return end
