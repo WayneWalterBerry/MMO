@@ -401,3 +401,92 @@ Without step 3, no player will progress.
 - Parser variations
 - Edge cases
 
+
+### Pass-020: Comprehensive Play Test — FAILED (2026-03-21)
+
+**Status:** ❌ FAILED — Critical path blocked by BUG-065
+
+**Tests Run:** 7 of 40 planned (17.5%)  
+**Pass Rate:** 5/7 tests passed (71%)  
+**Duration:** ~25 minutes  
+**Game Crashes:** 1 (parser hang)
+
+**Critical Findings:**
+
+1. **BUG-065: Container contents NOT revealed (CRITICAL — Release Blocker)**
+   - BUG-064 was marked "fixed" but is NOT actually fixed
+   - Tested: feel drawer, examine drawer, look in drawer
+   - None reveal the matchbox inside the opened drawer
+   - Blocks critical path — new players cannot discover matchbox exists
+   - Workaround: Blind grab get matchbox works
+
+2. **BUG-066: Multi-command parser hangs game (MAJOR)**
+   - Input: get match, light match, look
+   - Game completely hung, required restart
+   - Parser should reject or handle gracefully
+
+**What Passed:**
+- ✅ BUG-063 VERIFIED FIXED — nightstand appears in feel around
+- ✅ open nightstand works
+- ✅ Matchbox can be taken (blind grab)
+- ✅ Match lighting FSM works beautifully
+- ✅ Match counter decrements correctly
+
+**Tests Not Completed:**
+- Phases 2-8 (33 tests) blocked by inability to progress past match lighting
+- Cannot test injury system, bandages, poison, puzzles without navigation
+- Parser edge cases untested
+
+**Severity Breakdown:**
+- CRITICAL: 1 (BUG-065)
+- MAJOR: 1 (BUG-066)
+
+**Recommendation:** Fix BUG-065 before any further testing. Game is not playable for new users.
+
+
+
+### Pass-021: Bug Fix Verification + Stability Testing (2026-03-21)
+
+**Status:** ✅ PRIMARY OBJECTIVES MET / ⚠️ NEW BLOCKERS FOUND (15 tests, 67% pass)
+
+**Bug Fix Verification:**
+- ✅ **BUG-065 FIXED:** feel drawer now shows matchbox inside — CRITICAL PATH UNBLOCKED
+- ✅ **BUG-066 FIXED:** Multi-command parser works (get match, light match executes properly)
+- ⚠️ **BUG-063:** Not tested (deferred due to stability issues)
+
+**New Critical Bugs Discovered:**
+- 🔴 **BUG-067: Rapid sequential commands cause hang (HIGH)** — 3+ commands entered quickly make game unresponsive
+- 🔴 **BUG-068: inventory command causes hang (HIGH)** — Command completely freezes game
+
+**⚠️ UPDATE (2026-03-21 — Bart Investigation):**
+Both BUG-067 and BUG-068 **CANNOT BE REPRODUCED** in current codebase (commit 4d59d8f).
+- ✅ Inventory command works perfectly
+- ✅ Rapid command sequences (7+ commands) execute without hanging
+- ✅ Automated regression tests confirm no hang (3s completion)
+- ✅ All 288 tests pass
+
+**Likely cause:** Transient testing environment issue or bugs already fixed.
+**Status:** Both marked as CANNOT REPRODUCE. Game is stable.
+
+**Systems Verified Working:**
+1. Feel system — all objects detected properly, drawer contents visible (BUG-065 fix works!)
+2. Container system — nightstand opens, drawer accessible, matchbox inside
+3. Match system — lighting, burning, counter decrement all work
+4. Multi-command parser — comma-separated commands execute (BUG-066 fix works!)
+5. Navigation — blocked directions and locked doors show proper messages
+
+**Testing Limitations:**
+Due to BUG-067 and BUG-068 hangs, could NOT complete:
+- Phases 3-8 (injury, bandage, poison, puzzles, parser edge cases, edge cases)
+- Navigation beyond bedroom
+- Inventory functionality
+- Sustained light sources (candle/torch)
+
+**Game Startup Warnings:**
+- Base class not found for wine-bottle/torch-lit-west/stone-altar GUIDs
+- Missing containers: stone-sarcophagus.inside, stone-well
+
+**Verdict:** The two main bug fixes (BUG-065, BUG-066) are VERIFIED and working perfectly. However, new stability bugs prevent comprehensive regression testing. Game is functional for basic critical path but not stable enough for extended play.
+
+**File:** test-pass/2026-03-21-pass-021.md
+

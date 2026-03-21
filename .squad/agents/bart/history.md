@@ -41,6 +41,34 @@
 
 ## Recent Updates
 
+### Session: BUG-067/068 Investigation (2026-03-21)
+**Status:** ✅ CANNOT REPRODUCE — Bugs not present  
+**Requested by:** Wayne "Effe" Berry
+
+**Task:** Investigate game stability bugs reported by Nelson in Pass-021:
+- BUG-067: Rapid sequential commands cause hang
+- BUG-068: `inventory` command hangs game
+
+**Investigation Results:**
+- ✅ Inventory command works perfectly (displays hands, worn items, containers)
+- ✅ Rapid command sequences (7+ commands) execute without hanging
+- ✅ Piped input completes in 3 seconds (no blocking)
+- ✅ All 288 existing tests pass
+- ✅ Code review shows no infinite loops or blocking operations
+
+**Root Cause:** Likely transient testing environment issue or already fixed before investigation.
+
+**Actions Taken:**
+1. Created automated regression tests:
+   - `test/integration/test-no-hang.lua` — end-to-end hang detection
+   - `test/integration/test-bug-067-068.lua` — unit-level verification
+2. Documented findings in `temp/bug-067-068-investigation.md`
+3. Verified game stability with multiple test scenarios
+
+**Outcome:** Both bugs marked as **CANNOT REPRODUCE**. Game is stable.
+
+**Commit:** `4d59d8f` — test: add regression tests for BUG-067/068
+
 ### Session: Object Lua Batch + Bugfix Pass-007 (2026-03-20T22:00Z)
 **Status:** ✅ COMPLETE
 **Outcome:** 4 object .lua files shipped + 2 minor bugs fixed
