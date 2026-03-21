@@ -393,3 +393,98 @@
 
 ### Commit
 - `2faac42`: "Design puzzle difficulty rating system and classification guide"
+
+---
+
+## Session: Level 1 New Puzzle Design (2026-07-22)
+
+### Work Completed
+
+Designed 6 new puzzles (009–014) for Level 1 based on CBG's master design at `docs/levels/level-01-intro.md`. All puzzles grounded in Frink's 47KB research document (`resources/research/puzzles/puzzle-design-research.md`).
+
+#### Puzzles Created
+
+| ID | Name | Room | Difficulty | Cruelty | Pattern | Critical Path? |
+|----|------|------|------------|---------|---------|----------------|
+| 009 | Crate Puzzle | Storage Cellar | ⭐⭐ | Polite | Discovery (Nested Containers) + Lock-and-Key (Tool-Gated) | YES |
+| 010 | Light Upgrade | Storage Cellar | ⭐⭐ | Merciful | Combination/Synthesis + Transformation | NO (optional) |
+| 011 | Ascent to Manor | Deep Cellar → Hallway | ⭐⭐ | Merciful | Environmental/Spatial (Navigation) | YES |
+| 012 | Altar Puzzle | Deep Cellar | ⭐⭐⭐ | Polite | Environmental Interaction + Deduction + Sequence | NO (optional, unlocks crypt) |
+| 013 | Courtyard Entry | Courtyard | ⭐⭐⭐⭐ | Tough | Lateral Thinking + Environmental/Spatial | NO (alternate path) |
+| 014 | Sarcophagus Puzzle | Crypt | ⭐⭐⭐ | Polite | Discovery + Deduction (Pattern Recognition) | NO (optional, lore reward) |
+
+#### Key Design Decisions
+
+1. **GOAP-compatible where appropriate:** Puzzles 009 and 011 (critical path) have GOAP-resolvable mechanical steps, but discovery moments remain human-only. Puzzle 012 is explicitly GOAP-incompatible (knowledge gate via ritual interpretation). This follows Frink's core finding: GOAP makes inventory puzzles obsolete → design for understanding.
+
+2. **Multi-sensory clues throughout:** Every puzzle has a full sensory hints table. Key innovations:
+   - Puzzle 010: SMELL is the primary discovery channel (oil bottle vs wine bottles)
+   - Puzzle 012: SMELL is a feedback channel (incense confirms progress)
+   - Puzzle 014: FEEL reveals the empty sarcophagus mystery (scratch marks inside)
+
+3. **Progressive complexity (Witness model):** Puzzles build on previously taught concepts:
+   - 001 taught fire chain → 010 teaches fuel combination
+   - 007 taught spatial discovery → 009 teaches nested container discovery
+   - 006 taught lock-and-key → 012 teaches symbolic/ritual interaction (non-physical "key")
+
+4. **No softlocks:** Every critical-path puzzle (009, 011) is Zarfian Merciful or Polite. Optional puzzles (012, 014) are Polite. Only the alternate-path puzzle (013) reaches Tough — appropriate for players who chose the high-risk window escape.
+
+5. **Level boundary flags:** Identified objects that could cross into Level 2:
+   - **Must cross:** Tome (lore), burial goods (economy)
+   - **May need destruction:** Crowbar, rope (could trivialize L2 puzzles), oil lantern (light advantage)
+   - **Self-consuming:** Iron key (purpose fulfilled in L1), silver key (same)
+   - **Flag for CBG:** All crypt objects are optional finds — L2 must NOT require them
+
+6. **Narrative seeds for Level 2:** 
+   - Empty sarcophagus E (who opened it? what was taken?)
+   - Tome's warning ("what sleeps below must never wake")
+   - The Keepers of the Vigil (religious order that built the manor)
+
+#### New Objects Specified for Flanders
+
+~30 new objects across puzzles 009–014, including:
+- **Storage Cellar:** large-crate, small-crate, grain-sack, iron-key, crowbar, straw-packing, wine-rack, wine-bottle (×3), oil-bottle, oil-lantern, rope-coil
+- **Deep Cellar:** stone-altar, offering-bowl, incense-burner, tattered-scroll, silver-key, stone-panel, unlit-sconce (×2)
+- **Hallway:** stone-stairway (exit), oak-door-top (exit)
+- **Courtyard:** stone-well, well-bucket, ivy, cobblestone-loose, wooden-door-courtyard, ground-floor-window (×2), rain-barrel, first-floor-shutters
+- **Crypt:** sarcophagus (×5 instances), tome, silver-dagger, burial-jewelry, burial-coins, candle-stub (×4), wall-inscription
+
+#### Technical Notes for Bart
+
+1. **Puzzle 012 ritual mechanism:** Requires Boolean-AND compound trigger (incense smoldering + flame in offering bowl). Recommend room-level event listener over individual object guards — keeps logic in room metadata per Principle 8.
+2. **Sarcophagus instances:** 5 instances from 1 base class with per-instance overrides (effigy, inscription, contents). Follows Principle 5 exactly.
+3. **PUSH/LIFT/SLIDE verbs for heavy lids:** May need verb handler additions if not already present. Check `engine/verbs/init.lua` for heavy-object manipulation.
+
+### Files Created
+- `docs/puzzles/009-crate-puzzle.md` (13.6 KB)
+- `docs/puzzles/010-light-upgrade.md` (12.1 KB)
+- `docs/puzzles/011-ascent-to-manor.md` (11.4 KB)
+- `docs/puzzles/012-altar-puzzle.md` (17.0 KB)
+- `docs/puzzles/013-courtyard-entry.md` (15.3 KB)
+- `docs/puzzles/014-sarcophagus-puzzle.md` (17.4 KB)
+
+### Research Citations Used
+- Frink §1.3 [7][8] — Emily Short's narrative reward and through-line principles
+- Frink §2.1 [11] — The Witness scaffolding / progressive complexity
+- Frink §2.3 [15][16] — Obra Dinn observation-based deduction
+- Frink §2.4 [17] — Outer Wilds knowledge-gate model
+- Frink §2.6 [19][20] — Riven integrated environmental puzzle design
+- Frink §3.1-3.3 [21][22][23][24] — Escape room flow structures, chaining, physical objects
+- Frink §3.5 [25] — Neuroscience of "aha!" moments
+- Frink §4.1-4.2 [26][27] — Real-world problem solving, material consistency
+- Frink §5.1-5.3 [28][29][32] — Gate taxonomies, hint design, cognitive science
+- Frink §6.2-6.4 — GOAP paradigm shift, material-physics puzzles, sensory system
+
+### Key Insights for Future Puzzle Design
+
+1. **GOAP makes Boolean-AND puzzles our sweet spot.** GOAP plans linear chains but cannot resolve parallel condition satisfaction (incense AND flame). Design more puzzles with simultaneous conditions.
+
+2. **SMELL is underutilized.** Only Puzzle 010 (oil discovery) and 012 (incense feedback) use SMELL as primary channel. Future levels should feature smell-gated puzzles (tracking by scent, poison identification, etc.).
+
+3. **Empty containers are powerful mystery hooks.** The empty sarcophagus (014-E) generates more narrative tension than any treasure. Future levels should plant "evidence of prior action" — emptied chests, disturbed dust, moved furniture.
+
+4. **Ritual/symbolic puzzles bypass GOAP beautifully.** The altar puzzle (012) proves that "perform a ritual based on written instructions" is a pure knowledge gate that GOAP cannot shortcut. This pattern is infinitely extensible (recipes, spells, ceremonies, codes).
+
+5. **Light-as-resource creates organic difficulty modifiers.** Players who found the lantern (010) can sacrifice the candle for the altar ritual (012) without penalty. Players who didn't must make a strategic choice. This cross-puzzle synergy emerged naturally from resource design.
+
+6. **Level boundary design needs early attention.** Several objects (crowbar, rope, tome, silver dagger) could break Level 2 if carried forward. Recommend: CBG creates a formal "Level 1→2 inventory audit" before Level 2 puzzle design begins.
