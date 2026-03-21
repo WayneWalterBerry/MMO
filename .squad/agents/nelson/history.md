@@ -19,10 +19,11 @@
 **Agent Role:** Tester responsible for playtest validation, bug discovery, and regression verification.
 
 **Testing Summary (2026-03-19 to 2026-03-21):**
-- 8 playtests completed, 94+ tests run, 83+ passed
+- 9 playtests completed, 172+ tests run, 139+ passed
 - Critical path proven end-to-end: feel → GOAP light → spatial puzzle → multi-room → unlock
-- 35 unique bugs discovered (6 CRITICAL/HIGH, 9 MEDIUM, 2 LOW, 18 MINOR/COSMETIC)
-- All CRITICAL/HIGH bugs fixed; 1 MEDIUM open (BUG-035)
+- 47 unique bugs discovered (7 CRITICAL/HIGH, 12 MEDIUM+MAJOR, 2 LOW, 26 MINOR/COSMETIC)
+- All previous CRITICAL/HIGH bugs fixed; BUG-036 (new CRITICAL) open
+- 1 MEDIUM open (BUG-035)
 
 **Current Status:**
 - Engine core: ✅ SOLID
@@ -35,6 +36,41 @@
 - `history-archive-2026-03-20T22-40Z-nelson.md` — Full archive (2026-03-19 to 2026-03-20T22:40Z): all 7 playtests, 32 bugs, regression verification, pass-by-pass findings
 
 ## Recent Updates
+
+### Pass-012: Natural Language + New Player Simulation (2026-03-21)
+
+**Status:** ✅ COMPLETE
+
+| Category | Tests | Passed | Failed | Notes |
+|----------|-------|--------|--------|-------|
+| Natural Language | 14 | 7 | 7 | "I" prefix, "what's around me", "use X on Y" |
+| Multi-Word Objects | 12 | 10 | 2 | Hyphen in "four-poster" breaks match |
+| Typos/Near-Misses | 4 | 0 | 4 | ≤4-char words skip fuzzy (by design D-BUG018) |
+| Confused Player | 12 | 8 | 4 | Directions, scenery, verb routing |
+| Sensory Verbs | 4 | 4 | 0 | listen/smell are extraordinary |
+| GOAP/Critical Path | 8 | 8 | 0 | Zero regressions |
+| Edge Cases | 10 | 7 | 3 | drop all, examine self, noun-only |
+| Random/Gibberish | 4 | 4 | 0 | Clean error messages |
+| Help System | 4 | 4 | 0 | "what can I do", "how do I get out" → help |
+| Ambiguity | 6 | 4 | 2 | "light" bare, search intransitive |
+| **TOTAL** | **78** | **56** | **22** | |
+
+**New Bugs (12):**
+- BUG-036 (🔴 CRITICAL): "I" at sentence start triggers inventory — any "I want to..." shows hands
+- BUG-037 (🟡 MAJOR): "what's around me" not understood
+- BUG-038 (🟡 MAJOR): "what am I holding" not understood
+- BUG-039 (🟡 MAJOR): "use X on Y" not understood
+- BUG-040–047: Minor parser/UX issues (hyphen matching, typo tolerance, noun-only input, drop all, search room, climb routing, bare verb suggestions, feel-in-drawer)
+
+**Major Wins:**
+1. Sensory verbs (listen, smell, feel) are best-in-class — incredible atmospheric writing
+2. GOAP still magical — "light candle" from cold start chains 5 steps flawlessly
+3. Multi-word matching works for 10/12 tested objects (only hyphenated name fails)
+4. "what can I do", "where am I", "what do I see" all map naturally to help/look
+5. Error messages for nonexistent objects are clear and consistent
+6. Candle burn timer creates real gameplay tension
+
+**Full Report:** test-pass/gameplay/012-pass-2026-03-21.md
 
 ### Pass-009 Execution: Material Properties & Mutate Fields (2026-03-21)
 
@@ -100,11 +136,12 @@
 ### GOAP Tier 3 Implementation (2026-03-20T21:15Z)
 **Status:** Ready for testing. Bart delivered UNLOCK verb + auto prerequisite planning.
 
-## Bug Track Summary (35 unique)
-- CRITICAL/HIGH (6): BUG-001, BUG-004, BUG-008, BUG-017, BUG-026, BUG-030 — ALL FIXED
+## Bug Track Summary (47 unique)
+- CRITICAL/HIGH (7): BUG-001, BUG-004, BUG-008, BUG-017, BUG-026, BUG-030 (ALL FIXED), BUG-036 (OPEN — "I" triggers inventory)
+- MAJOR (3): BUG-037 (what's around me), BUG-038 (what am I holding), BUG-039 (use X on Y) — ALL OPEN
 - MEDIUM (9): ALL FIXED except BUG-035 (GOAP spent match relight)
 - LOW (2): BUG-033 (oak missing from registry), BUG-034 (velvet missing from registry)
-- MINOR/COSMETIC (18): Most fixed; BUG-031, BUG-032 fixed post-pass-007
+- MINOR/COSMETIC (26): Most fixed; BUG-040–047 open (parser UX from pass-012)
 
 ## Learnings
 
