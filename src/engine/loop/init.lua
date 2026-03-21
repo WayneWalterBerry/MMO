@@ -266,8 +266,9 @@ function loop.run(context)
       -- Player hands (extract IDs from object instances)
       if context.player then
         for i = 1, 2 do
-          if context.player.hands[i] then
-            tick_targets[#tick_targets + 1] = context.player.hands[i]
+          local hand = context.player.hands[i]
+          if hand then
+            tick_targets[#tick_targets + 1] = type(hand) == "table" and hand.id or hand
           end
         end
       end
@@ -304,7 +305,9 @@ function loop.run(context)
             local st = obj.states and obj.states[obj._state]
             if st and st.terminal and st.consumable then
               for i = 1, 2 do
-                if context.player.hands[i] == entry.obj_id then
+                local hand = context.player.hands[i]
+                local hand_id = hand and (type(hand) == "table" and hand.id or hand)
+                if hand_id == entry.obj_id then
                   context.player.hands[i] = nil
                 end
               end

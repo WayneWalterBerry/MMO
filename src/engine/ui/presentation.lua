@@ -26,10 +26,11 @@ function presentation.get_all_carried_ids(ctx)
     local ids = {}
     local reg = ctx.registry
     for i = 1, 2 do
-        local hand_id = ctx.player.hands[i]
-        if hand_id then
+        local hand = ctx.player.hands[i]
+        if hand then
+            local hand_id = type(hand) == "table" and hand.id or hand
             ids[#ids + 1] = hand_id
-            local obj = reg:get(hand_id)
+            local obj = type(hand) == "table" and hand or reg:get(hand)
             if obj and obj.container and obj.contents then
                 for _, item_id in ipairs(obj.contents) do
                     ids[#ids + 1] = item_id

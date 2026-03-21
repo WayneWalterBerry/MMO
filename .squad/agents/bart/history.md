@@ -535,3 +535,25 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 - Injury-specific healing creates natural puzzle pressure — finding the RIGHT remedy, not just ANY remedy.
 - Nested inventory (containers within containers) needs recursive traversal but the code stays simple.
 - The compute_health() function is called on every read, which is fine for a text adventure (no performance concern).
+
+### Session: Inventory Instance Refactor (2026-07-22)
+**Status:** COMPLETE
+**Outcome:** Inventory now stores object INSTANCES (tables) instead of string IDs
+
+**What Changed:**
+- player.hands[i] stores the actual object table (same reference as registry) instead of a string ID
+- Each picked-up object gets an instance_id (monotonic counter) to distinguish duplicates
+- Added _hid(hand) and _hobj(hand, reg) backward-compatible accessors throughout the engine
+- Container contents inside bags preserve nested structure on pickup
+
+**Files Modified (engine only, no meta .lua changes):**
+1. src/engine/verbs/init.lua - Added instance helpers; updated take/drop/put/inventory/wear/remove handlers + all internal helpers
+2. src/engine/ui/presentation.lua - get_all_carried_ids handles object instances in hands
+3. src/engine/loop/init.lua - Post-command FSM tick phase extracts IDs from hand instances
+4. src/engine/parser/goal_planner.lua - All hand-reading functions updated
+5. src/main.lua - Burnable tick handler reads object instances from hands
+6. test/inventory/test-inventory.lua - Updated place_in_hand helper + all 60 assertions
+
+**Test Results:** 126/126 pass (60 inventory + 35 parser + 4 context + 15 on-traverse + 12 search-order)
+
+**Architectural Decision:** D-INV007 - Hands store object instances (tables), not string IDs

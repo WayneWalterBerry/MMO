@@ -72,17 +72,23 @@ local function place_in_room(ctx, obj_def)
     return obj_def
 end
 
--- Register an object and put it in the player's hand
+-- Register an object and put it in the player's hand (stores object instance)
 local function place_in_hand(ctx, obj_def, hand_slot)
     ctx.registry:register(obj_def.id, obj_def)
     hand_slot = hand_slot or 1
     if ctx.player.hands[1] == nil and hand_slot == 1 then
-        ctx.player.hands[1] = obj_def.id
+        ctx.player.hands[1] = obj_def
     elseif ctx.player.hands[2] == nil then
-        ctx.player.hands[2] = obj_def.id
+        ctx.player.hands[2] = obj_def
     end
     obj_def.location = "player"
     return obj_def
+end
+
+-- Extract object ID from a hand slot (supports instances and legacy strings)
+local function hand_id(h)
+    if type(h) == "table" then return h.id end
+    return h
 end
 
 -- Check if an ID is in a list
@@ -106,7 +112,7 @@ test("take portable object from room moves it to hand", function()
 
     handlers["take"](ctx, "apple")
 
-    eq("apple", ctx.player.hands[1])
+    eq("apple", hand_id(ctx.player.hands[1]))
     eq(false, list_contains(room.contents, "apple"))
     eq("player", reg:get("apple").location)
 end)
@@ -125,8 +131,8 @@ test("take uses first empty hand (left first)", function()
     handlers["take"](ctx, "key")
     handlers["take"](ctx, "coin")
 
-    eq("key", ctx.player.hands[1])
-    eq("coin", ctx.player.hands[2])
+    eq("key", hand_id(ctx.player.hands[1]))
+    eq("coin", hand_id(ctx.player.hands[2]))
 end)
 
 test("take with empty noun prints prompt", function()
@@ -201,7 +207,7 @@ test("'get' is an alias for take", function()
 
     handlers["get"](ctx, "book")
 
-    eq("book", ctx.player.hands[1])
+    eq("book", hand_id(ctx.player.hands[1]))
     eq("player", reg:get("book").location)
 end)
 
@@ -214,7 +220,7 @@ test("'grab' is an alias for take", function()
 
     handlers["grab"](ctx, "rope")
 
-    eq("rope", ctx.player.hands[1])
+    eq("rope", hand_id(ctx.player.hands[1]))
 end)
 
 -------------------------------------------------------------------------------
@@ -230,8 +236,8 @@ test("take two-handed object occupies both hands", function()
 
     handlers["take"](ctx, "crate")
 
-    eq("crate", ctx.player.hands[1])
-    eq("crate", ctx.player.hands[2])
+    eq("crate", hand_id(ctx.player.hands[1]))
+    eq("crate", hand_id(ctx.player.hands[2]))
     eq("player", reg:get("crate").location)
 end)
 
@@ -293,8 +299,8 @@ test("drop two-handed object frees both hands", function()
         keywords = {"box"}, portable = true, hands_required = 2,
     }
     reg:register("big-box", crate)
-    ctx.player.hands[1] = "big-box"
-    ctx.player.hands[2] = "big-box"
+    ctx.player.hands[1] = crate
+    ctx.player.hands[2] = crate
     crate.location = "player"
 
     handlers["drop"](ctx, "box")
@@ -312,7 +318,7 @@ test("drop item in bag gives helpful message", function()
         contents = { "pebble" },
     }
     reg:register("sack", bag)
-    ctx.player.hands[1] = "sack"
+    ctx.player.hands[1] = bag
     bag.location = "player"
     reg:register("pebble", {
         id = "pebble", name = "a pebble",
@@ -338,7 +344,7 @@ test("take item from carried container", function()
         contents = { "match-1" },
     }
     reg:register("matchbox", box)
-    ctx.player.hands[1] = "matchbox"
+    ctx.player.hands[1] = box
     box.location = "player"
     reg:register("match-1", {
         id = "match-1", name = "a wooden match",
@@ -348,7 +354,7 @@ test("take item from carried container", function()
 
     handlers["take"](ctx, "match from matchbox")
 
-    eq("match-1", ctx.player.hands[2])
+    eq("match-1", hand_id(ctx.player.hands[2]))
     eq(0, #box.contents)
     eq("player", reg:get("match-1").location)
 end)
@@ -369,7 +375,7 @@ test("take from visible room container (not held)", function()
 
     handlers["take"](ctx, "bottle from rack")
 
-    eq("wine-bottle", ctx.player.hands[1])
+    eq("wine-bottle", hand_id(ctx.player.hands[1]))
     eq(0, #rack.contents)
 end)
 
@@ -434,7 +440,7 @@ test("take from surface container (accessible)", function()
 
     handlers["take"](ctx, "diary from nightstand")
 
-    eq("diary", ctx.player.hands[1])
+    eq("diary", hand_id(ctx.player.hands[1]))
     eq(0, #nightstand.surfaces.inside.contents)
 end)
 
@@ -702,7 +708,7 @@ test("inventory shows bag contents", function()
         contents = { "quill" },
     }
     reg:register("satchel", bag)
-    ctx.player.hands[1] = "satchel"
+    ctx.player.hands[1] = bag
     bag.location = "player"
     reg:register("quill", {
         id = "quill", name = "a feather quill",
@@ -844,7 +850,7 @@ test("take then drop returns object to room", function()
     })
 
     handlers["take"](ctx, "flask")
-    eq("flask", ctx.player.hands[1])
+    eq("flask", hand_id(ctx.player.hands[1]))
     eq(false, list_contains(room.contents, "flask"))
 
     handlers["drop"](ctx, "flask")
@@ -873,7 +879,7 @@ test("put into container then take from container round-trip", function()
 
     -- Take lantern from crate
     handlers["take"](ctx, "lantern from crate")
-    eq("lantern", ctx.player.hands[1])
+    eq("lantern", hand_id(ctx.player.hands[1]))
     eq(0, #crate.contents)
 end)
 
@@ -938,7 +944,7 @@ test("find_visible locates object in room contents", function()
     })
     -- Use take as a proxy — if take works, find_visible found it
     handlers["take"](ctx, "lamp")
-    eq("lamp", ctx.player.hands[1])
+    eq("lamp", hand_id(ctx.player.hands[1]))
 end)
 
 test("find_visible finds object on accessible surface", function()
@@ -958,7 +964,7 @@ test("find_visible finds object on accessible surface", function()
     })
 
     handlers["take"](ctx, "pen")
-    eq("pen", ctx.player.hands[1])
+    eq("pen", hand_id(ctx.player.hands[1]))
     eq(0, #desk.surfaces.top.contents)
 end)
 
@@ -987,7 +993,7 @@ test("take with article 'the' works", function()
     })
 
     handlers["take"](ctx, "the scroll")
-    eq("scroll", ctx.player.hands[1])
+    eq("scroll", hand_id(ctx.player.hands[1]))
 end)
 
 test("'pick up X' syntax works", function()
@@ -998,7 +1004,7 @@ test("'pick up X' syntax works", function()
     })
 
     handlers["take"](ctx, "up hat")
-    eq("hat", ctx.player.hands[1])
+    eq("hat", hand_id(ctx.player.hands[1]))
 end)
 
 -------------------------------------------------------------------------------

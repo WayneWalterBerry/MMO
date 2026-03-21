@@ -392,9 +392,10 @@ context.on_tick = function(ctx)
 
     -- Player hands
     for i = 1, 2 do
-        local hand_id = p.hands[i]
-        if hand_id then
-            local obj = reg:get(hand_id)
+        local hand = p.hands[i]
+        if hand then
+            local hand_id = type(hand) == "table" and hand.id or hand
+            local obj = type(hand) == "table" and hand or reg:get(hand)
             tick_burnable(obj, hand_id, function()
                 p.hands[i] = nil
             end)

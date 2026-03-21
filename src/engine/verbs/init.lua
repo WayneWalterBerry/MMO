@@ -342,7 +342,7 @@ local function reattach_part(ctx, drawer_obj, parent)
     end
     -- Also check player hands
     for i = 1, 2 do
-        if ctx.player.hands[i] == drawer_obj.id then
+        if _hid(ctx.player.hands[i]) == drawer_obj.id then
             ctx.player.hands[i] = nil
         end
     end
@@ -1645,11 +1645,11 @@ function verbs.create()
             end
             -- Also check player hands
             for i = 1, 2 do
-                local hid = ctx.player.hands[i]
-                if hid then
-                    local hobj = reg:get(hid)
-                    if hobj and hobj.on_smell then
-                        found[#found + 1] = { name = hobj.name or hobj.id, smell = hobj.on_smell }
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local h_obj = _hobj(hand, reg)
+                    if h_obj and h_obj.on_smell then
+                        found[#found + 1] = { name = h_obj.name or h_obj.id, smell = h_obj.on_smell }
                     end
                 end
             end
@@ -1757,11 +1757,11 @@ function verbs.create()
                 end
             end
             for i = 1, 2 do
-                local hid = ctx.player.hands[i]
-                if hid then
-                    local hobj = reg:get(hid)
-                    if hobj and hobj.on_listen then
-                        found[#found + 1] = { name = hobj.name or hobj.id, sound = hobj.on_listen }
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local h_obj = _hobj(hand, reg)
+                    if h_obj and h_obj.on_listen then
+                        found[#found + 1] = { name = h_obj.name or h_obj.id, sound = h_obj.on_listen }
                     end
                 end
             end
@@ -1871,9 +1871,10 @@ function verbs.create()
                 return
             end
             table.remove(found_list, found_idx)
-            ctx.player.hands[slot] = found_id
             local item = ctx.registry:get(found_id)
             item.location = "player"
+            if not item.instance_id then item.instance_id = next_instance_id() end
+            ctx.player.hands[slot] = item
             print("You take " .. (item and item.name or found_id) .. " from " .. (bag.name or "the container") .. ".")
             return
         end
@@ -1893,9 +1894,9 @@ function verbs.create()
                     :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
                 local alt_obj, alt_parent
                 for i = 1, 2 do
-                    local hand_id = ctx.player.hands[i]
-                    if hand_id then
-                        local bag = reg:get(hand_id)
+                    local hand = ctx.player.hands[i]
+                    if hand then
+                        local bag = _hobj(hand, reg)
                         if bag and bag.container and bag.contents then
                             for _, item_id in ipairs(bag.contents) do
                                 local item = reg:get(item_id)
@@ -1947,7 +1948,8 @@ function verbs.create()
                     end
                 end
             end
-            ctx.player.hands[slot] = obj.id
+            if not obj.instance_id then obj.instance_id = next_instance_id() end
+            ctx.player.hands[slot] = obj
             obj.location = "player"
             print("You take " .. (obj.name or obj.id) .. " from " .. (parent.name or "the container") .. ".")
             return
@@ -1967,8 +1969,9 @@ function verbs.create()
                 return
             end
             remove_from_location(ctx, obj)
-            ctx.player.hands[1] = obj.id
-            ctx.player.hands[2] = obj.id
+            if not obj.instance_id then obj.instance_id = next_instance_id() end
+            ctx.player.hands[1] = obj
+            ctx.player.hands[2] = obj
             obj.location = "player"
             print("You take " .. (obj.name or obj.id) .. " with both hands.")
             return
@@ -1981,7 +1984,8 @@ function verbs.create()
         end
 
         remove_from_location(ctx, obj)
-        ctx.player.hands[slot] = obj.id
+        if not obj.instance_id then obj.instance_id = next_instance_id() end
+        ctx.player.hands[slot] = obj
         obj.location = "player"
 
         print("You take " .. (obj.name or obj.id) .. ".")
@@ -2233,9 +2237,9 @@ function verbs.create()
         local kw = noun:lower()
             :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
         for i = 1, 2 do
-            local hand_id = ctx.player.hands[i]
-            if hand_id then
-                local candidate = ctx.registry:get(hand_id)
+            local hand = ctx.player.hands[i]
+            if hand then
+                local candidate = _hobj(hand, ctx.registry)
                 if candidate and matches_keyword(candidate, kw) then
                     obj = candidate
                     hand_slot = i
@@ -2259,7 +2263,7 @@ function verbs.create()
         ctx.player.hands[hand_slot] = nil
         if obj.hands_required and obj.hands_required >= 2 then
             for i = 1, 2 do
-                if ctx.player.hands[i] == obj.id then
+                if _hid(ctx.player.hands[i]) == obj.id then
                     ctx.player.hands[i] = nil
                 end
             end
@@ -2677,11 +2681,11 @@ function verbs.create()
 
         -- Hands
         for i = 1, 2 do
-            local hand_id = ctx.player.hands[i]
-            if hand_id then
-                local obj = reg:get(hand_id)
+            local hand = ctx.player.hands[i]
+            if hand then
+                local obj = _hobj(hand, reg)
                 local label = (i == 1) and "Left hand" or "Right hand"
-                print("  " .. label .. ": " .. (obj and obj.name or hand_id))
+                print("  " .. label .. ": " .. (obj and obj.name or _hid(hand)))
                 -- Show bag contents
                 if obj and obj.container and obj.contents and #obj.contents > 0 then
                     print("    (contains:)")
@@ -3303,9 +3307,9 @@ function verbs.create()
             local found = false
             -- Search inventory
             for i = 1, 2 do
-                local hand_id = ctx.player.hands[i]
-                if hand_id then
-                    local obj = ctx.registry:get(hand_id)
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local obj = _hobj(hand, ctx.registry)
                     if obj and obj.id:match("^" .. need_id) and not available[hand_id] then
                         available[hand_id] = obj
                         consumed_objs[#consumed_objs + 1] = obj
@@ -3428,9 +3432,9 @@ function verbs.create()
         local kw = item_word:lower()
             :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
         for i = 1, 2 do
-            local hand_id = ctx.player.hands[i]
-            if hand_id then
-                local candidate = ctx.registry:get(hand_id)
+            local hand = ctx.player.hands[i]
+            if hand then
+                local candidate = _hobj(hand, ctx.registry)
                 if candidate and matches_keyword(candidate, kw) then
                     item = candidate
                     item_hand = i
@@ -3462,7 +3466,7 @@ function verbs.create()
             if ok then
                 -- Clear hand slots (handle two-handed items)
                 for i = 1, 2 do
-                    if ctx.player.hands[i] == item.id then
+                    if _hid(ctx.player.hands[i]) == item.id then
                         ctx.player.hands[i] = nil
                     end
                 end
@@ -3523,7 +3527,7 @@ function verbs.create()
         -- Clear both hands for two-handed items
         if item.hands_required and item.hands_required >= 2 then
             for i = 1, 2 do
-                if ctx.player.hands[i] == item.id then
+                if _hid(ctx.player.hands[i]) == item.id then
                     ctx.player.hands[i] = nil
                 end
             end
@@ -3711,9 +3715,9 @@ function verbs.create()
         local kw = target:lower()
             :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
         for i = 1, 2 do
-            local hand_id = ctx.player.hands[i]
-            if hand_id then
-                local candidate = ctx.registry:get(hand_id)
+            local hand = ctx.player.hands[i]
+            if hand then
+                local candidate = _hobj(hand, ctx.registry)
                 if candidate and matches_keyword(candidate, kw) then
                     obj = candidate
                     hand_slot = i
@@ -3897,7 +3901,8 @@ function verbs.create()
         local had_vision_block = obj.wear and obj.wear.blocks_vision
 
         table.remove(ctx.player.worn, worn_idx)
-        ctx.player.hands[slot] = obj.id
+        if not obj.instance_id then obj.instance_id = next_instance_id() end
+        ctx.player.hands[slot] = obj
 
         -- Restore original wear config if it was overridden by slot selection
         if obj._base_wear then
@@ -4238,7 +4243,7 @@ function verbs.create()
         if ctx.player then
             for i = 1, 2 do
                 if ctx.player.hands[i] then
-                    tick_targets[#tick_targets + 1] = ctx.player.hands[i]
+                    tick_targets[#tick_targets + 1] = _hid(ctx.player.hands[i])
                 end
             end
         end

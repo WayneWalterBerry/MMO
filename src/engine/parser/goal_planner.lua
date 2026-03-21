@@ -56,15 +56,26 @@ local function is_spent_or_terminal(obj)
     return false
 end
 
+-- Instance-aware hand accessors for goal planner
+local function _gp_hid(hand)
+    if type(hand) == "table" then return hand.id end
+    return hand
+end
+local function _gp_hobj(hand, reg)
+    if type(hand) == "table" then return hand end
+    if type(hand) == "string" then return reg:get(hand) end
+    return nil
+end
+
 ---------------------------------------------------------------------------
 -- State queries
 ---------------------------------------------------------------------------
 local function has_tool(ctx, cap)
     local reg = ctx.registry
     for i = 1, 2 do
-        local id = ctx.player.hands[i]
-        if id then
-            local obj = reg:get(id)
+        local hand = ctx.player.hands[i]
+        if hand then
+            local obj = _gp_hobj(hand, reg)
             if obj then
                 local pt = obj.provides_tool
                 if pt == cap then return true end
@@ -92,7 +103,7 @@ local function has_tool(ctx, cap)
 end
 
 local function is_held(ctx, obj_id)
-    return ctx.player.hands[1] == obj_id or ctx.player.hands[2] == obj_id
+    return _gp_hid(ctx.player.hands[1]) == obj_id or _gp_hid(ctx.player.hands[2]) == obj_id
 end
 
 ---------------------------------------------------------------------------
@@ -103,9 +114,9 @@ local function find_all(ctx, keyword)
     local reg = ctx.registry
     local kw = strip_articles(keyword)
     for i = 1, 2 do
-        local id = ctx.player.hands[i]
-        if id then
-            local obj = reg:get(id)
+        local hand = ctx.player.hands[i]
+        if hand then
+            local obj = _gp_hobj(hand, reg)
             if obj and kw_match(obj, kw) then
                 out[#out + 1] = { obj = obj, where = "hand" }
             end
@@ -166,9 +177,9 @@ end
 local function find_property(ctx, prop)
     local reg = ctx.registry
     for i = 1, 2 do
-        local id = ctx.player.hands[i]
-        if id then
-            local obj = reg:get(id)
+        local hand = ctx.player.hands[i]
+        if hand then
+            local obj = _gp_hobj(hand, reg)
             if obj and obj[prop] then return obj end
         end
     end
@@ -294,9 +305,9 @@ local function plan_for_tool(capability, ctx, visited, depth)
         -- Drop any spent/terminal matches from hands
         local spent_drops = {}
         for i = 1, 2 do
-            local id = ctx.player.hands[i]
-            if id then
-                local obj = ctx.registry:get(id)
+            local hand = ctx.player.hands[i]
+            if hand then
+                local obj = _gp_hobj(hand, ctx.registry)
                 if obj and kw_match(obj, "match") and is_spent_or_terminal(obj) then
                     spent_drops[#spent_drops + 1] = { verb = "drop", noun = "match" }
                 end
@@ -328,9 +339,9 @@ local function plan_for_tool(capability, ctx, visited, depth)
         -- Free a hand by dropping a non-container held item
         if needs_free_hand then
             for i = 1, 2 do
-                local id = ctx.player.hands[i]
-                if id then
-                    local obj = ctx.registry:get(id)
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local obj = _gp_hobj(hand, ctx.registry)
                     if obj and not (obj.container and obj.contents) then
                         local n = obj.keywords and obj.keywords[1] or obj.id
                         spent_drops[#spent_drops + 1] = { verb = "drop", noun = n }
@@ -362,9 +373,9 @@ local function resolve_target(ctx, noun)
     local kw = strip_articles(noun)
     local reg = ctx.registry
     for i = 1, 2 do
-        local id = ctx.player.hands[i]
-        if id then
-            local obj = reg:get(id)
+        local hand = ctx.player.hands[i]
+        if hand then
+            local obj = _gp_hobj(hand, reg)
             if obj and kw_match(obj, kw) then return obj end
         end
     end
