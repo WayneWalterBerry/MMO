@@ -58,6 +58,10 @@ empty → holding_candle (candle inserted)
 5. Bedroom starts with candle in candle holder on nightstand
 6. Single .lua file defines both holder and candle
 
+## What Changed (2026-07-20)
+
+- Added `material = "brass"` metadata field
+
 ## Mutate Fields (Added 2026-07-20)
 
 Transition-level property mutations applied by `apply_mutations()`:

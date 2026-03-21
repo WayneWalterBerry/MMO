@@ -31,10 +31,12 @@ hidden → revealed → open
 ## Properties
 
 - **Size:** 6, **Weight:** 100, **Portable:** No, **Hidden:** true (initially)
+- **Material:** `wood` (oak-like, heavy wooden construction)
 - **Categories:** architecture, wooden
 - **Keywords:** trap door, trapdoor, trap, hatch, door in floor, floor door
 - **Special:** `reveals_exit = "down"` when opened
 
 ## What Changed (2026-07-20)
 
+- Added `material = "wood"` metadata field
 - Added `mutate` field to revealed→open transition (keywords +open)
