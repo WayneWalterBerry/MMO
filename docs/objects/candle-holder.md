@@ -57,3 +57,14 @@ empty → holding_candle (candle inserted)
 4. Without holder, candle falls over — can't carry while lit
 5. Bedroom starts with candle in candle holder on nightstand
 6. Single .lua file defines both holder and candle
+
+## Mutate Fields (Added 2026-07-20)
+
+Transition-level property mutations applied by `apply_mutations()`:
+
+| Transition | Mutate |
+|---|---|
+| with_candle → empty (detach) | `weight = function(w) return w - 1 end` |
+| empty → with_candle (reattach) | `weight = function(w) return w + 1 end` |
+
+**Design rationale:** The holder weighs 1.5 with candle, 0.5 without. Simple physics — the candle has mass. Functions (not absolutes) because the candle's own weight might change if partially burned.

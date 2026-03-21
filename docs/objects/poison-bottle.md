@@ -98,3 +98,20 @@ prerequisites = {
 7. The bottle has 4 visual states matching its FSM
 8. Single .lua file defines both bottle and cork
 9. "poison bottle" must work as a noun phrase (BUG-014, fixed)
+
+## Material
+
+**Material:** `glass` — references the material registry for fragility, opacity, etc.
+
+## Mutate Fields (Added 2026-07-20)
+
+Transition-level property mutations applied by `apply_mutations()`:
+
+| Transition | Mutate |
+|---|---|
+| sealed → open (uncork) | `weight = function(w) return w - 0.05 end`, `keywords = { add = "uncorked" }` |
+| sealed → open (detach_part) | Same as uncork |
+| open → empty (drink) | `weight = 0.1`, `categories = { remove = "dangerous" }`, `keywords = { add = "empty" }` |
+| open → empty (pour) | Same as drink |
+
+**Design rationale:** Sealed bottle (0.4) loses cork weight on open (-0.05). Empty bottle drops to 0.1 (just glass). "dangerous" category removed when liquid is gone — engine stops flagging it as hazard. "empty" keyword enables "GET EMPTY BOTTLE" parser resolution.

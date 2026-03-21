@@ -78,3 +78,18 @@ The candle is the **reference implementation** for the timed events architecture
 3. Relighting resumes from remaining burn time
 4. All FSM + timer metadata in candle.lua
 5. This ties into the timed events system (clocks, time bombs)
+
+## Material
+
+**Material:** `wax` — references the material registry for physical properties (melting_point, flammability, etc.)
+
+## Mutate Fields (Added 2026-07-20)
+
+Transition-level property mutations applied by `apply_mutations()`:
+
+| Transition | Mutate |
+|---|---|
+| lit → extinguished | `weight = function(w) return math.max(w * 0.7, 0.1) end`, `keywords = { add = "half-burned" }` |
+| lit → spent (auto) | `weight = 0.05`, `size = 0`, `keywords = { add = "nub" }`, `categories = { remove = "light source" }` |
+
+**Design rationale:** Weight decreases proportionally each extinguish cycle (you don't know how long it burned). Spent candle uses absolute values (fully consumed). The "light source" category drops when the candle can never be relit.

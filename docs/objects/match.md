@@ -61,3 +61,19 @@ unlit → lit → spent
 3. A blown-out match CANNOT be relit — the head is consumed
 4. Different from candle: candle can be relit, match cannot
 5. This makes match conservation important — limited supply in matchbox
+
+## Material
+
+**Material:** `wood` — references the material registry (matchstick body is wood; head is sulfur compound).
+
+## Mutate Fields (Added 2026-07-20)
+
+Transition-level property mutations applied by `apply_mutations()`:
+
+| Transition | Mutate |
+|---|---|
+| unlit → lit | `keywords = { add = "burning" }` |
+| lit → spent (manual) | `weight = 0.005`, `keywords = { add = "blackened" }`, `categories = { add = "useless" }` |
+| lit → spent (auto) | `weight = 0.005`, `keywords = { add = "blackened" }`, `categories = { add = "useless" }` |
+
+**Design rationale:** A spent match is a different thing — barely any weight, "blackened" keyword for parser resolution ("DROP BLACKENED MATCH"), "useless" category for engine hinting.
