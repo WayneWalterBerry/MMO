@@ -18,27 +18,31 @@ in-browser, with a terminal-style UI.
 ## Build Steps
 
 ```bash
-# 1. Rebuild the game bundle (bundles all src/ files into JS)
-powershell web/build-bundle.ps1
+# 1. Rebuild the engine bundle (compresses to .gz)
+powershell -File web/build-engine.ps1
 
-# 2. Verify the bundle was created
-ls web/game-bundle.js
+# 2. Rebuild meta files (copies individual .lua files by GUID)
+powershell -File web/build-meta.ps1
 ```
 
 ## Deploy Steps
 
 ```bash
-# 3. Copy web files to the GitHub Pages site
+# 3. Copy ALL web files to the GitHub Pages site
 $pagesRepo = "../WayneWalterBerry.github.io"
 $playDir   = "$pagesRepo/play"
 
 # Create play/ directory if it doesn't exist
 New-Item -ItemType Directory -Path $playDir -Force
 
-# Copy the three web files
+# ⚠️ CRITICAL: Copy index.html EVERY TIME — it contains all CSS.
+# This file was missed in a prior deploy and caused CSS fixes to not appear.
 Copy-Item web/index.html       $playDir/
+Copy-Item web/bootstrapper.js  $playDir/
 Copy-Item web/game-adapter.lua $playDir/
-Copy-Item web/game-bundle.js   $playDir/
+
+# Copy all built/dist files (engine bundle, meta files, etc.)
+Copy-Item web/dist/*           $playDir/ -Recurse -Force
 
 # 4. Commit and push
 cd $pagesRepo
@@ -46,6 +50,17 @@ git add play/
 git commit -m "Update web playtest build"
 git push
 ```
+
+## ⚠️ Deploy Checklist
+
+Every deploy MUST copy these files (miss one and the site breaks or shows stale content):
+
+| File | Contains | Changes when |
+|------|----------|-------------|
+| `web/index.html` | **ALL CSS**, DOM structure, boot script | CSS fixes, layout changes, new UI elements |
+| `web/bootstrapper.js` | JS engine, bold rendering, debug flag, echo styling | JS behavior changes, formatting fixes |
+| `web/game-adapter.lua` | Lua↔browser bridge, coroutine loop, JIT loader | Engine integration changes |
+| `web/dist/*` | Engine bundle (.gz), meta .lua files | Any `src/` changes |
 
 ## Hidden Link Pattern
 
