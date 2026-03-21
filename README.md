@@ -29,33 +29,42 @@ MMO/
 │   ├── main.lua                        # Entry point — REPL game loop
 │   ├── engine/
 │   │   ├── fsm/                        # Finite state machine engine (apply_mutations, thresholds)
-│   │   ├── materials/                  # Material registry (13+ materials, numeric properties)
+│   │   ├── materials/                  # Material registry (17+ materials, numeric properties)
 │   │   ├── parser/                     # Parser pipeline (Tiers 1-5) + GOAP goal planner
+│   │   ├── ui/                          # UI presentation layer (status bar, text formatting)
 │   │   └── loop/                       # Game loop, environment context
 │   └── meta/
-│       ├── objects/                     # 37+ object .lua definitions (candle, matchbox, bed, etc.)
-│       ├── world/                       # Room .lua definitions (start-room, cellar)
+│       ├── objects/                     # 74+ object .lua definitions
+│       ├── world/                       # 7 room .lua definitions (Level 1 complete)
+│       ├── levels/                      # Level .lua definitions (level-01.lua)
 │       └── templates/                   # Base templates (room template)
+├── web/                                 # Fengari browser wrapper (beta testing)
+├── blog/                                # 📝 Blog post drafts and source files
+│   ├── blog-squad-specialists.md        # Published: AI specialist teams
+│   └── blog-research-driven-development.md  # Draft: development methodology
 ├── docs/
 │   ├── architecture/
 │   │   ├── objects/                     # Core principles (8 inviolable principles)
-│   │   ├── engine/                      # Engine architecture (FSM, materials, parser tiers)
+│   │   ├── engine/                      # Engine architecture (FSM, materials, parser, levels)
 │   │   ├── player/                      # Player model, movement, sensory
 │   │   ├── rooms/                       # Room architecture
-│   │   └── ui/                          # UI architecture (text output, parser UX)
+│   │   └── ui/                          # UI architecture (text output, parser UX, code ownership)
 │   ├── design/
 │   │   ├── puzzles/                     # Puzzle design methodology (rating, classification, patterns)
 │   │   ├── rooms/                       # Room design methodology
 │   │   └── levels/                      # Level design methodology (considerations, principles)
-│   ├── puzzles/                         # Individual puzzle specs (001-008)
-│   ├── objects/                         # Individual object documentation
-│   ├── rooms/                           # Individual room documentation
-│   └── levels/                          # Individual level designs (level-01-intro.md)
+│   ├── objects/                         # Object documentation (shared across levels)
+│   └── levels/
+│       └── 01/                          # Level 1 — "The Awakening"
+│           ├── level-01-intro.md        # Level overview
+│           ├── rooms/                   # Room docs for Level 1
+│           └── puzzles/                 # Puzzle docs for Level 1 (001-014)
 ├── newspaper/                           # 📰 The MMO Gazette — daily team newspapers
 │   ├── 2026-03-18.md                    # Edition 1 — Project launch
 │   ├── 2026-03-19.md                    # Edition 2 — Engine advances
 │   ├── 2026-03-20-morning.md            # Edition 3 — Morning update
-│   └── 2026-03-20-evening.md            # Edition 4 — Evening wrap-up
+│   ├── 2026-03-20-evening.md            # Edition 4 — Evening wrap-up
+│   └── 2026-03-21-special-edition.md    # Edition 5 — Special Edition
 ├── resources/
 │   └── research/
 │       ├── architecture/                # Dynamic object mutation research (37KB)
@@ -73,12 +82,14 @@ MMO/
 
 | Folder | Purpose |
 |--------|---------|
-| `src/` | Game source code — engine, objects, rooms, templates |
+| `src/` | Game source code — engine, objects, rooms, levels, templates |
+| `src/meta/levels/` | Level definitions (level-01.lua) |
+| `web/` | Fengari browser wrapper for web-based beta testing |
+| `blog/` | 📝 Blog post drafts and source files (not game docs) |
 | `docs/architecture/` | Architectural decisions, core principles, engine specs |
 | `docs/design/` | Design methodology — how to design puzzles, rooms, levels |
-| `docs/puzzles/` | Individual puzzle specifications (001–008+) |
-| `docs/levels/` | Individual level design documents |
-| `docs/objects/` | Individual object documentation |
+| `docs/levels/01/` | Level 1 docs — room and puzzle specs organized per level |
+| `docs/objects/` | Object documentation (shared across all levels) |
 | `newspaper/` | 📰 **The MMO Gazette** — daily team newspapers with updates, decisions, and progress. Named by date (e.g., `2026-03-20-evening.md`) |
 | `resources/research/` | Research documents — IF history, DF comparison, room/puzzle design (200KB+ total) |
 | `test-pass/` | Test pass results — `gameplay/` (Nelson) and `objects/` (Lisa) |

@@ -87,13 +87,13 @@
 
 ## 4. Exits
 
-### South — Oak Door → Bedroom
+### South — Oak Door → Bedroom (BARRED)
 - **Type:** `door`
 - **Passage ID:** `bedroom-hallway-door` (matches bedroom's north exit)
-- **State:** Matches bedroom door state (open/closed/locked per gameplay). From this side, it's a normal door.
+- **State:** Closed, locked (barred with a heavy iron bar in brackets). No key required — player lifts the bar.
 - **Constraints:** max_carry_size 4, player_max_size 5
-- **Mutations:** open/close/lock/unlock (synchronized with bedroom side via passage_id)
-- **Design note:** This is the other side of the bedroom's north door. If the bedroom door was open, this is open. If the player locked it with the brass key, it's locked from both sides. If CBG's recommendation is followed (door locked, key in deep cellar), the player arrives here via the stairway and can now unlock this door from the hallway side.
+- **Mutations:** unlock (lift bar — no key needed)/lock (replace bar)/open (requires unbarred)/close
+- **Design note:** This is the hallway side of the bedroom door. An iron bar in brackets holds it shut. The player arrives in the hallway via the deep cellar stairway and can lift the bar to reconnect to the bedroom. The bar mechanic uses standard lock/unlock mutations — "unlock" lifts the bar, "lock" replaces it. This prevents the bedroom north shortcut that would bypass the entire cellar puzzle chain.
 
 ### Down — Stone Stairway → Deep Cellar
 - **Type:** `stairway`

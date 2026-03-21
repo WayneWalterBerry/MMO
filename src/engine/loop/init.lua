@@ -291,6 +291,24 @@ function loop.run(context)
       for _, entry in ipairs(timer_msgs) do
         print("")
         print(entry.message)
+        -- Remove spent consumables from player's hands after auto-transition
+        if context.player then
+          local obj = reg:get(entry.obj_id)
+          if obj and obj._state then
+            local st = obj.states and obj.states[obj._state]
+            if st and st.terminal and st.consumable then
+              for i = 1, 2 do
+                if context.player.hands[i] == entry.obj_id then
+                  context.player.hands[i] = nil
+                end
+              end
+              if context.current_room then
+                context.current_room.contents[#context.current_room.contents + 1] = entry.obj_id
+                obj.location = context.current_room.id
+              end
+            end
+          end
+        end
       end
     end
 

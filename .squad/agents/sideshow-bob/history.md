@@ -328,6 +328,11 @@
 7. **Composite object puzzles:** Detach/reattach parts (nightstand drawer, candle from holder, cork from bottle)
 8. **Multi-room light management:** Candle burns down over time; must conserve light across rooms
 9. **Skill-gated alternative paths:** Lockpicking (pin) vs. key-finding for locked doors
+10. **Environmental exit effects:** Exit traversal can trigger object interactions (wind extinguishes candles in stairways). New `on_traverse` pattern — generic, reusable for water crossings, narrow passages, hot rooms, etc.
+11. **Mini-puzzles fill tutorial gaps efficiently:** CBG's coverage analysis identifies verb gaps; 1-2 step mini-puzzles address them without adding rooms, objects, or critical-path complexity. These are the lowest-cost, highest-value additions to a level.
+12. **Verb contrast pairs teach discrimination:** Poison (TASTE=death) + wine (DRINK=safe) together teach more than either alone. Lesson pairs create nuanced understanding — "investigate before acting" rather than "never act."
+13. **Existing objects are underutilized:** Wine bottles were flavor props for Puzzle 010; adding one FSM transition makes them tutorial vehicles. Always check existing objects before designing new ones.
+14. **Puzzle docs location:** Level-specific puzzles now live in `docs/levels/01/puzzles/` (was `docs/puzzles/`).
 
 ---
 
@@ -488,3 +493,47 @@ Designed 6 new puzzles (009–014) for Level 1 based on CBG's master design at `
 5. **Light-as-resource creates organic difficulty modifiers.** Players who found the lantern (010) can sacrifice the candle for the altar ritual (012) without penalty. Players who didn't must make a strategic choice. This cross-puzzle synergy emerged naturally from resource design.
 
 6. **Level boundary design needs early attention.** Several objects (crowbar, rope, tome, silver dagger) could break Level 2 if carried forward. Recommend: CBG creates a formal "Level 1→2 inventory audit" before Level 2 puzzle design begins.
+
+---
+
+## Session: Tutorial Gap Mini-Puzzles (2026-07-22)
+
+### Work Completed
+
+Designed 2 mini-puzzles (015–016) to fill tutorial coverage gaps identified by CBG's analysis.
+
+#### Puzzles Created
+
+| ID | Name | Room | Difficulty | Cruelty | Pattern | Critical Path? |
+|----|------|------|------------|---------|---------|----------------|
+| 015 | Draft Extinguish | Deep Cellar → Hallway (stairway) | ⭐ | Merciful | Environmental/Spatial (State Change) + Transformation | NO |
+| 016 | Wine Drink | Storage Cellar | ⭐ | Merciful | Discovery + Sensory Rewards | NO |
+
+#### Key Design Decisions
+
+1. **Environmental triggers over forced tutorials:** Puzzle 015 uses a stairway draft to extinguish the candle — the player EXPERIENCES the extinguish/relight cycle rather than being told about it. This follows The Witness principle (Frink §2.1): show results, don't explain rules.
+
+2. **Verb contrast pairs:** Puzzle 016 (wine = DRINK = safe) directly contrasts Puzzle 002 (poison = TASTE = death). Together they teach discrimination, not fear. Players learn to investigate before consuming, not to avoid all liquids.
+
+3. **Minimal new work:** Puzzle 015 requires zero new objects (candle FSM already supports extinguish/relight), only a new `on_traverse` exit-effect pattern. Puzzle 016 requires one FSM transition added to wine-bottle.lua. Both are tiny additions to existing content.
+
+4. **Lantern reward validation:** Puzzle 015 retroactively rewards Puzzle 010 (oil lantern) — the lantern's `wind_resistant = true` means it survives the draft while the candle doesn't. The optional upgrade proves its value.
+
+5. **New engine pattern identified:** `on_traverse` exit effects — generic mechanism for environmental interactions during room transitions. First use is wind/extinguish; future uses include water crossings, narrow passages, temperature shocks. Flagged for Bart.
+
+#### Handoffs
+
+- **Flanders:** Add `drink` verb transition to wine-bottle.lua (open→empty); add `on_taste` sensory; add DRINK rejection to oil-bottle.lua
+- **Moe:** Add `on_traverse` wind effect to stairway exit in deep-cellar room metadata
+- **Bart:** Design/implement `on_traverse` exit-effect pattern (new engine concept)
+- **Nelson:** Test both puzzles per enumerated test cases in puzzle docs
+
+### Files Created
+- `docs/levels/01/puzzles/puzzle-015-draft-extinguish.md` (16.0 KB)
+- `docs/levels/01/puzzles/puzzle-016-wine-drink.md` (16.0 KB)
+- `.squad/decisions/inbox/bob-mini-puzzles.md` (3.6 KB)
+
+### Research Citations Used
+- Frink §2.1 [11] — The Witness scaffolding / progressive complexity
+- Frink §2.4 [17] — Outer Wilds knowledge-gate model
+- Frink §4.1 [26] — Real-world physics in puzzle design

@@ -90,6 +90,22 @@
 - 50-100 predefined socials for MVP retention
 
 ## Learnings
+
+### Web Performance (2026-03-27)
+
+- **Bundle splitting is 10x more effective than compression.** Moving from 16 MB monolithic to 3 bundles (500 KB core, 15.6 MB index, content) reduces time-to-first-interaction from ~4s to ~1.2s via lazy-loading. HTTP/2 multiplexing makes split bundles strictly faster on GitHub Pages.
+- **Gzip compression ratio for JavaScript is inherently low (~12–15%).** Fengari + embedding index as JSON compresses only to 14% because embedding vectors are pseudo-random. Brotli adds ~10% improvement but GitHub Pages only serves gzip.
+- **V8 compilation overhead dominates load time, not network transfer.** 16 MB JS takes ~2–3 seconds to parse and compile (inherent to JS engines), not network. Splitting solves this by deferring large JS compilation.
+- **Coroutine yield architecture enables progressive loading without major refactor.** Game-adapter.lua can yield after engine init, allowing browser to load game-index.js in background while player sees terminal. Natural fit for Fengari's async architecture.
+- **Service Worker caching for text games should use "Cache first" for static code, "Stale while revalidate" for content.** Different cache strategies per bundle type: engine ∞, index 7 days, HTML 1 hour.
+- **GitHub Pages doesn't support custom Cache-Control headers via .headers files.** Workaround: use content-hashed filenames (game-core-abc123.js) or query params (?v=20260327) for cache-busting. For long-term, consider Cloudflare Pages.
+- **Text games have UX advantage over visual games in progressive loading.** Terminal UI shows immediately after core parse (~1s), player doesn't perceive waiting like in visual games that must render assets first. Fengari + text UI = fast perceived load.
+- **Wasmoon is viable post-MVP per Decision D-43.** Lua → WASM gives ~2–3x speed improvement + offline WASM execution. Current recommendation: MVP with Fengari, prototype Wasmoon in Phase 2 (3–5 day effort).
+- **Stripping Fengari stdlib is low ROI.** Removable modules (io, os, debug) add only ~50 KB; bundle splitting already saves 1.8 MB. Skip stdlib trimming; focus on architecture optimizations.
+- **Performance targets for text game: <2s time-to-first-interaction, <6s full load.** Reasonable for 4G mobile; 2G/3G will be slower but playable. Measure with Performance API + Lighthouse; DevTools Network tab shows actual transfer size (gzipped).
+
+### Original Research (Cumulative)
+
 - Embedding matching beats generative distillation for constrained domains
 - Browser SLMs are real but 350MB download limits adoption
 - Wasmoon enables zero-framework Lua PWA deployment

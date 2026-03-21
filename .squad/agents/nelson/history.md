@@ -19,23 +19,115 @@
 **Agent Role:** Tester responsible for playtest validation, bug discovery, and regression verification.
 
 **Testing Summary (2026-03-19 to 2026-03-21):**
-- 9 playtests completed, 172+ tests run, 139+ passed
-- Critical path proven end-to-end: feel → GOAP light → spatial puzzle → multi-room → unlock
-- 47 unique bugs discovered (7 CRITICAL/HIGH, 12 MEDIUM+MAJOR, 2 LOW, 26 MINOR/COSMETIC)
-- All previous CRITICAL/HIGH bugs fixed; BUG-036 (new CRITICAL) open
-- 1 MEDIUM open (BUG-035)
+- 10 playtests completed, 266+ tests run, 221+ passed
+- Critical path: bedroom → cellar → storage-cellar → BLOCKED at crate contents (BUG-048)
+- 54 unique bugs discovered (8 CRITICAL/HIGH, 15 MEDIUM+MAJOR, 2 LOW, 29 MINOR/COSMETIC)
+- All Level 1 rooms load, connect, and render correctly — writing is exceptional
+- 2 CRITICAL open (BUG-036, BUG-048)
 
 **Current Status:**
 - Engine core: ✅ SOLID
-- Parser: ✅ WORKING (Tier 2 embedding)
-- Objects: 🚀 READY (new batch: candle-holder, wall-clock, enhanced candle/match)
-- Progression: ⏸️ BLOCKED at Room 3 (content needed, mechanics proven)
+- Parser: ✅ WORKING (Tier 2 embedding), missing "with" preposition + "pry" verb
+- Level 1 Rooms: ✅ ALL LOAD (5/5 rooms, 15/15 exits correct)
+- Level 1 Puzzle: ✅ COMPLETE — crate `.inside` surface FIXED (BUG-048), iron key accessible
+- Display: ✅ FIXED — duplicate instance descriptions resolved (BUG-050)
+- Critical Path: ✅ VERIFIED END-TO-END (bedroom → cellar → storage-cellar → deep-cellar → hallway)
 
 ## Archives
 
 - `history-archive-2026-03-20T22-40Z-nelson.md` — Full archive (2026-03-19 to 2026-03-20T22:40Z): all 7 playtests, 32 bugs, regression verification, pass-by-pass findings
 
 ## Recent Updates
+
+### Pass-015: Deep Level 1 Playtest (2026-03-21)
+
+**Status:** ✅ COMPLETE — 149 tests, 137 passed, 12 failed (92%)
+
+| Category | Tests | Passed | Failed | Notes |
+|----------|-------|--------|--------|-------|
+| Room Visits (all 7) | 7 | 7 | 0 | All rooms load and connect |
+| Object Interactions | 53 | 49 | 4 | Rat feel, plural forms, drawer |
+| Verb Coverage | 22 | 19 | 3 | pry ✅, match hand bug |
+| Compound Commands | 5 | 5 | 0 | "X and Y" chains perfectly |
+| Natural Language | 14 | 11 | 3 | "I want to..." fixed |
+| Edge Cases | 12 | 12 | 0 | Clean rejections throughout |
+| Bug Verification | 12 | 11 | 1 | BUG-049/050 fixed, 036 partial |
+| Sleep/Time/Death | 5 | 5 | 0 | All working |
+| Dark Room Behavior | 8 | 8 | 0 | Sensory verbs work in dark |
+| **TOTAL** | **149** | **137** | **12** | |
+
+**New Bugs (5):**
+- BUG-055 (HIGH): Spent match stays in hand after "dropping" — blocks taking candle
+- BUG-056 (MEDIUM): Plural object names not recognized by parser
+- BUG-057 (LOW): Rat feel description says "heavy piece of furniture"
+- BUG-058 (MEDIUM): `feel inside drawer` fails (inconsistent with crate)
+- BUG-059 (LOW): uncork/drink work without holding object
+
+**Verified Fixes:** BUG-049 (pry), BUG-050 (duplicates), BUG-036 (partial), Moe's north door fix
+**Full Report:** test-pass/2026-03-21-pass-015-deep-level1.md
+
+### Pass-014: Critical Path Test — Level 1 (2026-03-21)
+
+**Status:** ✅ COMPLETE — CRITICAL PATH VERIFIED
+
+| Category | Tests | Passed | Failed | Notes |
+|----------|-------|--------|--------|-------|
+| Bedroom Setup | 5 | 5 | 0 | Feel, drawer, matchbox, GOAP light candle |
+| Bedroom Puzzle | 4 | 4 | 0 | Push bed, pull rug, brass key, trap door |
+| Cellar Navigation | 3 | 3 | 0 | Unlock + open door with brass key |
+| Crate Interaction (BUG-048) | 6 | 5 | 1 | Iron key accessible — FIX VERIFIED |
+| Deep Cellar → Hallway | 3 | 3 | 0 | Unlock with iron key, go up |
+| Duplicate Presences (BUG-050) | 2 | 2 | 0 | Hallway clean — FIX VERIFIED |
+| Inventory Management | 3 | 3 | 0 | Two-hand limit, drop/get cycle |
+| **TOTAL** | **26** | **25** | **1** | |
+
+**Key Findings:**
+1. **BUG-048 FIXED**: `look inside crate`, `feel inside crate`, `get iron key` all work after prying open
+2. **BUG-050 FIXED**: Hallway displays torches/portraits/table once each, no duplicates
+3. **OBS-001**: North exit from bedroom to hallway is UNLOCKED — bypasses entire cellar puzzle
+4. **BUG-049 still open**: `pry crate` → "I don't understand that"
+
+**Full Report:** test-pass/2026-03-21-pass-014-critical-path.md
+
+### Pass-013: Full Level 1 Room-by-Room Testing (2026-03-21)
+
+**Status:** ✅ COMPLETE
+
+| Category | Tests | Passed | Failed | Notes |
+|----------|-------|--------|--------|-------|
+| Room Loading | 5 | 5 | 0 | All 5 Level 1 rooms load |
+| Feel in Dark | 5 | 5 | 0 | All rooms list objects by touch |
+| Examine Objects | 14 | 14 | 0 | on_feel fallback works everywhere |
+| Sensory Verbs | 8 | 8 | 0 | smell/listen in hallway, courtyard, crypt |
+| Exit Navigation | 15 | 15 | 0 | All exits connect or block correctly |
+| Get/Drop Items | 6 | 6 | 0 | Crowbar, candle, key, match |
+| Container Puzzle | 4 | 2 | 2 | Crate opens, contents trapped |
+| Unlock/Open Doors | 3 | 3 | 0 | Brass key + cellar door |
+| Parser (with) | 2 | 0 | 2 | "pry" unknown, "with" fails |
+| Display (dupes) | 6 | 0 | 6 | 3 rooms have duplicate instances |
+| Light System | 2 | 1 | 1 | Hallway lit, courtyard moonlight ignored |
+| Critical Path | 12 | 11 | 1 | Blocked at crate contents |
+| **TOTAL** | **94** | **82** | **12** | |
+
+**New Bugs (7):**
+- BUG-048 (🔴 CRITICAL): Iron key trapped inside crate — `.inside` surface never exposed after prying open. BLOCKS ALL Level 1 progression.
+- BUG-049 (🟡 MAJOR): "pry X with Y" and "open X with Y" both fail — parser doesn't handle tool prepositions
+- BUG-050 (🟡 MAJOR): Duplicate instance descriptions — torches ×2, portraits ×3, sarcophagi ×5 repeat identical text
+- BUG-051 (🟠 MEDIUM): Courtyard moonlight (light_level=1) ignored — outdoor room treated as dark
+- BUG-052 (🟠 MEDIUM): 5 identical sarcophagi in crypt — no way to target specific ones
+- BUG-053 (⚪ MINOR): on_enter text references "your light" when player has no light source
+- BUG-054 (⚪ MINOR): Rat has no on_feel description
+
+**Major Wins:**
+1. Writing quality across all 5 rooms is extraordinary — best atmospheric text in a text adventure
+2. Hallway warmth-after-darkness is a genuine emotional payoff
+3. All 15 exits tested — connections correct, locked doors block, Level 2 boundary holds
+4. GOAP crowbar auto-use on crate is magic
+5. Candle timer creates real resource management tension
+6. Carried light works across room transitions seamlessly
+
+**Full Report:** test-pass/gameplay/013-pass-2026-03-21.md
+**Puzzle Feedback:** .squad/decisions/inbox/nelson-puzzle-feedback-pass013.md
 
 ### Pass-012: Natural Language + New Player Simulation (2026-03-21)
 
@@ -136,12 +228,12 @@
 ### GOAP Tier 3 Implementation (2026-03-20T21:15Z)
 **Status:** Ready for testing. Bart delivered UNLOCK verb + auto prerequisite planning.
 
-## Bug Track Summary (47 unique)
-- CRITICAL/HIGH (7): BUG-001, BUG-004, BUG-008, BUG-017, BUG-026, BUG-030 (ALL FIXED), BUG-036 (OPEN — "I" triggers inventory)
-- MAJOR (3): BUG-037 (what's around me), BUG-038 (what am I holding), BUG-039 (use X on Y) — ALL OPEN
-- MEDIUM (9): ALL FIXED except BUG-035 (GOAP spent match relight)
-- LOW (2): BUG-033 (oak missing from registry), BUG-034 (velvet missing from registry)
-- MINOR/COSMETIC (26): Most fixed; BUG-040–047 open (parser UX from pass-012)
+## Bug Track Summary (59 unique)
+- CRITICAL/HIGH (9): BUG-001, BUG-004, BUG-008, BUG-017, BUG-026, BUG-030 (ALL FIXED), BUG-036 (✅ PARTIALLY FIXED — "I want to..." works), BUG-048 (✅ FIXED), BUG-055 (NEW — spent match stays in hand)
+- MAJOR (5): BUG-037, BUG-038, BUG-039 (parser), BUG-049 (✅ FIXED — pry verb works), BUG-050 (✅ FIXED)
+- MEDIUM (13): Most FIXED; BUG-035 (GOAP spent match), BUG-051 (courtyard moonlight), BUG-052 (sarcophagus ambiguity), BUG-056 (NEW — plural names), BUG-058 (NEW — feel inside drawer)
+- LOW (4): BUG-033, BUG-034, BUG-057 (NEW — rat feel), BUG-059 (NEW — uncork/drink no hold check)
+- MINOR/COSMETIC (28): Most fixed; BUG-040–047 open, BUG-053, BUG-054
 
 ## Learnings
 
@@ -159,3 +251,31 @@
 - Spent matches accumulate inside matchbox after GOAP chains — root cause of relight failures
 - Candle burn timer fires correctly over gameplay time, creating real urgency
 - Match burn timer fires same-turn (by design) — you can't hold a lit match between commands
+- Level 1 rooms all load, connect, and render correctly — writing is best-in-class
+- Container `.inside` surfaces need explicit exposure when container is opened/broken (BUG-048)
+- Rooms with multiple instances of same type_id need display deduplication (hallway, crypt worst)
+- Room `light_level` field is unused by engine — only `casts_light` on objects counts
+- The hallway warmth-after-darkness reveal is the emotional highlight of Level 1
+- Carried candle provides portable light across room transitions — works perfectly
+- Two-hand inventory creates meaningful resource tension (light vs tools vs keys)
+- BUG-048 FIXED: Crate `.inside` surface now exposes iron key after prying open — `look inside crate`, `feel inside crate`, `get iron key` all work
+- BUG-050 FIXED: Hallway torches/portraits/side table display once each — no duplicate instance descriptions
+- GOAP auto-resolves crowbar from room when player types `open crate` without holding it — excellent UX
+- North exit from bedroom to hallway is UNLOCKED — entire cellar puzzle chain is bypassable (design question raised)
+- `feel inside drawer` still fails even though `feel inside crate` works — `.inside` surface inconsistency on drawer
+- Full Level 1 critical path verified end-to-end: bedroom → cellar → storage-cellar → deep-cellar → hallway
+- Candle burn timer is tight but fair — expires around storage cellar, player finishes deep cellar in dark
+- BUG-055: Match FSM says "You drop the blackened stub" but spent match stays in player's hand — blocks picking up candle/other items. HIGH impact.
+- BUG-056: Plural object names ("torches", "portraits") not matched by parser — room descriptions use plurals but examine only works with singular
+- BUG-057: Rat on_feel returns "A heavy piece of furniture" — template/base class fallback issue
+- BUG-058: `feel inside drawer` still broken — `.inside` surface not exposed for feel verb. Crate works, drawer doesn't.
+- BUG-059: uncork/drink work on objects not in hand — design decision needed on whether surface interactions require holding
+- BUG-049 FIXED: `pry crate` now works — pry verb recognized by parser
+- BUG-036 PARTIALLY FIXED: "I want to..." prefix handled correctly by NL parser. Only bare "I" triggers inventory (intended).
+- Moe's bedroom north door fix VERIFIED: heavy oak door is locked, cellar route is now the only path
+- Compound commands ("open drawer and get matchbox") work cleanly — split on "and" with GOAP integration
+- Death system works: drinking poison bottle produces "YOU HAVE DIED" game over
+- Sleep/rest/nap all advance time by 1 hour — time system fully functional
+- All 7 Level 1 rooms visited and tested: bedroom, cellar, storage-cellar, deep-cellar, hallway, courtyard, crypt
+- Crypt writing is extraordinary — silence description is best-in-class atmospheric text
+- Courtyard smell/listen are world-class — wind, owl, rain, empty manor watching

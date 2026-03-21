@@ -86,13 +86,13 @@
 
 ## 4. Exits
 
-### North — Oak Door → Hallway
+### North — Oak Door → Hallway (BARRED)
 - **Type:** `door`
 - **Passage ID:** `bedroom-hallway-door`
-- **State:** Open (slightly ajar), unlockable with brass-key
+- **State:** Closed, locked (barred from hallway side). No keyhole on bedroom side.
 - **Constraints:** max_carry_size 4, player_max_size 5
-- **Mutations:** open/close/lock/unlock/break
-- **Design note:** CBG's master design recommends this eventually be LOCKED (key in deep cellar) to force cellar exploration. Currently open per implementation.
+- **Mutations:** open (requires unbarred)/close/break
+- **Design note:** The door is barred from the hallway side with a heavy iron bar in brackets. There is no keyhole on the bedroom side — the player cannot unlock or open this door from within. This forces the critical path through the cellar chain (trap door → cellar → storage cellar → deep cellar → hallway). Once the player reaches the hallway via the deep cellar stairway, they can lift the bar from the hallway side to reconnect the rooms. The break mutation (difficulty 3) remains as a high-cost alternate path.
 
 ### Window — Leaded Glass → Courtyard
 - **Type:** `window`

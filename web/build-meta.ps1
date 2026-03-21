@@ -27,6 +27,12 @@ $MetaRoot = Join-Path $RepoRoot "src\meta"
 $MetaOut  = Join-Path $OutDir "meta"
 
 Write-Host "=== build-meta.ps1 ==="
+
+# Capture build timestamp
+$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm"
+$timestampCompact = Get-Date -Format "yyyyMMddHHmmss"
+Write-Host "Build timestamp: $timestamp ($timestampCompact)"
+
 Write-Host "Copying meta files to $MetaOut..."
 
 # Clean stale output
@@ -113,4 +119,13 @@ if ($warnings.Count -gt 0) {
     }
 }
 
+# Embed build timestamp in game-adapter.lua
+$adapterPath = Join-Path $ScriptDir "game-adapter.lua"
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+$adapterContent = [System.IO.File]::ReadAllText($adapterPath, $utf8NoBom)
+$adapterContent = $adapterContent -replace 'local BUILD_TIMESTAMP = ".*?"', "local BUILD_TIMESTAMP = `"$timestamp`""
+[System.IO.File]::WriteAllText($adapterPath, $adapterContent, $utf8NoBom)
+Write-Host "  Stamped game-adapter.lua: BUILD_TIMESTAMP = `"$timestamp`""
+
+Write-Host "Meta built ($timestamp) -> $objectCount objects, $roomCount rooms"
 Write-Host "Done."

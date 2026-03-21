@@ -57,15 +57,23 @@ end
 
 -- find_by_keyword(keyword) -> first matching object | nil
 -- Matches against object.keywords (array of strings) and object.name.
+-- BUG-056: also tries singular forms of plural nouns.
 function registry:find_by_keyword(keyword)
+  local preprocess = require("engine.parser.preprocess")
   local kw = keyword:lower()
-  for _, obj in pairs(self._objects) do
-    if obj.name and obj.name:lower() == kw then
-      return obj
-    end
-    if type(obj.keywords) == "table" then
-      for _, k in ipairs(obj.keywords) do
-        if k:lower() == kw then return obj end
+  local candidates = { kw }
+  for _, s in ipairs(preprocess.singularize(kw)) do
+    candidates[#candidates + 1] = s
+  end
+  for _, try_kw in ipairs(candidates) do
+    for _, obj in pairs(self._objects) do
+      if obj.name and obj.name:lower() == try_kw then
+        return obj
+      end
+      if type(obj.keywords) == "table" then
+        for _, k in ipairs(obj.keywords) do
+          if k:lower() == try_kw then return obj end
+        end
       end
     end
   end

@@ -19,7 +19,7 @@
 | 🏗️ Moe | World Builder | 🎨 Design | .squad/agents/moe/charter.md | Active |
 | 🧪 Lisa | Object Tester | 🎨 Design | .squad/agents/lisa/charter.md | Active |
 | 🏗️ Bart | Architect | ⚙️ Engineering | .squad/agents/bart/charter.md | Active |
-| 🔬 Frink | Researcher | ⚙️ Engineering | .squad/agents/frink/charter.md | Active |
+| 🔬 Frink | Researcher | 🔬 Research | .squad/agents/frink/charter.md | Active |
 | 🧪 Nelson | Tester | ⚙️ Engineering | .squad/agents/nelson/charter.md | Active |
 | ⚛️ Smithers | UI Engineer | ⚙️ Engineering | .squad/agents/smithers/charter.md | Active |
 | 📝 Brockman | Documentation | 📝 Docs | .squad/agents/brockman/charter.md | Active |
@@ -32,7 +32,8 @@
 | Department | Lead | Members | Focus |
 |------------|------|---------|-------|
 | 🎨 Design | Comic Book Guy | CBG, Flanders, Sideshow Bob, Moe, Lisa | Game content: objects, puzzles, rooms, levels + object testing |
-| ⚙️ Engineering | Bart | Bart, Frink, Nelson, Smithers | Engine code, architecture, research, system testing, UI/parser |
+| ⚙️ Engineering | Bart | Bart, Nelson, Smithers | Engine code, architecture, system testing, UI/parser |
+| 🔬 Research | Frink | Frink | Domain research, reference models, material systems |
 | 📝 Docs | Brockman | Brockman | Documentation, newspapers |
 | 📋 Operations | Chalmers | Chalmers, Scribe, Ralph | PM, logging, monitoring |
 

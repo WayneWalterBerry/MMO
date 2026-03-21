@@ -512,3 +512,38 @@ Flagged materials NOT in `src/engine/materials/init.lua`:
 - **For Bart (Engine):** Oil-lantern's fueling step requires `requires_tool = "lamp-oil"` — need to confirm the engine can resolve a tool capability from a container's contents_type (wine-bottle-oil instance).
 - **For Moe (World Builder):** Object placement coordinates included in each spec. Spatial relationships (large-crate against east wall, rope on peg, etc.) should be honored in room files.
 - **For Wayne:** Several design decisions flagged as TBD — altar offering item, courtyard door key, crypt lore text, buried-alive sarcophagus significance. See CBG's decision points in level-01-intro.md §Wayne's Decision Points.
+
+### Level 1 Object Build Pass (2026-07-21)
+- Built all 37 new .lua object files in `src/meta/objects/` from Level 1 specifications.
+- **Storage Cellar (10 files):** large-crate, small-crate, grain-sack, wine-rack, wine-bottle, rope-coil, iron-key, oil-lantern, crowbar, rat.
+- **Deep Cellar (7 files):** stone-altar, wall-sconce, incense-burner, tattered-scroll, silver-key, stone-sarcophagus, offering-bowl, chain.
+- **Hallway (5 files):** torch, portrait, side-table, vase, locked-door.
+- **Courtyard (6 files):** stone-well, well-bucket, ivy, cobblestone, wooden-door, rain-barrel.
+- **Crypt (8 files):** sarcophagus (base for 5 instances), candle-stub, skull, burial-jewelry, burial-coins, tome, silver-dagger, wall-inscription.
+- All 37 files pass Lua syntax validation (`loadfile()` check).
+
+#### Build Patterns Applied
+- Every FSM object follows candle.lua/poison-bottle.lua structure: guid, id, material, keywords, states table, transitions table, mutations table.
+- Static objects (keys, tools, furniture) follow brass-key.lua pattern: flat metadata, no FSM.
+- All objects include sensory properties (description, on_feel, on_smell minimum) per Principle 6.
+- `provides_tool` used for: crowbar (prying_tool, blunt_weapon, leverage), rope-coil (rope, binding), cobblestone (blunt_weapon, weight, hammer), silver-dagger (cutting_edge, injury_source, ritual_blade), torch (fire_source).
+- `surfaces` used for containers: crates (inside), wine-rack (inside), altar (top, behind), sarcophagus (inside, top), well (top, inside), offering-bowl (inside), wall-sconce (inside with accepts filter).
+- Timer metadata (burn_duration, remaining_burn) on: oil-lantern (14400s), torch (10800s), candle-stub (1800s).
+- `room_presence` strings on all objects that appear independently in rooms.
+- `prerequisites` (GOAP) on: large-crate, grain-sack, oil-lantern, torch, candle-stub, sarcophagus, tattered-scroll, tome.
+
+#### Materials Referenced (not yet in registry)
+- `stone` — 7 objects (stone-altar, stone-sarcophagus, sarcophagus, stone-well, cobblestone, wall-inscription, offering-bowl uses ceramic)
+- `silver` — 4 objects (silver-key, silver-dagger, burial-jewelry, burial-coins)
+- `hemp` — 1 object (rope-coil)
+- `bone` — 1 object (skull)
+- `burlap` — 1 object (grain-sack)
+- `tallow` — 1 object (candle-stub) — may or may not exist in registry
+- These need Frink/Bart to add to `src/engine/materials/init.lua`.
+
+### Template Assignment Audit (2026-07-20)
+- Lisa's audit found 61 objects (not 12) missing template declarations in src/meta/objects/
+- Assigned templates to all 61: 23 small-item, 25 furniture, 7 container, 6 sheet
+- Convention: template field goes after guid, before id (matches bandage.lua etc.)
+- Ambiguous cases resolved: rat→furniture (no creature template), curtains/rug→sheet (fabric nature overrides non-portability), candle-holder→small-item (portable despite 'furniture' category), poison-bottle→small-item (has 'small-item' in categories), barrel/rain-barrel→furniture (heavy immovable despite container categories)
+- All 78 object files pass Lua syntax check after changes

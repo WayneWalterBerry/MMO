@@ -108,7 +108,7 @@ The Read-Eval-Print Loop (REPL) is the heartbeat of the UI:
 
 ```lua
 while true do
-  -- UPDATE: Refresh status bar (time, matches, candle state)
+  -- UPDATE: Refresh status bar (level, room, time, matches, candle state)
   if context.ui then context.update_status(context) end
   
   -- READ: Capture player input
@@ -210,7 +210,7 @@ Exits:
 
 **Features (from main.lua context):**
 - **Split-screen layout** — Status bar (top) + output window + input area
-- **Status bar** — Room name, game time (12:02 AM), matches remaining, candle state
+- **Status bar** — Level + room name, game time, matches remaining, candle state (see `engine/ui/status.lua`)
 - **Scrollback buffer** — Players can scroll output history with `/up`, `/down`
 - **Word-wrapping integration** — UI window width syncs with `display.WIDTH`
 

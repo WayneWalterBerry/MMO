@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>MMO — A Text Adventure</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0c0c1d;
+            --fg: #c8c8d0;
+            --dim: #6a6a7a;
+            --prompt: #5f9ea0;
+            --echo: #7a7a8a;
+            --error: #cc4444;
+            --border: #2a2a3d;
+        }
+
+        html, body {
+            height: 100%;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Courier New', Consolas, 'Liberation Mono', monospace;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        #terminal {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 82ch;
+            margin: 0 auto;
+            padding: 12px 16px;
+        }
+
+        #output {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) var(--bg);
+        }
+
+        #output::-webkit-scrollbar { width: 6px; }
+        #output::-webkit-scrollbar-track { background: var(--bg); }
+        #output::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .output-line {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 1.5em;
+        }
+
+        .input-echo {
+            color: var(--echo);
+            white-space: pre-wrap;
+        }
+
+        .error-line {
+            color: var(--error);
+            white-space: pre-wrap;
+        }
+
+        #input-line {
+            display: flex;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-top: 8px;
+            flex-shrink: 0;
+        }
+
+        #input-line .prompt {
+            color: var(--prompt);
+            margin-right: 8px;
+            user-select: none;
+        }
+
+        #input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--fg);
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
+            outline: none;
+            caret-color: var(--prompt);
+        }
+
+        #input::placeholder {
+            color: var(--dim);
+        }
+
+        #input:disabled {
+            opacity: 0.5;
+        }
+
+        .status-line {
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal">
+        <div id="output"></div>
+        <div id="input-line">
+            <span class="prompt">&gt;</span>
+            <input type="text" id="input" autofocus autocomplete="off"
+                   spellcheck="false" placeholder="Type a command..." disabled>
+        </div>
+    </div>
+
+    <script>
+        // --- Boot log: initial status message (before any other scripts load) ---
+        (function() {
+            var out = document.getElementById('output');
+            window.logStatus = function(msg) {
+                var div = document.createElement('div');
+                div.className = 'output-line status-line';
+                div.textContent = msg;
+                out.appendChild(div);
+                out.scrollTop = out.scrollHeight;
+            };
+            window.logStatus("Loading Bootstrapper...");
+        })();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/fengari-web@0.1.4/dist/fengari-web.js"></script>
+    <script src="bootstrapper.js"></script>
+</body>
+</html>

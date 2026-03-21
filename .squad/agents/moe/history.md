@@ -349,4 +349,43 @@ Completed full room design documentation for all 7 Level 1 rooms in `docs/rooms/
 **Handoff items for team:**
 - **Flanders:** ~40 new objects needed across 5 new rooms. Priority: storage cellar objects (critical path), then deep cellar, then hallway, then courtyard/crypt.
 - **Bob:** 6 new puzzles (009-014). Puzzles 009, 011 are critical path. Rest are optional.
-- **Implementation note:** `cellar.lua` north exit currently targets `deep-cellar` — needs to be changed to `storage-cellar` when that room is built. Passage ID should also change from `cellar-deep-door` to `cellar-storage-door`.
+- **Implementation note:** ~~`cellar.lua` north exit currently targets `deep-cellar` — needs to be changed to `storage-cellar` when that room is built.~~ **DONE** — cellar.lua updated: target → `storage-cellar`, passage_id → `cellar-storage-door`.
+
+### Level 1 Room Build (2026-07-21)
+
+Built all 5 new room .lua files in `src/meta/world/`:
+
+| Room | File | Objects | Exits | Environmental |
+|------|------|---------|-------|---------------|
+| Storage Cellar | `storage-cellar.lua` | 13 instances (10 room-level + 3 nested) | south→cellar, north→deep-cellar (locked, iron-key) | temp=11, moisture=0.5, light=0 |
+| Deep Cellar | `deep-cellar.lua` | 9 instances (5 room + 3 altar + 1 hidden) | south→storage-cellar, up→hallway, west→crypt (locked, silver-key) | temp=9, moisture=0.3, light=0 |
+| Hallway | `hallway.lua` | 7 instances (2 torches + 3 portraits + table + vase) | south→start-room, down→deep-cellar, north→level-2, west/east→locked | temp=18, moisture=0.15, light=3 |
+| Courtyard | `courtyard.lua` | 5 instances (well, bucket, ivy, cobblestone, rain-barrel) | up→start-room (window), east→manor-kitchen (locked) | temp=8, moisture=0.7, light=1 |
+| Crypt | `crypt.lua` | 14 instances (5 sarcophagi + 3 niche items + 4 hidden burial goods + inscription + tome) | west→deep-cellar | temp=8, moisture=0.1, light=0 |
+
+**Build notes:**
+1. All object type_ids are placeholders for Flanders. Engine warns "base class not found" for each — expected until object .lua files exist.
+2. Updated `cellar.lua` north exit: target `deep-cellar` → `storage-cellar`, passage_id `cellar-deep-door` → `cellar-storage-door`.
+3. All passage_ids are synchronized across bidirectional exits (e.g., `storage-deep-door` used by both storage-cellar.north and deep-cellar.south).
+4. Hallway is the only room with `light_level = 3` (self-lit by torches). Courtyard has `light_level = 1` (moonlit). All cellar rooms are `light_level = 0`.
+5. Room descriptions follow the "permanent features only" rule — no movable objects referenced.
+6. All 5 files + updated cellar.lua pass Lua syntax validation. Engine boots successfully with all rooms loaded.
+
+**Flanders dependency — placeholder GUIDs that need matching object files:**
+- Storage cellar: large-crate, small-crate, grain-sack, wine-rack, wine-bottle, oil-lantern, rope-coil, crowbar, iron-key, rat, oil-flask, cloth-scraps, candle-stub
+- Deep cellar: stone-altar, unlit-sconce, stone-sarcophagus, chain, incense-burner, tattered-scroll, offering-bowl, silver-key
+- Hallway: lit-torch, portrait, side-table, vase
+- Courtyard: stone-well, well-bucket, ivy, loose-cobblestone, rain-barrel
+- Crypt: crypt-sarcophagus, candle-stub, burial-coins, bronze-ring, silver-dagger, burial-necklace, tome, wall-inscription
+
+### Bedroom North Exit Shortcut Fix (2026-03-21)
+
+**Bug:** Nelson's Pass-014 found that `start-room.lua` north exit was `open = true, locked = false`, allowing players to walk straight into the hallway and skip the entire Level 1 cellar puzzle chain.
+
+**Fix:** Barred the door from the hallway side using an iron bar in brackets.
+
+- **Bedroom side (start-room.lua):** `open = false, locked = true, key_id = nil`. No keyhole on this side — the player cannot open or unlock the door from the bedroom. Description mentions the bar on the far side. Removed `lock`/`unlock` mutations. Added `condition` to `open` mutation. Break mutation preserved (difficulty 3) as a high-cost alternate path.
+- **Hallway side (hallway.lua):** `open = false, locked = true, key_id = nil`. The bar is accessible from this side. `unlock` mutation lifts the bar (no key required). `lock` mutation replaces it. Player arrives via deep cellar stairway and can unbar the door to reconnect rooms.
+- **Docs updated:** start-room.md, hallway.md, level-01-intro.md.
+
+**Design principle learned:** When gating a door, consider whether a bar or a lock is more appropriate. A bar is one-directional by nature (accessible from one side only) and doesn't require a key item to exist in the world. A lock creates a key-finding puzzle. Choose based on narrative intent: bars for imprisonment, locks for restricted access.

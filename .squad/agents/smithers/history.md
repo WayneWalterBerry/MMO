@@ -15,6 +15,28 @@
 
 ## Learnings
 
+### Session 2026-07-23: BUG-056 Plural Noun Resolution + Deploy
+
+**Task:** Fix BUG-056 — room descriptions use plurals ("torches", "portraits") but parser only matches singular keywords. Players type "examine torches" and get "You don't see that here."
+
+**Fix — Plural-to-singular fallback in parser:**
+- `src/engine/parser/preprocess.lua`: Added `singularize(noun)` function and local `singularize_word(word)` helper. Returns candidate singular forms by stripping common plural suffixes:
+  - `-ies` → `-y` (berries → berry)
+  - `-es` → strip, only after sibilants ch/sh/s/x/z (torches → torch, boxes → box)
+  - `-s` → strip, but not `-ss` (portraits → portrait, candles → candle)
+  - Multi-word nouns: also singularizes the last word ("wall torches" → "wall torch")
+- `src/engine/verbs/init.lua`: Modified `matches_keyword()` to try singular forms as fallback after exact match fails. Added `require("engine.parser.preprocess")` import. All noun resolution paths (`find_visible`, `find_in_inventory`, `find_part`) benefit automatically.
+- `src/engine/parser/goal_planner.lua`: Updated `kw_match()` (Tier 3 GOAP) with same singular fallback. Added preprocess import.
+- `src/engine/registry/init.lua`: Updated `find_by_keyword()` with same singular fallback.
+
+**Testing:** 12/12 singularize unit tests pass. All 22 existing parser tests pass. Game boots clean.
+
+**Deploy:** Built engine (86.9KB gz) + meta (58 files). Deployed to GitHub Pages with commit "Deploy: parser context fix, report bug, plural names, public issues repo". Includes team changes from Bart/Flanders/Nelson that were already in the working tree.
+
+**Key Design Decision:** Singular fallback is applied at match-time (not parse-time) so exact plural matches still work if an object is literally named "torches". The `singularize()` function lives in preprocess.lua (parser domain) but is consumed by verbs and registry modules.
+
+---
+
 ### Session 2026-07-23: HTTP Cache-Aware JIT Loader
 
 **Task:** Implement HTTP cache strategy for the JIT loader per docs/architecture/web/jit-loader.md spec.

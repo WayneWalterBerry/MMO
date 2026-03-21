@@ -113,3 +113,8 @@
 - Categories as system queries ("dangerous", "ventilation", "useless") enable cross-system behavior
 - 10 of 37 objects have FSM transitions where `mutate` adds value; 27 are static or use old mutations system
 - Tier 1 mutate candidates: candle (weight↓ per burn cycle), match (keywords→spent), poison-bottle (weight+categories), window (keywords+categories)
+- Level 1 covers 31 of 35 engine verbs through puzzle necessity alone — no exposition needed
+- Tutorial gaps are small: EXTINGUISH, DRINK, EAT, BURN never required. EXTINGUISH and DRINK are the only two worth fixing before Level 2.
+- Scaffolding works: same pattern at different scales (drawer→matchbox→match THEN crate→sack→key) is textbook Witness-model progressive complexity
+- The candle extinguish→relight FSM cycle is fully implemented but no puzzle exercises it — a draft in the stairway or altar ritual variant would fix this cheaply
+- TASTE teaches "danger" but DRINK (consumption) is never safely demonstrated — players may fear all liquids after the poison bottle

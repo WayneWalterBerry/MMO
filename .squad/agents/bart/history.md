@@ -134,6 +134,83 @@
 - Skill gate checking, READ verb grants skills, SEW verb crafting
 - Sewing manual object, curtains FSM, wearable container (sack), blood persistence, wardrobe FSM
 
+## Versioning Architecture (2026-07-22)
+
+**Status:** ✅ DESIGN COMPLETE  
+**Requested by:** Wayne "Effe" Berry
+
+### What Was Designed
+
+Comprehensive versioning strategy addressing GitHub Pages caching, version visibility, and independent component release cycles.
+
+**Deliverables:**
+
+1. **`docs/architecture/web/versioning.md`** — Web-specific versioning doc with cache-busting via content-hash query params, bootstrap messages, and build pipeline integration
+
+2. **`docs/architecture/engine/versioning.md`** — General engine versioning covering CLI, web, and release lifecycle
+
+3. **`.squad/decisions/inbox/bart-versioning.md`** — Decision D-VERSION001 through D-VERSION006
+
+### Key Design Choices
+
+**Single Source (D-VERSION001):**
+- All versions in `src/version.lua` (bootstrapper, engine, meta, game)
+- No duplication across package.json, comments, or build scripts
+
+**Semantic Versioning (D-VERSION002):**
+- Each component (bootstrapper, engine, meta) increments independently
+- MAJOR on breaking changes, MINOR on features, PATCH on fixes
+- Game version coordinates major releases
+
+**Cache-Busting (D-VERSION003):**
+- Content-hash query params: `?v=HASH` (12-char SHA256 prefix)
+- Build scripts compute hashes at build time
+- File changed → hash changed → new URL → fresh download
+- Eliminates GitHub Pages cache issues without manual cache invalidation
+
+**Version Display (D-VERSION004):**
+- Bootstrap messages show versions: "Loading Bootstrapper v1.0.0..."
+- CLI supports `--version` flag
+- JIT loader messages show meta version
+- Aids troubleshooting and cache validation
+
+**CLI Integration (D-VERSION005):**
+- `lua src/main.lua --version` outputs: `MMO 0.1.0 (engine: 0.3.1)`
+- Engine version applies to both CLI and web (same codebase)
+
+**Manifest File Optional (D-VERSION006):**
+- `versions.json` not required for V1
+- Future feature for client-side update notifications
+
+### Release Lifecycle
+
+| Scenario | Action |
+|----------|--------|
+| Engine bug fix | Bump engine PATCH → rebuild → new hash → fresh download |
+| New verb system | Bump engine MINOR → message shows new version |
+| New Level 2 | Bump meta MINOR, optionally game MINOR → coordinate release |
+| Major overhaul | Bump MAJOR, include in game version, update all messages |
+
+### Addressed Concerns
+
+✅ **GitHub Pages caching:** Content-hash query params force fresh downloads regardless of cache headers  
+✅ **Version visibility:** Bootstrap messages + CLI flag + in-game output  
+✅ **Independent versioning:** Each component (bootstrapper/engine/meta) increments separately  
+✅ **Cache-busting:** Automatic via content hashes, no manual invalidation needed  
+✅ **General architecture:** Applies to CLI and web equally  
+
+### Implementation Notes for Smithers
+
+1. Create `src/version.lua` with initial versions (bootstrapper 1.0.0, engine 0.1.0, meta 0.1.0, game 0.1.0)
+2. Add `--version` flag to `src/main.lua`
+3. Update build scripts (build-engine.ps1, build-meta.ps1) to extract versions and compute hashes
+4. Wire versions into bootstrapper.js (embed at build time)
+5. Rewrite URLs in index.html and bootstrapper.js with `?v=HASH`
+6. Test CLI: `lua src/main.lua --version`
+7. Test web: Verify bootstrap messages display correct versions
+
+---
+
 ## Learnings
 
 - FSM state transitions that touch `surfaces` are dangerous — save containment BEFORE cleanup
@@ -225,3 +302,99 @@ Designed and implemented the level data architecture — a two-layer system for 
 - Level file is source of truth; room-level field is denormalized for fast UI reads
 
 **Validated:** Game starts cleanly with `lua src/main.lua --no-ui --room start-room`. All 7 rooms load with level fields intact.
+
+## JIT Loader Architecture (2026-07-21)
+
+**Status:** ✅ DESIGN COMPLETE  
+**Requested by:** Wayne "Effe" Berry
+
+### What Was Designed
+
+Architecture for replacing the monolithic `game-bundle.js` with a JIT loading system for the web version. Engine code stays bundled (~2-3MB); meta files (objects, rooms, levels, templates) served individually and fetched on demand.
+
+**Deliverables:**
+1. `docs/architecture/web/jit-loader.md` — Full architecture doc: web loader API, static file layout, loading flow, error handling, build pipeline, implementation order
+2. `.squad/decisions/inbox/bart-jit-loader.md` — Decision D-JIT001
+
+**Key Design Choices:**
+- New `src/engine/loader/web.lua` wraps existing loader — no engine core changes
+- Objects served at GUID-based URLs (matches `type_id` references in rooms)
+- Rooms served at ID-based URLs (matches `exit.target` references)
+- All meta types already have UUID-format GUIDs — no GUID expansion needed
+- `fetch_room_bundle()` is the primary API: fetches room → discovers objects → parallel fetch
+- Write-once cache, graceful degradation on single-object failure
+- CLI mode completely unchanged
+
+## Learnings
+
+- All rooms and levels already have UUID-format GUIDs — checked all 7 rooms and level-01
+- The coroutine yield/resume pattern in game-adapter.lua can be reused for async HTTP fetches (same mechanism as io.read yields)
+- Object files need GUID-based renaming at build time because room instances reference by type_id (GUID), not filename
+- Template count is small enough (5 files, ~2KB) to always fetch at init — no JIT needed for templates
+- The VFS layer (vfs_get/vfs_list) can stay for engine require() resolution while meta files use a separate HTTP fetch path
+- Wayne's full web architecture is THREE layers, not two: (1) JS bootstrapper fetches+decompresses, (2) compressed engine bundle, (3) JIT Lua loader for meta files
+- The bootstrapper is the ONLY JS file loaded by HTML — everything else flows from it
+- Engine bundle is published pre-compressed as engine.lua.gz (~500KB); bootstrapper decompresses client-side using DecompressionStream API
+- SLM embeddings (~15MB) are a SEPARATE file from the engine bundle — only loaded if AI features needed
+- Status messages during load are light gray and progress through both JS (bootstrapper) and Lua (JIT loader) phases
+- Source dir `src/meta/world/` maps to URL path `meta/rooms/` — the build script handles the rename for cleaner URL semantics
+- build-engine.ps1 outputs pure Lua (not JS strings) — the engine.lua file is valid Lua that Fengari executes directly after decompression
+
+## GUID Audit (2026-07-21)
+
+**Status:** ✅ NO CHANGES NEEDED — All GUIDs already present
+
+Wayne requested GUIDs be added to all room and level .lua files. Audit confirmed every file already has a properly formatted `guid` field (lowercase, hyphens, no braces). This aligns with the earlier JIT Loader learnings entry.
+
+**Verified GUIDs (all pre-existing):**
+
+| File | GUID |
+|------|------|
+| `src/meta/world/start-room.lua` | `44ea2c40-e898-47a6-bb9d-77e5f49b3ba0` |
+| `src/meta/world/cellar.lua` | `b7d2e3f4-a891-4c56-9e38-d7f1b2c4a605` |
+| `src/meta/world/storage-cellar.lua` | `a1aa73d3-cd9d-4d13-9361-bd510cf0d46d` |
+| `src/meta/world/deep-cellar.lua` | `64da418f-1fb2-4898-a016-50a5c0a6f4da` |
+| `src/meta/world/hallway.lua` | `bb964e65-2233-4624-8757-9ec31d278530` |
+| `src/meta/world/courtyard.lua` | `8fa16d57-41ea-4695-a61b-2ccc3f68c1b6` |
+| `src/meta/world/crypt.lua` | `dea3ae62-c67e-4092-a361-fe3911c3fd4e` |
+| `src/meta/levels/level-01.lua` | `c4a71e20-8f3d-4b61-a9c5-2d7e1f03b8a6` |
+| `src/meta/templates/container.lua` | `f1596a51-4e1f-4f9a-a6d0-93b279066910` |
+| `src/meta/templates/furniture.lua` | `45a12525-ae7c-4ff1-ba22-4719e9144621` |
+| `src/meta/templates/room.lua` | `071e1b6a-17ae-498b-b7af-0cbb8948cd0d` |
+| `src/meta/templates/sheet.lua` | `ada88382-de1e-4fbc-908c-05d121e02f84` |
+| `src/meta/templates/small-item.lua` | `c2960f69-67a2-42e4-bcdc-dbc0254de113` |
+
+**Learnings:**
+- GUID coverage was already 100% across rooms, levels, and templates — prior JIT Loader session had already noted this
+
+### Session: Parser Unit Test Framework (2026-07-21)
+
+**Status:** ✅ COMPLETE  
+**Outcome:** 26 tests across 2 test files, all passing. Pre-deploy gate script created.
+
+**Deliverables:**
+1. `test/parser/test-helpers.lua` — minimal pure-Lua test framework (test, assert_eq, assert_truthy, assert_nil, assert_no_error)
+2. `test/parser/test-preprocess.lua` — 22 tests covering preprocess.parse() and preprocess.natural_language()
+3. `test/parser/test-context.lua` — 4 tests covering pronoun resolution, context retention bug, crash protection, BUG-049 alias
+4. `test/run-tests.lua` — test runner with auto-discovery of test-*.lua files
+5. `test/run-before-deploy.ps1` — pre-deploy gate (tests must pass before build)
+6. `docs/architecture/engine/testing.md` — framework documentation
+
+**Decisions Filed:**
+- D-TEST001: Pure-Lua test framework, no external dependencies
+- D-TEST002: Tests gate deployment (run-before-deploy.ps1)
+- D-TEST003: Test files run as isolated subprocesses
+- D-TEST004: Known bugs documented as passing tests (not "expected failures")
+
+**Context Retention Bug Confirmed:**
+- After "search wardrobe", bare "open" says "Open what?" — `ctx.last_object` is set but verb handlers with `noun == ""` don't consult it
+- Test documents current behavior and fix path inline
+- Fix target: verb handlers should check `ctx.last_object` when noun is empty
+
+## Learnings
+
+- `verbs.create()` returns a handler table — not `verbs.init()`. The module has no init function.
+- Verb handler tests need `game_start_time` and `time_offset` in context because presentation.lua calculates game time from real time
+- `search` is aliased to `examine` (with noun) or `look` (bare) — it goes through find_visible, which sets last_object
+- The pronoun resolution wrapper around find_visible works for "it"/"one"/"that" but NOT for empty noun — that's the gap causing the context retention bug
+- Test files must run as subprocesses because the verb module loads the full dependency graph (FSM, containment, presentation, materials)

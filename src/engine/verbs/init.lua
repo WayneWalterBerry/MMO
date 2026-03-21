@@ -13,6 +13,7 @@ local verbs = {}
 
 local fsm_mod = require("engine.fsm")
 local presentation = require("engine.ui.presentation")
+local preprocess = require("engine.parser.preprocess")
 
 ---------------------------------------------------------------------------
 -- Constants (authoritative source: engine/ui/presentation.lua)
@@ -28,17 +29,24 @@ local DAYTIME_END = presentation.DAYTIME_END
 local function matches_keyword(obj, kw)
     if not obj then return false end
     kw = kw:lower()
-    if obj.id and obj.id:lower() == kw then return true end
-    -- Exact keyword match first (highest priority)
-    if type(obj.keywords) == "table" then
-        for _, k in ipairs(obj.keywords) do
-            if k:lower() == kw then return true end
-        end
+    -- Build list: original keyword + BUG-056 singular fallbacks
+    local candidates = { kw }
+    for _, s in ipairs(preprocess.singularize(kw)) do
+        candidates[#candidates + 1] = s
     end
-    -- Word-boundary match on name (avoids "match" matching "matchbox")
-    if obj.name then
-        local padded = " " .. obj.name:lower() .. " "
-        if padded:find(" " .. kw .. " ", 1, true) then return true end
+    for _, try_kw in ipairs(candidates) do
+        if obj.id and obj.id:lower() == try_kw then return true end
+        -- Exact keyword match (highest priority)
+        if type(obj.keywords) == "table" then
+            for _, k in ipairs(obj.keywords) do
+                if k:lower() == try_kw then return true end
+            end
+        end
+        -- Word-boundary match on name (avoids "match" matching "matchbox")
+        if obj.name then
+            local padded = " " .. obj.name:lower() .. " "
+            if padded:find(" " .. try_kw .. " ", 1, true) then return true end
+        end
     end
     return false
 end
@@ -1371,10 +1379,14 @@ function verbs.create()
             end
         end
         if container_noun then
-            local cobj = find_visible(ctx, container_noun)
+            local cobj, loc_type, parent_obj = find_visible(ctx, container_noun)
             if not cobj then
                 print("You can't feel anything like that nearby.")
                 return
+            end
+            -- BUG-058: If we found a part, redirect to the parent for surface access
+            if loc_type == "part" and parent_obj then
+                cobj = parent_obj
             end
             local found_anything = false
             -- If a specific surface prep was given (under/beneath), check only that surface
@@ -3856,9 +3868,13 @@ function verbs.create()
         local target = noun:match("^from%s+(.+)") or noun
 
         local obj = find_in_inventory(ctx, target)
-        if not obj then obj = find_visible(ctx, target) end
         if not obj then
-            print("You don't see that here.")
+            local visible = find_visible(ctx, target)
+            if visible then
+                print("You'll need to pick that up first.")
+            else
+                print("You don't see that here.")
+            end
             return
         end
 
@@ -4488,7 +4504,7 @@ function verbs.create()
             .. "```\n" .. transcript_text .. "```\n\n"
             .. "## Description\n\n_Describe the bug here_\n"
 
-        local url = "https://github.com/WayneWalterBerry/MMO/issues/new"
+        local url = "https://github.com/WayneWalterBerry/MMO-Issues/issues/new"
             .. "?title=" .. url_encode(title)
             .. "&body=" .. url_encode(body)
 

@@ -5,23 +5,31 @@
 
 local goal_planner = {}
 local MAX_DEPTH = 5
+local preprocess = require("engine.parser.preprocess")
 
 -- Verb synonyms: verbs that should trigger the same GOAP prerequisite chain
 local VERB_SYNONYMS = { burn = "light" }
 
 ---------------------------------------------------------------------------
 -- Helpers: keyword matching (mirrors verbs module)
+-- BUG-056: tries singular forms of plural nouns as fallback
 ---------------------------------------------------------------------------
 local function kw_match(obj, kw)
     if not obj then return false end
     kw = kw:lower()
-    if obj.id and obj.id:lower() == kw then return true end
-    for _, k in ipairs(obj.keywords or {}) do
-        if k:lower() == kw then return true end
+    local candidates = { kw }
+    for _, s in ipairs(preprocess.singularize(kw)) do
+        candidates[#candidates + 1] = s
     end
-    if obj.name then
-        local p = " " .. obj.name:lower() .. " "
-        if p:find(" " .. kw .. " ", 1, true) then return true end
+    for _, try_kw in ipairs(candidates) do
+        if obj.id and obj.id:lower() == try_kw then return true end
+        for _, k in ipairs(obj.keywords or {}) do
+            if k:lower() == try_kw then return true end
+        end
+        if obj.name then
+            local p = " " .. obj.name:lower() .. " "
+            if p:find(" " .. try_kw .. " ", 1, true) then return true end
+        end
     end
     return false
 end

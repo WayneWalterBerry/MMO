@@ -143,7 +143,7 @@ Level 1 is a **tutorial disguised as a mystery**. The player doesn't realize the
 1. **Bedroom** (start) → DOWN (trap door) → **Cellar** → NORTH (iron door) → **Storage Cellar** → NORTH (iron door) → **Deep Cellar** → UP (stairs) → **Hallway** → NORTH → **Level 2**
 
 **Alternate Paths:**
-- **Bedroom** → NORTH (oak door — locked? TBD) → **Hallway** → NORTH → **Level 2** (shortcut if player has key)
+- **Bedroom** → NORTH (oak door — BARRED from hallway side, no keyhole on bedroom side) → **Hallway** → NORTH → **Level 2** (only accessible after unbarring from hallway side via cellar path)
 - **Bedroom** → WINDOW (breakable) → **Courtyard** (dangerous, leads to exterior exploration — optional)
 
 **Optional Exploration:**
