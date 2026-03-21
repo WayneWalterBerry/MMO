@@ -147,3 +147,38 @@
 - Spatial relationships as per-object properties (not separate graph module)
 - Covering objects dump surfaces underneath AND reveal covering list (two mechanisms)
 - Exit mutations and room object state are separate systems — sync needed on mutation
+
+## Mutation Analysis & Architecture Alignment (2026-03-21T00:16Z)
+
+**Status:** ✅ COMPLETE  
+**Orchestration Log:** `.squad/orchestration-log/2026-03-21T00-16Z-bart.md`
+
+### Engine Mutation Surface Audit
+
+Comprehensive analysis of all property mutations across the engine:
+
+**FSM Transition Engine (`engine/fsm/init.lua`):**
+- 14 properties mutated via `apply_state()`: _state, name, description, room_presence, sensory verbs (on_feel/on_smell/on_listen/on_taste/on_look), casts_light, light_radius, provides_tool, consumable, surfaces
+
+**Verb Handlers:** 
+- 60+ distinct mutations across player and object state
+- Player mutations: hands, worn, location, state.bloody, state.bleed_ticks, state.has_flame, state.poisoned, state.nauseated, state.dead
+- Object mutations: all properties except core 5 (weight/size/keywords/categories/portable)
+
+**Key Finding:** Core object properties (weight, size, keywords, categories, portable) are architecturally stable — never mutated across all systems.
+
+### Proposal: Generic `mutate` Field
+
+Added to decisions.md as D-MUTATE-PROPOSAL. Enables:
+- Explicit transition-time mutation declarations
+- Arbitrary property changes at FSM transition time
+- Maintains engine genericity (no object special-casing)
+- ~25 lines Lua implementation
+
+Aligns with user directive: Dwarf Fortress property-bag architecture validates this approach.
+
+### Decision Filed
+
+- **D-MUTATE-PROPOSAL:** Generic `mutate` field on FSM transitions
+- **D-PRINCIPLE-GOVERNANCE:** Core principles are hard constraints
+- **D-DF-ARCHITECTURE:** Dwarf Fortress reference model (property-bag over special-casing)

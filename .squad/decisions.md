@@ -1052,3 +1052,82 @@ Keep an authoritative folder of puzzle documentation at `docs/puzzles/` where ga
 **End of Pass-008 & Docs Cleanup Merge**  
 **Total Active Decisions:** 52  
 **Last Merge:** 2026-03-20T22:40Z (Scribe)
+
+---
+
+## SQUAD RESEARCH & MUTATION ANALYSIS (2026-03-21T00:16Z)
+
+### D-MUTATE-PROPOSAL: Generic `mutate` Field on FSM Transitions
+**Author:** Bart (Architect)  
+**Date:** 2026-03-21  
+**Status:** Proposal  
+**Research:** Frink (resources/research/architecture/dynamic-object-mutation.md)
+
+**Audit Summary:**
+- FSM engine currently mutates 14 properties via `apply_state()`
+- Verb handlers mutate 60+ distinct properties across player and object state
+- Core properties (weight, size, keywords, categories, portable) are never mutated
+- Current limitation: property changes are implicit in state definitions, not declarable at transition time
+
+**Proposal:**
+Add optional `mutate` table to FSM transition definitions:
+```lua
+transitions = {
+  light = {
+    to = "lit",
+    on_transition = "light_verb_handler",
+    mutate = { casts_light = true, light_radius = 5 }  -- NEW: explicit mutation at transition
+  }
+}
+```
+
+**Benefits:**
+- Makes transition-time mutations explicit and debuggable
+- Keeps metadata accurate during transformation
+- Maintains engine genericity (no object special-casing)
+- Aligns with Dwarf Fortress property-bag architecture (user directive 2026-03-21T00:16Z)
+
+**Implementation:** ~25 lines Lua in engine/fsm/init.lua
+
+**Key Insight:** Core object properties are architecturally stable; new mutation control should be orthogonal to them.
+
+---
+
+### DIRECTIVE: Core Principles Are Inviolable
+**Author:** Brockman (Documentation) / Wayne Berry (User)  
+**Date:** 2026-03-21T00:16Z  
+**Status:** SQUAD GOVERNANCE RULE
+
+When making architecture or design changes, agents must:
+
+1. **No violations:** Check that changes do NOT violate any existing core principle. If they would, rework the change.
+2. **No contradictions:** Core principles must not contradict each other. If a new principle conflicts with an existing one, resolve the conflict BEFORE adoption.
+3. **Equal weight:** Architecture core principles (in `docs/architecture/core-principles.md`) and design core principles have equal weight.
+
+Core principles are the constitution — everything else is legislation. See `docs/architecture/core-principles.md` (7 foundational principles).
+
+---
+
+### DIRECTIVE: User Reference — Dwarf Fortress Architecture Model
+**Author:** Wayne Berry (via Copilot)  
+**Date:** 2026-03-21T00:16Z  
+**Status:** SQUAD GOVERNANCE RULE
+
+Dwarf Fortress is an excellent architectural reference model. Its property-bag approach where the engine simulates physics on data-driven material/object properties (rather than special-casing objects) is the architecture we should aspire to.
+
+**Alignment:** This validates our FSM + generic mutation strategy and the proposed `mutate` field.
+
+---
+
+### DIRECTIVE: Process — Resolved Questions Are Deleted
+**Author:** Wayne Berry (via Copilot)  
+**Date:** 2026-03-20T22:53Z  
+**Status:** SQUAD PROCESS DIRECTIVE
+
+When an open question gets answered/resolved, remove it from `docs/design/open-questions.md` entirely. Don't mark it as "RESOLVED" and leave it there — just delete it. The answer should already be captured in the appropriate design or architecture doc. The open-questions file should only contain genuinely open questions.
+
+---
+
+**End of 2026-03-21T00:16Z Mutation Research Merge**  
+**Total Active Decisions:** 56  
+**Last Merge:** 2026-03-21T00:16Z (Scribe)

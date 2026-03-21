@@ -96,3 +96,31 @@
 - CYOA hidden/unreachable content translates directly to unconventional verb usage
 - MUD social verbs require zero mechanical reward but drive retention
 - Premium one-time purchase is market-preferred for text games
+
+## Dynamic Object Mutation & Architecture Validation (2026-03-21T00:16Z)
+
+**Status:** ✅ COMPLETE  
+**Orchestration Log:** `.squad/orchestration-log/2026-03-21T00-16Z-frink.md`
+
+### Research Deliverable
+
+**File:** `resources/research/architecture/dynamic-object-mutation.md` (37KB, 29 citations)
+
+Comprehensive review of state machine patterns, mutation strategies, and game engine architectures:
+
+- State machine pattern applications in commercial game engines (GOAP planners, hierarchical FSMs, Harel statecharts)
+- Mutation strategies: flag-based vs. code-rewriting analysis
+- ECS (Entity Component System) architecture benefits and constraints for text games
+- Property bag models (Dwarf Fortress, Elder Scrolls)
+- Dynamic object transformation without special-casing
+
+### Key Findings
+
+1. **Code-rewriting mutation is architecturally sound** — Lua homoiconicity enables self-modifying objects without compromising metadata accuracy
+2. **Property-bag models scale better** than special-case objects — aligns with user directive on Dwarf Fortress reference model
+3. **FSM transitions need explicit mutation control** — current implicit state-level mutations insufficient for complex behavior trees
+4. **Generic property mutation orthogonal to core properties** — weight, size, keywords, categories, portable are semantically stable
+
+### Impact
+
+Research validated Bart's mutation analysis findings and informed the D-MUTATE-PROPOSAL for generic `mutate` field on FSM transitions. Also supports D-PRINCIPLE-GOVERNANCE: core principles as hard constraints.
