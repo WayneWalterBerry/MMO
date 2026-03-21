@@ -1,6 +1,8 @@
 # Injury Design
 
-This folder documents the design of injury types before implementation. Injuries are first-class game entities, designed using the same workflow as objects: **design doc first, then implementation**.
+This folder documents the **gameplay design** of injury types: how they function as puzzles, their discovery mechanisms, treatment matching, puzzle integration, and narrative moments. These are the design documents that precede implementation.
+
+⚠️ **For technical reference** (FSM states, damage values, treatment items, symptom text) → see `docs/injuries/`
 
 ## What Is an Injury?
 
@@ -11,11 +13,20 @@ An injury is a modifier that affects the player's state for a duration. Injuries
 - **Identity:** Each injury type has a Windows GUID (consistent with the metadata identity system)
 - **Loading:** Injury metadata is JIT-loaded on demand, just like object metadata
 
+## Design vs. Reference Documentation
+
+**This folder (design):** Gameplay design, puzzle uses, discovery paths, treatment mechanics as puzzles, narrative integration, design rationale
+
+**`docs/injuries/` (reference):** Technical specifications, FSM state diagrams, damage calculations, treatment items, symptom text, implementation details
+
+The design documents in this folder are comprehensive — they include technical details too — but they're focused on **how the injury plays as a game mechanic**. For a quick reference lookup (just the facts), see the reference docs.
+
 ## Design Workflow
 
-1. **Design phase:** Create a `.md` file in this folder describing the injury concept
+1. **Design phase:** Create a `.md` file in this folder describing the injury concept, puzzle uses, and integration
 2. **Implementation phase:** Flanders converts the design into a `.lua` template in `src/meta/injuries/`
-3. **Live:** The injury is ready for puzzle mechanics, gameplay, and discovery
+3. **Reference docs:** Extract the technical content into a reference doc in `docs/injuries/`
+4. **Live:** The injury is ready for puzzle mechanics, gameplay, and discovery
 
 ## Injury Design Template
 
@@ -41,9 +52,11 @@ Each injury design document should include:
 
 ## Cross-References
 
+- **Reference Documentation:** `docs/injuries/` — FSM diagrams, damage values, treatment items, symptom text (the facts)
 - **Technical Architecture:** `docs/architecture/player/injuries.md` — How injuries are stored, serialized, and updated in the player object
 - **Implementation:** `src/meta/injuries/` — All injury type .lua files
 - **Object Design:** `docs/design/objects/` — Objects follow the same template→instance pattern; study object designs for parallel structure
+- **Healing Items:** `docs/design/healing-items.md` — Items that cure or manage injuries
 
 ## Examples
 
