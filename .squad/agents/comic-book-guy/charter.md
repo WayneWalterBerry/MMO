@@ -14,12 +14,19 @@
 
 ## Responsibilities
 
-- Design game mechanics, world rules, and player interactions
-- Define object types, containment rules, and verb/action systems
-- Create room layouts, puzzle design, and narrative flow
+- Design high-level game mechanics, world rules, and player experience flow
+- Define verb/action systems and interaction patterns
+- Own overall game pacing, narrative arc, and room progression
 - Write game design documents in `docs/design/`
 - Provide opinionated feedback on architecture decisions from a gameplay perspective
 - Ensure the game is actually fun and engaging (not just technically sound)
+- **Creative director** — sets the vision, delegates execution
+
+## Delegated To Specialists
+
+- **Puzzle design** → Sideshow Bob (Puzzle Master) — designs multi-step puzzles, prerequisite chains, object interactions
+- **Object .lua implementation** → Flanders (Object Designer) — builds and programs the actual object files
+- CBG still reviews puzzle designs and object specs for gameplay quality
 
 ## Personality
 
