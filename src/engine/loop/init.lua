@@ -85,13 +85,20 @@ function loop.run(context)
     if trimmed == "" then goto continue end
 
     -- Multi-command splitting: commas, semicolons, "then" (Issue #1)
+    -- BUG-066: Added safety limits to prevent infinite loops or hangs
     local command_parts = preprocess.split_commands(trimmed)
 
     -- Expand each part further with the existing " and " compound split
     local sub_commands = {}
     for _, part in ipairs(command_parts) do
       local remaining = part
+      local safety_limit = 0
       while true do
+        safety_limit = safety_limit + 1
+        if safety_limit > 100 then
+          print("Error: Command too complex (infinite loop protection). Try simpler commands.")
+          break
+        end
         local before, after = remaining:match("^(.-)%s+and%s+(.+)$")
         if before and after then
           local b = before:match("^%s*(.-)%s*$")
@@ -123,6 +130,12 @@ function loop.run(context)
     end
 
     local should_quit = false
+    -- BUG-066: Safety limit to prevent hanging on pathological multi-command input
+    if #sub_commands > 50 then
+      print("Error: Too many commands at once (limit: 50). Try breaking them into smaller groups.")
+      goto continue
+    end
+    
     for _, sub_input in ipairs(sub_commands) do
       -- Try natural language preprocessing first (Smithers's parser pipeline)
       local verb, noun = preprocess.natural_language(sub_input)
