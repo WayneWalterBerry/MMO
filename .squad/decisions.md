@@ -1102,9 +1102,9 @@ When making architecture or design changes, agents must:
 
 1. **No violations:** Check that changes do NOT violate any existing core principle. If they would, rework the change.
 2. **No contradictions:** Core principles must not contradict each other. If a new principle conflicts with an existing one, resolve the conflict BEFORE adoption.
-3. **Equal weight:** Architecture core principles (in `docs/architecture/core-principles.md`) and design core principles have equal weight.
+3. **Equal weight:** Architecture core principles (in `docs/architecture/objects/core-principles.md`) and design core principles have equal weight.
 
-Core principles are the constitution — everything else is legislation. See `docs/architecture/core-principles.md` (7 foundational principles).
+Core principles are the constitution — everything else is legislation. See `docs/architecture/objects/core-principles.md` (7 foundational principles).
 
 ---
 

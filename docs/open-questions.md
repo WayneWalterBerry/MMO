@@ -9,6 +9,6 @@
 
 ## Status
 
-No open questions at this time. All previously open questions have been resolved. See the [Core Architecture Principles](architecture/core-principles.md) for the 7 foundational design decisions.
+No open questions at this time. All previously open questions have been resolved. See the [Core Architecture Principles](architecture/objects/core-principles.md) for the 7 foundational design decisions.
 
 ---

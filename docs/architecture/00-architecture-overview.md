@@ -9,7 +9,7 @@
 
 ## 🏛️ Core Principles
 
-**See [Core Architecture Principles](core-principles.md) for the 7 foundational principles governing the object system:**
+**See [Core Architecture Principles](objects/core-principles.md) for the 7 foundational principles governing the object system:**
 1. Code-Derived Mutable Objects
 2. Base Objects → Object Instances
 3. Objects Have FSM; Instances Know Their State
