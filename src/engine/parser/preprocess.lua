@@ -10,10 +10,17 @@ local preprocess = {}
 
 --- parse(input) -> verb, noun
 --- Splits a raw input string into the first word (verb) and the rest (noun).
+--- Handles leading "I" pronoun: "i" is inventory only when typed alone.
 function preprocess.parse(input)
     input = input:match("^%s*(.-)%s*$") -- trim
     local verb, noun = input:match("^(%S+)%s*(.*)")
-    return (verb or ""):lower(), (noun or ""):lower()
+    verb = (verb or ""):lower()
+    noun = (noun or ""):lower()
+    -- BUG-036: "I" as pronoun, not inventory shortcut. Re-parse the rest.
+    if verb == "i" and noun ~= "" then
+        return preprocess.parse(noun)
+    end
+    return verb, noun
 end
 
 --- natural_language(input) -> verb, noun or nil, nil
@@ -23,8 +30,24 @@ function preprocess.natural_language(input)
     local lower = input:lower():match("^%s*(.-)%s*$")
     if not lower or lower == "" then return nil, nil end
 
+    -- BUG-036: Strip "I want to / I need to / I'd like to" preambles
+    local preamble_rest = lower:match("^i%s+want%s+to%s+(.+)")
+        or lower:match("^i%s+need%s+to%s+(.+)")
+        or lower:match("^i'?d%s+like%s+to%s+(.+)")
+        or lower:match("^i%s+would%s+like%s+to%s+(.+)")
+        or lower:match("^i'?ll%s+(.+)")
+        or lower:match("^i%s+need%s+(.+)")
+        or lower:match("^i%s+want%s+(.+)")
+    if preamble_rest then
+        local v2, n2 = preprocess.natural_language(preamble_rest)
+        if v2 then return v2, n2 end
+        return preprocess.parse(preamble_rest)
+    end
+
     -- Question patterns → look
+    -- BUG-037: added "what's around me" pattern
     if lower:match("^what%s+is%s+around")
+        or lower:match("^what'?s%s+around")
         or lower:match("^what%s+do%s+i%s+see")
         or lower:match("^what%s+can%s+i%s+see")
         or lower:match("^where%s+am%s+i")
@@ -39,7 +62,9 @@ function preprocess.natural_language(input)
     end
 
     -- Question patterns → inventory
+    -- BUG-038: added "what am I holding" pattern
     if lower:match("^what%s+am%s+i%s+carry")
+        or lower:match("^what%s+am%s+i%s+hold")
         or lower:match("^what%s+do%s+i%s+have") then
         return "inventory", ""
     end
@@ -99,6 +124,7 @@ function preprocess.natural_language(input)
     end
 
     -- "use X on Y" → sew Y with X (crafting shorthand)
+    -- BUG-039: expanded to handle fire tools and generic "apply X to Y"
     local use_tool, use_target = lower:match("^use%s+(.+)%s+on%s+(.+)$")
     if use_tool and use_target then
         if use_tool:match("needle") or use_tool:match("thread") then
@@ -107,6 +133,13 @@ function preprocess.natural_language(input)
         if use_tool:match("key") then
             return "unlock", use_target .. " with " .. use_tool
         end
+        if use_tool:match("match") or use_tool:match("lighter")
+            or use_tool:match("flint") or use_tool:match("torch")
+            or use_tool:match("fire") or use_tool:match("flame") then
+            return "light", use_target .. " with " .. use_tool
+        end
+        -- Generic fallback: "use X on Y" → "apply" semantics via put
+        return "put", use_tool .. " on " .. use_target
     end
 
     -- "push X back" / "put X back in Y" → put

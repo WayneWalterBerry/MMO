@@ -677,4 +677,58 @@ Nelson tested "light candle" in darkness:
 
 ---
 
+### Session 2026-07-18: Add Level Name to Status Bar
+
+**Task:** Wayne noticed the status bar shows the room name but not the level. Add level info.
+
+**What I Found:**
+- Rooms (`src/meta/world/*.lua`) have no `level` field — this is a data-model gap.
+- Only 2 rooms exist: `start-room` (The Bedroom) and `cellar` (The Cellar), both Level 1.
+
+**What I Did:**
+1. **Updated `src/engine/ui/status.lua`:**
+   - Added `LEVEL_MAP` lookup table mapping room IDs → `{ number, name }`
+   - Added `status.get_level(room)` — checks `room.level` first (future-proof), falls back to `LEVEL_MAP`
+   - Status bar left side now shows: `Lv 1: The Awakening — THE BEDROOM  2:00 AM`
+2. **Updated `docs/architecture/ui/README.md`** — status bar description now mentions level
+3. **Created decision inbox note:** `.squad/decisions/inbox/smithers-status-bar-level.md`
+   - Documents what Moe needs to add (`level = { number = 1, name = "..." }`) to room files
+   - Once rooms carry their own level field, the hardcoded `LEVEL_MAP` can be removed
+
+**Files Changed:** `src/engine/ui/status.lua`, `docs/architecture/ui/README.md`
+**Files Created:** `.squad/decisions/inbox/smithers-status-bar-level.md`
+**Tests Passed:** `--no-ui` smoke test (clean exit), isolated `get_level()` unit tests (4/4 passed)
+
+---
+
+### Session: Parser Bug Fixes (BUG-036, 037, 038, 039)
+
+**Task:** Fix four parser bugs found by Nelson in test passes 011/012.
+
+**Bugs Fixed (all in `src/engine/parser/preprocess.lua`):**
+
+1. **BUG-036 🔴 CRITICAL — "I" prefix triggers inventory**
+   - Root cause: `preprocess.parse()` split "I want to look around" → verb="i", noun="want to look around". The `i` alias in `verbs/init.lua` then dispatched to inventory.
+   - Fix (two layers):
+     - `natural_language()`: Added preamble strippers for "I want to...", "I need to...", "I'd like to...", "I'll..." — strips the pronoun + modal, re-parses the meaningful part.
+     - `parse()`: Safety net — if verb is "i" and noun is non-empty, recursively re-parse without the leading "I". Bare "i" (no noun) still triggers inventory.
+   - Pre-existing bug — not introduced by my refactor. The `i` alias existed before me.
+
+2. **BUG-037 🟡 MAJOR — "what's around me" not understood**
+   - Added `^what'?s%s+around` pattern to the look section in `natural_language()`.
+
+3. **BUG-038 🟡 MAJOR — "what am I holding" not understood**
+   - Added `^what%s+am%s+i%s+hold` pattern to the inventory section in `natural_language()`.
+
+4. **BUG-039 🟡 MAJOR — "use X on Y" not understood for fire tools**
+   - Expanded the existing "use X on Y" handler with fire-tool detection (match, lighter, flint, torch, fire, flame) → maps to `light Y with X`.
+   - Added generic fallback for unrecognized tools → maps to `put X on Y`.
+
+**Tests:** 26/26 passed (bug-specific + regression on existing shortcuts).
+
+**Files Changed:** `src/engine/parser/preprocess.lua`
+**Files Created:** `.squad/decisions/inbox/smithers-parser-bugfix.md`
+
+---
+
 **END OF LEARNINGS**
