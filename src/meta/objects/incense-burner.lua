@@ -1,6 +1,6 @@
 -- incense-burner.lua — Static environmental storytelling object (Deep Cellar)
 return {
-    guid = "739afo3m-0a11-442c-673d-891bf0789012",
+    guid = "{2fce1fb5-94ad-44f7-9036-4332a62d3405}",
     template = "container",
 
     id = "incense-burner",

@@ -1,6 +1,6 @@
 -- wine-rack.lua — Static furniture / container for wine bottles
 return {
-    guid = "ea06f4d5-7182-4b23-de45-f02167890123",
+    guid = "{ea06f4d5-7182-4b23-de45-f02167890123}",
     template = "furniture",
 
     id = "wine-rack",

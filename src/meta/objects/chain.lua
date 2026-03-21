@@ -1,7 +1,7 @@
 -- chain.lua — Mechanical puzzle element (Deep Cellar)
 -- States: hanging → pulled
 return {
-    guid = "c84fkt8r-5f66-497f-b282-d46045234567",
+    guid = "{5f18202e-220f-4a16-b75e-170595f22845}",
     template = "furniture",
 
     id = "chain",

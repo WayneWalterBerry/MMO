@@ -1,6 +1,6 @@
 -- stone-well.lua — Static furniture (Courtyard center)
 return {
-    guid = "24alqz4x-b5c2-4fd5-18e8-3a260b890123",
+    guid = "{096114c9-418d-41df-a5bf-d6a977664f8a}",
     template = "furniture",
 
     id = "stone-well",

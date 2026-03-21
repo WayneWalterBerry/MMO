@@ -1,7 +1,7 @@
 -- wall-sconce.lua — Container for light sources (Deep Cellar)
 -- States: empty ↔ occupied
 return {
-    guid = "6289en2l-f900-431b-562c-780aef678901",
+    guid = "{fd0fb6ed-a643-4b1a-96fd-ad1d520e4f75}",
     template = "furniture",
 
     id = "wall-sconce",

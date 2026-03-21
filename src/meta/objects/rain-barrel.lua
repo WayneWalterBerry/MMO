@@ -1,7 +1,7 @@
 -- rain-barrel.lua — FSM-managed water source (Courtyard)
 -- States: full → half-full → empty
 return {
-    guid = "79fqv49c-0a17-4420-6d3d-8f7b50345678",
+    guid = "{ff526b60-83e1-4c82-9d5f-c303bac5bdf3}",
     template = "furniture",
 
     id = "rain-barrel",

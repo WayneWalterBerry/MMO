@@ -1,6 +1,6 @@
 -- skull.lua — Static atmospheric object (Crypt)
 return {
-    guid = "a2ity72f-3d40-4753-9060-b20e83678901",
+    guid = "{afb5c50c-a82b-414b-8d1c-9ab50e6ad454}",
     template = "small-item",
 
     id = "skull",

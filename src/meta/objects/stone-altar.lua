@@ -1,6 +1,6 @@
 -- stone-altar.lua — Static furniture (Deep Cellar hub for Puzzle 012)
 return {
-    guid = "5178dm1k-e8f9-420a-451b-6798de567890",
+    guid = "{a5fbf32f-530b-49af-9a19-255575a5eb77}",
     template = "furniture",
 
     id = "stone-altar",

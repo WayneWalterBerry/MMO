@@ -1,6 +1,6 @@
 -- wall-inscription.lua — Static readable lore object (Crypt)
 return {
-    guid = "f7ny3c7k-8295-4ca8-e5b5-075338123456",
+    guid = "{959a08fd-057e-4cf6-b80e-c419d184bcc1}",
     template = "furniture",
 
     id = "wall-inscription",

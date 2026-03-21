@@ -2,7 +2,7 @@
 -- States: lit → extinguished ↔ relit → spent (terminal)
 -- Starts lit in the hallway
 return {
-    guid = "d95glu9s-6077-4a80-c393-e57156345678",
+    guid = "{816862a1-c892-45ba-8d0f-2a72315f8eb2}",
     template = "small-item",
 
     id = "torch",

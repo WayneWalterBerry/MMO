@@ -1,7 +1,7 @@
 -- wooden-door.lua — FSM-managed door (Courtyard to manor interior)
 -- States: locked → unlocked → open
 return {
-    guid = "68epu38b-f906-4319-5c2c-7e6a4f234567",
+    guid = "{642fafd8-3e6d-4a58-8547-f9a47142e697}",
     template = "furniture",
 
     id = "wooden-door",

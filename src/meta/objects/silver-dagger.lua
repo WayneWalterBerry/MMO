@@ -1,6 +1,6 @@
 -- silver-dagger.lua — Tool/weapon/treasure (Crypt, Sarcophagus 2)
 return {
-    guid = "e6mx2b6j-7184-4b97-d4a4-f64227012345",
+    guid = "{2155adb3-839c-451b-8078-892e839013b2}",
     template = "small-item",
 
     id = "silver-dagger",

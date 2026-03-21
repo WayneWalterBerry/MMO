@@ -1,6 +1,6 @@
 -- crowbar.lua — Static tool object (Puzzle 009: required to pry open crates)
 return {
-    guid = "3f5bk9i0-c6d7-4078-2390-4576bc345678",
+    guid = "{b30076fe-7931-4089-8ea2-2cac139b022c}",
     template = "small-item",
 
     id = "crowbar",

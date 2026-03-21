@@ -1,7 +1,7 @@
 -- well-bucket.lua — FSM-managed water retrieval tool (Courtyard)
 -- States: raised-empty → lowered → raised-full → raised-empty
 return {
-    guid = "35bmr05y-c6d3-40e6-29f9-4b371c901234",
+    guid = "{d2fcb814-b606-4525-8a03-e031d3800332}",
     template = "container",
 
     id = "well-bucket",

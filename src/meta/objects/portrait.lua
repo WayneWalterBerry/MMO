@@ -1,7 +1,7 @@
 -- portrait.lua — Static decorative/lore object (Hallway)
 -- Multiple instances with description overrides for different subjects
 return {
-    guid = "e06hmv0t-7188-4b91-d4a4-f68267456789",
+    guid = "{21c70054-ed7f-4873-ac0e-f8c90a2ff18a}",
     template = "furniture",
 
     id = "portrait",

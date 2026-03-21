@@ -1,7 +1,7 @@
 -- candle-stub.lua — Short-lived consumable light source (Crypt)
 -- States: unlit → lit → spent (terminal)
 return {
-    guid = "91hsx61e-2c39-4642-8f5f-a19d72567890",
+    guid = "{076d1bf6-12c3-443f-b88a-85452cb4477c}",
     template = "small-item",
 
     id = "candle-stub",

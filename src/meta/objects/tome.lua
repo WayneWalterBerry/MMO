@@ -1,7 +1,7 @@
 -- tome.lua — Critical lore object (Crypt, Sarcophagus 1 — Puzzle 014)
 -- States: closed → open (readable)
 return {
-    guid = "d5lw1a5i-6073-4a86-c393-e53116901234",
+    guid = "{7283ca72-a6be-4727-8de2-a7c1998e46cf}",
     template = "small-item",
 
     id = "tome",

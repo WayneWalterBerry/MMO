@@ -1,7 +1,7 @@
 -- wardrobe.lua — FSM-managed wardrobe
 -- States: closed <-> open (reversible)
 return {
-    guid = "9c4701d1-4cc4-49e7-9c4a-041e1e37caf1",
+    guid = "{9c4701d1-4cc4-49e7-9c4a-041e1e37caf1}",
     template = "furniture",
     id = "wardrobe",
     material = "oak",

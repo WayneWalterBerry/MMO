@@ -1,6 +1,6 @@
 -- iron-key.lua — Critical path key (Puzzle 009: unlocks iron door to Deep Cellar)
 return {
-    guid = "1d39i7g8-a4b5-4e56-0178-23549a123456",
+    guid = "{438f3f05-00d9-4b5a-b50d-bd46012b27c7}",
     template = "small-item",
 
     id = "iron-key",

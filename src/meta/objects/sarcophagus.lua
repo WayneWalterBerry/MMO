@@ -1,7 +1,7 @@
 -- sarcophagus.lua — FSM-managed container (Crypt, base for 5 instances)
 -- States: closed → open
 return {
-    guid = "80grw50d-1b28-4531-7e4e-908c61456789",
+    guid = "{f46656fd-02ca-4549-bb0d-e2366c6a43da}",
     template = "furniture",
 
     id = "sarcophagus",

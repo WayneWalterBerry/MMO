@@ -1,6 +1,6 @@
 -- burial-jewelry.lua — Lore/treasure object (Crypt, Sarcophagus 1)
 return {
-    guid = "b3juz83g-4e51-4864-a171-c31f94789012",
+    guid = "{626db614-fc42-45ba-ab2f-a636088f2c46}",
     template = "small-item",
 
     id = "burial-jewelry",

@@ -1,7 +1,7 @@
 -- oil-flask.lua — Consumable fuel source (Storage Cellar)
 -- Used to fuel the oil lantern (Puzzle 010: Light Upgrade)
 return {
-    guid = "ae5df831-7c42-4b19-8e60-f9a3c7d21b54",
+    guid = "{ae5df831-7c42-4b19-8e60-f9a3c7d21b54}",
     template = "small-item",
 
     id = "oil-flask",

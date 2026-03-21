@@ -3,7 +3,7 @@
 -- Puzzle 010: SMELL distinguishes wine from oil
 -- Puzzle 016: DRINK teaches the verb, contrasts with Puzzle 002 poison
 return {
-    guid = "fb17g5e6-8293-4c34-ef56-013278901234",
+    guid = "{1143ab52-ba47-4610-bd1f-6c9aa6167287}",
     template = "small-item",
 
     id = "wine-bottle",

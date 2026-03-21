@@ -1,7 +1,7 @@
 -- offering-bowl.lua — Puzzle 012 trigger container (Deep Cellar)
 -- States: empty → offering-placed
 return {
-    guid = "b73ejs7q-4e55-486f-a171-c35f34123456",
+    guid = "{dfea4690-5a7c-406d-ba4e-20388319ea0e}",
     template = "container",
 
     id = "offering-bowl",

@@ -1,6 +1,6 @@
 -- side-table.lua — Static furniture with surface (Hallway)
 return {
-    guid = "f17inw1u-8299-4ca2-e5b5-079378567890",
+    guid = "{b9c53625-2c37-4a70-988b-0769375705bd}",
     template = "furniture",
 
     id = "side-table",

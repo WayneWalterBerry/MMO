@@ -1,7 +1,7 @@
 -- oil-lantern.lua — FSM-managed light source (Puzzle 010: Light Upgrade)
 -- States: empty → fueled → lit ↔ extinguished → spent (terminal)
 return {
-    guid = "2e4aj8h9-b5c6-4f67-1289-3465ab234567",
+    guid = "{675d14a9-6ab6-40c2-bc74-90308232c5e1}",
     template = "small-item",
 
     id = "oil-lantern",

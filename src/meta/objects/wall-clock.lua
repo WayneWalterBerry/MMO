@@ -84,7 +84,7 @@ for h = 1, 24 do
 end
 
 return {
-    guid = "c5bae682-b7ee-451d-b1cf-ceeb74d6b83d",
+    guid = "{c5bae682-b7ee-451d-b1cf-ceeb74d6b83d}",
     template = "furniture",
 
     id = "wall-clock",

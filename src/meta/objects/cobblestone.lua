@@ -1,6 +1,6 @@
 -- cobblestone.lua — Static tool/weapon object (Courtyard)
 return {
-    guid = "57dot27a-e8f5-4208-4b1b-6d593e123456",
+    guid = "{4388e944-50e3-4382-9068-646421c0741f}",
     template = "small-item",
 
     id = "cobblestone",

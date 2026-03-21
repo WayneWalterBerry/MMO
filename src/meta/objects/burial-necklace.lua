@@ -1,6 +1,6 @@
 -- burial-necklace.lua — Burial treasure (Crypt, Sarcophagus 4)
 return {
-    guid = "5e9b3c71-a284-4df6-8e13-7d0f4a5b2c89",
+    guid = "{5e9b3c71-a284-4df6-8e13-7d0f4a5b2c89}",
     template = "small-item",
 
     id = "burial-necklace",

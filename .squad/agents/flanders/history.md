@@ -598,3 +598,10 @@ Flagged materials NOT in `src/engine/materials/init.lua`:
 - Includes complete function signatures, implementation pseudocode, disambiguation format, data flow diagram, and verb handler integration checklist — all written for Bart to implement directly.
 - Decision doc written to `.squad/decisions/inbox/flanders-bandage-arch.md` with 7 decisions (D-BANDAGE001–D-BANDAGE003, D-TARGET001–D-TARGET006)
 - Lua syntax validated: bandage.lua passes `dofile()` clean
+### GUID Standardization — All 78 Objects (2026-03-21)
+- **Fixed 77 object files** in `src/meta/objects/` to use proper Windows-style GUID format `{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}` with lowercase hex.
+- **33 objects had invalid GUIDs** (contained non-hex characters like k, v, z, w, etc.) — these were the "33 objects skipped (no GUIDs)" build warnings. Generated fresh v4 GUIDs for: burial-coins, burial-jewelry, candle-stub, chain, cobblestone, crowbar, incense-burner, iron-key, ivy, locked-door, offering-bowl, oil-lantern, portrait, rain-barrel, rat, rope-coil, sarcophagus, side-table, silver-dagger, silver-key, skull, stone-altar, stone-sarcophagus, stone-well, tattered-scroll, tome, torch, vase, wall-inscription, wall-sconce, well-bucket, wine-bottle, wooden-door.
+- **44 objects had valid hex UUIDs but missing `{...}` braces** — wrapped existing UUIDs in braces to match the Windows GUID standard.
+- **1 object already perfect** (bandage.lua — had braces from the FSM rewrite).
+- **Verified all 5 injury templates** (bleeding, bruised, burn, minor-cut, poisoned-nightshade) already had correct `{guid}` format — no changes needed.
+- **All 280 tests pass** (49 injury-engine + 105 self-infliction + 60 inventory + 12 search-order + 4 context + 15 on-traverse + 35 preprocess = 280).

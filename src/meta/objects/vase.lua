@@ -1,7 +1,7 @@
 -- vase.lua — Breakable decorative object (Hallway)
 -- States: intact → broken (terminal)
 return {
-    guid = "028jox2v-93a0-4db3-f6c6-180489678901",
+    guid = "{1ae1f401-2c06-421c-8530-eb339c061a9f}",
     template = "small-item",
 
     id = "vase",

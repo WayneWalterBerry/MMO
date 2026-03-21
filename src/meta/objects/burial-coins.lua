@@ -1,6 +1,6 @@
 -- burial-coins.lua — Treasure object (Crypt, multiple sarcophagi)
 return {
-    guid = "c4kv094h-5f62-4975-b282-d42005890123",
+    guid = "{76d22caa-0c4e-4671-bdce-7eeb3093b861}",
     template = "small-item",
 
     id = "burial-coins",

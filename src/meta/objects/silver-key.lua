@@ -1,6 +1,6 @@
 -- silver-key.lua — Optional path key (unlocks crypt archway)
 return {
-    guid = "951chq5o-2c33-464e-895f-a13d12901234",
+    guid = "{336a1fce-6bfb-405d-a59e-c55faf83dd9d}",
     template = "small-item",
 
     id = "silver-key",

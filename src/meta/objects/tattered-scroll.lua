@@ -1,7 +1,7 @@
 -- tattered-scroll.lua — Readable lore object (Deep Cellar, Puzzle 012 hint)
 -- States: rolled → unrolled (readable)
 return {
-    guid = "840bgp4n-1b22-453d-784e-902c01890123",
+    guid = "{08d903bb-98fa-4c75-a986-26502479d12f}",
     template = "small-item",
 
     id = "tattered-scroll",

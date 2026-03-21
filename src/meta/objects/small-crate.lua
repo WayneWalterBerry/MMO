@@ -1,7 +1,7 @@
 -- small-crate.lua — Simple container with latch
 -- States: closed ↔ open, any → broken (terminal)
 return {
-    guid = "c8d4e2b3-5f60-4901-bc23-def045678901",
+    guid = "{c8d4e2b3-5f60-4901-bc23-def045678901}",
     template = "container",
 
     id = "small-crate",

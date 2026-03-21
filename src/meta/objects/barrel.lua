@@ -1,5 +1,5 @@
 return {
-    guid = "c3e8f1a2-b4d7-4596-8e23-f9a1b6c5d402",
+    guid = "{c3e8f1a2-b4d7-4596-8e23-f9a1b6c5d402}",
     template = "furniture",
     id = "barrel",
     name = "an old barrel",

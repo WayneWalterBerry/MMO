@@ -1,6 +1,6 @@
 -- rope-coil.lua — Static tool object
 return {
-    guid = "0c28h6f7-93a4-4d45-f067-124389012345",
+    guid = "{9aaf7810-427b-428e-9902-34ab5d1c2fbe}",
     template = "small-item",
 
     id = "rope-coil",

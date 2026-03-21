@@ -1,7 +1,7 @@
 -- stone-sarcophagus.lua — Openable container (Deep Cellar version)
 -- States: closed → open
 return {
-    guid = "a62dir6p-3d44-475f-9060-b24e23012345",
+    guid = "{3fd2ce07-0c8b-421e-8e56-fa4687c815de}",
     template = "furniture",
 
     id = "stone-sarcophagus",

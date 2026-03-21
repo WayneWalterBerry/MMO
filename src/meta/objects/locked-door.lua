@@ -1,6 +1,6 @@
 -- locked-door.lua — Level 2 boundary (Hallway, single-state in Level 1)
 return {
-    guid = "139kpy3w-a4b1-4ec4-07d7-29159a789012",
+    guid = "{0ddcb6f6-6514-4001-b904-c91938c8488b}",
     template = "furniture",
 
     id = "locked-door",

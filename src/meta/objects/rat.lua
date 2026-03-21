@@ -1,7 +1,7 @@
 -- rat.lua — Atmospheric ambient creature
 -- States: hidden → visible → fleeing → gone (terminal)
 return {
-    guid = "4067cl0j-d7e8-4189-340a-5687cd456789",
+    guid = "{8bf03d96-19dd-491d-b17f-f071ed9d028f}",
     template = "furniture",
 
     id = "rat",

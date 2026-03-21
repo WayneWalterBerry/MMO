@@ -1,5 +1,5 @@
 return {
-    guid = "a3f8c7d1-e592-4b6a-8d3e-f1c7a4b92e05",
+    guid = "{a3f8c7d1-e592-4b6a-8d3e-f1c7a4b92e05}",
     template = "furniture",
     id = "trap-door",
     name = "a trap door",

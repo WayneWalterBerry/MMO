@@ -1,7 +1,7 @@
 -- ivy.lua — Climbable environmental object (Courtyard)
 -- States: growing → climbed / growing → torn
 return {
-    guid = "46cns16z-d7e4-41f7-3a0a-5c482d012345",
+    guid = "{18723096-bed0-46fa-bcf8-d79514f994ff}",
     template = "furniture",
 
     id = "ivy",
