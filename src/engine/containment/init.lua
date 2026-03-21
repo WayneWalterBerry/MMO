@@ -74,6 +74,11 @@ end
 -- Validates all four layers. `surface_name` is optional (nil for root-level).
 -- `registry` is optional but required for weight checking.
 function containment.can_contain(item, container_obj, surface_name, registry)
+  -- Layer 0: Self-containment guard (BUG-036b)
+  if item == container_obj then
+    return false, "You can't put something inside itself."
+  end
+
   -- Layer 1: Container identity
   if container_obj.surfaces then
     -- Multi-surface objects are containers by definition
