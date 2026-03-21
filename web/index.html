@@ -98,25 +98,14 @@
             opacity: 0.5;
         }
 
-        #loading {
-            color: var(--prompt);
-            padding: 20px 0;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        #loading.hidden { display: none; }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+        .status-line {
+            color: #888;
         }
     </style>
 </head>
 <body>
     <div id="terminal">
-        <div id="output">
-            <div id="loading">Loading game engine...</div>
-        </div>
+        <div id="output"></div>
         <div id="input-line">
             <span class="prompt">&gt;</span>
             <input type="text" id="input" autofocus autocomplete="off"
@@ -124,79 +113,22 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/fengari-web@0.1.4/dist/fengari-web.js"></script>
-    <script src="game-bundle.js"></script>
     <script>
-        // --- Terminal UI (JavaScript side) ---
-        const outputEl = document.getElementById('output');
-        const inputEl  = document.getElementById('input');
-
-        // Append a line to the terminal output
-        function appendOutput(text, className) {
-            const div = document.createElement('div');
-            div.className = className || 'output-line';
-            if (!text && text !== 0) {
-                div.innerHTML = '&nbsp;';
-            } else {
-                div.textContent = String(text);
-            }
-            outputEl.appendChild(div);
-            outputEl.scrollTop = outputEl.scrollHeight;
-        }
-
-        // Expose to Lua adapter
-        window._appendOutput = appendOutput;
-
-        // Command history (arrow-key recall)
-        const history = [];
-        let historyIndex = -1;
-
-        inputEl.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                const text = inputEl.value;
-                if (text.trim() === '') return;
-                inputEl.value = '';
-                history.push(text);
-                historyIndex = history.length;
-
-                // Echo command in output
-                appendOutput('> ' + text, 'input-echo');
-
-                // Send to Lua game engine
-                if (window._gameProcessCommand) {
-                    try {
-                        window._gameProcessCommand(text);
-                    } catch (err) {
-                        appendOutput('[Error: ' + err.message + ']', 'error-line');
-                        console.error(err);
-                    }
-                } else {
-                    appendOutput('[Game engine still loading...]', 'error-line');
-                }
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                if (historyIndex > 0) {
-                    historyIndex--;
-                    inputEl.value = history[historyIndex];
-                }
-            } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                if (historyIndex < history.length - 1) {
-                    historyIndex++;
-                    inputEl.value = history[historyIndex];
-                } else {
-                    historyIndex = history.length;
-                    inputEl.value = '';
-                }
-            }
-        });
-
-        // Focus input on click anywhere in terminal
-        document.getElementById('terminal').addEventListener('click', function() {
-            inputEl.focus();
-        });
+        // --- Boot log: initial status message (before any other scripts load) ---
+        (function() {
+            var out = document.getElementById('output');
+            window.logStatus = function(msg) {
+                var div = document.createElement('div');
+                div.className = 'output-line status-line';
+                div.textContent = msg;
+                out.appendChild(div);
+                out.scrollTop = out.scrollHeight;
+            };
+            window.logStatus("Loading Bootstrapper...");
+        })();
     </script>
 
-    <script type="application/lua" src="game-adapter.lua"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fengari-web@0.1.4/dist/fengari-web.js"></script>
+    <script src="bootstrapper.js"></script>
 </body>
 </html>

@@ -1,16 +1,14 @@
 -- game-adapter.lua
--- Fengari adapter: runs the MMO text adventure in the browser.
+-- Three-layer web adapter: engine from compressed bundle, meta via JIT HTTP.
 --
--- Architecture:
---   1. Builds a virtual file system from game-bundle.js (all Lua/JSON sources)
---   2. Overrides io.open/io.popen/io.read for browser environment
---   3. Installs a custom package.searcher so require() finds engine modules
---   4. Loads game data (templates, objects, rooms) exactly like main.lua
---   5. Wraps the game loop in a coroutine — io.read() yields, JS resumes
+-- Architecture (see docs/architecture/web/jit-loader.md):
+--   1. Engine modules loaded via package.preload (from engine.lua.gz bundle)
+--   2. Asset files accessed via _G.__VFS (embedded in engine bundle)
+--   3. Meta files (rooms, objects, templates, levels) fetched on demand via XHR
+--   4. Coroutine-based game loop — io.read() yields, JS resumes with player input
 --
--- The coroutine trick means we reuse the EXISTING game loop code unchanged.
--- When the loop calls io.read(), the coroutine suspends. When the player
--- types a command, JavaScript resumes the coroutine with their input.
+-- JIT loading: rooms and their objects are fetched the first time the player
+-- enters them. A metatable on the rooms table triggers transparent loading.
 
 ---------------------------------------------------------------------------
 -- JavaScript bridge
@@ -21,7 +19,6 @@ local document = window.document
 
 local output_el  = document:getElementById("output")
 local input_el   = document:getElementById("input")
-local loading_el = document:getElementById("loading")
 
 ---------------------------------------------------------------------------
 -- DOM output helpers
@@ -34,31 +31,38 @@ local function append_error(text)
     window:_appendOutput(text, "error-line")
 end
 
----------------------------------------------------------------------------
--- Virtual File System (backed by game-bundle.js)
----------------------------------------------------------------------------
-local function vfs_get(path)
-    if not window.GAME_FILES then return nil end
-    local val = window.GAME_FILES[path]
-    if val == nil or val == js.null then return nil end
-    return tostring(val)
+local function log_status(msg)
+    window:_logStatus(msg)
 end
 
-local function vfs_list(dir_prefix)
-    local files = {}
-    if not window.GAME_FILE_KEYS then return files end
-    local keys = window.GAME_FILE_KEYS
-    for i = 0, keys.length - 1 do
-        local key = tostring(keys[i])
-        if key:sub(1, #dir_prefix) == dir_prefix then
-            local rest = key:sub(#dir_prefix + 1)
-            -- Only direct children (no further slashes)
-            if not rest:find("/") and #rest > 0 then
-                files[#files + 1] = rest
-            end
+---------------------------------------------------------------------------
+-- Synchronous HTTP fetch (for JIT meta file loading)
+---------------------------------------------------------------------------
+local function fetch_text(url)
+    local ok_fetch, result = pcall(function()
+        local xhr = js.new(window.XMLHttpRequest)
+        xhr:open("GET", url, false)  -- synchronous
+        xhr:send()
+        if xhr.status == 200 then
+            return tostring(xhr.responseText)
         end
+        return nil
+    end)
+    if not ok_fetch then
+        return nil, "fetch error: " .. tostring(result)
     end
-    return files
+    return result
+end
+
+---------------------------------------------------------------------------
+-- VFS for embedded assets (from engine bundle's _G.__VFS table)
+---------------------------------------------------------------------------
+local function vfs_get(path)
+    if _G.__VFS then
+        local val = _G.__VFS[path]
+        if val then return val end
+    end
+    return nil
 end
 
 ---------------------------------------------------------------------------
@@ -76,7 +80,7 @@ _G.print = function(...)
     append_output(text)
 end
 
--- io.open → VFS reader
+-- io.open → VFS reader (for engine assets like embedding-index.json)
 io.open = function(path, mode)
     if mode and (mode:find("w") or mode:find("a")) then
         return nil, "write not supported in browser"
@@ -96,7 +100,6 @@ io.open = function(path, mode)
                 pos = #content + 1
                 return result
             end
-            -- Default: read one line
             local nl = content:find("\n", pos)
             if nl then
                 local line = content:sub(pos, nl - 1)
@@ -121,39 +124,8 @@ io.open = function(path, mode)
     }
 end
 
--- io.popen → parse dir/ls commands against VFS
+-- io.popen → stub (meta files are JIT-loaded, not listed)
 io.popen = function(cmd)
-    local dir = cmd:match('dir /b "(.+)\\%*%.lua"')
-              or cmd:match('ls %-1 "(.+)"/%*%.lua')
-    if dir then
-        dir = dir:gsub("\\", "/"):gsub("^%./", "")
-        local prefix = dir .. "/"
-        if not prefix:match("^src/") then
-            prefix = "src/" .. prefix
-        end
-        local files = vfs_list(prefix)
-        local content = table.concat(files, "\n")
-        if #content == 0 then content = "" end
-        local pos = 1
-        return {
-            lines = function(self)
-                return function()
-                    if pos > #content then return nil end
-                    local nl = content:find("\n", pos)
-                    if nl then
-                        local line = content:sub(pos, nl - 1)
-                        pos = nl + 1
-                        return line
-                    else
-                        local line = content:sub(pos)
-                        pos = #content + 1
-                        return line
-                    end
-                end
-            end,
-            close = function() return true end,
-        }
-    end
     return nil, "io.popen not available in browser"
 end
 
@@ -185,7 +157,8 @@ os.exit = function(code)
 end
 
 ---------------------------------------------------------------------------
--- Package searcher: resolve require() against VFS
+-- Package searcher: resolve require() against VFS (for asset files)
+-- Engine modules already resolve via package.preload (set by engine bundle)
 ---------------------------------------------------------------------------
 table.insert(package.searchers, 2, function(modname)
     local path = modname:gsub("%.", "/")
@@ -212,12 +185,12 @@ package.loaded["engine.ui"] = {
 }
 
 ---------------------------------------------------------------------------
--- Boot the game
+-- Boot the game (three-layer architecture)
 ---------------------------------------------------------------------------
 local game_co  -- the coroutine running the game loop
 
 local ok, err = pcall(function()
-    -- Engine modules (loaded via VFS searcher)
+    -- Engine modules (resolved from package.preload via engine bundle)
     local registry     = require("engine.registry")
     local loader       = require("engine.loader")
     local mutation     = require("engine.mutation")
@@ -233,96 +206,95 @@ local ok, err = pcall(function()
     display.install()
 
     -------------------------------------------------------------------
-    -- Load game data (mirrors main.lua initialization)
+    -- Shared state
     -------------------------------------------------------------------
-    local meta_root = "src/meta"
-
-    local function read_file(path)
-        local f = io.open(path, "r")
-        if not f then return nil end
-        local content = f:read("*a")
-        f:close()
-        return content
-    end
-
-    local function list_lua_files(dir)
-        dir = dir:gsub("\\", "/")
-        if not dir:match("/$") then dir = dir .. "/" end
-        if not dir:match("^src/") then dir = "src/" .. dir end
-        return vfs_list(dir)
-    end
-
-    -- Templates
+    local reg = registry.new()
     local templates = {}
-    local template_dir = meta_root .. "/templates"
-    for _, fname in ipairs(list_lua_files(template_dir)) do
-        local source = read_file(template_dir .. "/" .. fname)
+    local base_classes = {}
+    local object_sources = {}
+    local rooms = {}
+
+    -------------------------------------------------------------------
+    -- Load templates (all 5, fetched at boot — small and required early)
+    -------------------------------------------------------------------
+    log_status("Loading Templates...")
+    local TEMPLATE_FILES = {
+        "small-item.lua", "room.lua", "container.lua",
+        "furniture.lua", "sheet.lua",
+    }
+    for _, fname in ipairs(TEMPLATE_FILES) do
+        local source = fetch_text("meta/templates/" .. fname)
         if source then
             local tmpl, tmpl_err = loader.load_source(source)
-            if tmpl then templates[tmpl.id] = tmpl end
-        end
-    end
-
-    -- Objects (base classes)
-    local object_sources = {}
-    local base_classes = {}
-    local object_dir = meta_root .. "/objects"
-    for _, fname in ipairs(list_lua_files(object_dir)) do
-        local source = read_file(object_dir .. "/" .. fname)
-        if source then
-            local def, def_err = loader.load_source(source)
-            if def then
-                if def.template then
-                    def, def_err = loader.resolve_template(def, templates)
-                end
-                if def then
-                    if def.guid then base_classes[def.guid] = def end
-                    if def.id then object_sources[def.id] = source end
-                end
+            if tmpl then
+                templates[tmpl.id] = tmpl
             end
         end
     end
 
-    -- Rooms
-    local rooms = {}
-    local room_dir = meta_root .. "/world"
-    for _, fname in ipairs(list_lua_files(room_dir)) do
-        local source = read_file(room_dir .. "/" .. fname)
-        if source then
-            local rm, rm_err = loader.load_source(source)
-            if rm then
-                rm, rm_err = loader.resolve_template(rm, templates)
-                if rm then rooms[rm.id] = rm end
+    -------------------------------------------------------------------
+    -- JIT loader: fetch and load a single object by GUID
+    -------------------------------------------------------------------
+    local function load_object(guid)
+        if base_classes[guid] then return base_classes[guid] end
+        local source = fetch_text("meta/objects/" .. guid .. ".lua")
+        if not source then return nil end
+        local def = loader.load_source(source)
+        if not def then return nil end
+        if def.template then
+            def = loader.resolve_template(def, templates)
+        end
+        if def and def.guid then
+            base_classes[def.guid] = def
+            if def.id then object_sources[def.id] = source end
+        end
+        return def
+    end
+
+    -------------------------------------------------------------------
+    -- JIT loader: fetch and fully load a room + all its objects
+    -------------------------------------------------------------------
+    local function load_room(room_id)
+        if rawget(rooms, room_id) then return rawget(rooms, room_id) end
+
+        -- Friendly name for status message
+        local name_hint = room_id:gsub("^start%-room$", "Bedroom")
+        if name_hint == room_id then
+            name_hint = room_id:gsub("%-", " "):gsub("(%a)([%w_']*)",
+                function(a, b) return a:upper() .. b end)
+        end
+        log_status("Loading Room: " .. name_hint .. "...")
+
+        local source = fetch_text("meta/rooms/" .. room_id .. ".lua")
+        if not source then return nil end
+
+        local rm = loader.load_source(source)
+        if not rm then return nil end
+        rm = loader.resolve_template(rm, templates)
+        if not rm then return nil end
+
+        -- Fetch all objects referenced by instances
+        for _, inst in ipairs(rm.instances or {}) do
+            if inst.type_id and not base_classes[inst.type_id] then
+                log_status("Loading Object: " .. (inst.type or inst.id) .. "...")
+                load_object(inst.type_id)
             end
         end
-    end
 
-    -- Starting room
-    local start_room_id = "start-room"
-    local room = rooms[start_room_id]
-    if not room then
-        error("Starting room '" .. start_room_id .. "' not found")
-    end
-
-    -- Registry
-    local reg = registry.new()
-
-    -- Phase 1: resolve all instances across all rooms
-    for _, rm in pairs(rooms) do
+        -- Resolve instances and register
         for _, inst in ipairs(rm.instances or {}) do
             local resolved, inst_err = loader.resolve_instance(inst, base_classes, templates)
             if resolved then
                 reg:register(inst.id, resolved)
             end
         end
-    end
 
-    -- Phase 2: build containment trees
-    for _, rm in pairs(rooms) do
+        -- Wire containment for this room
         rm.contents = {}
         for _, inst in ipairs(rm.instances or {}) do
             local loc = inst.location
             local obj = reg:get(inst.id)
+
             if loc == "room" then
                 rm.contents[#rm.contents + 1] = inst.id
                 if obj then obj.location = rm.id end
@@ -346,9 +318,40 @@ local ok, err = pcall(function()
                 end
             end
         end
+
+        -- Initialize timed events for this room
+        local fsm_ok2, fsm_mod = pcall(require, "engine.fsm")
+        if fsm_ok2 and fsm_mod then
+            fsm_mod.scan_room_timers(reg, rm)
+        end
+
+        rawset(rooms, room_id, rm)
+        return rm
     end
 
+    -- Metatable: transparent JIT loading when engine accesses rooms[id]
+    setmetatable(rooms, {
+        __index = function(t, room_id)
+            return load_room(room_id)
+        end
+    })
+
+    -------------------------------------------------------------------
+    -- Load level and starting room
+    -------------------------------------------------------------------
+    log_status("Loading Level 1...")
+    local level_source = fetch_text("meta/levels/level-01.lua")
+    local level = level_source and loader.load_source(level_source)
+
+    local start_room_id = (level and level.start_room) or "start-room"
+    local room = rooms[start_room_id]  -- triggers JIT load of starting room
+    if not room then
+        error("Starting room '" .. start_room_id .. "' not found")
+    end
+
+    -------------------------------------------------------------------
     -- Player state
+    -------------------------------------------------------------------
     local player = {
         hands    = { nil, nil },
         worn     = {},
@@ -357,10 +360,14 @@ local ok, err = pcall(function()
         state    = { bloody = false, poisoned = false, has_flame = 0 },
     }
 
+    -------------------------------------------------------------------
     -- Parser
+    -------------------------------------------------------------------
     local parser_instance = parser_mod.init("src/assets", false)
 
+    -------------------------------------------------------------------
     -- Game context
+    -------------------------------------------------------------------
     local context = {
         registry        = reg,
         current_room    = room,
@@ -378,13 +385,9 @@ local ok, err = pcall(function()
         ui              = nil,
     }
 
-    -- FSM timer init
-    local fsm_ok, fsm_mod = pcall(require, "engine.fsm")
-    if fsm_ok and fsm_mod then
-        fsm_mod.scan_room_timers(reg, room)
-    end
-
+    -------------------------------------------------------------------
     -- Post-command tick (flame, candle, bleed — from main.lua)
+    -------------------------------------------------------------------
     context.on_tick = function(ctx)
         local p = ctx.player
         if p.state.bloody and p.state.bleed_ticks then
@@ -472,6 +475,7 @@ local ok, err = pcall(function()
     -------------------------------------------------------------------
     -- Start game loop in a coroutine
     -------------------------------------------------------------------
+    log_status("Starting Game...")
     game_co = coroutine.create(function()
         loop.run(context)
     end)
@@ -485,8 +489,6 @@ local ok, err = pcall(function()
     -------------------------------------------------------------------
     -- Expose command handler to JavaScript
     -------------------------------------------------------------------
-    -- Fengari calling convention: when JS calls window.func(arg),
-    -- Lua may receive (self, arg) or (arg). We handle both.
     window._gameProcessCommand = function(a, b)
         local text
         if b ~= nil then
@@ -512,7 +514,7 @@ local ok, err = pcall(function()
     end
 
     -- Enable input
-    loading_el.className = "hidden"
+    log_status("Ready.")
     input_el.disabled = false
     input_el:focus()
     window._gameReady = true
@@ -521,6 +523,4 @@ end)
 if not ok then
     append_error("Failed to load game: " .. tostring(err))
     window.console:error(tostring(err))
-    loading_el.textContent = "Failed to load game engine."
-    loading_el.className = "error-line"
 end
