@@ -44,18 +44,7 @@ The engine is a **self-modifying Lua interpreter**. All game state is represente
 
 **Design:** Three-tier command parsing.
 
-#### Tier 1: Exact Dispatch
-- Input → verb alias lookup → handler
-- **Cost:** Zero tokens, instant
-- **Examples:** "look", "l", "x chair"
-- **Success Rate:** ~70% of typical player input
-
-#### Tier 2: Phrase Similarity
-- If Tier 1 misses, compute Jaccard token overlap between input and phrase dictionary
-- Threshold: 0.40 (tunable)
-- **Cost:** Zero tokens, ~5ms per lookup
-- **Examples:** "examine the chair" → matches "x", "look at chair" → matches "examine"
-- **Success Rate:** ~90% of player input
+**Tier 1 & Tier 2:** Fast exact lookup (70%), graceful phrase similarity (20%), visible fail (10%). See `engine/basic-parser.md` for full design.
 
 #### Tier 3: NOT YET IMPLEMENTED
 - If Tier 2 misses, **Goal-Oriented Action Planning (GOAP) backward-chaining parser** engages
@@ -521,8 +510,9 @@ Player Types "light candle"
   - `player-model.md` — Inventory, hands, worn items, skills
   - `player-movement.md` — Movement, exits, location tracking
   - `player-sensory.md` — Light/dark, vision blocking, sensory gating
+- **Parser Tiers 1 & 2:** `engine/basic-parser.md` — Exact dispatch, phrase similarity
 - **Parser Details:** `verb-system.md`, `command-variation-matrix.md`
-- **Goal-Oriented Parser:** `intelligent-parser.md` (existing), `docs/design/goal-decomposition.md` (planned)
+- **Goal-Oriented Parser:** `intelligent-parser.md` (Tier 3+)
 - **Object Details:** `fsm-object-lifecycle.md`, `composite-objects.md`
 - **Container Details:** `containment-constraints.md`
 - **Wearable Details:** `wearable-system.md`

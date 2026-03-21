@@ -1239,6 +1239,7 @@ Let players set error reporting level:
 
 ## 12. REFERENCES
 
+- **Basic Parser (Tier 1 + Tier 2):** `basic-parser.md` — Exact dispatch and phrase similarity
 - **Architecture Overview:** `00-architecture-overview.md`
 - **Parser Implementation Plan:** `plan/llm-slm-parser-plan.md`
 - **Command Variations:** `../design/command-variation-matrix.md`
