@@ -13,9 +13,22 @@ package.path = script_dir .. "/?.lua;"
 -- Parse command-line flags
 local debug_mode = false
 local no_ui = false
-for _, a in ipairs(arg or {}) do
-    if a == "--debug" then debug_mode = true end
-    if a == "--no-ui" then no_ui = true end
+local start_room_override = nil
+local list_rooms = false
+do
+    local args = arg or {}
+    local i = 1
+    while i <= #args do
+        local a = args[i]
+        if a == "--debug" then debug_mode = true
+        elseif a == "--no-ui" then no_ui = true
+        elseif a == "--list-rooms" then list_rooms = true
+        elseif a == "--room" or a == "--start-room" then
+            i = i + 1
+            start_room_override = args[i]
+        end
+        i = i + 1
+    end
 end
 
 ---------------------------------------------------------------------------
@@ -30,6 +43,8 @@ local verbs_mod   = require("engine.verbs")
 local parser_mod  = require("engine.parser")
 local display     = require("engine.display")
 local ui          = require("engine.ui")
+local ui_status   = require("engine.ui.status")
+local presentation = require("engine.ui.presentation")
 
 -- Install word-wrapping print before any game output
 display.install()
@@ -157,10 +172,41 @@ for _, fname in ipairs(room_files) do
     end
 end
 
-local room = rooms["start-room"]
+---------------------------------------------------------------------------
+-- Handle --list-rooms
+---------------------------------------------------------------------------
+if list_rooms then
+    local ids = {}
+    for id in pairs(rooms) do ids[#ids + 1] = id end
+    table.sort(ids)
+    print("Available rooms:")
+    for _, id in ipairs(ids) do
+        local label = (id == "start-room") and " (default)" or ""
+        print("  " .. id .. label)
+    end
+    os.exit(0)
+end
+
+---------------------------------------------------------------------------
+-- Select starting room (supports --room override for testing)
+---------------------------------------------------------------------------
+local start_room_id = start_room_override or "start-room"
+local room = rooms[start_room_id]
 if not room then
-    io.stderr:write("Fatal: start-room not found in " .. room_dir .. "\n")
+    io.stderr:write("Error: room '" .. start_room_id .. "' not found.\n")
+    io.stderr:write("Available rooms:\n")
+    local ids = {}
+    for id in pairs(rooms) do ids[#ids + 1] = id end
+    table.sort(ids)
+    for _, id in ipairs(ids) do
+        io.stderr:write("  " .. id .. "\n")
+    end
     os.exit(1)
+end
+
+if start_room_override then
+    print("=== DEBUG: Starting in room '" .. start_room_id .. "' (not the normal start) ===")
+    print("")
 end
 
 ---------------------------------------------------------------------------
@@ -223,7 +269,7 @@ local player = {
     hands = { nil, nil },    -- two hand slots (object IDs)
     worn = {},               -- worn items (backpack, cloak -- don't use hand slots)
     skills = {},             -- learned skills (future use)
-    location = "start-room",
+    location = start_room_id,
     state = {
         bloody = false,
         poisoned = false,
@@ -253,7 +299,7 @@ local context = {
     containment    = containment,
     parser         = parser_instance,
     game_start_time = os.time(),
-    game_start_hour = 2,
+    game_start_hour = presentation.GAME_START_HOUR,
     ui             = ui_active and ui or nil,
 }
 
@@ -361,51 +407,9 @@ end
 context.verbs = verbs_mod.create()
 
 ---------------------------------------------------------------------------
--- Status bar updater (called by the game loop each turn when UI is active)
+-- Status bar updater (Smithers owns — see engine/ui/status.lua)
 ---------------------------------------------------------------------------
-local GAME_SECONDS_PER_REAL_SECOND = 24
-local GAME_STATUS_START_HOUR = 2
-
-context.update_status = function(ctx)
-    if not ctx.ui then return end
-
-    -- Compute game time
-    local real_elapsed = os.time() - ctx.game_start_time
-    local total_hours  = (real_elapsed * GAME_SECONDS_PER_REAL_SECOND) / 3600
-    local abs_hour     = GAME_STATUS_START_HOUR + total_hours + (ctx.time_offset or 0)
-    local hour   = math.floor(abs_hour % 24)
-    local minute = math.floor((abs_hour * 60) % 60)
-    local period = hour >= 12 and "PM" or "AM"
-    local dh     = hour % 12
-    if dh == 0 then dh = 12 end
-    local time_str = string.format("%d:%02d %s", dh, minute, period)
-
-    -- Room name
-    local room_name = "UNKNOWN"
-    if ctx.current_room and ctx.current_room.name then
-        room_name = ctx.current_room.name:upper()
-    end
-
-    -- Right side: match / candle status (best-effort from game state)
-    local match_count = "?"
-    local candle_icon = "o"
-    local p = ctx.player
-    if p then
-        -- Count matches in matchbox (if it exists)
-        local matchbox = ctx.registry:get("matchbox")
-        if matchbox and matchbox.contents then
-            match_count = tostring(#matchbox.contents)
-        end
-        -- Candle lit?
-        if p.state.has_flame and p.state.has_flame > 0 then
-            candle_icon = "*"
-        end
-    end
-
-    local left  = " " .. room_name .. "  " .. time_str
-    local right = "Matches: " .. match_count .. "  Candle: " .. candle_icon .. " "
-    ctx.ui.status(left, right)
-end
+context.update_status = ui_status.create_updater()
 
 ---------------------------------------------------------------------------
 -- Welcome

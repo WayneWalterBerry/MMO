@@ -128,6 +128,53 @@
 - Material properties system enables environmental consistency without special-casing — room material determines temperature, humidity, fire risk, acoustics
 - Hub-and-spoke layout pattern is ideal for our Great Hall-centric medieval setting; linear for tutorials/horror; branching for exploration
 - 10 concrete room design principles (R1-R10) codified for Moe from cross-domain research synthesis
+- GOAP auto-resolution fundamentally changes puzzle design: simple inventory chains are no longer puzzles; knowledge gates become primary
+- Zarfian Cruelty Scale maps cleanly to our GOAP tiers: Merciful/Polite is our natural operating range
+- Emily Short's "explorability" maps directly to our sensory system — multi-sense feedback rewards experimentation before solution
+- The Witness's "teach without words" achievable in text via progressive material-property puzzles (learn one property per puzzle, combine later)
+- Outer Wilds' "knowledge is the key" is the ideal model when GOAP handles inventory prerequisites
+- Escape room pyramid flow (parallel tracks → convergence) is optimal for our multi-room architecture
+- 3-5 key elements per puzzle is the cognitive science limit; more causes frustration not complexity
+- Material Consistency principle enables Witness-style progressive complexity in text: if wax melts, ALL wax melts, so players can predict
+- Multi-sensory puzzles (especially dark-room senses-only) are our unique competitive advantage — zero competitors
+- Real-world physics grounding beats arbitrary game logic for both puzzle satisfaction and fairness
+- Fire propagation chain puzzles (Rube Goldberg + material thresholds) are the highest-impact showcase for material properties
+
+## Puzzle Design Research (2026-07-22)
+
+**Status:** ✅ COMPLETE  
+**Report:** `resources/research/puzzles/puzzle-design-research.md` (~47KB, 33 citations)
+
+### Research Scope
+Cross-domain research on puzzle design for Bob (Puzzle Master), covering:
+- Classic IF puzzles (Infocom golden age: Zork, Enchanter, Hitchhiker's Guide)
+- Andrew Plotkin's Zarfian Cruelty Scale and forgiveness framework
+- Emily Short's puzzle design principles
+- Modern puzzle games (The Witness, Baba Is You, Obra Dinn, Outer Wilds, Portal, Myst/Riven)
+- Professional escape room design principles (flow, chaining, red herrings, aha moments)
+- Real-world problem solving (lock picking, fire, cooking, navigation)
+- Academic research (gate taxonomies, frustration thresholds, hint systems, insight neuroscience)
+- Engine-specific analysis (8 principles, GOAP impact, material properties, sensory system)
+- 16 concrete puzzle ideas with classifications
+
+### Key Findings
+1. **GOAP changes everything** — simple inventory chains are trivial; knowledge gates become primary puzzle type
+2. **Material properties enable unique puzzles** — threshold-based, chain-reaction, and substitution puzzles impossible in other text IF
+3. **Sensory system is our competitive moat** — dark-room senses-only puzzles have zero competition
+4. **Zarfian Merciful/Polite is our natural range** — GOAP auto-resolution prevents most "stuck" states
+5. **3-5 key elements per puzzle** — cognitive science limit for insight-based solving
+
+### Deliverables
+- 7 research sections covering classic IF through academic research
+- Mapping to all 8 architecture principles
+- GOAP impact analysis (5 design implications)
+- Material properties puzzle taxonomy (10 property→puzzle mappings)
+- Sensory puzzle framework (darkness, cross-sensory, senses-only)
+- 16 concrete puzzle ideas rated by difficulty with object requirements
+- Hint system design (4-tier escalation)
+- 33 cited sources
+
+---
 
 ## Room & Environment Design Research (2026-07-21)
 

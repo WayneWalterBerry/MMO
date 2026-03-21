@@ -312,3 +312,41 @@ bandage, barrel, bed, bed-sheets, blanket, brass-key, candle, candle-holder, cha
 6. Objects inventory: What's in this room? (existing objects + new objects needed from Flanders)
 7. Puzzle hooks: What puzzle opportunities? (hand to Bob)
 8. Map context: How does this room connect to adjacent rooms? Player journey?
+
+### Level 1 Room Design Docs (2026-07-21)
+
+Completed full room design documentation for all 7 Level 1 rooms in `docs/rooms/`:
+
+| Room | File | Status | Objects | Key Design Decision |
+|------|------|--------|---------|---------------------|
+| Bedroom | `docs/rooms/start-room.md` | 🟢 Existing | 28 instances | Anchor room — all core systems taught here |
+| Cellar | `docs/rooms/cellar.md` | 🟢 Existing | 2 | Transition/breathing room, first lock-and-key |
+| Storage Cellar | `docs/rooms/storage-cellar.md` | 🔴 New | ~12 | Moderate complexity, tool discovery (crowbar, rope), iron key in nested crate |
+| Deep Cellar | `docs/rooms/deep-cellar.md` | 🔴 New | ~11 | Narrative pivot — architecture shifts to ancient megalithic. Altar, scroll, offering bowl. Driest underground room (0.3 moisture = preservation). |
+| Hallway | `docs/rooms/hallway.md` | 🔴 New | ~7 | REWARD room — warm, lit, wood-paneled. Zero puzzles. Torches, portraits for lore. Level 2 transition via grand staircase. |
+| Courtyard | `docs/rooms/courtyard.md` | 🔴 New (optional) | ~6 | First exterior room. Moonlit. Well, ivy, cobblestones. Only accessible via window escape (alternate path). |
+| Crypt | `docs/rooms/crypt.md` | 🔴 New (optional) | ~16 | Deepest/oldest space. 5 sarcophagi with generational story. Tome = major lore reward. Dead-end by design. |
+
+**Environmental property gradient across Level 1:**
+
+| Room | Temp (°C) | Moisture | Light | Character |
+|------|-----------|----------|-------|-----------|
+| Bedroom | 14 | 0.2 | 0 (dark start) | Comfortable but locked |
+| Cellar | 10 | 0.8 | 0 | Cold, wet, oppressive |
+| Storage Cellar | 11 | 0.5 | 0 | Moderate, dusty, abandoned |
+| Deep Cellar | 9 | 0.3 | 0 | Cold but DRY — engineered preservation |
+| Crypt | 8 | 0.1 | 0 | Coldest, driest — perfect preservation |
+| Courtyard | 8 | 0.7 | 1 (moonlit) | Cold, wet, exposed — first outdoor |
+| Hallway | 18 | 0.15 | 3 (torchlit) | WARM, DRY, LIT — reward/relief |
+
+**Key design patterns discovered:**
+1. **Environmental properties tell stories** — the deep cellar's low moisture (0.3) compared to the cellar's high moisture (0.8) says "someone built this to preserve things" without the description needing to state it.
+2. **Contrast is the tool** — the hallway's warmth (18°C) only works because the cellars were cold (9-11°C). Every room's properties are defined in relation to neighbors.
+3. **The architectural timeline** — Bedroom (14th-15th century) → Cellar (older) → Storage (same era) → Deep Cellar (10th-12th century) → Crypt (8th-10th century). The player literally descends through time.
+4. **Dead ends have purpose** — the crypt is a dead-end room by design. One exit. The constraint focuses the player on CONTENT (lore) rather than NAVIGATION.
+5. **Asymmetric exits work** — the bedroom-cellar connection (trap door down, stairway up) is different from each side. This adds realism.
+
+**Handoff items for team:**
+- **Flanders:** ~40 new objects needed across 5 new rooms. Priority: storage cellar objects (critical path), then deep cellar, then hallway, then courtyard/crypt.
+- **Bob:** 6 new puzzles (009-014). Puzzles 009, 011 are critical path. Rest are optional.
+- **Implementation note:** `cellar.lua` north exit currently targets `deep-cellar` — needs to be changed to `storage-cellar` when that room is built. Passage ID should also change from `cellar-deep-door` to `cellar-storage-door`.

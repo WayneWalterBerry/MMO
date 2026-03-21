@@ -25,24 +25,64 @@ The game starts in a dark bedroom at 2 AM. Use sensory verbs to explore and inte
 
 ```
 MMO/
+├── src/
+│   ├── main.lua                        # Entry point — REPL game loop
+│   ├── engine/
+│   │   ├── fsm/                        # Finite state machine engine (apply_mutations, thresholds)
+│   │   ├── materials/                  # Material registry (13+ materials, numeric properties)
+│   │   ├── parser/                     # Parser pipeline (Tiers 1-5) + GOAP goal planner
+│   │   └── loop/                       # Game loop, environment context
+│   └── meta/
+│       ├── objects/                     # 37+ object .lua definitions (candle, matchbox, bed, etc.)
+│       ├── world/                       # Room .lua definitions (start-room, cellar)
+│       └── templates/                   # Base templates (room template)
 ├── docs/
-│   └── architecture/           # Architectural decisions and design docs
-├── newspaper/                  # The MMO Gazette — daily team updates & decisions
+│   ├── architecture/
+│   │   ├── objects/                     # Core principles (8 inviolable principles)
+│   │   ├── engine/                      # Engine architecture (FSM, materials, parser tiers)
+│   │   ├── player/                      # Player model, movement, sensory
+│   │   ├── rooms/                       # Room architecture
+│   │   └── ui/                          # UI architecture (text output, parser UX)
+│   ├── design/
+│   │   ├── puzzles/                     # Puzzle design methodology (rating, classification, patterns)
+│   │   ├── rooms/                       # Room design methodology
+│   │   └── levels/                      # Level design methodology (considerations, principles)
+│   ├── puzzles/                         # Individual puzzle specs (001-008)
+│   ├── objects/                         # Individual object documentation
+│   ├── rooms/                           # Individual room documentation
+│   └── levels/                          # Individual level designs (level-01-intro.md)
+├── newspaper/                           # 📰 The MMO Gazette — daily team newspapers
+│   ├── 2026-03-18.md                    # Edition 1 — Project launch
+│   ├── 2026-03-19.md                    # Edition 2 — Engine advances
+│   ├── 2026-03-20-morning.md            # Edition 3 — Morning update
+│   └── 2026-03-20-evening.md            # Edition 4 — Evening wrap-up
 ├── resources/
 │   └── research/
-│       └── architecture/       # Background research on IF engines & data structures
-├── .squad/                     # AI team coordination and state
-└── README.md                   # This file
+│       ├── architecture/                # Dynamic object mutation research (37KB)
+│       ├── competitors/                 # Dwarf Fortress architecture comparison (36KB)
+│       ├── rooms/                       # Room design research (42KB)
+│       └── puzzles/                     # Puzzle design research (47KB)
+├── test-pass/
+│   ├── gameplay/                        # Nelson's gameplay test passes
+│   └── objects/                         # Lisa's object test passes
+├── .squad/                              # AI team coordination and state
+└── README.md                            # This file
 ```
 
 ### Key Folders
 
 | Folder | Purpose |
 |--------|---------|
-| `docs/` | Project documentation, architecture decisions, and technical specifications |
-| `newspaper/` | Daily editions of The MMO Gazette — team updates, decisions, and progress |
-| `resources/research/` | Reference materials on classic IF (Zork, Inform, TADS) and modern approaches |
-| `.squad/` | Team coordination, agent state, and governance |
+| `src/` | Game source code — engine, objects, rooms, templates |
+| `docs/architecture/` | Architectural decisions, core principles, engine specs |
+| `docs/design/` | Design methodology — how to design puzzles, rooms, levels |
+| `docs/puzzles/` | Individual puzzle specifications (001–008+) |
+| `docs/levels/` | Individual level design documents |
+| `docs/objects/` | Individual object documentation |
+| `newspaper/` | 📰 **The MMO Gazette** — daily team newspapers with updates, decisions, and progress. Named by date (e.g., `2026-03-20-evening.md`) |
+| `resources/research/` | Research documents — IF history, DF comparison, room/puzzle design (200KB+ total) |
+| `test-pass/` | Test pass results — `gameplay/` (Nelson) and `objects/` (Lisa) |
+| `.squad/` | Team coordination, agent charters, decisions, casting |
 
 ## Project Stage
 

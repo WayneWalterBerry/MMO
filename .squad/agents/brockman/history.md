@@ -92,6 +92,7 @@
 - When adding approved principles: update TOC first, then append full section following the exact formatting pattern of existing principles, preserve all wording from approved draft
 - Parser tier extraction: split complex layered systems by logical boundaries (Tier 1+2 vs Tier 3+) for clarity; update all cross-references (overview, related docs) in single pass
 - **Parser tier refactoring learning:** When splitting composite docs into per-tier files, create separate .md per tier (not per layer group). This enables: (1) independent status tracking (✅ Built vs 🔷 Designed), (2) bidirectional cross-references, (3) focused navigation for specific tier. Always preserve ZERO content loss and include implementation file paths in built tiers.
+- **Test pass organization:** Flat test directories scale poorly as team grows. Organize early with ownership (Nelson→gameplay/, Lisa→objects/), zero-padded sequential numbering (001, 002...), date-aware filenames (YYYY-MM-DD-pass-NNN), and clear README explaining naming conventions. Enables parallel work, clear responsibility, and easy browsing of related test runs.
 
 ### Session: Player System Extraction (2026-03-22)
 **Status:** ✅ COMPLETED

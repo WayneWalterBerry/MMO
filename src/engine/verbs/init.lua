@@ -2,18 +2,25 @@
 -- V1 verb handlers for the bedroom REPL.
 -- Each handler has signature: function(context, noun)
 -- Context is injected by the game loop at dispatch time.
+--
+-- Ownership:
+--   Smithers (UI Engineer): Text presentation, sensory verb output, help,
+--     error message wording, pronoun resolution, light-level-aware display.
+--   Bart (Architect): Game state mutations, FSM interactions, containment,
+--     tool resolution, core verb logic (take, put, open, close, crafting, etc.)
 
 local verbs = {}
 
 local fsm_mod = require("engine.fsm")
+local presentation = require("engine.ui.presentation")
 
 ---------------------------------------------------------------------------
--- Constants
+-- Constants (authoritative source: engine/ui/presentation.lua)
 ---------------------------------------------------------------------------
-local GAME_SECONDS_PER_REAL_SECOND = 24
-local GAME_START_HOUR = 2
-local DAYTIME_START = 6
-local DAYTIME_END = 18
+local GAME_SECONDS_PER_REAL_SECOND = presentation.GAME_SECONDS_PER_REAL_SECOND
+local GAME_START_HOUR = presentation.GAME_START_HOUR
+local DAYTIME_START = presentation.DAYTIME_START
+local DAYTIME_END = presentation.DAYTIME_END
 
 ---------------------------------------------------------------------------
 -- Helper: keyword matching
@@ -57,32 +64,8 @@ end
 
 -- Returns flat list of all object IDs the player is carrying
 -- (hands + held bag contents + worn items + worn bag contents)
-local function get_all_carried_ids(ctx)
-    local ids = {}
-    local reg = ctx.registry
-    for i = 1, 2 do
-        local hand_id = ctx.player.hands[i]
-        if hand_id then
-            ids[#ids + 1] = hand_id
-            local obj = reg:get(hand_id)
-            if obj and obj.container and obj.contents then
-                for _, item_id in ipairs(obj.contents) do
-                    ids[#ids + 1] = item_id
-                end
-            end
-        end
-    end
-    for _, worn_id in ipairs(ctx.player.worn or {}) do
-        ids[#ids + 1] = worn_id
-        local obj = reg:get(worn_id)
-        if obj and obj.container and obj.contents then
-            for _, item_id in ipairs(obj.contents) do
-                ids[#ids + 1] = item_id
-            end
-        end
-    end
-    return ids
-end
+-- Authoritative implementation in engine/ui/presentation.lua
+local get_all_carried_ids = presentation.get_all_carried_ids
 
 ---------------------------------------------------------------------------
 -- Helper: count hands used by carried objects (for two-handed carry)
@@ -766,108 +749,28 @@ local function remove_from_location(ctx, obj)
 end
 
 ---------------------------------------------------------------------------
--- Helper: game time from real clock
+-- Presentation helpers (authoritative source: engine/ui/presentation.lua)
 ---------------------------------------------------------------------------
-local function get_game_time(ctx)
-    local real_elapsed = os.time() - ctx.game_start_time
-    local total_game_hours = (real_elapsed * GAME_SECONDS_PER_REAL_SECOND) / 3600
-    local absolute_hour = GAME_START_HOUR + total_game_hours + (ctx.time_offset or 0)
-    local hour = math.floor(absolute_hour % 24)
-    local minute = math.floor((absolute_hour * 60) % 60)
-    return hour, minute
-end
+local get_game_time = presentation.get_game_time
 
-local function is_daytime(ctx)
-    local hour = get_game_time(ctx)
-    return hour >= DAYTIME_START and hour < DAYTIME_END
-end
+local is_daytime = presentation.is_daytime
 
-local function format_time(hour, minute)
-    local period = hour >= 12 and "PM" or "AM"
-    local display_hour = hour % 12
-    if display_hour == 0 then display_hour = 12 end
-    return string.format("%d:%02d %s", display_hour, minute, period)
-end
+local format_time = presentation.format_time
 
-local function time_of_day_desc(hour)
-    if hour >= 5 and hour < 7 then return "Dawn breaks on the horizon."
-    elseif hour >= 7 and hour < 10 then return "Morning light fills the sky."
-    elseif hour >= 10 and hour < 14 then return "The sun stands high overhead."
-    elseif hour >= 14 and hour < 17 then return "The afternoon sun angles westward."
-    elseif hour >= 17 and hour < 19 then return "Dusk gathers at the edges of the world."
-    elseif hour >= 19 and hour < 21 then return "Night has fallen."
-    else return "Deep night. The world sleeps."
-    end
-end
+local time_of_day_desc = presentation.time_of_day_desc
 
 ---------------------------------------------------------------------------
--- Helper: light system -- tri-state: "lit", "dim", "dark"
---   "lit"  = full light (open curtains + daytime, or artificial light)
---   "dim"  = filtered daylight through closed curtains during daytime
---   "dark" = no light at all (nighttime, no candle)
--- Dim light is enough to see and interact; descriptions note the dimness.
+-- Light system (authoritative source: engine/ui/presentation.lua)
 ---------------------------------------------------------------------------
-local function get_light_level(ctx)
-    local room = ctx.current_room
-    local reg = ctx.registry
-
-    -- Artificial light always gives full "lit" (candle, torch, etc.)
-    for _, obj_id in ipairs(room.contents or {}) do
-        local obj = reg:get(obj_id)
-        if obj and obj.casts_light then return "lit" end
-        if obj and obj.surfaces then
-            for _, zone in pairs(obj.surfaces) do
-                for _, item_id in ipairs(zone.contents or {}) do
-                    local item = reg:get(item_id)
-                    -- Check contents of surface items (e.g., candle inside holder)
-                    if item and item.contents then
-                        for _, inner_id in ipairs(item.contents) do
-                            local inner = reg:get(inner_id)
-                            if inner and inner.casts_light then return "lit" end
-                        end
-                    end
-                    if item and item.casts_light then return "lit" end
-                end
-            end
-        end
-    end
-    for _, obj_id in ipairs(get_all_carried_ids(ctx)) do
-        local obj = reg:get(obj_id)
-        if obj and obj.casts_light then return "lit" end
-    end
-
-    -- Daylight: open curtains = "lit", closed curtains = "dim"
-    if is_daytime(ctx) then
-        local has_filter = false
-        for _, obj_id in ipairs(room.contents or {}) do
-            local obj = reg:get(obj_id)
-            if obj and obj.allows_daylight then return "lit" end
-            if obj and obj.filters_daylight then has_filter = true end
-        end
-        if has_filter then return "dim" end
-    end
-
-    return "dark"
-end
+local get_light_level = presentation.get_light_level
 
 -- Convenience: can the player see enough to interact?
-local function has_some_light(ctx)
-    return get_light_level(ctx) ~= "dark"
-end
+local has_some_light = presentation.has_some_light
 
 ---------------------------------------------------------------------------
--- Helper: check if player's vision is blocked by a worn item
+-- Vision check (authoritative source: engine/ui/presentation.lua)
 ---------------------------------------------------------------------------
-local function vision_blocked_by_worn(ctx)
-    local reg = ctx.registry
-    for _, worn_id in ipairs(ctx.player.worn or {}) do
-        local obj = reg:get(worn_id)
-        if obj and obj.wear and obj.wear.blocks_vision then
-            return true, obj
-        end
-    end
-    return false, nil
-end
+local vision_blocked_by_worn = presentation.vision_blocked_by_worn
 
 ---------------------------------------------------------------------------
 -- Helper: find a mutation entry on an object for a given verb

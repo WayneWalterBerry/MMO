@@ -155,6 +155,12 @@
 - Lazy-loading the material registry via pcall avoids hard dependency — FSM module works fine without materials loaded
 - Environment context (temperature, wetness, etc.) belongs on the room table and is assembled per-tick in the loop, not stored globally
 - Support both direct numeric thresholds (`above = 62`) and material-referenced (`above_material = "melting_point"`) for flexibility — objects can hardcode or delegate to registry
+- GOAP terminal state detection must be comprehensive — checking just `_state == "spent"` misses `state.terminal`, `consumable` flag, and "useless" category. Use a single `is_spent_or_terminal()` helper for all checks.
+- When multiple FSM transitions share the same from→to pair (drink and pour both go open→empty), `fsm.transition()` needs a verb_hint parameter to disambiguate — first-match is wrong when verbs differ.
+- GOAP container cleanup: spent matches in containers block fresh ones because the take verb grabs the first keyword match. Plan must include take+drop steps for preceding spent items.
+- Material registry must stay in sync with object material fields — cross-reference check caught "cardboard" (matchbox) and "linen" (pillow) as additional missing entries beyond the reported "oak" and "velvet".
+- CLI arg parsing: Lua's `arg` table is positional — use while-loop with manual index advance for `--flag value` pairs (not ipairs)
+- Debug/test features should gate behind explicit flags and print visible warnings so testers never confuse backdoor starts with normal gameplay
 
 ## Mutation Analysis & Architecture Alignment (2026-03-21T00:16Z)
 
