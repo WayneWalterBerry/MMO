@@ -328,3 +328,68 @@
 7. **Composite object puzzles:** Detach/reattach parts (nightstand drawer, candle from holder, cork from bottle)
 8. **Multi-room light management:** Candle burns down over time; must conserve light across rooms
 9. **Skill-gated alternative paths:** Lockpicking (pin) vs. key-finding for locked doors
+
+---
+
+## Session: Puzzle Rating & Classification System (2026-03-20)
+
+### Work Completed
+1. **Researched puzzle difficulty rating systems:**
+   - Zarfian Cruelty Scale (IF games): Merciful → Polite → Tough → Nasty → Cruel
+   - Escape room industry: Star scales (1-5), tiered levels, success rates
+   - Modern design (The Witness, Baba Is You): Implicit progression via rule teaching, "aha moments"
+
+2. **Designed 1-5 star difficulty scale:**
+   - ⭐ Level 1: Trivial (tutorial, 1-2 steps, impossible to fail)
+   - ⭐⭐ Level 2: Introductory (3-5 steps, single tool chain, soft failure)
+   - ⭐⭐⭐ Level 3: Intermediate (6-10 steps, multi-room chains, planning required)
+   - ⭐⭐⭐⭐ Level 4: Advanced (8-15 steps, lateral thinking, consequences)
+   - ⭐⭐⭐⭐⭐ Level 5: Expert (12-25+ steps, multiple solutions, deep consequence chains)
+   - Key insight: Difficulty ≠ Cruelty. A Level 4 puzzle can be Merciful or Cruel depending on feedback.
+
+3. **Created puzzle classification guide:**
+   - Lifecycle: 🔴 Theorized → 🟡 Wanted → 🟢 In Game
+   - Wayne approves Theorized→Wanted; Flanders builds; Nelson tests
+   - Standardized template for all puzzle docs (required fields, GOAP analysis, failure modes)
+   - Numbered format: `{SEQUENCE}-{SLUG}` (e.g., 001-light-the-room)
+
+4. **Documented 9 core puzzle patterns:**
+   - Lock-and-Key (simple, nested, compound, magical, conditional)
+   - Environmental/Spatial (uncover, stairs, state change, pressure-sensitive, multi-point)
+   - Combination/Synthesis (binary, ternary, order-dependent, tool application, chemical chains)
+   - Sequence/Ordering (linear, parallel+sync, discovered, ritual, undoable-with-cost)
+   - Discovery/Hidden Objects (sensory, conditional visibility, spatial deduction, nested containers, secret passages)
+   - Transformation/State Mutation (simple state, irreversible consumption, time decay, conditional unlock, cascading, reversal)
+   - Lateral Thinking (multi-use, reverse problem, engine mechanic exploit, impossible-as-solution, system chaining)
+   - Deduction/Logic (riddles, constraint satisfaction, pattern recognition, ciphers, sudoku)
+   - Moral/Choice (sacrifice-vs-rescue, utilitarian-vs-deontological, path splitting, truth-vs-lie)
+
+5. **Applied rating system to Puzzle 001 (Light the Room):**
+   - Rating: ⭐⭐ Level 2 (Introductory, Polite cruelty)
+   - Analysis: 9 discrete steps but GOAP collapses 5-7; single chain; contextual clues; soft failure (wait for dawn)
+   - Patterns used: Compound Lock, Combination, State Mutation, Sensory Discovery
+   - Justification: Opening tutorial teaches core systems without overwhelming complexity
+
+### Key Insights for Puzzle Design
+1. **GOAP affects perceived difficulty:** Auto-resolution can collapse multi-step chains, making Level 3 feel like Level 2. But GOAP never auto-solves the "aha!" moment — only the mechanical prerequisites.
+2. **Cruelty ≠ Difficulty:** A puzzle can be intellectually hard but merciful (always recoverable), or easy but cruel (one wrong move and stuck for hours). Both dimensions matter.
+3. **Sensory hints are clue channels:** In darkness, on_feel/on_smell/on_listen convey clues that on_look cannot. State-specific descriptions guide discovery.
+4. **Consumable resources create natural urgency:** Matches burning out, candle wax depleting, crafted items breaking — these create time pressure without artificial timers.
+5. **Multi-solution design rewards creativity:** knife can cut OR injure; pin can pick locks OR sew. Same object, multiple uses, multiple valid paths.
+
+### Decisions Made (for .squad/decisions/)
+- Established that all puzzles must have both difficulty AND cruelty rating
+- Standardized puzzle status field (🔴/🟡/🟢) with approval chain: Wayne → Flanders → Nelson
+- GOAP compatibility is now a documented puzzle property (required field in template)
+- Puzzle patterns are reference library for designers; no pattern is "forbidden," but pattern selection guides level selection
+
+### Files Created
+- `docs/design/puzzles/puzzle-rating-system.md` (11.5 KB, 5-star scale + worked example)
+- `docs/design/puzzles/puzzle-classification-guide.md` (11.9 KB, template + lifecycle)
+- `docs/design/puzzles/puzzle-design-patterns.md` (23.3 KB, 9 patterns + combinations + best practices)
+
+### Files Modified
+- `docs/puzzles/001-light-the-room.md` — Added difficulty rating section, cruelty analysis, pattern classification
+
+### Commit
+- `2faac42`: "Design puzzle difficulty rating system and classification guide"
