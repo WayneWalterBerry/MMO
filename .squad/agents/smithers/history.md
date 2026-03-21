@@ -15,6 +15,43 @@
 
 ## Learnings
 
+### Session 2026-03-25: Web Loading Fix + BUG-049 "pry" Verb
+
+**Task:** Debug web game hanging at "Loading Game Engine" + add "pry" verb.
+
+**Root Cause (web hang):** The embedding-index.json (16 MB, 4337 phrases with 384-dim vectors) was bundled raw into game-bundle.js. When Fengari's Lua ran the pure-Lua JSON decoder on 16 MB in the browser's main thread, it froze indefinitely. The embedding vectors are explicitly unused at runtime (token-overlap matching only uses text/verb/noun).
+
+**Fix — build-bundle.ps1:** Added a stripping step that removes the `embedding` field from each phrase during bundling. Result: JSON dropped from 16 MB → 343 KB; total bundle from 16.7 MB → 990 KB.
+
+**Fix — BUG-049 "pry" verb:**
+- Added `handlers["pry"] = handlers["open"]` in verbs/init.lua (matches existing synonym pattern like `handlers["shut"] = handlers["close"]`)
+- Added "pry open X" compound phrase in preprocess.lua's natural_language()
+- Added "use crowbar on X" / "use bar on X" / "use prybar on X" → open X mapping
+
+**Verified:** Bundle JS syntax valid, all 3 web files served correctly via npx serve, game CLI boot+quit works, parser correctly resolves `pry crate`, `pry open crate`, and `use crowbar on crate`.
+
+**Key learning:** Never bundle large data blobs raw for Fengari. Pure-Lua JSON parsing is O(n) on string length, and Fengari adds another ~10x overhead vs native Lua. Strip unused fields at build time.
+
+---
+
+### Session 2026-03-24: Web Bundle Build & Local Server Verification
+
+**Task:** Build game-bundle.js and verify it serves correctly for local play.
+
+**Results:**
+- `build-bundle.ps1` ran clean: 110 files bundled, 15.93 MB (16,701,187 bytes)
+- Bundle structure verified: `window.GAME_FILES` (line 7) and `window.GAME_FILE_KEYS` (line 120)
+- Python not available on this Windows machine; used `npx serve` (Node.js) instead
+- Local server on `http://localhost:8080` serves all three files:
+  - `index.html` — 200 OK (6,228 bytes)
+  - `game-bundle.js` — 200 OK (16,701,187 bytes)
+  - `game-adapter.lua` — 200 OK (19,212 bytes)
+- No build errors. Wayne can open `http://localhost:8080` to play.
+
+**Environment note:** Python is not installed; Node.js (v24.14) is available. Use `npx serve web -l 8080` for local testing.
+
+---
+
 ### Session 2026-03-23: Fengari Web Wrapper (Browser Playtest Build)
 
 **Task:** Build a web wrapper so the game can be played in a browser for beta testing.
@@ -754,6 +791,27 @@ Nelson tested "light candle" in darkness:
 
 **Files Changed:** `src/engine/parser/preprocess.lua`
 **Files Created:** `.squad/decisions/inbox/smithers-parser-bugfix.md`
+
+---
+
+### Session 2026-03-24: Deploy Web Game to GitHub Pages
+
+**Task:** Deploy the web game to WayneWalterBerry.github.io/play/ as a hidden beta URL.
+
+**Results:**
+- Created `play/` directory in the blog repo (WayneWalterBerry.github.io)
+- Copied three files: `index.html` (6,230 bytes), `game-bundle.js` (16.7 MB), `game-adapter.lua` (19,212 bytes)
+- Updated robots meta tag from `noindex` to `noindex, nofollow` for stronger search engine exclusion
+- Committed and pushed to main: `a5e12f0` — "Deploy web game to /play/ (hidden beta)"
+- Push succeeded; GitHub Pages will build and serve at https://waynewalterberry.github.io/play/
+
+**Key Decisions:**
+- The `/play/` path is intentionally unlisted — no links from blog homepage or posts
+- The `noindex, nofollow` meta tag prevents search engine crawling and link following
+- Direct URL sharing only for beta testers
+
+**Files Modified:** `play/index.html` (added nofollow to existing noindex meta tag)
+**Files Created:** `play/index.html`, `play/game-bundle.js`, `play/game-adapter.lua` in blog repo
 
 ---
 

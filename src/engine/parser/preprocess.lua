@@ -96,6 +96,20 @@ function preprocess.natural_language(input)
         return "feel", ""
     end
 
+    -- BUG-049: "pry open X" → open X
+    local pry_target = lower:match("^pry%s+open%s+(.+)")
+    if pry_target then
+        return "open", pry_target
+    end
+
+    -- "use crowbar/bar on X" → open X (lever tool to force open)
+    local crowbar_target = lower:match("^use%s+crowbar%s+on%s+(.+)")
+        or lower:match("^use%s+bar%s+on%s+(.+)")
+        or lower:match("^use%s+pry%s*bar%s+on%s+(.+)")
+    if crowbar_target then
+        return "open", crowbar_target
+    end
+
     -- Composite part phrases: "take out X", "pull out X" → pull
     local pull_target = lower:match("^take%s+out%s+(.+)")
         or lower:match("^pull%s+out%s+(.+)")

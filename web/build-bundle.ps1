@@ -37,6 +37,26 @@ Get-ChildItem -Path $SrcDir -Recurse -File |
         # Path relative to repo root, with forward slashes
         $relPath = $_.FullName.Substring($RepoRoot.Length + 1).Replace("\", "/")
         $content = [System.IO.File]::ReadAllText($_.FullName, [System.Text.Encoding]::UTF8)
+
+        # Strip embedding vectors from the parser index (15 MB → ~300 KB).
+        # The vectors are unused at runtime — the Lua matcher uses token overlap only.
+        # Without this, Fengari hangs parsing 16 MB of JSON in a pure-Lua decoder.
+        if ($relPath -eq "src/assets/parser/embedding-index.json") {
+            Write-Host "  Stripping embedding vectors from $relPath..."
+            $idx = $content | ConvertFrom-Json
+            $stripped = @{ phrases = @() }
+            foreach ($p in $idx.phrases) {
+                $stripped.phrases += @{
+                    id   = $p.id
+                    text = $p.text
+                    verb = $p.verb
+                    noun = $p.noun
+                }
+            }
+            $content = $stripped | ConvertTo-Json -Depth 5 -Compress
+            Write-Host "  Stripped: $([math]::Round($content.Length / 1024, 1)) KB (was $([math]::Round(16029964 / 1024, 1)) KB)"
+        }
+
         $files[$relPath] = $content
         $count++
     }
