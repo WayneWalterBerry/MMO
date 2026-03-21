@@ -6,6 +6,9 @@
 (function () {
     'use strict';
 
+    // --- Debug mode: ?debug in URL shows detailed loading messages ---
+    window._debugMode = new URLSearchParams(window.location.search).has('debug');
+
     var outputEl = document.getElementById('output');
     var inputEl  = document.getElementById('input');
 
@@ -31,7 +34,7 @@
     }
 
     // --- Build version (embedded at build time) ---
-    const BUILD_TIMESTAMP = "2026-03-21 10:38";
+    const BUILD_TIMESTAMP = "2026-03-21 10:54";
 
     // --- Size formatting ---
     function formatSize(bytes) {
@@ -196,29 +199,43 @@
     // --- Main boot sequence ---
     async function boot() {
         try {
-            showStatus('Loading Bootstrapper (' + BUILD_TIMESTAMP + ')...');
+            if (window._debugMode) {
+                showStatus('Loading Bootstrapper (' + BUILD_TIMESTAMP + ')...');
+            }
 
             // Step 1: Fetch compressed engine bundle
             showStatus('Loading Game Engine...');
             var engineResponse = await fetchWithRetry('engine.lua.gz', 1);
             var compressedData = await engineResponse.arrayBuffer();
-            showStatus('Loading Game Engine... (' + formatSize(compressedData.byteLength) + ' compressed)');
+            if (window._debugMode) {
+                showStatus('Loading Game Engine... (' + formatSize(compressedData.byteLength) + ' compressed)');
+            }
 
             // Step 2: Decompress
-            showStatus('Decompressing Engine...');
+            if (window._debugMode) {
+                showStatus('Decompressing Engine...');
+            }
             var engineSource = await decompress(compressedData);
-            showStatus('Decompressing Engine... (' + formatSize(engineSource.length) + ')');
+            if (window._debugMode) {
+                showStatus('Decompressing Engine... (' + formatSize(engineSource.length) + ')');
+            }
 
             // Step 3: Load engine into Fengari
-            showStatus('Initializing Fengari (' + BUILD_TIMESTAMP + ')...');
+            if (window._debugMode) {
+                showStatus('Initializing Fengari (' + BUILD_TIMESTAMP + ')...');
+            }
             var L = getLuaState();
             executeLua(L, engineSource, 'engine');
 
             // Step 4: Fetch and execute game adapter
-            showStatus('Loading Game Adapter...');
+            if (window._debugMode) {
+                showStatus('Loading Game Adapter...');
+            }
             var adapterResponse = await fetchWithRetry('game-adapter.lua', 1);
             var adapterSource = await adapterResponse.text();
-            showStatus('Loading Game Adapter... (' + formatSize(adapterSource.length) + ')');
+            if (window._debugMode) {
+                showStatus('Loading Game Adapter... (' + formatSize(adapterSource.length) + ')');
+            }
             executeLua(L, adapterSource, 'game-adapter');
 
         } catch (err) {

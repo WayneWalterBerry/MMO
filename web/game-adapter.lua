@@ -21,6 +21,12 @@ local output_el  = document:getElementById("output")
 local input_el   = document:getElementById("input")
 
 ---------------------------------------------------------------------------
+-- Debug mode flag (mirrors JS window._debugMode, set by ?debug URL param)
+---------------------------------------------------------------------------
+local DEBUG_MODE = not not window._debugMode  -- coerce JS truthy to Lua boolean
+_G.DEBUG_MODE = DEBUG_MODE
+
+---------------------------------------------------------------------------
 -- DOM output helpers
 ---------------------------------------------------------------------------
 local function append_output(text)
@@ -35,8 +41,12 @@ local function log_status(msg)
     window:_logStatus(msg)
 end
 
+local function log_debug(msg)
+    if DEBUG_MODE then window:_logStatus(msg) end
+end
+
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-21 10:38"
+local BUILD_TIMESTAMP = "2026-03-21 10:54"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -276,7 +286,7 @@ local ok, err = pcall(function()
     -------------------------------------------------------------------
     -- Load templates (all 5, fetched at boot — small and required early)
     -------------------------------------------------------------------
-    log_status("Loading Templates...")
+    log_debug("Loading Templates...")
     local TEMPLATE_FILES = {
         "small-item.lua", "room.lua", "container.lua",
         "furniture.lua", "sheet.lua",
@@ -327,11 +337,11 @@ local ok, err = pcall(function()
 
         local source, was_cached = fetch_text("meta/rooms/" .. room_id .. ".lua")
         if was_cached then
-            log_status("Loading Room: " .. name_hint .. "... (cached)")
+            log_debug("Loading Room: " .. name_hint .. "... (cached)")
         elseif source then
-            log_status("Loading Room: " .. name_hint .. "... (" .. format_size(#source) .. ")")
+            log_debug("Loading Room: " .. name_hint .. "... (" .. format_size(#source) .. ")")
         else
-            log_status("Loading Room: " .. name_hint .. "...")
+            log_debug("Loading Room: " .. name_hint .. "...")
         end
         if not source then return nil end
 
@@ -346,11 +356,11 @@ local ok, err = pcall(function()
                 local obj_def, obj_cached, obj_size = load_object(inst.type_id)
                 local obj_label = inst.type or inst.id
                 if obj_cached then
-                    log_status("Loading Object: " .. obj_label .. "... (cached)")
+                    log_debug("Loading Object: " .. obj_label .. "... (cached)")
                 elseif obj_size and obj_size > 0 then
-                    log_status("Loading Object: " .. obj_label .. "... (" .. format_size(obj_size) .. ")")
+                    log_debug("Loading Object: " .. obj_label .. "... (" .. format_size(obj_size) .. ")")
                 else
-                    log_status("Loading Object: " .. obj_label .. "...")
+                    log_debug("Loading Object: " .. obj_label .. "...")
                 end
             end
         end
@@ -455,7 +465,7 @@ local ok, err = pcall(function()
     -------------------------------------------------------------------
     -- Load level and starting room
     -------------------------------------------------------------------
-    log_status("Loading Level 1...")
+    log_debug("Loading Level 1...")
     local level_source = fetch_text("meta/levels/level-01.lua")
     local level = level_source and loader.load_source(level_source)
 
@@ -595,7 +605,7 @@ local ok, err = pcall(function()
     -------------------------------------------------------------------
     -- Start game loop in a coroutine
     -------------------------------------------------------------------
-    log_status("Starting Game...")
+    log_debug("Starting Game...")
     game_co = coroutine.create(function()
         loop.run(context)
     end)
