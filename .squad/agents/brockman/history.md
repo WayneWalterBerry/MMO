@@ -88,3 +88,22 @@
 - Design vs. architecture distinction is about perspective, not content
 - Research scales with organizational infrastructure (subfolders early)
 - Design directives create implementation clarity
+- File reorganization can leave duplicates behind; periodic cleanup sweeps catch orphaned refs
+- When adding approved principles: update TOC first, then append full section following the exact formatting pattern of existing principles, preserve all wording from approved draft
+
+### Session: Player System Extraction (2026-03-22)
+**Status:** ✅ COMPLETED
+- Created docs/architecture/player/ subfolder
+- Extracted player-model.md (inventory, hands, worn items, skills)
+- Extracted player-movement.md (exits, location tracking, room transitions)
+- Extracted player-sensory.md (light/dark system, vision blocking)
+- Updated 00-architecture-overview.md with cross-references
+- All content preserved; nothing lost in reorganization
+- Commit: f1935c7
+
+### Session: Duplicate Core-Principles Cleanup (2026-03-22)
+**Status:** ✅ COMPLETED
+- Discovered and removed duplicate core-principles.md at root level
+- Kept authoritative copy at docs/architecture/objects/core-principles.md
+- Updated 4 cross-references in 4 files (00-architecture-overview.md, open-questions.md, decisions.md, orchestration-log)
+- Commit: 92601d2

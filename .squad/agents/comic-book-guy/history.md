@@ -106,3 +106,10 @@
 - Hidden objects are the mystery teacher (discovery drives exploration)
 - Decomposable objects create emergent puzzles
 - Darkness is solvable without light when sensory descriptions are complete
+- `mutate` on FSM transitions is for BASE-LEVEL properties (weight, size, keywords, categories) — don't duplicate what states already handle (name, description, sensory text)
+- Weight mutations are the highest-immersion payoff — players FEEL physics through inventory weight
+- Functions for proportional changes (`weight * 0.7`), absolutes for terminal states (`weight = 0.05`)
+- Keywords must reflect current object reality for parser resolution ("open window", "spent match", "empty bottle")
+- Categories as system queries ("dangerous", "ventilation", "useless") enable cross-system behavior
+- 10 of 37 objects have FSM transitions where `mutate` adds value; 27 are static or use old mutations system
+- Tier 1 mutate candidates: candle (weight↓ per burn cycle), match (keywords→spent), poison-bottle (weight+categories), window (keywords+categories)

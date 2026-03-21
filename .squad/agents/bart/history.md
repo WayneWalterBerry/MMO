@@ -147,6 +147,9 @@
 - Spatial relationships as per-object properties (not separate graph module)
 - Covering objects dump surfaces underneath AND reveal covering list (two mechanisms)
 - Exit mutations and room object state are separate systems — sync needed on mutation
+- `apply_mutations()` must run AFTER `apply_state()` but BEFORE `on_transition` — state sets baseline, mutate adjusts instance, callback sees final result
+- Three mutation types cover all cases: direct value, computed function, list ops (add/remove) — no need for a fourth
+- Hook mutations into all three transition paths (manual, on_tick auto, timer-expired auto) or objects will silently skip mutations on timed transitions
 
 ## Mutation Analysis & Architecture Alignment (2026-03-21T00:16Z)
 
