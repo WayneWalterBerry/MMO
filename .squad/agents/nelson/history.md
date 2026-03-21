@@ -39,6 +39,24 @@
 
 ## Recent Updates
 
+### Pass-017: Puzzle Retest — BUG-060/061/062 (2026-03-21)
+
+**Status:** ✅ COMPLETE — 11 retests, 4 passed, 6 failed, 1 blocked (36%)
+
+| Category | Tests | Passed | Failed | Blocked | Notes |
+|----------|-------|--------|--------|---------|-------|
+| Puzzle 015: Draft Extinguish | 4 | 3 | 0 | 1 | ✅ BUG-060 FIXED |
+| Puzzle 016: Wine Drink | 6 | 0 | 6 | 0 | 🔴 BUG-061 NOT FIXED |
+| Oil Flask Drink Rejection | 1 | 1 | 0 | 0 | ✅ BUG-062 FIXED |
+
+**Bug Verdicts:**
+- BUG-060 ✅ FIXED: `normalize_effect` handles both formats. Wind extinguishes candle on deep-cellar→hallway traversal.
+- BUG-061 ❌ NOT FIXED: Wine bottle `location = "wine-rack"` needs to be `"wine-rack.inside"`. One-line data fix.
+- BUG-062 ✅ FIXED: Drink handler fallback checks `on_drink_reject`. Oil flask prints custom gagging text.
+
+**Blocked:** Oil lantern wind-resistance test — can't fuel lantern (pour/fill/fuel verbs don't resolve two-object interaction)
+**Full Report:** test-pass/2026-03-21-pass-017-puzzle-retest.md
+
 ### Pass-016: Puzzles & UX Polish Playtest (2026-03-21)
 
 **Status:** ✅ COMPLETE — 26 tests, 15 passed, 11 failed (58%)
@@ -252,10 +270,10 @@
 **Status:** Ready for testing. Bart delivered UNLOCK verb + auto prerequisite planning.
 
 ## Bug Track Summary (62 unique)
-- CRITICAL/HIGH (11): BUG-001, BUG-004, BUG-008, BUG-017, BUG-026, BUG-030 (ALL FIXED), BUG-036 (✅ PARTIALLY FIXED), BUG-048 (✅ FIXED), BUG-055, BUG-060 (NEW — on_traverse schema mismatch), BUG-061 (NEW — wine bottles not instantiated)
+- CRITICAL/HIGH (11): BUG-001, BUG-004, BUG-008, BUG-017, BUG-026, BUG-030 (ALL FIXED), BUG-036 (✅ PARTIALLY FIXED), BUG-048 (✅ FIXED), BUG-055, BUG-060 (✅ FIXED — on_traverse schema), BUG-061 (OPEN — wine bottle location needs `.inside` suffix)
 - MAJOR (5): BUG-037, BUG-038, BUG-039 (parser), BUG-049 (✅ FIXED), BUG-050 (✅ FIXED)
 - MEDIUM (13): Most FIXED; BUG-035 (GOAP spent match), BUG-051 (courtyard moonlight), BUG-052 (sarcophagus ambiguity), BUG-056 (plural names), BUG-058 (feel inside drawer)
-- LOW (5): BUG-033, BUG-034, BUG-057 (rat feel), BUG-059 (uncork/drink no hold check), BUG-062 (NEW — drink verb ignores on_drink_reject)
+- LOW (5): BUG-033, BUG-034, BUG-057 (rat feel), BUG-059 (uncork/drink no hold check), BUG-062 (✅ FIXED — drink verb checks on_drink_reject)
 - MINOR/COSMETIC (28): Most fixed; BUG-040–047 open, BUG-053, BUG-054
 
 ## Learnings
@@ -312,3 +330,10 @@
 - Schema mismatches between engine and data are a recurring category — the code patterns are solid but the contracts between layers aren't enforced
 - Multi-command makes speed-running the critical path trivial: `light candle` → 6-command chain → 3-command chain → at deep cellar in 3 inputs
 - Bug count: 62 unique bugs discovered total (BUG-001 through BUG-062)
+- BUG-060 VERIFIED FIXED: `normalize_effect()` handles both `{type: "wind_effect"}` and `{wind_effect: {...}}` nested formats. Wind effect fires correctly on deep-cellar→hallway traversal. Candle FSM transitions lit→extinguished cleanly.
+- BUG-062 VERIFIED FIXED: Drink handler fallback checks `on_drink_reject` field before generic refusal. Oil flask prints vivid custom rejection text.
+- BUG-061 STILL OPEN: Wine bottle ID was fixed but instance `location` field was not updated. Engine requires explicit `.inside` surface suffix (`location = "wine-rack.inside"`), not bare container name (`location = "wine-rack"`). Same pattern as iron-key using `large-crate.inside`. One-line data fix needed in storage-cellar.lua line 28.
+- Container surface placement is a recurring gotcha: the engine's `loc:match("^(.-)%.(.+)$")` regex requires the dot-suffix. Bare container names fall through to root-level contents which are invisible to `look inside` / `take from`.
+- Oil lantern fueling is BLOCKED by parser: "pour oil flask into lantern", "fill lantern", "fuel lantern with oil flask" all fail. The FSM transition requires `lamp-oil` tool but parser can't resolve two-object pour/fill interactions. Likely same class as BUG-039 ("use X on Y" not understood).
+- Wind effect atmospheric writing is excellent — the stairway gust description is a standout moment
+- Extinguished candle description ("wick is black and still warm, trailing a thin wisp of smoke") is first-rate detail
