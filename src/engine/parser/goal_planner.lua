@@ -441,6 +441,7 @@ function goal_planner.execute(steps, ctx)
             print("(You're not sure how to " .. step.verb .. ".)")
             return false
         end
+        ctx.current_verb = step.verb
         handler(ctx, step.noun)
     end
     print("")

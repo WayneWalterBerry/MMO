@@ -189,6 +189,7 @@ function loop.run(context)
 
       local handler = context.verbs[verb]
       if handler then
+        context.current_verb = verb
         handler(context, noun)
         -- BUG-060: Update last_noun after successful handler with a real noun
         if noun ~= "" and not no_noun_verbs[verb] then
@@ -262,7 +263,7 @@ function loop.run(context)
           end
         end
       end
-      -- Player hands
+      -- Player hands (extract IDs from object instances)
       if context.player then
         for i = 1, 2 do
           if context.player.hands[i] then

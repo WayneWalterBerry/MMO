@@ -948,3 +948,26 @@ Nelson tested "light candle" in darkness:
 ---
 
 **END OF LEARNINGS**
+
+### Session 2026-07-23: Verb-Dependent Object Search Order
+
+**Task:** Implement verb-dependent search order in `find_visible` per Wayne's directive (copilot-directive-2026-03-21T19-35Z) and docs/architecture/player/inventory.md spec.
+
+**Problem:** `find_visible` used a FIXED search order (room → surfaces → containers → hands → bags → worn) for all verbs. This caused wrong disambiguation: "light candle" with a candle in hand AND on the floor would target the floor candle. The player's intent — "act on what I'm holding" — was ignored.
+
+**Solution — verb-dependent search order:**
+
+Refactored `find_visible` in `src/engine/verbs/init.lua` into 6 composable sub-search functions (`_fv_room`, `_fv_surfaces`, `_fv_parts`, `_fv_hands`, `_fv_bags`, `_fv_worn`). Added `interaction_verbs` lookup table. The main `find_visible` function composes sub-searches in verb-dependent order based on `ctx.current_verb`.
+
+Search orders:
+- **Interaction verbs** (open, close, light, drink, pour, eat, extinguish, wear, remove, pry, shut): Hands → Bags → Worn → Room → Surfaces → Parts
+- **Acquisition verbs** (everything else — take, examine, look, feel, search, etc.): Room → Surfaces → Parts → Hands → Bags → Worn (same as old fixed order)
+
+Set `ctx.current_verb` at three dispatch points: `loop/init.lua`, `parser/init.lua`, `parser/goal_planner.lua`.
+
+**Testing:** All 114 original tests pass unchanged. Added 12 new tests in `test/inventory/test-search-order.lua`. Total: 126 tests, 0 failures.
+
+**Files Changed:** `src/engine/verbs/init.lua`, `src/engine/loop/init.lua`, `src/engine/parser/init.lua`, `src/engine/parser/goal_planner.lua`
+**Files Created:** `test/inventory/test-search-order.lua`
+
+---

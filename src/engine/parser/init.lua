@@ -38,6 +38,7 @@ function parser.fallback(instance, input_text, context)
   if verb and score > instance.threshold then
     local handler = context.verbs[verb]
     if handler then
+      context.current_verb = verb
       if instance.diagnostic then
         io.stderr:write(string.format(
           "[Parser] Tier 2 match: \"%s\" → %s %s (score: %.2f, phrase: \"%s\")\n",

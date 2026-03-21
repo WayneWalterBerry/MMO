@@ -17,6 +17,27 @@ local preprocess = require("engine.parser.preprocess")
 local traverse_effects = require("engine.traverse_effects")
 
 ---------------------------------------------------------------------------
+-- Instance-aware hand accessors: hands store object instances (tables).
+-- Backward compatible with string IDs for transitional code.
+---------------------------------------------------------------------------
+local _next_instance_id = 0
+local function next_instance_id()
+    _next_instance_id = _next_instance_id + 1
+    return _next_instance_id
+end
+
+local function _hid(hand)
+    if type(hand) == "table" then return hand.id end
+    return hand
+end
+
+local function _hobj(hand, reg)
+    if type(hand) == "table" then return hand end
+    if type(hand) == "string" then return reg:get(hand) end
+    return nil
+end
+
+---------------------------------------------------------------------------
 -- Constants (authoritative source: engine/ui/presentation.lua)
 ---------------------------------------------------------------------------
 local GAME_SECONDS_PER_REAL_SECOND = presentation.GAME_SECONDS_PER_REAL_SECOND
@@ -53,6 +74,21 @@ local function matches_keyword(obj, kw)
 end
 
 ---------------------------------------------------------------------------
+-- Verb-dependent search order (see docs/architecture/player/inventory.md)
+--
+-- Interaction verbs act on something the player controls → search
+-- hands/bags first, then fall back to room/surfaces.
+-- Everything else (acquisition) reaches for things in the world → search
+-- room/surfaces first, then fall back to hands/bags.
+---------------------------------------------------------------------------
+local interaction_verbs = {
+    use = true, light = true, drink = true, open = true, close = true,
+    pour = true, eat = true, extinguish = true, wear = true, remove = true,
+    -- aliases that map to interaction verbs
+    pry = true, shut = true,
+}
+
+---------------------------------------------------------------------------
 -- Hand inventory helpers
 ---------------------------------------------------------------------------
 local function hands_full(ctx)
@@ -66,8 +102,8 @@ local function first_empty_hand(ctx)
 end
 
 local function which_hand(ctx, obj_id)
-    if ctx.player.hands[1] == obj_id then return 1 end
-    if ctx.player.hands[2] == obj_id then return 2 end
+    if _hid(ctx.player.hands[1]) == obj_id then return 1 end
+    if _hid(ctx.player.hands[2]) == obj_id then return 2 end
     return nil
 end
 
@@ -85,7 +121,7 @@ local function count_hands_used(ctx)
     local reg = ctx.registry
     for i = 1, 2 do
         if ctx.player.hands[i] then
-            local obj = reg:get(ctx.player.hands[i])
+            local obj = _hobj(ctx.player.hands[i], reg)
             local hr = (obj and obj.hands_required) or 1
             if hr >= 2 then
                 return 2, 0  -- two-hand item uses both slots
@@ -139,9 +175,9 @@ local function find_part(ctx, keyword)
     end
     -- Search held objects for parts
     for i = 1, 2 do
-        local hand_id = ctx.player.hands[i]
-        if hand_id then
-            local obj = reg:get(hand_id)
+        local hand = ctx.player.hands[i]
+        if hand then
+            local obj = _hobj(hand, reg)
             if obj and obj.parts then
                 for part_key, part in pairs(obj.parts) do
                     if matches_keyword(part, kw) then
@@ -359,25 +395,24 @@ end
 -- Helper: find an object the player can see or reach
 -- Returns: obj, location_type, parent_obj, surface_name
 --   location_type: "room" | "surface" | "hand" | "bag" | "worn" | "part"
+--
+-- Search order is VERB-DEPENDENT (see docs/architecture/player/inventory.md):
+--   Interaction verbs (use, light, drink, …): Hands → Bags → Worn → Room → Surfaces → Parts
+--   Acquisition verbs (take, examine, look, …): Room → Surfaces → Parts → Hands → Bags → Worn
 ---------------------------------------------------------------------------
-local function find_visible(ctx, keyword)
-    if not keyword or keyword == "" then return nil end
-    local room = ctx.current_room
-    local reg = ctx.registry
-    local kw = keyword:lower()
-        :gsub("^the%s+", "")
-        :gsub("^a%s+", "")
-        :gsub("^an%s+", "")
 
-    -- 1. Room contents
+-- Sub-search: room contents (non-hidden objects sitting in the room)
+local function _fv_room(kw, reg, room)
     for _, obj_id in ipairs(room.contents or {}) do
         local obj = reg:get(obj_id)
         if obj and not obj.hidden and matches_keyword(obj, kw) then
             return obj, "room", nil, nil
         end
     end
+end
 
-    -- 2. Accessible surface contents of room objects
+-- Sub-search: accessible surface contents + non-surface containers in room
+local function _fv_surfaces(kw, reg, room)
     for _, obj_id in ipairs(room.contents or {}) do
         local obj = reg:get(obj_id)
         if obj and obj.surfaces then
@@ -413,8 +448,10 @@ local function find_visible(ctx, keyword)
             end
         end
     end
+end
 
-    -- 2b. Parts of room objects and their surface contents
+-- Sub-search: parts of room objects and parts of surface-hosted objects
+local function _fv_parts(kw, reg, room)
     for _, obj_id in ipairs(room.contents or {}) do
         local obj = reg:get(obj_id)
         if obj and obj.parts then
@@ -442,21 +479,27 @@ local function find_visible(ctx, keyword)
             end
         end
     end
+end
 
-    -- 3. Player hands (direct items first, then bag contents)
+-- Sub-search: player hands (direct items only)
+local function _fv_hands(kw, reg, player)
     for i = 1, 2 do
-        local hand_id = ctx.player.hands[i]
-        if hand_id then
-            local obj = reg:get(hand_id)
+        local hand = player.hands[i]
+        if hand then
+            local obj = _hobj(hand, reg)
             if obj and matches_keyword(obj, kw) then
                 return obj, "hand", nil, nil
             end
         end
     end
+end
+
+-- Sub-search: contents of containers held in hands
+local function _fv_bags(kw, reg, player)
     for i = 1, 2 do
-        local hand_id = ctx.player.hands[i]
-        if hand_id then
-            local obj = reg:get(hand_id)
+        local hand = player.hands[i]
+        if hand then
+            local obj = _hobj(hand, reg)
             if obj and obj.container and obj.contents then
                 for _, item_id in ipairs(obj.contents) do
                     local item = reg:get(item_id)
@@ -467,9 +510,11 @@ local function find_visible(ctx, keyword)
             end
         end
     end
+end
 
-    -- 4. Worn items and worn bag contents
-    for _, worn_id in ipairs(ctx.player.worn or {}) do
+-- Sub-search: worn items and contents of worn containers
+local function _fv_worn(kw, reg, player)
+    for _, worn_id in ipairs(player.worn or {}) do
         local obj = reg:get(worn_id)
         if obj and matches_keyword(obj, kw) then
             return obj, "worn", nil, nil
@@ -482,6 +527,49 @@ local function find_visible(ctx, keyword)
                 end
             end
         end
+    end
+end
+
+local function find_visible(ctx, keyword)
+    if not keyword or keyword == "" then return nil end
+    local room = ctx.current_room
+    local reg = ctx.registry
+    local kw = keyword:lower()
+        :gsub("^the%s+", "")
+        :gsub("^a%s+", "")
+        :gsub("^an%s+", "")
+
+    local verb = ctx.current_verb or ""
+    local obj, loc, parent, surface
+
+    if interaction_verbs[verb] then
+        -- Interaction: acting on held objects → Hands → Bags → Worn → Room → Surfaces → Parts
+        obj, loc, parent, surface = _fv_hands(kw, reg, ctx.player)
+        if obj then return obj, loc, parent, surface end
+        obj, loc, parent, surface = _fv_bags(kw, reg, ctx.player)
+        if obj then return obj, loc, parent, surface end
+        obj, loc, parent, surface = _fv_worn(kw, reg, ctx.player)
+        if obj then return obj, loc, parent, surface end
+        obj, loc, parent, surface = _fv_room(kw, reg, room)
+        if obj then return obj, loc, parent, surface end
+        obj, loc, parent, surface = _fv_surfaces(kw, reg, room)
+        if obj then return obj, loc, parent, surface end
+        obj, loc, parent, surface = _fv_parts(kw, reg, room)
+        if obj then return obj, loc, parent, surface end
+    else
+        -- Acquisition / default: reaching for world objects → Room → Surfaces → Parts → Hands → Bags → Worn
+        obj, loc, parent, surface = _fv_room(kw, reg, room)
+        if obj then return obj, loc, parent, surface end
+        obj, loc, parent, surface = _fv_surfaces(kw, reg, room)
+        if obj then return obj, loc, parent, surface end
+        obj, loc, parent, surface = _fv_parts(kw, reg, room)
+        if obj then return obj, loc, parent, surface end
+        obj, loc, parent, surface = _fv_hands(kw, reg, ctx.player)
+        if obj then return obj, loc, parent, surface end
+        obj, loc, parent, surface = _fv_bags(kw, reg, ctx.player)
+        if obj then return obj, loc, parent, surface end
+        obj, loc, parent, surface = _fv_worn(kw, reg, ctx.player)
+        if obj then return obj, loc, parent, surface end
     end
 
     return nil
@@ -524,17 +612,17 @@ local function find_in_inventory(ctx, keyword)
     local reg = ctx.registry
     -- Hands
     for i = 1, 2 do
-        local hand_id = ctx.player.hands[i]
-        if hand_id then
-            local obj = reg:get(hand_id)
+        local hand = ctx.player.hands[i]
+        if hand then
+            local obj = _hobj(hand, reg)
             if obj and matches_keyword(obj, kw) then return obj end
         end
     end
     -- Held bag contents
     for i = 1, 2 do
-        local hand_id = ctx.player.hands[i]
-        if hand_id then
-            local bag = reg:get(hand_id)
+        local hand = ctx.player.hands[i]
+        if hand then
+            local bag = _hobj(hand, reg)
             if bag and bag.container and bag.contents then
                 for _, item_id in ipairs(bag.contents) do
                     local item = reg:get(item_id)
@@ -679,7 +767,7 @@ local function remove_from_location(ctx, obj)
 
     -- Player hands
     for i = 1, 2 do
-        if ctx.player.hands[i] == obj.id then
+        if _hid(ctx.player.hands[i]) == obj.id then
             ctx.player.hands[i] = nil
             return true
         end
@@ -687,9 +775,9 @@ local function remove_from_location(ctx, obj)
 
     -- Bags in player's hands
     for i = 1, 2 do
-        local hand_id = ctx.player.hands[i]
-        if hand_id then
-            local bag = reg:get(hand_id)
+        local hand = ctx.player.hands[i]
+        if hand then
+            local bag = _hobj(hand, reg)
             if bag and bag.container and bag.contents then
                 for j, item_id in ipairs(bag.contents) do
                     if item_id == obj.id then
