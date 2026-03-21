@@ -48,6 +48,18 @@ return {
             on_feel = "Heavy wooden planks, rough-sawn. Iron nail-heads along the seams, prickly with rust. The lid doesn't budge when you push -- nailed fast.",
             on_smell = "Old wood and dust. Faintly sour, like grain gone stale.",
             on_listen = "Silent. Something shifts faintly inside when you thump it.",
+            surfaces = {
+                top = {
+                    capacity = 3, max_item_size = 3, weight_capacity = 15,
+                    contents = {},
+                    accessible = true,
+                },
+                inside = {
+                    capacity = 6, max_item_size = 4, weight_capacity = 30,
+                    contents = {},
+                    accessible = false,
+                },
+            },
         },
 
         ["pried-open"] = {
@@ -57,6 +69,18 @@ return {
             on_feel = "Splintered wood edges around the opening. Inside: coarse fabric of a sack, loose straw, wood shavings.",
             on_smell = "Stale grain, sawdust, and the musty smell of long storage.",
             on_listen = "Faint rustling from the straw.",
+            surfaces = {
+                top = {
+                    capacity = 3, max_item_size = 3, weight_capacity = 15,
+                    contents = {},
+                    accessible = true,
+                },
+                inside = {
+                    capacity = 6, max_item_size = 4, weight_capacity = 30,
+                    contents = {},
+                    accessible = true,
+                },
+            },
         },
 
         broken = {
@@ -67,6 +91,18 @@ return {
             on_smell = "Grain dust, sawdust, damp wood.",
             on_listen = "Nothing.",
             terminal = true,
+            surfaces = {
+                top = {
+                    capacity = 3, max_item_size = 3, weight_capacity = 15,
+                    contents = {},
+                    accessible = true,
+                },
+                inside = {
+                    capacity = 6, max_item_size = 4, weight_capacity = 30,
+                    contents = {},
+                    accessible = true,
+                },
+            },
         },
     },
 

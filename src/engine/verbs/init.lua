@@ -1013,13 +1013,18 @@ function verbs.create()
             -- Room description (permanent features)
             parts[#parts + 1] = room.description or ""
 
-            -- Object presences
+            -- Object presences (deduplicated — identical room_presence strings shown once)
             local presences = {}
+            local seen_presences = {}
             for _, obj_id in ipairs(room.contents or {}) do
                 local obj = ctx.registry:get(obj_id)
                 if obj and not obj.hidden then
-                    presences[#presences + 1] = obj.room_presence
+                    local text = obj.room_presence
                         or ("There is " .. (obj.name or obj.id) .. " here.")
+                    if not seen_presences[text] then
+                        seen_presences[text] = true
+                        presences[#presences + 1] = text
+                    end
                 end
             end
             if #presences > 0 then
