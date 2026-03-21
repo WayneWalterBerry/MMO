@@ -21,6 +21,25 @@ return {
 
     provides_tool = {"cutting_edge", "injury_source", "ritual_blade"},
 
+    on_stab = {
+        damage = 8,
+        injury_type = "bleeding",
+        description = "You drive the silver dagger into your %s. Blood wells up immediately.",
+        pain_description = "A sharp, deep pain radiates from the wound.",
+    },
+    on_cut = {
+        damage = 4,
+        injury_type = "minor-cut",
+        description = "You draw the dagger's edge across your %s. A thin red line appears.",
+        pain_description = "A stinging line of fire across the skin.",
+    },
+    on_slash = {
+        damage = 6,
+        injury_type = "bleeding",
+        description = "You slash the dagger across your %s. The wound opens wide and bleeds freely.",
+        pain_description = "A burning, tearing sensation.",
+    },
+
     on_look = function(self)
         return self.description
     end,

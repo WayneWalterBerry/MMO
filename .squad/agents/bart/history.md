@@ -615,3 +615,57 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 - D-INJURY010: Injury engine is a standalone module (`engine/injuries.lua`), not embedded in verbs or loop
 - D-INJURY011: Injury definitions loaded via `require("meta.injuries." .. type)` with test injection via register_definition()
 - D-INJURY012: Poison bottle drink handler wires through injury system (inflict_injury) instead of legacy instant death
+
+### Session: Self-Infliction Verbs + Body Targeting + Bandage Apply/Remove (2026-07-26)
+**Status:** ✅ COMPLETE
+**Outcome:** Full stab/cut/slash self system, injury location tracking, bandage dual-binding lifecycle
+
+**Engine Changes (`src/engine/injuries.lua`):**
+- `inflict()` accepts optional `location` (body area) and `override_damage` (weapon-supplied) parameters
+- `find_by_id()` — lookup injury by instance ID for dual-binding
+- `resolve_target()` — 5-priority injury targeting (ID → display name → body location → type → ordinal)
+- `format_injury_options()` — disambiguation prompt for multiple treatable injuries
+- `apply_treatment()` — dual-bind bandage↔injury, transition both FSMs, stop damage drain
+- `remove_treatment()` — unbind both sides, revert injury to active, bandage to soiled
+- `compute_total_drain()` — sum damage_per_tick across all injuries
+- `list()` now shows body location ("bleeding wound on your left arm") and [treated] marker
+
+**Verb Changes (`src/engine/verbs/init.lua`):**
+- `stab` verb: new handler for self-infliction, reads weapon `on_stab` profile
+- `cut` verb: rewritten — tries self-infliction first (via `on_cut`), falls through to world-object cutting
+- `slash` verb: separate handler (no longer aliased to cut), reads `on_slash` profile, falls through to cut for world objects
+- Aliases: jab/pierce/stick → stab, slice/nick → cut, carve → slash
+- Self-infliction shared logic: body area parsing, weighted random selection, damage modifiers (torso ×1.5, head ×2.0), weapon profile reading, %s description substitution
+- `apply` verb: rewritten to support bandage-style items with `cures` + FSM. Uses `resolve_target()` for "apply bandage to left arm". Falls back to legacy `try_heal` for non-bandage items.
+- `remove` verb: extended to detect applied bandages (`applied_to` set) and call `remove_treatment()` before checking worn items/detachable parts
+
+**Weapon Objects Updated:**
+- `silver-dagger.lua`: Added `on_stab` (dmg 8, bleeding), `on_cut` (dmg 4, minor-cut), `on_slash` (dmg 6, bleeding)
+- `knife.lua`: Added `on_stab` (dmg 5, bleeding), `on_cut` (dmg 3, minor-cut)
+- `glass-shard.lua`: Added `on_cut` (dmg 3, minor-cut, self_damage), `provides_tool`
+
+**Tests Added:** 105 new tests in `test/injuries/test-self-infliction.lua`:
+- inflict with body location (5 tests)
+- override damage from weapon (4 tests)
+- list shows location (4 tests)
+- find_by_id (4 tests)
+- resolve_target: auto-target, disambiguation, by location, by type, by ordinal, no injuries, treated skip, display name (13 tests)
+- apply_treatment: dual binding, minor-cut, drain stops (12 tests)
+- remove_treatment: unbind, soiled state, non-applied error, orphan case (11 tests)
+- bandage exclusivity (2 tests)
+- compute_total_drain (4 tests)
+- weapon damage encoding: profiles, substitution, missing profiles (10 tests)
+- body area damage modifiers (3 tests)
+- random body area weighted selection (11 tests)
+- format_injury_options (5 tests)
+- full lifecycle: inflict → tick → bandage → tick → remove → tick (14 tests)
+- treated injury marker in list (1 test)
+
+**Test Results:** 280/280 pass (49 injury-engine + 105 self-infliction + 60 inventory + 35 parser + 4 context + 15 on-traverse + 12 search-order)
+
+**Architectural Decisions:**
+- D-INJURY013: Self-infliction verbs read weapon `on_stab`/`on_cut`/`on_slash` damage profiles — engine has zero hardcoded damage values
+- D-INJURY014: Body area damage modifiers are engine-side (×1.0 baseline, ×1.5 torso/stomach, ×2.0 head) — weapons don't know about body risk
+- D-INJURY015: Bandage dual-binding uses mutual references (bandage.applied_to ↔ injury.treatment) — both sides know about the relationship
+- D-INJURY016: Bandage removal reverts injury to active state and resumes damage_per_tick — premature removal has consequences
+- D-INJURY017: Treatment targeting uses 5-priority resolution (ID/name/location/type/ordinal) with auto-target for single-injury cases

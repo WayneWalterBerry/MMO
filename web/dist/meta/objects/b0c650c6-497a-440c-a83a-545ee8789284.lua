@@ -27,6 +27,19 @@ return {
         use_message = "You grip the bone handle and draw the blade.",
     },
 
+    on_stab = {
+        damage = 5,
+        injury_type = "bleeding",
+        description = "You stab the knife into your %s. It hurts more than you expected.",
+        pain_description = "A blunt, throbbing pain. The blade is not as sharp as a dagger.",
+    },
+    on_cut = {
+        damage = 3,
+        injury_type = "minor-cut",
+        description = "You nick your %s with the knife. A shallow cut — it stings.",
+        pain_description = "A thin sting, like a paper cut but deeper.",
+    },
+
     location = nil,
 
     on_look = function(self)

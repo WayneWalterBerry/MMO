@@ -57,8 +57,13 @@ end
 
 ---------------------------------------------------------------------------
 -- Inflict an injury on the player
+-- @param player table
+-- @param injury_type string
+-- @param source string           — e.g. "silver-dagger"
+-- @param location string|nil     — body area, e.g. "left arm"
+-- @param override_damage number|nil — weapon-supplied damage overrides def
 ---------------------------------------------------------------------------
-function injuries.inflict(player, injury_type, source)
+function injuries.inflict(player, injury_type, source, location, override_damage)
     local def = injuries.load_definition(injury_type)
     if not def then
         print("Unknown injury type: " .. tostring(injury_type))
@@ -66,13 +71,15 @@ function injuries.inflict(player, injury_type, source)
     end
 
     local on_inflict = def.on_inflict or {}
+    local initial_dmg = override_damage or on_inflict.initial_damage or 0
     local instance = {
         id = next_instance_id(injury_type),
         type = injury_type,
         _state = def.initial_state or "active",
         source = source or "unknown",
+        location = location,
         turns_active = 0,
-        damage = on_inflict.initial_damage or 0,
+        damage = initial_dmg,
         damage_per_tick = on_inflict.damage_per_tick or 0,
     }
 
@@ -90,6 +97,18 @@ function injuries.inflict(player, injury_type, source)
     end
 
     return instance
+end
+
+---------------------------------------------------------------------------
+-- Find injury by instance ID
+---------------------------------------------------------------------------
+function injuries.find_by_id(player, instance_id)
+    for i, injury in ipairs(player.injuries or {}) do
+        if injury.id == instance_id then
+            return injury, i
+        end
+    end
+    return nil
 end
 
 ---------------------------------------------------------------------------
@@ -252,11 +271,202 @@ function injuries.list(player)
                      or ""
 
         local line = "  " .. name
+        if injury.location then
+            line = line .. " on your " .. injury.location
+        end
         if symptom ~= "" then
             line = line .. " — " .. symptom
         end
+        if injury.treatment then
+            line = line .. " [treated]"
+        end
         print(line)
     end
+end
+
+---------------------------------------------------------------------------
+-- Compute total health drain per tick from all untreated injuries
+---------------------------------------------------------------------------
+function injuries.compute_total_drain(player)
+    local total_drain = 0
+    for _, injury in ipairs(player.injuries or {}) do
+        total_drain = total_drain + (injury.damage_per_tick or 0)
+    end
+    return total_drain
+end
+
+---------------------------------------------------------------------------
+-- Injury targeting: resolve player text to an injury instance
+-- @param player table
+-- @param target_str string|nil  — text after "to", e.g. "left arm stab wound"
+-- @param cures_list table       — e.g. {"bleeding", "minor-cut"}
+-- @return injury|nil, error_msg string
+---------------------------------------------------------------------------
+local function table_contains(t, val)
+    for _, v in ipairs(t) do
+        if v == val then return true end
+    end
+    return false
+end
+
+function injuries.resolve_target(player, target_str, cures_list)
+    if not player.injuries or #player.injuries == 0 then
+        return nil, "You don't have any injuries."
+    end
+
+    -- Filter to treatable injuries
+    local treatable = {}
+    for _, injury in ipairs(player.injuries) do
+        if table_contains(cures_list, injury.type) and not injury.treatment then
+            treatable[#treatable + 1] = injury
+        end
+    end
+
+    if #treatable == 0 then
+        return nil, "You don't have any injuries that would help."
+    end
+
+    -- Auto-target: if only one treatable injury and no target specified
+    if target_str == nil or target_str == "" then
+        if #treatable == 1 then
+            return treatable[1], ""
+        else
+            return nil, injuries.format_injury_options(treatable)
+        end
+    end
+
+    local normalized = target_str:lower()
+
+    -- Priority 1: Exact instance ID
+    for _, injury in ipairs(treatable) do
+        if injury.id == target_str then
+            return injury, ""
+        end
+    end
+
+    -- Priority 2: Display name substring
+    for _, injury in ipairs(treatable) do
+        local def = injuries.load_definition(injury.type)
+        local state_def = def and def.states and def.states[injury._state]
+        if state_def and state_def.name and
+           string.find(state_def.name:lower(), normalized, 1, true) then
+            return injury, ""
+        end
+    end
+
+    -- Priority 3: Body location substring
+    for _, injury in ipairs(treatable) do
+        if injury.location and
+           string.find(injury.location:lower(), normalized, 1, true) then
+            return injury, ""
+        end
+    end
+
+    -- Priority 4: Injury type exact match
+    for _, injury in ipairs(treatable) do
+        if injury.type == normalized then
+            return injury, ""
+        end
+    end
+
+    -- Priority 5: Ordinal index
+    local ordinal_map = {first = 1, second = 2, third = 3, fourth = 4, fifth = 5}
+    local ordinal_index = ordinal_map[normalized] or tonumber(normalized)
+    if ordinal_index and treatable[ordinal_index] then
+        return treatable[ordinal_index], ""
+    end
+
+    return nil, "You don't see that injury. " .. injuries.format_injury_options(treatable)
+end
+
+function injuries.format_injury_options(treatable)
+    local lines = {"Which injury? You have:"}
+    for i, injury in ipairs(treatable) do
+        local def = injuries.load_definition(injury.type)
+        local state_def = def and def.states and def.states[injury._state]
+        local state_name = (state_def and state_def.name) or injury.type
+        local location = injury.location and (" (" .. injury.location .. ")") or ""
+        lines[#lines + 1] = "  " .. i .. ". " .. state_name .. location
+    end
+    return table.concat(lines, "\n")
+end
+
+---------------------------------------------------------------------------
+-- Treatment: apply a treatment object to an injury (dual binding)
+-- @param player table
+-- @param treatment_obj table  — bandage instance
+-- @param injury table         — target injury instance
+---------------------------------------------------------------------------
+function injuries.apply_treatment(player, treatment_obj, injury)
+    -- 1. Bind treatment → injury
+    treatment_obj.applied_to = injury.id
+
+    -- 2. Bind injury → treatment
+    injury.treatment = {
+        type = treatment_obj.id,
+        item_id = treatment_obj.id,
+        healing_boost = treatment_obj.healing_boost or 1,
+    }
+
+    -- 3. Transition bandage FSM: clean/soiled → applied
+    treatment_obj._state = "applied"
+
+    -- 4. Transition injury FSM if applicable
+    local def = injuries.load_definition(injury.type)
+    if def and def.healing_interactions then
+        local interaction = def.healing_interactions[treatment_obj.id]
+        if interaction and interaction.from_states then
+            if table_contains(interaction.from_states, injury._state) then
+                injury._state = interaction.transitions_to
+                injury.damage_per_tick = 0
+            end
+        end
+    end
+end
+
+---------------------------------------------------------------------------
+-- Treatment: remove a treatment object from its attached injury
+-- @param player table
+-- @param treatment_obj table
+-- @return boolean, string|nil
+---------------------------------------------------------------------------
+function injuries.remove_treatment(player, treatment_obj)
+    if not treatment_obj.applied_to then
+        return false, "That isn't applied to anything."
+    end
+
+    -- Find the injury this treatment is attached to
+    local injury = injuries.find_by_id(player, treatment_obj.applied_to)
+    if not injury then
+        -- Injury healed while bandage was on — just clean up bandage side
+        treatment_obj.applied_to = nil
+        treatment_obj._state = "soiled"
+        return true
+    end
+
+    -- Clear injury → treatment reference
+    injury.treatment = nil
+
+    -- If injury is still active, resume damage
+    local def = injuries.load_definition(injury.type)
+    if def then
+        -- Revert to active state if currently treated
+        if injury._state == "treated" then
+            injury._state = "active"
+        end
+        local state_def = def.states and def.states[injury._state]
+        if state_def and state_def.damage_per_tick then
+            injury.damage_per_tick = state_def.damage_per_tick
+        end
+    end
+
+    -- Clear treatment → injury reference
+    treatment_obj.applied_to = nil
+
+    -- Transition bandage FSM: applied → soiled
+    treatment_obj._state = "soiled"
+
+    return true
 end
 
 return injuries

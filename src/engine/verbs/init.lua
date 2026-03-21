@@ -84,8 +84,10 @@ end
 local interaction_verbs = {
     use = true, light = true, drink = true, open = true, close = true,
     pour = true, eat = true, extinguish = true, wear = true, remove = true,
+    apply = true, stab = true, cut = true, slash = true,
     -- aliases that map to interaction verbs
-    pry = true, shut = true,
+    pry = true, shut = true, jab = true, pierce = true, stick = true,
+    slice = true, nick = true, carve = true,
 }
 
 ---------------------------------------------------------------------------
@@ -3085,6 +3087,179 @@ function verbs.create()
     handlers["inscribe"] = handlers["write"]
 
     ---------------------------------------------------------------------------
+    -- Self-infliction: shared logic for stab/cut/slash self
+    ---------------------------------------------------------------------------
+    local BODY_AREA_WEIGHTS = {
+        { area = "left arm",   weight = 3 },
+        { area = "right arm",  weight = 3 },
+        { area = "left hand",  weight = 2 },
+        { area = "right hand", weight = 2 },
+        { area = "left leg",   weight = 2 },
+        { area = "right leg",  weight = 2 },
+        { area = "torso",      weight = 1 },
+        { area = "stomach",    weight = 1 },
+    }
+    local BODY_AREA_TOTAL_WEIGHT = 16
+
+    local BODY_AREA_DAMAGE_MODS = {
+        ["left arm"]   = 1.0, ["right arm"]  = 1.0,
+        ["left hand"]  = 1.0, ["right hand"] = 1.0,
+        ["left leg"]   = 1.0, ["right leg"]  = 1.0,
+        ["torso"]      = 1.5, ["stomach"]    = 1.5,
+        ["head"]       = 2.0,
+    }
+
+    -- Body area aliases the parser recognizes
+    local BODY_AREA_ALIASES = {
+        ["arm"]      = "left arm",
+        ["hand"]     = "left hand",
+        ["leg"]      = "left leg",
+        ["left arm"] = "left arm",  ["right arm"]  = "right arm",
+        ["left hand"]= "left hand", ["right hand"] = "right hand",
+        ["left leg"] = "left leg",  ["right leg"]  = "right leg",
+        ["torso"]    = "torso",     ["chest"]      = "torso",   ["side"] = "torso",
+        ["stomach"]  = "stomach",   ["belly"]      = "stomach", ["gut"]  = "stomach",
+        ["head"]     = "head",      ["forehead"]   = "head",    ["face"] = "head",
+    }
+
+    local function random_body_area()
+        local roll = math.random(1, BODY_AREA_TOTAL_WEIGHT)
+        local acc = 0
+        for _, entry in ipairs(BODY_AREA_WEIGHTS) do
+            acc = acc + entry.weight
+            if roll <= acc then return entry.area end
+        end
+        return "left arm"
+    end
+
+    -- Parse self-infliction noun into body_area and weapon keyword
+    -- Returns: is_self, body_area_or_nil, weapon_kw_or_nil
+    local function parse_self_infliction(noun)
+        local target_part, tool_word = noun:match("^(.+)%s+with%s+(.+)$")
+        if not target_part then target_part = noun; tool_word = nil end
+
+        -- Strip "my " prefix
+        local cleaned = target_part:lower():gsub("^my%s+", "")
+
+        -- Check if targeting self or a body part
+        if cleaned == "self" or cleaned == "myself" or cleaned == "me" or cleaned == "" then
+            return true, nil, tool_word
+        end
+
+        -- Check if it's a recognized body area
+        local area = BODY_AREA_ALIASES[cleaned]
+        if area then
+            return true, area, tool_word
+        end
+
+        return false, nil, tool_word
+    end
+
+    local function handle_self_infliction(ctx, noun, verb_name, profile_field)
+        if noun == "" then
+            print(verb_name:sub(1,1):upper() .. verb_name:sub(2) .. " what?")
+            return true
+        end
+
+        local is_self, body_area, tool_word = parse_self_infliction(noun)
+        if not is_self then return false end
+
+        -- Find weapon
+        local weapon = nil
+        if tool_word then
+            weapon = find_in_inventory(ctx, tool_word)
+            if not weapon then
+                print("You don't have " .. tool_word .. ".")
+                return true
+            end
+        else
+            -- Search hands for any item with the right damage profile
+            local candidates = {}
+            for i = 1, 2 do
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local obj = _hobj(hand, ctx.registry)
+                    if obj and obj[profile_field] then
+                        candidates[#candidates + 1] = obj
+                    end
+                end
+            end
+            if #candidates == 0 then
+                print("You have nothing sharp to " .. verb_name .. " with.")
+                return true
+            elseif #candidates > 1 then
+                local names = {}
+                for _, c in ipairs(candidates) do names[#names + 1] = c.name or c.id end
+                print(verb_name:sub(1,1):upper() .. verb_name:sub(2) .. " yourself with what? You're holding " .. table.concat(names, " and ") .. ".")
+                return true
+            end
+            weapon = candidates[1]
+        end
+
+        -- Validate weapon has the right profile
+        local profile = weapon[profile_field]
+        if not profile then
+            print("You can't " .. verb_name .. " yourself with " .. (weapon.name or "that") .. ".")
+            return true
+        end
+
+        -- Resolve body area
+        if not body_area then
+            body_area = random_body_area()
+        end
+
+        -- Apply body area damage modifier
+        local base_damage = profile.damage or 5
+        local modifier = BODY_AREA_DAMAGE_MODS[body_area] or 1.0
+        local effective_damage = math.floor(base_damage * modifier)
+
+        -- Inflict the injury
+        local inj_ok, injury_mod = pcall(require, "engine.injuries")
+        if not inj_ok then
+            print("Something goes wrong.")
+            return true
+        end
+
+        local source = "self-inflicted (" .. (weapon.id or "weapon") .. ", " .. verb_name .. ")"
+        local _captured = {}
+        local old_print = _G.print
+        _G.print = function(...) _captured[#_captured + 1] = true end
+        local instance = injury_mod.inflict(ctx.player, profile.injury_type, source, body_area, effective_damage)
+        _G.print = old_print
+
+        if not instance then
+            print("The wound doesn't take hold.")
+            return true
+        end
+
+        -- Set bloody state
+        ctx.player.state = ctx.player.state or {}
+        ctx.player.state.bloody = true
+        ctx.player.state.bleed_ticks = 10
+
+        -- Print the weapon's description with body area substituted
+        if profile.description then
+            print(string.format(profile.description, body_area))
+        else
+            print("You " .. verb_name .. " your " .. body_area .. " with " .. (weapon.name or "the weapon") .. ".")
+        end
+
+        return true
+    end
+
+    ---------------------------------------------------------------------------
+    -- STAB {target} WITH {tool}  /  STAB SELF
+    ---------------------------------------------------------------------------
+    handlers["stab"] = function(ctx, noun)
+        if handle_self_infliction(ctx, noun, "stab", "on_stab") then return end
+        -- Stab is only for self-infliction — there are no world objects to stab
+        print("You can only stab yourself. (Try: stab self with <weapon>)")
+    end
+    handlers["jab"] = handlers["stab"]
+    handlers["pierce"] = handlers["stab"]
+    handlers["stick"] = handlers["stab"]
+
+    ---------------------------------------------------------------------------
     -- CUT {target} WITH {tool}  /  CUT SELF WITH {tool}
     ---------------------------------------------------------------------------
     handlers["cut"] = function(ctx, noun)
@@ -3093,42 +3268,13 @@ function verbs.create()
             return
         end
 
+        -- Try self-infliction first
+        if handle_self_infliction(ctx, noun, "cut", "on_cut") then return end
+
+        -- CUT {object} — world object cutting (existing logic)
         local target_word, tool_word = noun:match("^(.+)%s+with%s+(.+)$")
         if not target_word then target_word = noun end
 
-        -- CUT SELF -- self-injury with a blade
-        if target_word == "self" or target_word == "myself"
-           or target_word == "me" or target_word == "hand"
-           or target_word == "palm" then
-
-            local tool = nil
-            if tool_word then
-                tool = find_in_inventory(ctx, tool_word)
-                if not tool then
-                    print("You don't have " .. tool_word .. ".")
-                    return
-                end
-                if not provides_capability(tool, "cutting_edge") then
-                    print("You can't cut yourself with " .. (tool.name or "that") .. ". You need a proper blade.")
-                    return
-                end
-            else
-                tool = find_tool_in_inventory(ctx, "cutting_edge")
-                if not tool then
-                    print("You have nothing sharp enough to cut with.")
-                    return
-                end
-            end
-
-            ctx.player.state = ctx.player.state or {}
-            ctx.player.state.bloody = true
-            ctx.player.state.bleed_ticks = 10
-            print("You draw the blade across your palm. Blood wells up, dark and warm.")
-            print("Your hands are now bloody.")
-            return
-        end
-
-        -- CUT {object}
         if not has_some_light(ctx) then
             print("It is too dark to see what you're doing.")
             return
@@ -3170,8 +3316,25 @@ function verbs.create()
 
         print("You can't cut " .. (obj.name or "that") .. ".")
     end
+    handlers["slice"] = handlers["cut"]
+    handlers["nick"] = handlers["cut"]
 
-    handlers["slash"] = handlers["cut"]
+    ---------------------------------------------------------------------------
+    -- SLASH {target} WITH {tool}  /  SLASH SELF WITH {tool}
+    ---------------------------------------------------------------------------
+    handlers["slash"] = function(ctx, noun)
+        if noun == "" then
+            print("Slash what?")
+            return
+        end
+
+        -- Try self-infliction first
+        if handle_self_infliction(ctx, noun, "slash", "on_slash") then return end
+
+        -- Fall through to cut logic for world objects
+        handlers["cut"](ctx, noun)
+    end
+    handlers["carve"] = handlers["slash"]
 
     ---------------------------------------------------------------------------
     -- PRICK SELF WITH {tool}
@@ -3834,7 +3997,7 @@ function verbs.create()
     handlers["don"] = handlers["wear"]
 
     ---------------------------------------------------------------------------
-    -- REMOVE / TAKE OFF / DOFF -- worn items OR detachable parts
+    -- REMOVE / TAKE OFF / DOFF -- worn items, detachable parts, OR bandages
     ---------------------------------------------------------------------------
     handlers["remove"] = function(ctx, noun)
         if noun == "" then
@@ -3844,6 +4007,39 @@ function verbs.create()
 
         -- Strip leading "off " for "take off X" passthrough
         local target = noun:lower():match("^off%s+(.+)") or noun
+
+        -- Strip "from ..." suffix for "remove bandage from left arm"
+        local base_target = target:match("^(.-)%s+from%s+") or target
+
+        -- Check for bandage removal (treatment objects with applied_to)
+        local kw_check = base_target:lower()
+            :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+        local bandage_obj = find_in_inventory(ctx, kw_check)
+        if bandage_obj and bandage_obj.applied_to then
+            local inj_ok, injury_mod = pcall(require, "engine.injuries")
+            if inj_ok then
+                local ok, err = injury_mod.remove_treatment(ctx.player, bandage_obj)
+                if ok then
+                    -- Print the remove transition message from bandage FSM
+                    local msg = nil
+                    if bandage_obj.transitions then
+                        for _, t in ipairs(bandage_obj.transitions) do
+                            if t.verb == "remove" and t.to == "soiled" then
+                                msg = t.message
+                                break
+                            end
+                        end
+                    end
+                    if not msg then
+                        msg = "You remove " .. (bandage_obj.name or "the bandage") .. "."
+                    end
+                    print(msg)
+                else
+                    print(err or "You can't remove that.")
+                end
+                return
+            end
+        end
 
         -- First: check if this matches a detachable part (remove cork, remove drawer)
         local part, parent_obj, part_key = find_part(ctx, target)
@@ -4761,6 +4957,7 @@ function verbs.create()
 
     ---------------------------------------------------------------------------
     -- APPLY -- apply a healing item to an injury ("apply bandage", "apply bandage to wound")
+    -- Supports bandage dual-binding via injury_targeting + injury_treatment
     ---------------------------------------------------------------------------
     handlers["apply"] = function(ctx, noun)
         if noun == "" then
@@ -4781,15 +4978,18 @@ function verbs.create()
 
         -- Parse "apply X to Y" or just "apply X"
         local item_kw = noun
-        local _target_kw = nil
+        local target_kw = nil
         local to_match = noun:match("^(.-)%s+to%s+(.+)$")
         if to_match then
             item_kw = noun:match("^(.-)%s+to%s+")
-            _target_kw = noun:match("%s+to%s+(.+)$")
+            target_kw = noun:match("%s+to%s+(.+)$")
         end
 
         -- Strip articles
         item_kw = item_kw:lower():gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+        if target_kw then
+            target_kw = target_kw:lower():gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", ""):gsub("^my%s+", "")
+        end
 
         -- Find healing item in inventory (hands, worn, etc.)
         local obj = find_in_inventory(ctx, item_kw)
@@ -4798,7 +4998,42 @@ function verbs.create()
             return
         end
 
-        -- Check for healing capability: look for on_use.cures or on_apply.cures or on_drink.cures
+        -- Check if this is a bandage-type item with cures list and FSM
+        if obj.cures and obj._state then
+            -- Bandage-style treatment: use dual-binding system
+            if obj.applied_to then
+                print((obj.name or "That") .. " is already applied to a wound.")
+                return
+            end
+
+            -- Resolve which injury to target
+            local injury, err = injury_mod.resolve_target(ctx.player, target_kw, obj.cures)
+            if not injury then
+                print(err)
+                return
+            end
+
+            -- Apply the treatment (dual binding)
+            injury_mod.apply_treatment(ctx.player, obj, injury)
+
+            -- Find and print the transition message from the bandage's transitions
+            local msg = nil
+            if obj.transitions then
+                for _, t in ipairs(obj.transitions) do
+                    if t.verb == "apply" and t.to == "applied" then
+                        msg = t.message
+                        break
+                    end
+                end
+            end
+            if not msg then
+                msg = "You apply " .. (obj.name or item_kw) .. " to the wound."
+            end
+            print(msg)
+            return
+        end
+
+        -- Fallback: legacy healing via on_apply/on_use/on_drink
         local healing_effect = nil
         local healing_verb = nil
         for _, v in ipairs({"apply", "use", "drink"}) do

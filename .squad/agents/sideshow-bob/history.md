@@ -743,3 +743,86 @@ Updated the full injury and healing design doc suite to incorporate Wayne's dire
 - **Reusable bandages create a resource management loop.** The player doesn't just "use" a bandage — they manage its lifecycle across multiple wounds. This is a new puzzle dimension.
 - **Targeted treatment adds diagnosis gameplay.** Forcing the player to name the wound makes injuries verb output directly actionable — it's not just flavor, it's the targeting vocabulary.
 - **Consumable vs reusable creates asymmetric risk.** Wasting a salve on the wrong burn is permanent loss. Trying a bandage on the wrong wound just fails — you get it back. This rewards experimentation with bandages but punishes careless salve use.
+
+---
+
+## Session: Bandage Lifecycle Design (2026-07-26)
+
+### Directive
+Wayne requested a full bandage lifecycle design doc — bandages as reusable treatment items with FSM states, crafting, triage puzzles, and contrast with consumable salve.
+
+### Work Completed
+Created `docs/design/injuries/bandage-lifecycle.md` — comprehensive design covering the bandage as a persistent, reusable treatment object.
+
+#### Key Design Contributions
+1. **Four-state bandage FSM:** Clean → Applied → Removable → Soiled → Clean (wash cycle). Each state has full description, sensory output, and mechanical behavior.
+2. **Linked FSM architecture:** Bandage and injury cross-reference each other (`attached_to` / `treated_by`). Injury healing auto-triggers bandage state change via event-driven transition.
+3. **Premature removal mechanic:** Player can strip a bandage from an unhealed wound — wound re-opens, bleeding resumes. Enables emergency triage decisions.
+4. **Infection risk from soiled bandages:** Dirty bandages work but risk infection. Washing in water source cleans them. Level 2+ mechanic — Level 1 keeps it simple.
+5. **The triage puzzle:** Signature puzzle — limited bandages vs. multiple bleeding wounds. Player must assess severity via `injuries` verb and prioritize. Math shows optimal strategy: bandage highest-drain wound first.
+6. **Crafting sources with trade-offs:** Blanket/cloak/curtains all produce bandages but sacrifice warmth/protection/light-control. Every bandage costs something.
+7. **Full parser pattern catalog:** Apply, remove, wash, inspect — with disambiguation, auto-resolution, and error messages.
+8. **Bandage vs. salve contrast table:** Reusable (forgiving, management-focused) vs. consumable (punishing, timing-focused). Deliberately asymmetric.
+9. **Object metadata sketch:** Lua-shaped template for Flanders with states, transitions, guards, and runtime fields.
+
+### Files Created
+- `docs/design/injuries/bandage-lifecycle.md` — Full bandage lifecycle design
+
+### Files Created (Decisions)
+- `.squad/decisions/inbox/bob-bandage-design.md` — Decision summary with handoffs
+
+### Handoffs
+- **Flanders:** Build bandage object — 4-state FSM, `attached_to` field, event-driven `injury_healed` transition, `portable = false` when applied.
+- **Bart:** Engine support for linked FSMs (injury healed → bandage state change), premature removal guard, `portable` override in applied state.
+- **Nelson:** Test full lifecycle loop, premature removal, triage scenarios, multi-bandage disambiguation.
+- **CBG:** Review triage balance — drain-rate math and gameplay tension.
+
+### Learnings
+- **The soiled state creates a genuine decision.** Skip washing = save time but risk infection. Wash first = safe but costs a turn. Neither choice is obviously right — depends on context.
+- **Premature removal is the hidden depth.** Most players will use the basic loop (apply → heal → remove). Advanced players will strip bandages from healing wounds to save new bleeds — a risk/reward calculation that emerges from the FSM naturally.
+- **Linked FSMs are a new architectural pattern.** Two objects tracking each other's state via cross-references. This is different from containment (parent/child) — it's a peer relationship. Bart needs to support event propagation between linked objects.
+- **The triage puzzle is math disguised as narrative.** Drain rates, healing timers, and health totals create an optimization problem — but the player experiences it as urgent medical decisions. The `injuries` verb provides just enough info to solve it without making it feel like spreadsheet gaming.
+
+---
+
+### Session: Self-Infliction Mechanic Design (2026-07-25)
+
+**Task:** Design the "stab self" mechanic — self-infliction as a test harness for the injury system and a gameplay mechanic.
+
+**Directive:** Wayne requested a complete design for deliberate self-injury (stab, cut, slash) with body targeting, weapon-encoded damage, and puzzle uses (blood offerings, desperate escapes).
+
+### Key Decisions
+1. **Three verbs, not one:** `stab`, `cut`, `slash` — each reads a different weapon profile (`on_stab`, `on_cut`, `on_slash`). Same weapon produces different injuries depending on the verb.
+2. **Body targeting with 9 areas:** left/right arm, left/right hand, left/right leg, torso, stomach, head. Random selection weighted toward arms/hands. Head excluded from random — must be explicit.
+3. **Weapon encodes ALL damage:** `on_stab = { damage = 8, injury_type = "bleeding", description = "..." }`. Engine reads metadata, never hardcodes. Follows Principle 8.
+4. **`%s` body area substitution** in weapon descriptions — weapon text stays on the weapon, engine substitutes the targeted area.
+5. **Body area damage modifiers** (engine-side): hand/arm/leg = x1.0, torso/stomach = x1.5, head = x2.0.
+6. **Glass shard `self_damage` flag** — cutting with a shard also cuts the holding hand. Reinforces "wrap it first" lesson.
+7. **Narrative three-beat structure:** Resolve → Action → Consequence. Never casual, never glorified. Escalating narrative for repeated self-injury.
+8. **Head targeting requires confirmation prompt** (lethality warning, not moral judgment).
+9. **Combat precursor:** Same `on_stab`/`on_cut`/`on_slash` profiles will be reused for future combat. Self-infliction validates the entire injury pipeline.
+
+### Files Created
+- `docs/design/player/self-infliction.md` — Full self-infliction design doc (12 sections)
+
+### Files Created (Decisions)
+- `.squad/decisions/inbox/bob-stab-self.md` — Decision summary with handoffs
+
+### Handoffs
+- **Bart:** New verb handlers (stab/cut/slash) with self-target detection, instrument resolution, body area resolution, damage profile reading, body modifier math, injury instantiation, confirmation gates.
+- **Flanders:** Add `on_stab`/`on_cut`/`on_slash` damage profiles to silver-dagger, kitchen-knife, glass-shard, pin. Add `self_damage` flag to glass shard.
+- **Nelson:** Test all parser patterns (stab self, cut my arm, slash left arm with knife), disambiguation flows, weapon validation, accumulation from repeated self-injury, body modifier math.
+- **CBG:** Review blood-offering puzzle integration and narrative tone guidelines.
+
+### Open Questions (for Wayne)
+1. Bare "arm"/"hand"/"leg" — auto-select non-dominant side, or always disambiguate?
+2. Head self-injury — confirmation prompt or narrative warning only?
+3. `slash` verb — include now or defer to combat?
+4. Bare-hand self-injury (punch self → bruise)?
+5. Cap on self-injuries per turn?
+
+### Learnings
+- **Self-infliction is combat-minus-opponent.** By designing it first, we validate the weapon→injury→treatment pipeline before adding hit/miss and AI targeting. Smart sequencing from Wayne.
+- **The verb matters as much as the weapon.** A knife stabbed vs. a knife drawn produces fundamentally different wounds. This maps to real-world anatomy and to different injury types in our system.
+- **Weighted random is better than uniform random.** Arms/hands are natural self-targets. Torso/head are dangerous and should require deliberate targeting. The weight table encodes anatomical common sense.
+- **Glass shard `self_damage` is emergent teaching.** The player learns "wrap sharp things" through mechanical consequence, not tutorial text. Pure puzzle design.

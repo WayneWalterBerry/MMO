@@ -22,6 +22,16 @@ return {
 
     categories = {"sharp", "fragile", "reflective"},
 
+    provides_tool = {"cutting_edge", "injury_source"},
+
+    on_cut = {
+        damage = 3,
+        injury_type = "minor-cut",
+        description = "You press the glass edge against your %s. The shard bites into skin.",
+        pain_description = "A clean, sharp sting.",
+        self_damage = true,
+    },
+
     on_look = function(self)
         return self.description
     end,

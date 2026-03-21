@@ -587,3 +587,14 @@ Flagged materials NOT in `src/engine/materials/init.lua`:
 - Replaced older prototype `poisoned-nightshade.lua` (had no GUID, no transitions table, no worsened state, used non-canonical `symptom` and `auto_heal_turns` fields) with full canonical format
 - Key design decisions: used "neutralized" state name for nightshade (matches Bob's design, distinct from physical "treated"); burn blistered-path timer is set by inflicting object override; bruised healing_interactions is empty because rest is a verb, not an item
 - All 5 files validated: Lua syntax clean, return tables with guid/id/states/transitions confirmed
+
+### Bandage FSM Rewrite & Injury Targeting Architecture (2026-07-25)
+- **Rewrote `src/meta/objects/bandage.lua`** — Full FSM treatment object replacing the old static placeholder. New GUID `{5869a474-8d70-4efb-85d3-108e46325907}`. Three states: clean (default, ready to apply), applied (bound to injury via `applied_to` field), soiled (after removal, washable). Transitions: clean→applied via APPLY/use/wrap/bind, applied→soiled via REMOVE/unwrap, soiled→clean via WASH (requires water_source tool). Properties: `reusable = true`, `cures = {"bleeding", "minor-cut"}`, `healing_boost = 2` (timer multiplier), `applied_to = nil` (instance field tracking injury attachment). NOT consumable — this is the key distinction from salve per Wayne's Directive 4.
+- **Created `docs/architecture/player/injury-targeting.md`** — Full architecture spec for Bart covering four systems:
+  1. **Targeting resolution** — `injury_targeting.resolve(player, target_str, cures_list)` with 5-priority matcher chain: instance ID → display name → body location → injury type → ordinal index. Auto-targets when only one treatable injury exists.
+  2. **Dual binding** — `injury_treatment.apply()` sets both `bandage.applied_to = injury.id` AND `injury.treatment = { type, item_id, healing_boost }`. Both sides reference each other. Engine traverses either direction.
+  3. **Removal** — `injury_treatment.remove()` clears both references, transitions bandage to soiled, resumes injury's state-defined damage_per_tick. Drop blocked for applied items.
+  4. **Accumulation math** — `health = max_health - sum(injury.damage)`. `total_drain = sum(damage_per_tick for untreated injuries)`. Worked examples: two bleedings at 5/turn = 10/turn total; bandaged wound freezes drain to 0; healing_boost = 2 halves heal time.
+- Includes complete function signatures, implementation pseudocode, disambiguation format, data flow diagram, and verb handler integration checklist — all written for Bart to implement directly.
+- Decision doc written to `.squad/decisions/inbox/flanders-bandage-arch.md` with 7 decisions (D-BANDAGE001–D-BANDAGE003, D-TARGET001–D-TARGET006)
+- Lua syntax validated: bandage.lua passes `dofile()` clean
