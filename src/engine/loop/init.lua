@@ -143,7 +143,7 @@ function loop.run(context)
         look = true, feel = true, smell = true, listen = true, taste = true,
         inventory = true, i = true, help = true, time = true, quit = true,
         sleep = true, rest = true, nap = true, wait = true, score = true,
-        report_bug = true,
+        report_bug = true, injuries = true, injury = true, wounds = true, health = true,
         -- Direction verbs should never inherit a context noun
         north = true, south = true, east = true, west = true,
         up = true, down = true, n = true, s = true, e = true, w = true,
@@ -324,6 +324,25 @@ function loop.run(context)
     -- Post-command tick (flame countdown, candle burn, etc.)
     if context.on_tick then
       context.on_tick(context)
+    end
+
+    -- Injury tick: advance injury FSMs, accumulate damage, check death
+    if context.player and context.player.injuries and #context.player.injuries > 0 then
+      local inj_ok, injury_mod = pcall(require, "engine.injuries")
+      if inj_ok and injury_mod then
+        local msgs, died = injury_mod.tick(context.player)
+        for _, msg in ipairs(msgs) do
+          print("")
+          print(msg)
+        end
+        if died then
+          print("")
+          print("Your injuries have overwhelmed you.")
+          print("")
+          print("YOU HAVE DIED.")
+          context.game_over = true
+        end
+      end
     end
 
     -- Game over check (death by poison, etc.)

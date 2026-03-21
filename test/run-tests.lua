@@ -23,6 +23,7 @@ print("========================================")
 local test_dirs = {
     repo_root .. SEP .. "test" .. SEP .. "parser",
     repo_root .. SEP .. "test" .. SEP .. "inventory",
+    repo_root .. SEP .. "test" .. SEP .. "injuries",
 }
 
 local is_windows = SEP == "\\"

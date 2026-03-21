@@ -557,3 +557,61 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 **Test Results:** 126/126 pass (60 inventory + 35 parser + 4 context + 15 on-traverse + 12 search-order)
 
 **Architectural Decision:** D-INV007 - Hands store object instances (tables), not string IDs
+
+### Session: Injury Engine — Pass 2 (2026-07-25)
+**Status:** ✅ COMPLETE
+**Requested by:** Wayne Berry
+**Outcome:** Full injury engine with derived health, per-turn ticking, auto-healing, death detection, and end-to-end poison bottle wiring.
+
+**Deliverables:**
+
+1. **`src/engine/injuries.lua`** — Core injury engine module (~230 lines)
+   - `compute_health(player)` — Derived health: `max_health - sum(injury.damage)`
+   - `inflict(player, injury_type, source)` — Creates injury instance from meta definition, prints symptom
+   - `tick(player)` — Per-turn processing: damage accumulation, degenerative scaling, auto-healing, death check
+   - `try_heal(player, healing_object, verb)` — Healing via exact injury type matching + FSM transition
+   - `list(player)` — Injury verb output with symptom text and treatment hints
+   - `find_by_type(player, type)` — Lookup by exact injury type
+   - `register_definition()` / `clear_cache()` — Test injection support
+
+2. **`src/meta/injuries/poisoned-nightshade.lua`** — First injury FSM definition
+   - Over-time toxin: 15 initial + 8/tick damage
+   - States: active → treated → healed (+ fatal terminal)
+   - Healing interaction: antidote-nightshade transitions active → treated
+   - Auto-heal after 3 turns in treated state
+
+3. **Player state wired** (`src/main.lua`)
+   - Added `player.max_health = 100` and `player.injuries = {}`
+   - Health is derived, never stored
+
+4. **Game loop wired** (`src/engine/loop/init.lua`)
+   - Injury tick fires after on_tick phase each command
+   - Death check: if `compute_health() <= 0` → game over
+   - `injuries`/`injury`/`wounds`/`health` added to no_noun_verbs
+
+5. **Verbs wired** (`src/engine/verbs/init.lua`)
+   - `injuries` verb: lists active injuries with symptom text + derived health display
+   - Aliases: `injury`, `wounds`, `health`
+   - `apply` verb: "apply X to Y" or "apply X" — finds healing item, matches cures field, heals
+   - Alias: `treat`
+   - `drink` (poison bottle): now inflicts `poisoned-nightshade` through injury system instead of instant death
+   - Help text updated with injury/apply verbs
+
+6. **Test suite** (`test/injuries/test-injury-engine.lua`) — 49 assertions
+   - compute_health: 4 tests (full, reduced, additive, clamped)
+   - inflict: 10 tests (creation, type, damage, source, state, message)
+   - tick: 9 tests (accumulation, multi-tick, stacking/double drain)
+   - auto-healing: 5 tests (bruise heals after N turns)
+   - death detection: 3 tests (lethal tick, non-lethal)
+   - try_heal: 6 tests (success, transition, wrong cure)
+   - treated auto-heal: 5 tests (treated → removed after timer)
+   - list: 4 tests (no injuries, header, name, hint)
+   - safe with no injuries: 2 tests
+   - Test runner updated to scan `test/injuries/` directory
+
+**Test Results:** 175/175 pass (49 injury + 60 inventory + 35 parser + 4 context + 15 on-traverse + 12 search-order)
+
+**Architectural Decisions:**
+- D-INJURY010: Injury engine is a standalone module (`engine/injuries.lua`), not embedded in verbs or loop
+- D-INJURY011: Injury definitions loaded via `require("meta.injuries." .. type)` with test injection via register_definition()
+- D-INJURY012: Poison bottle drink handler wires through injury system (inflict_injury) instead of legacy instant death

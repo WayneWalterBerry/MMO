@@ -3990,13 +3990,30 @@ function verbs.create()
                 if trans then
                     print(trans.message or ("You drink from " .. (obj.name or obj.id) .. "."))
                     if trans.effect == "poison" then
-                        ctx.player.state.poisoned = true
-                        print("")
-                        print("Your body crumples to the cold stone floor. The poison works swiftly --")
-                        print("a spreading numbness, a ringing silence, and then... nothing.")
-                        print("")
-                        print("YOU HAVE DIED.")
-                        ctx.game_over = true
+                        -- Wire through injury system: inflict nightshade poisoning
+                        local inj_ok, injury_mod = pcall(require, "engine.injuries")
+                        if inj_ok then
+                            injury_mod.inflict(ctx.player, "poisoned-nightshade", obj.id)
+                            -- Check if instantly lethal
+                            local health = injury_mod.compute_health(ctx.player)
+                            if health <= 0 then
+                                print("")
+                                print("Your body crumples to the cold stone floor. The poison works swiftly --")
+                                print("a spreading numbness, a ringing silence, and then... nothing.")
+                                print("")
+                                print("YOU HAVE DIED.")
+                                ctx.game_over = true
+                            end
+                        else
+                            -- Fallback if injury module unavailable
+                            ctx.player.state.poisoned = true
+                            print("")
+                            print("Your body crumples to the cold stone floor. The poison works swiftly --")
+                            print("a spreading numbness, a ringing silence, and then... nothing.")
+                            print("")
+                            print("YOU HAVE DIED.")
+                            ctx.game_over = true
+                        end
                     end
                 else
                     print("You can't drink from " .. (obj.name or "that") .. ".")
@@ -4708,6 +4725,8 @@ function verbs.create()
         print("  descend / ascend  - go down / go up")
         print("  climb up/down     - climb stairs or ladders")
         print("  inventory (i)     - see what you're carrying / wearing")
+        print("  injuries          - check your injuries and health")
+        print("  apply <item>      - apply a healing item to an injury")
         print("  time              - check the time of day")
         print("  sleep             - sleep for 1 hour (or: sleep for 2 hours, sleep until dawn)")
         print("  rest / nap        - same as 'sleep'")
@@ -4715,6 +4734,104 @@ function verbs.create()
         print("  report bug        - report a bug (opens GitHub issue)")
         print("  quit              - leave the game")
     end
+
+    ---------------------------------------------------------------------------
+    -- INJURIES -- examine active injuries and derived health
+    ---------------------------------------------------------------------------
+    handlers["injuries"] = function(ctx, noun)
+        local inj_ok, injury_mod = pcall(require, "engine.injuries")
+        if not inj_ok then
+            print("You feel fine.")
+            return
+        end
+
+        injury_mod.list(ctx.player)
+
+        -- Show derived health
+        local health = injury_mod.compute_health(ctx.player)
+        local max = ctx.player.max_health or 100
+        if ctx.player.injuries and #ctx.player.injuries > 0 then
+            print("")
+            print("Health: " .. health .. "/" .. max)
+        end
+    end
+    handlers["injury"] = handlers["injuries"]
+    handlers["wounds"] = handlers["injuries"]
+    handlers["health"] = handlers["injuries"]
+
+    ---------------------------------------------------------------------------
+    -- APPLY -- apply a healing item to an injury ("apply bandage", "apply bandage to wound")
+    ---------------------------------------------------------------------------
+    handlers["apply"] = function(ctx, noun)
+        if noun == "" then
+            print("Apply what?")
+            return
+        end
+
+        local inj_ok, injury_mod = pcall(require, "engine.injuries")
+        if not inj_ok then
+            print("You can't do that right now.")
+            return
+        end
+
+        if not ctx.player.injuries or #ctx.player.injuries == 0 then
+            print("You don't have any injuries to treat.")
+            return
+        end
+
+        -- Parse "apply X to Y" or just "apply X"
+        local item_kw = noun
+        local _target_kw = nil
+        local to_match = noun:match("^(.-)%s+to%s+(.+)$")
+        if to_match then
+            item_kw = noun:match("^(.-)%s+to%s+")
+            _target_kw = noun:match("%s+to%s+(.+)$")
+        end
+
+        -- Strip articles
+        item_kw = item_kw:lower():gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+
+        -- Find healing item in inventory (hands, worn, etc.)
+        local obj = find_in_inventory(ctx, item_kw)
+        if not obj then
+            print("You don't have " .. item_kw .. ".")
+            return
+        end
+
+        -- Check for healing capability: look for on_use.cures or on_apply.cures or on_drink.cures
+        local healing_effect = nil
+        local healing_verb = nil
+        for _, v in ipairs({"apply", "use", "drink"}) do
+            local eff = obj["on_" .. v]
+            if eff and eff.cures then
+                healing_effect = eff
+                healing_verb = v
+                break
+            end
+        end
+
+        if not healing_effect then
+            print("You can't use " .. (obj.name or item_kw) .. " to treat injuries.")
+            return
+        end
+
+        -- Attempt healing
+        local healed = injury_mod.try_heal(ctx.player, obj, healing_verb)
+        if healed and healing_effect.consumable then
+            -- Consume the item from hands
+            for i = 1, 2 do
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local hand_id = type(hand) == "table" and hand.id or hand
+                    if hand_id == obj.id then
+                        ctx.player.hands[i] = nil
+                        break
+                    end
+                end
+            end
+        end
+    end
+    handlers["treat"] = handlers["apply"]
 
     return handlers
 end
