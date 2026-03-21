@@ -58,7 +58,7 @@ if (Test-Path $objectDir) {
     $objectFiles = Get-ChildItem -Path $objectDir -File -Filter "*.lua" | Sort-Object Name
     foreach ($file in $objectFiles) {
         $content = Get-Content $file.FullName -Raw
-        if ($content -match 'guid\s*=\s*"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"') {
+        if ($content -match 'guid\s*=\s*"\{?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\}?"') {
             $guid = $Matches[1]
             $dest = Join-Path $MetaOut "objects\$guid.lua"
             Copy-Item $file.FullName $dest
