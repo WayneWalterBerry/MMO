@@ -15,6 +15,50 @@
 
 ## Learnings
 
+### Session 2026-07-22: Three-Layer Web Delivery Architecture
+
+**Task:** Replace monolithic 16MB game-bundle.js with a three-layer architecture: bootstrapper.js → engine.lua.gz → JIT-loaded meta files.
+
+**Changes:**
+- `web/build-engine.ps1`: Bundles 17 engine files + stripped embedding-index.json into engine.lua (633KB raw), gzip-compressed to engine.lua.gz (85KB). Uses `package.preload["module.name"]` wrapper pattern. Asset files embedded in `_G.__VFS`.
+- `web/build-meta.ps1`: Copies 58 meta files to web/dist/meta/ tree. Objects renamed by GUID (extracted via regex). Rooms mapped from `src/meta/world/` → `meta/rooms/`. 33 objects skipped (non-hex GUIDs — placeholder objects for future rooms).
+- `web/bootstrapper.js` (7KB): Layer 1 — fetches engine.lua.gz via fetch(), decompresses using DecompressionStream API (fflate fallback), loads into Fengari shared state via luaL_loadbuffer. Also handles terminal UI (appendOutput, command history, input handler). Shows progressive status messages during async fetch/decompress.
+- `web/game-adapter.lua`: Rewritten for three-layer architecture. VFS backed by `_G.__VFS` (engine bundle assets) instead of `window.GAME_FILES`. Templates fetched at boot via synchronous XHR (5 files). JIT loader: rooms and objects fetched on demand — metatable on `rooms` table triggers transparent loading when engine accesses `rooms[room_id]`. Each room load fetches the room file, discovers object GUIDs from instances, fetches missing objects, resolves templates, registers instances, wires containment.
+- `web/index.html`: Stripped to minimal — loads Fengari CDN + bootstrapper.js only. Removed game-bundle.js, inline terminal UI code, and `<script type="application/lua">` tag. Initial "Loading Bootstrapper..." message in inline script.
+- `web/deploy.ps1`: Builds, copies to GitHub Pages repo, git add/commit/push.
+
+**Results:**
+- Initial download: ~135KB (engine.lua.gz 85KB + templates ~3KB + level 3.5KB + starting room + objects ~50KB) vs. old 16MB
+- 63 files in web/dist/ (45 objects, 7 rooms, 5 templates, 1 level, plus engine/adapter/bootstrapper/index)
+- CLI mode (`lua src/main.lua --no-ui`) unchanged and verified working
+- Deployed to GitHub Pages at WayneWalterBerry.github.io/play/
+
+**Key Design Decisions:**
+1. Synchronous XHR for meta file fetches from Lua — simplest approach for V1. Deprecated but universally supported for same-origin. Small files (<15KB) complete in <50ms.
+2. Metatable-based JIT loading on `rooms` table — transparent to engine code. When `rooms[target]` is accessed and not cached, metatable `__index` triggers full room bundle load (room + objects + containment wiring).
+3. `package.preload` for engine modules — engine.lua bundle wraps each source file in `package.preload["engine.module"]`. Require() resolves from preload before searchers, so engine modules load without VFS.
+4. `_G.__VFS` for asset files — embedding-index.json (stripped to 343KB) embedded in engine bundle as a Lua long string. io.open override checks __VFS.
+5. fengari.L (shared state) used when available, fallback creates new state with `luaL_requiref` for js module.
+
+**Limitations:**
+- 33 object files skipped in build-meta (non-hex GUIDs like `c4kv094h-...`). These are placeholder objects for rooms beyond Level 1. When GUIDs are assigned, build-meta will pick them up automatically.
+- Synchronous XHR blocks main thread during room transitions. Status messages don't render mid-fetch. Acceptable for V1 — files are small.
+- Template file list hardcoded in adapter (5 files). Adding a template requires updating the adapter. A manifest file would be better for V2.
+
+---
+
+### Session 2026-07-21: Loading Status Messages (Boot Log)
+
+**Task:** Add light gray status messages to the web game during initialization.
+
+**Changes:**
+- `web/index.html`: Added `logStatus()` function that appends `<div class="output-line status-line">` elements (styled `color: #888`). Removed old pulsing `#loading` div. Split script loading into stages with inline logStatus calls between each `<script>` tag: "Loading Bootstrapper...", "Loading Game Engine...", "Initializing Fengari...". Exposed `window._logStatus` for Lua-side calls.
+- `web/game-adapter.lua`: Added `log_status()` Lua helper calling `window:_logStatus()`. Inserted calls at key boot phases: "Loading Level 1...", "Loading Objects...", "Loading Room: Bedroom...", "Starting Game...", "Ready.". Removed all `loading_el` references (element no longer exists).
+
+**Result:** 8 sequential status lines appear in the terminal as a boot log, visible even after game loads. Deployed to GitHub Pages via `WayneWalterBerry.github.io/play/`.
+
+---
+
 ### Session 2026-03-25: Web Loading Fix + BUG-049 "pry" Verb
 
 **Task:** Debug web game hanging at "Loading Game Engine" + add "pry" verb.
