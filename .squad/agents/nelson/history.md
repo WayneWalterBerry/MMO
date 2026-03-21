@@ -342,3 +342,62 @@
 - `put` verb requires item to be in player's **hands** specifically (not bag/worn) — if you want to move something from a bag to a container, you must first `take` it from the bag.
 - `drop` only works on items directly in hands — items in bags get a helpful "get it out of the bag first" message rather than auto-extracting.
 - Test runner updated to discover tests from multiple subdirectories (parser + inventory), not just parser.
+## Learnings
+
+### Pass 019: BUG-063 Fix Verification (2026-03-21)
+
+**Status:** PARTIAL — Found critical blocker
+
+**BUG-063 FIXED:**
+- GUID normalization now works correctly
+- \eel around\ properly discovers nightstand in the bedroom
+- Critical path Step 1 (discover nightstand) works as intended
+- The fix is solid and complete
+
+**NEW BUG-064 DISCOVERED (CRITICAL):**
+- **Severity**: CRITICAL — Blocks critical path progression
+- **Commands**: \search drawer\, \xamine drawer\, \eel drawer\
+- **Problem**: Container search only describes surface, doesn't reveal contents
+- **Expected**: Should list "a small matchbox" inside drawer
+- **Actual**: Only tactile description of drawer wood/handle
+- **Impact**: Real players cannot discover matchbox without meta-knowledge
+- **Workaround**: Direct \get matchbox\ still works (object exists, just hidden)
+
+**What Passed:**
+- ✅ Nightstand appears in \eel around\ output (BUG-063)
+- ✅ \open nightstand\ works
+- ✅ \get matchbox\ (direct) works
+- ✅ \open matchbox\ reveals matches
+- ✅ \get match\ decrements match count (7→6)
+- ✅ \light match\ works with beautiful atmospheric prose
+- ✅ Match burns out over time with vivid description
+
+**Quality Notes:**
+- Match lighting prose is excellent: "sputters once, twice -- then catches with a sharp hiss and a curl of sulphur smoke"
+- Match burnout: "The match flame reaches your fingers and dies. You drop the blackened stub."
+- Writing quality remains consistently high
+
+**Pattern Observed:**
+- Container search is a separate issue from container opening
+- Opening works (drawer opens)
+- Search/examine/feel don't enumerate contents
+- This is distinct from the surface placement issue (BUG-061) which was about .inside suffix
+- Likely issue with dark-mode container inspection logic
+
+**Recommendation:**
+BUG-064 must be fixed before Pass 020. This is a showstopper. The critical path is:
+1. feel around → discover nightstand ✅
+2. open nightstand → drawer opens ✅
+3. search/examine drawer → discover matchbox 🔴 BROKEN
+4. get matchbox, light match, etc.
+
+Without step 3, no player will progress.
+
+**Tests Not Completed (due to BUG-064):**
+- Injury system (stabbing, targeting, damage)
+- Bandage system
+- Poison system
+- Puzzle 015/016 retests
+- Parser variations
+- Edge cases
+

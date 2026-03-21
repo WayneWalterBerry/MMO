@@ -1,6 +1,6 @@
 -- bronze-ring.lua — Burial treasure (Crypt, Sarcophagus 2)
 return {
-    guid = "d4f18a63-9e27-4c85-b790-3a6e2f8d1c04",
+    guid = "{d4f18a63-9e27-4c85-b790-3a6e2f8d1c04}",
     template = "small-item",
 
     id = "bronze-ring",

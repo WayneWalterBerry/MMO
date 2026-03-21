@@ -1,5 +1,5 @@
 return {
-    guid = "a7f1c3d9-6e24-4b8a-9f52-1d3e7a8b4c60",
+    guid = "{a7f1c3d9-6e24-4b8a-9f52-1d3e7a8b4c60}",
     template = "small-item",
 
     id = "matchbox-open",

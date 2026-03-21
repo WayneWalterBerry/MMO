@@ -1,5 +1,5 @@
 return {
-    guid = "a8a4bbae-0a64-43c5-a06b-1165fb780a87",
+    guid = "{a8a4bbae-0a64-43c5-a06b-1165fb780a87}",
     template = "sheet",
     id = "rag",
     name = "a dirty rag",

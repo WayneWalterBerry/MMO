@@ -1,7 +1,7 @@
 -- grain-sack.lua — Nested container (Puzzle 009: hides iron-key)
 -- States: tied → untied (by hand) OR tied → cut-open (with knife)
 return {
-    guid = "d9e5f3c4-6071-4a12-cd34-ef1056789012",
+    guid = "{d9e5f3c4-6071-4a12-cd34-ef1056789012}",
     template = "container",
 
     id = "grain-sack",

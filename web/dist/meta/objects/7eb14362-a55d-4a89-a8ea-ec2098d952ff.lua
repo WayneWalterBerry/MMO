@@ -1,5 +1,5 @@
 return {
-    guid = "7eb14362-a55d-4a89-a8ea-ec2098d952ff",
+    guid = "{7eb14362-a55d-4a89-a8ea-ec2098d952ff}",
     template = "sheet",
     id = "blanket",
     name = "a heavy wool blanket",

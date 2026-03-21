@@ -1,5 +1,5 @@
 return {
-    guid = "d9f4a2b3-c5e8-4167-9d34-e8b2c7d6f513",
+    guid = "{d9f4a2b3-c5e8-4167-9d34-e8b2c7d6f513}",
     template = "furniture",
     id = "torch-bracket",
     name = "an iron torch bracket",

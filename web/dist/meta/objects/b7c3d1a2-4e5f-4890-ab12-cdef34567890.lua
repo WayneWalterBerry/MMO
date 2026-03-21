@@ -1,7 +1,7 @@
 -- large-crate.lua — FSM-managed container (Puzzle 009: Crate Puzzle)
 -- States: sealed → pried-open → broken (terminal)
 return {
-    guid = "b7c3d1a2-4e5f-4890-ab12-cdef34567890",
+    guid = "{b7c3d1a2-4e5f-4890-ab12-cdef34567890}",
     template = "furniture",
 
     id = "large-crate",

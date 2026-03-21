@@ -1,5 +1,5 @@
 return {
-    guid = "3f8a1c9d-7e52-4b6f-a831-9d4e6f2c8b71",
+    guid = "{3f8a1c9d-7e52-4b6f-a831-9d4e6f2c8b71}",
     template = "small-item",
 
     id = "sewing-manual",

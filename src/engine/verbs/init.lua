@@ -1203,6 +1203,36 @@ function verbs.create()
             else
                 print(obj.description or "You see nothing special.")
             end
+
+            -- BUG-064: Enumerate accessible surface contents visually (if no on_look)
+            if not obj.on_look and obj.surfaces then
+                for zone_name, zone in pairs(obj.surfaces) do
+                    if zone.accessible ~= false and #(zone.contents or {}) > 0 then
+                        local items = {}
+                        for _, id in ipairs(zone.contents) do
+                            local item = ctx.registry:get(id)
+                            items[#items + 1] = item and item.name or id
+                        end
+                        print("You see " .. zone_name .. ":")
+                        for _, item_name in ipairs(items) do
+                            print("  " .. item_name)
+                        end
+                    end
+                end
+            end
+
+            -- BUG-064: Enumerate simple container contents visually (if no on_look)
+            if not obj.on_look and obj.container and obj.contents and #obj.contents > 0 then
+                local items = {}
+                for _, id in ipairs(obj.contents) do
+                    local item = ctx.registry:get(id)
+                    items[#items + 1] = item and item.name or id
+                end
+                print("Inside you see:")
+                for _, item_name in ipairs(items) do
+                    print("  " .. item_name)
+                end
+            end
             return
         end
 
@@ -1303,6 +1333,36 @@ function verbs.create()
         else
             print(obj.description or "You see nothing special.")
         end
+
+        -- BUG-064: Enumerate accessible surface contents visually (if no on_look)
+        if not obj.on_look and obj.surfaces then
+            for zone_name, zone in pairs(obj.surfaces) do
+                if zone.accessible ~= false and #(zone.contents or {}) > 0 then
+                    local items = {}
+                    for _, id in ipairs(zone.contents) do
+                        local item = ctx.registry:get(id)
+                        items[#items + 1] = item and item.name or id
+                    end
+                    print("You see " .. zone_name .. ":")
+                    for _, item_name in ipairs(items) do
+                        print("  " .. item_name)
+                    end
+                end
+            end
+        end
+
+        -- BUG-064: Enumerate simple container contents visually (if no on_look)
+        if not obj.on_look and obj.container and obj.contents and #obj.contents > 0 then
+            local items = {}
+            for _, id in ipairs(obj.contents) do
+                local item = ctx.registry:get(id)
+                items[#items + 1] = item and item.name or id
+            end
+            print("Inside you see:")
+            for _, item_name in ipairs(items) do
+                print("  " .. item_name)
+            end
+        end
     end
 
     handlers["examine"] = function(ctx, noun)
@@ -1349,6 +1409,36 @@ function verbs.create()
                 print("It's too dark to see, but you feel: " .. obj.touch_description)
             else
                 print("It's too dark to see, and you can't make out much by touch.")
+            end
+
+            -- BUG-064: Enumerate accessible surface contents by touch
+            if obj.surfaces then
+                for zone_name, zone in pairs(obj.surfaces) do
+                    if zone.accessible ~= false and #(zone.contents or {}) > 0 then
+                        local items = {}
+                        for _, id in ipairs(zone.contents) do
+                            local item = ctx.registry:get(id)
+                            items[#items + 1] = item and item.name or id
+                        end
+                        print("Your fingers find " .. zone_name .. ":")
+                        for _, item_name in ipairs(items) do
+                            print("  " .. item_name)
+                        end
+                    end
+                end
+            end
+
+            -- BUG-064: Enumerate simple container contents by touch
+            if obj.container and obj.contents and #obj.contents > 0 then
+                local items = {}
+                for _, id in ipairs(obj.contents) do
+                    local item = ctx.registry:get(id)
+                    items[#items + 1] = item and item.name or id
+                end
+                print("Inside you feel:")
+                for _, item_name in ipairs(items) do
+                    print("  " .. item_name)
+                end
             end
         end
     end
