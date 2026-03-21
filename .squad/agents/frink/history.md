@@ -104,6 +104,49 @@
 - DF raws are pure declarative data (no logic); our embedded Lua callbacks are more flexible — don't sacrifice this for "purity"
 - Threshold-based auto-transitions (guard functions checking numeric properties) bridge DF-style emergence into our FSM framework
 - Tarn Adams's key principle: "Don't overplan your model" — start simple, iterate, let emergence surprise you
+- Material properties fit WITHIN Principle 8 — the engine needs mechanical extensions (material registry + threshold tick) but no new principles
+- BotW's "chemistry engine" achieved massive emergence with only 3 rules about element-material interactions — simplicity > complexity
+- Noita proves that simple per-material numeric properties (density, flammability, conductivity) produce breathtaking emergent interactions
+- Caves of Qud's liquid/gas property system creates emergent narratives from material property matching — acid corrodes, fire burns, water rusts
+- 10-11 material properties are sufficient for a text IF game; DF's 20+ are overkill for our medium
+- Fire propagation is the highest-impact first implementation — touches flammability, ignition_point, material consistency, and threshold auto-transitions
+- "Material Consistency" as a design principle prevents special-casing and creates a teachable world — if wax melts, ALL wax melts
+- Per-tick threshold checking (not event-driven) is correct for our room-scoped, turn-based model — O(n×t) where n≈5-20 objects, t≈0-3 thresholds
+- Cross-domain concerns (architecture + design) need dual documents — same research, different audiences, different emphasis
+
+## Material Properties System Research (2026-07-19)
+
+**Status:** ✅ COMPLETE  
+**Architecture Doc:** `docs/architecture/engine/material-properties.md` (~27KB, 15 citations)  
+**Design Doc:** `docs/design/material-properties-system.md` (~25KB, 16 citations)  
+**Recommendations:** `.squad/decisions/inbox/frink-material-properties.md`
+
+### Research Scope
+Cross-domain research on numeric material properties and threshold-based auto-transitions, covering:
+- DF raw file material property system (template inheritance, 20+ numeric properties)
+- BotW chemistry engine (3 rules, enormous emergence)
+- Noita pixel-level material simulation (cellular automata, property-driven interactions)
+- Caves of Qud material/liquid/gas interaction system
+- Academic frameworks (EB-DEVS, Machinations)
+- Engine architecture changes needed (material registry, threshold tick extension)
+- Relationship to Principle 8 and mutate field
+- Design implications (13 material definitions, 6 emergent behavior scenarios)
+
+### Key Findings
+1. **Material properties fit within Principle 8** — needs mechanical extensions but no new principles
+2. **10-11 properties sufficient** — density, melting_point, ignition_point, hardness, flexibility, absorbency, opacity, flammability, conductivity, fragility, value
+3. **Fire propagation is highest-impact first implementation** — exercises the entire material system
+4. **Per-tick threshold checking is correct** for our room-scoped turn-based model
+5. **"Material Consistency" principle proposed** — all objects of same material behave identically
+
+### Recommendations Filed
+- R-MAT-1: Material Registry (HIGH)
+- R-MAT-2: Threshold Checking in FSM Tick (HIGH)
+- R-MAT-3: Material Consistency Design Principle (MEDIUM)
+- R-MAT-4: Fire Propagation as First Implementation (HIGH)
+- R-MAT-5: Fits Within Principle 8 (INFORMATIONAL)
+
+---
 
 ## Dwarf Fortress Architecture Deep Dive (2026-07-19)
 

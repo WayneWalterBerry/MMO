@@ -1,5 +1,15 @@
 # Puzzle 003: Write in Blood
 
+**Status:** 🟡 Wanted  
+**Difficulty:** ⭐⭐⭐ Level 3 (Intermediate)  
+**Zarfian Cruelty:** Polite (multi-path, consequences but not fatal)  
+**Classification:** 🟡 Wanted  
+**Pattern Type:** Multi-Solution + Tool Chains + Choice Consequences  
+**Author:** Sideshow Bob  
+**Last Updated:** 2026-03-21
+
+---
+
 ## Overview
 
 The player has a sheet of paper but needs a writing instrument. Two paths exist: find a pen or pencil (simple), or draw blood from themselves using a knife or pin and use that blood to write (dark and consequential). This puzzle teaches that multiple tools can solve the same problem and that sometimes players must pay a price (injury) to get what they want.

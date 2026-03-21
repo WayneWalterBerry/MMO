@@ -1,10 +1,12 @@
 # Puzzle 001: Light the Room
 
 **Status:** 🟢 In Game  
-**Difficulty:** ⭐⭐ Level 2  
-**Cruelty Rating:** Polite (soft failure with recovery path)  
+**Difficulty:** ⭐⭐ Level 2 (Introductory)  
+**Zarfian Cruelty:** Polite (soft failure with recovery path)  
+**Classification:** 🟢 In Game  
+**Pattern Type:** Discovery + Sensory + Compound Tools  
 **Author:** Sideshow Bob  
-**Last Updated:** 2026-03-20
+**Last Updated:** 2026-03-21
 
 ---
 

@@ -1,4 +1,14 @@
-# Puzzle 01: The Bedroom Escape
+# Puzzle 005: The Bedroom Escape
+
+**Status:** 🟢 In Game (Core Complete)  
+**Difficulty:** ⭐⭐⭐ Level 3 (Intermediate / Meta-Puzzle)  
+**Zarfian Cruelty:** Polite (spatial puzzle, no instant traps, soft resource management)  
+**Classification:** 🟢 In Game  
+**Pattern Type:** Spatial Discovery + Meta-Puzzle (Combines 001-004 + Trap Door)  
+**Author:** Sideshow Bob  
+**Last Updated:** 2026-03-21
+
+---
 
 ## Overview
 

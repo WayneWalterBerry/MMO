@@ -1,5 +1,15 @@
 # Puzzle 002: Poison Bottle
 
+**Status:** 🟡 Wanted  
+**Difficulty:** ⭐⭐ Level 2 (Introductory)  
+**Zarfian Cruelty:** Harsh (instant death trap)  
+**Classification:** 🟡 Wanted  
+**Pattern Type:** Trap + Sensory Rewards (Safe Investigation)  
+**Author:** Sideshow Bob  
+**Last Updated:** 2026-03-21
+
+---
+
 ## Overview
 
 A bottle of poison sits on the nightstand in the bedroom. In darkness, the player cannot read the skull-and-crossbones label. The puzzle teaches sensory interaction and the consequences of blindly tasting unknown substances. It's a trap puzzle: the player learns what NOT to do.

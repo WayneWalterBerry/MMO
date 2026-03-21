@@ -1,5 +1,15 @@
 # Puzzle 004: Inventory Management
 
+**Status:** 🟡 Wanted  
+**Difficulty:** ⭐ Level 1 (Trivial / System Teaching)  
+**Zarfian Cruelty:** Polite (soft constraint, learnable via failure)  
+**Classification:** 🟡 Wanted  
+**Pattern Type:** System Constraint + Resource Management  
+**Author:** Sideshow Bob  
+**Last Updated:** 2026-03-21
+
+---
+
 ## Overview
 
 The player has two hands. Certain actions (like striking a match) require both hands to be free. If the player is carrying too much, they cannot perform compound tool actions. This puzzle teaches that inventory is physical and strategic, not a magical bag. Early in the game, a sack or bag found in the bedroom becomes crucial: it frees up hand slots by providing a container to carry multiple items without juggling them.
