@@ -630,3 +630,70 @@ Revised all four docs in `docs/design/player/` to incorporate Wayne's directives
 4. **Death hints include treatment** — cause-of-death text tells the player what SPECIFIC cure might have saved them
 5. **Viper venom + nightshade = the matching puzzle exemplars** — two specific poisons that generic antidote cannot cure, demonstrating the core mechanic
 6. **Nested container pressure** — the right cure exists but is behind container layers, adding urgency
+
+---
+
+## Session: Level 1 Injury Design Docs (2026-07-25)
+
+### Work Completed
+
+Designed the first 5 Level 1 injury types as individual design documents in `docs/design/injuries/`. Each doc follows the template from the injuries README and is consistent with the injury catalog (`docs/design/player/injury-catalog.md`).
+
+#### Injury Docs Created
+
+| File | Injury | Category | Severity | Treatment | Key Puzzle Use |
+|------|--------|----------|----------|-----------|----------------|
+| `minor-cut.md` | Minor Cut | One-Time | Low | Cloth bandage (optional — self-heals in 5 turns) | "Prepare your tools" — wrap glass before handling |
+| `bleeding.md` | Bleeding | Over-Time (DoT) | Medium | Cloth bandage (stops drain); heals naturally over 10 turns | Ticking clock — every command matters |
+| `poisoned-nightshade.md` | Nightshade Poisoning | Over-Time (rapid, lethal) | High | Nightshade antidote ("Contra Belladonna") ONLY | Treatment-matching exemplar; "don't drink random things" |
+| `burn.md` | Burn | One-Time | Low-Medium | Cold water or cool damp cloth | "Use the tool, not the source" — grab the holder, not the flame |
+| `bruised.md` | Bruised | One-Time | Low | Rest (no item needed) | Risky Shortcut pattern — window jump costs bruised legs |
+
+#### Key Design Decisions
+
+1. **Each injury has a unique treatment.** No "cure-all" items. Minor cut → bandage (optional). Bleeding → bandage (required). Nightshade → specific antidote. Burn → cold water. Bruise → rest. This forces treatment discrimination.
+
+2. **Wrong-treatment feedback teaches the correct treatment.** Every doc includes a "Wrong Treatments" section where trying the wrong item gives a hint toward the right one. Example: dry cloth on burn → "if the cloth were WET and COOL, this might help."
+
+3. **FSM states are consistent across all injuries.** Pattern: `active → treated → healed` (with variants for severity). All injuries use the standard FSM from the injury catalog.
+
+4. **Nightshade antidote is a NEW OBJECT.** Specified in the poisoned-nightshade doc with full object properties for Flanders. Design decision required from Wayne/CBG: place antidote in Level 1 (making poison bottle survivable) or defer to Level 2+ (keeping instant death).
+
+5. **Severity calibration across the set.** Injuries form a severity gradient:
+   - Bruise (trivial, self-heals, no treatment needed)
+   - Minor Cut (minor, self-heals, bandage optional)
+   - Burn (moderate, needs water, intuitive treatment)
+   - Bleeding (serious, needs bandage, time pressure)
+   - Nightshade (lethal, needs specific antidote, maximum urgency)
+   This gradient teaches players to read symptoms and prioritize treatment.
+
+6. **Body-location-specific effects for bruises.** Legs bruised → can't climb. Head → degraded examine. Torso → can't carry heavy. Arms → can't lift/push. Each body part gates different capabilities.
+
+7. **Bleeding extends existing `bleed_ticks` prototype.** The bleeding doc formalizes the prototype mechanic into a full FSM with two-phase recovery (bandage → rest → healed).
+
+#### Handoffs
+
+- **Flanders:** 5 injury templates needed in `src/meta/injuries/`. Plus nightshade antidote object (`nightshade-antidote.lua`). Full specs in each doc's "Implementation Notes" section.
+- **Bart:** Injury infliction triggers need engine support — objects with `on_take_effect: "burn"` or `on_feel_effect: "cut"` must create actual injury instances.
+- **CBG:** Decision needed on nightshade antidote placement in Level 1 (see poisoned-nightshade.md §2).
+- **Nelson:** Test each injury's FSM (infliction → symptoms → treatment → healing), wrong-treatment responses, and death sequences.
+
+#### New Object Specified
+
+- **Nightshade Antidote** (`nightshade-antidote`) — Small glass vial, "Contra Belladonna" label, dark green liquid. Consumable, single-use. Full spec in `poisoned-nightshade.md` §11.
+
+### Files Created
+- `docs/design/injuries/minor-cut.md` (8.1 KB)
+- `docs/design/injuries/bleeding.md` (13.2 KB)
+- `docs/design/injuries/poisoned-nightshade.md` (17.7 KB)
+- `docs/design/injuries/burn.md` (13.8 KB)
+- `docs/design/injuries/bruised.md` (13.5 KB)
+
+### Files Modified
+- `docs/design/injuries/README.md` — Updated Examples section to list all 5 Level 1 injury docs with summaries
+
+### Learnings
+- **Treatment matching is the central puzzle.** The injury system's value isn't in the damage — it's in the cure. Each injury teaches a different treatment principle.
+- **Wrong treatments are teaching moments.** The feedback from failed treatment attempts is as important as the correct treatment itself.
+- **Severity gradient creates calibration.** Starting with bruises (trivial) and ending with nightshade (lethal) lets the player build understanding progressively.
+- **Existing Level 1 objects are the treatment sources.** Blanket/curtains → cloth → bandage. Rain barrel → water → burn treatment. Bed → rest → bruise recovery. No new items needed except the nightshade antidote.

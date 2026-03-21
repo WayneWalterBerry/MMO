@@ -48,9 +48,16 @@ Each injury design document should include:
 ## Examples
 
 See individual injury design documents in this folder:
-- `bleeding.md`
-- `poisoned-nightshade.md`
-- `fractured-arm.md`
+
+### Level 1 Injuries (Designed)
+- `minor-cut.md` — One-time, low severity. From glass/sharp edges. Treated with cloth bandage. Self-heals.
+- `bleeding.md` — Over-time (DoT). From deep wounds. Treated with cloth bandage (stops drain). Heals naturally once bandaged.
+- `poisoned-nightshade.md` — Rapid over-time, lethal. From poison bottle. Requires specific nightshade antidote.
+- `burn.md` — One-time. From flame/hot objects. Treated with cold water or cool cloth.
+- `bruised.md` — One-time, minor. From falls/impacts. Heals naturally with rest. No treatment item needed.
+
+### Future Injuries
+- `fractured-arm.md` *(Level 2+)*
 - *(more to come)*
 
 ## Design Principles
