@@ -96,9 +96,25 @@ A minor cut is a small laceration — the kind you get from handling broken glas
 
 | Item | Effect | How Obtained (Level 1) |
 |------|--------|----------------------|
-| **Cloth bandage** | Transitions `active → treated`. Accelerates healing from 5 turns to 2 turns. | Tear blanket, curtains, or wool-cloak → cloth strip → bandage |
+| **Cloth bandage** | Transitions `active → treated`. Accelerates healing from 5 turns to 2 turns. Bandage *attaches* to the cut (reusable — not consumed). | Tear blanket, curtains, or wool-cloak → cloth strip → bandage |
 
 **Treatment is optional.** The minor cut heals on its own in 5 turns. Bandaging speeds it up but is not required. This teaches players that minor injuries are survivable without treatment — save your bandages for serious wounds.
+
+**Bandage Interaction:** A bandage applied to a minor cut accelerates healing (5 turns → 2 turns). The bandage attaches to the cut and can be removed once healed. Since minor cuts heal on their own, using a bandage here is a strategic choice — faster healing, but the bandage is occupied and unavailable for a more serious wound.
+
+**Targeted Treatment — What the Player Types:**
+
+Single minor cut:
+```
+> apply bandage
+"You wrap the cloth snugly around the cut on your hand. The sting fades."
+```
+
+Multiple cuts (must specify):
+```
+> apply bandage to right hand cut
+"You wrap the cloth around the cut on your right hand. The sting fades."
+```
 
 ### 6.2 Wrong Treatments
 
@@ -146,7 +162,7 @@ The minor cut is the player's first injury. It establishes the baseline: this is
 |--------|-------------|
 | **Blood writing** | A minor cut does NOT produce enough bleeding for blood writing. Only the `bleeding` injury enables that mechanic. |
 | **Object handling** | Glass shard with `on_feel_effect: "cut"` triggers this injury. The injury formalization means the engine applies a real injury instance instead of just flavor text. |
-| **Stacking** | Minor cut stacks with other injuries. Multiple minor cuts from different sources are tracked independently. |
+| **Stacking** | Minor cut stacks with other injuries. Multiple minor cuts from different sources are tracked independently — two cuts on different hands are two separate injury instances, each needing its own treatment (or each healing on its own timer). Three minor cuts don't threaten death individually, but they shift the narrative tone and collectively reduce derived health. |
 | **GOAP** | GOAP should NOT auto-treat minor cuts. They heal naturally. This prevents the engine from wasting bandages on trivial injuries. |
 
 ---

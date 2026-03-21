@@ -56,6 +56,9 @@ See individual injury design documents in this folder:
 - `burn.md` — One-time. From flame/hot objects. Treated with cold water or cool cloth.
 - `bruised.md` — One-time, minor. From falls/impacts. Heals naturally with rest. No treatment item needed.
 
+### Treatment System
+- `treatment-targeting.md` — How the parser resolves "apply X to Y" where Y is a specific injury. Context resolution, disambiguation, and example interaction flows.
+
 ### Future Injuries
 - `fractured-arm.md` *(Level 2+)*
 - *(more to come)*

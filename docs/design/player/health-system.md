@@ -2,7 +2,7 @@
 
 **Author:** Sideshow Bob (Puzzle Designer)  
 **Date:** 2026-07-23  
-**Revised:** 2026-07-24 (Wayne directive 2026-03-21T19:17Z — derived health, injury-specific healing)  
+**Revised:** 2026-07-25 (Wayne directive 2026-03-21T20:05Z — explicit injury accumulation, targeted treatment)  
 **Status:** DESIGN  
 **Depends On:** FSM Engine, Verb Handlers, Game Loop tick system  
 **Audience:** Designers, Bart (engine), Flanders (objects)
@@ -38,6 +38,53 @@ Instead of HP-based tiers, the player's condition is described by the aggregate 
 | **Dying** | Untreated critical injuries, aggregate damage overwhelming | Fragmentary, desperate prose. Ellipses and incomplete sentences. Every command is agony. |
 
 The transitions between these levels happen organically as injuries accumulate, worsen, or are treated. There are no hard HP thresholds — the narrative voice shifts based on *what injuries the player has* and *how severe each one is*.
+
+### 1.3 Injury Accumulation — Multiple Injuries Stack
+
+**Injuries are accumulative.** Each active injury contributes its own damage independently. Two stab wounds drain twice as fast as one. A bleeding arm and a bleeding leg together are twice as dangerous as either alone.
+
+**The math (internal, never shown to player):**
+
+```
+derived_health = max_health - sum(all_active_injury_damage)
+
+Example — Player with max_health 100:
+  Stab wound on left arm:  drains 2 health/turn
+  Stab wound on right leg: drains 2 health/turn
+  Minor cut on hand:       one-time -3 (already applied)
+  Bruised ribs:            one-time -5 (already applied)
+
+  Turn 1: 100 - 3 - 5 = 92 (one-time hits applied)
+  Turn 2: 92 - 2 - 2 = 88  (both stab wounds drain)
+  Turn 3: 88 - 2 - 2 = 84
+  Turn 4: 84 - 2 - 2 = 80
+  ...
+  Total drain per turn: 4 health/turn (2 from each bleeding wound)
+```
+
+**What the player experiences (not numbers — narrative):**
+
+```
+> injuries
+"You examine yourself:
+ — A deep stab wound on your left arm (bleeding). Blood flows
+   steadily. Something tight around this — now.
+ — A second wound on your right leg (bleeding). More blood.
+   The floor beneath you is pooling red.
+ — A small cut on your hand (healing on its own).
+ — Bruised ribs from the fall. They ache, but it's the blood
+   that's killing you.
+ 
+ Two wounds are bleeding. You're losing blood fast — faster than
+ one wound alone. You need bandages. Plural."
+```
+
+**Accumulation creates exponential urgency.** One bleeding wound is survivable for many turns. Two bleeding wounds halve that survival time. Three would be critical. The narrative voice communicates this through escalating desperation without ever showing numbers.
+
+**Key design implications:**
+- **Triage matters.** With two bleeding wounds and one bandage, which wound gets treated first? The player must assess via `injuries` and choose.
+- **Healing order is strategic.** Treat the fastest-draining injury first to maximize survival time. Or treat the one blocking a critical action.
+- **Same injury type stacks.** Two minor cuts are tracked independently. Two burns on different body parts each hurt separately. The player can't "batch heal" — each injury needs its own treatment instance.
 
 ---
 

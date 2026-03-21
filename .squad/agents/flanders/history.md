@@ -574,3 +574,16 @@ Flagged materials NOT in `src/engine/materials/init.lua`:
 ### BUG-061 & BUG-062 Fixes — Nelson Pass 016 (2026-07-22)
 - **BUG-061 (HIGH):** Wine rack `surfaces.inside.contents` referenced `{"wine-bottle-1", "wine-bottle-2", "wine-bottle-3"}` but the room instance in `storage-cellar.lua` only places one bottle with `id = "wine-bottle"`. Fixed by updating wine-rack contents to `{"wine-bottle"}` to match the actual instance ID. Lesson: always cross-check rack/container content IDs against room instance IDs — they must match exactly.
 - **BUG-062 (LOW):** Oil flask's `on_drink_reject` field was never checked by the drink verb handler. The handler fell through to the generic "You can't drink..." message. Fixed by adding a check for `obj.on_drink_reject` in `src/engine/verbs/init.lua` before the generic fallback. Lesson: when adding custom rejection fields to objects, always verify the engine verb handler actually reads them — object data is inert without engine support.
+
+### Injury Lua Templates — First 5 Implementations (2026-07-25)
+- Created `src/meta/injuries/` directory and implemented 5 injury `.lua` files from Bob's design docs
+- All files follow the canonical template format from `docs/architecture/player/injury-template-example.md`
+- Each file returns a single Lua table with GUID, FSM states, transitions, timers, and healing interactions
+- **minor-cut.lua** `{fc7f4ea7-c569-4f6d-bc80-64f918ccfb42}` — One-time (3 dmg), physical. States: active/treated/healed. Self-heals in 5 turns; bandage accelerates to 2 turns. No capability restrictions.
+- **bleeding.lua** `{f6c20c23-a8e3-402e-afc7-1f0857481b4c}` — Over-time (5 dmg/tick), physical. States: active/treated/worsened/critical/fatal/healed. 15-turn worsen timer. Bandage stops drain; poultice works even in critical. Restricts climb (active), run (worsened), fight (critical).
+- **poisoned-nightshade.lua** `{62874f58-bcee-4f39-9f63-c3953d532aea}` — Over-time (8 dmg/tick), toxin. States: active/worsened/neutralized/fatal/healed. 4-turn escalation windows. ONLY antidote-nightshade works. Generic cures rejected by empty healing_interactions. Recovery from worsened takes 6 turns via `_timer_delay` mutate.
+- **burn.lua** `{d182984e-b424-47d9-91fc-2796d993228c}` — One-time (5 dmg), environmental. States: active/blistered/treated/healed. Minor burns self-heal in 10 turns; severe burns blister at 8 turns (source overrides timer). Cold-water, damp-cloth treat active; salve treats active AND blistered.
+- **bruised.lua** `{4deab41d-f062-4f05-89fd-8fc2cbc2d073}` — One-time (4 dmg), physical. States: active/recovering/healed. Self-heals in 8 turns; rest/sleep accelerates to 4 turns. No item required. Restricts climb/run/jump. Empty healing_interactions (verb-only treatment).
+- Replaced older prototype `poisoned-nightshade.lua` (had no GUID, no transitions table, no worsened state, used non-canonical `symptom` and `auto_heal_turns` fields) with full canonical format
+- Key design decisions: used "neutralized" state name for nightshade (matches Bob's design, distinct from physical "treated"); burn blistered-path timer is set by inflicting object override; bruised healing_interactions is empty because rest is a verb, not an item
+- All 5 files validated: Lua syntax clean, return tables with guid/id/states/transitions confirmed

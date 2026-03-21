@@ -143,14 +143,30 @@ Burns are treatable with **cold water** (immediate relief) or **cool damp cloth*
 
 | Item | Effect | How Obtained (Level 1) |
 |------|--------|----------------------|
-| **Cold water** | Transitions `active → treated`. Works on minor and severe burns (before blistering). | Rain barrel in courtyard. Well bucket with water. Future: any water source. |
-| **Cool damp cloth** | Same as cold water. Cloth + water = improvised treatment. | Wet a cloth strip in rain barrel or well. |
-| **Salve** | Transitions `active → treated` OR `blistered → treated`. Required for blistered burns. | Not available in Level 1 (Level 2+ medicine). This means severe burns MUST be treated before blistering in Level 1. |
+| **Cold water** | Transitions `active → treated`. Works on minor and severe burns (before blistering). Consumable — water is used. | Rain barrel in courtyard. Well bucket with water. Future: any water source. |
+| **Cool damp cloth** | Same as cold water. Cloth + water = improvised treatment. Consumable — the dampness is spent. | Wet a cloth strip in rain barrel or well. |
+| **Salve** | Transitions `active → treated` OR `blistered → treated`. Required for blistered burns. Consumable — use spent from jar, destroyed when empty. | Not available in Level 1 (Level 2+ medicine). This means severe burns MUST be treated before blistering in Level 1. |
 
 **Level 1 Treatment Path:** The rain barrel in the courtyard and the well bucket are the water sources. Player must:
 1. Recognize they need water ("cool water would soothe this")
 2. Find a water source (courtyard rain barrel, well)
-3. Apply water to the burn (`pour water on hand`, `splash water on burn`, `cool burn with water`)
+3. Apply water to the burn, targeting the specific injury: `pour water on burned hand`, `splash water on hand burn`, `cool burn with water`
+
+**Targeted Treatment — What the Player Types:**
+
+Single burn:
+```
+> pour water on burn
+"You splash cold water over your burned fingers. The relief is immediate."
+```
+
+Multiple burns or injuries (must specify):
+```
+> pour water on left hand burn
+"You splash cold water over your burned left hand. The angry red fades."
+```
+
+**Salve Lifecycle (Consumable):** Salve follows the consumable pattern — each application uses one dose. When the jar is empty, the instance is destroyed. There is no recovering spent salve. See healing-items.md §12 for full lifecycle.
 
 ### 6.2 Wrong Treatments
 
@@ -217,7 +233,7 @@ How the player figures out the treatment:
 | **Candle/torch FSM** | Lit state objects gain `on_take_effect: "burn"` property. Only fires when player attempts bare-handed interaction with flame. Holder-mediated interaction bypasses this. |
 | **Grip/hand system** | Active severe burn reduces grip reliability. Overlaps with bleeding's slippery-hands effect. If both active, grip is extremely unreliable — strong incentive to treat at least one. |
 | **Water objects** | Rain barrel, well bucket — existing courtyard objects. Burn treatment is their first gameplay purpose. Later: water is used for cleaning wounds, mixing potions, extinguishing fires. |
-| **Injury stacking** | Burns stack with other injuries. Burned hand + bleeding arm = both hands impaired in different ways. |
+| **Injury stacking** | Burns stack with other injuries. Burned hand + bleeding arm = both hands impaired in different ways. Multiple burns on different body parts are independent instances — a burned left hand and a burned right hand each need separate treatment and each contribute their own one-time damage to derived health. |
 | **GOAP** | GOAP should NOT auto-treat burns. But GOAP CAN help: if player says "cool burn with water" and rain barrel is in an adjacent room, GOAP could plan: go to courtyard → get water from barrel → apply to burn. The navigation is GOAP territory; the decision to treat is the player's. |
 | **Fire chain** | The candle fire chain (match → candle → light) already exists. Burns are the consequence of disrespecting that chain — grabbing fire directly instead of using proper tools. |
 

@@ -697,3 +697,49 @@ Designed the first 5 Level 1 injury types as individual design documents in `doc
 - **Wrong treatments are teaching moments.** The feedback from failed treatment attempts is as important as the correct treatment itself.
 - **Severity gradient creates calibration.** Starting with bruises (trivial) and ending with nightshade (lethal) lets the player build understanding progressively.
 - **Existing Level 1 objects are the treatment sources.** Blanket/curtains → cloth → bandage. Rain barrel → water → burn treatment. Bed → rest → bruise recovery. No new items needed except the nightshade antidote.
+
+---
+
+## Session: Injury Treatment Targeting & Item Lifecycles (2026-07-25)
+
+### Directive
+Wayne directive 2026-03-21T20:05Z — Injuries accumulate, treatment is targeted to specific injury instances, treatment items have consumable vs reusable lifecycles.
+
+### Work Completed
+
+Updated the full injury and healing design doc suite to incorporate Wayne's directives on accumulation, targeted treatment, and treatment item lifecycles.
+
+#### Key Design Additions
+
+1. **Injury Accumulation (explicit).** Multiple injuries stack their damage. Two stab wounds = double drain per turn. Added accumulation math example to health-system.md §1.3 and accumulation scenarios to bleeding.md §9.1. Updated stacking notes in all 5 injury docs.
+
+2. **Targeted Treatment.** Players apply cures to SPECIFIC injury instances: "apply bandage to left arm stab wound." Created new doc 	reatment-targeting.md covering parser resolution rules, context resolution (bare verb when single injury), disambiguation flow, and full interaction examples. Updated all injury docs with targeting examples.
+
+3. **Bandage = Reusable.** Bandages are persistent object instances that attach to an injury, accelerate healing, and can be removed when the wound heals and reapplied elsewhere. One bandage per wound at a time. Lifecycle: clean → applied → removable → reusable. Updated healing-items.md §3.1 and §12, bleeding.md §6.
+
+4. **Salve/Antidote = Consumable.** Salves and antidotes are consumed on use — instance destroyed (or use count decremented until empty). Added lifecycle FSM diagrams to healing-items.md §12. Updated burn.md and poisoned-nightshade.md with consumable notes.
+
+5. **Bandage Accelerates Healing.** Bandaged wounds heal faster than unbandaged ones. Minor cut: 5 turns → 2 turns with bandage. This gives a mechanical incentive to bandage even minor wounds when time matters.
+
+### Files Created
+- docs/design/injuries/treatment-targeting.md — Full treatment targeting design: parser resolution, context resolution, disambiguation, interaction flows, edge cases
+
+### Files Modified
+- docs/design/player/healing-items.md — Added targeted treatment to core rules, changed bandage from consumable to reusable, added §12 (Treatment Item Lifecycles) with bandage/salve FSM diagrams, updated puzzle integrations (triage, bandage recovery)
+- docs/design/player/health-system.md — Added §1.3 (Injury Accumulation) with drain math example and multi-injury narrative
+- docs/design/injuries/bleeding.md — Added §6.2 (Targeted Treatment), §9.1 (Accumulation), updated bandage interaction to reusable lifecycle
+- docs/design/injuries/minor-cut.md — Added bandage interaction details, targeted treatment examples, updated stacking notes
+- docs/design/injuries/burn.md — Added targeted treatment examples, salve consumable lifecycle note, updated stacking notes
+- docs/design/injuries/poisoned-nightshade.md — Added consumable lifecycle note, targeted treatment text, updated stacking notes
+- docs/design/injuries/bruised.md — Updated stacking notes with accumulation cross-reference
+- docs/design/injuries/README.md — Added treatment-targeting.md to doc listing
+
+### Handoffs
+- **Bart:** Treatment targeting parser needs engine support — resolve "apply X to Y" where Y is an injury instance. Same disambiguation pattern as objects. Bandage attachment tracking (which injury has which bandage).
+- **Flanders:** Bandage FSM needs states: clean → applied → removable → reusable. Salve/antidote need consumable terminal states. Bandage needs ttached_to field linking to injury instance.
+- **Nelson:** Test targeting disambiguation (single injury auto-resolve, multiple injury prompt, wrong treatment on target). Test bandage reuse loop (apply → heal → remove → reapply).
+
+### Learnings
+- **Reusable bandages create a resource management loop.** The player doesn't just "use" a bandage — they manage its lifecycle across multiple wounds. This is a new puzzle dimension.
+- **Targeted treatment adds diagnosis gameplay.** Forcing the player to name the wound makes injuries verb output directly actionable — it's not just flavor, it's the targeting vocabulary.
+- **Consumable vs reusable creates asymmetric risk.** Wasting a salve on the wrong burn is permanent loss. Trying a bandage on the wrong wound just fails — you get it back. This rewards experimentation with bandages but punishes careless salve use.

@@ -109,10 +109,46 @@ This two-phase recovery (stop bleeding → wait for healing) is the core mechani
 
 | Step | Item | Effect | How Obtained (Level 1) |
 |------|------|--------|----------------------|
-| **Step 1: Stop bleeding** | **Cloth bandage** | Transitions `active → bandaged`. Health drain STOPS. | Tear blanket, curtains, or wool-cloak → cloth strip → bandage |
-| **Step 2: Heal wound** | **Time (rest)** | Transitions `bandaged → healed` after 10 turns. No item needed. | Wait. The wound heals naturally once the bleeding is stopped. |
+| **Step 1: Stop bleeding** | **Cloth bandage** | Transitions `active → bandaged`. Health drain STOPS immediately. Bandage *attaches* to the injury instance (reusable — not consumed). | Tear blanket, curtains, or wool-cloak → cloth strip → bandage |
+| **Step 2: Heal wound** | **Time (rest)** | Transitions `bandaged → healed` after 10 turns. No item needed. Bandage accelerates this healing. | Wait. The wound heals naturally once the bleeding is stopped. |
 
-**Critical Design Point:** The bandage does NOT heal the wound. It only stops the drain. The player still carries the injury (impaired limb, aching) until natural healing completes. This prevents the bandage from being a "full heal" button.
+**Critical Design Point:** The bandage does NOT heal the wound. It stops the drain and *accelerates* healing. The player still carries the injury (impaired limb, aching) until natural healing completes. But a bandaged wound heals significantly faster than if somehow the bleeding stopped without one.
+
+**Bandage Interaction — Reusable Lifecycle:**
+- Applying a bandage **attaches** it to this specific bleeding injury. The bandage object moves from the player's inventory to the injury.
+- While attached, the bandage accelerates healing: `bandaged → healed` takes 10 turns (without bandage, the wound would never stop bleeding at all).
+- Once healed, the bandage enters `removable` state. Player types `remove bandage from [body part]` to recover it.
+- The recovered bandage can be applied to a new injury. One bandage, many uses — if the player manages the timing.
+- **A bandage can only be on ONE injury at a time.** Two bleeding wounds need two bandages, or the player must triage.
+
+### 6.2 Targeted Treatment — What the Player Types
+
+**Single bleeding wound:**
+```
+> apply bandage
+"You wrap the cloth strip tightly around your wounded forearm.
+ The bleeding slows... and stops. The bandage holds."
+```
+
+**Multiple bleeding wounds (must specify):**
+```
+> apply bandage
+"Which wound? You have a gash on your left arm and a stab wound
+ on your right leg. Both are bleeding."
+
+> apply bandage to left arm
+"You wrap the cloth strip tightly around the gash on your left arm.
+ The bleeding slows... and stops."
+```
+
+**Bandage already in use:**
+```
+> apply bandage to right leg
+"That bandage is already wrapped around your left arm wound.
+ You'd need to remove it first — but the arm is still bleeding."
+```
+
+See `docs/design/injuries/treatment-targeting.md` for full targeting rules.
 
 ### 6.2 Alternative Treatments
 
@@ -189,10 +225,61 @@ How the player figures out the treatment:
 |--------|-------------|
 | **Blood writing** | Active bleeding enables the `write with blood` mechanic. The player's injury becomes a tool — but using it costs health (continued bleeding while writing). Strategic choice. |
 | **Infection cascade** | Untreated bleeding for 15+ turns triggers `infection` injury (Level 2). The wound isn't just draining — it's getting dirty. This cascading makes ignoring the injury increasingly dangerous. |
-| **Injury stacking** | Bleeding stacks with other injuries. Multiple bleeding wounds compound the drain rate. Two active bleeds = twice the urgency. |
+| **Injury stacking** | Bleeding stacks with other injuries. Multiple bleeding wounds compound the drain rate. Two active bleeds = twice the drain per turn = half the survival time. See health-system.md §1.3 for accumulation math. |
 | **Room descriptions** | While bleeding, room enter text includes: *"Blood drips from your arm onto the cold stone floor."* This is a per-room sensory overlay. |
 | **GOAP** | GOAP should NOT auto-bandage. The player must choose to treat. However, GOAP CAN auto-tear cloth if the player says "bandage arm" and has no bandage but has cloth. The mechanical preparation is GOAP territory; the decision to treat is the player's. |
 | **`player.state.bloody`** | Existing engine state. Bleeding injury sets `player.state.bloody = true`. Cleared when bandaged. Other systems can check this flag. |
+
+---
+
+## 9.1 Accumulation — Multiple Bleeding Wounds
+
+Two stab wounds bleed independently. Each one drains health per turn, and the drains stack:
+
+```
+Example — Player with two bleeding wounds:
+  Stab wound on left arm:  drains 2 health/turn
+  Gash on right leg:       drains 2 health/turn
+  
+  Combined drain: 4 health/turn
+  Survival time: HALVED compared to single wound
+```
+
+**What the player sees:**
+
+```
+> injuries
+"You examine yourself:
+ — A deep stab wound on your left arm (bleeding). Blood flows
+   from the gash.
+ — A deep gash on your right leg (bleeding). Blood runs down
+   into your boot.
+ 
+ Two wounds bleeding. You're losing blood from both — faster
+ than either alone. You need bandages. More than one."
+```
+
+**Triage scenario (one bandage, two wounds):**
+
+```
+> apply bandage to left arm
+"You wrap the bandage tightly around your left arm.
+ The bleeding from the arm stops — but your leg still bleeds."
+
+[Left arm: active → bandaged, drain stops]
+[Right leg: still active, still draining 2/turn]
+[Net drain reduced from 4/turn to 2/turn]
+
+> [10 turns later, arm heals]
+> remove bandage from left arm
+"You carefully unwrap the bandage. The wound has closed."
+
+> apply bandage to right leg
+"You wrap the bandage around the gash on your leg.
+ The bleeding slows... and stops."
+```
+
+The bandage is a reusable lifeline. The player manages its movement between wounds as a core survival loop.
 
 ---
 

@@ -125,6 +125,19 @@ This injury exists to teach one lesson above all others: **don't consume unknown
 - EXAMINE: *"A small glass vial labeled in faded script: 'Contra Belladonna.' The dark green liquid inside smells of crushed herbs."*
 - The label "Contra Belladonna" is the key clue — belladonna = nightshade. The player who reads the label and knows nightshade = belladonna makes the connection.
 
+**Consumable Lifecycle:** The antidote is consumable. Drinking it destroys the instance. One vial, one use, gone. The `sealed → open → empty (destroyed)` FSM follows the same terminal pattern as spent matches. See healing-items.md §12 for lifecycle details.
+
+**Targeted Treatment — What the Player Types:**
+
+Nightshade is typically the only poison the player has (single injury auto-resolves):
+```
+> drink antidote
+"You drink the dark liquid. The racing in your chest slows.
+ The antidote is working."
+```
+
+If somehow the player has multiple conditions, the antidote only works on nightshade — the parser matches automatically since generic antidotes don't treat nightshade and the nightshade antidote doesn't treat anything else.
+
 ### 6.2 Partial Treatments
 
 | Item | Effect | Notes |
@@ -206,7 +219,7 @@ How the player figures out the treatment:
 | **Poison bottle (existing)** | Currently instant death. This injury converts it to a survivable (but dangerous) condition IF an antidote is placed in the level. Requires design decision. |
 | **Vision degradation** | Stage 1: examine descriptions become vaguer. Stage 2: hallucinations inject false details into room descriptions. This is a mechanical overlay on the existing light/vision system. |
 | **Action interruption** | Dizziness causes random action failure in stage 1 (~20% chance). Collapse causes movement failure in stage 2 (~40% chance). |
-| **Injury stacking** | Nightshade poisoning stacks with other injuries. Being poisoned AND bleeding is doubly urgent — which do you treat first? The `injuries` verb provides triage guidance. |
+| **Injury stacking** | Nightshade poisoning stacks with other injuries. Being poisoned AND bleeding is doubly urgent — both drain health per turn, and the drains accumulate (see health-system.md §1.3). Which do you treat first? The `injuries` verb provides triage guidance through its severity descriptions. |
 | **GOAP** | GOAP should NOT auto-drink the antidote. The player must identify and choose to drink it. GOAP can help with container-opening chains (unlock cabinet → open → take vial) but not the decision to consume. |
 | **Sensory overlay** | While poisoned, TASTE and SMELL senses are degraded. The burning in the throat corrupts taste perception. This makes identifying OTHER substances harder while poisoned. |
 

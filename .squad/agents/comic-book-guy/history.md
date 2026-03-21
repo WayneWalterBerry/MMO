@@ -19,6 +19,27 @@
 
 ## Recent Updates
 
+### Session Update: Injury ↔ Puzzle Integration Analysis (2026-07-25)
+**Status:** ✅ DESIGN COMPLETE
+
+**Deliverable:** `docs/design/injuries/puzzle-integration.md` — ~35 KB strategic design analysis.
+
+**Core Analysis:**
+1. **Five Roles of Injury:** Injuries AS puzzles (ticking clocks, triage), Puzzles CAUSING injuries (failure consequences), Injuries BLOCKING puzzles (capability gates), Treatment AS puzzles (crafting chains), Engine hooks (on_traverse, on_pickup, on_timer)
+2. **Level 1 Integration Map:** Each of 7 rooms mapped to specific injury sources, treatment resources, and teachable moments
+3. **Engine Proposals:** `injury_effect` handler (parallels `wind_effect`), prevention conditions, capability gate system
+4. **Anti-Patterns:** Never injure for observation, never create unwinnable stacks, critical path completable injury-free
+5. **Medical Scroll:** Proposed tattered scroll content for deep cellar that pre-loads treatment knowledge
+
+**Key Design Decisions:**
+- Bedroom is safest room (5 avoidable injuries, all educational); Crypt is danger room (full complexity)
+- Courtyard is treatment hub (water for burns, rest for bruises) — ironic because it's hardest to reach safely
+- Minor cut calibrates expectations; nightshade is the "final exam"
+- Injury severity must match recklessness of player approach
+- "Fair Warning" principle: every injury must be traceable to a warning the player could have heeded
+
+**Decision filed:** `.squad/decisions/inbox/cbg-injury-puzzles.md`
+
 ### Session Update: Spatial Relationships & Stacking System Design (2026-03-26)
 **Status:** ✅ DESIGN COMPLETE
 

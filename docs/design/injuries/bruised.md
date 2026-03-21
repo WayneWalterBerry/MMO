@@ -191,7 +191,7 @@ How the player figures out the "treatment":
 | **Climbing/running** | Bruised legs BLOCK climbing and running. These require leg strength. `climb ivy` → *"Your bruised legs buckle. Not yet."* |
 | **Carrying** | Bruised torso impairs carrying heavy objects (2-handed items, large crates). Light items unaffected. |
 | **Examination** | Bruised head occasionally degrades examine output: details are fuzzier, descriptions shorter. Not a hard block — just reduced fidelity. |
-| **Injury stacking** | Bruises stack with other injuries. Bruised legs + bleeding arm = very limited capability. The `injuries` verb helps prioritize: bleeding is urgent, bruises are patient. |
+| **Injury stacking** | Bruises stack with other injuries. Bruised legs + bleeding arm = very limited capability. Multiple bruises on different body parts are independent instances — bruised legs AND bruised ribs means both climbing AND carrying are impaired. The one-time damage from each bruise accumulates in derived health (see health-system.md §1.3). The `injuries` verb helps prioritize: bleeding is urgent, bruises are patient. |
 | **GOAP** | GOAP should NOT auto-rest. The decision to rest (sacrificing turns) is strategic — the player must weigh recovery against other priorities. |
 | **Sleep verb** | If the player `sleep`s in bed with bruised legs, the injury transitions to `recovering` during the sleep time skip. Sleep is the fastest recovery. |
 | **Rest verb** | `rest` or `sit down` triggers the transition. Must be in a location where resting is plausible (not mid-combat, not in water). |

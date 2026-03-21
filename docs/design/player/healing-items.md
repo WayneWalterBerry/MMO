@@ -19,10 +19,11 @@ Healing in this game is **specific, physical, and interactive**. Every healing i
 
 1. **Every healing item treats SPECIFIC injuries.** A bandage stops bleeding. An antidote cures a specific poison. A salve treats burns. None of them "restore HP."
 2. **Wrong treatment wastes the item.** Drinking a generic antidote for viper venom? The venom doesn't respond. The antidote is gone. The clock is still ticking.
-3. **Healing items are consumed.** Bandages are used. Potions are drunk. Resources are finite. Every use is a commitment.
-4. **Treatment is the puzzle, not a menu.** The player must read their `injuries`, interpret the clues, and match the right item. This is gameplay.
-5. **Items declare what they cure.** Each healing item's metadata lists exactly which injury types it treats. No engine special-casing.
-6. **No universal cures exist.** Nothing cures everything. The closest is rest (heals bruises, accelerates recovery from treated wounds) — but rest doesn't stop bleeding, doesn't cure poison, doesn't treat burns.
+3. **Treatments are targeted to specific injury instances.** The player applies a cure to a SPECIFIC wound — "apply bandage to left arm stab wound." Not "heal me." If only one injury exists, the bare verb works ("apply bandage"), but with multiple injuries the player must specify which one gets treatment. See `docs/design/injuries/treatment-targeting.md` for full targeting rules.
+4. **Treatment items have lifecycles — some are consumed, some are reusable.** Salves and antidotes are consumable (one use, destroyed). Bandages are reusable (persistent objects that attach to an injury, can be removed when healed, and reapplied elsewhere). This distinction creates strategic resource management.
+5. **Treatment is the puzzle, not a menu.** The player must read their `injuries`, interpret the clues, and match the right item. This is gameplay.
+6. **Items declare what they cure.** Each healing item's metadata lists exactly which injury types it treats. No engine special-casing.
+7. **No universal cures exist.** Nothing cures everything. The closest is rest (heals bruises, accelerates recovery from treated wounds) — but rest doesn't stop bleeding, doesn't cure poison, doesn't treat burns.
 
 ---
 
@@ -49,10 +50,10 @@ Healing in this game is **specific, physical, and interactive**. Every healing i
 |-------|-------|
 | **ID** | `bandage` |
 | **Crafted From** | Tear cloth from blanket, curtains, cloak, or sack |
-| **Verb** | `bandage [body part]`, `apply bandage`, `wrap wound` |
-| **Treats** | **Bleeding** (any cause) — stops blood flow. Also progresses deep cuts to bandaged state. |
+| **Verb** | `bandage [body part]`, `apply bandage to [injury]`, `wrap wound` |
+| **Treats** | **Bleeding** (any cause) — stops blood flow. Also progresses deep cuts to bandaged state. **Accelerates healing** — cuts heal faster WITH bandage than without. |
 | **Does NOT Treat** | Poison, burns, bruises, infection. A bandage only addresses bleeding and open wounds. |
-| **Uses** | 1 (consumed on application) |
+| **Uses** | ♻️ Reusable — bandage is a persistent object instance. Attaches to one injury at a time. Can be removed when the wound heals and reapplied to another wound. |
 | **Status** | 🟡 Object exists in design, not yet implemented as healing item |
 
 **How It Plays:**
@@ -66,20 +67,31 @@ Healing in this game is **specific, physical, and interactive**. Every healing i
 > tear cloth from blanket
 "You rip a long strip of wool from the blanket. It's rough but serviceable."
 
-> bandage arm
+> apply bandage to forearm wound
 "You wrap the cloth strip tightly around your wounded forearm.
  The bleeding slows... and stops. The bandage holds."
  
 [Injury: BLEEDING → STOPPED]
-[Deep cut: ACTIVE → BANDAGED]
-[Bandage consumed]
+[Deep cut: ACTIVE → BANDAGED — healing accelerated]
+[Bandage: CLEAN → APPLIED (attached to forearm wound)]
+
+> [Later, after the wound heals...]
+> injuries
+"You examine yourself:
+ — The wound on your forearm has closed. The bandage is no longer needed."
+
+> remove bandage from forearm
+"You carefully unwrap the bandage. The cloth is stained but still usable."
+[Bandage: APPLIED → REMOVED (reusable)]
 ```
 
 **Design Details:**
+- **Reusable, not consumable.** A bandage is a persistent object instance. Applying it to a wound doesn't destroy it — it attaches the bandage to that injury. When the wound heals, the player can remove the bandage and apply it to another wound.
+- **One wound at a time.** A single bandage instance can only be attached to ONE injury. To use it on a different wound, the player must first remove it from the current one.
+- **Accelerates healing.** A bandaged wound heals faster than an unbandaged one. A minor cut heals in 5 turns without a bandage, 2 turns with one. A bleeding wound stops draining immediately and heals in 10 turns (without bandage, it never stops draining).
+- **Removal timing is strategic.** Removing a bandage from a wound that hasn't fully healed re-exposes it. The wound might start bleeding again. The player must weigh: "Is this wound healed enough to remove the bandage for that new wound?"
 - Bandages work on **any bleeding wound** regardless of cause — they're the universal wound dressing.
-- A bandage does NOT cure the underlying injury. It stops the bleeding. The wound still needs time (or medicine) to fully heal.
-- Multiple wounds need multiple bandages. One strip per wound.
-- The cloth strip is the same object used for sewing, cleaning, and crafting. Using it as a bandage consumes it — resource tension.
+- Multiple wounds need multiple bandages (or strategic reuse). The cloth strip is the same object used for sewing, cleaning, and crafting. Using it as a bandage occupies it — resource tension.
 
 **What Happens If Used on Wrong Injury:**
 ```
@@ -91,7 +103,8 @@ Healing in this game is **specific, physical, and interactive**. Every healing i
 
 **Puzzle Opportunities:**
 - Player is bleeding → must discover blanket can be torn → cloth works as bandage. Discovery + crafting under time pressure.
-- Only one cloth strip available → two bleeding wounds → which to bandage? (The more severe one — the player must assess via `injuries`.)
+- Only one cloth strip available → two bleeding wounds → which gets the bandage first? The player must triage via `injuries` and apply bandage to the more dangerous wound by name.
+- Bandage is on a healed wound → new wound opens → player must `remove bandage from [healed location]` then `apply bandage to [new wound]`. The reuse loop is itself a puzzle under time pressure.
 
 ### 3.2 COBWEB (Natural Dressing)
 
@@ -239,7 +252,7 @@ Healing in this game is **specific, physical, and interactive**. Every healing i
 | **Verb** | `apply salve to burn`, `rub salve on [body part]` |
 | **Treats** | **Burns (minor AND severe).** Including blistered burns that water alone can't handle. |
 | **Does NOT Treat** | Bleeding, poison, bruises, infection, broken bones. |
-| **Uses** | 3 (jar with multiple applications) |
+| **Uses** | 🔥 Consumable — 3 applications total. Each application consumes one use and the salve instance is destroyed when all uses are spent. |
 | **Status** | 🔴 Planned (Level 2+) |
 
 ---
@@ -354,7 +367,7 @@ This is the **master reference** — the puzzle design surface. For each injury,
 |-------------|-------------|-----------------|
 | Healing potion that "restores 30 HP" | Bypasses the injury-matching puzzle entirely | Items treat specific injuries, not numbers |
 | Universal cure that heals everything | No diagnosis puzzle | Each medicine cures one condition |
-| Infinite-use medical kit | Makes injuries meaningless | Kit has 3 bandages, 1 salve, 1 antidote |
+| Infinite-use medical kit | Makes injuries meaningless | Kit has 3 bandages (reusable), 1 salve (consumable), 1 antidote (consumable) |
 | Auto-healing when entering safe room | Player never engages with the system | Player must explicitly treat each injury |
 | Generic "heal" command | Removes the matching puzzle | Player must `bandage`, `drink antidote`, `apply salve` — specific verbs for specific treatments |
 | Antidote that cures "all poisons" | Eliminates the poison-identification puzzle | Different antidotes for different poisons |
@@ -414,12 +427,106 @@ What healing resources exist (or should exist) in Level 1?
 **Correct cure:** Bandage from blanket  
 **Puzzle:** Tearing the blanket makes it useless for warmth (needed later for hypothermia). The player must choose: survive now, or save the resource for later?
 
+### Integration 7: The Triage Decision
+**Injury:** Two bleeding wounds (left arm + right leg), one bandage  
+**Correct cure:** Bandage applied to the more severe wound  
+**Puzzle:** Player uses `injuries` to compare severity. Applies bandage to the worse wound by name: `apply bandage to left arm wound`. The other wound continues draining. Once the first wound heals, the player removes the bandage and applies it to the second: `remove bandage from left arm`, `apply bandage to right leg`. Timing and triage under pressure.
+
+### Integration 8: The Bandage Recovery Loop
+**Injury:** Wound heals under bandage → new wound opens  
+**Correct cure:** Remove healed bandage → apply to fresh wound  
+**Puzzle:** The player must notice (via `injuries`) that the old wound has healed, remember they have a bandage on it, remove it, and apply it to the new wound — all while the new wound is draining health. The reuse mechanic itself is the puzzle.
+
+---
+
+## 12. Treatment Item Lifecycles
+
+Treatment items are object instances with FSM state, just like every other object in the game. Their lifecycle determines whether they're consumed on use or persist as reusable resources.
+
+### 12.1 Consumable Items (Destroyed on Use)
+
+**Pattern:** The item instance is destroyed when applied. One use, gone forever.
+
+**Examples:** Salve, antidote, antivenom, herb poultice.
+
+**Salve Lifecycle:**
+
+```
+ ┌──────────┐     apply to      ┌──────────┐
+ │  SEALED   │ ──────────────── │  APPLIED   │ → instance destroyed
+ │           │    burn/wound     │ (consumed) │   (if last use)
+ └──────────┘                   └──────────┘
+```
+
+| State | Description | What the Player Sees |
+|-------|-------------|---------------------|
+| **Sealed** | Jar is stoppered. Contents available. | *"A clay jar sealed with wax. Something medicinal sloshes inside."* |
+| **Applied** | Salve rubbed onto wound. Use consumed. | *"You rub the cool salve over the burn. Immediate relief."* |
+| **Empty** | All uses spent. Instance destroyed. | *"The jar is empty. The last of the salve is on your skin."* |
+
+**Design Rule:** Consumable items follow the same terminal-state pattern as spent matches. The `applied` state triggers instance destruction (or the jar persists as an empty container — designer's choice).
+
+### 12.2 Reusable Items (Persistent, Attachable)
+
+**Pattern:** The item instance persists. It attaches to an injury, can be removed when the wound heals, and reapplied to a different injury.
+
+**Example:** Bandage (cloth strip).
+
+**Bandage Lifecycle:**
+
+```
+ ┌──────────┐   apply to     ┌──────────┐   wound    ┌──────────┐
+ │   CLEAN   │ ─────────── │  APPLIED   │ ──────── │ REMOVABLE  │
+ │           │   injury     │ (attached  │  heals   │ (can be    │
+ └──────────┘              │  to wound) │          │  removed)  │
+      ▲                     └──────────┘          └─────┬──────┘
+      │                                                  │
+      └──────────────── remove from wound ◄──────────────┘
+         (bandage returns to inventory, 
+          stained but reusable)
+```
+
+| State | Description | What the Player Sees |
+|-------|-------------|---------------------|
+| **Clean** | Fresh cloth strip, ready to apply. | *"A strip of rough wool cloth. Clean and ready for use."* |
+| **Applied** | Wrapped around a specific injury. Accelerating healing. | *"Wrapped tightly around your left arm wound."* |
+| **Removable** | Wound has healed. Bandage can be safely removed. | *"The bandage on your arm is loose — the wound beneath has closed."* |
+| **Removed/Reusable** | Back in inventory after removal. Stained but functional. | *"A stained cloth strip. Used, but still serviceable as a bandage."* |
+
+**Key Constraint:** A bandage can only be APPLIED to ONE injury at a time. The player cannot stretch one bandage across two wounds. To treat a second wound, they need a second bandage — or they must wait for the first wound to heal, remove the bandage, and reapply it.
+
+**Bandage Accelerates Healing:**
+
+| Wound Type | Without Bandage | With Bandage |
+|-----------|----------------|-------------|
+| Minor cut | 5 turns (natural healing) | 2 turns (accelerated) |
+| Bleeding (deep wound) | Never stops — fatal | Drain stops immediately; wound heals in 10 turns |
+
+The bandage doesn't just stop bleeding — it creates a better healing environment. This is the mechanical incentive to use bandages even on minor wounds when time is scarce.
+
+### 12.3 Lifecycle Comparison
+
+| Property | Consumable (Salve) | Reusable (Bandage) |
+|----------|-------------------|-------------------|
+| **On use** | Use count decremented; destroyed when empty | Attaches to injury; item persists |
+| **After treatment** | Gone forever | Remains on wound, accelerating healing |
+| **Recovery** | None — find a new one | Remove when healed → reuse |
+| **Strategic tension** | "Should I use this now or save it?" | "Which wound gets the bandage?" |
+| **Example FSM** | sealed → applied → empty (destroyed) | clean → applied → removable → clean |
+
+### 12.4 Wrong-Treatment Behavior by Lifecycle Type
+
+**Consumable on wrong target:** Item is consumed AND wasted. The antidote is gone. The wrong injury is unchanged. Maximum punishment for mismatching.
+
+**Reusable on wrong target:** Item is NOT consumed. The bandage doesn't attach to a bruise — the player gets it back immediately. "The cloth doesn't help here." Reusable items are more forgiving of experimentation.
+
 ---
 
 ## See Also
 
-- [health-system.md](./health-system.md) — Derived health model, `injuries` verb, death design
+- [health-system.md](./health-system.md) — Derived health model, injury accumulation, `injuries` verb, death design
 - [injury-catalog.md](./injury-catalog.md) — Each injury type and its specific cure
+- [treatment-targeting.md](../injuries/treatment-targeting.md) — How players target specific injuries for treatment
 - [README.md](./README.md) — System overview
 - `docs/design/composite-objects.md` — Object FSM patterns (healing items follow same lifecycle)
 - `docs/design/tool-objects.md` — Tool resolution system (healing items use same dispatch)
