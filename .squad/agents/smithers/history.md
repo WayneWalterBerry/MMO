@@ -15,6 +15,18 @@
 
 ## Learnings
 
+### Session 2026-07-23: Fix Fengari to_luastring API Error
+
+**Task:** Fix "to_luastring is not a function" error on live web game.
+
+**Root Cause:** `bootstrapper.js` referenced `lua.to_luastring` (i.e., `fengari.lua.to_luastring`) but in fengari-web, `to_luastring` is a top-level utility on the `fengari` global object, not on `fengari.lua`. Two call sites were broken: `executeLua()` line 128 and `getLuaState()` line 159.
+
+**Fix:** Changed `lua.to_luastring` → `fengari.to_luastring` in both places. No rebuild needed — bootstrapper.js is served directly.
+
+**Key learning:** Fengari API namespacing: `fengari.to_luastring()` / `fengari.to_jsstring()` are top-level utilities. `fengari.lua.*` contains the C API bindings (`lua_pcall`, `lua_pop`, `lua_tojsstring`, etc.). `fengari.lauxlib.*` has auxiliary functions. Don't mix them up.
+
+---
+
 ### Session 2026-07-22: Three-Layer Web Delivery Architecture
 
 **Task:** Replace monolithic 16MB game-bundle.js with a three-layer architecture: bootstrapper.js → engine.lua.gz → JIT-loaded meta files.
