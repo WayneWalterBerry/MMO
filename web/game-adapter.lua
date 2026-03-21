@@ -36,22 +36,57 @@ local function log_status(msg)
 end
 
 ---------------------------------------------------------------------------
--- Synchronous HTTP fetch (for JIT meta file loading)
+-- HTTP cache — stores content + ETag + Last-Modified per URL
+---------------------------------------------------------------------------
+local http_cache = {}  -- { [url] = { content, etag, last_modified } }
+
+---------------------------------------------------------------------------
+-- Cache-aware HTTP fetch via JS bridge (synchronous XHR)
+-- First fetch: GET, store content + headers.
+-- Subsequent: send If-None-Match / If-Modified-Since.
+-- 304 → use cached content (zero bandwidth).
+-- 200 → update cache with new content + headers.
+-- Returns: (content, was_cached, err)
 ---------------------------------------------------------------------------
 local function fetch_text(url)
-    local ok_fetch, result = pcall(function()
-        local xhr = js.new(window.XMLHttpRequest)
-        xhr:open("GET", url, false)  -- synchronous
-        xhr:send()
-        if xhr.status == 200 then
-            return tostring(xhr.responseText)
+    local entry = http_cache[url]
+    local etag = entry and entry.etag or nil
+    local last_modified = entry and entry.last_modified or nil
+
+    local ok_fetch, content_or_err, was_cached = pcall(function()
+        local resp = window:_cachedFetch(url, etag, last_modified)
+        local status = tonumber(tostring(resp.status)) or 0
+        if status == 304 and entry then
+            return entry.content, true
+        elseif status == 200 then
+            local content = tostring(resp.content)
+            local new_etag = resp.etag and tostring(resp.etag) or nil
+            local new_lm   = resp.lastModified and tostring(resp.lastModified) or nil
+            http_cache[url] = {
+                content       = content,
+                etag          = new_etag,
+                last_modified = new_lm,
+            }
+            return content, false
         end
-        return nil
+        return nil, false
     end)
+
     if not ok_fetch then
-        return nil, "fetch error: " .. tostring(result)
+        return nil, false, "fetch error: " .. tostring(content_or_err)
     end
-    return result
+    return content_or_err, was_cached
+end
+
+---------------------------------------------------------------------------
+-- Cache management API (web_loader.invalidate / web_loader.clear)
+---------------------------------------------------------------------------
+local function cache_invalidate(url)
+    http_cache[url] = nil
+end
+
+local function cache_clear()
+    http_cache = {}
 end
 
 ---------------------------------------------------------------------------
@@ -248,13 +283,14 @@ local ok, err = pcall(function()
 
     -------------------------------------------------------------------
     -- JIT loader: fetch and load a single object by GUID
+    -- Returns (def, was_cached)
     -------------------------------------------------------------------
     local function load_object(guid)
-        if base_classes[guid] then return base_classes[guid] end
-        local source = fetch_text("meta/objects/" .. guid .. ".lua")
-        if not source then return nil end
+        if base_classes[guid] then return base_classes[guid], true end
+        local source, was_cached = fetch_text("meta/objects/" .. guid .. ".lua")
+        if not source then return nil, false end
         local def = loader.load_source(source)
-        if not def then return nil end
+        if not def then return nil, false end
         if def.template then
             def = loader.resolve_template(def, templates)
         end
@@ -262,7 +298,7 @@ local ok, err = pcall(function()
             base_classes[def.guid] = def
             if def.id then object_sources[def.id] = source end
         end
-        return def
+        return def, was_cached
     end
 
     -------------------------------------------------------------------
@@ -277,9 +313,13 @@ local ok, err = pcall(function()
             name_hint = room_id:gsub("%-", " "):gsub("(%a)([%w_']*)",
                 function(a, b) return a:upper() .. b end)
         end
-        log_status("Loading Room: " .. name_hint .. "...")
 
-        local source = fetch_text("meta/rooms/" .. room_id .. ".lua")
+        local source, was_cached = fetch_text("meta/rooms/" .. room_id .. ".lua")
+        if was_cached then
+            log_status("Loading Room: " .. name_hint .. "... (cached)")
+        else
+            log_status("Loading Room: " .. name_hint .. "...")
+        end
         if not source then return nil end
 
         local rm = loader.load_source(source)
@@ -290,8 +330,13 @@ local ok, err = pcall(function()
         -- Fetch all objects referenced by instances
         for _, inst in ipairs(rm.instances or {}) do
             if inst.type_id and not base_classes[inst.type_id] then
-                log_status("Loading Object: " .. (inst.type or inst.id) .. "...")
-                load_object(inst.type_id)
+                local obj_def, obj_cached = load_object(inst.type_id)
+                local obj_label = inst.type or inst.id
+                if obj_cached then
+                    log_status("Loading Object: " .. obj_label .. "... (cached)")
+                else
+                    log_status("Loading Object: " .. obj_label .. "...")
+                end
             end
         end
 
@@ -349,6 +394,48 @@ local ok, err = pcall(function()
             return load_room(room_id)
         end
     })
+
+    -------------------------------------------------------------------
+    -- web_loader cache API (per architecture spec)
+    -------------------------------------------------------------------
+    local web_loader_api = {}
+
+    -- Fetch with conditional headers, returns content
+    function web_loader_api.fetch(meta_type, id)
+        local url_map = {
+            objects   = "meta/objects/"   .. id .. ".lua",
+            rooms     = "meta/rooms/"     .. id .. ".lua",
+            levels    = "meta/levels/"    .. id .. ".lua",
+            templates = "meta/templates/" .. id .. ".lua",
+        }
+        local url = url_map[meta_type]
+        if not url then return nil, false, "unknown type: " .. tostring(meta_type) end
+        return fetch_text(url)
+    end
+
+    -- Force re-fetch on next access (clears stored headers)
+    function web_loader_api.invalidate(meta_type, id)
+        local url_map = {
+            objects   = "meta/objects/"   .. id .. ".lua",
+            rooms     = "meta/rooms/"     .. id .. ".lua",
+            levels    = "meta/levels/"    .. id .. ".lua",
+            templates = "meta/templates/" .. id .. ".lua",
+        }
+        local url = url_map[meta_type]
+        if url then cache_invalidate(url) end
+        -- Also clear parsed data so next access re-fetches
+        if meta_type == "rooms" then rawset(rooms, id, nil) end
+        if meta_type == "objects" then base_classes[id] = nil end
+    end
+
+    -- Clear all cached data
+    function web_loader_api.clear()
+        cache_clear()
+        -- Clear parsed caches too
+        for k in pairs(base_classes) do base_classes[k] = nil end
+        for k in pairs(object_sources) do object_sources[k] = nil end
+        for k in pairs(rooms) do rawset(rooms, k, nil) end
+    end
 
     -------------------------------------------------------------------
     -- Load level and starting room

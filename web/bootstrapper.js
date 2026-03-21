@@ -30,6 +30,23 @@
         appendOutput(message, 'output-line error-line');
     }
 
+    // --- Conditional fetch bridge (called from Lua for HTTP cache) ---
+    // Uses synchronous XHR to send If-None-Match / If-Modified-Since headers.
+    // Returns { status, content, etag, lastModified } to Lua.
+    window._cachedFetch = function (url, etag, lastModified) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, false); // synchronous
+        if (etag) xhr.setRequestHeader('If-None-Match', etag);
+        if (lastModified) xhr.setRequestHeader('If-Modified-Since', lastModified);
+        xhr.send();
+        return {
+            status: xhr.status,
+            content: xhr.status === 304 ? null : xhr.responseText,
+            etag: xhr.getResponseHeader('ETag'),
+            lastModified: xhr.getResponseHeader('Last-Modified')
+        };
+    };
+
     // Expose to Lua adapter
     window.logStatus = showStatus;
     window._logStatus = showStatus;
