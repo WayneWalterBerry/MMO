@@ -93,6 +93,13 @@ local function list_lua_files(dir)
     return files
 end
 
+-- normalize_guid(guid) -> string
+-- Strips braces from GUIDs to handle both "{abc-123}" and "abc-123" formats.
+local function normalize_guid(guid)
+    if type(guid) ~= "string" then return guid end
+    return guid:gsub("^%{(.-)%}$", "%1")
+end
+
 ---------------------------------------------------------------------------
 -- Load templates
 ---------------------------------------------------------------------------
@@ -136,7 +143,7 @@ for _, fname in ipairs(object_files) do
             end
             if def then
                 if def.guid then
-                    base_classes[def.guid] = def
+                    base_classes[normalize_guid(def.guid)] = def
                 end
                 if def.id then
                     object_sources[def.id] = source

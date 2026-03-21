@@ -5,6 +5,14 @@
 
 local loader = {}
 
+-- normalize_guid(guid) -> string
+-- Strips braces from GUIDs to handle both "{abc-123}" and "abc-123" formats.
+-- This allows object definitions and room references to use either style.
+local function normalize_guid(guid)
+  if type(guid) ~= "string" then return guid end
+  return guid:gsub("^%{(.-)%}$", "%1")
+end
+
 -- Minimal safe environment available to all loaded object code.
 local function make_sandbox()
   return {
@@ -120,9 +128,10 @@ function loader.resolve_instance(instance, base_classes, templates)
     return nil, "instance '" .. tostring(instance.id) .. "' missing type_id"
   end
 
-  local base = base_classes[instance.type_id]
+  local normalized_type_id = normalize_guid(instance.type_id)
+  local base = base_classes[normalized_type_id]
   if not base then
-    return nil, "base class not found for guid '" .. instance.type_id
+    return nil, "base class not found for guid '" .. normalized_type_id
         .. "' (instance '" .. tostring(instance.id) .. "')"
   end
 

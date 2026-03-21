@@ -6,6 +6,13 @@
 local registry = {}
 registry.__index = registry
 
+-- normalize_guid(guid) -> string
+-- Strips braces from GUIDs to handle both "{abc-123}" and "abc-123" formats.
+local function normalize_guid(guid)
+  if type(guid) ~= "string" then return guid end
+  return guid:gsub("^%{(.-)%}$", "%1")
+end
+
 -- new() -> registry instance
 function registry.new()
   return setmetatable({ _objects = {}, _guid_index = {} }, registry)
@@ -19,7 +26,7 @@ function registry:register(id, object)
   object.id = id
   self._objects[id] = object
   if type(object.guid) == "string" and object.guid ~= "" then
-    self._guid_index[object.guid] = id
+    self._guid_index[normalize_guid(object.guid)] = id
   end
 end
 
@@ -31,7 +38,7 @@ end
 -- find_by_guid(guid) -> object | nil
 -- Looks up an object by its definition guid using the guid index.
 function registry:find_by_guid(guid)
-  local id = self._guid_index[guid]
+  local id = self._guid_index[normalize_guid(guid)]
   if id then return self._objects[id] end
   return nil
 end
@@ -40,7 +47,7 @@ end
 function registry:remove(id)
   local obj = self._objects[id]
   if obj and type(obj.guid) == "string" then
-    self._guid_index[obj.guid] = nil
+    self._guid_index[normalize_guid(obj.guid)] = nil
   end
   self._objects[id] = nil
   return obj
