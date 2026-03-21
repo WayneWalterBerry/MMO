@@ -20,6 +20,7 @@
 
         html, body {
             height: 100%;
+            overflow: hidden;
             background: var(--bg);
             color: var(--fg);
             font-family: 'Courier New', Consolas, 'Liberation Mono', monospace;
@@ -30,8 +31,7 @@
         #terminal {
             display: flex;
             flex-direction: column;
-            height: calc(100vh - 16px);
-            height: calc(100dvh - 16px);
+            height: calc(100% - 16px);
             max-width: 82ch;
             margin: 8px auto;
             padding: 12px 16px;
