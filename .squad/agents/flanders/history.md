@@ -481,3 +481,34 @@ transitions = {
 - Composite objects (poison-bottle, candle-holder, nightstand) need mutate on BOTH the verb-triggered AND the detach_part transitions — same mutation, two paths to the same state change.
 - When adding keywords ±open to open/close patterns, it's a project-wide convention now: window, wardrobe, nightstand, vanity, curtains, trap-door all follow it.
 - Documentation charter: every object gets a .md in docs/objects/. Created 9 new docs, updated 4 existing.
+
+### Level 1 Object Specification Pass (2026-07-21)
+- Created 5 comprehensive room-based object specification docs in `docs/objects/level-01-*.md` covering all ~38 new objects needed for Level 1's 5 new rooms.
+- **Storage Cellar (10 objects):** large-crate, small-crate, grain-sack, wine-rack, wine-bottle, rope-coil, iron-key, oil-lantern, crowbar, rat. Most complex room — nested container puzzle (crate→sack→key) and optional light upgrade puzzle (lantern+oil).
+- **Deep Cellar (8 objects):** stone-altar, wall-sconce, incense-burner, tattered-scroll, silver-key, stone-sarcophagus, offering-bowl, chain. Narrative-focused room — altar puzzle with offering mechanic.
+- **Hallway (5 objects):** torch, portrait, side-table, vase, locked-door. Reward/transition room — no puzzles, lore delivery via portraits.
+- **Courtyard (6 objects):** stone-well, well-bucket, ivy, cobblestone, wooden-door, rain-barrel. Optional room — climbing, water mechanics.
+- **Crypt (9 base objects, 5 sarcophagus instances):** sarcophagus, candle-stub, skull, burial-jewelry, burial-coins, tome, silver-dagger, wall-inscription. Lore-heavy — Blackwood family history, tome as critical narrative prize.
+
+#### New Materials Needed (4 total)
+Flagged materials NOT in `src/engine/materials/init.lua`:
+1. **stone** — altar, sarcophagus, well, cobblestone, wall-inscription. Critical — used by 8+ objects across 3 rooms.
+2. **silver** — silver-key, silver-dagger, burial-jewelry, burial-coins. Important for value system.
+3. **hemp** — rope-coil. Single object but unique material.
+4. **bone** — skull. Single object, niche material.
+- `burlap` was also flagged (grain-sack) but `fabric` works as fallback.
+- These should be added to the registry before building .lua files. Coordinate with Frink/Bart.
+
+#### Design Patterns Established for New Objects
+- **Nested Container Puzzle pattern:** sealed crate (requires prying_tool) → tied sack (requires cutting_edge or untie by hand) → hidden key. Three-layer accessibility gate.
+- **Fuel-then-light pattern (oil-lantern):** empty → fueled (requires lamp-oil) → lit (requires fire_source). Two-step activation extends the candle "light" pattern.
+- **Instance Override for Content Variants:** wine-bottle base object with instance overrides for oil variant. Sensory clues (smell, viscosity, no label) distinguish oil from wine. One base, multiple behaviors.
+- **Ambient Creature pattern (rat):** 4-state FSM (hidden→visible→fleeing→gone) driven by auto-transitions and player proximity triggers. Not portable, not interactive — pure atmosphere. Proves Principle 8: creatures are just objects with states.
+- **Effigy-as-description (not separate object):** Sarcophagus effigies are part of the sarcophagus's closed state description, not independent objects. Avoids object fragmentation.
+- **Lore Cross-referencing pattern:** wall-inscription names ↔ portrait names ↔ sarcophagus contents ↔ tome text. The same family narrative is told from multiple angles across rooms, rewarding exploration.
+
+#### Coordination Notes
+- **For Bob (Puzzle Master):** Puzzle 012 (Altar Puzzle) has a placeholder offering mechanism — the offering-bowl guard needs the specific acceptable offering item defined. Puzzle 013 (Courtyard Entry) has multiple possible paths — wooden-door unlock, ivy climb, or both.
+- **For Bart (Engine):** Oil-lantern's fueling step requires `requires_tool = "lamp-oil"` — need to confirm the engine can resolve a tool capability from a container's contents_type (wine-bottle-oil instance).
+- **For Moe (World Builder):** Object placement coordinates included in each spec. Spatial relationships (large-crate against east wall, rope on peg, etc.) should be honored in room files.
+- **For Wayne:** Several design decisions flagged as TBD — altar offering item, courtyard door key, crypt lore text, buried-alive sarcophagus significance. See CBG's decision points in level-01-intro.md §Wayne's Decision Points.
