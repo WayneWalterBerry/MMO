@@ -113,6 +113,53 @@
 - "Material Consistency" as a design principle prevents special-casing and creates a teachable world — if wax melts, ALL wax melts
 - Per-tick threshold checking (not event-driven) is correct for our room-scoped, turn-based model — O(n×t) where n≈5-20 objects, t≈0-3 thresholds
 - Cross-domain concerns (architecture + design) need dual documents — same research, different audiences, different emphasis
+- A great room is a character (personality, mood, history, secrets) not a container with a description
+- Classic IF rooms succeed through economy of words, sensory specificity, distinctiveness, and atmosphere through absence
+- Colossal Cave's grounding in real Mammoth Cave geography gave rooms spatial coherence — base fantastical spaces on real architecture
+- Emily Short's "room as character" principle: rooms should be designed with the same care as characters
+- Inform 7 community consensus: 2-3 strong sensory details per room; variable descriptions keep rooms alive on revisits
+- Immersive sims (Thief, Dishonored, Prey) prove "lived-in clutter" — personal items with zero gameplay function have enormous narrative function
+- Environmental storytelling (Jenkins 2004): spaces evoke associations, enact events, embed narrative in mise-en-scène, enable emergent narratives
+- "Show don't tell" applied to rooms: broken weapons > "a battle was fought here"; empty bottles > "the occupant drinks"
+- Medieval manor layout follows social hierarchy: Great Hall (public) → Solar (private family) → Service rooms (buttery/pantry/kitchen) → Cellar (storage)
+- Real buildings connect purposefully: screens passages, spiral stairs, service corridors, hidden doors behind tapestries
+- Room materials cascade into environment: stone = cold/echoing/damp; wood = warm/creaking/fire-risk; earth = cool/muffled/stable
+- Every room should engage minimum 3 senses (sight + sound + smell); touch and taste are bonus channels for distinctive rooms
+- Material properties system enables environmental consistency without special-casing — room material determines temperature, humidity, fire risk, acoustics
+- Hub-and-spoke layout pattern is ideal for our Great Hall-centric medieval setting; linear for tutorials/horror; branching for exploration
+- 10 concrete room design principles (R1-R10) codified for Moe from cross-domain research synthesis
+
+## Room & Environment Design Research (2026-07-21)
+
+**Status:** ✅ COMPLETE  
+**Report:** `resources/research/rooms/room-design-research.md` (~42KB, 26 citations)
+
+### Research Scope
+Cross-domain research on room/environment design for Moe (World Builder), covering:
+- Classic text adventure room design (Zork, Colossal Cave Adventure, Inform 7 community)
+- Emily Short's "room as character" philosophy
+- Immersive sim environment design (Looking Glass Studios, Arkane Studios)
+- Real medieval architecture (manor houses, castles, dungeons, cottages)
+- Environmental storytelling theory (Jenkins 2004, BioShock, Gone Home, Edith Finch)
+- Multi-sensory room design (sound, smell, touch, darkness)
+- Material properties and environmental consistency
+- Room layout patterns (hub-and-spoke, linear, branching, loop, vertical)
+
+### Key Findings
+1. **A room is a character** — personality, mood, history, secrets; not a container with a description
+2. **Material drives environment** — room's primary material (stone/wood/earth/metal) determines temperature, acoustics, humidity, fire risk
+3. **3+ senses per room** — sight is default; add sound and smell minimum; touch/taste for special rooms
+4. **Objects tell the story** — room description = permanent architecture; objects = narrative through arrangement and condition
+5. **Hub-and-spoke is ideal** for medieval settings; Great Hall as central hub with wings branching off
+
+### Deliverables
+- 10 concrete room design principles (R1-R10) for Moe
+- Mapping to all 8 architecture principles
+- 5 room layout patterns with use cases
+- Room-puzzle connection matrix for Bob
+- Medieval room reference table with materials, function, and sensory character
+
+---
 
 ## Material Properties System Research (2026-07-19)
 

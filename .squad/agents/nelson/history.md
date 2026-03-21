@@ -18,11 +18,11 @@
 
 **Agent Role:** Tester responsible for playtest validation, bug discovery, and regression verification.
 
-**Testing Summary (2026-03-19 to 2026-03-20T21:45Z):**
-- 7 playtests completed, 57+ tests run, 50+ passed
+**Testing Summary (2026-03-19 to 2026-03-21):**
+- 8 playtests completed, 94+ tests run, 83+ passed
 - Critical path proven end-to-end: feel → GOAP light → spatial puzzle → multi-room → unlock
-- 32 unique bugs discovered (6 CRITICAL/HIGH, 8 MEDIUM, 18 MINOR/COSMETIC)
-- All CRITICAL/HIGH bugs fixed by pass-007
+- 35 unique bugs discovered (6 CRITICAL/HIGH, 9 MEDIUM, 2 LOW, 18 MINOR/COSMETIC)
+- All CRITICAL/HIGH bugs fixed; 1 MEDIUM open (BUG-035)
 
 **Current Status:**
 - Engine core: ✅ SOLID
@@ -35,6 +35,35 @@
 - `history-archive-2026-03-20T22-40Z-nelson.md` — Full archive (2026-03-19 to 2026-03-20T22:40Z): all 7 playtests, 32 bugs, regression verification, pass-by-pass findings
 
 ## Recent Updates
+
+### Pass-009 Execution: Material Properties & Mutate Fields (2026-03-21)
+
+**Status:** ✅ COMPLETE
+
+| Category | Tests | Passed | Failed | Notes |
+|----------|-------|--------|--------|-------|
+| Material System | 8 | 6 | 2 | 2 registry mismatches |
+| Mutate Fields | 10 | 9 | 1 | GOAP relight bug |
+| Core Gameplay | 12 | 12 | 0 | Zero regressions |
+| Timed Events | 3 | 3 | 0 | All fire correctly |
+| GOAP | 4 | 3 | 1 | First light ✅; relight ❌ |
+| **TOTAL** | **37** | **33** | **4** | |
+
+**New Bugs:**
+- BUG-033 (LOW): Material "oak" missing from registry (3 objects affected)
+- BUG-034 (LOW): Material "velvet" missing from registry (curtains)
+- BUG-035 (MEDIUM): GOAP relight picks spent match instead of fresh one
+
+**Major Wins:**
+1. `apply_mutations()` works perfectly — weight functions, keyword add/remove, category ops all verified
+2. Window open/close: keywords + feel changes + categories all mutate correctly
+3. Wardrobe open/close: keywords mutate correctly
+4. Nightstand open drawer: keyword mutation + room description update confirmed
+5. Candle burn timer fires naturally during gameplay — excellent urgency
+6. Zero regressions across entire critical path
+
+**Full Report:** test-pass/2026-03-21-pass-009.md
+**Puzzle Feedback:** .squad/decisions/inbox/nelson-puzzle-feedback-pass009.md
 
 ### Pass-007 Execution: GOAP Tier 3 + UNLOCK Verb Validation (2026-03-20T21:45Z)
 
@@ -71,9 +100,10 @@
 ### GOAP Tier 3 Implementation (2026-03-20T21:15Z)
 **Status:** Ready for testing. Bart delivered UNLOCK verb + auto prerequisite planning.
 
-## Bug Track Summary (32 unique)
+## Bug Track Summary (35 unique)
 - CRITICAL/HIGH (6): BUG-001, BUG-004, BUG-008, BUG-017, BUG-026, BUG-030 — ALL FIXED
-- MEDIUM (8): ALL FIXED by pass-007
+- MEDIUM (9): ALL FIXED except BUG-035 (GOAP spent match relight)
+- LOW (2): BUG-033 (oak missing from registry), BUG-034 (velvet missing from registry)
 - MINOR/COSMETIC (18): Most fixed; BUG-031, BUG-032 fixed post-pass-007
 
 ## Learnings
@@ -86,3 +116,9 @@
 - Wearable system is polished and extensible
 - Critical path now proven end-to-end (darkness → light → spatial → multi-room → unlock)
 - Content (Room 3) is the next blocker, not engine mechanics
+- Material registry works for gameplay display but has data gaps (oak/velvet missing from registry, 20 objects lack material field)
+- `apply_mutations()` handles all three types (direct, function, list ops) correctly — tested across candle, match, window, wardrobe, nightstand
+- GOAP spent match selection is a real usability problem — first light is magic, relight is broken
+- Spent matches accumulate inside matchbox after GOAP chains — root cause of relight failures
+- Candle burn timer fires correctly over gameplay time, creating real urgency
+- Match burn timer fires same-turn (by design) — you can't hold a lit match between commands
