@@ -150,6 +150,11 @@
 - `apply_mutations()` must run AFTER `apply_state()` but BEFORE `on_transition` — state sets baseline, mutate adjusts instance, callback sees final result
 - Three mutation types cover all cases: direct value, computed function, list ops (add/remove) — no need for a fourth
 - Hook mutations into all three transition paths (manual, on_tick auto, timer-expired auto) or objects will silently skip mutations on timed transitions
+- Material properties are a data layer, not a class hierarchy — Lua table registry with `get(name)` is the right pattern
+- Threshold checking extends the FSM tick (step 2 after on_tick), never replaces it — backward compatibility is preserved by nil-checking `obj.thresholds`
+- Lazy-loading the material registry via pcall avoids hard dependency — FSM module works fine without materials loaded
+- Environment context (temperature, wetness, etc.) belongs on the room table and is assembled per-tick in the loop, not stored globally
+- Support both direct numeric thresholds (`above = 62`) and material-referenced (`above_material = "melting_point"`) for flexibility — objects can hardcode or delegate to registry
 
 ## Mutation Analysis & Architecture Alignment (2026-03-21T00:16Z)
 

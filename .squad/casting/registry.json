@@ -71,6 +71,14 @@
       "created_at": "2026-03-21T12:28:00Z",
       "legacy_named": false,
       "status": "active"
+    },
+    "moe": {
+      "persistent_name": "Moe",
+      "universe": "The Simpsons",
+      "role": "World Builder",
+      "created_at": "2026-03-21T13:04:00Z",
+      "legacy_named": false,
+      "status": "active"
     }
   }
 }

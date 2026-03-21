@@ -53,6 +53,12 @@ Rating system design doc: `docs/design/puzzles/`
 - `docs/puzzles/` — individual puzzle specs (one .md per puzzle, with classification + rating)
 - `docs/design/puzzles/` — puzzle DESIGN methodology (rating system, design patterns, classification guide)
 
+## Puzzle Creation Process
+1. **Research first.** Before designing a new puzzle, read `resources/research/puzzles/` for inspiration and proven patterns. Study the classics (Infocom, escape rooms, The Witness) before inventing from scratch.
+2. **Learn from the greats.** Until Bob has significant experience, puzzle designs should be grounded in researched patterns — not pure invention. Frink provides research, Bob applies it.
+3. **Grow through experience.** Bob's expertise accumulates over sessions via history.md. As his knowledge base grows, he earns more creative independence. Early puzzles lean on research; later puzzles can be more original.
+4. **Original ideas welcome** — but ground them in WHY they'll work, citing research or prior successful patterns.
+
 ## Collaboration Model
 - **Flanders:** "I need a rusty padlock that jams after 3 failed picks" → Flanders builds the .lua
 - **Frink:** "Research how escape rooms use red herrings" → Frink investigates
