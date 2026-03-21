@@ -22,6 +22,34 @@ function fsm.load(obj)
     return nil
 end
 
+-- Apply transition-level mutations to an object instance.
+-- Supports: direct values, functions (computed from current), and list ops (add/remove).
+local function apply_mutations(obj, mutations)
+    if not mutations then return end
+    for k, v in pairs(mutations) do
+        if type(v) == "function" then
+            obj[k] = v(obj[k])
+        elseif type(v) == "table" and (v.add ~= nil or v.remove ~= nil) then
+            local list = obj[k]
+            if type(list) ~= "table" then list = {}; obj[k] = list end
+            if v.remove then
+                for i = #list, 1, -1 do
+                    if list[i] == v.remove then table.remove(list, i) end
+                end
+            end
+            if v.add then
+                local found = false
+                for _, item in ipairs(list) do
+                    if item == v.add then found = true; break end
+                end
+                if not found then list[#list + 1] = v.add end
+            end
+        else
+            obj[k] = v
+        end
+    end
+end
+
 -- Apply state properties to an object, preserving containment and identity.
 -- Removes old state-specific keys, then applies new state properties.
 -- Base properties (not defined in any state) persist untouched.
@@ -128,6 +156,7 @@ function fsm.transition(registry, obj_id, target_state, context)
     -- Stop timer for the old state (extinguish, etc.)
     fsm.stop_timer(obj_id)
     apply_state(obj, target_state, old_state)
+    apply_mutations(obj, trans.mutate)
     if trans.on_transition then trans.on_transition(obj, context) end
     -- Start timer for the new state if it has timed_events
     fsm.start_timer(registry, obj_id)
@@ -155,6 +184,7 @@ function fsm.tick(registry, obj_id)
             if t.from == obj._state and t.trigger == "auto"
                and t.condition == result.trigger then
                 apply_state(obj, t.to, obj._state)
+                apply_mutations(obj, t.mutate)
                 return t.message
             end
         end
@@ -290,6 +320,7 @@ function fsm.tick_timers(registry, delta_seconds)
                 if t.from == timer.state and t.trigger == "auto"
                    and t.condition == "timer_expired" then
                     apply_state(obj, t.to, timer.state)
+                    apply_mutations(obj, t.mutate)
                     if t.message then
                         messages[#messages + 1] = { obj_id = obj_id, message = t.message }
                     end
