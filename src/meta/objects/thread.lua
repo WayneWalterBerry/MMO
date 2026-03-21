@@ -14,6 +14,7 @@ return {
     weight = 0.05,
     categories = {"small", "crafting-material", "sewing"},
     portable = true,
+    material = "cotton",
 
     -- Sewing material: used WITH needle for sewing/crafting.
     -- The needle provides sewing_tool; thread provides sewing_material.

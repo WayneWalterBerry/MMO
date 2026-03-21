@@ -13,6 +13,7 @@ return {
     weight = 60,
     categories = {"wooden", "container"},
     portable = false,
+    material = "wood",
     room_position = "against the wall",
 
     location = nil,

@@ -13,6 +13,7 @@ return {
     weight = 0.05,
     categories = {"small", "tool", "sharp", "metal", "sewing"},
     portable = true,
+    material = "steel",
 
     -- SKILL-GATED TOOL: The pin's capabilities change based on player skills.
     -- Base capability: injury_source (prick self → blood)

@@ -14,6 +14,7 @@ return {
     weight = 0.1,
     categories = {"small", "readable", "paper"},
     portable = true,
+    material = "paper",
 
     -- Skill granting: reading this teaches the sewing skill
     grants_skill = "sewing",

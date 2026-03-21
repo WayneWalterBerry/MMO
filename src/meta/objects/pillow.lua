@@ -12,6 +12,7 @@ return {
     weight = 1,
     categories = {"soft", "fabric"},
     portable = true,
+    material = "linen",
 
     surfaces = {
         inside = { capacity = 1, max_item_size = 1, contents = {"pin"}, accessible = false },

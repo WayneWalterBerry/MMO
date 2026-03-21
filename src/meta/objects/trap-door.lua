@@ -9,6 +9,7 @@ return {
     weight = 100,
     categories = {"architecture", "wooden"},
     portable = false,
+    material = "wood",
     room_position = "set into the stone floor",
 
     discovery_message = "As you pull the rug aside, your foot catches on a wooden edge -- a seam in the flagstones. No... a trap door!",

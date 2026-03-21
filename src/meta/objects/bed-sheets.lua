@@ -12,6 +12,7 @@ return {
     size = 3,
     weight = 2,
     categories = {"fabric", "soft", "warm"},
+    material = "cotton",
 
     location = nil,
 

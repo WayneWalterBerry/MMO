@@ -14,6 +14,7 @@ return {
     weight = 0.1,
     categories = {"small", "tool", "writing"},
     portable = true,
+    material = "wood",
 
     provides_tool = "writing_instrument",
     -- Pens do not consume charges. They last forever.

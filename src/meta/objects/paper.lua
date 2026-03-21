@@ -14,6 +14,7 @@ return {
     weight = 0.1,
     categories = {"small", "writable", "flammable"},
     portable = true,
+    material = "paper",
 
     -- The paper is a writable surface. Writing requires a writing_instrument tool.
     -- When written on, the engine performs a DYNAMIC MUTATION: it generates a new

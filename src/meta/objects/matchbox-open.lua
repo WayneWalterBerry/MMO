@@ -6,6 +6,7 @@ return {
     name = "an open matchbox",
     keywords = {"matchbox", "match box", "box of matches", "tinderbox", "lucifers", "open matchbox"},
     description = "A battered little cardboard matchbox, its sliding tray pulled open. Inside, wooden matches lie in a neat row. One long side bears a rough brown striker strip, worn but functional.",
+    material = "cardboard",
 
     on_feel = function(self)
         local count = self.contents and #self.contents or 0

@@ -12,6 +12,7 @@ return {
     weight = 3,
     categories = {"fabric", "warm", "wearable"},
     portable = true,
+    material = "wool",
 
     wear = {
         slot = "back",

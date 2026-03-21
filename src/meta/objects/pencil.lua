@@ -13,6 +13,7 @@ return {
     weight = 0.1,
     categories = {"small", "tool", "writing"},
     portable = true,
+    material = "wood",
 
     provides_tool = "writing_instrument",
     -- Pencils do not consume charges. Infinite uses.

@@ -10,6 +10,7 @@ return {
     weight = 1.5,
     categories = {"furniture", "small", "portable"},
     portable = true,
+    material = "brass",
 
     -- Initial state (with_candle)
     name = "a brass candle holder",

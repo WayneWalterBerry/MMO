@@ -92,6 +92,7 @@ return {
     weight = 12,
     categories = {"furniture", "fixture", "wooden"},
     portable = false,
+    material = "wood",
 
     name = "a wooden wall clock",
     description = "A wooden wall clock with Roman numerals on a tarnished brass face. The pendulum swings steadily behind a small glass door, counting out the seconds with mechanical indifference.",

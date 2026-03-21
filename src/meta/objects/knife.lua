@@ -14,6 +14,7 @@ return {
     weight = 0.3,
     categories = {"small", "tool", "weapon", "sharp", "metal"},
     portable = true,
+    material = "steel",
 
     -- Multi-capability tool: provides both cutting and injury capabilities.
     -- The engine resolves which capability to use by verb context:

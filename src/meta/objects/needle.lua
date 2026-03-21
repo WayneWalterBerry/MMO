@@ -13,6 +13,7 @@ return {
     weight = 0.05,
     categories = {"small", "tool", "sharp", "metal", "sewing"},
     portable = true,
+    material = "steel",
 
     -- Sewing tool: used with SEW verb to transform materials into products.
     -- Pattern: SEW <material> WITH needle (requires sewing skill)

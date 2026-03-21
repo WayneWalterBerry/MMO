@@ -12,6 +12,7 @@ return {
     weight = 1,
     categories = {"metal", "small"},
     portable = true,
+    material = "brass",
 
     location = nil,
 

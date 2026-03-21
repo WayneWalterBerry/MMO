@@ -12,6 +12,7 @@ return {
     weight = 5,
     categories = {"metal", "architecture"},
     portable = false,
+    material = "iron",
     room_position = "bolted to the wall",
 
     location = nil,
