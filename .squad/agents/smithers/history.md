@@ -888,4 +888,27 @@ Nelson tested "light candle" in darkness:
 
 ---
 
+### Session 2026-03-21: BUG-060 Parser Context Retention + Report Bug Command
+
+**Task:** Fix parser losing context between commands (BUG-060) + implement "report bug" verb for web game.
+
+**Changes:**
+- `src/engine/loop/init.lua`: Added `context.last_noun` — stores the last successfully referenced noun after each verb+noun command. When a new command has a verb but no noun (e.g., bare "open" after "search wardrobe"), the last noun is substituted. Pronouns ("it", "that", "this", "them", "those") also resolve to last noun. Direction verbs, room-level verbs, and inventory excluded from context inheritance. Also added `context.transcript` (last 20 command/response pairs) captured via a print wrapper for bug reports.
+- `src/engine/parser/preprocess.lua`: Added "report bug" / "report a bug" / "bug report" / "file a bug" natural language patterns → `report_bug` verb.
+- `src/engine/verbs/init.lua`: Added `handlers["report_bug"]` — collects transcript, room name, timestamp; builds URL-encoded GitHub issue URL with pre-filled title and body; in web mode calls `ctx.open_url()` JS bridge, in CLI mode prints URL. Added to help text.
+- `web/bootstrapper.js`: Added `window._openUrl(url)` JS bridge that calls `window.open(url, '_blank')`.
+- `web/game-adapter.lua`: Added `open_url` function to context that calls `window:_openUrl(url)`.
+
+**Key Design Decisions:**
+1. Context noun stored as bare noun (prepositions stripped: "in wardrobe" → "wardrobe") to work across different verb preposition patterns.
+2. Explicit `no_noun_verbs` exclusion list rather than trying to detect which verbs need nouns — safer, avoids false context injection on "look", "feel", "north" etc.
+3. Transcript captured by wrapping `_G.print` during handler execution — non-invasive, works with all verb handlers without modifying them.
+4. `report_bug` uses `ctx.open_url` function on context (set by game-adapter.lua in web mode, nil in CLI) — clean separation of web/CLI behavior.
+
+**Key Learning:** The prepositional stripping pattern `noun:match("^%a+%s+(.+)$")` works for "in wardrobe", "at nightstand", "on bed" etc., giving us clean context nouns that work when re-applied to different verbs ("search wardrobe" → context is "wardrobe" → "open" uses "wardrobe").
+
+**Result:** Deployed to GitHub Pages. "search wardrobe" → "open" now opens the wardrobe. "examine nightstand" → "open it" → "search" chains correctly. "report bug" opens a pre-filled GitHub issue with the session transcript.
+
+---
+
 **END OF LEARNINGS**
