@@ -12,6 +12,7 @@ How to decide who handles what.
 | Scope & priorities | Chalmers | What to build next, trade-offs, decisions |
 | Game design | Comic Book Guy | Mechanics, world rules, puzzles, player interactions, object/verb design |
 | Architecture & code structure | Bart | Folder structure, module boundaries, engine design, system patterns, code organization |
+| Object design & building | Flanders | .lua object files, FSM states, mutate metadata, sensory properties, real-world object simulation |
 | Code review | Chalmers | Review PRs, check quality, suggest improvements |
 | Async issue work (bugs, tests, small features) | @copilot 🤖 | Well-defined tasks matching capability profile |
 | Session logging | Scribe | Automatic — never needs routing |

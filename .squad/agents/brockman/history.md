@@ -90,6 +90,8 @@
 - Design directives create implementation clarity
 - File reorganization can leave duplicates behind; periodic cleanup sweeps catch orphaned refs
 - When adding approved principles: update TOC first, then append full section following the exact formatting pattern of existing principles, preserve all wording from approved draft
+- Parser tier extraction: split complex layered systems by logical boundaries (Tier 1+2 vs Tier 3+) for clarity; update all cross-references (overview, related docs) in single pass
+- **Parser tier refactoring learning:** When splitting composite docs into per-tier files, create separate .md per tier (not per layer group). This enables: (1) independent status tracking (✅ Built vs 🔷 Designed), (2) bidirectional cross-references, (3) focused navigation for specific tier. Always preserve ZERO content loss and include implementation file paths in built tiers.
 
 ### Session: Player System Extraction (2026-03-22)
 **Status:** ✅ COMPLETED
@@ -107,3 +109,47 @@
 - Kept authoritative copy at docs/architecture/objects/core-principles.md
 - Updated 4 cross-references in 4 files (00-architecture-overview.md, open-questions.md, decisions.md, orchestration-log)
 - Commit: 92601d2
+
+### Session: Parser Documentation Extraction (2026-03-25)
+**Status:** ✅ COMPLETED
+- Created docs/architecture/engine/basic-parser.md (202 lines, 7.4 KB)
+- Extracted Tier 1 (Exact Dispatch) and Tier 2 (Phrase Similarity) from 00-architecture-overview.md
+- Comprehensive coverage: design, characteristics, implementation strategy, flow diagrams, testing strategy, performance notes
+- Updated 00-architecture-overview.md: removed 13 lines, added 1-line cross-reference
+- Updated intelligent-parser.md: added basic-parser.md to REFERENCES section
+- All content preserved; overview reduced by ~150 lines in focused extraction
+- Commit: b1c49d2
+
+### Session: Parser Tier Refactoring — 5 Dedicated Files (2026-03-25)
+**Status:** ✅ COMPLETED
+**Requestor:** Wayne Berry
+**Outcome:** ONE .md file per parser tier (exactly 5 files) + updated architecture overview
+
+**Files Created:**
+1. `parser-tier-1-basic.md` (2.5 KB) — Exact verb dispatch [✅ Built]
+2. `parser-tier-2-compound.md` (7.5 KB) — Phrase similarity fallback [✅ Built]
+3. `parser-tier-3-goap.md` (19.6 KB) — GOAP backward-chaining [🔷 Designed]
+4. `parser-tier-4-context.md` (7.7 KB) — Context window memory [🔷 Designed]
+5. `parser-tier-5-slm.md` (9.7 KB) — SLM/LLM fallback, Phase 2+ [🔷 Designed]
+
+**Files Deleted:**
+- `basic-parser.md` (replaced by Tiers 1+2)
+- `intelligent-parser.md` (replaced by Tiers 3-5)
+
+**Changes to Overview:**
+- Updated 00-architecture-overview.md Layer 2 section
+- Added all 5 tier files with status badges (✅ Built vs 🔷 Designed)
+- Cross-referenced each tier to its dedicated file
+- Added architecture example showing tier fallback flow
+
+**Content Preservation:** Zero loss — all content from both source files (basic-parser.md + intelligent-parser.md) split into tier-specific files with clear headers, status markers, and bidirectional cross-references.
+
+**Each Tier File Includes:**
+- Clear header: "# Parser Tier N: {Name}"
+- Status badge: ✅ Built or 🔷 Designed (not yet implemented)
+- File path of implementation (for built tiers)
+- Cross-references to adjacent tiers
+- Full design, examples, implementation notes
+- Integration points with other tiers
+
+**Commit:** e9cf2f0 with Co-authored-by trailer

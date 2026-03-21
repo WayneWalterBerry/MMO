@@ -19,6 +19,7 @@
 | 🎮 Comic Book Guy | Game Designer | .squad/agents/comic-book-guy/charter.md | Active |
 | 🏗️ Bart | Architect | .squad/agents/bart/charter.md | Active |
 | 🧪 Nelson | Tester | .squad/agents/nelson/charter.md | Active |
+| 🔨 Flanders | Object Designer / Builder | .squad/agents/flanders/charter.md | Active |
 | 📋 Scribe | Session Logger | .squad/agents/scribe/charter.md | 🔄 Monitor |
 | 🔄 Ralph | Work Monitor | — | 🔄 Monitor |
 

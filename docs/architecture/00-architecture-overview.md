@@ -49,30 +49,30 @@ The engine is a **self-modifying Lua interpreter**. All game state is represente
 1. **Tier 1 (Basic - Exact Dispatch):** ✅ Built  
    - Fast exact lookup (70% of inputs)
    - Zero tokens, instant hash table lookup
-   - `engine/parser-tier-1-basic.md`
+   - `engine/parser/parser-tier-1-basic.md`
 
 2. **Tier 2 (Compound - Phrase Similarity):** ✅ Built  
    - Graceful phrase matching (20% of inputs)
    - Token-based Jaccard similarity, ~5ms per lookup
-   - `engine/parser-tier-2-compound.md`
+   - `engine/parser/parser-tier-2-compound.md`
 
 3. **Tier 3 (GOAP - Goal-Oriented Action Planning):** 🔷 Designed, not yet built  
    - Complex goal decomposition (8% of inputs)
    - Backward-chaining prerequisite resolution
    - Auto-handles missing intermediate steps
-   - `engine/parser-tier-3-goap.md`
+   - `engine/parser/parser-tier-3-goap.md`
 
 4. **Tier 4 (Context Window - Memory-Aware):** 🔷 Designed, not yet built  
    - Context-aware tool inference (1% of inputs)
    - Remembers recent discoveries and commands
    - Aging/confidence decay for older context
-   - `engine/parser-tier-4-context.md`
+   - `engine/parser/parser-tier-4-context.md`
 
 5. **Tier 5 (SLM/LLM - Fallback):** 🔷 Designed, Phase 2+ optional  
    - On-device small language model fallback (<1% of inputs)
    - Handles novel phrasings beyond rule-based patterns
    - 350MB optional download (Qwen2.5-0.5B)
-   - `engine/parser-tier-5-slm.md`
+   - `engine/parser/parser-tier-5-slm.md`
 
 **Key Insight:** The parser is a **recovery mechanism**, not mind-reading. Each tier asks: "The player wanted X. How can I help them achieve it?" when the previous tier fails.
 
@@ -529,7 +529,7 @@ Player Types "light candle"
   - `player-model.md` — Inventory, hands, worn items, skills
   - `player-movement.md` — Movement, exits, location tracking
   - `player-sensory.md` — Light/dark, vision blocking, sensory gating
-- **Parser Tiers 1 & 2:** `engine/basic-parser.md` — Exact dispatch, phrase similarity
+- **Parser Tiers 1 & 2:** `engine/parser/parser-tier-1-basic.md` — Exact dispatch, phrase similarity
 - **Parser Details:** `verb-system.md`, `command-variation-matrix.md`
 - **Goal-Oriented Parser:** `intelligent-parser.md` (Tier 3+)
 - **Object Details:** `fsm-object-lifecycle.md`, `composite-objects.md`

@@ -96,6 +96,44 @@
 - CYOA hidden/unreachable content translates directly to unconventional verb usage
 - MUD social verbs require zero mechanical reward but drive retention
 - Premium one-time purchase is market-preferred for text games
+- DF's core insight: property-bag simulation with numeric thresholds creates emergence without special-casing
+- DF uses continuous numeric state (temperature, wear points); our discrete FSM states are correct for text IF
+- DF's material system is first-class (20+ numeric properties per material); our materials are labels — biggest adoption gap
+- DF's `CREATURE_VARIATION` / `BODY_DETAIL_PLAN` composition is richer than our single-template system
+- DF's "FPS death" (single-threaded, unbounded entity tracking) is a cautionary tale — our turn-based model avoids this entirely
+- DF raws are pure declarative data (no logic); our embedded Lua callbacks are more flexible — don't sacrifice this for "purity"
+- Threshold-based auto-transitions (guard functions checking numeric properties) bridge DF-style emergence into our FSM framework
+- Tarn Adams's key principle: "Don't overplan your model" — start simple, iterate, let emergence surprise you
+
+## Dwarf Fortress Architecture Deep Dive (2026-07-19)
+
+**Status:** ✅ COMPLETE  
+**Report:** `resources/research/competitors/dwarf-fortress/architecture-comparison.md` (~36KB, 34 citations)
+**Recommendations:** `.squad/decisions/inbox/frink-df-recommendations.md`
+
+### Research Scope
+Comprehensive analysis of Dwarf Fortress architecture covering:
+- Material/property system (raw files, material templates, numeric properties)
+- Object/entity model (creatures, items, buildings, composition hierarchy)
+- FSM/state management (continuous simulation, temperature, wear, cascades)
+- Full comparison against our engine across 7 dimensions
+- Lessons to adopt, avoid, and areas where we're ahead
+
+### Key Findings
+1. **DF's core: property-bag simulation with numeric thresholds** — engine has zero knowledge of object types, operates purely on material/physical properties
+2. **Our biggest gap: material properties** — our `material = "wax"` is a label; DF's materials carry 20+ numeric properties that drive combat, fire, phase transitions
+3. **Our biggest advantage: sensory depth + NLP** — DF is primarily visual; we have 5 senses + natural language parser
+4. **DF's biggest weakness: performance** — single-threaded, unbounded tracking, "FPS death" at scale; our turn-based model is immune
+5. **Principle 8 is validated** — already captures the DF philosophy; `mutate` field is the correct next step
+
+### Recommendations Filed
+- R1: Material property tables (HIGH)
+- R2: Threshold-based auto-transitions (HIGH)
+- R3: Variation/composition macros (MEDIUM)
+- R4: Numeric wear/decay property (MEDIUM)
+- Anti-recommendations: no full physics, no unbounded tracking, keep embedded Lua logic
+
+---
 
 ## Dynamic Object Mutation & Architecture Validation (2026-03-21T00:16Z)
 
