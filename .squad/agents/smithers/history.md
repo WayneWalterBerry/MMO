@@ -651,4 +651,30 @@ Nelson tested "light candle" in darkness:
 
 ---
 
+### Session 2026-03-23: UI/Parser/Engine Separation Refactor
+
+**Task:** Refactor engine for clean separation between UI/Parser (Smithers) and Object/FSM/Engine (Bart) domains.
+
+**Work Completed:**
+1. Created `src/engine/parser/preprocess.lua` — extracted `parse()` and `preprocess_natural_language()` (30+ NLP patterns) from loop/init.lua into standalone module. Pure functions, no side effects.
+2. Created `src/engine/ui/presentation.lua` — extracted `get_game_time()`, `format_time()`, `time_of_day_desc()`, `get_light_level()`, `has_some_light()`, `vision_blocked_by_worn()`, `get_all_carried_ids()` from verbs/init.lua. Single source of truth for time constants.
+3. Created `src/engine/ui/status.lua` — extracted `update_status()` from main.lua into clean module.
+4. Refactored `loop/init.lua` — removed dead `cmd_look` (58 lines), replaced inline parse functions with `require("engine.parser.preprocess")`, fixed double-require bug.
+5. Refactored `verbs/init.lua` — replaced 7 duplicated helper functions with `require("engine.ui.presentation")` aliases. Constants now sourced from presentation module.
+6. Refactored `main.lua` — replaced inline `update_status` with `ui_status.create_updater()`, removed duplicated time constants, added presentation module require.
+7. Updated `docs/architecture/ui/code-ownership.md` with new module boundaries, dependency graph, and remaining tangling documentation.
+8. Created `smithers-refactor-boundaries.md` decision document.
+
+**DRY Violations Fixed:** 4 (time constants, get_all_carried_ids, get_game_time, format_time)
+**Dead Code Removed:** 58 lines (cmd_look in loop)
+**Bugs Fixed:** 1 (double-require in loop)
+**New Files:** 3 (preprocess.lua, presentation.lua, status.lua)
+**Tests Passed:** All 5 verification tests (normal start, full command flow, GOAP chain, --room cellar, --list-rooms)
+
+**Key Decision:** `verbs/init.lua` (~4500 lines) remains shared. Individual verb handlers still mix presentation + logic inline. Splitting them requires a verb-result protocol — too risky for this refactor. Documented as future work.
+
+**Approach That Worked:** Local aliasing — `local get_light_level = presentation.get_light_level` — lets the presentation module own the implementation while minimizing changes to caller code throughout the 4500-line verbs file.
+
+---
+
 **END OF LEARNINGS**
