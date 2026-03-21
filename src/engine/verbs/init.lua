@@ -1382,7 +1382,7 @@ function verbs.create()
             handlers["look"](ctx, "at " .. noun)
         else
             -- Dark: fall back to feel description
-            local obj = find_visible(ctx, noun)
+            local obj, loc_type, parent_obj, surface_key = find_visible(ctx, noun)
             if not obj then
                 -- BUG-029: check exits by feel in darkness
                 local room = ctx.current_room
@@ -1411,27 +1411,38 @@ function verbs.create()
                 print("It's too dark to see, and you can't make out much by touch.")
             end
 
+            -- BUG-065: If examining a part that carries contents, check parent's surfaces
+            local check_obj = obj
+            local check_inside_only = false
+            if loc_type == "part" and parent_obj and obj.carries_contents then
+                check_obj = parent_obj
+                check_inside_only = true
+            end
+
             -- BUG-064: Enumerate accessible surface contents by touch
-            if obj.surfaces then
-                for zone_name, zone in pairs(obj.surfaces) do
-                    if zone.accessible ~= false and #(zone.contents or {}) > 0 then
-                        local items = {}
-                        for _, id in ipairs(zone.contents) do
-                            local item = ctx.registry:get(id)
-                            items[#items + 1] = item and item.name or id
-                        end
-                        print("Your fingers find " .. zone_name .. ":")
-                        for _, item_name in ipairs(items) do
-                            print("  " .. item_name)
+            if check_obj.surfaces then
+                for zone_name, zone in pairs(check_obj.surfaces) do
+                    -- For parts with carries_contents, only show "inside" surface
+                    if (not check_inside_only or zone_name == "inside") then
+                        if zone.accessible ~= false and #(zone.contents or {}) > 0 then
+                            local items = {}
+                            for _, id in ipairs(zone.contents) do
+                                local item = ctx.registry:get(id)
+                                items[#items + 1] = item and item.name or id
+                            end
+                            print("Your fingers find " .. zone_name .. ":")
+                            for _, item_name in ipairs(items) do
+                                print("  " .. item_name)
+                            end
                         end
                     end
                 end
             end
 
             -- BUG-064: Enumerate simple container contents by touch
-            if obj.container and obj.contents and #obj.contents > 0 then
+            if check_obj.container and check_obj.contents and #check_obj.contents > 0 then
                 local items = {}
-                for _, id in ipairs(obj.contents) do
+                for _, id in ipairs(check_obj.contents) do
                     local item = ctx.registry:get(id)
                     items[#items + 1] = item and item.name or id
                 end
@@ -1636,7 +1647,7 @@ function verbs.create()
             return
         end
 
-        local obj = find_visible(ctx, noun)
+        local obj, loc_type, parent_obj, surface_key = find_visible(ctx, noun)
         if not obj then
             -- BUG-029: check exits by touch (iron door, etc.)
             local room = ctx.current_room
@@ -1668,27 +1679,38 @@ function verbs.create()
                 ". " .. (obj.description or "It feels ordinary."))
         end
 
+        -- BUG-065: If feeling a part that carries contents, check parent's surfaces
+        local check_obj = obj
+        local check_inside_only = false
+        if loc_type == "part" and parent_obj and obj.carries_contents then
+            check_obj = parent_obj
+            check_inside_only = true
+        end
+
         -- Enumerate accessible surface contents by touch
-        if obj.surfaces then
-            for zone_name, zone in pairs(obj.surfaces) do
-                if zone.accessible ~= false and #(zone.contents or {}) > 0 then
-                    local items = {}
-                    for _, id in ipairs(zone.contents) do
-                        local item = ctx.registry:get(id)
-                        items[#items + 1] = item and item.name or id
-                    end
-                    print("Your fingers find " .. zone_name .. ":")
-                    for _, item_name in ipairs(items) do
-                        print("  " .. item_name)
+        if check_obj.surfaces then
+            for zone_name, zone in pairs(check_obj.surfaces) do
+                -- For parts with carries_contents, only show "inside" surface
+                if (not check_inside_only or zone_name == "inside") then
+                    if zone.accessible ~= false and #(zone.contents or {}) > 0 then
+                        local items = {}
+                        for _, id in ipairs(zone.contents) do
+                            local item = ctx.registry:get(id)
+                            items[#items + 1] = item and item.name or id
+                        end
+                        print("Your fingers find " .. zone_name .. ":")
+                        for _, item_name in ipairs(items) do
+                            print("  " .. item_name)
+                        end
                     end
                 end
             end
         end
 
         -- Enumerate simple container contents by touch
-        if obj.container and obj.contents and #obj.contents > 0 then
+        if check_obj.container and check_obj.contents and #check_obj.contents > 0 then
             local items = {}
-            for _, id in ipairs(obj.contents) do
+            for _, id in ipairs(check_obj.contents) do
                 local item = ctx.registry:get(id)
                 items[#items + 1] = item and item.name or id
             end
