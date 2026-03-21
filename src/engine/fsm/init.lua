@@ -129,7 +129,8 @@ end
 
 -- Transition an object to target_state. Returns transition table on success,
 -- or nil + error code on failure. Optional context table for guard checks.
-function fsm.transition(registry, obj_id, target_state, context)
+-- verb_hint narrows transition search when multiple transitions share a target.
+function fsm.transition(registry, obj_id, target_state, context, verb_hint)
     local obj = registry:get(obj_id)
     if not obj or not obj.states or not obj._state then
         return nil, "not_fsm"
@@ -138,12 +139,30 @@ function fsm.transition(registry, obj_id, target_state, context)
     local cur = obj.states[obj._state]
     if cur and cur.terminal then return nil, "terminal" end
 
-    -- Find a matching transition
+    -- Find a matching transition (prefer verb_hint when given)
     local trans
     for _, t in ipairs(obj.transitions or {}) do
         if t.from == obj._state and t.to == target_state and t.trigger ~= "auto" then
-            trans = t
-            break
+            if not verb_hint or t.verb == verb_hint then
+                trans = t
+                break
+            end
+            -- Also check aliases for verb_hint
+            if verb_hint and t.aliases then
+                for _, a in ipairs(t.aliases) do
+                    if a == verb_hint then trans = t; break end
+                end
+                if trans then break end
+            end
+        end
+    end
+    -- Fallback: if verb_hint didn't match, pick the first available transition
+    if not trans then
+        for _, t in ipairs(obj.transitions or {}) do
+            if t.from == obj._state and t.to == target_state and t.trigger ~= "auto" then
+                trans = t
+                break
+            end
         end
     end
     if not trans then return nil, "no_transition" end
