@@ -14,6 +14,7 @@ How to decide who handles what.
 | Architecture & code structure | Bart | Folder structure, module boundaries, engine design, system patterns, code organization |
 | Object design & building | Flanders | .lua object files, FSM states, mutate metadata, sensory properties, real-world object simulation |
 | Puzzle design & conceptualization | Sideshow Bob | Multi-step puzzles, prerequisite chains, object interaction design, puzzle research |
+| Object testing | Lisa | FSM transition verification, mutate field testing, sensory property checks, object-level test reports |
 | Code review | Chalmers | Review PRs, check quality, suggest improvements |
 | Async issue work (bugs, tests, small features) | @copilot 🤖 | Well-defined tasks matching capability profile |
 | Session logging | Scribe | Automatic — never needs routing |

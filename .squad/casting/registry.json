@@ -63,6 +63,14 @@
       "created_at": "2026-03-21T12:22:00Z",
       "legacy_named": false,
       "status": "active"
+    },
+    "lisa": {
+      "persistent_name": "Lisa",
+      "universe": "The Simpsons",
+      "role": "Object Tester",
+      "created_at": "2026-03-21T12:28:00Z",
+      "legacy_named": false,
+      "status": "active"
     }
   }
 }

@@ -21,6 +21,7 @@
 | 🧪 Nelson | Tester | .squad/agents/nelson/charter.md | Active |
 | 🔨 Flanders | Object Designer / Builder | .squad/agents/flanders/charter.md | Active |
 | 🧩 Sideshow Bob | Puzzle Master | .squad/agents/sideshow-bob/charter.md | Active |
+| 🧪 Lisa | Object Tester | .squad/agents/lisa/charter.md | Active |
 | 📋 Scribe | Session Logger | .squad/agents/scribe/charter.md | 🔄 Monitor |
 | 🔄 Ralph | Work Monitor | — | 🔄 Monitor |
 

@@ -1,5 +1,13 @@
 # Puzzle 001: Light the Room
 
+**Status:** 🟢 In Game  
+**Difficulty:** ⭐⭐ Level 2  
+**Cruelty Rating:** Polite (soft failure with recovery path)  
+**Author:** Sideshow Bob  
+**Last Updated:** 2026-03-20
+
+---
+
 ## Overview
 
 The player wakes in complete darkness in a bedroom around 2–3 AM. They cannot see anything and must find a light source. This is the first puzzle and teaches the core tool system: finding objects, using containers, and chaining compound tool actions together to accomplish a goal.
@@ -7,6 +15,23 @@ The player wakes in complete darkness in a bedroom around 2–3 AM. They cannot 
 ## Room
 
 Bedroom (starting location)
+
+---
+
+## Quick Reference
+
+| Field | Value |
+|-------|-------|
+| **Room(s)** | Bedroom |
+| **Objects Required** | nightstand, drawer, matchbox, match (7 instances), candle |
+| **Objects Created** | match-lit (state mutation of match) |
+| **Prerequisite Puzzles** | None |
+| **Unlocks** | Visual exploration of bedroom; foundation for Puzzle 002+ |
+| **GOAP Compatible?** | Yes (full auto-resolution available) |
+| **Multiple Solutions?** | 2 (strike match OR wait for dawn) |
+| **Estimated Time** | 2–5 min (first-time), < 1 min (repeat) |
+
+---
 
 ## Required Objects
 
@@ -95,11 +120,52 @@ If the player tries `LIGHT candle` without possessing a fire source:
 
 ## Status
 
-**Designed** — Detailed game design and mechanics established. Implementation in progress per `.squad/decisions.md` and `design-directives.md`.
+**🟢 In Game** — Tested and working.
+
+**Owner:** Sideshow Bob  
+**Builder:** Flanders (Object Designer)  
+**Tester:** Nelson  
+**Last Tested:** 2026-03-15
+
+---
+
+## Difficulty Rating: ⭐⭐ Level 2 (Introductory)
+
+### Rating Analysis
+
+| Factor | Analysis | Score |
+|--------|----------|-------|
+| **Step count** | 9 actions (FEEL → open drawer → take matchbox → open matchbox → take match → strike match → light candle), but GOAP collapses 5–7 | 3–5 actions perceived |
+| **Tool chain depth** | Single linear chain: nightstand → matchbox → match → strike → light | Depth 2 (simple) |
+| **Clue obviousness** | Nightstand contextually adjacent to bed (narratively sensible); matches contextually near candle; FEEL works in darkness (taught immediately via failure feedback) | Contextual (non-explicit but reasonable) |
+| **GOAP coverage** | GOAP can auto-resolve entire chain if player discovers match location first. Or player manually executes. | Partial (scaffolding + player choice) |
+| **Failure reversibility** | Soft only: 7 matches available (generous for first puzzle); player can waste them and wait for dawn (3–4 min). Encourages experimentation. | Soft |
+| **Lateral thinking required?** | No. Solution is linear and hinted by narrative ("you wake in darkness, you need light"). | None |
+| **Player learning time** | 2–5 min (first-time); < 1 min (experienced) | Appropriate for opening |
+
+### Justification
+
+This is the opening puzzle. It teaches core systems (containment, compound tools, sensory verbs, GOAP scaffolding) with a linear solution path and no real failure penalty. The puzzle is designed to build confidence before introducing Level 3 complexity. Despite 9 discrete actions, the conceptual challenge is minimal. GOAP can collapse the chain, but player can also manually execute. The narrative guides the player toward the solution. This is a **tutorial-grade** Level 2, not a challenge.
+
+### Cruelty Analysis: **Polite**
+
+- **Running out of matches:** Soft failure. Matchbox becomes empty, but player can wait for dawn (3–4 real minutes).
+- **Match burns out:** Soft failure. Player strikes another match. Teaches urgency.
+- **Visual feedback:** Player always knows when light has been achieved (room description changes).
+- **No hidden gotchas:** Everything works as expected. No trick conditions or cryptic feedback.
 
 ---
 
 ## Design Notes
+
+### Puzzle Patterns Applied
+
+This puzzle uses two core patterns:
+
+1. **Lock-and-Key (Compound):** Darkness is the "lock." Fire source is the "key." Match requires striker surface (matchbox) to ignite—this is a compound lock (two objects required).
+2. **Combination/Synthesis:** Match (object A) + matchbox striker (object B) → lit match (new state). Lit match + candle → illuminated candle.
+3. **Transformation/State Mutation:** match → match-lit (state change with new properties: `casts_light`, `provides_tool`). Consumed resource (burnout timer).
+4. **Discovery/Sensory:** FEEL works in darkness, guiding exploration without light.
 
 ### Why These Objects?
 

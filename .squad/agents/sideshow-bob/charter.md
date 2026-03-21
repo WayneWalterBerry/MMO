@@ -36,6 +36,23 @@ Every puzzle must have:
 - Bob owns the puzzle docs. He can write them himself or delegate to Brockman, but they must exist and stay up to date.
 - Puzzle docs are a deliverable, not optional.
 
+## Puzzle Classification
+Every puzzle must be tagged with one of three statuses:
+1. **🟢 In Game** — implemented and working in the engine
+2. **🟡 Wanted** — designed and approved by Wayne, not yet built
+3. **🔴 Theorized** — conceptualized by Bob, not yet signed off or no place for it yet
+
+This allows Bob to design puzzles ahead of time. The pipeline is:
+**Theorized → (Wayne approves) → Wanted → (Flanders builds) → In Game**
+
+## Puzzle Difficulty Rating
+All puzzles must be rated for hardness/difficulty using a standardized rating system.
+Rating system design doc: `docs/design/puzzles/`
+
+## Documentation Structure
+- `docs/puzzles/` — individual puzzle specs (one .md per puzzle, with classification + rating)
+- `docs/design/puzzles/` — puzzle DESIGN methodology (rating system, design patterns, classification guide)
+
 ## Collaboration Model
 - **Flanders:** "I need a rusty padlock that jams after 3 failed picks" → Flanders builds the .lua
 - **Frink:** "Research how escape rooms use red herrings" → Frink investigates
