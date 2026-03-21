@@ -214,7 +214,7 @@ end
 - **Room Registry:** `context.rooms = { bedroom = {...}, cellar = {...}, ... }`
 - **Object Registry:** Single shared registry across all rooms
 - **Room Contents:** Each room has `room.contents` array (which objects are in this room)
-- **Player Location:** `ctx.current_room` tracks current room ID
+- **Player Location:** `ctx.current_room` tracks current room ID (see [player/player-movement.md](player/player-movement.md))
 
 **Loading:**
 - Startup: Load all `.lua` files from `src/meta/world/`
@@ -222,11 +222,8 @@ end
 - Rooms instantiated into `context.rooms` table
 
 **Movement:**
-- Player types: "go north"
-- `handle_movement` looks up north exit in current room
-- Checks accessibility (locked door? key in inventory?)
-- Transitions player to new room: `ctx.current_room = "cellar"`
-- Resets view: shows room description, contents
+- See [player/player-movement.md](player/player-movement.md) for complete movement mechanics
+- Summary: Player types "go north" → `handle_movement` looks up exit → checks accessibility → transitions `ctx.current_room` → resets view
 
 **Object Persistence:**
 - Drop item in bedroom → item stays in registry with `location = "bedroom"`
@@ -317,41 +314,12 @@ container = {
 
 ### Layer 6: Player Model
 
-**Inventory Structure:**
-```lua
-player = {
-    hands = { left = nil, right = nil },     -- What's held in hands?
-    worn = {                                  -- What's worn?
-        head = nil,
-        torso = nil,
-        feet = nil,
-        -- ... other body slots
-    },
-    skills = {
-        lockpicking = false,
-        sewing = false,
-        -- ... learned skills
-    }
-}
-```
+**See:** [player/](player/) directory for complete player system documentation:
+- `player-model.md` — Inventory, hands, worn items, skills structure
+- `player-movement.md` — Movement verbs, exit system, location tracking
+- `player-sensory.md` — Light/dark system, vision blocking, sensory gating
 
-**Hand Slots:**
-- Player has 2 hands total
-- Objects declare `hands_required` (0, 1, or 2)
-- Heavy/large items tie up both hands
-- Worn items don't consume hand slots
-
-**Wearable System:**
-- Each worn item occupies one body slot
-- Wearables can be containers (backpack on back)
-- Some wearables block vision (sack on head)
-- Slot conflicts prevent simultaneous wear
-
-**Skills:**
-- Binary (have it or don't)
-- Gates certain verbs (SEW requires sewing skill)
-- Unlocks tool combinations (pin → lock pick WITH skill)
-- Discovered through gameplay (find manual, practice, NPC teaching, puzzle solve)
+Player entity contains hands (2 slots), worn items (body slots), and learned skills. See player/ folder for full details.
 
 ---
 
@@ -378,20 +346,9 @@ player = {
 
 ### Layer 8: Light & Dark System
 
-**Light Sources:**
-- Objects with `casts_light = true` emit light (lit candle, torch)
-- Room-level check: if any object in room casts light, room is bright
-- Daylight: outside areas + time 6 AM to 6 PM + `allows_daylight = true`
+**See:** [player/player-sensory.md](player/player-sensory.md) for complete sensory system documentation.
 
-**Sensory in Darkness:**
-- LOOK requires light (fails with "You see nothing in the darkness")
-- FEEL / SMELL / TASTE / LISTEN work in darkness (no light needed)
-- EXAMINE has light requirement (only in bright rooms)
-
-**Vision Blocking:**
-- Wearables with `blocks_vision = true` (sack, blindfold) disable LOOK
-- Even in bright room, blindness overrides light
-- Becomes a puzzle element (can't see, but can FEEL/SMELL)
+Summary: Objects with `casts_light` emit light. Darkness gates LOOK/EXAMINE verbs. FEEL/SMELL/LISTEN work in darkness. Vision-blocking wearables override light state, creating puzzle elements.
 
 ---
 
@@ -560,6 +517,10 @@ Player Types "light candle"
 
 ## Cross-References
 
+- **Player System:** `player/` directory
+  - `player-model.md` — Inventory, hands, worn items, skills
+  - `player-movement.md` — Movement, exits, location tracking
+  - `player-sensory.md` — Light/dark, vision blocking, sensory gating
 - **Parser Details:** `verb-system.md`, `command-variation-matrix.md`
 - **Goal-Oriented Parser:** `intelligent-parser.md` (existing), `docs/design/goal-decomposition.md` (planned)
 - **Object Details:** `fsm-object-lifecycle.md`, `composite-objects.md`
