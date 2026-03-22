@@ -131,3 +131,9 @@
 2. **Early wake-up:** Single player for now — you always wait out the timer. Design the hook for future multiplayer but don't implement NPC wake-up yet.
 3. **Dazed state:** No — binary conscious/unconscious, clean transition. No intermediate state.
 4. **Armor protection:** Yes — helmets/armor reduce unconsciousness duration or prevent it entirely for weak blows. Design the `reduces_unconsciousness` property on wearable objects.
+5. **Injury listing verb:** Three approaches, all should work:
+   - `health` / `check health` — natural, covers injuries + overall state
+   - `status` — covers everything (health, injuries, hunger, time)
+   - `how am I` / `how do I feel` — Prime Directive natural English
+   - Parser should handle all variants: "check my wounds", "am I hurt?", "what's wrong with me?", "injuries", "wounds"
+   - **Nelson must test this area after implementation** — wide variety of natural phrasing
