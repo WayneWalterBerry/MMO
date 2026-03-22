@@ -434,10 +434,10 @@ local function transform_search_phrases(text)
         return "search around", true
     end
 
-    -- "rummage" and all forms → search (BUG-081, BUG-093)
+    -- "rummage" and all forms → search (BUG-081, BUG-093, BUG-111)
     local rummage_target = text:match("^rummage%s+for%s+(.+)")
     if rummage_target then
-        return "search " .. preprocess.strip_articles(rummage_target), true
+        return "search " .. singularize_target(preprocess.strip_articles(rummage_target)), true
     end
     local rummage_through = text:match("^rummage%s+through%s+(.+)")
     if rummage_through then

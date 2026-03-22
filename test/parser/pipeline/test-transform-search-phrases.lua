@@ -151,9 +151,9 @@ end)
 h.suite("Stage 5: transform_search_phrases — 'rummage' patterns")
 -------------------------------------------------------------------------------
 
-test("'rummage for matches' → 'search matches'", function()
+test("'rummage for matches' → 'search match' (BUG-111: singularized)", function()
     local result = transform_search_phrases("rummage for matches")
-    eq("search matches", result)
+    eq("search match", result)
 end)
 
 test("'rummage through the drawer' → 'search the drawer'", function()

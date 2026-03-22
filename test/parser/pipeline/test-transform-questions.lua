@@ -77,8 +77,8 @@ end)
 h.suite("Stage 3: transform_questions — 'what is this'")
 -------------------------------------------------------------------------------
 
-test("'what is this' → 'examine this'", function()
-    eq("examine this", transform_questions("what is this"))
+test("'what is this' → 'look' (BUG-104: safe fallback for unresolved pronoun)", function()
+    eq("look", transform_questions("what is this"))
 end)
 
 -------------------------------------------------------------------------------
@@ -169,36 +169,36 @@ end)
 h.suite("Stage 3: transform_questions — 'where is the X' (Tier 1)")
 -------------------------------------------------------------------------------
 
-test("'where is the key' → 'search for key'", function()
-    eq("search for key", transform_questions("where is the key"))
+test("'where is the key' → 'find key' (BUG-110)", function()
+    eq("find key", transform_questions("where is the key"))
 end)
 
-test("'where is the matchbox' → 'search for matchbox'", function()
-    eq("search for matchbox", transform_questions("where is the matchbox"))
+test("'where is the matchbox' → 'find matchbox' (BUG-110)", function()
+    eq("find matchbox", transform_questions("where is the matchbox"))
 end)
 
-test("'where is nightstand' (no article) → 'search for nightstand'", function()
-    eq("search for nightstand", transform_questions("where is nightstand"))
+test("'where is nightstand' (no article) → 'find nightstand' (BUG-110)", function()
+    eq("find nightstand", transform_questions("where is nightstand"))
 end)
 
-test("'where's the candle' → 'search for candle'", function()
-    eq("search for candle", transform_questions("where's the candle"))
+test("'where's the candle' → 'find candle' (BUG-110)", function()
+    eq("find candle", transform_questions("where's the candle"))
 end)
 
-test("'wheres the door' (no apostrophe) → 'search for door'", function()
-    eq("search for door", transform_questions("wheres the door"))
+test("'wheres the door' (no apostrophe) → 'find door' (BUG-110)", function()
+    eq("find door", transform_questions("wheres the door"))
 end)
 
 -------------------------------------------------------------------------------
 h.suite("Stage 3: transform_questions — 'what is this' variants (Tier 1)")
 -------------------------------------------------------------------------------
 
-test("'what's this' → 'examine this'", function()
-    eq("examine this", transform_questions("what's this"))
+test("'what's this' → 'look' (BUG-104)", function()
+    eq("look", transform_questions("what's this"))
 end)
 
-test("'whats this' (no apostrophe) → 'examine this'", function()
-    eq("examine this", transform_questions("whats this"))
+test("'whats this' (no apostrophe) → 'look' (BUG-104)", function()
+    eq("look", transform_questions("whats this"))
 end)
 
 -------------------------------------------------------------------------------

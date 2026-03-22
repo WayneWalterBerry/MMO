@@ -317,8 +317,8 @@ test("new politeness + adverb: 'perhaps carefully search' → 'search'", functio
     eq("search", strip_filler("perhaps carefully search"))
 end)
 
-test("'would you mind hastily searching around' → 'searching around'", function()
-    eq("searching around", strip_filler("would you mind hastily searching around"))
+test("'would you mind hastily searching around' → 'search around' (BUG-107: gerund stripped)", function()
+    eq("search around", strip_filler("would you mind hastily searching around"))
 end)
 
 test("'i think i'll nervously open the crate' → 'open the crate'", function()

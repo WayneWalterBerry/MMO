@@ -82,10 +82,10 @@ test("'I want to look for the key' → find key (preamble + look for)", function
     eq("key", n)
 end)
 
-test("'please slowly hunt for matches' → search matches", function()
+test("'please slowly hunt for matches' → search match (BUG-111: singularized)", function()
     local v, n = preprocess.natural_language("please slowly hunt for matches")
     eq("search", v)
-    eq("matches", n)
+    eq("match", n)
 end)
 
 test("'Would you thoroughly rummage around?' → search around", function()
@@ -217,15 +217,15 @@ end)
 h.suite("Pipeline Integration: Tier 0 + Tier 1 cross-stage interactions")
 -------------------------------------------------------------------------------
 
-test("BUG-083: 'Could you search for matches?' → search matches (politeness + compound)", function()
+test("BUG-083: 'Could you search for matches?' → search match (BUG-111: singularized)", function()
     local v, n = preprocess.natural_language("Could you search for matches?")
     eq("search", v)
-    eq("matches", n)
+    eq("match", n)
 end)
 
-test("'Where is the key?' → search for key (question transform)", function()
+test("'Where is the key?' → find key (BUG-110: question transform)", function()
     local v, n = preprocess.natural_language("Where is the key?")
-    eq("search", v)
+    eq("find", v)
     truthy(n and n:find("key"), "Should target key")
 end)
 
@@ -241,10 +241,10 @@ test("'What do I do?' → help", function()
     eq("", n)
 end)
 
-test("'What's this?' → examine this", function()
+test("'What's this?' → look (BUG-104: safe fallback)", function()
     local v, n = preprocess.natural_language("What's this?")
-    eq("examine", v)
-    eq("this", n)
+    eq("look", v)
+    eq("", n)
 end)
 
 test("'Perhaps look around?' → look (new politeness + question mark)", function()
@@ -271,9 +271,9 @@ test("'Please hastily grab the key' → grab key", function()
     truthy(n and n:find("key"), "Should target key")
 end)
 
-test("'Where's the matchbox?' → search for matchbox", function()
+test("'Where's the matchbox?' → find matchbox (BUG-110)", function()
     local v, n = preprocess.natural_language("Where's the matchbox?")
-    eq("search", v)
+    eq("find", v)
     truthy(n and n:find("matchbox"), "Should target matchbox")
 end)
 
@@ -283,13 +283,13 @@ test("'How do I open the crate?' → help", function()
     eq("", n)
 end)
 
-test("'Would you mind carefully searching around?' → search around", function()
+test("'Would you mind carefully searching around?' → search around (BUG-107: gerund stripped)", function()
     local v, n = preprocess.natural_language("Would you mind carefully searching around?")
     -- "would you mind" stripped → "carefully searching around"
     -- "carefully" stripped → "searching around"
-    -- No further pipeline match but text changed, so parsed
-    local parsed_v, parsed_n = preprocess.parse("searching around")
-    eq(parsed_v, v, "Verb should match parsed result")
+    -- Gerund stripped → "search around"
+    eq("search", v, "Verb should be 'search' after gerund stripping")
+    eq("around", n, "Noun should be 'around'")
 end)
 
 test("'Perhaps carefully check the nightstand' → examine nightstand", function()
