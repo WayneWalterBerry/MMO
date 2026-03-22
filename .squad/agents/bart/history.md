@@ -78,6 +78,29 @@
 - Section 6 of prime-directive-roadmap.md details the pipeline refactor
 - Shows extensible architecture without framework overhead
 
+### Session: Headless Testing Mode (2026-03-22T19:41Z)
+**Status:** ✅ COMPLETE  
+**Team:** Scribe coordination of Marge + Bart + Smithers deploy sprint
+
+**Task:** Implement `--headless` testing mode to eliminate TUI false-positive hang reports.
+
+**Deliverable:** D-HEADLESS decision + `src/main.lua` implementation
+
+**Key Insight:** Nelson Pass 035 proved 6 reported "hangs" were false positives caused by TUI ANSI escape codes (cursor positioning, scroll regions) overwriting terminal content in interactive sessions. Automated pipe-based testing with precise timing showed zero actual hangs (50/50 PASS rate).
+
+**Solution Implemented:**
+- `--headless` flag in main.lua disables TUI entirely (no ANSI codes)
+- Suppresses interactive `"> "` prompt and welcome banner
+- Emits `---END---` delimiters on separate lines for trivial test harness parsing
+- Preserves all game logic (only presentation layer changes)
+- Usage: `echo "look" | lua src/main.lua --headless`
+
+**Impact:**
+- Eliminates entire class of TUI false-positive reports
+- Nelson MUST use `--headless` for all automated/LLM play testing going forward
+- No changes to game logic, parser, or verb system required
+- All 1,088 unit tests pass with --headless mode verified
+
 **Commit:** `a86f9d7` — docs: Add parser strategy document (buzzword analysis & architectural decisions)
 
 ### Session: BUG-067/068 Investigation (2026-03-21)

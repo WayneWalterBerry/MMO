@@ -31,3 +31,26 @@
   - #8 BUG-106b (blow unlit candle): ✅ Fixed + test (extinguish transitions checked)
 - **Only open item:** #3 BUG-072 (screen flicker during progressive object discovery) — LOW severity, no fix yet, no deploy blocker
 - **Recommendation:** Close #1, #4, #7, #8 immediately (Marge's authority). Defer #3 as post-deploy polish investigation.
+
+### Session: Deploy & Cleanup Sprint (2026-03-22T19:41Z)
+**Status:** ✅ COMPLETE (Marge's portion)  
+**Team:** Scribe orchestration — Marge + Bart + Smithers
+
+**Task:** Final deploy gate clearance and issue closure.
+
+**Results:**
+- ✅ **6 critical hangs closed** (#2, #5, #6, #9, #10, #11) — evidence-based: Nelson Pass 035 pipe-based testing (50/50 PASS) proved TUI ANSI codes caused false positives, not actual hangs
+- ✅ **4 additional fixed issues closed** (#1, #4, #7, #8) — verified against bug tracker, all have regression tests
+- ✅ **Deploy gate: UNBLOCKED**
+  - 0 CRITICAL issues
+  - 0 HIGH issues
+  - 5 MEDIUM/LOW remaining (non-blocking)
+  - 1,088 unit tests passing (37 test files)
+
+**Key Finding:** Early interactive terminal tests showed apparent "hangs" due to TUI split-screen renderer (cursor positioning `\e[H`, scroll regions `\e[r`, screen clearing `\e[2J`, reverse video `\e[7m`) overwriting terminal content. Automated testing infrastructure (Smithers' work) proved no actual deadlocks exist. Bart's architectural safety nets (debug.sethook 2-second deadline + pcall wrapper) provide defense-in-depth regardless.
+
+**Decision Propagated:** D-HEADLESS (Bart) — `--headless` mode for automated testing without TUI false positives
+
+**Next Steps:**
+- Smithers deploying to live site
+- Post-deploy: investigate #3 (cosmetic screen flicker)

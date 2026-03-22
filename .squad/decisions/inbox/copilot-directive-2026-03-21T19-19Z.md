@@ -1,4 +1,0 @@
-### 2026-03-21T19:19Z: User directive — Inventory stores object instances
-**By:** Wayne Berry (via Copilot)
-**What:** Inventory items are OBJECT INSTANCES, not object references/IDs. An object instance can be a modified version of its base object (e.g., a candle that's been lit has a different FSM state than the template candle). The player's inventory in player.lua should store the full modified object instance — not just a string ID pointing to the base object definition. This means when you pick up a candle that's been lit, the inventory holds the candle WITH its current "lit" state, not a pointer to the generic candle definition.
-**Why:** Objects change during gameplay (FSM transitions, damage, modifications). Storing just IDs would lose per-instance state. The inventory is a collection of live, mutable object instances — each one potentially different from its template.

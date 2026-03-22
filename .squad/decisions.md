@@ -1,13 +1,21 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-22  
+**Last Updated:** 2026-03-22T19:41Z  
 **Merger:** Scribe  
-**Source:** 32 inbox files + existing decisions.md (deduplicated, reorganized by category)  
-**Merged:** brockman-daily-editions.md, brockman-directive-sweep.md, brockman-doc-maintenance.md, brockman-puzzle-docs.md, nelson-pass-008-bugs.md
+**Source:** Inbox merged (deduplicated, reorganized by category)  
+**New Decisions:** D-HEADLESS
 
 ---
 
 ## TESTING DECISIONS
+
+### D-HEADLESS: Headless Testing Mode
+**Author:** Bart (Architect)  
+**Date:** 2026-03-25  
+**Status:** Implemented  
+Added `--headless` command-line flag to `src/main.lua` that activates clean automated testing mode: disables TUI (no ANSI codes), suppresses prompt, emits `---END---` delimiters for trivial parsing, and preserves all game logic. Usage: `echo "look" | lua src/main.lua --headless`. Eliminates TUI false-positive hang reports from LLM play testing. Nelson MUST use `--headless` for all automated testing going forward.
+
+---
 
 ### D-PIPE-TESTS: Per-Stage Pipeline Unit Tests
 **Author:** Nelson (Tester)  
