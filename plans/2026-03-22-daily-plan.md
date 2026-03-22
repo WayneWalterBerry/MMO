@@ -327,10 +327,10 @@
 
 ---
 
-## Phase 7: Final Deploy (after Marge gives go/no-go)
-- [ ] Run `deploy.ps1` to push everything live
-- [ ] Verify live site
-- [ ] `git commit && git push`
+## Phase 7: Final Deploy ✅
+- [x] Run `deploy.ps1` to push everything live (commit 22ac27c → Pages commit 302a335)
+- [x] Verify live site at waynewalterberry.github.io/play/ — game prompt responding
+- [x] 96 files deployed: engine bundle (124.7 KB), 78 objects, 7 rooms, 91 meta files
 
 ---
 
@@ -347,3 +347,21 @@
 - **Bugs in GitHub Issues** — WayneWalterBerry/MMO, not markdown files. Labels for severity/component/hang.
 - **Engineers don't close Issues** — Only test team (Marge/Nelson) verifies fixes and closes. Engineers fix + comment.
 - **PIVOT: Hang elimination** — Stop all features. Make parser architecturally unable to hang. Deploy only after Marge go/no-go.
+- **Headless testing mode** — `--headless` flag disables TUI rendering for automated testing. Nelson must always use it. Prevents TUI false-positive hang reports.
+- **Nelson→Bart feedback loop** — Nelson gives Bart feedback on headless mode after first use, in case it needs tuning.
+- **Smithers preferred model** — claude-opus-4.6 (fast variant if available), fallback to claude-sonnet-4.5.
+
+---
+
+## Final Session Stats
+
+- **Tests:** 302 → 1,088 (pass), 0 fail
+- **Parser grade:** C+ (65%) → A (90%)
+- **Bugs filed:** 40+ (BUG-078 through BUG-118)
+- **Bugs fixed:** 30+
+- **GitHub Issues:** 11 opened → 10 closed, 1 remaining (cosmetic)
+- **Nelson play tests:** Passes 025–035 (11 passes)
+- **Agent spawns:** ~80+
+- **New team members:** Marge (Test Manager)
+- **New skills:** LLM play testing, headless testing
+- **New architecture:** 7-stage parser pipeline, fuzzy noun resolution, context window, generalized GOAP, headless mode, global hang safety net
