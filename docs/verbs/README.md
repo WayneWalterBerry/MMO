@@ -11,8 +11,7 @@ This directory contains detailed design documentation for each **main verb** in 
 - **[examine](examine.md)** — Close inspection (vision-focused, touch fallback in darkness)
 
 ### 🔎 Discovery Verbs (Progressive Traversal)
-- **[search](search.md)** — Progressive room traversal (step-by-step exploration, time cost)
-- **[find](find.md)** — Targeted traversal discovery (find specific objects or goals)
+- **[search](search.md)** — Progressive room traversal with targeted and goal-oriented variants (step-by-step exploration, time cost)
 
 ### 👆 Touch & Tactile Verbs
 - **[feel](feel.md)** — Grope around or feel specific objects (includes touch)
@@ -118,6 +117,7 @@ Verbs have been consolidated as follows:
 - **take.md** — Includes: take, get, grab, pick
 - **feel.md** — Includes: feel, touch, grope
 - **pull.md** — Includes: pull, push, lift (and their synonyms: yank, tug, extract, shove)
+- **search.md** — Includes: search, find (same traversal engine with undirected and targeted variants)
 
 **Kept Separate (Distinct mechanics):**
 - **stab.md** — Stabbing weapon type
