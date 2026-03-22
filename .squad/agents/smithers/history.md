@@ -15,6 +15,30 @@
 
 ## Learnings
 
+### Session: Tier 4 — Context Window
+
+**Task:** Implement Tier 4 context window — recent interaction memory for the parser pipeline. The game now remembers what you just did.
+
+**New Module — `src/engine/parser/context.lua`:**
+- Context stack of last 5 interacted objects (push/peek/dedup, most recent first)
+- Search discovery list: separate tracking of items found via search module
+- Pronoun resolution: "it", "that", "this", "one" → top of context stack
+- Discovery references: "the thing I found", "what I found", "item I found" → last search discovery
+- Room history: `set_previous_room`/`get_previous_room` for "go back" support
+- Module-level state (same pattern as engine/search/init.lua)
+
+**Integration Points:**
+- `verbs/init.lua`: `find_visible` wrapper enhanced — resolves pronouns and discovery references via context_window, pushes found objects to stack. `handle_movement` tracks previous room. Added "back"/"return" verb handlers.
+- `search/init.lua`: `push_discovery()` called when search tick finds items
+- `loop/init.lua`: PRONOUNS table extended with discovery patterns. Bare noun fallback uses context_window.peek() when last_noun is unset.
+- `preprocess.lua`: "go back", "return", "retrace my steps" → canonical "go back". Bare "return" → "go back" but "return X" preserved.
+
+**Key Design Decision:** Context resolution happens at two layers: (1) the game loop resolves pronouns/bare nouns before calling handlers (string-level), (2) `find_visible` in the verb module resolves pronouns/discovery refs to actual objects (object-level). Both layers consult the same context_window module. This dual-layer approach means the game loop handles most cases, while find_visible catches references that bypass the loop.
+
+**Result:** 41 new tests (test-context-window.lua), 880 total pass, 0 fail. All 29 test files pass.
+
+---
+
 ### Session: Phase 5 Step 0 — Pipeline Refactor
 
 **Task:** Refactor `src/engine/parser/preprocess.lua` from monolithic `natural_language()` function into a table-driven pipeline of composable transform stages, per roadmap section 6 (Extensible Pipeline).
