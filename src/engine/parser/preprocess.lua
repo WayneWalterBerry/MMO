@@ -45,6 +45,17 @@ function preprocess.natural_language(input)
     lower = lower:gsub("^attempt%s+to%s+", "")
     lower = lower:gsub("^maybe%s+i%s+should%s+", "")
 
+    -- Prime Directive: Strip leading adverbs (BUG-085)
+    lower = lower:gsub("^carefully%s+", "")
+    lower = lower:gsub("^closely%s+", "")
+    lower = lower:gsub("^quickly%s+", "")
+    lower = lower:gsub("^slowly%s+", "")
+    lower = lower:gsub("^gently%s+", "")
+    lower = lower:gsub("^thoroughly%s+", "")
+    lower = lower:gsub("^quietly%s+", "")
+    lower = lower:gsub("^frantically%s+", "")
+    lower = lower:gsub("^desperately%s+", "")
+
     -- Prime Directive: Strip trailing adverbs from noun phrases
     lower = lower:gsub("%s+carefully$", "")
     lower = lower:gsub("%s+closely$", "")
@@ -52,6 +63,9 @@ function preprocess.natural_language(input)
     lower = lower:gsub("%s+slowly$", "")
     lower = lower:gsub("%s+gently$", "")
     lower = lower:gsub("%s+thoroughly$", "")
+    lower = lower:gsub("%s+quietly$", "")
+    lower = lower:gsub("%s+frantically$", "")
+    lower = lower:gsub("%s+desperately$", "")
     lower = lower:gsub("%s+again$", "")
     lower = lower:gsub("%s+now$", "")
     lower = lower:gsub("%s+here$", "")
@@ -79,6 +93,11 @@ function preprocess.natural_language(input)
     -- "what is this?" → "examine this"
     if lower:match("^what%s+is%s+this$") then
         return "examine", "this"
+    end
+
+    -- "what can I find?" → "search" (BUG-084)
+    if lower:match("^what%s+can%s+i%s+find") then
+        return "search", ""
     end
 
     -- BUG-036: Strip "I want to / I need to / I'd like to" preambles
@@ -154,7 +173,7 @@ function preprocess.natural_language(input)
     end
 
     -- Search/find compound phrases → search (all-sense discovery)
-    -- "search around", "search for X", "find X"
+    -- "search around", "search for X", "find X", "hunt for X", "rummage for X"
     -- Compound: "search [scope] for [target]", "find [target] in [scope]"
     if lower:match("^search%s+around%s*") then
         return "search", "around"
@@ -170,6 +189,28 @@ function preprocess.natural_language(input)
     local search_target = lower:match("^search%s+for%s+(.+)")
     if search_target then
         return "search", search_target
+    end
+
+    -- "hunt for [target]" / "hunt around" → search synonym
+    local hunt_target = lower:match("^hunt%s+for%s+(.+)")
+    if hunt_target then
+        return "search", hunt_target
+    end
+    if lower:match("^hunt%s+around%s*") then
+        return "search", "around"
+    end
+
+    -- "rummage for [target]" / "rummage around" / "rummage through X"
+    local rummage_target = lower:match("^rummage%s+for%s+(.+)")
+    if rummage_target then
+        return "search", rummage_target
+    end
+    local rummage_through = lower:match("^rummage%s+through%s+(.+)")
+    if rummage_through then
+        return "search", rummage_through
+    end
+    if lower:match("^rummage%s+around%s*") then
+        return "search", "around"
     end
     
     -- "find [target] in [scope]" → pass whole thing to verb handler

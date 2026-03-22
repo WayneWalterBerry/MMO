@@ -1565,8 +1565,14 @@ function verbs.create()
         end
 
         -- Handle "feel in/inside/under/underneath/beneath {target}" prepositional phrases
-        local container_noun = noun:match("^in%s+(.+)") or noun:match("^inside%s+(.+)")
+        -- BUG-089: Track the preposition so "feel inside X" limits to interior only
+        local container_noun = nil
         local surface_prep = nil
+        local in_match = noun:match("^in%s+(.+)") or noun:match("^inside%s+(.+)")
+        if in_match then
+            container_noun = in_match
+            surface_prep = "inside"
+        end
         if not container_noun then
             local p, t = noun:match("^(under)%s+(.+)")
             if not p then p, t = noun:match("^(underneath)%s+(.+)") end
@@ -1596,7 +1602,7 @@ function verbs.create()
                 cobj = parent_obj
             end
             local found_anything = false
-            -- If a specific surface prep was given (under/beneath), check only that surface
+            -- BUG-089: If a specific surface prep was given, check only that surface
             if surface_prep and cobj.surfaces and cobj.surfaces[surface_prep] then
                 local zone = cobj.surfaces[surface_prep]
                 if zone.accessible == false then
@@ -1609,8 +1615,45 @@ function verbs.create()
                         local item = ctx.registry:get(id)
                         print("  " .. (item and item.name or id))
                     end
+                    found_anything = true
                 else
                     print("You feel " .. noun:match("^(%S+)") .. " " .. (cobj.name or "that") .. " but find nothing.")
+                end
+                -- Also check simple container contents for "inside" prep
+                if surface_prep == "inside" and cobj.container and cobj.contents and #cobj.contents > 0 then
+                    local items = {}
+                    for _, id in ipairs(cobj.contents) do
+                        local item = ctx.registry:get(id)
+                        items[#items + 1] = item and item.name or id
+                    end
+                    print("Inside you feel:")
+                    for _, item_name in ipairs(items) do
+                        print("  " .. item_name)
+                    end
+                    found_anything = true
+                end
+                if not found_anything then
+                    print("You feel " .. noun:match("^(%S+)") .. " " .. (cobj.name or "that") .. " but find nothing.")
+                end
+                return
+            end
+            -- When surface_prep is set but the specific surface doesn't exist,
+            -- only check simple container contents (don't show unrelated surfaces)
+            if surface_prep then
+                if cobj.container and cobj.contents and #cobj.contents > 0 then
+                    local items = {}
+                    for _, id in ipairs(cobj.contents) do
+                        local item = ctx.registry:get(id)
+                        items[#items + 1] = item and item.name or id
+                    end
+                    print("Inside you feel:")
+                    for _, item_name in ipairs(items) do
+                        print("  " .. item_name)
+                    end
+                    found_anything = true
+                end
+                if not found_anything then
+                    print("You can't feel inside " .. (cobj.name or "that") .. ".")
                 end
                 return
             end
@@ -2091,7 +2134,8 @@ function verbs.create()
             return
         end
 
-        -- Prefer non-spent items from carried containers over terminal items on floor
+        -- BUG-091: Prefer non-spent items from containers over terminal items on floor.
+        -- Checks hand-held containers first, then visible containers in the room.
         if where == "room" and obj._state and obj.states then
             local cur_state = obj.states[obj._state]
             if cur_state and cur_state.terminal then
@@ -2099,6 +2143,7 @@ function verbs.create()
                 local kw = target:lower()
                     :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
                 local alt_obj, alt_parent
+                -- 1) Search carried containers (bags in hands)
                 for i = 1, 2 do
                     local hand = ctx.player.hands[i]
                     if hand then
@@ -2119,6 +2164,59 @@ function verbs.create()
                         end
                     end
                     if alt_obj then break end
+                end
+                -- 2) Search visible containers in the room (surfaces, open containers)
+                if not alt_obj then
+                    local room = ctx.current_room
+                    for _, room_obj_id in ipairs(room.contents or {}) do
+                        local room_obj = reg:get(room_obj_id)
+                        if room_obj then
+                            -- Check accessible surface containers (e.g. matchbox on nightstand)
+                            if room_obj.surfaces then
+                                for _, zone in pairs(room_obj.surfaces) do
+                                    if zone.accessible ~= false then
+                                        for _, item_id in ipairs(zone.contents or {}) do
+                                            local item = reg:get(item_id)
+                                            if item and item.container and item.contents
+                                                    and item.accessible ~= false then
+                                                for _, inner_id in ipairs(item.contents) do
+                                                    local inner = reg:get(inner_id)
+                                                    if inner and matches_keyword(inner, kw) then
+                                                        local ist = inner.states and inner._state
+                                                            and inner.states[inner._state]
+                                                        if not ist or not ist.terminal then
+                                                            alt_obj = inner
+                                                            alt_parent = item
+                                                            break
+                                                        end
+                                                    end
+                                                end
+                                            end
+                                            if alt_obj then break end
+                                        end
+                                    end
+                                    if alt_obj then break end
+                                end
+                            end
+                            -- Check non-surface containers in room
+                            if not alt_obj and room_obj.container and room_obj.contents
+                                    and room_obj.accessible ~= false then
+                                for _, item_id in ipairs(room_obj.contents) do
+                                    local item = reg:get(item_id)
+                                    if item and matches_keyword(item, kw) then
+                                        local ist = item.states and item._state
+                                            and item.states[item._state]
+                                        if not ist or not ist.terminal then
+                                            alt_obj = item
+                                            alt_parent = room_obj
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                        if alt_obj then break end
+                    end
                 end
                 if alt_obj then
                     obj = alt_obj
