@@ -30,6 +30,9 @@ function preprocess.natural_language(input)
     local lower = input:lower():match("^%s*(.-)%s*$")
     if not lower or lower == "" then return nil, nil end
 
+    -- Prime Directive: Strip question marks first
+    lower = lower:gsub("%?+$", "")
+
     -- Prime Directive: Strip politeness words BEFORE any parsing
     lower = lower:gsub("^please%s+", "")
     lower = lower:gsub("^kindly%s+", "")
@@ -55,25 +58,26 @@ function preprocess.natural_language(input)
 
     -- Prime Directive: Convert questions to commands
     -- "what's in the X?" → "examine X"
-    local whats_in = lower:match("^what'?s%s+in%s+the%s+(.+)%??$")
+    local whats_in = lower:match("^what'?s%s+in%s+the%s+(.+)$")
+        or lower:match("^what'?s%s+in%s+(.+)$")
     if whats_in then
         return "examine", whats_in
     end
     
     -- "is there anything in X?" → "search X"
-    local is_anything_in = lower:match("^is%s+there%s+anything%s+in%s+(.+)%??$")
+    local is_anything_in = lower:match("^is%s+there%s+anything%s+in%s+(.+)$")
     if is_anything_in then
         return "search", is_anything_in
     end
     
     -- "can I open X?" → "open X"
-    local can_i_verb, can_i_target = lower:match("^can%s+i%s+(%w+)%s+(.+)%??$")
+    local can_i_verb, can_i_target = lower:match("^can%s+i%s+(%w+)%s+(.+)$")
     if can_i_verb and can_i_target then
         return can_i_verb, can_i_target
     end
     
     -- "what is this?" → "examine this"
-    if lower:match("^what%s+is%s+this%??$") then
+    if lower:match("^what%s+is%s+this$") then
         return "examine", "this"
     end
 
@@ -325,6 +329,12 @@ function preprocess.natural_language(input)
     end
     if lower:match("^set%s+the%s+clock") or lower:match("^set%s+clock") then
         return "set", "clock"
+    end
+
+    -- If we stripped any politeness/adverbs, the input changed - try basic parse
+    -- This handles cases like "please open nightstand" → "open nightstand" → parse
+    if lower ~= input:lower():match("^%s*(.-)%s*$"):gsub("%?+$", "") then
+        return preprocess.parse(lower)
     end
 
     return nil, nil

@@ -61,7 +61,7 @@ function parser.fallback(instance, input_text, context)
       print(string.format('[Parser] No match found. Input: "%s" | No candidates.', input_text))
     end
   else
-    print("I don't understand that.")
+    print("I'm not sure what you mean. Try 'help' to see what you can do, or describe what you're trying to accomplish.")
   end
 
   return false
