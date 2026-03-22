@@ -37,7 +37,7 @@
 
 **Key interactions:**
 - **Nelson** files bugs via test passes → I ensure they're tracked and assigned
-- **Smithers** fixes bugs → I verify regression tests exist
+- **Smithers/Bart** fix bugs → I verify regression tests exist. **I can request engineering time directly** — if a bug needs fixing, I assign it to the right engineer and follow up until it's closed with a test.
 - **Coordinator** asks me before deploys → I give go/no-go based on bug status
 - **Wayne** gets a clean bug report → I surface what matters
 

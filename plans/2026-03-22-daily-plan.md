@@ -250,17 +250,31 @@
 
 ---
 
-## Phase 6: Remaining Game Systems (🔄 RUNNING — Smithers)
-- [ ] Combat precursor: stab/cut/slash deeper testing
-- [ ] Treatment objects: salve, nightshade antidote
-- [ ] Wine FSM (BUG-061 still broken)
-- [ ] Scribe: merge ~15 pending decisions from inbox
-- [ ] Run full test suite → zero regressions
-- [ ] `git commit && git push`
+## Phase 6: Remaining Game Systems ✅
+- [x] Combat precursor: 25 unit tests (stab/cut/slash with knife, edge cases)
+- [x] BUG-061 wine FSM fixed (bad GUID in storage-cellar.lua), 23 regression tests
+- [x] Treatment objects: bandage implemented, salve + antidote are design-only
+- [x] BUG-113/114/115 context window gaps fixed + 19 regression tests
+- [x] `git commit && git push` ✅
 
-### 🧪 Nelson Sanity Check: Pass 035
-- [ ] Nelson full playthrough — all systems together
-- [ ] Write results to `test-pass/gameplay/2026-03-22-pass-035.md`
+### 🏠 Marge: First Bug Audit (🔄 RUNNING)
+- [ ] Review all 11 Nelson test passes, cross-reference with bug tracker
+- [ ] Identify missing bugs, coverage gaps, Nelson→unit test conversion gaps, duplicates
+- [ ] Write audit report to `bugs/audit-2026-03-22.md`
+
+### ⚛️ Smithers: Remaining Open Bugs (🔄 RUNNING)
+- [ ] BUG-069: dawn sleep error message
+- [ ] BUG-071: rapid command spam hang (verify if still reproducible)
+- [ ] BUG-104b: politeness + idiom combo
+- [ ] BUG-105b: bare examine bad message
+- [ ] BUG-106b: blow out unlit candle message
+- [ ] Regression test for each fix
+- [ ] Update bugs/bug-tracker.md
+
+### 🧪 Nelson Sanity Check: Pass 034 (🔄 RUNNING)
+- [ ] Comprehensive GOAP + full playthrough + natural language gauntlet
+- [ ] Write results to `test-pass/gameplay/2026-03-22-pass-034.md`
+- [ ] Fix anything found → rerun tests → commit+push
 
 ---
 
