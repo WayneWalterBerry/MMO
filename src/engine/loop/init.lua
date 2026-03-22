@@ -141,6 +141,18 @@ function loop.run(context)
         local clean = ln:match("^(.-)%s+with%s+.+$")
         if clean and clean ~= "" then ln = clean end
       end
+      -- BUG-084: Resolve pronouns in last sub-command from earlier fragments.
+      -- "find a match and light it" → resolve "it" to "match" from first sub-cmd.
+      if PRONOUNS[ln] then
+        for i = #sub_commands - 1, 1, -1 do
+          local pv, pn = preprocess.natural_language(sub_commands[i])
+          if not pv then pv, pn = preprocess.parse(sub_commands[i]) end
+          if pn and pn ~= "" then
+            ln = pn
+            break
+          end
+        end
+      end
       local plan = goal_planner.plan(lv, ln, context)
       if plan and #plan > 0 then
         sub_commands = { last }
@@ -155,6 +167,16 @@ function loop.run(context)
     end
     
     for _, sub_input in ipairs(sub_commands) do
+      -- BUG-084: Drain any active search before processing the next sub-command.
+      -- "find a match and light it" — search must complete before "light" runs.
+      if search_ok and search_mod and search_mod.is_searching() then
+        local drain_limit = 0
+        while search_mod.is_searching() and drain_limit < 150 do
+          search_mod.tick(context)
+          drain_limit = drain_limit + 1
+        end
+      end
+
       -- Try natural language preprocessing first (Smithers's parser pipeline)
       local verb, noun = preprocess.natural_language(sub_input)
       if not verb then

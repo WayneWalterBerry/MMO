@@ -236,6 +236,7 @@ function preprocess.natural_language(input)
 
     -- "rummage for [target]" / "rummage around" / "rummage through X"
     -- BUG-081: strip articles from target
+    -- BUG-093: "rummage" and all its forms → search
     local rummage_target = lower:match("^rummage%s+for%s+(.+)")
     if rummage_target then
         return "search", preprocess.strip_articles(rummage_target)
@@ -246,6 +247,15 @@ function preprocess.natural_language(input)
     end
     if lower:match("^rummage%s+around%s*") then
         return "search", "around"
+    end
+    -- BUG-093: bare "rummage" or "rummage [scope]" → search
+    local rummage_bare = lower:match("^rummage$")
+    if rummage_bare then
+        return "search", "around"
+    end
+    local rummage_scope = lower:match("^rummage%s+(.+)")
+    if rummage_scope then
+        return "search", preprocess.strip_articles(rummage_scope)
     end
     
     -- "find [target] in [scope]" → pass whole thing to verb handler
