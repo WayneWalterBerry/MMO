@@ -51,13 +51,43 @@
 
 ---
 
-## Backlog (Not Today Unless Time Permits)
+## Phase 5: Engine Work
 
-### Pending Todos
 - [ ] `container-sensory-gating` — Engine checks open/closed before revealing contents
 - [ ] `chest-object` — Create chest.lua + GUID + docs (two-handed carry)
 
-### Parser North Star — Path to Prime Directive (A / 95%)
+---
+
+## Phase 6: Hang Root Cause Investigation (BEFORE North Star)
+
+**Problem:** Multiple bugs (BUG-076, 077, 080, 084, 086, 087, 090) cause infinite hangs. The current "fix" is depth-limiting recursion — but that's a band-aid, not a real fix. Depth limits will produce bad outcomes: silently truncating searches, returning incomplete results, or swallowing errors the player never sees.
+
+**Wayne's directive:** Don't just limit depth because it's easy. Deeply understand WHY these loops happen. Track state? Different algorithm? Something else? Find the real fix.
+
+**What we suspect but haven't verified:**
+- The embedding matcher (fuzzy verb/noun fallback) may be the common root — multiple hangs trace there
+- The goal planner (GOAP) may have circular prerequisite chains (match needs fire, fire needs match)
+- Scoped search + container recursion may visit the same object twice (no visited-set)
+- "look at X" and "check X" fall through to embedding matcher which has no termination guarantee
+
+**Investigation tasks (Bart — architecture level):**
+- [ ] **Trace each hang to its actual loop.** For BUG-080, 084, 086, 087, 090 — what exact code path loops? Is it the same function every time or different entry points?
+- [ ] **Map the embedding matcher.** What is its algorithm? Does it have a termination guarantee? If it's comparing against all objects × all verbs, what stops it from cycling?
+- [ ] **Map the goal planner.** Can prerequisite chains form cycles? (A needs B, B needs A) Is there a visited-set? What's the maximum plan depth and is it enforced?
+- [ ] **Map container traversal.** Can search traverse visit the same container twice? Is there a visited-set or does it rely on tree structure (which breaks if objects have backlinks)?
+- [ ] **Propose the real fix.** Options to consider:
+  - **State tracking:** visited-set for any recursive walk (search, GOAP, embedding matcher)
+  - **Cycle detection:** if the same state is seen twice, the algorithm terminates with a clear message
+  - **Algorithm redesign:** maybe the embedding matcher shouldn't recurse at all — it should be a single-pass score-and-rank
+  - **Separation of concerns:** the parser fallback path should NEVER call the same parser again (no re-entrant parsing)
+- [ ] **Document findings** in a short write-up: what's actually happening, what the real fix is, why depth limits are insufficient
+- [ ] **If depth limits are actually the right answer**, explain WHY — what about the problem structure makes them correct (not just convenient)
+
+**This investigation blocks Step 0.** We don't want to refactor the pipeline and carry forward a broken fallback path into the new architecture.
+
+---
+
+## Phase 7: Parser North Star — Path to Prime Directive (A / 95%)
 
 **Current:** C+ (65%) → **Target:** A (95%)
 **Philosophy:** Feel like Copilot, cost like Zork. Zero tokens. Pure pipeline.
@@ -152,7 +182,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] Safety limits on plan depth (BUG-090 root cause)
 - [ ] **TEST GATE:** Write Tier 6 unit tests → run ALL tests → zero regressions before proceeding
 
-### Other
+## Phase 8: Remaining Game Systems
 - [ ] Combat precursor: stab/cut/slash deeper testing
 - [ ] Treatment objects: salve, nightshade antidote
 - [ ] Wine FSM (BUG-061 still broken)
