@@ -602,6 +602,31 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 - `debug.sethook` instruction-count hook in game loop: 2-second timeout on ALL command processing
 - Each handler/Tier 2/GOAP call wrapped in `pcall` — timeout caught and reported to player
 - Search tick loop at top of game loop: 200-tick hard limit with force-abort
+
+### Headless Testing Mode (2026-03-25)
+**Context:** Pass-035 proved all 5 "hangs" (BUG-105/106/116/117/118) were TUI false positives — the split-screen UI uses ANSI escape codes that overwrite terminal content, making responses invisible to LLM terminal capture tools.
+
+**Investigation Findings:**
+- `engine/ui/init.lua` uses cursor positioning (`\e[H`), scroll regions (`\e[r`), screen clearing (`\e[2J`), reverse video (`\e[7m`)
+- These ANSI sequences cause re-rendered content to overwrite existing lines instead of appending
+- When read through an interactive PTY, the game appears to produce no output — a hang
+- Pipe-based testing bypasses the TUI entirely, proving the engine responds in <2s for all inputs
+
+**Solution Implemented:**
+- Added `--headless` flag to `src/main.lua` (implies `--no-ui`)
+- Headless mode: no TUI, no prompts, no ANSI codes, `---END---` delimiters after each response
+- Minimal banner (room intro only, no chrome)
+- All game logic preserved — only presentation changes
+- Updated LLM play testing skill (`.squad/skills/llm-play-testing/SKILL.md`) with headless-first approach
+- Decision: D-HEADLESS in `.squad/decisions/inbox/bart-headless-testing.md`
+
+**Key Learning:** TUI rendering is invisible to the engine — it sits entirely in the presentation layer. Test infrastructure should always bypass presentation to test engine logic directly. The `--headless` flag makes this architectural boundary explicit.
+
+## Learnings
+
+- **TUI false positives are a category of testing bug.** ANSI escape codes in split-screen UIs can make engine responses invisible to automated terminal readers. Always provide a headless bypass for automated testing.
+- **`--no-ui` was insufficient.** It disabled the TUI but still emitted prompt characters and verbose banners that pollute pipe output. Headless mode is a distinct concern from "no TUI" — it's about clean, parseable, delimited output for machine consumption.
+- **Response delimiters (`---END---`) are essential for pipe-based testing.** Without them, there's no way to tell where one response ends and another begins in a multi-command session.
 - Makes CPU-bound hangs architecturally impossible regardless of game state
 
 **Files Changed:** loop/init.lua, parser/init.lua, preprocess.lua, search/init.lua, main.lua

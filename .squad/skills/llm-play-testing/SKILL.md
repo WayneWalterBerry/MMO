@@ -25,21 +25,55 @@ This skill captures the technique of using an LLM agent (Nelson) to play-test a 
 
 This is a zero-cost alternative to human play testing that catches a different class of bugs than unit tests: parser coverage gaps, unnatural error messages, missing synonyms, interaction chain regressions, and UX friction.
 
+### ⚠️ CRITICAL: Always Use `--headless` for Automated Testing
+
+**The game has a TUI (split-screen terminal UI) that uses ANSI escape codes for cursor positioning, screen clearing, and scroll regions.** When an LLM agent reads game output through an interactive terminal session, the TUI rendering overwrites existing content, making it LOOK like the game hung — even though the engine responded correctly. This caused 5 false-positive hang reports (BUG-105/106/116/117/118) and a wasted engineering sprint.
+
+**Solution:** Always launch the game with `--headless` for automated testing:
+
+```bash
+echo "look around" | lua src/main.lua --headless
+```
+
+Headless mode:
+- Disables all TUI rendering (no ANSI codes, no cursor repositioning)
+- Outputs plain text only (no `"> "` prompt prefix)
+- Adds `---END---` delimiter after each response for easy parsing
+- Preserves all game logic — only presentation changes
+
+**NEVER test via interactive terminal mode.** Use `--headless` + piped input. See decision D-HEADLESS for full rationale.
+
 ## Patterns
 
-### Pattern 1: Interactive Game Session
+### Pattern 1: Headless Pipe-Based Testing (Recommended)
 
-Launch the game in async mode, send commands, read responses.
+Launch the game in headless mode with piped input for reliable, parseable output.
 
 ```
-1. powershell mode="async" → lua src/main.lua
+1. Build input: write commands to a temp file or pipe them inline
+2. Run: echo "command" | lua src/main.lua --headless
+3. Parse output: split on "---END---" to get individual responses
+4. Evaluate: does each response make sense? Is it what a player would expect?
+```
+
+For multi-command sessions:
+```bash
+printf "feel around\nsearch nightstand\nquit\n" | lua src/main.lua --headless
+```
+
+**Key:** Each response is delimited by `---END---`. No ANSI codes, no prompt noise, no false positives.
+
+### Pattern 1b: Interactive Game Session (Legacy — Not Recommended)
+
+Launch the game in async mode, send commands, read responses. **WARNING:** This approach is prone to TUI false positives — use Pattern 1 (headless) for automated testing.
+
+```
+1. powershell mode="async" → lua src/main.lua --no-ui
 2. write_powershell → send command (e.g., "feel around")
 3. read_powershell → capture response
 4. Evaluate: does the response make sense? Is it what a player would expect?
 5. Repeat with creative variations
 ```
-
-**Key:** Use delay of 5-10 seconds on write_powershell to give the game time to respond. The game is synchronous Lua — it processes one command at a time.
 
 ### Pattern 2: Creative Phrase Generation
 

@@ -54,11 +54,13 @@ function loop.run(context)
   -- Session transcript for "report bug" (last 50 exchanges)
   context.transcript = context.transcript or {}
 
-  print("Type 'look' to look around. Type 'report bug' to report issues. Type 'quit' to exit.")
-  if context.ui and context.ui.is_enabled() then
-    print("Scroll: /up  /down  /bottom")
+  if not context.headless then
+    print("Type 'look' to look around. Type 'report bug' to report issues. Type 'quit' to exit.")
+    if context.ui and context.ui.is_enabled() then
+      print("Scroll: /up  /down  /bottom")
+    end
+    print("")
   end
-  print("")
 
   while true do
     -- Update status bar if UI is active
@@ -88,10 +90,12 @@ function loop.run(context)
       -- Search completed or aborted — fall through to normal input
     end
 
-    -- Read input (UI-aware or fallback)
+    -- Read input (UI-aware, headless, or fallback)
     local input
     if context.ui and context.ui.is_enabled() then
       input = context.ui.input()
+    elseif context.headless then
+      input = io.read()
     else
       io.write("> ")
       io.flush()
@@ -399,6 +403,7 @@ function loop.run(context)
     if should_quit then
       if context.on_quit then context.on_quit() end
       print("Goodbye.")
+      if context.headless then io.write("---END---\n"); io.flush() end
       break
     end
 
@@ -506,8 +511,12 @@ function loop.run(context)
     -- Game over check (death by poison, etc.)
     if context.game_over then
       print("Game over. Thanks for playing.")
+      if context.headless then io.write("---END---\n"); io.flush() end
       break
     end
+
+    -- Headless response delimiter: marks end of output for this command
+    if context.headless then io.write("---END---\n"); io.flush() end
 
     ::continue::
   end

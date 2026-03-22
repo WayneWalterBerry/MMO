@@ -13,6 +13,7 @@ package.path = script_dir .. "/?.lua;"
 -- Parse command-line flags
 local debug_mode = false
 local no_ui = false
+local headless = false
 local start_room_override = nil
 local list_rooms = false
 do
@@ -23,6 +24,7 @@ do
         if a == "--debug" then debug_mode = true
         elseif a == "--trace" then _G.TRACE = true
         elseif a == "--no-ui" then no_ui = true
+        elseif a == "--headless" then headless = true; no_ui = true
         elseif a == "--list-rooms" then list_rooms = true
         elseif a == "--room" or a == "--start-room" then
             i = i + 1
@@ -311,6 +313,7 @@ local context = {
     game_start_time = os.time(),
     game_start_hour = presentation.GAME_START_HOUR,
     ui             = ui_active and ui or nil,
+    headless       = headless,
     visited_rooms  = { [start_room_id] = true },
 }
 
@@ -426,16 +429,24 @@ context.update_status = ui_status.create_updater()
 ---------------------------------------------------------------------------
 -- Welcome
 ---------------------------------------------------------------------------
-print("================================================================")
-print("  THE BEDROOM -- A Text Adventure")
-print("  V1 Playtest")
-print("================================================================")
-print("")
+if not headless then
+    print("================================================================")
+    print("  THE BEDROOM -- A Text Adventure")
+    print("  V1 Playtest")
+    print("================================================================")
+    print("")
+end
 print("You wake with a start. The darkness is absolute.")
 print("You can feel rough linen beneath your fingers.")
 print("")
-print("Type 'help' for commands. Try 'feel' to explore the darkness.")
-print("")
+if not headless then
+    print("Type 'help' for commands. Try 'feel' to explore the darkness.")
+    print("")
+end
+if headless then
+    io.write("---END---\n")
+    io.flush()
+end
 
 ---------------------------------------------------------------------------
 -- Run (with cleanup on exit)
