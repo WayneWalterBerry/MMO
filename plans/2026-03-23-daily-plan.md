@@ -47,13 +47,24 @@
 #### Phase 1: Design Docs (CBG + design team)
 - [ ] `docs/design/injuries/unconsciousness.md` — Full design doc:
   - Unconsciousness FSM states: conscious → unconscious → waking → conscious
-  - Duration mechanics: fixed vs random (e.g., 5-10 turns for head blow)
+  - Duration mechanics: severity-based (harder hit = longer KO)
   - Interaction with existing injury ticking (bleeding continues during unconsciousness)
   - Interaction with voluntary sleep (same risk — injuries tick during sleep too)
   - Death conditions: health ≤ 0 while unconscious = permanent death
   - Wake-up narration templates (vary by cause)
   - What triggers unconsciousness? (blow to head, poison, gas, magic?)
-- [ ] Update `docs/design/injuries/` index if one exists — add unconsciousness to injury category list
+- [ ] `docs/design/injuries/self-hit.md` — Design doc for the `hit` verb:
+  - `hit head` → unconsciousness injury (severity-based duration)
+  - `hit arm` / `hit leg` → bruise injury (pain category, affects actions)
+  - Body area targeting (reuse stab's body area system)
+  - Interaction with armor: helmet reduces/prevents head hit unconsciousness
+  - Narration: "You slam your fist against your own head. Stars explode..."
+  - This is the testing mechanism for unconsciousness — same pattern as self-stab for bleeding
+- [ ] `docs/verbs/hit.md` — Verb reference doc (follows pattern of `docs/verbs/stab.md` and `docs/verbs/cut.md`)
+  - Synonyms: hit, punch, strike, slam, bash, bonk
+  - Body area targeting, self-infliction rules, injury types by area
+  - Requires: nothing (bare fists) or blunt weapon for increased severity
+- [ ] Update `docs/design/injuries/` index if one exists — add unconsciousness + bruise + hit to injury category list
 - [ ] `git commit && git push`
 
 #### Phase 2: Architecture Docs (Bart)
