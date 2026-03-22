@@ -15,7 +15,16 @@ local containers = {}
 -- @return boolean
 function containers.is_container(object)
     if not object then return false end
-    return object.is_container == true or object.container == true
+    if object.is_container == true or object.container == true then
+        return true
+    end
+    -- BUG-125 (#33): Also check the categories array for "container"
+    if object.categories then
+        for _, cat in ipairs(object.categories) do
+            if cat == "container" then return true end
+        end
+    end
+    return false
 end
 
 --- Check if container is locked

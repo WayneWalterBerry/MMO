@@ -412,6 +412,20 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
             end
         end
         
+        -- BUG-126 (#34): Target not found in accessible surface — report what IS there (#27)
+        if target and #contents > 0 then
+            local items = {}
+            for _, child_id in ipairs(contents) do
+                local child = registry:get(child_id)
+                if child then
+                    items[#items + 1] = child.name or child.id
+                end
+            end
+            if #items > 0 then
+                result.narrative = narrator.container_contents_no_target(ctx, parent, items, target)
+            end
+        end
+
         -- Surface checked, no match found
         return result
     end

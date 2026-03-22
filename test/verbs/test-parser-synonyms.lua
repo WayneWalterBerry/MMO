@@ -156,7 +156,7 @@ test("'sleep until morning' works", function()
 end)
 
 -------------------------------------------------------------------------------
-h.suite("Issue #2 — 'move' as synonym for 'go'")
+h.suite("Issue #2 / #32 — 'move' disambiguates direction vs object")
 -------------------------------------------------------------------------------
 
 test("'move' verb handler exists", function()
@@ -166,21 +166,21 @@ test("'move' verb handler exists", function()
     end
 end)
 
-test("'move' maps to same handler as 'go'", function()
+test("'move' is NOT the same function as 'go' (#32 disambiguation)", function()
+    -- After #32 fix, 'move' is a disambiguation wrapper, not a raw alias
     local move_handler = handlers["move"]
     local go_handler = handlers["go"]
     
-    eq(go_handler, move_handler, "'move' should be same handler as 'go'")
+    h.assert_truthy(move_handler ~= go_handler, "'move' should be a separate disambiguator, not a raw 'go' alias")
 end)
 
-test("'walk', 'run', 'head', 'travel' are also synonyms", function()
+test("'walk', 'run', 'head', 'travel' are synonyms for 'go'", function()
     local go_handler = handlers["go"]
     
     eq(go_handler, handlers["walk"], "'walk' should be synonym")
     eq(go_handler, handlers["run"], "'run' should be synonym")
     eq(go_handler, handlers["head"], "'head' should be synonym")
     eq(go_handler, handlers["travel"], "'travel' should be synonym")
-    eq(go_handler, handlers["move"], "'move' should be synonym")
 end)
 
 -- Note: Full integration testing of movement requires a room context,

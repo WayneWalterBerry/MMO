@@ -5404,7 +5404,24 @@ function verbs.create()
     handlers["run"]    = handlers["go"]
     handlers["head"]   = handlers["go"]
     handlers["travel"] = handlers["go"]
-    handlers["move"]   = handlers["go"]
+
+    -- BUG-124 (#32): "move" must disambiguate between navigation and object interaction.
+    -- If the noun is a direction, treat as "go"; otherwise delegate to the spatial move handler.
+    local _move_object = handlers["move"]  -- spatial handler defined earlier (line ~2617)
+    handlers["move"] = function(ctx, noun)
+        if noun == "" then print("Move what?") return end
+        local clean = noun:lower()
+            :gsub("^through%s+", "")
+            :gsub("^to%s+the%s+", "")
+            :gsub("^to%s+", "")
+            :gsub("^into%s+", "")
+            :gsub("^towards?%s+", "")
+        if DIRECTION_ALIASES[clean] or clean == "back" then
+            handle_movement(ctx, noun)
+        else
+            _move_object(ctx, noun)
+        end
+    end
 
     -- Tier 4: "back" and "return" as standalone verbs
     handlers["back"] = function(ctx, noun)
