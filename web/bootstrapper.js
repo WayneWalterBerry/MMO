@@ -43,7 +43,7 @@
     }
 
     // --- Build version (embedded at build time) ---
-    const BUILD_TIMESTAMP = "2026-03-22 08:06";
+    const BUILD_TIMESTAMP = "2026-03-22 12:42";
 
     // --- Size formatting ---
     function formatSize(bytes) {
@@ -74,7 +74,27 @@
     window._appendOutput = appendOutput;
 
     // JS bridge: open URL in new tab (used by "report bug" command)
+    // Fix #13: Trim transcript to last 3 command/response pairs so GitHub
+    // doesn't truncate the URL and show stale welcome text instead.
     window._openUrl = function (url) {
+        try {
+            var urlObj = new URL(url);
+            if (urlObj.pathname.indexOf('/issues/new') !== -1) {
+                var body = urlObj.searchParams.get('body');
+                if (body) {
+                    var match = body.match(/(### Session Transcript[^\n]*\n\n```\n)([\s\S]*?)(```[\s]*)$/);
+                    if (match) {
+                        var blocks = match[2].split(/(?=^> )/m).filter(function (b) { return b.trim(); });
+                        var last3 = blocks.slice(-3).join('');
+                        var count = Math.min(blocks.length, 3);
+                        var header = match[1].replace(/last \d+/, 'last ' + count);
+                        body = body.replace(match[0], header + last3 + match[3]);
+                        urlObj.searchParams.set('body', body);
+                        url = urlObj.toString();
+                    }
+                }
+            }
+        } catch (e) { /* proceed with original URL */ }
         window.open(url, '_blank');
     };
 
@@ -129,6 +149,32 @@
     document.getElementById('terminal').addEventListener('click', function () {
         inputEl.focus();
     });
+
+    // --- Copy button: copies all output text to clipboard (#12) ---
+    var copyBtn = document.getElementById('copy-btn');
+    var copySvgClipboard = copyBtn ? copyBtn.innerHTML : '';
+    var copySvgCheck = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+    if (copyBtn) {
+        copyBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var text = outputEl.innerText || outputEl.textContent;
+            navigator.clipboard.writeText(text).then(function () {
+                copyBtn.innerHTML = copySvgCheck;
+                copyBtn.classList.add('copied');
+                setTimeout(function () {
+                    copyBtn.innerHTML = copySvgClipboard;
+                    copyBtn.classList.remove('copied');
+                }, 1500);
+            }).catch(function () {
+                copyBtn.innerHTML = copySvgCheck;
+                copyBtn.classList.add('copied');
+                setTimeout(function () {
+                    copyBtn.innerHTML = copySvgClipboard;
+                    copyBtn.classList.remove('copied');
+                }, 1500);
+            });
+        });
+    }
 
     // --- Decompression ---
     async function decompress(compressedBuffer) {
