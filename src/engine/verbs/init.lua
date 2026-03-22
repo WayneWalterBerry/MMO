@@ -46,6 +46,21 @@ local DAYTIME_START = presentation.DAYTIME_START
 local DAYTIME_END = presentation.DAYTIME_END
 
 ---------------------------------------------------------------------------
+-- Prime Directive: Helpful error messages
+---------------------------------------------------------------------------
+local function err_not_found()
+    print("You don't notice anything called that nearby. Try 'search around' to discover what's here.")
+end
+
+local function err_cant_do_that()
+    print("That doesn't seem to work. Try a different approach, or type 'help' for ideas.")
+end
+
+local function err_nothing_happens(obj)
+    print("Nothing obvious happens. Maybe try examining it first?")
+end
+
+---------------------------------------------------------------------------
 -- Helper: keyword matching
 ---------------------------------------------------------------------------
 local function matches_keyword(obj, kw)
@@ -1195,7 +1210,7 @@ function verbs.create()
                         return
                     end
                 end
-                print("You don't see that here.")
+                err_not_found()
                 return
             end
             if obj.on_look then
@@ -1257,7 +1272,7 @@ function verbs.create()
             end
             local obj = find_visible(ctx, surface_target)
             if not obj then
-                print("You don't see that here.")
+                err_not_found()
                 return
             end
             if obj.surfaces then
@@ -1325,7 +1340,7 @@ function verbs.create()
                     return
                 end
             end
-            print("You don't see that here.")
+            err_not_found()
             return
         end
         if obj.on_look then
@@ -2072,7 +2087,7 @@ function verbs.create()
 
         local obj, where, parent, sname = find_visible(ctx, target)
         if not obj then
-            print("You don't see that here.")
+            err_not_found()
             return
         end
 
@@ -2272,11 +2287,11 @@ function verbs.create()
                     return
                 end
             end
-            print("You pull at " .. (obj.name or "that") .. ". Nothing happens.")
+            err_nothing_happens(obj)
             return
         end
 
-        print("You don't see that here.")
+        err_not_found()
     end
 
     handlers["yank"] = handlers["pull"]
@@ -2294,7 +2309,7 @@ function verbs.create()
 
         local obj = find_visible(ctx, target)
         if not obj then
-            print("You don't see that here.")
+            err_not_found()
             return
         end
 
@@ -2314,7 +2329,7 @@ function verbs.create()
 
         local obj = find_visible(ctx, target)
         if not obj then
-            print("You don't see that here.")
+            err_not_found()
             return
         end
 
@@ -2332,7 +2347,7 @@ function verbs.create()
 
         local obj = find_visible(ctx, noun)
         if not obj then
-            print("You don't see that here.")
+            err_not_found()
             return
         end
 
@@ -2363,7 +2378,7 @@ function verbs.create()
 
         local obj = find_visible(ctx, noun)
         if not obj then
-            print("You don't see that here.")
+            err_not_found()
             return
         end
 
@@ -2571,7 +2586,7 @@ function verbs.create()
         if obj then
             print("You can't open " .. (obj.name or "that") .. ".")
         else
-            print("You don't see that here.")
+            err_not_found()
         end
     end
 
@@ -2666,7 +2681,7 @@ function verbs.create()
         if obj then
             print("You can't close " .. (obj.name or "that") .. ".")
         else
-            print("You don't see that here.")
+            err_not_found()
         end
     end
 
@@ -2730,7 +2745,7 @@ function verbs.create()
         if obj then
             print("You can't unlock " .. (obj.name or "that") .. ".")
         else
-            print("You don't see that here.")
+            err_not_found()
         end
     end
 
@@ -2830,7 +2845,7 @@ function verbs.create()
         if obj then
             print("You can't break " .. (obj.name or "that") .. ".")
         else
-            print("You don't see that here.")
+            err_not_found()
         end
     end
 
@@ -2845,7 +2860,7 @@ function verbs.create()
 
         local obj = find_visible(ctx, noun)
         if not obj then
-            print("You don't see that here.")
+            err_not_found()
             return
         end
 
@@ -3059,7 +3074,7 @@ function verbs.create()
         local obj = find_in_inventory(ctx, noun)
         if not obj then obj = find_visible(ctx, noun) end
         if not obj then
-            print("You don't see that here.")
+            err_not_found()
             return
         end
 
@@ -3147,7 +3162,7 @@ function verbs.create()
             target = find_in_inventory(ctx, target_word)
         end
         if not target then
-            print("You don't see that here.")
+            err_not_found()
             return
         end
 
@@ -3471,7 +3486,7 @@ function verbs.create()
 
         local obj = find_visible(ctx, target_word)
         if not obj then
-            print("You don't see that here.")
+            err_not_found()
             return
         end
 
@@ -4318,7 +4333,7 @@ function verbs.create()
             obj = find_visible(ctx, noun)
         end
         if not obj then
-            print("You don't see that here.")
+            err_not_found()
             return
         end
 
@@ -4352,7 +4367,7 @@ function verbs.create()
             if visible then
                 print("You'll need to pick that up first.")
             else
-                print("You don't see that here.")
+                err_not_found()
             end
             return
         end
@@ -4424,7 +4439,7 @@ function verbs.create()
         local obj = find_in_inventory(ctx, noun)
         if not obj then obj = find_visible(ctx, noun) end
         if not obj then
-            print("You don't see that here.")
+            err_not_found()
             return
         end
 
@@ -4472,7 +4487,7 @@ function verbs.create()
             obj = find_visible(ctx, noun)
         end
         if not obj then
-            print("You don't see that here.")
+            err_not_found()
             return
         end
 
@@ -5169,7 +5184,7 @@ function verbs.create()
 
         local inj_ok, injury_mod = pcall(require, "engine.injuries")
         if not inj_ok then
-            print("You can't do that right now.")
+            err_cant_do_that()
             return
         end
 
@@ -5274,3 +5289,5 @@ function verbs.create()
 end
 
 return verbs
+
+

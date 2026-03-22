@@ -148,7 +148,7 @@ test("take nonexistent object prints error", function()
     local output = capture_print(function()
         handlers["take"](ctx, "unicorn")
     end)
-    eq(true, output:find("don't see") ~= nil)
+    eq(true, output:find("don't notice") ~= nil)
 end)
 
 test("take non-portable object prints error", function()
@@ -978,7 +978,7 @@ test("find_visible skips hidden objects", function()
     local output = capture_print(function()
         handlers["take"](ctx, "compartment")
     end)
-    eq(true, output:find("don't see") ~= nil)
+    eq(true, output:find("don't notice") ~= nil)
 end)
 
 -------------------------------------------------------------------------------

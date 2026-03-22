@@ -30,6 +30,53 @@ function preprocess.natural_language(input)
     local lower = input:lower():match("^%s*(.-)%s*$")
     if not lower or lower == "" then return nil, nil end
 
+    -- Prime Directive: Strip politeness words BEFORE any parsing
+    lower = lower:gsub("^please%s+", "")
+    lower = lower:gsub("^kindly%s+", "")
+    lower = lower:gsub("^could%s+you%s+", "")
+    lower = lower:gsub("^can%s+you%s+", "")
+    lower = lower:gsub("^would%s+you%s+", "")
+    lower = lower:gsub("^will%s+you%s+", "")
+    lower = lower:gsub("^let%s+me%s+", "")
+    lower = lower:gsub("^try%s+to%s+", "")
+    lower = lower:gsub("^attempt%s+to%s+", "")
+    lower = lower:gsub("^maybe%s+i%s+should%s+", "")
+
+    -- Prime Directive: Strip trailing adverbs from noun phrases
+    lower = lower:gsub("%s+carefully$", "")
+    lower = lower:gsub("%s+closely$", "")
+    lower = lower:gsub("%s+quickly$", "")
+    lower = lower:gsub("%s+slowly$", "")
+    lower = lower:gsub("%s+gently$", "")
+    lower = lower:gsub("%s+thoroughly$", "")
+    lower = lower:gsub("%s+again$", "")
+    lower = lower:gsub("%s+now$", "")
+    lower = lower:gsub("%s+here$", "")
+
+    -- Prime Directive: Convert questions to commands
+    -- "what's in the X?" → "examine X"
+    local whats_in = lower:match("^what'?s%s+in%s+the%s+(.+)%??$")
+    if whats_in then
+        return "examine", whats_in
+    end
+    
+    -- "is there anything in X?" → "search X"
+    local is_anything_in = lower:match("^is%s+there%s+anything%s+in%s+(.+)%??$")
+    if is_anything_in then
+        return "search", is_anything_in
+    end
+    
+    -- "can I open X?" → "open X"
+    local can_i_verb, can_i_target = lower:match("^can%s+i%s+(%w+)%s+(.+)%??$")
+    if can_i_verb and can_i_target then
+        return can_i_verb, can_i_target
+    end
+    
+    -- "what is this?" → "examine this"
+    if lower:match("^what%s+is%s+this%??$") then
+        return "examine", "this"
+    end
+
     -- BUG-036: Strip "I want to / I need to / I'd like to" preambles
     local preamble_rest = lower:match("^i%s+want%s+to%s+(.+)")
         or lower:match("^i%s+need%s+to%s+(.+)")
