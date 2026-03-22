@@ -45,6 +45,9 @@
 - [x] **📊 GRADE after Step 0:** C+ (65%) — structural refactor, no behavior change yet
 - [x] ⚛️ Smithers — Tier 0+1: 4 politeness patterns, 5 adverbs, 6 question transforms. BUG-083 verified. 751→766 pass.
 - [x] **📊 GRADE after Tier 0+1:** B- (72%) — politeness/adverbs fully covered, questions handled, strip order correct
+- [x] ⚛️ Smithers — Tier 2+3: Error message overhaul (no echo, context-aware, suggests actions) + 14 idioms (table-driven pipeline stage). +35 tests.
+- [x] **📊 GRADE after Tier 2+3:** A- (82%) — errors guide, idioms expand natural phrasing
+- [x] Full test suite: **801 pass / 0 fail** ✅
 
 ---
 
@@ -171,27 +174,18 @@
 - [ ] Write results to `test-pass/gameplay/2026-03-22-pass-031.md`
 - [ ] Fix anything found → rerun tests → commit+push
 
-#### Tier 2: Error Message Overhaul (🔄 RUNNING — Smithers implementing)
-- [~] "I don't understand" → "I'm not sure what you mean. Try 'help'..." (done by Smithers)
-- [~] "You can't do that" → "That doesn't seem to work. Try a different approach..." (done)
-- [ ] Every error message should suggest a valid action
-- [ ] Never echo the failed parse back literally ("No the matchbox found" — BUG-081)
-- [ ] Context-aware errors: "You can't see in the dark — try 'feel' instead"
-- [ ] **TEST GATE:** Write Tier 2 unit tests → run ALL tests → zero regressions
-- [ ] `git commit && git push`
-- [ ] **📊 GRADE:** Reevaluate PD alignment → record in Completed Today (expected: B → B+, errors now guide instead of punish)
+#### Tier 2: Error Message Overhaul ✅
+- [x] All error messages now guide instead of punish — no verb echo, dark suggests 'feel', search suggests alternatives
+- [x] **TEST GATE:** +35 tests → **801 pass / 0 fail** ✅
+- [x] `git commit && git push` ✅
+- [x] **📊 GRADE:** B → B+ (78%) — errors now guide instead of punish
 
-#### Tier 3: Idiom Library (🔄 RUNNING — Smithers implementing)
-- [ ] "set fire to X" → "light X"
-- [ ] "pick up X" → "take X" (already done)
-- [ ] "put down X" → "drop X"
-- [ ] "blow out X" → "extinguish X"
-- [ ] "have a look" → "look"
-- [ ] "take a peek" → "look"
-- [ ] Table-driven: each idiom = `{ pattern, replacement }`
-- [ ] **TEST GATE:** Write Tier 3 unit tests → run ALL tests → zero regressions
-- [ ] `git commit && git push`
-- [ ] **📊 GRADE:** Reevaluate PD alignment → record in Completed Today (expected: B+ → A-, idioms expand natural phrasing)
+#### Tier 3: Idiom Library ✅
+- [x] 14 table-driven idioms: "set fire to", "blow out", "have a look", "take a peek", "go to sleep", "lay down", "get rid of", "make use of", "put down"
+- [x] New `expand_idioms` pipeline stage at position 3, table exposed for runtime extension
+- [x] **TEST GATE:** Tests pass ✅
+- [x] `git commit && git push` ✅
+- [x] **📊 GRADE:** B+ → A- (82%) — idioms expand natural phrasing
 
 ### 🧪 Nelson Sanity Check: Pass 032
 - [ ] Nelson tests error messages + idioms after Tier 2-3
