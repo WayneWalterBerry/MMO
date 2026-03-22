@@ -110,6 +110,19 @@ function loop.run(context)
     trimmed = trimmed:gsub("%?+$", ""):match("^%s*(.-)%s*$")
     if trimmed == "" then goto continue end
 
+    -- BUG-105/106: Direct transform for common help/confusion phrases.
+    -- Safety net: preprocess.natural_language() handles these patterns, but
+    -- the live game reportedly hangs on them. This early bailout guarantees
+    -- they never reach Tier 2 regardless of pipeline state or input encoding.
+    do
+      local lc = trimmed:lower()
+      if lc == "what do i do" or lc == "what now"
+          or lc == "now what" or lc == "what can i do"
+          or lc == "what should i do" then
+        trimmed = "help"
+      end
+    end
+
     -- Multi-command splitting: commas, semicolons, "then" (Issue #1)
     -- BUG-066: Added safety limits to prevent infinite loops or hangs
     local command_parts = preprocess.split_commands(trimmed)

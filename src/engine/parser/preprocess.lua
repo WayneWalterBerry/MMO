@@ -334,6 +334,7 @@ local function transform_questions(text)
     -- Question patterns → help
     if text:match("^what%s+can%s+i%s+do")
         or text:match("^what%s+do%s+i%s+do")
+        or text:match("^what%s+should%s+i%s+do")
         or text:match("^what%s+now$")
         or text:match("^now%s+what$")
         or text:match("^how%s+do%s+i") then
@@ -366,6 +367,17 @@ local function transform_look_patterns(text)
     local check_target = text:match("^check%s+(.+)")
     if check_target then
         return "examine " .. check_target
+    end
+
+    -- BUG-112: "look under/underneath/beneath X" → "examine X"
+    -- "look under" is not a recognized verb pattern in its own right; without
+    -- this transform, the input falls through to Tier 2 search which can hang
+    -- on unresolved pronouns. Route to "examine" which safely handles objects.
+    local look_under_target = text:match("^look%s+under%s+(.+)")
+        or text:match("^look%s+underneath%s+(.+)")
+        or text:match("^look%s+beneath%s+(.+)")
+    if look_under_target then
+        return "examine " .. look_under_target
     end
 
     -- BUG-074: "look for X" → "find X" (BUG-081: strip articles)
