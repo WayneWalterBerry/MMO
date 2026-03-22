@@ -117,6 +117,27 @@
 
 ## Learnings
 
+### 2026-03-23: Unconsciousness, Mirrors, and Player Appearance Subsystem
+**Status:** ✅ 5 DESIGN DOCS WRITTEN
+
+**Design decisions locked in:**
+1. **Unconsciousness is binary, not graduated.** No dazed state. Either you're conscious or knocked out. Clean transition creates clarity for players.
+2. **Severity-based duration scales threat.** 3-turn light hit vs. 18-turn sledgehammer creates tunable puzzle pressure. Players learn consequences through duration feedback.
+3. **Injuries tick during unconsciousness.** This is the KEY PUZZLE. A player can bleed out while sleeping/KO'd. Sleep becomes strategically dangerous, not a rest button.
+4. **Armor interacts with unconsciousness via reduction modifier.** Helmets reduce duration — not a binary negate, but a percentage reduction (30-75%). Allows progression: leather helmet > iron helmet > plate + gorget.
+5. **Self-infliction via `hit` parallels `stab self`.** Same testing pattern for different injury types. Player can safely explore mechanics without traps. Builds intuition.
+6. **Appearance subsystem is the "eyes" of the game.** Layer-by-layer rendering (head→feet) avoids robotic lists. Natural connectives make prose flow. Same subsystem later powers multiplayer. Must be beautiful first, functional second.
+7. **Mirrors are metadata-only.** The `is_mirror` flag on objects routes examine to appearance subsystem. No special mechanics. Appearance is where complexity lives.
+8. **Health is never displayed as a number.** Derived from injuries aggregate. Narrative voice shifts with severity (healthy→worn→critical→dying). Player experiences their condition through prose, not HUD.
+
+**Design principles affirmed:**
+- State-driven composition beats hardcoded content (appearance from flags, not templates)
+- Puzzle-first design (unconsciousness creates time-pressure and resource-matching puzzles)
+- Sensory richness in narrative text compensates for text-only interface
+- Layered systems enable reuse (same appearance subsystem: mirrors today, multiplayer tomorrow)
+
+### Earlier Sessions (Previous Learnings)
+
 - Containers are simpler and more immersive than charges (real matches > abstract counter)
 - Compound actions create better puzzles (STRIKE match ON matchbox)
 - Skills as discovery gates, not progression gates
