@@ -25,7 +25,7 @@ return {
         { id = "small-crate",   type = "Small Crate",    type_id = "c8d4e2b3-5f60-4901-bc23-def045678901", location = "large-crate.top" },
         { id = "grain-sack",    type = "Grain Sack",     type_id = "d9e5f3c4-6071-4a12-cd34-ef1056789012", location = "room" },
         { id = "wine-rack",     type = "Wine Rack",      type_id = "ea06f4d5-7182-4b23-de45-f02167890123", location = "room" },
-        { id = "wine-bottle",   type = "Wine Bottle",    type_id = "fb17g5e6-8293-4c34-ef56-013278901234", location = "wine-rack.inside" },
+        { id = "wine-bottle",   type = "Wine Bottle",    type_id = "1143ab52-ba47-4610-bd1f-6c9aa6167287", location = "wine-rack.inside" },
         { id = "oil-lantern",   type = "Oil Lantern",    type_id = "2e4aj8h9-b5c6-4f67-1289-3465ab234567", location = "room" },
         { id = "rope-coil",     type = "Rope Coil",      type_id = "0c28h6f7-93a4-4d45-f067-124389012345", location = "room" },
         { id = "crowbar",       type = "Crowbar",        type_id = "3f5bk9i0-c6d7-4078-2390-4576bc345678", location = "room" },
