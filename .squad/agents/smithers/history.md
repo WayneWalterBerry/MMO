@@ -15,6 +15,45 @@
 
 ## Learnings
 
+### Session: Phase 3 — Hit Verb, Unconsciousness, Player Appearance
+
+**Task:** Implement Phase 3 features: hit verb (self-infliction for blunt trauma), consciousness state machine, player appearance subsystem, mirror integration, and fix sleep to tick injuries.
+
+**New Files:**
+- `src/engine/player/appearance.lua`: Layered head-to-toe appearance renderer. Pure read→compose→return pipeline. 7 layer renderers (head, torso, arms, hands, legs, feet, overall). Injury phrase composer (type + severity + location + treatment). Health percentage → pallor descriptors. Test exports for all internal functions.
+- `src/meta/injuries/concussion.lua`: Concussion injury definition with `causes_unconsciousness = true`, severity-based duration map (minor=3, moderate=5, severe=10, critical=20 turns), and FSM states (active → healed).
+- `test/verbs/test-hit-unconscious.lua`: 39 tests covering hit verb, unconsciousness, sleep+injury death, helmet armor, appearance subsystem, mirror integration, and internal helpers.
+
+**Changes — `src/engine/verbs/init.lua`:**
+- `handlers["hit"]`: Self-infliction handler for blunt trauma. Body area routing: head → concussion + unconsciousness (severity-based timer), other areas → bruise. Bare-fist only in V1. Helmet armor checks `reduces_unconsciousness` modifier on worn head items. Narration varies by area and helmet presence.
+- Aliases: `punch`, `bash`, `bonk`, `thump` → `handlers["hit"]`.
+- `strike` handler: Added body-area disambiguation — tries self-infliction first, falls through to fire-making (strike match on matchbox) if not a body area. This avoids breaking existing `strike match` functionality.
+- `smash`: Left as alias for `break` (conflicts with vanity mirror smash transition).
+- Sleep tick loop: Added `injury_mod.tick()` call + death check during each sleep tick. Player can now bleed out during voluntary sleep with proper "You never wake up" narration.
+- Mirror integration in `look at X` handler: checks `obj.is_mirror` flag, routes to `appearance.describe(ctx.player, ctx.registry)` instead of normal `on_look`.
+- Mirror integration in `look in X` handler: same `is_mirror` check for "look in mirror" path.
+
+**Changes — `src/engine/loop/init.lua`:**
+- Consciousness gate at top of game loop: if `player.consciousness.state == "unconscious"`, skip input, tick injuries, check death, decrement wake timer. On death: cause-specific narration ("You never wake up. The bleeding was too much."). On wake: cause-specific narration + health status report. Uses `goto continue` to loop back without reaching input reading section.
+
+**Changes — `src/main.lua`:**
+- Added `player.consciousness` table to player state init: `{ state = "conscious", wake_timer = 0, cause = nil, unconscious_since = nil }`.
+
+**Changes — `src/meta/objects/vanity.lua`:**
+- Added `is_mirror = true` flag to vanity object definition.
+
+**Key Design Decisions:**
+1. Hit verb is self-only in V1 (parallels stab). Combat hits are future work.
+2. `strike` is overloaded: body areas route to hit, everything else routes to fire-making. The `parse_self_infliction` function is reused for disambiguation.
+3. `smash` NOT aliased to hit — it's already `break` and used for smashing the vanity mirror.
+4. Consciousness gate runs BEFORE input reading — unconscious ticks don't consume player input.
+5. Appearance subsystem is stateless pure function — takes any player state table, returns string. Future-proofed for multiplayer `look at <player>`.
+6. Sleep injury ticking uses the same `injury_mod.tick()` as post-command ticking — orthogonal systems per Bart's architecture.
+
+**Result:** 39 new tests, all 39 test files pass (1117+ total). Game boots and plays correctly. Verified: hit head → KO → wake, hit arm → bruise, mirror shows appearance, helmet reduces KO duration.
+
+---
+
 ### Session: Tier 6 — Generalized GOAP
 
 **Task:** Extend the goal planner beyond the fire_source prerequisite chain to handle multi-step goals generically. Property-based goal matching replaces hardcoded verb chains.
