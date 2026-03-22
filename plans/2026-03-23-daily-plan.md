@@ -52,38 +52,19 @@
 
 ### Implementation Tasks
 
-#### Phase 1: Design Docs (CBG + design team)
-- [ ] `docs/design/injuries/unconsciousness.md` — Full design doc:
-  - Unconsciousness FSM states: conscious → unconscious → waking → conscious
-  - Duration mechanics: severity-based (harder hit = longer KO)
-  - Interaction with existing injury ticking (bleeding continues during unconsciousness)
-  - Interaction with voluntary sleep (same risk — injuries tick during sleep too)
-  - Death conditions: health ≤ 0 while unconscious = permanent death
-  - Wake-up narration templates (vary by cause)
-  - What triggers unconsciousness? (blow to head, poison, gas, magic?)
-- [ ] `docs/design/injuries/self-hit.md` — Design doc for the `hit` verb:
-  - `hit head` → unconsciousness injury (severity-based duration)
-  - `hit arm` / `hit leg` → bruise injury (pain category, affects actions)
-  - Body area targeting (reuse stab's body area system)
-  - Interaction with armor: helmet reduces/prevents head hit unconsciousness
-  - Narration: "You slam your fist against your own head. Stars explode..."
-  - This is the testing mechanism for unconsciousness — same pattern as self-stab for bleeding
-- [ ] `docs/verbs/hit.md` — Verb reference doc (follows pattern of `docs/verbs/stab.md` and `docs/verbs/cut.md`)
-  - Synonyms: hit, punch, strike, slam, bash, bonk
-  - Body area targeting, self-infliction rules, injury types by area
-  - Requires: nothing (bare fists) or blunt weapon for increased severity
-- [ ] Update `docs/design/injuries/` index if one exists — add unconsciousness + bruise + hit to injury category list
-- [ ] `git commit && git push`
+#### Phase 1: Design Docs (CBG + design team) ✅ PULLED FORWARD — completed 2026-03-22
+- [x] `docs/design/injuries/unconsciousness.md` — Full FSM design, severity-based duration (3-25 turns), armor protection, wake-up narration
+- [x] `docs/design/injuries/self-hit.md` — Hit verb self-infliction, body area targeting, armor interaction
+- [x] `docs/verbs/hit.md` — Verb reference: synonyms (punch/strike/bash/bonk), body areas, injury types
+- [x] `docs/design/objects/mirror.md` — `is_mirror` flag, appearance subsystem trigger, vanity placement
+- [x] `docs/design/player/appearance.md` — Layer-based rendering, health tiers, multiplayer-ready
+- [x] `git commit && git push`
 
-#### Phase 2: Architecture Docs (Bart)
-- [ ] `docs/architecture/player/` — Update player model architecture:
-  - Player consciousness state (conscious/unconscious/sleeping)
-  - How the game loop handles forced-sleep (skip input, tick injuries, check death, decrement timer)
-  - Interaction between sleep command and injury ticking (voluntary sleep now dangerous)
-  - Death-during-unconsciousness handler architecture
-  - Wake-up event and narration dispatch
-- [ ] Review engine implications — does `src/engine/loop/init.lua` need a state machine for player consciousness?
-- [ ] `git commit && git push`
+#### Phase 2: Architecture Docs (Bart) ✅ PULLED FORWARD — completed 2026-03-22
+- [x] `docs/architecture/player/appearance-subsystem.md` — Layered renderer pipeline, injury phrase composer, mirror integration, multiplayer-ready API
+- [x] `docs/architecture/player/consciousness-state.md` — Full state machine, game loop gate, forced ticks, death handler
+- [x] **Found bug:** Current sleep verb doesn't call `injury_mod.tick()` — sleeping with bleeding is currently safe (shouldn't be)
+- [x] `git commit && git push`
 
 #### Phase 3: Engine Implementation (Smithers + Bart)
 - [ ] Implement unconsciousness state in the player model
