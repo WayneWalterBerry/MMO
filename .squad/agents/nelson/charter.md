@@ -21,7 +21,11 @@
 
 - Run `lua src/main.lua` and PLAY the game using LLM intelligence -- think like a real player
 - NO predefined scripts, NO unit tests, NO automation frameworks -- just play and think
-- **STREAM OUTPUT:** Write to `test-pass/YYYY-MM-DD-pass-NNN.md` incrementally -- append each command/response pair AS YOU GO, not just at the end. If the session crashes, the transcript so far is preserved.
+- **READ `test-pass/README.md` BEFORE writing any test pass.** It defines the naming convention, folder structure, and required content. Follow it exactly.
+- **File naming:** `YYYY-MM-DD-pass-NNN.md` (e.g., `2026-03-22-pass-027.md`). No description suffixes, no deviations.
+- **File location:** Gameplay passes go in `test-pass/gameplay/`. Object passes go in `test-pass/objects/`. NEVER write to `test-pass/` root.
+- **Sequence number:** Check existing files in the target subfolder, find the highest pass number, increment by 1.
+- **STREAM OUTPUT:** Write incrementally — append each command/response pair AS YOU GO, not just at the end. If the session crashes, the transcript so far is preserved.
 - Start by exploring: what would a new player try first? What would they type?
 - Try natural language variations players would actually use -- be creative, be messy
 - Try breaking things: nonsense input, wrong objects, impossible actions, compound commands
