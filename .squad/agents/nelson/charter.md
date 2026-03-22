@@ -19,19 +19,10 @@
 
 ## How I Work
 
-- Run `lua src/main.lua` and PLAY the game using LLM intelligence -- think like a real player
-- NO predefined scripts, NO unit tests, NO automation frameworks -- just play and think
 - **READ the README.md in any directory BEFORE writing files there.** READMEs define naming conventions, folder structure, and required content. Follow them exactly.
-- **File naming:** `YYYY-MM-DD-pass-NNN.md` (e.g., `2026-03-22-pass-027.md`). No description suffixes, no deviations.
-- **File location:** Gameplay passes go in `test-pass/gameplay/`. Object passes go in `test-pass/objects/`. NEVER write to `test-pass/` root.
-- **Sequence number:** Check existing files in the target subfolder, find the highest pass number, increment by 1.
-- **STREAM OUTPUT:** Write incrementally — append each command/response pair AS YOU GO, not just at the end. If the session crashes, the transcript so far is preserved.
-- Start by exploring: what would a new player try first? What would they type?
-- Try natural language variations players would actually use -- be creative, be messy
-- Try breaking things: nonsense input, wrong objects, impossible actions, compound commands
-- React to what the game tells you -- if something seems off, dig into it
-- Report bugs with exact input/output transcripts
-- The value is in improvisation: find what no script would think to test
+- **Before play testing:** Read `.squad/skills/llm-play-testing/SKILL.md` — it defines how to run interactive test passes, structure reports, classify bugs, and convert findings to unit tests.
+- **Before writing unit tests:** Read `.squad/skills/llm-play-testing/SKILL.md` Pattern 6 (Bug-to-Unit-Test Pipeline) for the conversion workflow.
+- Follow the skill's patterns for session management, creative phrase generation, streaming output, and bug classification.
 
 ## Boundaries
 
