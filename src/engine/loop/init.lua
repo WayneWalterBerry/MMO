@@ -56,6 +56,19 @@ function loop.run(context)
       context.update_status(context)
     end
 
+    -- If search is active and no input yet, process one search step
+    local search_ok, search_mod = pcall(require, "engine.search")
+    if search_ok and search_mod and search_mod.is_searching() then
+      -- Wait briefly to allow interruption
+      -- (In a real async system, this would be event-driven)
+      local continue_search = search_mod.tick(context)
+      if continue_search then
+        -- Search continues - loop back for next tick
+        goto continue
+      end
+      -- Search completed - fall through to normal input
+    end
+
     -- Read input (UI-aware or fallback)
     local input
     if context.ui and context.ui.is_enabled() then
@@ -69,6 +82,11 @@ function loop.run(context)
 
     local trimmed = input:match("^%s*(.-)%s*$")
     if trimmed == "" then goto continue end
+    
+    -- If search is active and user entered a command, abort search
+    if search_ok and search_mod and search_mod.is_searching() then
+      search_mod.abort(context)
+    end
 
     -- Handle scroll commands before game processing
     if context.ui and context.ui.handle_scroll(trimmed) then

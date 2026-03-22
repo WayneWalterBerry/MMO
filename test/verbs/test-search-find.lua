@@ -40,6 +40,40 @@ local function capture_output(fn)
     return table.concat(captured, "\n")
 end
 
+-- Helper: capture output from search with tick processing
+local function capture_search_output(ctx, verb, noun)
+    local captured = {}
+    local old_print = print
+    _G.print = function(msg) captured[#captured + 1] = msg end
+    
+    -- Start the search
+    local ok, err = pcall(function()
+        handlers[verb](ctx, noun)
+    end)
+    
+    if not ok then
+        _G.print = old_print
+        error("Handler call failed: " .. tostring(err))
+    end
+    
+    -- Process search ticks until completion
+    local search_mod = require("engine.search")
+    local max_ticks = 50  -- Safety limit
+    local tick_count = 0
+    
+    while search_mod.is_searching() and tick_count < max_ticks do
+        local continue_search = search_mod.tick(ctx)
+        tick_count = tick_count + 1
+        if not continue_search then
+            break
+        end
+    end
+    
+    _G.print = old_print
+    
+    return table.concat(captured, "\n")
+end
+
 -- Helper: create test room with nightstand
 local function create_test_room()
     local reg = registry_mod
@@ -127,9 +161,7 @@ test("search around in DARK returns objects with tactile descriptions", function
     local room, reg, nightstand, curtains = create_test_room()
     local ctx = create_context(false, room, reg, curtains)
     
-    local output = capture_output(function()
-        handlers["search"](ctx, "around")
-    end)
+    local output = capture_search_output(ctx, "search", "around")
     
     -- Should find objects by touch in darkness
     assert_contains(output, "nightstand", "Should discover nightstand in darkness")
@@ -143,9 +175,7 @@ test("search around in LIGHT returns objects with visual descriptions", function
     local room, reg, nightstand, curtains = create_test_room()
     local ctx = create_context(true, room, reg, curtains)
     
-    local output = capture_output(function()
-        handlers["search"](ctx, "around")
-    end)
+    local output = capture_search_output(ctx, "search", "around")
     
     -- Should find objects visually in light
     assert_contains(output, "nightstand", "Should discover nightstand in light")
@@ -155,9 +185,7 @@ test("search with no noun defaults to search around", function()
     local room, reg, nightstand, curtains = create_test_room()
     local ctx = create_context(false, room, reg, curtains)
     
-    local output = capture_output(function()
-        handlers["search"](ctx, "")
-    end)
+    local output = capture_search_output(ctx, "search", "")
     
     -- Should work like "search around"
     assert_contains(output, "nightstand", "Bare search should discover objects")
@@ -171,9 +199,7 @@ test("find nightstand in DARK uses touch", function()
     local room, reg, nightstand, curtains = create_test_room()
     local ctx = create_context(false, room, reg, curtains)
     
-    local output = capture_output(function()
-        handlers["find"](ctx, "nightstand")
-    end)
+    local output = capture_search_output(ctx, "find", "nightstand")
     
     -- Should find by touch and show tactile description
     assert_contains(output, "feel", "Should use touch-based description in dark")
@@ -187,9 +213,7 @@ test("find nightstand in LIGHT uses vision", function()
     local room, reg, nightstand, curtains = create_test_room()
     local ctx = create_context(true, room, reg, curtains)
     
-    local output = capture_output(function()
-        handlers["find"](ctx, "nightstand")
-    end)
+    local output = capture_search_output(ctx, "find", "nightstand")
     
     -- Should find by vision and show visual description
     assert_contains(output, "nightstand", "Should find nightstand visually")
@@ -204,13 +228,8 @@ test("find synonym works same as find", function()
     local ctx = create_context(false, room, reg, curtains)
     
     -- Verify both "find" and "search" work
-    local find_output = capture_output(function()
-        handlers["find"](ctx, "nightstand")
-    end)
-    
-    local search_output = capture_output(function()
-        handlers["search"](ctx, "nightstand")
-    end)
+    local find_output = capture_search_output(ctx, "find", "nightstand")
+    local search_output = capture_search_output(ctx, "search", "nightstand")
     
     -- Both should successfully find the object
     assert_contains(find_output, "nightstand", "find should discover object")
@@ -280,9 +299,7 @@ test("after finding nightstand in dark, can reference its parts", function()
     local ctx = create_context(false, room, reg, curtains)
     
     -- First, find the nightstand
-    local find_output = capture_output(function()
-        handlers["find"](ctx, "nightstand")
-    end)
+    local find_output = capture_search_output(ctx, "find", "nightstand")
     
     assert_contains(find_output, "nightstand", "Should find nightstand")
     

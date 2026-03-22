@@ -98,13 +98,30 @@ function preprocess.natural_language(input)
 
     -- Search/find compound phrases → search (all-sense discovery)
     -- "search around", "search for X", "find X"
+    -- Compound: "search [scope] for [target]", "find [target] in [scope]"
     if lower:match("^search%s+around%s*") then
         return "search", "around"
     end
+    
+    -- "search [scope] for [target]" → pass whole thing to verb handler
+    local search_scope_for = lower:match("^search%s+(.+)%s+for%s+(.+)")
+    if search_scope_for then
+        return "search", lower:match("^search%s+(.+)$")
+    end
+    
+    -- "search for [target]" → target only
     local search_target = lower:match("^search%s+for%s+(.+)")
     if search_target then
         return "search", search_target
     end
+    
+    -- "find [target] in [scope]" → pass whole thing to verb handler
+    local find_in = lower:match("^find%s+(.+)%s+in%s+(.+)")
+    if find_in then
+        return "find", lower:match("^find%s+(.+)$")
+    end
+    
+    -- "find [target]"
     local find_target = lower:match("^find%s+(.+)")
     if find_target then
         return "find", find_target

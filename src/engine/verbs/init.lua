@@ -1724,125 +1724,79 @@ function verbs.create()
     handlers["grope"] = handlers["feel"]
 
     ---------------------------------------------------------------------------
-    -- SEARCH / FIND -- ALL senses (works in darkness AND light)
-    -- Wayne directive 2026-03-22T04:03: distinct from look/see (vision only)
+    -- SEARCH / FIND -- Progressive traverse system (turn-based, interruptible)
+    -- Wayne directive 2026-03-22T12:25, 12:31: Search is a progressive TRAVERSE
+    -- NOT instant query. Engine walks objects near→far, narrating as it goes.
+    -- Auto-opens containers, costs 1 turn per step, can be interrupted.
     ---------------------------------------------------------------------------
+    local search_mod = require("engine.search")
+    
     handlers["search"] = function(ctx, noun)
-        -- Treat "around", "room", "here" the same as bare search (room sweep)
+        -- Parse search syntax patterns
+        local target = nil
+        local scope = nil
+        
+        -- Treat "around", "room", "here" as bare search (no target)
         local sweep_words = { [""] = true, ["around"] = true, ["room"] = true, ["here"] = true,
                               ["around me"] = true, ["surroundings"] = true }
         
         if sweep_words[noun] then
-            -- Search around the room using available senses
-            local room = ctx.current_room
-            local reg = ctx.registry
-            local has_light = has_some_light(ctx)
-            local found = {}
-            
-            for _, obj_id in ipairs(room.contents or {}) do
-                local obj = reg:get(obj_id)
-                if obj and not obj.hidden then
-                    local desc = obj.name or obj.id
-                    found[#found + 1] = desc
-                end
-            end
-            
-            if #found > 0 then
-                if has_light then
-                    print("You search around the room, looking carefully...")
-                    for _, entry in ipairs(found) do
-                        print("  " .. entry)
-                    end
-                else
-                    -- In darkness, use touch/hearing/smell instead of vision
-                    print("You search around in the darkness, feeling and listening...")
-                    for _, entry in ipairs(found) do
-                        print("  " .. entry)
-                    end
-                end
-            else
-                print("You search around but find nothing within reach.")
-            end
+            -- Bare search - undirected room sweep
+            search_mod.search(ctx, nil, nil)
             return
         end
         
-        -- "search [object]" → find a specific object using all senses
-        local obj, loc_type, parent_obj, surface_key = find_visible(ctx, noun)
-        if not obj then
-            print("You can't find anything like that nearby.")
+        -- Pattern: "search [scope] for [target]"
+        local scope_part, target_part = noun:match("^(.-)%s+for%s+(.+)$")
+        if scope_part and target_part then
+            -- Resolve scope to object ID
+            local scope_obj = find_visible(ctx, scope_part)
+            if not scope_obj then
+                print("You don't see " .. scope_part .. " here.")
+                return
+            end
+            search_mod.search(ctx, target_part, scope_obj.id)
             return
         end
         
-        -- Show appropriate sensory description based on lighting
-        local has_light = has_some_light(ctx)
-        if has_light then
-            -- Use vision (same as examine)
-            if obj.on_look then
-                print(obj.on_look(obj, reg))
-            else
-                print(obj.description or "You see nothing special.")
-            end
+        -- Pattern: "search for [target]" (already stripped by preprocess.lua if present)
+        -- If noun doesn't contain "for", treat as either:
+        --   1. A scope to search ("search nightstand")
+        --   2. A target to find ("search matchbox")
+        -- Prefer scope interpretation (search a specific object)
+        
+        local obj = find_visible(ctx, noun)
+        if obj then
+            -- Found an object - treat as scope
+            search_mod.search(ctx, nil, obj.id)
         else
-            -- Use touch/sound/smell in darkness
-            if obj.on_feel then
-                local feel_text = type(obj.on_feel) == "function" and obj.on_feel(obj) or obj.on_feel
-                print(feel_text)
-            elseif obj.touch_description then
-                print(obj.touch_description)
-            else
-                print("You reach out and feel " .. (obj.name or "it") .. " in the darkness.")
-            end
-        end
-        
-        -- Enumerate surface/container contents
-        local check_obj = obj
-        local check_inside_only = false
-        if loc_type == "part" and parent_obj and obj.carries_contents then
-            check_obj = parent_obj
-            check_inside_only = true
-        end
-        
-        if check_obj.surfaces then
-            for zone_name, zone in pairs(check_obj.surfaces) do
-                if (not check_inside_only or zone_name == "inside") then
-                    if zone.accessible ~= false and #(zone.contents or {}) > 0 then
-                        local items = {}
-                        for _, id in ipairs(zone.contents) do
-                            local item = ctx.registry:get(id)
-                            items[#items + 1] = item and item.name or id
-                        end
-                        if has_light then
-                            print("You see " .. zone_name .. ":")
-                        else
-                            print("Your fingers find " .. zone_name .. ":")
-                        end
-                        for _, item_name in ipairs(items) do
-                            print("  " .. item_name)
-                        end
-                    end
-                end
-            end
-        end
-        
-        if check_obj.container and check_obj.contents and #check_obj.contents > 0 then
-            local items = {}
-            for _, id in ipairs(check_obj.contents) do
-                local item = ctx.registry:get(id)
-                items[#items + 1] = item and item.name or id
-            end
-            if has_light then
-                print("Inside you see:")
-            else
-                print("Inside you feel:")
-            end
-            for _, item_name in ipairs(items) do
-                print("  " .. item_name)
-            end
+            -- Not found as object - treat as target (room-wide search)
+            search_mod.search(ctx, noun, nil)
         end
     end
     
-    -- "find" is a synonym for "search" (all-sense discovery)
-    handlers["find"] = handlers["search"]
+    handlers["find"] = function(ctx, noun)
+        if not noun or noun == "" then
+            print("Find what?")
+            return
+        end
+        
+        -- Pattern: "find [target] in [scope]"
+        local target_part, scope_part = noun:match("^(.-)%s+in%s+(.+)$")
+        if target_part and scope_part then
+            -- Resolve scope to object ID
+            local scope_obj = find_visible(ctx, scope_part)
+            if not scope_obj then
+                print("You don't see " .. scope_part .. " here.")
+                return
+            end
+            search_mod.find(ctx, target_part, scope_obj.id)
+            return
+        end
+        
+        -- Simple "find [target]" - room-wide targeted search
+        search_mod.find(ctx, noun, nil)
+    end
 
     ---------------------------------------------------------------------------
     -- SMELL / SNIFF -- works in darkness AND light
