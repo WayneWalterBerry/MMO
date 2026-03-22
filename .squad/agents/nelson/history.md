@@ -599,3 +599,45 @@ Due to BUG-067 and BUG-068 hangs, could NOT complete:
 - Test pass: test-pass/2026-03-22-pass-024.md
 - Bug inbox: .squad/decisions/inbox/nelson-search-playtest-bugs.md
 
+### Regression Test Suite: Pass 025/026 Bugs (2026-03-22)
+
+**Status:** ✅ COMPLETE — 56 regression tests written across 3 new test files
+
+**Test Files Created:**
+- `test/parser/test-preprocess-phrases.lua` — 28 tests for NL phrase preprocessing
+- `test/search/test-search-scoped.lua` — 13 tests for scoped search and narration
+- `test/nightstand/test-nightstand-chain.lua` — 15 tests for nightstand interaction chain
+
+**Baseline Results:**
+| File | Pass | Fail | Notes |
+|------|------|------|-------|
+| test-preprocess-phrases | 18 | 10 | BUG-081 (article strip) accounts for 6 failures |
+| test-search-scoped | 7 | 6 | BUG-088 (doubled articles) accounts for 4 failures |
+| test-nightstand-chain | 13 | 2 | BUG-091 (spent match priority), examine matchbox |
+| **TOTAL** | **38** | **18** | All failures are known unfixed bugs |
+
+**Bugs Encoded as Tests:**
+- BUG-074: `look for X` → find conversion (regression check, passes)
+- BUG-078: `find everything/anything` → sweep trigger (FAILS)
+- BUG-079: Scoped search content discovery (PARTIAL — nightstand passes, bed fails)
+- BUG-080: Wardrobe depth limit (PASSES — safety limit works)
+- BUG-081: Article stripping from find/search targets (FAILS)
+- BUG-082: Drawer recognized as search scope (FAILS)
+- BUG-083: Politeness stripping with compound patterns (PASSES)
+- BUG-084: Question transform hangs (PASSES — returns valid verb)
+- BUG-085: Adverb stripping expanded list (PASSES — already fixed)
+- BUG-086: `check X` → examine (PASSES — already fixed)
+- BUG-087: `look at X` → examine (PASSES — already fixed)
+- BUG-088: Narrator double article "the a" (FAILS)
+- BUG-089: feel inside drawer scope bleed (PASSES — already fixed)
+- BUG-090: light candle hang (PASSES — safety limit catches it)
+- BUG-091: Spent match pickup priority (FAILS)
+- BUG-092: Match counter decrement (PASSES at data level)
+
+**Key Learnings:**
+- Smithers has already fixed BUG-085/086/087 in parallel — `thoroughly`, `check`, `look at` all pass now
+- BUG-081 (article stripping) is the most pervasive unfixed issue — causes 6+ test failures
+- BUG-088 (narrator doubled articles) is confirmed reproducible in unit tests — "the a large four-poster bed"
+- Test infrastructure pattern: search/nightstand tests use h.summary() without os.exit for soft failure; parser tests use os.exit(1) for hard failure
+- test/run-tests.lua updated to include nightstand/ directory in test discovery
+
