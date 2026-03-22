@@ -56,10 +56,42 @@ The Container template does **not** define surfaces. Instance containers may add
 
 To support "on" placement, instances should define custom surfaces in their verb handlers.
 
+## Open/Closed Sensory Rules
+
+Containers support **open** and **closed** states that control whether senses can access contents.
+
+### Closed Container (Default)
+- **Sensory access:** NO sense can examine or interact with contents
+- Players cannot: look inside, feel inside, search contents, or examine items
+- Exception pattern: `transparent = true` allows vision when closed (see below)
+
+### Open Container
+- **Sensory access:** All senses can access contents
+- Players can: look inside, feel inside, search contents, examine items as normal
+
+### Exception Pattern: Transparent Containers
+When `transparent = true`, the container allows **visual access when closed** but still blocks physical/tactile access:
+
+**Example: Glass Bottle**
+```lua
+{
+  id = "glass_bottle",
+  transparent = true,  -- Can see inside when closed
+  -- closed: can LOOK/EXAMINE inside, cannot FEEL or reach
+  -- open: all senses work
+}
+```
+
+### Implementation Pattern
+- **Closed state:** Check `transparent` flag before blocking sensory access
+- If `transparent` and sense is visual (look/examine): allow
+- If `transparent` and sense is tactile (feel/search): block
+- If not `transparent`: block all senses (default container behavior)
+
 ## FSM States
 
 The Container template does **not** define FSM states. State management is handled by instance objects:
-- **Open/Closed** — Controlled by `OPEN` and `CLOSE` verbs
+- **Open/Closed** — Controlled by `OPEN` and `CLOSE` verbs; affects sensory access (see Open/Closed Sensory Rules)
 - **Locked/Unlocked** — Controlled by `LOCK` and `UNLOCK` verbs
 - **Hidden** — Items can be concealed via describe override
 
@@ -68,7 +100,7 @@ The Container template does **not** define FSM states. State management is handl
 Common instances include:
 - `satchel` — Leather bag, 4-slot container
 - `backpack` — Adventurer's pack, 6-slot container
-- `chest` — Wooden storage chest, 8-slot container
+- `chest` — Wooden storage chest, 8-slot container; two hands required to carry (planned)
 - `barrel` — Wooden barrel, 12-slot container
 - `lockbox` — Secure box with lock, 4-slot container
 

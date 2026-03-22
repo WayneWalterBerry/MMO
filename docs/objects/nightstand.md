@@ -1,7 +1,7 @@
 # Nightstand — Object Design
 
 ## Description
-A squat knotted-pine nightstand crusted with candle wax. Composite object with a detachable drawer. Has top surface and inside (drawer) surface.
+A squat knotted-pine nightstand crusted with candle wax. Composite object with a detachable drawer. The drawer is a container that can be opened and closed, controlling access to its contents.
 
 **Material:** `oak`
 
@@ -9,11 +9,20 @@ A squat knotted-pine nightstand crusted with candle wax. Composite object with a
 
 ```
 nightstand (parent)
-  ├── drawer (detachable part, carries contents)
+  ├── drawer (detachable part, container with open/closed states)
   └── legs (non-detachable part)
 ```
 
+## Drawer as a Container
+
+The drawer inherits from the **Container** template and supports open/closed states:
+- **Closed drawer:** Contents NOT accessible. Players cannot look, feel, search, or examine items inside.
+- **Open drawer:** Contents fully accessible. All senses work on drawer contents.
+- The matchbox lives inside the drawer container.
+
 ## FSM States
+
+The drawer's open/closed state affects whether its contents are accessible:
 
 ```
 closed_with_drawer ↔ open_with_drawer
@@ -22,8 +31,8 @@ closed_without_drawer   open_without_drawer
         ↕ (reattach)       ↕ (reattach)
 ```
 
-- **closed_with_drawer** — Default. Drawer closed, inside not accessible.
-- **open_with_drawer** — Drawer slid open, inside accessible.
+- **closed_with_drawer** — Default. Drawer closed, contents NOT accessible (container closed).
+- **open_with_drawer** — Drawer slid open, contents fully accessible (container open).
 - **closed_without_drawer** — Drawer removed. Empty slot.
 - **open_without_drawer** — Drawer removed. Empty slot visible.
 
