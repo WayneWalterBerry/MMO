@@ -1042,3 +1042,27 @@ Set `ctx.current_verb` at three dispatch points: `loop/init.lua`, `parser/init.l
 **Files Changed:** preprocess.lua, goal_planner.lua, traverse.lua, narrator.lua, verbs/init.lua
 
 ---
+
+### Session 2026-07-25: Pass 028 — Container Gating Bug Fixes
+
+**Task:** Fix 3 container gating bugs from Nelson's Pass 028 test report.
+
+**BUG-095 (HIGH) — Wardrobe shows contents while closed:**
+- Root cause: Wardrobe's base-level `surfaces.inside` was missing `accessible = false`. Unlike the nightstand (which has it), the wardrobe's base properties didn't match its initial "closed" state. FSM `apply_state` only runs on transitions, not at load time, so base properties ARE the initial state.
+- Fix: Added `accessible = false` to wardrobe's base surfaces in `src/meta/objects/wardrobe.lua`.
+
+**BUG-096 (MEDIUM) — Gating message says "nightstand" when player targets "drawer":**
+- Root cause: Feel handler redirects part→parent for surface access (BUG-058 fix) but used `cobj.name` (parent name) in the inaccessible-surface gating message.
+- Fix: Save target name before redirect in `target_name` variable; use it in the gating print at line 1629.
+
+**BUG-097 (LOW) — `look inside drawer` (closed, lit) shows description not "it's closed":**
+- Root cause: "look in/inside X" handler didn't do part→parent redirect. Drawer part has no surfaces, so it fell through to general examine and showed the part description.
+- Fix: Capture `loc_type`/`parent_obj` from `find_visible`, redirect to parent's surfaces for zone check, print "The [part] is closed." if surface inaccessible.
+- Key pattern: `closed_name:gsub("^a ", "the "):gsub("^an ", "the ")` converts article-prefixed names to definite article for natural gating message.
+
+**Testing:** All 16 test files pass. 10 new regression tests in `test/nightstand/test-container-gating-pass028.lua`.
+
+**Files Changed:** `src/meta/objects/wardrobe.lua`, `src/engine/verbs/init.lua`
+**Files Created:** `test/nightstand/test-container-gating-pass028.lua`
+
+---
