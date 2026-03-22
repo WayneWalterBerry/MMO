@@ -645,6 +645,57 @@ do
             return obj, loc, parent, surface
         end
 
+        -- BUG-115: Spatial reference — "thing on X" / "something on X" etc.
+        -- Resolves vague references to the first object on a named surface.
+        local spatial_surface = kw:match("^thing%s+on%s+(.+)$")
+            or kw:match("^something%s+on%s+(.+)$")
+            or kw:match("^item%s+on%s+(.+)$")
+            or kw:match("^object%s+on%s+(.+)$")
+            or kw:match("^stuff%s+on%s+(.+)$")
+        if spatial_surface then
+            local surface_obj = _find_visible(ctx, spatial_surface)
+            if surface_obj and surface_obj.surfaces then
+                -- Prefer "top" surface, then any accessible surface
+                local check_order = {}
+                for zone_name, zone in pairs(surface_obj.surfaces) do
+                    if zone_name == "top" then
+                        table.insert(check_order, 1, { name = zone_name, zone = zone })
+                    elseif zone.accessible ~= false then
+                        check_order[#check_order + 1] = { name = zone_name, zone = zone }
+                    end
+                end
+                for _, entry in ipairs(check_order) do
+                    if entry.zone.contents and #entry.zone.contents > 0 then
+                        if #entry.zone.contents == 1 then
+                            local item = ctx.registry:get(entry.zone.contents[1])
+                            if item then
+                                ctx.last_object = item
+                                ctx.last_object_loc = "surface"
+                                ctx.last_object_parent = surface_obj
+                                ctx.last_object_surface = entry.name
+                                ctx.known_objects = ctx.known_objects or {}
+                                ctx.known_objects[item.id] = true
+                                if context_window then
+                                    context_window.push(item)
+                                end
+                                return item, "surface", surface_obj, entry.name
+                            end
+                        else
+                            -- Multiple items: disambiguate
+                            local names = {}
+                            for _, id in ipairs(entry.zone.contents) do
+                                local item = ctx.registry:get(id)
+                                names[#names + 1] = item and item.name or id
+                            end
+                            print("Which thing on " .. (surface_obj.name or spatial_surface)
+                                .. "? You see: " .. table.concat(names, ", ") .. ".")
+                            return nil
+                        end
+                    end
+                end
+            end
+        end
+
         -- Tier 5: Fuzzy noun resolution fallback (only when exact match fails)
         if fuzzy then
             local fobj, floc, fparent, fsurface, prompt = fuzzy.resolve(ctx, keyword)

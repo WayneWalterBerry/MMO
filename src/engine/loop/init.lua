@@ -34,8 +34,10 @@ local PRONOUNS = {
   it = true, them = true, that = true, this = true, those = true,
   ["the same"] = true, ["the same thing"] = true,
   ["thing i found"] = true, ["the thing i found"] = true,
+  ["one i found"] = true, ["the one i found"] = true,
   ["what i found"] = true, ["item i found"] = true,
-  ["thing i discovered"] = true,
+  ["thing i discovered"] = true, ["one i discovered"] = true,
+  ["the one i discovered"] = true,
 }
 
 function loop.run(context)
@@ -231,8 +233,10 @@ function loop.run(context)
       if noun ~= "" and PRONOUNS[noun] and context.last_noun then
         -- Tier 4: discovery references resolve from context window
         if context_window and (noun == "thing i found" or noun == "the thing i found"
+            or noun == "one i found" or noun == "the one i found"
             or noun == "what i found" or noun == "item i found"
-            or noun == "thing i discovered") then
+            or noun == "thing i discovered" or noun == "one i discovered"
+            or noun == "the one i discovered") then
           local disc = context_window.last_discovery()
           if disc then
             noun = disc.id

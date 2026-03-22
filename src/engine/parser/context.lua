@@ -111,12 +111,15 @@ function context_window.resolve(noun)
         return _stack[1]
     end
 
-    -- "thing I found" / "what I found" / "thing I discovered" / "item I found"
+    -- BUG-114: "thing I found" / "one I found" / "what I found" etc. → last discovery
     if kw:match("thing%s+i%s+found")
+        or kw:match("one%s+i%s+found")
         or kw:match("what%s+i%s+found")
         or kw:match("thing%s+i%s+discovered")
+        or kw:match("one%s+i%s+discovered")
         or kw:match("item%s+i%s+found")
-        or kw:match("thing%s+i%s+just%s+found") then
+        or kw:match("thing%s+i%s+just%s+found")
+        or kw:match("one%s+i%s+just%s+found") then
         return _discoveries[1]
     end
 

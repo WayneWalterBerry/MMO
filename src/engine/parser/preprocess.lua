@@ -523,6 +523,11 @@ local function transform_compound_actions(text)
         return "pull " .. pull_target
     end
 
+    -- BUG-113: "pick up" (bare, no target) → "take" so loop context fallback kicks in
+    if text == "pick up" then
+        return "take"
+    end
+
     -- "roll up X" → "move X"
     local roll_target = text:match("^roll%s+up%s+(.+)")
         or text:match("^roll%s+(.+)%s+up$")
