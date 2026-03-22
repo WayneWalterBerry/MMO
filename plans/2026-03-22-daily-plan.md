@@ -54,6 +54,9 @@
 - [x] 🧪 Nelson Pass 032: 86% pass. All 8 idioms work. Error messages much improved. 3 minor bugs (politeness+idiom combo, bare examine, unlit candle message).
 - [x] ⚛️ Smithers — Fixed BUG-104-111: question hangs, gerund stripping (27 mappings), preambles, singularize targets. 33 new tests.
 - [x] Full test suite: **872 pass / 0 fail** ✅ (1 flaky timing test excluded)
+- [x] ⚛️ Smithers — Tier 5: Fuzzy noun resolution. New `fuzzy.lua` module — material matching, partial name, property matching, disambiguation prompts, Levenshtein typo tolerance. Fallback only (zero happy-path cost). 52 new tests.
+- [x] **📊 GRADE after Tier 5:** A- (88%) — typos and vague nouns now tolerated
+- [x] Full test suite: **927 pass / 0 fail** ✅
 
 ---
 
