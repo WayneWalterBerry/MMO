@@ -31,6 +31,9 @@
 - [x] 🧪 Nelson — 56 regression unit tests written (38 pass, 18 fail → mapped to known bugs)
 - [x] Full test suite: **421 pass / 0 fail** ✅
 - [x] 🧪 Nelson Pass 027: 18/25 pass (72%). Release blocker cleared (`light candle` works!). 11/15 bugs fixed. Still broken: BUG-082/083/084 (compound hangs), BUG-091 (spent match). New: BUG-093 (rummage hangs), BUG-094 (look for a candle hangs)
+- [x] ⚛️ Smithers — Fixed 6 remaining Pass 027 bugs (BUG-082/083/084/091/093/094) + 40 regression tests
+- [x] ⚛️ Smithers — Deployed to live site (commit 58538d4, 96 files, verified live)
+- [x] Full test suite: **461 pass / 0 fail** ✅
 
 ---
 
