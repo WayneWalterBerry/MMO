@@ -369,6 +369,22 @@ local function transform_look_patterns(text)
         return "examine " .. check_target
     end
 
+    -- BUG-118: "peek behind/at/through/in/into/around X" → "examine X"
+    -- "peek" (bare) → "look"
+    if text == "peek" then
+        return "look"
+    end
+    local peek_target = text:match("^peek%s+behind%s+(.+)")
+        or text:match("^peek%s+at%s+(.+)")
+        or text:match("^peek%s+through%s+(.+)")
+        or text:match("^peek%s+into%s+(.+)")
+        or text:match("^peek%s+in%s+(.+)")
+        or text:match("^peek%s+around%s+(.+)")
+        or text:match("^peek%s+under%s+(.+)")
+    if peek_target then
+        return "examine " .. peek_target
+    end
+
     -- BUG-112: "look under/underneath/beneath X" → "examine X"
     -- "look under" is not a recognized verb pattern in its own right; without
     -- this transform, the input falls through to Tier 2 search which can hang

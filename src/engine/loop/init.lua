@@ -69,14 +69,23 @@ function loop.run(context)
     -- If search is active and no input yet, process one search step
     local search_ok, search_mod = pcall(require, "engine.search")
     if search_ok and search_mod and search_mod.is_searching() then
-      -- Wait briefly to allow interruption
-      -- (In a real async system, this would be event-driven)
-      local continue_search = search_mod.tick(context)
-      if continue_search then
-        -- Search continues - loop back for next tick
-        goto continue
+      if _G.TRACE then io.stderr:write("[TRACE] search tick (active)\n") end
+      -- Safety net: limit consecutive search ticks to prevent infinite spin
+      local search_tick_limit = 0
+      while search_mod.is_searching() and search_tick_limit < 200 do
+        local continue_search = search_mod.tick(context)
+        search_tick_limit = search_tick_limit + 1
+        if _G.TRACE and search_tick_limit % 10 == 0 then
+          io.stderr:write("[TRACE] search tick #" .. search_tick_limit .. " result: " .. tostring(continue_search) .. "\n")
+        end
+        if not continue_search then break end
       end
-      -- Search completed - fall through to normal input
+      if search_mod.is_searching() then
+        -- Search exceeded tick limit — force abort
+        if _G.TRACE then io.stderr:write("[TRACE] search force-aborted after " .. search_tick_limit .. " ticks\n") end
+        search_mod.abort(context)
+      end
+      -- Search completed or aborted — fall through to normal input
     end
 
     -- Read input (UI-aware or fallback)
@@ -128,6 +137,16 @@ function loop.run(context)
     -- Multi-command splitting: commas, semicolons, "then" (Issue #1)
     -- BUG-066: Added safety limits to prevent infinite loops or hangs
     local command_parts = preprocess.split_commands(trimmed)
+
+    -- Global safety net: detect CPU-bound hangs in verb handlers.
+    -- BUG-105/106/116/117/118: makes it architecturally impossible to hang.
+    local _cmd_deadline = os.clock() + 2  -- 2-second timeout
+    debug.sethook(function()
+      if os.clock() > _cmd_deadline then
+        debug.sethook()
+        error("__COMMAND_TIMEOUT__")
+      end
+    end, "", 500000)
 
     -- Expand each part further with the existing " and " compound split
     local sub_commands = {}
@@ -201,9 +220,12 @@ function loop.run(context)
       end
 
       -- Try natural language preprocessing first (Smithers's parser pipeline)
+      if _G.TRACE then io.stderr:write("[TRACE] parsing: " .. tostring(sub_input) .. "\n") end
       local verb, noun = preprocess.natural_language(sub_input)
+      if _G.TRACE then io.stderr:write("[TRACE] natural_language => verb=" .. tostring(verb) .. " noun=" .. tostring(noun) .. "\n") end
       if not verb then
         verb, noun = preprocess.parse(sub_input)
+        if _G.TRACE then io.stderr:write("[TRACE] parse fallback => verb=" .. tostring(verb) .. " noun=" .. tostring(noun) .. "\n") end
       end
 
       if verb == "" then goto next_sub end
@@ -269,7 +291,18 @@ function loop.run(context)
 
       -- Tier 3: goal-oriented prerequisite planning
       if goal_planner then
-        local plan = goal_planner.plan(verb, noun, context)
+        if _G.TRACE then io.stderr:write("[TRACE] GOAP plan: verb=" .. verb .. " noun=" .. noun .. "\n") end
+        local goap_ok, plan_or_err = pcall(goal_planner.plan, verb, noun, context)
+        if not goap_ok then
+          if type(plan_or_err) == "string" and plan_or_err:find("__COMMAND_TIMEOUT__") then
+            print("That took longer than expected. Try a simpler command, or type 'help'.")
+            _G.print = old_print or _G.print
+            debug.sethook()
+            goto next_sub
+          end
+        end
+        local plan = goap_ok and plan_or_err or nil
+        if _G.TRACE then io.stderr:write("[TRACE] GOAP result: " .. tostring(plan and #plan or "nil") .. " steps\n") end
         if plan then
           if not goal_planner.execute(plan, context) then
             goto next_sub
@@ -292,8 +325,20 @@ function loop.run(context)
 
       local handler = context.verbs[verb]
       if handler then
+        if _G.TRACE then io.stderr:write("[TRACE] dispatch handler: " .. verb .. "(" .. noun .. ")\n") end
         context.current_verb = verb
-        handler(context, noun)
+        local h_ok, h_err = pcall(handler, context, noun)
+        if not h_ok then
+          if type(h_err) == "string" and h_err:find("__COMMAND_TIMEOUT__") then
+            print("That took longer than expected. Try a simpler command, or type 'help'.")
+          elseif _G.TRACE then
+            io.stderr:write("[TRACE] handler error: " .. tostring(h_err) .. "\n")
+          end
+          _G.print = old_print
+          debug.sethook()
+          goto next_sub
+        end
+        if _G.TRACE then io.stderr:write("[TRACE] handler complete: " .. verb .. "\n") end
         -- BUG-060: Update last_noun after successful handler with a real noun
         if noun ~= "" and not no_noun_verbs[verb] then
           -- Strip prepositions for context: "in wardrobe" → "wardrobe"
@@ -302,8 +347,19 @@ function loop.run(context)
         end
       elseif context.parser then
         -- Tier 2 fallback: try embedding-based phrase matching
+        if _G.TRACE then io.stderr:write("[TRACE] Tier 2 fallback entry: " .. sub_input .. "\n") end
         local parser_fallback = require("engine.parser")
-        local handled = parser_fallback.fallback(context.parser, sub_input, context)
+        local t2_ok, t2_result = pcall(parser_fallback.fallback, context.parser, sub_input, context)
+        if not t2_ok then
+          if type(t2_result) == "string" and t2_result:find("__COMMAND_TIMEOUT__") then
+            print("That took longer than expected. Try a simpler command, or type 'help'.")
+          end
+          _G.print = old_print
+          debug.sethook()
+          goto next_sub
+        end
+        local handled = t2_result
+        if _G.TRACE then io.stderr:write("[TRACE] Tier 2 fallback result: " .. tostring(handled) .. "\n") end
         if not handled then
           -- Tier 2 failed — restore print and skip
           _G.print = old_print
@@ -336,6 +392,9 @@ function loop.run(context)
 
       ::next_sub::
     end
+
+    -- Clear the command timeout hook
+    debug.sethook()
 
     if should_quit then
       if context.on_quit then context.on_quit() end

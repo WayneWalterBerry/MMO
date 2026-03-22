@@ -76,7 +76,7 @@ end
 -- @param target string or nil (nil = undirected sweep)
 -- @param scope object ID or nil (nil = full room)
 function search.search(ctx, target, scope)
-    -- If already searching, abort previous search
+    if _G.TRACE then io.stderr:write("[TRACE] search.search: target=" .. tostring(target) .. " scope=" .. tostring(scope) .. "\n") end    -- If already searching, abort previous search
     if _state.active then
         search.abort(ctx)
     end
@@ -149,6 +149,8 @@ function search.tick(ctx)
     if not _state.active then
         return false
     end
+    
+    if _G.TRACE then io.stderr:write("[TRACE] search.tick step=" .. _state.current_step .. " index=" .. _state.current_index .. "/" .. #_state.queue .. "\n") end
     
     -- BUG-076, BUG-077: Safety limit - prevent infinite loops
     if _state.current_step > 100 then

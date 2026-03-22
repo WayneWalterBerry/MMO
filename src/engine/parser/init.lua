@@ -33,12 +33,15 @@ end
 -- Returns true if handled, false if the command should fail.
 ---------------------------------------------------------------------------
 function parser.fallback(instance, input_text, context)
+  if _G.TRACE then io.stderr:write("[TRACE] embedding_matcher:match entry: " .. tostring(input_text) .. "\n") end
   local verb, noun, score, phrase = instance.matcher:match(input_text)
+  if _G.TRACE then io.stderr:write("[TRACE] embedding_matcher:match exit: verb=" .. tostring(verb) .. " noun=" .. tostring(noun) .. " score=" .. tostring(score) .. "\n") end
 
   if verb and score > instance.threshold then
     local handler = context.verbs[verb]
     if handler then
       context.current_verb = verb
+      if _G.TRACE then io.stderr:write("[TRACE] Tier 2 dispatch: " .. verb .. "(" .. tostring(noun) .. ")\n") end
       if instance.diagnostic then
         io.stderr:write(string.format(
           "[Parser] Tier 2 match: \"%s\" → %s %s (score: %.2f, phrase: \"%s\")\n",
@@ -46,6 +49,7 @@ function parser.fallback(instance, input_text, context)
         ))
       end
       handler(context, noun or "")
+      if _G.TRACE then io.stderr:write("[TRACE] Tier 2 handler complete: " .. verb .. "\n") end
       return true
     end
   end

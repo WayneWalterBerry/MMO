@@ -587,6 +587,26 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 - When a buzzword would wrap existing code (e.g., Humanizer around narrator.lua) — polish the original instead
 - When a buzzword requires infrastructure you don't have (e.g., orchestration framework) — use simple design patterns instead
 
+### Hang Elimination Sprint — Phase 5 (2026-03-25)
+**Context:** BUG-105/106 "fixed" twice but kept recurring in live play. Three new hangs (BUG-116/117/118) found in pass-034.
+
+**Root Cause Analysis:**
+- Added trace logging (`_G.TRACE`, `--trace` flag) to game loop, parser, search, GOAP
+- Reproduced all 5 inputs with piped stdin — none actually hang in isolation with current code
+- BUG-105/106: Already fixed by direct transform in loop + pipeline transform_questions
+- BUG-116 ("look around"): Already handled by transform_look_patterns → "look"
+- BUG-117 ("where is the matchbox"): Already handled by transform_questions → "find matchbox"
+- BUG-118 ("peek behind the curtains"): Missing preprocessing — "peek" had no handler and Tier 2 score too low. Added "peek behind/at/through X" → "examine X" in preprocess.lua
+
+**Architectural Fix — Global Safety Net:**
+- `debug.sethook` instruction-count hook in game loop: 2-second timeout on ALL command processing
+- Each handler/Tier 2/GOAP call wrapped in `pcall` — timeout caught and reported to player
+- Search tick loop at top of game loop: 200-tick hard limit with force-abort
+- Makes CPU-bound hangs architecturally impossible regardless of game state
+
+**Files Changed:** loop/init.lua, parser/init.lua, preprocess.lua, search/init.lua, main.lua
+**Tests:** All 37 files pass (0 failures)
+
 **Applied Result:**
 - Rejected formal Decision Matrix (idiom expansion > framework)
 - Rejected Humanizer Layer (narrator + error message polish > wrapper)

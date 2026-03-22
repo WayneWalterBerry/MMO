@@ -21,6 +21,7 @@ do
     while i <= #args do
         local a = args[i]
         if a == "--debug" then debug_mode = true
+        elseif a == "--trace" then _G.TRACE = true
         elseif a == "--no-ui" then no_ui = true
         elseif a == "--list-rooms" then list_rooms = true
         elseif a == "--room" or a == "--start-room" then
