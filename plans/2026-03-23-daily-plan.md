@@ -1,22 +1,30 @@
 # Daily Plan — 2026-03-23
 
 **Owner:** Wayne "Effe" Berry
-**Focus:** Injury system expansion (unconsciousness), hang elimination completion, deploy
+**Focus:** Injury system expansion (unconsciousness), mirror/player appearance subsystem, deploy
 
 ---
 
 ## Carry-Over from 2026-03-22
 
-### Hang Elimination Sprint (must complete before deploy)
-- [ ] Bart: trace logging + RCA on remaining 5 hangs (BUG-105/106/116/117/118)
-- [ ] Smithers: implement Bart's fix + global safety net timeout
-- [ ] Nelson: Pass 035 hang hunting results → file new Issues
-- [ ] Marge: verify all hang fixes in live play, close GitHub Issues
-- [ ] Deploy once Marge gives go/no-go
+### Hang Elimination Sprint ✅ COMPLETE
+- [x] Bart: trace logging + RCA — 3 mechanisms found, visited sets, global safety net
+- [x] Smithers/Bart: implemented `debug.sethook` 2s deadline + `pcall` wrapper
+- [x] Nelson: Pass 035 — **50/50 PASS, ZERO HANGS** (false positives from TUI rendering)
+- [x] Marge: closed all 6 hang Issues (#2, #5, #6, #9, #10, #11), **DEPLOY GREEN LIGHT**
+- [ ] Deploy (run `deploy.ps1`, verify live site)
 
-### Open GitHub Issues (WayneWalterBerry/MMO)
-- [ ] Review all 11 open Issues, close any that were fixed yesterday
-- [ ] Triage any new Issues from Nelson's hang hunting
+### Headless Testing Hook (from hang investigation)
+- [ ] Bart: `--headless` mode for automated testing — disables TUI rendering, plain text output
+- [ ] Update LLM play testing skill to always use `--headless`
+- [ ] Prevents future TUI false positive hang reports
+
+### Open GitHub Issues (WayneWalterBerry/MMO) — 5 remaining
+- #1 BUG-069: dawn sleep error message (severity:medium)
+- #3 BUG-072: screen flicker during progressive object discovery (severity:low)
+- #4 BUG-104b: politeness + idiom combo breaks parser (severity:medium)
+- #7 BUG-105b: bare examine gives bad message (severity:low)
+- #8 BUG-106b: blow out unlit candle message (severity:low)
 
 ---
 
@@ -125,6 +133,104 @@
   - Enemy blow (combat precursor)?
   - Poison gas (cellar area)?
 - [ ] Design narration for each unconsciousness trigger
+- [ ] `git commit && git push`
+
+---
+
+## New Feature: Mirror / Player Appearance Subsystem
+
+**Wayne's design:** A mirror is a special object with a metadata flag/hook that, when the player looks at it, shows what they look like — clothing, armor, injuries, bandages, blood, etc. This requires a whole engine subsystem for composing a player appearance description from their `player.lua` state.
+
+**Key insight:** This subsystem is reusable. Today it powers mirrors. Tomorrow (multiplayer) it powers what one player sees when they look at another player. Design for that future, implement for single-player now.
+
+### Design Principles
+
+1. **Mirror = special object with `is_mirror` flag.** When you `look at mirror` or `examine mirror`, the engine intercepts and runs the player appearance subsystem instead of normal examine.
+2. **Appearance is composed, not canned.** The subsystem reads the player's full state (worn items, held items, injuries, bandages, blood) and builds a dynamic description.
+3. **Layered description.** Head-to-toe ordering:
+   - Head: helmet, hat, hair, face injuries
+   - Torso: armor, shirt, chest injuries, bandages
+   - Arms/hands: gloves, held items, arm injuries
+   - Legs: pants, leg armor, leg injuries
+   - Feet: boots, shoes
+   - Overall: blood stains, pallor (from health), general condition
+4. **Smart injury rendering.** Not just "you have a cut" — it should compose: "a deep cut on your left arm, partially covered by a bloodied bandage" or "dried blood on your forehead from the gash above your eye"
+5. **State-aware.** The description changes based on:
+   - What you're wearing (armor, clothing, nothing)
+   - Active injuries (bleeding, bruised, bandaged)
+   - Health level (pale, flushed, fine)
+   - What you're holding
+6. **Engine subsystem, not object logic.** This lives in the engine (`src/engine/player/appearance.lua` or similar), not in object files. Objects just have the `is_mirror` flag.
+7. **Future-proof for multiplayer.** Same subsystem answers "what does Player B look like?" — just swap whose state you're reading.
+
+### Implementation Tasks
+
+#### Phase M1: Design Docs
+- [ ] `docs/design/objects/mirror.md` — Mirror object design:
+  - `is_mirror` metadata flag on mirror objects
+  - How `look at mirror` / `examine mirror` triggers appearance subsystem
+  - Mirror placement (bedroom vanity, bathroom, hand mirror as inventory item?)
+  - Narration framing: "In the mirror, you see..." vs "Your reflection shows..."
+- [ ] `docs/design/player/appearance.md` — Player appearance subsystem design:
+  - How appearance is composed from player state
+  - Head-to-toe layer ordering
+  - Injury + clothing interaction (bandage over wound, blood on shirt)
+  - Health-based overall descriptors (pale, flushed, strong)
+  - Held item inclusion
+  - Smart phrasing: composing natural English from state flags
+  - Multiplayer hook: same subsystem, different player state input
+- [ ] `git commit && git push`
+
+#### Phase M2: Architecture Docs (Bart)
+- [ ] `docs/architecture/player/appearance-subsystem.md` — Architecture:
+  - Where it lives in the engine (`src/engine/player/appearance.lua`)
+  - Input: player state table (worn items, injuries, health, held items)
+  - Output: composed natural language description string
+  - Layer system: ordered renderers (head, torso, arms, legs, feet, overall)
+  - Each layer is a function: `render_head(player_state) → string or nil`
+  - Nil layers are skipped (nothing notable to say)
+  - Injury rendering pipeline: injury → location → severity → treatment → compose phrase
+  - Integration point: mirror object `on_examine` hook calls appearance subsystem
+  - Future integration point: `look at <player>` calls same subsystem with target's state
+- [ ] Review how player.lua currently stores worn items, injuries, held items
+- [ ] `git commit && git push`
+
+#### Phase M3: Engine Implementation (Smithers)
+- [ ] `src/engine/player/appearance.lua` — Player appearance subsystem:
+  - `appearance.describe(player_state)` → full description string
+  - Layer renderers: head, torso, arms, hands, legs, feet, overall
+  - Injury phrase composer: reads injury type, location, severity, treatment status
+  - Health descriptor: maps HP percentage to adjectives (pale, gaunt, flushed, healthy)
+  - Clothing/armor renderer: reads worn item slots, describes each
+  - Held item renderer: describes what's in each hand
+  - Smart composition: avoids repetition, uses natural English connectives
+- [ ] Mirror object hook: `is_mirror` flag → `on_examine` calls `appearance.describe()`
+- [ ] Parser integration: "look in mirror", "examine mirror", "look at my reflection" all trigger appearance
+- [ ] Create a mirror object in the bedroom (the oak vanity already exists — add mirror property)
+- [ ] **TEST GATE:** Unit tests covering:
+  - Naked player → basic description
+  - Fully armored player → all slots described
+  - Injured player → injuries shown with locations
+  - Bandaged injury → "covered by bandage" phrasing
+  - Bleeding + bandage → "bloodied bandage" phrasing
+  - Low health → pale/gaunt descriptors
+  - Holding items → described in hand slots
+  - Multiple injuries → all listed naturally
+  - Empty slot → skipped gracefully (no "you are wearing nothing on your feet")
+- [ ] `git commit && git push`
+
+#### Phase M4: Nelson Review
+- [ ] Nelson examines the mirror with various player configurations:
+  - Fresh player (no injuries, basic clothing)
+  - Injured player (stab wound, bleeding)
+  - Bandaged player (treated wound)
+  - Armored player (helmet, armor, boots)
+  - Injured + armored (blood on armor, bandage under helmet)
+  - Unconscious player can't look in mirror (verify error message)
+- [ ] Nelson reviews the QUALITY of the mirror text — does it read naturally?
+  - Not robotic: "You are wearing a helmet. You have a cut." ❌
+  - Natural: "Your reflection shows a battered figure in dented iron armor, dried blood visible on the left pauldron where a deep gash runs beneath." ✅
+- [ ] File Issues for any awkward/robotic phrasing
 - [ ] `git commit && git push`
 
 ---
