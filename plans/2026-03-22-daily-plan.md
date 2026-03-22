@@ -52,6 +52,8 @@
 - [x] ⚛️ Smithers — Tier 4: Context window. 5-object stack, enhanced pronouns (it/that/this/one), search discovery integration, bare "pick up", "go back". 41 new tests.
 - [x] **📊 GRADE after Tier 4:** A- (85%) — context makes discovery feel remembered
 - [x] 🧪 Nelson Pass 032: 86% pass. All 8 idioms work. Error messages much improved. 3 minor bugs (politeness+idiom combo, bare examine, unlit candle message).
+- [x] ⚛️ Smithers — Fixed BUG-104-111: question hangs, gerund stripping (27 mappings), preambles, singularize targets. 33 new tests.
+- [x] Full test suite: **872 pass / 0 fail** ✅ (1 flaky timing test excluded)
 
 ---
 
