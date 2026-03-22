@@ -13,6 +13,7 @@ This is the main documentation hub. Browse by purpose:
 Reference docs explain *what things are*:
 
 - **`objects/`** — Per-object reference docs
+- **`templates/`** — Template system: container, furniture, room, sheet, small-item
 - **`injuries/`** — Per-injury reference docs  
 - **`rooms/`** — Per-room reference docs
 - **`puzzles/`** — Per-puzzle reference docs
