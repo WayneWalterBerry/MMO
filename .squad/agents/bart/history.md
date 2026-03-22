@@ -846,3 +846,22 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 - 5 injury types exist: bleeding, bruised, burn, minor-cut, poisoned-nightshade
 
 **Decisions Made:** D-APP001 through D-APP006 (appearance), D-CONSC001 through D-CONSC008 (consciousness)
+
+## Learnings
+
+### Session: Spatial Relationships Architecture — Hiding vs On-Top-Of (2026-03-27)
+**Status:** ✅ COMPLETE
+**Requested by:** Wayne "Effe" Berry
+
+**Task:** Investigate and design engine architecture for distinguishing objects that sit ON something (both visible) vs objects that HIDE something (hidden until cover moved).
+
+**Deliverable:** `docs/architecture/objects/spatial-relationships.md`
+
+**Key Findings:**
+- The covering/hidden pattern already works end-to-end: `rug.lua` has `covering = {"trap-door"}`, `trap-door.lua` has `hidden = true` + FSM, the move verb handler reveals covered objects. The architecture is sound — it just wasn't documented.
+- **Critical gap found in traverse.lua:** The search engine does NOT check `obj.hidden` in `expand_object()` or `matches_target()`. A player doing `search room` could find the trap door before moving the rug. This is a real bug, not just a documentation gap.
+- **Secondary gap:** `rug.lua`'s `surfaces.underneath` lacks `accessible = false`, meaning search could discover items hidden under the unmoved rug.
+- The relationship metadata lives on the covering object (not the room). This follows Principle 8: objects declare behavior, engine executes metadata.
+- FSM-based reveal (`hidden → revealed`) is preferred over raw flag-clearing because it atomically updates all state-dependent properties.
+
+**Decisions Made:** D-SPATIAL-ARCH (engine architecture for spatial concealment)
