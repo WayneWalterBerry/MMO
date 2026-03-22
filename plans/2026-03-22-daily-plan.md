@@ -93,6 +93,7 @@
 - [ ] **If depth limits are actually the right answer**, explain WHY — what about the problem structure makes them correct (not just convenient)
 - [ ] **Implement the real fix** (not depth limits unless justified)
 - [ ] Run full test suite → zero regressions
+- [ ] **Verify previously-hanging tests:** Run all tests that were hanging (BUG-080, 084, 086, 087, 090). Confirm they now: (a) complete without hanging, (b) produce correct output (not truncated/empty from a depth limit), (c) report results back in this plan with before/after comparison
 - [ ] `git commit && git push`
 
 ### 🧪 Nelson Sanity Check: Pass 029
@@ -119,6 +120,7 @@
 - [ ] Write pipeline unit tests before and after refactor
 - [ ] Run full test suite → zero regressions
 - [ ] `git commit && git push`
+- [ ] **📊 GRADE:** Reevaluate PD alignment → record in Completed Today (expected: still C+, refactor is structural not behavioral)
 ```lua
 local pipeline = {
     strip_politeness,     -- Tier 0
@@ -157,6 +159,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] Ensure strip order: politeness BEFORE adverbs BEFORE compound extraction
 - [ ] **TEST GATE:** Write Tier 0 unit tests → run ALL tests → zero regressions
 - [ ] `git commit && git push`
+- [ ] **📊 GRADE:** Reevaluate PD alignment → record in Completed Today (expected: C+ → B-, politeness/adverbs now covered)
 
 #### Tier 1: Question Transforms (HIGH impact, LOW risk)
 - [~] "what's in the X?" → "examine X" (done, needs more patterns)
@@ -168,8 +171,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] "what is this?" → "examine" with context resolution
 - [ ] **TEST GATE:** Write Tier 1 unit tests → run ALL tests → zero regressions
 - [ ] `git commit && git push`
-
-### 🧪 Nelson Sanity Check: Pass 031
+- [ ] **📊 GRADE:** Reevaluate PD alignment → record in Completed Today (expected: B- → B, questions now handled)
 - [ ] Nelson tests polite phrasing + questions after Tier 0-1
 - [ ] Write results to `test-pass/gameplay/2026-03-22-pass-031.md`
 - [ ] Fix anything found → rerun tests → commit+push
@@ -182,8 +184,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] Context-aware errors: "You can't see in the dark — try 'feel' instead"
 - [ ] **TEST GATE:** Write Tier 2 unit tests → run ALL tests → zero regressions
 - [ ] `git commit && git push`
-
-#### Tier 3: Idiom Library (MEDIUM impact, LOW risk)
+- [ ] **📊 GRADE:** Reevaluate PD alignment → record in Completed Today (expected: B → B+, errors now guide instead of punish)(MEDIUM impact, LOW risk)
 - [ ] "set fire to X" → "light X"
 - [ ] "pick up X" → "take X" (already done)
 - [ ] "put down X" → "drop X"
@@ -193,8 +194,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] Table-driven: each idiom = `{ pattern, replacement }`
 - [ ] **TEST GATE:** Write Tier 3 unit tests → run ALL tests → zero regressions
 - [ ] `git commit && git push`
-
-### 🧪 Nelson Sanity Check: Pass 032
+- [ ] **📊 GRADE:** Reevaluate PD alignment → record in Completed Today (expected: B+ → A-, idioms expand natural phrasing)
 - [ ] Nelson tests error messages + idioms after Tier 2-3
 - [ ] Tries intentionally wrong commands — are error messages helpful?
 - [ ] Tries idiom phrases — "set fire to candle", "have a look", "take a peek"
@@ -210,8 +210,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] Integrate with search module's found_items tracking
 - [ ] **TEST GATE:** Write Tier 4 unit tests → run ALL tests → zero regressions
 - [ ] `git commit && git push`
-
-#### Tier 5: Fuzzy Noun Resolution (MEDIUM impact, MEDIUM risk)
+- [ ] **📊 GRADE:** Reevaluate PD alignment → record in Completed Today (expected: A- → A-, context makes discovery feel remembered)Fuzzy Noun Resolution (MEDIUM impact, MEDIUM risk)
 - [ ] "the wooden thing" → match objects by `material = "wood"`
 - [ ] "the heavy one" → match by weight/size properties
 - [ ] "that bottle" → partial name match when unambiguous
@@ -219,8 +218,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] Levenshtein distance for typo tolerance: "nighstand" → "nightstand"
 - [ ] **TEST GATE:** Write Tier 5 unit tests → run ALL tests → zero regressions
 - [ ] `git commit && git push`
-
-### 🧪 Nelson Sanity Check: Pass 033
+- [ ] **📊 GRADE:** Reevaluate PD alignment → record in Completed Today (expected: A- → A, typos and vague nouns now tolerated)
 - [ ] Nelson tests context + fuzzy resolution after Tier 4-5
 - [ ] "examine nightstand" → "open it" → "take that" — pronouns work?
 - [ ] "the wooden thing" → resolves correctly?
@@ -235,8 +233,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] Safety limits on plan depth (BUG-090 root cause)
 - [ ] **TEST GATE:** Write Tier 6 unit tests → run ALL tests → zero regressions
 - [ ] `git commit && git push`
-
-### 🧪 Nelson Sanity Check: Pass 034
+- [ ] **📊 GRADE:** Reevaluate PD alignment → record in Completed Today (expected: A → A+, GOAP handles multi-step goals beyond fire)
 - [ ] Nelson tests GOAP chains — "light candle" from cold start, "unlock door"
 - [ ] Full critical path playthrough: wake up → light candle → explore → interact
 - [ ] Write results to `test-pass/gameplay/2026-03-22-pass-034.md`
