@@ -39,7 +39,10 @@
 - [x] 🧪 Nelson Pass 028: 22 tests, 77% pass. Container gating works for nightstand. GOAP auto-chain flawless. New: BUG-095 (wardrobe gating), BUG-096 (drawer name), BUG-097 (look inside closed)
 - [x] ⚛️ Smithers — Phase 5 Step 0: Pipeline refactor complete. 7 composable stages, table-driven, debug logging. Zero behavior change, 479 pass.
 - [x] 🧪 Nelson — Phase 5 Step 0.5: 224 per-stage pipeline tests across 7 files, all passing
-- [x] Full test suite: **479+224 tests / 0 fail** ✅
+- [x] ⚛️ Smithers — Fixed BUG-095/096/097 container gating (wardrobe, drawer name, look-inside) + 10 regression tests
+- [x] 🧪 Nelson Pass 029: **0 hangs, 0 failures, 0 regressions.** All 9 hang bugs verified fixed with correct output. Pipeline refactor clean.
+- [x] Full test suite: **713 pass / 0 fail** ✅
+- [x] **📊 GRADE after Step 0:** C+ (65%) — structural refactor, no behavior change yet
 
 ---
 
