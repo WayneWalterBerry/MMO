@@ -20,6 +20,10 @@ local traverse_effects = require("engine.traverse_effects")
 local cw_ok, context_window = pcall(require, "engine.parser.context")
 if not cw_ok then context_window = nil end
 
+-- Tier 5: Fuzzy noun resolution (material, property, partial name, typo tolerance)
+local fz_ok, fuzzy = pcall(require, "engine.parser.fuzzy")
+if not fz_ok then fuzzy = nil end
+
 ---------------------------------------------------------------------------
 -- Instance-aware hand accessors: hands store object instances (tables).
 -- Backward compatible with string IDs for transitional code.
@@ -52,7 +56,13 @@ local DAYTIME_END = presentation.DAYTIME_END
 ---------------------------------------------------------------------------
 -- Prime Directive: Helpful error messages
 ---------------------------------------------------------------------------
-local function err_not_found()
+local function err_not_found(ctx)
+    -- Tier 5: Show disambiguation prompt if fuzzy matching found multiple candidates
+    if ctx and ctx.disambiguation_prompt then
+        print(ctx.disambiguation_prompt)
+        ctx.disambiguation_prompt = nil
+        return
+    end
     print("You don't notice anything called that nearby. Try 'search around' to discover what's here.")
 end
 
@@ -632,8 +642,32 @@ do
             if context_window then
                 context_window.push(obj)
             end
+            return obj, loc, parent, surface
         end
-        return obj, loc, parent, surface
+
+        -- Tier 5: Fuzzy noun resolution fallback (only when exact match fails)
+        if fuzzy then
+            local fobj, floc, fparent, fsurface, prompt = fuzzy.resolve(ctx, keyword)
+            if fobj then
+                ctx.last_object = fobj
+                ctx.last_object_loc = floc
+                ctx.last_object_parent = fparent
+                ctx.last_object_surface = fsurface
+                ctx.known_objects = ctx.known_objects or {}
+                ctx.known_objects[fobj.id] = true
+                if context_window then
+                    context_window.push(fobj)
+                end
+                return fobj, floc, fparent, fsurface
+            end
+            if prompt then
+                -- Store disambiguation prompt for caller to display
+                ctx.disambiguation_prompt = prompt
+                return nil
+            end
+        end
+
+        return nil
     end
 end
 
@@ -1243,7 +1277,7 @@ function verbs.create()
                         return
                     end
                 end
-                err_not_found()
+                err_not_found(ctx)
                 return
             end
             if obj.on_look then
@@ -1307,7 +1341,7 @@ function verbs.create()
             end
             local obj, loc_type, parent_obj = find_visible(ctx, surface_target)
             if not obj then
-                err_not_found()
+                err_not_found(ctx)
                 return
             end
             -- BUG-097: If we found a part, redirect to the parent for surface access
@@ -1382,7 +1416,7 @@ function verbs.create()
                     return
                 end
             end
-            err_not_found()
+            err_not_found(ctx)
             return
         end
         if obj.on_look then
@@ -2213,7 +2247,7 @@ function verbs.create()
 
         local obj, where, parent, sname = find_visible(ctx, target)
         if not obj then
-            err_not_found()
+            err_not_found(ctx)
             return
         end
 
@@ -2472,7 +2506,7 @@ function verbs.create()
             return
         end
 
-        err_not_found()
+        err_not_found(ctx)
     end
 
     handlers["yank"] = handlers["pull"]
@@ -2490,7 +2524,7 @@ function verbs.create()
 
         local obj = find_visible(ctx, target)
         if not obj then
-            err_not_found()
+            err_not_found(ctx)
             return
         end
 
@@ -2510,7 +2544,7 @@ function verbs.create()
 
         local obj = find_visible(ctx, target)
         if not obj then
-            err_not_found()
+            err_not_found(ctx)
             return
         end
 
@@ -2528,7 +2562,7 @@ function verbs.create()
 
         local obj = find_visible(ctx, noun)
         if not obj then
-            err_not_found()
+            err_not_found(ctx)
             return
         end
 
@@ -2559,7 +2593,7 @@ function verbs.create()
 
         local obj = find_visible(ctx, noun)
         if not obj then
-            err_not_found()
+            err_not_found(ctx)
             return
         end
 
@@ -2767,7 +2801,7 @@ function verbs.create()
         if obj then
             print("You can't open " .. (obj.name or "that") .. ".")
         else
-            err_not_found()
+            err_not_found(ctx)
         end
     end
 
@@ -2862,7 +2896,7 @@ function verbs.create()
         if obj then
             print("You can't close " .. (obj.name or "that") .. ".")
         else
-            err_not_found()
+            err_not_found(ctx)
         end
     end
 
@@ -2926,7 +2960,7 @@ function verbs.create()
         if obj then
             print("You can't unlock " .. (obj.name or "that") .. ".")
         else
-            err_not_found()
+            err_not_found(ctx)
         end
     end
 
@@ -3026,7 +3060,7 @@ function verbs.create()
         if obj then
             print("You can't break " .. (obj.name or "that") .. ".")
         else
-            err_not_found()
+            err_not_found(ctx)
         end
     end
 
@@ -3041,7 +3075,7 @@ function verbs.create()
 
         local obj = find_visible(ctx, noun)
         if not obj then
-            err_not_found()
+            err_not_found(ctx)
             return
         end
 
@@ -3255,7 +3289,7 @@ function verbs.create()
         local obj = find_in_inventory(ctx, noun)
         if not obj then obj = find_visible(ctx, noun) end
         if not obj then
-            err_not_found()
+            err_not_found(ctx)
             return
         end
 
@@ -3343,7 +3377,7 @@ function verbs.create()
             target = find_in_inventory(ctx, target_word)
         end
         if not target then
-            err_not_found()
+            err_not_found(ctx)
             return
         end
 
@@ -3667,7 +3701,7 @@ function verbs.create()
 
         local obj = find_visible(ctx, target_word)
         if not obj then
-            err_not_found()
+            err_not_found(ctx)
             return
         end
 
@@ -4514,7 +4548,7 @@ function verbs.create()
             obj = find_visible(ctx, noun)
         end
         if not obj then
-            err_not_found()
+            err_not_found(ctx)
             return
         end
 
@@ -4548,7 +4582,7 @@ function verbs.create()
             if visible then
                 print("You'll need to pick that up first.")
             else
-                err_not_found()
+                err_not_found(ctx)
             end
             return
         end
@@ -4620,7 +4654,7 @@ function verbs.create()
         local obj = find_in_inventory(ctx, noun)
         if not obj then obj = find_visible(ctx, noun) end
         if not obj then
-            err_not_found()
+            err_not_found(ctx)
             return
         end
 
@@ -4668,7 +4702,7 @@ function verbs.create()
             obj = find_visible(ctx, noun)
         end
         if not obj then
-            err_not_found()
+            err_not_found(ctx)
             return
         end
 
