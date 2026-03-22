@@ -15,6 +15,25 @@
 
 ## Learnings
 
+### Session: Phase 5 Step 0 — Pipeline Refactor
+
+**Task:** Refactor `src/engine/parser/preprocess.lua` from monolithic `natural_language()` function into a table-driven pipeline of composable transform stages, per roadmap section 6 (Extensible Pipeline).
+
+**Changes — `src/engine/parser/preprocess.lua`:**
+- Extracted 7 pipeline stages from monolithic function: `normalize`, `strip_filler` (iterative preamble+politeness+adverb removal, replaces recursion), `transform_questions`, `transform_look_patterns`, `transform_search_phrases`, `transform_compound_actions`, `transform_movement`.
+- Each stage: `string → string` pure transform. Pipeline table controls execution order.
+- `preprocess.pipeline` is externally accessible — other modules can add/remove/reorder stages.
+- `preprocess.stages` exposes individual functions for isolated testing.
+- `preprocess.debug = true` enables per-stage input→output logging.
+- Convention: stages return optional `(text, true)` second value to signal pattern match when output text is identical to input (e.g., "search around" is already canonical).
+- `strip_filler` replaces the old recursive `_depth`-guarded pattern with iterative loop (strip_preambles → strip_politeness → strip_adverbs, repeat until stable, max 10 iterations). Preserves single-pass termination property per Bart's findings.
+
+**Key Design Decision:** The `natural_language()` runner tracks both text changes AND stage match flags. The change-detection approach alone fails for patterns like "search around" or "find matchbox" where the canonical form equals the input — the optional boolean second return from stages solves this cleanly within the string→string contract.
+
+**Result:** All 456 tests pass unchanged — behavior-identical refactor. Adding new transforms is now `table.insert(preprocess.pipeline, N, my_function)`.
+
+---
+
 ### Session 2026-07-23: BUG-056 Plural Noun Resolution + Deploy
 
 **Task:** Fix BUG-056 — room descriptions use plurals ("torches", "portraits") but parser only matches singular keywords. Players type "examine torches" and get "You don't see that here."
