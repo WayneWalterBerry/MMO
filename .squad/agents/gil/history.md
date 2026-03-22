@@ -24,3 +24,14 @@
 - **#13 — Bug report transcript truncation:** The engine's `report_bug` handler sends all 50 transcript entries in the GitHub issue URL body. GitHub truncates long URLs, so users saw welcome text instead of recent commands. Fixed in the web layer (not engine code): `window._openUrl` in `bootstrapper.js` now parses the URL, splits the transcript on `> ` command prefixes, and keeps only the last 3 blocks before opening.
 - ⚠️ Key decision: Fixed #13 in the JS bridge layer (`_openUrl`) rather than modifying `src/engine/verbs/init.lua`, staying within my web-layer charter. The engine still sends all 50 entries — the web bridge trims to 3. Terminal users are unaffected.
 - These changes need a deploy (index.html + bootstrapper.js) to go live. Wayne will request separately.
+
+### 2026-07-27: Fixed Issue #18 — Safari/iPhone aggressive caching
+- **Problem:** Safari on iPhone serves stale cached JS/Lua files even after a new deploy. Mobile Safari has no hard-refresh gesture, so users get stuck on old versions.
+- **Root cause:** GitHub Pages serves static files with permissive cache headers, and Safari honors them aggressively. No cache-busting was in place.
+- **Fix — three layers of cache-busting:**
+  1. **Meta tags** in `index.html`: `Cache-Control: no-cache, no-store, must-revalidate` + `Pragma: no-cache` + `Expires: 0` — tells browsers not to cache the HTML page itself.
+  2. **Query string cache-busting** on all fetched files: `bootstrapper.js?v=TIMESTAMP`, `engine.lua.gz?v=TIMESTAMP`, `game-adapter.lua?v=TIMESTAMP` — browsers see a "new" URL each deploy.
+  3. **Automatic stamping** in `build-engine.ps1`: the build script writes the compact timestamp (`yyyyMMddHHmmss`) into both `bootstrapper.js` (`CACHE_BUST` constant) and `index.html` (script tag query string).
+- ⚠️ The `CACHEBUST` placeholder in source files is replaced by the build. Don't commit a real timestamp manually — let the build do it.
+- Updated `.squad/skills/web-publish/SKILL.md` with a new "Cache-Busting" section documenting the approach.
+- Left Issue #18 open for Marge to verify and close.

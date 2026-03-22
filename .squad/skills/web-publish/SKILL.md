@@ -94,6 +94,41 @@ After deploying, open the URL and verify:
 - **Blank page** — Fengari CDN might be down. Check network tab.
 - **Bundle too large** — The embedding-index.json (15 MB) dominates. Can be
   stripped for a lighter build (loses Tier 2 natural language parsing).
+- **Stale cached version on Safari/iPhone** — The build pipeline stamps all file
+  references with `?v=TIMESTAMP` query strings, and `index.html` includes
+  `Cache-Control: no-cache` meta tags. If users still see old content, ask them
+  to close and reopen the Safari tab (mobile Safari has no hard-refresh).
+
+## Cache-Busting (Issue #18)
+
+Safari (especially mobile) aggressively caches static files. GitHub Pages has no
+server-side cache-control headers, so we use two client-side strategies:
+
+### 1. Meta Tags in `index.html`
+```html
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+```
+These tell the browser not to serve cached versions of the HTML page itself.
+
+### 2. Query String Cache-Busting
+Every file reference gets a `?v=YYYYMMDDHHMMSS` timestamp appended:
+- `index.html` → `bootstrapper.js?v=20260722143000`
+- `bootstrapper.js` → `engine.lua.gz?v=20260722143000`
+- `bootstrapper.js` → `game-adapter.lua?v=20260722143000`
+
+The build script (`build-engine.ps1`) stamps these automatically. The compact
+timestamp is derived from `Get-Date -Format "yyyyMMddHHmmss"`.
+
+**How it works:** Each deploy produces a new timestamp, so browsers see a "new"
+URL and fetch fresh content instead of serving from cache.
+
+**Files stamped by the build:**
+| File | What gets stamped |
+|------|-------------------|
+| `bootstrapper.js` | `BUILD_TIMESTAMP`, `CACHE_BUST` constants |
+| `index.html` | `bootstrapper.js?v=` query string |
 
 ## Architecture Reference
 

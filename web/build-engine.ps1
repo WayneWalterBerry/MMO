@@ -161,8 +161,16 @@ Write-Host "  engine.lua.gz: $gzKB KB (compressed, $ratio% ratio)"
 $bootstrapperPath = Join-Path $ScriptDir "bootstrapper.js"
 $bsContent = [System.IO.File]::ReadAllText($bootstrapperPath, $utf8NoBom)
 $bsContent = $bsContent -replace 'const BUILD_TIMESTAMP = ".*?"', "const BUILD_TIMESTAMP = `"$timestamp`""
+$bsContent = $bsContent -replace 'const CACHE_BUST = ".*?"', "const CACHE_BUST = `"$timestampCompact`""
 [System.IO.File]::WriteAllText($bootstrapperPath, $bsContent, $utf8NoBom)
-Write-Host "  Stamped bootstrapper.js: BUILD_TIMESTAMP = `"$timestamp`""
+Write-Host "  Stamped bootstrapper.js: BUILD_TIMESTAMP = `"$timestamp`", CACHE_BUST = `"$timestampCompact`""
+
+# Embed cache-bust version in index.html (bootstrapper.js?v=XXXX)
+$indexPath = Join-Path $ScriptDir "index.html"
+$htmlContent = [System.IO.File]::ReadAllText($indexPath, $utf8NoBom)
+$htmlContent = $htmlContent -replace 'bootstrapper\.js\?v=[^"]*"', "bootstrapper.js?v=$timestampCompact`""
+[System.IO.File]::WriteAllText($indexPath, $htmlContent, $utf8NoBom)
+Write-Host "  Stamped index.html: bootstrapper.js?v=$timestampCompact"
 
 Write-Host "Engine built ($timestamp) -> engine.lua.gz?t=$timestampCompact"
 Write-Host "Done."

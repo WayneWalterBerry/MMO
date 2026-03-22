@@ -44,6 +44,7 @@
 
     // --- Build version (embedded at build time) ---
     const BUILD_TIMESTAMP = "2026-03-22 12:42";
+    const CACHE_BUST = "CACHEBUST";
 
     // --- Size formatting ---
     function formatSize(bytes) {
@@ -268,7 +269,7 @@
 
             // Step 1: Fetch compressed engine bundle
             showStatus('Loading Game Engine...');
-            var engineResponse = await fetchWithRetry('engine.lua.gz', 1);
+            var engineResponse = await fetchWithRetry('engine.lua.gz?v=' + CACHE_BUST, 1);
             var compressedData = await engineResponse.arrayBuffer();
             if (window._debugMode) {
                 showStatus('Loading Game Engine... (' + formatSize(compressedData.byteLength) + ' compressed)');
@@ -294,7 +295,7 @@
             if (window._debugMode) {
                 showStatus('Loading Game Adapter...');
             }
-            var adapterResponse = await fetchWithRetry('game-adapter.lua', 1);
+            var adapterResponse = await fetchWithRetry('game-adapter.lua?v=' + CACHE_BUST, 1);
             var adapterSource = await adapterResponse.text();
             if (window._debugMode) {
                 showStatus('Loading Game Adapter... (' + formatSize(adapterSource.length) + ')');
