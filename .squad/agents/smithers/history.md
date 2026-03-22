@@ -15,6 +15,30 @@
 
 ## Learnings
 
+### Session: Tier 5 — Fuzzy Noun Resolution
+
+**Task:** Implement Tier 5 fuzzy noun resolution — makes the parser tolerant of imprecise object references. Players can now say "the wooden thing" or "nighstand" and the parser figures it out.
+
+**New Module — `src/engine/parser/fuzzy.lua`:**
+- Levenshtein distance (space-optimized two-row implementation)
+- Material matching: "the wooden thing" → objects with `material = "wood"` or matching categories
+- Property matching: "the heavy one" → highest-weight visible object, "the small box" → size+name
+- Partial name match: "bottle" → "small glass bottle" when only one object contains "bottle"
+- Typo tolerance: "nighstand" → "nightstand", "candel" → "candle" via Levenshtein with length-adaptive thresholds (≤4 chars: exact only per D-BUG018, 5-7: distance ≤2, 8+: distance ≤2)
+- Disambiguation: multiple matches → "Which do you mean: the glass bottle or the wine bottle?" (Prime Directive friendly)
+- `gather_visible(ctx)` collects all visible objects (room + surfaces + containers + hands + bags + worn + parts)
+- `score_object(obj, parsed)` returns (score, reason) for ranking; `resolve(ctx, keyword)` is the main entry
+
+**Integration Points:**
+- `verbs/init.lua`: `find_visible` wrapper enhanced — after exact match + pronoun + context window all fail, calls `fuzzy.resolve(ctx, keyword)` as Tier 5 fallback. Single match auto-resolves; multiple matches set `ctx.disambiguation_prompt`.
+- `err_not_found(ctx)` now checks for disambiguation prompt before showing generic "not found" message.
+
+**Key Design Decision:** Fuzzy matching only fires when exact matching fails — zero performance impact on the happy path. The module is pure functions with no state, same pattern as other parser modules. Scoring uses a tiered system: exact (10) > material+name (5) > partial (4) > material/property (3) > typo (1-3). Property disambiguation (heavy/light) uses actual value ranking to pick the best match.
+
+**Result:** 52 new tests (test-fuzzy-nouns.lua), 952 total pass, 0 fail. All 31 test files pass.
+
+---
+
 ### Session: Tier 4 — Context Window
 
 **Task:** Implement Tier 4 context window — recent interaction memory for the parser pipeline. The game now remembers what you just did.
