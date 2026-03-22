@@ -103,9 +103,9 @@
 
 ---
 
-## Decisions Pending
+## Design Decisions (answered 2026-03-22)
 
-- How long should unconsciousness last? (Fixed turns vs random range?)
-- Can other players/NPCs wake you up early? (Future multiplayer consideration)
-- Should there be a "dazed" state between unconscious and fully conscious? (Blurry vision, limited actions)
-- What about armor/protection that prevents unconsciousness?
+1. **Duration:** Severity-based — harder hit = longer unconscious. Each injury source defines a severity that maps to turn count.
+2. **Early wake-up:** Single player for now — you always wait out the timer. Design the hook for future multiplayer but don't implement NPC wake-up yet.
+3. **Dazed state:** No — binary conscious/unconscious, clean transition. No intermediate state.
+4. **Armor protection:** Yes — helmets/armor reduce unconsciousness duration or prevent it entirely for weak blows. Design the `reduces_unconsciousness` property on wearable objects.
