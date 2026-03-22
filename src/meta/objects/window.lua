@@ -17,6 +17,7 @@ return {
     room_position = "is set deep in the stone of the far wall",
     portable = false,
     container = false,
+    allows_daylight = true,
 
     location = nil,
 
