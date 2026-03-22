@@ -48,6 +48,7 @@
 - [x] ⚛️ Smithers — Tier 2+3: Error message overhaul (no echo, context-aware, suggests actions) + 14 idioms (table-driven pipeline stage). +35 tests.
 - [x] **📊 GRADE after Tier 2+3:** A- (82%) — errors guide, idioms expand natural phrasing
 - [x] Full test suite: **801 pass / 0 fail** ✅
+- [x] 🧪 Nelson Pass 031: 64% pass. 3 hangs (BUG-104/105/106: "what's this?", "what do I do?", "what now?"). 3 fails (BUG-107/108/109: missing preambles). Critical path intact.
 
 ---
 
