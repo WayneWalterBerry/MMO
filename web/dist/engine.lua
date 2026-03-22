@@ -3078,7 +3078,13 @@ end
 --- natural_language(input) -> verb, noun or nil, nil
 --- Converts common question patterns and multi-word phrases into known verbs.
 --- Returns nil, nil if no pattern matches (caller should fall through to parse).
-function preprocess.natural_language(input)
+function preprocess.natural_language(input, _depth)
+    _depth = _depth or 0
+    -- Recursion safety: preamble stripping is input-consuming (each call
+    -- has strictly shorter input), so it terminates naturally. This counter
+    -- is a belt-and-suspenders guard against adversarial "i want to" × 100.
+    if _depth > 10 then return nil, nil end
+
     local lower = input:lower():match("^%s*(.-)%s*$")
     if not lower or lower == "" then return nil, nil end
 
@@ -3161,7 +3167,7 @@ function preprocess.natural_language(input)
         or lower:match("^i%s+need%s+(.+)")
         or lower:match("^i%s+want%s+(.+)")
     if preamble_rest then
-        local v2, n2 = preprocess.natural_language(preamble_rest)
+        local v2, n2 = preprocess.natural_language(preamble_rest, _depth + 1)
         if v2 then return v2, n2 end
         return preprocess.parse(preamble_rest)
     end
@@ -4532,11 +4538,21 @@ end
 -- @param depth number (current nesting depth)
 -- @param include_nested_containers boolean (true when scope search)
 -- @return list of queue entries
-local function expand_object(object_id, registry, depth, include_nested_containers)
+local function expand_object(object_id, registry, depth, include_nested_containers, visited)
     depth = depth or 0
     include_nested_containers = include_nested_containers or false
-    
-    -- BUG-080: Prevent infinite recursion (max depth 3 for nested containers)
+    visited = visited or {}
+
+    -- Cycle detection: skip objects already expanded in this traversal.
+    -- Containment is a tree by design, but a visited set protects against
+    -- data bugs (e.g., circular contents references) without magic constants.
+    if visited[object_id] then
+        return {}
+    end
+    visited[object_id] = true
+
+    -- Secondary safety belt: max depth 3 matches the data model
+    -- (room → furniture → container → item = 3 levels)
     if depth > 3 then
         return {}
     end
@@ -4587,7 +4603,7 @@ local function expand_object(object_id, registry, depth, include_nested_containe
             local child = registry:get(child_id)
             if child and containers.is_container(child) then
                 -- Recursively expand nested containers
-                local child_entries = expand_object(child_id, registry, depth + 1, include_nested_containers)
+                local child_entries = expand_object(child_id, registry, depth + 1, include_nested_containers, visited)
                 for _, child_entry in ipairs(child_entries) do
                     entries[#entries + 1] = child_entry
                 end
@@ -4664,15 +4680,26 @@ end
 -- @param registry registry instance
 -- @param depth number (recursion depth tracking)
 -- @return boolean
-local function matches_target(object, target, registry, depth)
+local function matches_target(object, target, registry, depth, visited)
     depth = depth or 0
-    
-    -- BUG-076, BUG-077: Prevent infinite recursion with depth limit
-    if depth > 3 then
-        return false
-    end
+    visited = visited or {}
     
     if not object or not target then
+        return false
+    end
+
+    -- Cycle detection: skip objects already checked in this match walk.
+    -- Prevents infinite recursion from circular containment references.
+    local oid = object.id
+    if oid and visited[oid] then
+        return false
+    end
+    if oid then
+        visited[oid] = true
+    end
+
+    -- Secondary safety belt: depth limit matches containment model depth
+    if depth > 3 then
         return false
     end
     
@@ -4709,7 +4736,7 @@ local function matches_target(object, target, registry, depth)
         local contents = containers.get_contents(object, registry)
         for _, child_id in ipairs(contents) do
             local child = registry:get(child_id)
-            if child and matches_target(child, target, registry, depth + 1) then
+            if child and matches_target(child, target, registry, depth + 1, visited) then
                 return true
             end
         end

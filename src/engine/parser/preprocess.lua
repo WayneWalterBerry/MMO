@@ -33,7 +33,13 @@ end
 --- natural_language(input) -> verb, noun or nil, nil
 --- Converts common question patterns and multi-word phrases into known verbs.
 --- Returns nil, nil if no pattern matches (caller should fall through to parse).
-function preprocess.natural_language(input)
+function preprocess.natural_language(input, _depth)
+    _depth = _depth or 0
+    -- Recursion safety: preamble stripping is input-consuming (each call
+    -- has strictly shorter input), so it terminates naturally. This counter
+    -- is a belt-and-suspenders guard against adversarial "i want to" × 100.
+    if _depth > 10 then return nil, nil end
+
     local lower = input:lower():match("^%s*(.-)%s*$")
     if not lower or lower == "" then return nil, nil end
 
@@ -116,7 +122,7 @@ function preprocess.natural_language(input)
         or lower:match("^i%s+need%s+(.+)")
         or lower:match("^i%s+want%s+(.+)")
     if preamble_rest then
-        local v2, n2 = preprocess.natural_language(preamble_rest)
+        local v2, n2 = preprocess.natural_language(preamble_rest, _depth + 1)
         if v2 then return v2, n2 end
         return preprocess.parse(preamble_rest)
     end
