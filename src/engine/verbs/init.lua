@@ -3365,7 +3365,25 @@ function verbs.create()
                     print("You can't extinguish " .. (obj.name or "that") .. ".")
                 end
             else
-                print("You can't extinguish " .. (obj.name or "that") .. ".")
+                -- BUG-106b: Check if object CAN be extinguished but just isn't lit
+                local has_extinguish = false
+                for _, t in ipairs(obj.transitions or {}) do
+                    if t.verb == "extinguish" then has_extinguish = true; break end
+                    if t.aliases then
+                        for _, a in ipairs(t.aliases) do
+                            if a == "extinguish" or a == "blow" or a == "put out" or a == "snuff" then
+                                has_extinguish = true; break
+                            end
+                        end
+                    end
+                    if has_extinguish then break end
+                end
+                if has_extinguish then
+                    local display = (obj.name or "that"):gsub("^a%s+", ""):gsub("^an%s+", "")
+                    print("The " .. display .. " isn't lit.")
+                else
+                    print("You can't extinguish " .. (obj.name or "that") .. ".")
+                end
             end
             return
         end
@@ -4837,14 +4855,19 @@ function verbs.create()
                 if noun:match("until%s+dawn") or noun:match("until%s+morning") then
                     local cur_h, cur_m = get_game_time(ctx)
                     local cur_total = cur_h + cur_m / 60
-                    local target = 6  -- 6:00 AM
-                    if cur_total >= target then
+                    local target = DAYTIME_START  -- 6:00 AM
+                    if cur_total >= target and cur_total < DAYTIME_END then
+                        -- BUG-069: It's already daytime — dawn has passed
+                        print("It's already past dawn.")
+                        return
+                    elseif cur_total >= target then
+                        -- Evening/night: wrap to next dawn
                         sleep_hours = (24 - cur_total) + target
                     else
                         sleep_hours = target - cur_total
                     end
                     if sleep_hours < 0.167 then
-                        print("It's already morning.")
+                        print("It's already nearly dawn — just wait a few minutes.")
                         return
                     end
                 end
@@ -4856,9 +4879,11 @@ function verbs.create()
                    or noun:match("until%s+dusk") or noun:match("until%s+evening") then
                     local cur_h, cur_m = get_game_time(ctx)
                     local cur_total = cur_h + cur_m / 60
-                    local target = 18  -- 6:00 PM
+                    local target = DAYTIME_END  -- 6:00 PM
                     if cur_total >= target then
-                        sleep_hours = (24 - cur_total) + target
+                        -- BUG-069: It's already nighttime
+                        print("It's already nighttime.")
+                        return
                     else
                         sleep_hours = target - cur_total
                     end

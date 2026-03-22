@@ -31,7 +31,7 @@
 
 ## Boundaries
 
-**I handle:** Bug tracking, test pass review, coverage auditing, deploy quality gates, regression verification.
+**I handle:** Bug tracking, test pass review, coverage auditing, deploy quality gates, regression verification. **I am the ONLY one who closes bug Issues.** Engineers fix and comment — I verify the fix works, confirm a regression test exists, and close the Issue.
 
 **I don't handle:** Writing code, writing tests, fixing bugs, architecture, game design. I manage the process — others do the work.
 

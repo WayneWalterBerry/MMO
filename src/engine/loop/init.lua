@@ -229,6 +229,9 @@ function loop.run(context)
         back = true, ["return"] = true,
         -- Drop/put verbs inherit noun correctly from their own grammar
         drop = true,
+        -- BUG-105b: Bare "examine" (no noun) should prompt the player, not
+        -- silently fill in a stale context noun that may fail to resolve.
+        examine = true, x = true, inspect = true,
       }
       if noun ~= "" and PRONOUNS[noun] and context.last_noun then
         -- Tier 4: discovery references resolve from context window

@@ -279,15 +279,49 @@
 - [x] **5 hangs block deploy:** BUG-105/106 (still broken) + BUG-116/117/118 (new)
 - [x] Write results to `test-pass/gameplay/2026-03-22-pass-034.md` ✅
 
-### 🏠 Marge: Migrate to GitHub Issues (🔄 RUNNING)
-- [ ] Create labels (severity, status, component, hang)
-- [ ] File all open bugs as GitHub Issues on WayneWalterBerry/MMO
-- [ ] Delete bugs/ folder from repo
-- [ ] Verify Issues are live
+### 🏠 Marge: Migrate to GitHub Issues ✅
+- [x] Created 14 labels (severity, status, component, hang)
+- [x] Filed 11 open bugs as GitHub Issues (#1-#11) on WayneWalterBerry/MMO
+- [x] Deleted bugs/ folder from repo
+- [x] **🔴 DEPLOY BLOCKED** — 3 critical hangs (#5, #6, #9), 3 high hangs (#2, #10, #11)
 
 ---
 
-## Phase 7: Final Deploy
+## ⚠️ PIVOT: Hang Elimination Sprint (BLOCKS DEPLOY)
+
+**Wayne's directive:** Stop all feature work. Focus entirely on hang elimination + deploy.
+
+**The problem:** We keep patching individual hanging inputs, but new inputs find the same hole. BUG-105/106 have been "fixed" twice and still hang in live play. The parser's fallback path can hang on any unrecognized input.
+
+**The goal:** Make it architecturally impossible for the parser to hang. Not "fix known inputs" — make the CLASS of inputs safe.
+
+### 🏗️ Bart: Deep RCA — why can the parser hang at all?
+- [ ] Trace the exact code path for BUG-105/106/116/117/118 in the LIVE game (not unit tests)
+- [ ] Why do unit tests pass but live play hangs? What's different about the game loop context?
+- [ ] Propose a fix that makes hangs impossible, not just unlikely
+- [ ] Document in GitHub Issue comments with RCA
+
+### ⚛️ Smithers: Implement Bart's fix + global safety net
+- [ ] Implement the architectural fix Bart proposes
+- [ ] Add global timeout in game loop — if ANY command takes > 2 seconds, bail with helpful message
+- [ ] Fix Issues #1-#11 that are fixable now
+- [ ] Leave Issues OPEN — Marge closes after verification
+
+### 🧪 Nelson: Targeted hang hunting (Pass 035)
+- [ ] Try 50+ bizarre inputs specifically to find hangs
+- [ ] Goal: enumerate ALL inputs that can hang, not just play the game
+- [ ] Categories: nonsense verbs, preposition combos, question variants, compound chains, pronouns with no context
+- [ ] File any new hangs as GitHub Issues
+
+### 🏠 Marge: Verify and close
+- [ ] After each fix: verify the fix works in live play (not just unit tests)
+- [ ] Confirm regression test exists
+- [ ] Close the GitHub Issue only after verification
+- [ ] Give deploy go/no-go when all critical/high hangs are closed
+
+---
+
+## Phase 7: Final Deploy (after Marge gives go/no-go)
 - [ ] Run `deploy.ps1` to push everything live
 - [ ] Verify live site
 - [ ] `git commit && git push`
@@ -304,3 +338,6 @@
 - **No depth-limit band-aids** — Investigate hang root causes properly before pipeline refactor
 - **Nelson between every phase** — LLM play test sanity check prevents the game from going off course
 - **Commit+push between every step** — No accumulated drift
+- **Bugs in GitHub Issues** — WayneWalterBerry/MMO, not markdown files. Labels for severity/component/hang.
+- **Engineers don't close Issues** — Only test team (Marge/Nelson) verifies fixes and closes. Engineers fix + comment.
+- **PIVOT: Hang elimination** — Stop all features. Make parser architecturally unable to hang. Deploy only after Marge go/no-go.
