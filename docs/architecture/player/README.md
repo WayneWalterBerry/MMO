@@ -27,6 +27,8 @@ The player is a first-class entity in the game state, tracked as a Lua table (`p
 | **Health** | [health.md](health.md) | 🔷 Designed |
 | **Injuries** | [injuries.md](injuries.md) | 🔷 Designed |
 | **Inventory** | [inventory.md](inventory.md) | 🔷 Designed |
+| **Appearance** | [appearance-subsystem.md](appearance-subsystem.md) | 🔷 Designed |
+| **Consciousness** | [consciousness-state.md](consciousness-state.md) | 🔷 Designed |
 
 ---
 
