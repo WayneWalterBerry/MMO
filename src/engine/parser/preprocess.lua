@@ -64,12 +64,16 @@ local function strip_politeness(text)
     text = text:gsub("^kindly%s+", "")
     text = text:gsub("^could%s+you%s+", "")
     text = text:gsub("^can%s+you%s+", "")
+    text = text:gsub("^would%s+you%s+mind%s+", "")
     text = text:gsub("^would%s+you%s+", "")
     text = text:gsub("^will%s+you%s+", "")
     text = text:gsub("^let%s+me%s+", "")
     text = text:gsub("^try%s+to%s+", "")
     text = text:gsub("^attempt%s+to%s+", "")
+    text = text:gsub("^i%s+think%s+i'?ll%s+", "")
     text = text:gsub("^maybe%s+i%s+should%s+", "")
+    text = text:gsub("^maybe%s+", "")
+    text = text:gsub("^perhaps%s+", "")
     return text
 end
 
@@ -86,6 +90,11 @@ local function strip_adverbs(text)
     text = text:gsub("^quietly%s+", "")
     text = text:gsub("^frantically%s+", "")
     text = text:gsub("^desperately%s+", "")
+    text = text:gsub("^firmly%s+", "")
+    text = text:gsub("^softly%s+", "")
+    text = text:gsub("^briskly%s+", "")
+    text = text:gsub("^hastily%s+", "")
+    text = text:gsub("^nervously%s+", "")
     -- Trailing adverbs/modifiers
     text = text:gsub("%s+carefully$", "")
     text = text:gsub("%s+closely$", "")
@@ -96,8 +105,16 @@ local function strip_adverbs(text)
     text = text:gsub("%s+quietly$", "")
     text = text:gsub("%s+frantically$", "")
     text = text:gsub("%s+desperately$", "")
+    text = text:gsub("%s+firmly$", "")
+    text = text:gsub("%s+softly$", "")
+    text = text:gsub("%s+briskly$", "")
+    text = text:gsub("%s+hastily$", "")
+    text = text:gsub("%s+nervously$", "")
     text = text:gsub("%s+again$", "")
-    text = text:gsub("%s+now$", "")
+    -- Guard: don't strip trailing "now" from question phrases ("what now", "where now")
+    if not text:match("^wh%w*%s+now$") then
+        text = text:gsub("%s+now$", "")
+    end
     text = text:gsub("%s+here$", "")
     return text
 end
@@ -151,20 +168,29 @@ local function transform_questions(text)
         return "search " .. is_anything_in
     end
 
-    -- "can I verb target" → "verb target"
+    -- "can I verb target" → "verb target" (strip question wrapper)
     local can_i_verb, can_i_target = text:match("^can%s+i%s+(%w+)%s+(.+)$")
     if can_i_verb and can_i_target then
         return can_i_verb .. " " .. can_i_target
     end
 
-    -- "what is this" → "examine this"
-    if text:match("^what%s+is%s+this$") then
+    -- "what is this" → "examine this" (context resolution downstream)
+    if text:match("^what%s+is%s+this$") or text:match("^what'?s%s+this$") then
         return "examine this"
     end
 
     -- "what can I find" → "search" (BUG-084)
     if text:match("^what%s+can%s+i%s+find") then
         return "search"
+    end
+
+    -- "where is the X" → "search for X"
+    local where_is_target = text:match("^where%s+is%s+the%s+(.+)$")
+        or text:match("^where%s+is%s+(.+)$")
+        or text:match("^where'?s%s+the%s+(.+)$")
+        or text:match("^where'?s%s+(.+)$")
+    if where_is_target then
+        return "search for " .. where_is_target
     end
 
     -- "what is around" / "what do I see" / "where am I" → "look"
@@ -207,6 +233,9 @@ local function transform_questions(text)
 
     -- Question patterns → help
     if text:match("^what%s+can%s+i%s+do")
+        or text:match("^what%s+do%s+i%s+do")
+        or text:match("^what%s+now$")
+        or text:match("^now%s+what$")
         or text:match("^how%s+do%s+i") then
         return "help"
     end

@@ -166,6 +166,78 @@ test("'how do i play' → 'help'", function()
 end)
 
 -------------------------------------------------------------------------------
+h.suite("Stage 3: transform_questions — 'where is the X' (Tier 1)")
+-------------------------------------------------------------------------------
+
+test("'where is the key' → 'search for key'", function()
+    eq("search for key", transform_questions("where is the key"))
+end)
+
+test("'where is the matchbox' → 'search for matchbox'", function()
+    eq("search for matchbox", transform_questions("where is the matchbox"))
+end)
+
+test("'where is nightstand' (no article) → 'search for nightstand'", function()
+    eq("search for nightstand", transform_questions("where is nightstand"))
+end)
+
+test("'where's the candle' → 'search for candle'", function()
+    eq("search for candle", transform_questions("where's the candle"))
+end)
+
+test("'wheres the door' (no apostrophe) → 'search for door'", function()
+    eq("search for door", transform_questions("wheres the door"))
+end)
+
+-------------------------------------------------------------------------------
+h.suite("Stage 3: transform_questions — 'what is this' variants (Tier 1)")
+-------------------------------------------------------------------------------
+
+test("'what's this' → 'examine this'", function()
+    eq("examine this", transform_questions("what's this"))
+end)
+
+test("'whats this' (no apostrophe) → 'examine this'", function()
+    eq("examine this", transform_questions("whats this"))
+end)
+
+-------------------------------------------------------------------------------
+h.suite("Stage 3: transform_questions — 'what do I do' / 'what now' (Tier 1)")
+-------------------------------------------------------------------------------
+
+test("'what do i do' → 'help'", function()
+    eq("help", transform_questions("what do i do"))
+end)
+
+test("'what now' → 'help'", function()
+    eq("help", transform_questions("what now"))
+end)
+
+test("'now what' → 'help'", function()
+    eq("help", transform_questions("now what"))
+end)
+
+test("'how do i open the crate' → 'help'", function()
+    eq("help", transform_questions("how do i open the crate"))
+end)
+
+-------------------------------------------------------------------------------
+h.suite("Stage 3: transform_questions — 'can I do X' passthrough (Tier 1)")
+-------------------------------------------------------------------------------
+
+test("'can i open the crate' → 'open the crate'", function()
+    eq("open the crate", transform_questions("can i open the crate"))
+end)
+
+test("'can i search the room' → 'search the room'", function()
+    eq("search the room", transform_questions("can i search the room"))
+end)
+
+test("'can i light the match' → 'light the match'", function()
+    eq("light the match", transform_questions("can i light the match"))
+end)
+
+-------------------------------------------------------------------------------
 h.suite("Stage 3: transform_questions — passthrough / non-questions")
 -------------------------------------------------------------------------------
 

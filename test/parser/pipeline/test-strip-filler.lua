@@ -218,6 +218,122 @@ test("iterative stripping handles deeply nested politeness", function()
 end)
 
 -------------------------------------------------------------------------------
+h.suite("Stage 2a: strip_politeness — new patterns (Tier 0)")
+-------------------------------------------------------------------------------
+
+test("'would you mind opening the door' → 'opening the door'", function()
+    eq("opening the door", strip_politeness("would you mind opening the door"))
+end)
+
+test("'would you mind searching around' → 'searching around'", function()
+    eq("searching around", strip_politeness("would you mind searching around"))
+end)
+
+test("'i think i'll take the key' → 'take the key'", function()
+    eq("take the key", strip_politeness("i think i'll take the key"))
+end)
+
+test("'i think ill take the key' (no apostrophe) → 'take the key'", function()
+    eq("take the key", strip_politeness("i think ill take the key"))
+end)
+
+test("'maybe look around' → 'look around'", function()
+    eq("look around", strip_politeness("maybe look around"))
+end)
+
+test("'perhaps search the room' → 'search the room'", function()
+    eq("search the room", strip_politeness("perhaps search the room"))
+end)
+
+test("'perhaps look at the nightstand' → 'look at the nightstand'", function()
+    eq("look at the nightstand", strip_politeness("perhaps look at the nightstand"))
+end)
+
+test("'maybe i should' still works → 'look'", function()
+    eq("look", strip_politeness("maybe i should look"))
+end)
+
+test("'would you mind' before 'would you' (order matters)", function()
+    eq("looking", strip_politeness("would you mind looking"))
+end)
+
+-------------------------------------------------------------------------------
+h.suite("Stage 2b: strip_adverbs — new adverbs (Tier 0)")
+-------------------------------------------------------------------------------
+
+test("'firmly push the door' → 'push the door'", function()
+    eq("push the door", strip_adverbs("firmly push the door"))
+end)
+
+test("'softly knock on the door' → 'knock on the door'", function()
+    eq("knock on the door", strip_adverbs("softly knock on the door"))
+end)
+
+test("'briskly walk north' → 'walk north'", function()
+    eq("walk north", strip_adverbs("briskly walk north"))
+end)
+
+test("'hastily grab the key' → 'grab the key'", function()
+    eq("grab the key", strip_adverbs("hastily grab the key"))
+end)
+
+test("'nervously open the door' → 'open the door'", function()
+    eq("open the door", strip_adverbs("nervously open the door"))
+end)
+
+test("trailing: 'push the door firmly' → 'push the door'", function()
+    eq("push the door", strip_adverbs("push the door firmly"))
+end)
+
+test("trailing: 'close the door softly' → 'close the door'", function()
+    eq("close the door", strip_adverbs("close the door softly"))
+end)
+
+test("trailing: 'walk north briskly' → 'walk north'", function()
+    eq("walk north", strip_adverbs("walk north briskly"))
+end)
+
+test("trailing: 'grab the key hastily' → 'grab the key'", function()
+    eq("grab the key", strip_adverbs("grab the key hastily"))
+end)
+
+test("trailing: 'open the box nervously' → 'open the box'", function()
+    eq("open the box", strip_adverbs("open the box nervously"))
+end)
+
+-------------------------------------------------------------------------------
+h.suite("Stage 2: strip_filler — Tier 0 composite interactions")
+-------------------------------------------------------------------------------
+
+test("BUG-083: 'could you search for matches' → 'search for matches'", function()
+    eq("search for matches", strip_filler("could you search for matches"))
+end)
+
+test("politeness + new adverb: 'please firmly push the door' → 'push the door'", function()
+    eq("push the door", strip_filler("please firmly push the door"))
+end)
+
+test("new politeness + adverb: 'perhaps carefully search' → 'search'", function()
+    eq("search", strip_filler("perhaps carefully search"))
+end)
+
+test("'would you mind hastily searching around' → 'searching around'", function()
+    eq("searching around", strip_filler("would you mind hastily searching around"))
+end)
+
+test("'i think i'll nervously open the crate' → 'open the crate'", function()
+    eq("open the crate", strip_filler("i think i'll nervously open the crate"))
+end)
+
+test("strip order: preamble then politeness then adverb", function()
+    eq("search", strip_filler("i want to please softly search"))
+end)
+
+test("multiple new politeness layers strip iteratively", function()
+    eq("look around", strip_filler("perhaps maybe look around"))
+end)
+
+-------------------------------------------------------------------------------
 -- Summary
 -------------------------------------------------------------------------------
 local failures = h.summary()

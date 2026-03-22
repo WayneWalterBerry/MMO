@@ -214,6 +214,91 @@ test("full pipeline: 'Try to gently blow out the candle' → extinguish", functi
 end)
 
 -------------------------------------------------------------------------------
+h.suite("Pipeline Integration: Tier 0 + Tier 1 cross-stage interactions")
+-------------------------------------------------------------------------------
+
+test("BUG-083: 'Could you search for matches?' → search matches (politeness + compound)", function()
+    local v, n = preprocess.natural_language("Could you search for matches?")
+    eq("search", v)
+    eq("matches", n)
+end)
+
+test("'Where is the key?' → search for key (question transform)", function()
+    local v, n = preprocess.natural_language("Where is the key?")
+    eq("search", v)
+    truthy(n and n:find("key"), "Should target key")
+end)
+
+test("'What now?' → help", function()
+    local v, n = preprocess.natural_language("What now?")
+    eq("help", v)
+    eq("", n)
+end)
+
+test("'What do I do?' → help", function()
+    local v, n = preprocess.natural_language("What do I do?")
+    eq("help", v)
+    eq("", n)
+end)
+
+test("'What's this?' → examine this", function()
+    local v, n = preprocess.natural_language("What's this?")
+    eq("examine", v)
+    eq("this", n)
+end)
+
+test("'Perhaps look around?' → look (new politeness + question mark)", function()
+    local v, n = preprocess.natural_language("Perhaps look around?")
+    eq("look", v)
+    eq("", n)
+end)
+
+test("'Maybe I should firmly push the door' → push door (Tier 0 layers)", function()
+    local v, n = preprocess.natural_language("Maybe I should firmly push the door")
+    eq("push", v)
+    truthy(n and n:find("door"), "Should target door")
+end)
+
+test("'I think I'll nervously search the room' → search room", function()
+    local v, n = preprocess.natural_language("I think I'll nervously search the room")
+    eq("search", v)
+    truthy(n and n:find("room"), "Should target room")
+end)
+
+test("'Please hastily grab the key' → grab key", function()
+    local v, n = preprocess.natural_language("Please hastily grab the key")
+    eq("grab", v)
+    truthy(n and n:find("key"), "Should target key")
+end)
+
+test("'Where's the matchbox?' → search for matchbox", function()
+    local v, n = preprocess.natural_language("Where's the matchbox?")
+    eq("search", v)
+    truthy(n and n:find("matchbox"), "Should target matchbox")
+end)
+
+test("'How do I open the crate?' → help", function()
+    local v, n = preprocess.natural_language("How do I open the crate?")
+    eq("help", v)
+    eq("", n)
+end)
+
+test("'Would you mind carefully searching around?' → search around", function()
+    local v, n = preprocess.natural_language("Would you mind carefully searching around?")
+    -- "would you mind" stripped → "carefully searching around"
+    -- "carefully" stripped → "searching around"
+    -- No further pipeline match but text changed, so parsed
+    local parsed_v, parsed_n = preprocess.parse("searching around")
+    eq(parsed_v, v, "Verb should match parsed result")
+end)
+
+test("'Perhaps carefully check the nightstand' → examine nightstand", function()
+    local v, n = preprocess.natural_language("Perhaps carefully check the nightstand")
+    eq("examine", v)
+    truthy(n and n:find("nightstand"), "Should target nightstand")
+end)
+
+-------------------------------------------------------------------------------
 -- Summary
 -------------------------------------------------------------------------------
 local failures = h.summary()

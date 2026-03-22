@@ -22,11 +22,13 @@ print("========================================")
 -- Directories to scan for test files
 local test_dirs = {
     repo_root .. SEP .. "test" .. SEP .. "parser",
+    repo_root .. SEP .. "test" .. SEP .. "parser" .. SEP .. "pipeline",
     repo_root .. SEP .. "test" .. SEP .. "inventory",
     repo_root .. SEP .. "test" .. SEP .. "injuries",
     repo_root .. SEP .. "test" .. SEP .. "verbs",
     repo_root .. SEP .. "test" .. SEP .. "search",
     repo_root .. SEP .. "test" .. SEP .. "nightstand",
+    repo_root .. SEP .. "test" .. SEP .. "integration",
 }
 
 local is_windows = SEP == "\\"
