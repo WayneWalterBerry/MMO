@@ -58,23 +58,15 @@ Each injury design document should include:
 - **Object Design:** `docs/design/objects/` — Objects follow the same template→instance pattern; study object designs for parallel structure
 - **Healing Items:** `docs/design/healing-items.md` — Items that cure or manage injuries
 
-## Examples
+## Design Documents in This Folder
 
-See individual injury design documents in this folder:
-
-### Level 1 Injuries (Designed)
-- `minor-cut.md` — One-time, low severity. From glass/sharp edges. Treated with cloth bandage. Self-heals.
-- `bleeding.md` — Over-time (DoT). From deep wounds. Treated with cloth bandage (stops drain). Heals naturally once bandaged.
-- `poisoned-nightshade.md` — Rapid over-time, lethal. From poison bottle. Requires specific nightshade antidote.
-- `burn.md` — One-time. From flame/hot objects. Treated with cold water or cool cloth.
-- `bruised.md` — One-time, minor. From falls/impacts. Heals naturally with rest. No treatment item needed.
-
-### Treatment System
+- `bandage-lifecycle.md` — How bandages interact with bleeding injuries over time
 - `treatment-targeting.md` — How the parser resolves "apply X to Y" where Y is a specific injury. Context resolution, disambiguation, and example interaction flows.
+- `puzzle-integration.md` — How injuries are used as puzzle mechanics throughout the game
 
-### Future Injuries
-- `fractured-arm.md` *(Level 2+)*
-- *(more to come)*
+## Individual Injury Reference
+
+For individual injury reference docs (technical specs, FSM diagrams, damage values, treatment items, symptom text), see `docs/injuries/`.
 
 ## Design Principles
 
