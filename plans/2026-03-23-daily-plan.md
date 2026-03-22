@@ -102,6 +102,12 @@
 - [ ] Nelson tests: get injured → sleep voluntarily → bleed out
 - [ ] Nelson tests: get injured → get knocked out → bleed out while unconscious
 - [ ] Nelson tests injury listing — natural phrasing: "health", "status", "how am I", "check my wounds", "am I hurt?", "what's wrong with me?", "injuries"
+  - "Where am I bleeding from?" — should list bleeding injury locations
+  - "Why don't I feel well?" — should describe all active injuries/effects
+  - "Where is that blood coming from?" — should identify bleeding source
+  - "Am I going to be ok?" — should give prognosis based on injury severity
+  - "How bad is it?" — should describe injury severity
+  - "What happened to my arm?" — should describe injuries to specific body part
 - [ ] Nelson tests inventory/hands — natural phrasing:
   - "inventory" / "i" — does it show hands + worn + bags?
   - "what am I holding?" — should show hand slots
