@@ -96,6 +96,14 @@
     window._logStatus = showStatus;
     window._appendOutput = appendOutput;
 
+    // --- Status bar bridge (called from Lua game-adapter) ---
+    var statusBarLeft  = document.querySelector('#status-bar .status-left');
+    var statusBarRight = document.querySelector('#status-bar .status-right');
+    window._updateStatusBar = function (left, right) {
+        if (statusBarLeft)  statusBarLeft.textContent  = left  || '';
+        if (statusBarRight) statusBarRight.textContent = right || '';
+    };
+
     // JS bridge: open URL in new tab (used by "report bug" command)
     // Fix #13: Trim transcript to last 3 command/response pairs so GitHub
     // doesn't truncate the URL and show stale welcome text instead.
