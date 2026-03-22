@@ -2,7 +2,7 @@
 name: "Bug Report Lifecycle"
 description: "Standard workflow for triaging, diagnosing, and fixing player bug reports from the in-game 'report bug' command. Covers issue intake, root cause analysis, implementation, testing, deployment, and resolution communication."
 domain: "bug-fixing, issue-triage, deployment, GitHub-integration"
-confidence: "low"
+confidence: "medium"
 source: "manual"
 tools:
   - name: "github-mcp-server-issue_read"
@@ -68,24 +68,46 @@ Categorize the issue and delegate to the owning team:
 
 ### Phase 3: Fix + Unit Test
 
-**Pattern**: Implement fix with regression safety
+**Pattern**: Implement fix with mandatory regression test
 
-1. **Implement the fix** in the appropriate source file(s)
+> **⚠️ NON-NEGOTIABLE: Every player-reported bug MUST have a regression unit test before closing.**
+> There is nothing more annoying to a player than reporting a bug twice. If a player took the time to report it, we owe them the guarantee it won't come back. No test = no close.
+
+1. **Write the regression test FIRST** (TDD approach preferred)
+   - Encode the exact player input that triggered the bug as a test case
+   - Assert the expected correct behavior (what SHOULD have happened)
+   - Run it — confirm it FAILS (proving the bug exists)
+   - Name the test descriptively, referencing the issue: `test_issue_NNN_take_book_multiword()`
+
+2. **Implement the fix** in the appropriate source file(s)
    - Example: Fix tokenizer bug in `src/engine/parser/tokenize.lua`
    - Example: Update verb handler in `src/engine/verbs/init.lua`
 
-2. **Write a unit test** that reproduces the original bug and verifies the fix
-   - Parser bugs → write test in `test/parser/` (e.g., `test/parser/test-preprocess.lua`)
-   - Other bugs → add test in the appropriate `test/` subdirectory
+3. **Run the regression test** — confirm it now PASSES
 
-3. **Run existing tests** to verify no regressions:
+4. **Run ALL existing tests** to verify no regressions:
    ```powershell
    lua test/parser/test-preprocess.lua
    lua test/parser/test-context.lua
    # (run all applicable test suites)
    ```
 
-4. Ensure all tests pass before moving to deployment
+5. Ensure all tests pass before moving to deployment
+
+**Test placement:**
+| Bug Type | Test Location |
+|----------|---------------|
+| Parser bugs | `test/parser/` |
+| Search/find bugs | `test/search/` |
+| Verb handler bugs | `test/verbs/` |
+| Object/room bugs | `test/objects/` or `test/nightstand/` |
+| UI/display bugs | `test/ui/` |
+
+**What the test should capture:**
+- The exact phrase the player typed (from the session transcript)
+- The expected game response or behavior
+- Any related phrasings that should also work (e.g., if "take the book" was broken, also test "pick up the book", "grab the book")
+- Edge cases near the bug (similar inputs that might hit the same code path)
 
 ---
 
