@@ -23,7 +23,7 @@
 
 ## Behavior
 - **Basic acquisition:** Moves object from location to player's hand/inventory
-- **Hand requirements:** 
+- **Hand requirements:**
   - One-handed items: Require one free hand
   - Two-handed items: Require both hands free
   - Full hands: "Your hands are full. Drop something first."
@@ -44,7 +44,6 @@
 - `put` — Place an object in/on (more deliberate placement)
 - `inventory` — Check what you're carrying
 - `wear` — Put on equipment (alternative to hands)
-- `grab` — Synonym/alias
 
 ## Implementation
 - **File:** `src/engine/verbs/init.lua` → `handlers["take"]`

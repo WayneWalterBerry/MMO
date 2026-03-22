@@ -1,4 +1,4 @@
-# Verb Design Catalog
+# Verb Reference
 
 This directory contains detailed design documentation for each **main verb** in the MMO engine. Each file documents the verb's sensory requirements, syntax, behavior, and design principles.
 
@@ -15,8 +15,7 @@ This directory contains detailed design documentation for each **main verb** in 
 - **[find](find.md)** — Universal search verb using all senses
 
 ### 👆 Touch & Tactile Verbs
-- **[feel](feel.md)** — Grope around or feel specific objects
-- **[touch](touch.md)** — Direct tactile interaction
+- **[feel](feel.md)** — Grope around or feel specific objects (includes touch)
 
 ### 📖 Sensory Observation
 - **[listen](listen.md)** — Hearing-based observation
@@ -25,20 +24,14 @@ This directory contains detailed design documentation for each **main verb** in 
 - **[read](read.md)** — Reading text (may teach skills)
 
 ### 🎒 Item Acquisition
-- **[take](take.md)** — Pick up an object (acquire)
-- **[grab](grab.md)** — Alias for take
-- **[get](get.md)** — Alias for take; also "get X from Y"
-- **[pick](pick.md)** — Pick up or pick lock (attempts)
+- **[take](take.md)** — Pick up an object (acquire) — includes take, get, grab, pick
 
 ### 🚪 Container & Object Interaction
 - **[open](open.md)** — Open a container or door
 - **[close](close.md)** — Close a container or door
 - **[put](put.md)** — Place an object in/on a container
 - **[drop](drop.md)** — Release an object
-- **[pull](pull.md)** — Detach parts or move objects
-- **[push](push.md)** — Move heavy objects aside
-- **[move](move.md)** — General spatial movement
-- **[lift](lift.md)** — Lift objects or reveal what's underneath
+- **[pull](pull.md)** — Pull objects, detach parts, push objects, and lift (includes pull, push, lift)
 - **[unlock](unlock.md)** — Unlock locked containers/doors
 
 ### 🧥 Equipment & Wearing
@@ -47,7 +40,7 @@ This directory contains detailed design documentation for each **main verb** in 
 - **[inventory](inventory.md)** — Check what you're carrying
 
 ### 🔥 Fire & Light Verbs
-- **[light](light.md)** — Light a fire or flame
+- **[light](light.md)** — Light a fire or flame (includes light, ignite, relight)
 - **[extinguish](extinguish.md)** — Put out a flame
 - **[burn](burn.md)** — Set something on fire
 - **[strike](strike.md)** — Strike a match
@@ -55,9 +48,9 @@ This directory contains detailed design documentation for each **main verb** in 
 ### 🗡️ Damage & Destruction
 - **[break](break.md)** — Break something breakable
 - **[tear](tear.md)** — Tear fabric apart
-- **[stab](stab.md)** — Stabbing attack or self-infliction
-- **[cut](cut.md)** — Cut something with a tool
-- **[slash](slash.md)** — Slashing attack or self-harm
+- **[stab](stab.md)** — Stabbing attack (distinct weapon type)
+- **[cut](cut.md)** — Cut something with a tool (distinct weapon type)
+- **[slash](slash.md)** — Slashing attack (distinct weapon type)
 
 ### 🍽️ Consumption
 - **[eat](eat.md)** — Eat edible objects
@@ -70,23 +63,10 @@ This directory contains detailed design documentation for each **main verb** in 
 - **[apply](apply.md)** — Apply healing items to wounds
 
 ### 🏃 Movement
-- **[go](go.md)** — Move in a direction
-- **[walk](walk.md)** — Walk in a direction
-- **[run](run.md)** — Run in a direction
-- **[head](head.md)** — Head in a direction
-- **[climb](climb.md)** — Climb stairs or obstacles
-- **[enter](enter.md)** — Enter through an exit
-- **[direction](direction.md)** — Cardinal (n/s/e/w) and vertical (u/d) movement
+- **[go](go.md)** — Move in a direction — consolidates: go, move, walk, run, head, climb, enter, direction
 
 ### 😴 Rest & Time
 - **[sleep](sleep.md)** — Sleep for extended periods
-- **[rest](rest.md)** — Alias for sleep
-
-### 📊 Status & Information
-- **[inventory](inventory.md)** — Check carrying status, health, injuries, time, help
-
-### 🐛 Meta
-- **[report-bug](report-bug.md)** — Report a bug
 
 ---
 
@@ -100,7 +80,9 @@ Every verb must document its sensory requirements:
 
 ### 2. Verb Synonyms Belong in the Main Verb File
 - `take`, `get`, `grab`, `pick up` → documented in **take.md**
-- `search`, `find` → distinct verbs with nuances
+- `go`, `walk`, `run`, `head`, `climb`, `enter`, `n/s/e/w/u/d` → documented in **go.md**
+- `pull`, `push`, `lift` → documented in **pull.md**
+- `feel`, `touch` → documented in **feel.md**
 - Aliases listed under **Synonyms** section in each file
 
 ### 3. Behavior Documentation
@@ -127,13 +109,34 @@ See `src/engine/parser/preprocess.lua` for phrase → verb mappings.
 
 ---
 
+## Consolidation Notes
+
+Verbs have been consolidated as follows:
+
+**Consolidated (One file for multiple synonyms):**
+- **go.md** — Includes: go, move, shift, slide, walk, travel, run, head, climb, enter, direction (n/s/e/w/u/d)
+- **take.md** — Includes: take, get, grab, pick
+- **feel.md** — Includes: feel, touch, grope
+- **pull.md** — Includes: pull, push, lift (and their synonyms: yank, tug, extract, shove)
+
+**Kept Separate (Distinct mechanics):**
+- **stab.md** — Stabbing weapon type
+- **cut.md** — Cutting weapon type (distinct behavior from stab)
+- **slash.md** — Slashing weapon type (distinct behavior from stab/cut)
+- **wear.md** — Equipping wearable items
+- **remove.md** — Unequipping wearable items
+
+**All Other Verbs** — Remain as individual files (no consolidation needed).
+
+---
+
 ## Related Documentation
 
-- **[verb-system.md](../verb-system.md)** — Overview of the verb system architecture
-- **[parser-tier-1-basic.md](../../architecture/engine/parser-tier-1-basic.md)** — How verbs are dispatched
-- **[parser-tier-2-compound.md](../../architecture/engine/parser-tier-2-compound.md)** — Phrase similarity fallback
-- **[player-sensory.md](../../architecture/player/player-sensory.md)** — Light/dark system and sensory perception
-- **[inventory.md](../../architecture/player/inventory.md)** — Hands, bags, worn items, search order
+- **[verb-system.md](../design/verb-system.md)** — Overview of the verb system architecture
+- **[parser-tier-1-basic.md](../architecture/engine/parser-tier-1-basic.md)** — How verbs are dispatched
+- **[parser-tier-2-compound.md](../architecture/engine/parser-tier-2-compound.md)** — Phrase similarity fallback
+- **[player-sensory.md](../architecture/player/player-sensory.md)** — Light/dark system and sensory perception
+- **[inventory.md](../architecture/player/inventory.md)** — Hands, bags, worn items, search order
 
 ---
 

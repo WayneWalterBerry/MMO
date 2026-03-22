@@ -15,6 +15,7 @@ Reference docs explain *what things are*:
 - **`objects/`** — Per-object reference docs
 - **`templates/`** — Template system: container, furniture, room, sheet, small-item
 - **`injuries/`** — Per-injury reference docs  
+- **`verbs/`** — Verb reference: command syntax, behavior, and design patterns
 - **`rooms/`** — Per-room reference docs
 - **`puzzles/`** — Per-puzzle reference docs
 

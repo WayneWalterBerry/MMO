@@ -23,7 +23,6 @@ Gameplay design and systems reference.
 
 ## Interaction & Mechanics
 - `verb-system.md` — Verb system and interactions
-- `verbs/` — Individual verb design documentation (one file per main verb)
 - `fsm-object-lifecycle.md` — Object lifecycle state machine
 - `command-variation-matrix.md` — Command variation system
 - `spatial-system.md` — Spatial mechanics
