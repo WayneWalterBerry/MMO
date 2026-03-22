@@ -57,14 +57,82 @@
 - [ ] `container-sensory-gating` — Engine checks open/closed before revealing contents
 - [ ] `chest-object` — Create chest.lua + GUID + docs (two-handed carry)
 
-### Prime Directive Roadmap
-- [ ] **Prerequisite:** Refactor `preprocess.lua` into extensible table-driven pipeline
-- [ ] Tier 0: Politeness/adverb stripping (partially done by Smithers)
-- [ ] Tier 1: Question transforms (partially done)
-- [ ] Tier 2: Error message overhaul (partially done)
-- [ ] Tier 3: Idiom library ("set fire to X" → "light X")
-- [ ] Tier 4: Context window (discovery memory)
-- [ ] Tier 5: Fuzzy noun resolution ("the wooden thing")
+### Parser North Star — Path to Prime Directive (A / 95%)
+
+**Current:** C+ (65%) → **Target:** A (95%)
+**Philosophy:** Feel like Copilot, cost like Zork. Zero tokens. Pure pipeline.
+**Reference:** `docs/architecture/engine/parser/prime-directive-roadmap.md`
+
+#### Step 0: Extensible Pipeline Refactor (PREREQUISITE — do this first)
+- [ ] Refactor `preprocess.lua` from monolithic function → table-driven pipeline
+- [ ] Each transform stage = separate function in a table
+- [ ] Stages can be reordered, disabled, hot-swapped without touching other code
+- [ ] Add per-stage debug logging (input/output at each step)
+- [ ] Write pipeline unit tests before and after refactor
+```lua
+local pipeline = {
+    strip_politeness,     -- Tier 0
+    strip_adverbs,        -- Tier 0
+    transform_questions,  -- Tier 1
+    expand_idioms,        -- Tier 3
+    resolve_pronouns,     -- Existing
+    disambiguate_nouns,   -- Tier 5
+}
+```
+
+#### Tier 0: Stripping Layer (HIGH impact, LOW risk)
+- [~] Politeness stripping — "please", "could you", "let me" (done by Smithers, needs testing)
+- [~] Adverb stripping — "carefully", "thoroughly", "quickly" (done, incomplete list — BUG-085)
+- [ ] Verify stripping doesn't break compound patterns (BUG-083: "could you search for matches")
+- [ ] Add missing adverbs: "thoroughly", "slowly", "gently", "firmly", "softly"
+- [ ] Ensure strip order: politeness BEFORE adverbs BEFORE compound extraction
+
+#### Tier 1: Question Transforms (HIGH impact, LOW risk)
+- [~] "what's in the X?" → "examine X" (done, needs more patterns)
+- [~] "is there anything in X?" → "search X" (done)
+- [~] "can I open X?" → "open X" (done)
+- [ ] "what can I find?" → "search" (BUG-084: currently hangs)
+- [ ] "where is the X?" → "search for X"
+- [ ] "how do I X?" → contextual help
+- [ ] "what is this?" → "examine" with context resolution
+
+#### Tier 2: Error Message Overhaul (HIGH impact, LOW risk)
+- [~] "I don't understand" → "I'm not sure what you mean. Try 'help'..." (done by Smithers)
+- [~] "You can't do that" → "That doesn't seem to work. Try a different approach..." (done)
+- [ ] Every error message should suggest a valid action
+- [ ] Never echo the failed parse back literally ("No the matchbox found" — BUG-081)
+- [ ] Context-aware errors: "You can't see in the dark — try 'feel' instead"
+
+#### Tier 3: Idiom Library (MEDIUM impact, LOW risk)
+- [ ] "set fire to X" → "light X"
+- [ ] "pick up X" → "take X" (already done)
+- [ ] "put down X" → "drop X"
+- [ ] "blow out X" → "extinguish X"
+- [ ] "have a look" → "look"
+- [ ] "take a peek" → "look"
+- [ ] Table-driven: each idiom = `{ pattern, replacement }`
+
+#### Tier 4: Context Window (HIGH impact, MEDIUM risk)
+- [ ] Track last 3-5 discovered/interacted objects
+- [ ] "it", "that", "this" resolve to most recent context (partially done)
+- [ ] "the thing I found" → resolve from search discovery memory
+- [ ] Bare "pick up" after discovery → take the discovered item
+- [ ] "go back" → return to previous room
+- [ ] Integrate with search module's found_items tracking
+
+#### Tier 5: Fuzzy Noun Resolution (MEDIUM impact, MEDIUM risk)
+- [ ] "the wooden thing" → match objects by `material = "wood"`
+- [ ] "the heavy one" → match by weight/size properties
+- [ ] "that bottle" → partial name match when unambiguous
+- [ ] Disambiguation prompt when multiple matches: "Which do you mean: the glass bottle or the wine bottle?"
+- [ ] Levenshtein distance for typo tolerance: "nighstand" → "nightstand"
+
+#### Tier 6: Generalized GOAP (MEDIUM impact, MEDIUM risk)
+- [ ] Extend beyond fire_source prerequisite chain
+- [ ] "unlock the door" → auto-find key, auto-use key
+- [ ] "read the book" → auto-light candle if dark
+- [ ] Property-based goal matching (not hardcoded verb chains)
+- [ ] Safety limits on plan depth (BUG-090 root cause)
 
 ### Other
 - [ ] Combat precursor: stab/cut/slash deeper testing
