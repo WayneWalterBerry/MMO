@@ -46,7 +46,7 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-21 10:54"
+local BUILD_TIMESTAMP = "2026-03-21 19:49"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -284,6 +284,14 @@ local ok, err = pcall(function()
     local rooms = {}
 
     -------------------------------------------------------------------
+    -- GUID normalization helper
+    -------------------------------------------------------------------
+    local function normalize_guid(guid)
+        if type(guid) ~= "string" then return guid end
+        return guid:gsub("^%{(.-)%}$", "%1")
+    end
+
+    -------------------------------------------------------------------
     -- Load templates (all 5, fetched at boot — small and required early)
     -------------------------------------------------------------------
     log_debug("Loading Templates...")
@@ -306,8 +314,9 @@ local ok, err = pcall(function()
     -- Returns (def, was_cached)
     -------------------------------------------------------------------
     local function load_object(guid)
-        if base_classes[guid] then return base_classes[guid], true, 0 end
-        local source, was_cached = fetch_text("meta/objects/" .. guid .. ".lua")
+        local normalized_guid = normalize_guid(guid)
+        if base_classes[normalized_guid] then return base_classes[normalized_guid], true, 0 end
+        local source, was_cached = fetch_text("meta/objects/" .. normalized_guid .. ".lua")
         if not source then return nil, false, 0 end
         local content_len = #source
         local def = loader.load_source(source)
@@ -316,7 +325,7 @@ local ok, err = pcall(function()
             def = loader.resolve_template(def, templates)
         end
         if def and def.guid then
-            base_classes[def.guid] = def
+            base_classes[normalize_guid(def.guid)] = def
             if def.id then object_sources[def.id] = source end
         end
         return def, was_cached, content_len
@@ -352,7 +361,7 @@ local ok, err = pcall(function()
 
         -- Fetch all objects referenced by instances
         for _, inst in ipairs(rm.instances or {}) do
-            if inst.type_id and not base_classes[inst.type_id] then
+            if inst.type_id and not base_classes[normalize_guid(inst.type_id)] then
                 local obj_def, obj_cached, obj_size = load_object(inst.type_id)
                 local obj_label = inst.type or inst.id
                 if obj_cached then
@@ -509,6 +518,7 @@ local ok, err = pcall(function()
         game_start_time = os.time(),
         game_start_hour = presentation.GAME_START_HOUR,
         ui              = nil,
+        visited_rooms   = { [start_room_id] = true },
         -- JS bridge: open URL in a new browser tab (for "report bug")
         open_url        = function(url)
             window:_openUrl(url)

@@ -13,13 +13,22 @@
     var inputEl  = document.getElementById('input');
 
     // --- Output helpers ---
+    function escapeHtml(str) {
+        return str.replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;');
+    }
+
     function appendOutput(text, className) {
         var div = document.createElement('div');
         div.className = className || 'output-line';
         if (!text && text !== 0) {
             div.innerHTML = '&nbsp;';
         } else {
-            div.textContent = String(text);
+            var safe = escapeHtml(String(text));
+            safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            div.innerHTML = safe;
         }
         outputEl.appendChild(div);
         outputEl.scrollTop = outputEl.scrollHeight;
@@ -34,7 +43,7 @@
     }
 
     // --- Build version (embedded at build time) ---
-    const BUILD_TIMESTAMP = "2026-03-21 10:54";
+    const BUILD_TIMESTAMP = "2026-03-21 19:49";
 
     // --- Size formatting ---
     function formatSize(bytes) {
@@ -80,7 +89,15 @@
             inputEl.value = '';
             history.push(text);
             historyIndex = history.length;
-            appendOutput('> ' + text, 'input-echo');
+            var echoDiv = document.createElement('div');
+            echoDiv.className = 'input-echo';
+            var promptSpan = document.createElement('span');
+            promptSpan.className = 'input-prompt';
+            promptSpan.textContent = '> ';
+            echoDiv.appendChild(promptSpan);
+            echoDiv.appendChild(document.createTextNode(text));
+            outputEl.appendChild(echoDiv);
+            outputEl.scrollTop = outputEl.scrollHeight;
             if (window._gameProcessCommand) {
                 try {
                     window._gameProcessCommand(text);

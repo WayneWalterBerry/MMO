@@ -1724,6 +1724,127 @@ function verbs.create()
     handlers["grope"] = handlers["feel"]
 
     ---------------------------------------------------------------------------
+    -- SEARCH / FIND -- ALL senses (works in darkness AND light)
+    -- Wayne directive 2026-03-22T04:03: distinct from look/see (vision only)
+    ---------------------------------------------------------------------------
+    handlers["search"] = function(ctx, noun)
+        -- Treat "around", "room", "here" the same as bare search (room sweep)
+        local sweep_words = { [""] = true, ["around"] = true, ["room"] = true, ["here"] = true,
+                              ["around me"] = true, ["surroundings"] = true }
+        
+        if sweep_words[noun] then
+            -- Search around the room using available senses
+            local room = ctx.current_room
+            local reg = ctx.registry
+            local has_light = has_some_light(ctx)
+            local found = {}
+            
+            for _, obj_id in ipairs(room.contents or {}) do
+                local obj = reg:get(obj_id)
+                if obj and not obj.hidden then
+                    local desc = obj.name or obj.id
+                    found[#found + 1] = desc
+                end
+            end
+            
+            if #found > 0 then
+                if has_light then
+                    print("You search around the room, looking carefully...")
+                    for _, entry in ipairs(found) do
+                        print("  " .. entry)
+                    end
+                else
+                    -- In darkness, use touch/hearing/smell instead of vision
+                    print("You search around in the darkness, feeling and listening...")
+                    for _, entry in ipairs(found) do
+                        print("  " .. entry)
+                    end
+                end
+            else
+                print("You search around but find nothing within reach.")
+            end
+            return
+        end
+        
+        -- "search [object]" → find a specific object using all senses
+        local obj, loc_type, parent_obj, surface_key = find_visible(ctx, noun)
+        if not obj then
+            print("You can't find anything like that nearby.")
+            return
+        end
+        
+        -- Show appropriate sensory description based on lighting
+        local has_light = has_some_light(ctx)
+        if has_light then
+            -- Use vision (same as examine)
+            if obj.on_look then
+                print(obj.on_look(obj, reg))
+            else
+                print(obj.description or "You see nothing special.")
+            end
+        else
+            -- Use touch/sound/smell in darkness
+            if obj.on_feel then
+                local feel_text = type(obj.on_feel) == "function" and obj.on_feel(obj) or obj.on_feel
+                print(feel_text)
+            elseif obj.touch_description then
+                print(obj.touch_description)
+            else
+                print("You reach out and feel " .. (obj.name or "it") .. " in the darkness.")
+            end
+        end
+        
+        -- Enumerate surface/container contents
+        local check_obj = obj
+        local check_inside_only = false
+        if loc_type == "part" and parent_obj and obj.carries_contents then
+            check_obj = parent_obj
+            check_inside_only = true
+        end
+        
+        if check_obj.surfaces then
+            for zone_name, zone in pairs(check_obj.surfaces) do
+                if (not check_inside_only or zone_name == "inside") then
+                    if zone.accessible ~= false and #(zone.contents or {}) > 0 then
+                        local items = {}
+                        for _, id in ipairs(zone.contents) do
+                            local item = ctx.registry:get(id)
+                            items[#items + 1] = item and item.name or id
+                        end
+                        if has_light then
+                            print("You see " .. zone_name .. ":")
+                        else
+                            print("Your fingers find " .. zone_name .. ":")
+                        end
+                        for _, item_name in ipairs(items) do
+                            print("  " .. item_name)
+                        end
+                    end
+                end
+            end
+        end
+        
+        if check_obj.container and check_obj.contents and #check_obj.contents > 0 then
+            local items = {}
+            for _, id in ipairs(check_obj.contents) do
+                local item = ctx.registry:get(id)
+                items[#items + 1] = item and item.name or id
+            end
+            if has_light then
+                print("Inside you see:")
+            else
+                print("Inside you feel:")
+            end
+            for _, item_name in ipairs(items) do
+                print("  " .. item_name)
+            end
+        end
+    end
+    
+    -- "find" is a synonym for "search" (all-sense discovery)
+    handlers["find"] = handlers["search"]
+
+    ---------------------------------------------------------------------------
     -- SMELL / SNIFF -- works in darkness AND light
     ---------------------------------------------------------------------------
     handlers["smell"] = function(ctx, noun)
@@ -4996,9 +5117,12 @@ function verbs.create()
         print("  climb up/down            Climb stairs or ladders")
         print("")
         print("== Observation ==")
-        print("  look                     Look around the room")
-        print("  look at <thing>          Examine something closely")
-        print("  look in/on/under         Inspect a surface")
+        print("  look                     Look around the room (vision only, needs light)")
+        print("  look at <thing>          Examine something closely (needs light)")
+        print("  look in/on/under         Inspect a surface (needs light)")
+        print("  search                   Search around (all senses, works in darkness)")
+        print("  search <thing>           Search for something (all senses)")
+        print("  find <thing>             Find something (all senses, works in darkness)")
         print("  read <thing>             Read text on an object (may teach skills)")
         print("  feel                     Grope around (works in darkness)")
         print("  feel <thing>             Feel an object by touch")

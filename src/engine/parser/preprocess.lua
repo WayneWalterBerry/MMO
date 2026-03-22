@@ -96,6 +96,20 @@ function preprocess.natural_language(input)
         return "feel", ""
     end
 
+    -- Search/find compound phrases → search (all-sense discovery)
+    -- "search around", "search for X", "find X"
+    if lower:match("^search%s+around%s*") then
+        return "search", "around"
+    end
+    local search_target = lower:match("^search%s+for%s+(.+)")
+    if search_target then
+        return "search", search_target
+    end
+    local find_target = lower:match("^find%s+(.+)")
+    if find_target then
+        return "find", find_target
+    end
+
     -- BUG-049: "pry open X" → open X
     local pry_target = lower:match("^pry%s+open%s+(.+)")
     if pry_target then

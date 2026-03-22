@@ -18,26 +18,58 @@
 
 **Agent Role:** Tester responsible for playtest validation, bug discovery, and regression verification.
 
-**Testing Summary (2026-03-19 to 2026-03-21):**
-- 10 playtests completed, 266+ tests run, 221+ passed
-- Critical path: bedroom → cellar → storage-cellar → BLOCKED at crate contents (BUG-048)
-- 54 unique bugs discovered (8 CRITICAL/HIGH, 15 MEDIUM+MAJOR, 2 LOW, 29 MINOR/COSMETIC)
+**Testing Summary (2026-03-19 to 2026-03-22):**
+- 11 playtests completed, 308+ tests run, 262+ passed
+- Critical path: bedroom → cellar → storage-cellar → deep-cellar → hallway ✅ COMPLETE
+- 55 unique bugs discovered (8 CRITICAL/HIGH, 15 MEDIUM+MAJOR, 2 LOW, 30 MINOR/COSMETIC)
 - All Level 1 rooms load, connect, and render correctly — writing is exceptional
-- 2 CRITICAL open (BUG-036, BUG-048)
+- ALL CRITICAL ISSUES RESOLVED
 
 **Current Status:**
 - Engine core: ✅ SOLID
-- Parser: ✅ WORKING (Tier 2 embedding), missing "with" preposition + "pry" verb
+- Parser: ✅ EXCELLENT (Tier 2 embedding, "move" synonym, "feel around", sleep without "for")
 - Level 1 Rooms: ✅ ALL LOAD (5/5 rooms, 15/15 exits correct)
 - Level 1 Puzzle: ✅ COMPLETE — crate `.inside` surface FIXED (BUG-048), iron key accessible
 - Display: ✅ FIXED — duplicate instance descriptions resolved (BUG-050)
 - Critical Path: ✅ VERIFIED END-TO-END (bedroom → cellar → storage-cellar → deep-cellar → hallway)
+- Dawn Light: ✅ NEW FEATURE — sleep until dawn enables `look` without matches
+- Issue Fixes: ✅ ALL VERIFIED (#2, #3, #4, #5, BUG-065)
 
 ## Archives
 
 - `history-archive-2026-03-20T22-40Z-nelson.md` — Full archive (2026-03-19 to 2026-03-20T22:40Z): all 7 playtests, 32 bugs, regression verification, pass-by-pass findings
 
 ## Recent Updates
+
+### Pass-022: Issue Fixes Validation (2026-03-22)
+
+**Status:** ✅ COMPLETE — 42 tests, 41 passed, 1 failed (98%)
+
+| Category | Tests | Passed | Failed | Notes |
+|----------|-------|--------|--------|-------|
+| Critical Path + Issue Fixes | 15 | 15 | 0 | ✅ ALL issue fixes verified |
+| Parser & Help System | 8 | 7 | 1 | BUG-069 found |
+| Critical Path Validation | 10 | 10 | 0 | Darkness → dawn → visibility |
+| Edge Cases & Polish | 9 | 9 | 0 | Match lifecycle, time, exits |
+| **TOTAL** | **42** | **41** | **1** | |
+
+**Issue Fix Verification:**
+- ✅ **Issue #2/#3 FIXED:** `feel around` discovers all 8 bedroom objects
+- ✅ **Issue #4 FIXED:** `sleep 6 hours` works without "for" keyword
+- ✅ **Issue #5 FIXED:** `sleep until dawn` works, dawn light enables `look`
+- ✅ **Issue #2 FIXED:** `move north` recognized as `go north` synonym
+- ✅ **BUG-065 FIXED:** `feel drawer` shows matchbox inside nightstand drawer
+
+**New Bug (1):**
+- BUG-069 (MINOR): `sleep until dawn` after dawn shows confusing error message
+
+**Major Wins:**
+- Dawn light system working perfectly (sleep until dawn → permanent light source)
+- All critical path steps operational
+- Parser enhancements (feel around, move synonym, sleep flexibility)
+- Container visibility (feel drawer shows contents)
+
+**Full Report:** test-pass/2026-03-22-pass-022.md
 
 ### Pass-017: Puzzle Retest — BUG-060/061/062 (2026-03-21)
 
