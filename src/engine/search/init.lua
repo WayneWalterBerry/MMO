@@ -13,6 +13,10 @@ local containers = require("engine.search.containers")
 local narrator = require("engine.search.narrator")
 local goals = require("engine.search.goals")
 
+-- Tier 4: Context window integration for search discoveries
+local cw_ok, context_window = pcall(require, "engine.parser.context")
+if not cw_ok then context_window = nil end
+
 ---------------------------------------------------------------------------
 -- Active search state (volatile, not persisted)
 ---------------------------------------------------------------------------
@@ -186,6 +190,10 @@ function search.tick(ctx)
     -- Track found items
     if result.found and result.item then
         _state.found_items[#_state.found_items + 1] = result.item.id
+        -- Tier 4: push discovery to context window
+        if context_window then
+            context_window.push_discovery(result.item)
+        end
     end
     
     -- Increment counters

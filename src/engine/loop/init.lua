@@ -17,6 +17,10 @@ local preprocess = require("engine.parser.preprocess")
 local planner_ok, goal_planner = pcall(require, "engine.parser.goal_planner")
 if not planner_ok then goal_planner = nil end
 
+-- Tier 4: context window for recent interaction memory
+local cw_ok, context_window = pcall(require, "engine.parser.context")
+if not cw_ok then context_window = nil end
+
 -- run(context)
 -- context fields:
 --   registry     -- live registry instance
@@ -25,9 +29,13 @@ if not planner_ok then goal_planner = nil end
 --   ui           -- (optional) engine.ui module instance
 --   on_quit      -- optional callback fired before exit
 -- BUG-060: Pronouns that resolve to the last referenced noun
+-- Tier 4: Added discovery reference patterns
 local PRONOUNS = {
   it = true, them = true, that = true, this = true, those = true,
   ["the same"] = true, ["the same thing"] = true,
+  ["thing i found"] = true, ["the thing i found"] = true,
+  ["what i found"] = true, ["item i found"] = true,
+  ["thing i discovered"] = true,
 }
 
 function loop.run(context)
@@ -202,13 +210,35 @@ function loop.run(context)
         up = true, down = true, n = true, s = true, e = true, w = true,
         u = true, d = true, go = true, enter = true, walk = true, run = true,
         climb = true, ascend = true, descend = true,
+        -- Tier 4: "back"/"return" handle their own noun semantics
+        back = true, ["return"] = true,
         -- Drop/put verbs inherit noun correctly from their own grammar
         drop = true,
       }
       if noun ~= "" and PRONOUNS[noun] and context.last_noun then
-        noun = context.last_noun
-      elseif noun == "" and context.last_noun and not no_noun_verbs[verb] then
-        noun = context.last_noun
+        -- Tier 4: discovery references resolve from context window
+        if context_window and (noun == "thing i found" or noun == "the thing i found"
+            or noun == "what i found" or noun == "item i found"
+            or noun == "thing i discovered") then
+          local disc = context_window.last_discovery()
+          if disc then
+            noun = disc.id
+          else
+            noun = context.last_noun
+          end
+        else
+          noun = context.last_noun
+        end
+      elseif noun == "" and not no_noun_verbs[verb] then
+        -- Tier 4: bare noun fallback — try last_noun, then context window
+        if context.last_noun then
+          noun = context.last_noun
+        elseif context_window then
+          local ctx_obj = context_window.peek()
+          if ctx_obj then
+            noun = ctx_obj.id
+          end
+        end
       end
 
       -- Prepositional parsing: strip "with Y" for verbs that auto-find tools

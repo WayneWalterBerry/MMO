@@ -16,6 +16,10 @@ local presentation = require("engine.ui.presentation")
 local preprocess = require("engine.parser.preprocess")
 local traverse_effects = require("engine.traverse_effects")
 
+-- Tier 4: Context window for recent interaction memory
+local cw_ok, context_window = pcall(require, "engine.parser.context")
+if not cw_ok then context_window = nil end
+
 ---------------------------------------------------------------------------
 -- Instance-aware hand accessors: hands store object instances (tables).
 -- Backward compatible with string IDs for transitional code.
@@ -592,15 +596,27 @@ local function find_visible(ctx, keyword)
     return nil
 end
 
--- Wrap find_visible with pronoun resolution ("it", "one", "that") and
+-- Wrap find_visible with pronoun resolution ("it", "one", "that", "this") and
 -- last-object tracking for compound command support.
+-- Tier 4: Also resolves "the thing I found" from search discoveries,
+-- and pushes found objects to the context window stack.
 do
     local _find_visible = find_visible
     find_visible = function(ctx, keyword)
         if not keyword or keyword == "" then return nil end
         local kw = keyword:lower()
             :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
-        if (kw == "it" or kw == "one" or kw == "that") and ctx.last_object then
+        -- Tier 4: try context window resolution first (pronouns + discovery refs)
+        if context_window then
+            local cw_obj = context_window.resolve(kw)
+            if cw_obj then
+                ctx.last_object = cw_obj
+                return cw_obj, ctx.last_object_loc or "room",
+                       ctx.last_object_parent, ctx.last_object_surface
+            end
+        end
+        -- Legacy pronoun fallback (in case context_window not loaded)
+        if (kw == "it" or kw == "one" or kw == "that" or kw == "this") and ctx.last_object then
             return ctx.last_object, ctx.last_object_loc or "room",
                    ctx.last_object_parent, ctx.last_object_surface
         end
@@ -612,6 +628,10 @@ do
             ctx.last_object_surface = surface
             ctx.known_objects = ctx.known_objects or {}
             ctx.known_objects[obj.id] = true
+            -- Tier 4: push to context window stack
+            if context_window then
+                context_window.push(obj)
+            end
         end
         return obj, loc, parent, surface
     end
@@ -4952,6 +4972,39 @@ function verbs.create()
             return
         end
 
+        -- Tier 4: "go back" → return to previous room
+        if clean == "back" or clean == "back to where i was" then
+            if not context_window then
+                print("You can't go back — you haven't been anywhere else.")
+                return
+            end
+            local prev_id = context_window.get_previous_room()
+            if not prev_id then
+                print("You can't go back — you haven't been anywhere else.")
+                return
+            end
+            local prev_room = ctx.rooms and ctx.rooms[prev_id]
+            if not prev_room then
+                print("You can't go back — that place is no longer accessible.")
+                return
+            end
+            -- Record current room as previous before moving
+            if context_window and ctx.current_room then
+                context_window.set_previous_room(ctx.current_room.id)
+            end
+            ctx.player.location = prev_id
+            ctx.current_room = prev_room
+            ctx.visited_rooms = ctx.visited_rooms or {}
+            ctx.visited_rooms[prev_id] = true
+            print("")
+            print("You retrace your steps.")
+            print("**" .. (prev_room.name or "Unnamed room") .. "**")
+            if prev_room.short_description then
+                print(prev_room.short_description)
+            end
+            return
+        end
+
         -- Resolve direction alias
         local dir = DIRECTION_ALIASES[clean]
 
@@ -5001,6 +5054,11 @@ function verbs.create()
 
         -- Fire on_traverse exit effects BEFORE moving the player
         traverse_effects.process(exit, ctx)
+
+        -- Tier 4: record current room before moving (for "go back")
+        if context_window and ctx.current_room then
+            context_window.set_previous_room(ctx.current_room.id)
+        end
 
         -- Move player
         ctx.player.location = target_id
@@ -5054,6 +5112,18 @@ function verbs.create()
     handlers["head"]   = handlers["go"]
     handlers["travel"] = handlers["go"]
     handlers["move"]   = handlers["go"]
+
+    -- Tier 4: "back" and "return" as standalone verbs
+    handlers["back"] = function(ctx, noun)
+        handle_movement(ctx, "back")
+    end
+    handlers["return"] = function(ctx, noun)
+        if noun == "" then
+            handle_movement(ctx, "back")
+        else
+            handle_movement(ctx, noun)
+        end
+    end
 
     -- ENTER {thing} -- move through an exit matched by keyword
     handlers["enter"] = function(ctx, noun)

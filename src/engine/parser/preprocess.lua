@@ -511,8 +511,27 @@ local function transform_compound_actions(text)
 end
 
 --- Stage: transform_movement
---- Normalize sleep, stair, and clock phrases.
+--- Normalize sleep, stair, clock, and return/go-back phrases.
 local function transform_movement(text)
+    -- Tier 4: "go back" / "return" → canonical "go back"
+    if text == "go back" or text == "go back to where i was" then
+        return "go back", true
+    end
+    if text:match("^go%s+back%s+to%s+") then
+        return "go back", true
+    end
+    if text == "return" then
+        return "go back", true
+    end
+    if text:match("^return%s+to%s+where%s+i%s+was")
+        or text:match("^return%s+to%s+the%s+previous%s+room")
+        or text:match("^return%s+to%s+previous%s+room") then
+        return "go back", true
+    end
+    if text:match("^retrace%s+my%s+steps") or text:match("^retrace%s+steps") then
+        return "go back", true
+    end
+
     -- Sleep phrases
     if text:match("^take%s+a%s+nap") then
         return "sleep"
@@ -575,7 +594,7 @@ preprocess.pipeline = {
     transform_look_patterns,  -- look at/for/around, check → canonical verbs
     transform_search_phrases, -- search/hunt/rummage/find compounds
     transform_compound_actions, -- pry, use X on Y, put/take, pull, wear
-    transform_movement,       -- sleep, stairs, clock
+    transform_movement,       -- sleep, stairs, clock, go back/return
 }
 
 -- Expose individual stage functions for testing and reuse
