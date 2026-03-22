@@ -609,9 +609,43 @@ end
 
 ## 6. Architectural Dependencies
 
+### Prerequisite: Extensible Interpretation Pipeline
+
+**Before implementing the tiers below, refactor `preprocess.lua` from one monolithic function into a table-driven pipeline.** This is the single most important structural change — it makes every tier a simple "add a function to the table" instead of surgery on a growing if/else chain.
+
+Right now, `preprocess.lua` is one big function where each transform is tangled with the next. Refactor to:
+
+```lua
+local pipeline = {
+    strip_politeness,     -- Tier 0: "please", "could you", "let me"
+    strip_adverbs,        -- Tier 0: "carefully", "thoroughly", "quickly"
+    transform_questions,  -- Tier 1: "what's in X?" → "examine X"
+    expand_idioms,        -- Tier 3: "set fire to X" → "light X"
+    resolve_pronouns,     -- Existing: "it", "that" → last context object
+    disambiguate_nouns,   -- Tier 5: "the wooden thing" → wood material match
+}
+
+-- Each stage receives input text, returns transformed text
+local function preprocess(input)
+    local text = input
+    for _, transform in ipairs(pipeline) do
+        text = transform(text)
+    end
+    return text
+end
+```
+
+**Why this matters:**
+- Each tier becomes a self-contained function — easy to test in isolation
+- Stages can be reordered, disabled, or hot-swapped without touching other code
+- New transforms (idioms, slang, typo correction) are just another entry in the table
+- Debugging is trivial: log the input/output of each stage to see where a phrase breaks
+
+**This is the only structural concept worth borrowing from "AI Orchestration" — a chain of cheap, composable transforms that combined create the illusion of intelligence. Zero tokens. Pure pipeline.**
+
 ### Before Implementing This Roadmap
 
-**None.** All tiers are additive or refinement. No breaking changes to core engine.
+Refactor the pipeline first (above). After that, all tiers are additive — no breaking changes to core engine.
 
 ### Parallel Work Streams
 
@@ -623,7 +657,7 @@ end
 
 - **GOAP Planner** (Tier 4, Tier 6): Must extend `goal_planner.lua` without breaking existing fire_source logic
 - **Context System** (Tier 4): Extends `src/engine/parser/context.lua`
-- **Preprocessing** (Tier 0, 1, 3): All changes in `src/engine/parser/preprocess.lua`
+- **Preprocessing** (Tier 0, 1, 3): Pipeline stages in `src/engine/parser/preprocess.lua`
 - **Error Messages** (Tier 2): Touches every verb handler in `src/engine/verbs/init.lua`
 
 ---
