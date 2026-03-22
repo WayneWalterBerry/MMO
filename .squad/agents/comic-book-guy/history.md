@@ -160,3 +160,50 @@
 - Scaffolding works: same pattern at different scales (drawer→matchbox→match THEN crate→sack→key) is textbook Witness-model progressive complexity
 - The candle extinguish→relight FSM cycle is fully implemented but no puzzle exercises it — a draft in the stairway or altar ritual variant would fix this cheaply
 - TASTE teaches "danger" but DRINK (consumption) is never safely demonstrated — players may fear all liquids after the poison bottle
+
+### 2026-03-27: Object Spatial Relationships — Hiding vs On-Top-Of
+**Status:** ✅ DESIGN COMPLETE
+
+**Deliverable:** `docs/design/objects/spatial-relationships.md` — 13 KB focused design document
+
+**Core Insight from Play-Test (Wayne):**
+The game doesn't distinguish between objects that sit ON something visible (candle on nightstand) and objects that HIDE something beneath them (rug over trap door). This difference is fundamental to creating mystery and discovery.
+
+**Four Spatial Relationships Defined:**
+1. **Resting On** — Both objects visible, no interaction needed to see both (candle on nightstand)
+2. **Covering/Hiding** — Top object visible, bottom INVISIBLE until interaction (rug over trap door)
+3. **Behind** — Front visible, back HIDDEN until opening/moving (curtains hiding window)
+4. **Inside** — Container mechanics (handled separately in containers.md)
+
+**Key Design Decisions:**
+- Hidden objects do NOT appear in SEARCH results (discovery phase)
+- EXAMINE of covering object includes ONE hint sentence (hint phase)
+- Move/lift/pull of covering object triggers dramatic discovery message (reveal phase)
+- Discovery messages are 2-3 sentences, sensory, explain WHY it was hidden
+- Hint→Verb progression must feel natural, not forced or arbitrary
+- Different cover types suggest different verbs (rug: MOVE; curtains: PULL ASIDE; painting: MOVE)
+- Hidden objects reward exploration, never gate critical paths
+
+**Player Experience Design:**
+- Hidden objects = mystery = discovery = engagement
+- Search gives hints, not spoilers
+- Reveal narration creates narrative moment, not just mechanical update
+- Players learn play pattern: "look UNDER things, MOVE furniture, EXAMINE carefully"
+- This is how the game hides puzzle elements (switch behind portrait, key under floorboard, etc.)
+
+**Real-World Connection:**
+- A rug HIDES what's under it (functional concealment)
+- A book SITS ON a table (both visible)
+- A painting HIDES a safe behind it (deliberate design)
+The game must distinguish these three cases for meaningful space and real discovery.
+
+**Anti-Patterns Identified:**
+- Don't hide objects without hints
+- Don't make hidden objects feel arbitrary
+- Don't put mandatory puzzle elements in hidden objects
+- Don't make "find the hidden thing" a puzzle by guessing randomly
+
+**Implementation Guidance:**
+- Object designers: declare covering relationships, write hints (1 sentence), write discovery (2-3 sentences)
+- Room designers: place hints deliberately, consider player expectations, test hint→verb progression
+- Testing: verify visibility gates, search exclusion, hint clarity, discovery satisfaction
