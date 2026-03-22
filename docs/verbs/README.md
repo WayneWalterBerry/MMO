@@ -10,9 +10,9 @@ This directory contains detailed design documentation for each **main verb** in 
 - **[look](look.md)** — Vision-only observation
 - **[examine](examine.md)** — Close inspection (vision-focused, touch fallback in darkness)
 
-### 🔎 Discovery Verbs (All Senses)
-- **[search](search.md)** — All-sense discovery and exploration
-- **[find](find.md)** — Universal search verb using all senses
+### 🔎 Discovery Verbs (Progressive Traversal)
+- **[search](search.md)** — Progressive room traversal (step-by-step exploration, time cost)
+- **[find](find.md)** — Targeted traversal discovery (find specific objects or goals)
 
 ### 👆 Touch & Tactile Verbs
 - **[feel](feel.md)** — Grope around or feel specific objects (includes touch)

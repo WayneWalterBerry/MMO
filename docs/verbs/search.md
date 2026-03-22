@@ -1,58 +1,115 @@
 # Search
 
-> All-sense discovery verb — searches for objects using any available sense (vision, touch, hearing, smell).
+> Progressive room traversal verb — explores a room step-by-step, narrating discoveries, with time cost and interruptibility.
 
 ## Synonyms
-- `search` — Search around or for a specific object
-- `search around` — Room sweep discovery
-- `search for [object]` — Search for a specific thing
-- Preprocessor converts "search around" → `search ""`
+- `search` — Search the room (full sweep, step-by-step)
+- `search around` — Same as search (normalized by preprocessor)
+- `search for [object]` — Targeted search for a specific object
 
 ## Sensory Mode
-- **Works in darkness?** ✅ Yes — uses any available sense
+- **Works in darkness?** ✅ Yes — adapts narration to available senses
 - **Senses used:** Vision (light), Touch (dark), Hearing, Smell, Taste
-- **Adaptive:** Engine picks appropriate sense based on context
+- **Adaptive narrative:**
   - Light: "You search and spot the..."
   - Darkness: "You feel out a nightstand..."
-  - Hearing: "You search and hear a faint ticking..."
+  - Hearing: "You hear a faint ticking..."
 
 ## Syntax
-- `search` — Search the room (room sweep, all reachable objects)
+- `search` — Search the room (undirected full sweep)
 - `search around` — Same as search (normalized by preprocessor)
-- `search for [object]` — Search for something specific
-- `search around for [object]` — Verbose form
+- `search for [object]` — Targeted search for a specific object
 
 ## Behavior
-- **Without object:** Performs room sweep — describes all discoverable objects
-- **With object:** Searches for specific object using all available senses
-- **Discovery sequence:** 
-  1. Check if object already known/visible
-  2. Use vision if light available
-  3. Use touch if in darkness
-  4. Use hearing for sound sources (ticking, etc.)
-  5. Use smell for scented objects
-- **Once found:** Player knows location — can interact even without direct line of sight
-- **Search order:** Room/surfaces first (acquisition verb)
+
+### Traversal Mechanics
+Search is a **progressive traversal**, not an instant list. The engine walks through the room object-by-object, narrating as it goes:
+
+1. **Proximity Ordering:** Starts with closest furniture to player, expands outward
+   - Example (bedroom): bed (player is on it) → nightstand (beside bed) → vanity → wardrobe → etc.
+   - Order is fixed per room based on room metadata (proximity list)
+
+2. **Turn Cost:** Each step costs **one game turn**
+   - Injuries tick during the search
+   - Clock advances per step
+   - Searching is a TIME commitment
+
+3. **Auto-open Containers:** Engine opens unlocked containers during search
+   - Locked containers are skipped with narrative note: "You find a locked chest... you can't open it"
+   - Containers remain **open after search** (realistic — you opened them)
+   - Never forces locked containers
+
+4. **Interruptible:** Player can abort mid-search by typing any command
+   - Current search terminates immediately
+   - Any new command takes over
+
+### Targeted vs. Undirected Search
+
+**Undirected search (`search`):**
+- Full room sweep from closest to farthest furniture
+- Narrates all discoverable objects
+- Continues until all furniture exhausted or player interrupts
+
+**Targeted search (`search for matchbox`):**
+- Follows same proximity ordering
+- Stops immediately upon finding target
+- Narrates path to discovery
+
+### Discovery Output
+Once target is found:
+- Announces discovery: "You have found a matchbox."
+- **Does NOT auto-pickup** — player must manually `take`
+- BUT found object is set as **context** — bare `pick up` or `take` works without re-specifying
+
+### Narrative Style
+
+Example undirected search (dark room):
+```
+> search
+You begin searching the room...
+
+You feel the edge of a large four-poster bed. Nothing useful on the sheets.
+
+You reach out further — a small nightstand. It has a drawer...
+You pull the drawer open.
+Inside, your fingers find: a small matchbox.
+
+[2 turns elapsed, injuries ticked]
+```
+
+Example targeted search (light room):
+```
+> search for lamp
+You begin searching the room...
+
+Your eyes scan the dresser — nothing notable.
+
+You turn toward the bookshelf and spot: an old brass lamp.
+
+You have found: an old brass lamp.
+```
 
 ## Design Notes
-- **Wayne's directive (2026-03-22T04:03):** "`find` and `search` = use ALL senses (works in dark and light)"
-- **Core distinction:** `search`/`find` ≠ `look`/`see`. Search uses all senses; look is vision-only.
-- **Example from directive:** 
-  - "search around in dark" → "you feel out a nightstand"
-  - "search around in light" → "you see a nightstand"
-  - "find the ticking" → uses hearing to locate source
-- **Once discovered:** Object becomes knowable for subsequent commands (e.g., "open drawer" works even if initially found by touch)
-- **Sensory output:** Engine determines sense used; presentation adapts output accordingly
+
+- **Core mechanic:** Search is a traverse — not an instant result list
+- **Time investment:** Each step is one turn; searching costs game time
+- **Realistic interaction:** Containers opened during search stay open
+- **Proximity system:** Room metadata defines furniture order (closest to farthest)
+- **Sensory adaptation:** Narration adapts to light level and available senses
+- **Interruptibility:** Any command breaks the search; clean termination
+- **Context awareness:** Found objects become context for follow-up commands
 
 ## Related Verbs
-- `find` — Universal discovery (distinction: search is targeted, find is more exploratory)
-- `look` — Vision-only observation (fails in darkness)
-- `feel` — Touch-based groping (darker, more intimate exploration)
-- `listen` — Hearing-based discovery
-- `smell` — Olfactory exploration
+- `find` — Targeted discovery with goal-oriented variant ("find something that can light the candle")
+- `look` — Vision-only observation (instant, no turn cost)
+- `feel` — Touch-based groping (no traversal cost, localized)
+- `listen` — Hearing-based discovery (narrower scope than search)
+- `examine` — Close inspection of a single object
 
 ## Implementation
 - **File:** `src/engine/verbs/init.lua` → `handlers["search"]`
 - **Preprocessor:** `src/engine/parser/preprocess.lua` normalizes "search around" → search ""
-- **Sensory engine:** `src/engine/ui/presentation.lua` determines light level and selects sense
-- **Ownership:** Bart (Architect) — sensory mode selection; Smithers (UI) — sensory output presentation
+- **Traverse engine:** `src/engine/systems/traverse.lua` — walks room objects, manages turn cost, handles interruption
+- **Proximity system:** Room metadata defines furniture ordering
+- **Container logic:** Auto-opens unlocked containers during traversal
+- **Ownership:** Brockman (Documentation & Design), Bart (Architect — traversal system), Smithers (UI — narrative output)
