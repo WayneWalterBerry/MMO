@@ -33,7 +33,10 @@
 - [x] 🧪 Nelson Pass 027: 18/25 pass (72%). Release blocker cleared (`light candle` works!). 11/15 bugs fixed. Still broken: BUG-082/083/084 (compound hangs), BUG-091 (spent match). New: BUG-093 (rummage hangs), BUG-094 (look for a candle hangs)
 - [x] ⚛️ Smithers — Fixed 6 remaining Pass 027 bugs (BUG-082/083/084/091/093/094) + 40 regression tests
 - [x] ⚛️ Smithers — Deployed to live site (commit 58538d4, 96 files, verified live)
-- [x] Full test suite: **461 pass / 0 fail** ✅
+- [x] ⚛️ Smithers — Container sensory gating: 7 content paths gated, transparent exception, 18 tests
+- [x] 🏗️ Bart — Chest design docs: `docs/objects/chest.md` + `docs/design/chest-mechanics.md` (two-handed carry)
+- [x] 🏗️ Bart — Hang root cause: 3 mechanisms found. Container cycles → visited sets (replaces depth limits). Embedding matcher already single-pass. Analysis at `docs/architecture/engine/parser/hang-root-cause-analysis.md`
+- [x] Full test suite: **479 pass / 0 fail** ✅
 
 ---
 
