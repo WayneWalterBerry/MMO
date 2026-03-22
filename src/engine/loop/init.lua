@@ -205,6 +205,37 @@ function loop.run(context)
       end
     end
 
+    -- Issue #16: Detect conditional clauses in compound commands.
+    -- "if", "when", "unless" etc. signal clauses we can't handle yet.
+    -- Trim everything from the conditional onward and give ONE helpful message.
+    if #sub_commands > 1 then
+      local conditional_idx = nil
+      for ci = 1, #sub_commands do
+        local lc = sub_commands[ci]:lower():match("^%s*(.-)%s*$")
+        if lc:match("^if%s+") or lc:match("^when%s+") or lc:match("^unless%s+")
+            or lc:match("^once%s+") or lc:match("^after%s+you%s+")
+            or lc:match("^in%s+case%s+") then
+          conditional_idx = ci
+          break
+        end
+      end
+      if conditional_idx then
+        -- Keep everything before the conditional; drop the rest
+        local kept = {}
+        for ci = 1, conditional_idx - 1 do
+          kept[#kept + 1] = sub_commands[ci]
+        end
+        if #kept == 0 then
+          -- The very first part was conditional — nothing actionable
+          print("I can only handle one action at a time. Try the first step on its own.")
+          goto continue
+        end
+        sub_commands = kept
+        -- Queue a single helpful message after the kept commands execute
+        sub_commands[#sub_commands + 1] = "__conditional_trimmed__"
+      end
+    end
+
     local should_quit = false
     -- BUG-066: Safety limit to prevent hanging on pathological multi-command input
     if #sub_commands > 50 then
@@ -213,6 +244,12 @@ function loop.run(context)
     end
     
     for _, sub_input in ipairs(sub_commands) do
+      -- Issue #16: sentinel from conditional trimming
+      if sub_input == "__conditional_trimmed__" then
+        print("I understood the first part, but I can only do one thing at a time. Try each step separately.")
+        goto next_sub
+      end
+
       -- BUG-084: Drain any active search before processing the next sub-command.
       -- "find a match and light it" — search must complete before "light" runs.
       if search_ok and search_mod and search_mod.is_searching() then

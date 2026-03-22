@@ -3217,6 +3217,21 @@ function verbs.create()
             return
         end
 
+        -- Issue #15: Check if already lit (Prime Directive — describe world state)
+        if obj._state and obj.states then
+            local cur = obj.states[obj._state]
+            if cur and cur.casts_light then
+                local desc = cur.description or ""
+                local short = desc:match("^([^.]+%.)") or desc
+                if short ~= "" then
+                    print(short)
+                else
+                    print((obj.name or "It") .. " is already alight.")
+                end
+                return
+            end
+        end
+
         local mut_data = find_mutation(obj, "light")
         if not mut_data then
             -- FSM path: check for "light" or "strike" transitions

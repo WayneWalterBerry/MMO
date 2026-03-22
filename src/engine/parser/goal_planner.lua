@@ -847,7 +847,19 @@ function goal_planner.plan(verb, noun, ctx)
     return plan_for_tool(needed, ctx, {}, 0)
 end
 
+--- Issue #17: Narration templates for GOAP auto-chain steps.
+--- Maps verb → function(noun) returning a brief narration prefix.
+--- When a verb isn't in the table, the handler's own output suffices.
+local STEP_NARRATION = {
+    take  = function(noun) return "You look for " .. noun .. "..." end,
+    open  = function(noun) return "You need to open " .. noun .. " first." end,
+    find  = function(noun) return "You search for " .. noun .. "..." end,
+    drop  = function(_)    return nil end,   -- silent helper step
+}
+
 --- Execute planned steps through Tier 1 dispatch. Returns true on success.
+--- Issue #17: Each step now narrates what's happening so the player sees
+--- every intermediate action, not just the final result.
 function goal_planner.execute(steps, ctx)
     if not steps or #steps == 0 then return true end
     -- Safety limit: max 7 plan depth → max ~20 individual steps
@@ -863,6 +875,12 @@ function goal_planner.execute(steps, ctx)
         if not handler then
             print("(You're not sure how to " .. step.verb .. ".)")
             return false
+        end
+        -- Issue #17: narrate the step before executing
+        local narrator = STEP_NARRATION[step.verb]
+        if narrator then
+            local msg = narrator(step.noun)
+            if msg then print(msg) end
         end
         ctx.current_verb = step.verb
         handler(ctx, step.noun)

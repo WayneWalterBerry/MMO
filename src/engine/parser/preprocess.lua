@@ -210,6 +210,25 @@ local function strip_filler(text)
     return text
 end
 
+--- Stage: strip_noun_modifiers (Issue #14)
+--- Remove quantifier/totality modifiers that players use for emphasis but that
+--- confuse noun resolution: "whole", "entire", "every", "all of the", etc.
+--- E.g., "search the whole room" → "search the room"
+local function strip_noun_modifiers(text)
+    -- "all of the X" → "the X"  (must come before single-word strips)
+    text = text:gsub("%f[%a]all%s+of%s+the%s+", "the ")
+    -- "all of X" → "X"
+    text = text:gsub("%f[%a]all%s+of%s+", "")
+    -- Single-word modifiers before a noun
+    text = text:gsub("%f[%a]whole%s+", "")
+    text = text:gsub("%f[%a]entire%s+", "")
+    text = text:gsub("%f[%a]every%s+", "")
+    -- Collapse any doubled spaces left behind
+    text = text:gsub("%s%s+", " ")
+    text = text:match("^%s*(.-)%s*$")
+    return text
+end
+
 ---------------------------------------------------------------------------
 -- Idiom Library (Tier 3)
 -- Table-driven expansion of common English phrases into canonical commands.
@@ -694,6 +713,7 @@ end
 preprocess.pipeline = {
     normalize,                -- Trim, lowercase, strip question marks
     strip_filler,             -- Iterative: preambles + politeness + adverbs
+    strip_noun_modifiers,     -- Issue #14: whole/entire/every/all-of-the
     expand_idioms,            -- Tier 3: common English phrases → canonical commands
     transform_questions,      -- Question patterns → imperative commands
     transform_look_patterns,  -- look at/for/around, check → canonical verbs
@@ -710,6 +730,7 @@ preprocess.stages = {
     strip_preambles = strip_preambles,
     strip_gerunds = strip_gerunds,
     strip_filler = strip_filler,
+    strip_noun_modifiers = strip_noun_modifiers,
     expand_idioms = expand_idioms,
     transform_questions = transform_questions,
     transform_look_patterns = transform_look_patterns,
