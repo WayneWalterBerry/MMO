@@ -57,7 +57,9 @@
 - [x] ⚛️ Smithers — Tier 5: Fuzzy noun resolution. New `fuzzy.lua` module — material matching, partial name, property matching, disambiguation prompts, Levenshtein typo tolerance. Fallback only (zero happy-path cost). 52 new tests.
 - [x] **📊 GRADE after Tier 5:** A- (88%) — typos and vague nouns now tolerated
 - [x] 🧪 Nelson Pass 033: 53% pass. Pronouns (it/that) work, go back works, GOAP flawless. BUT: BUG-105/106 still hang ("what do I do?", "what now?"), bare "pick up" no auto-fill, "look under this" hangs (BUG-112).
-- [x] Full test suite: **927 pass / 0 fail** ✅
+- [x] ⚛️ Smithers — Tier 6: Generalized GOAP. Property-based goals, plan_for_light, plan_for_key, plan_generic_tool. Safety limit (7 depth, 20 steps). Fire chain preserved. 44 new tests.
+- [x] **📊 GRADE after Tier 6:** A (90%) — GOAP handles multi-step goals beyond fire
+- [x] Full test suite: **968 pass / 0 fail** ✅
 
 ---
 
