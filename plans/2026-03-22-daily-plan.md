@@ -60,6 +60,8 @@
 - [x] ⚛️ Smithers — Tier 6: Generalized GOAP. Property-based goals, plan_for_light, plan_for_key, plan_generic_tool. Safety limit (7 depth, 20 steps). Fire chain preserved. 44 new tests.
 - [x] **📊 GRADE after Tier 6:** A (90%) — GOAP handles multi-step goals beyond fire
 - [x] Full test suite: **968 pass / 0 fail** ✅
+- [x] ⚛️ Smithers — Fixed BUG-105/106/112: belt-and-suspenders help safety net, look under/beneath → examine. 27 new tests.
+- [x] Full test suite: **995 pass / 0 fail** ✅
 
 ---
 
