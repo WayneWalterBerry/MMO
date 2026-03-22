@@ -2,6 +2,14 @@
 
 Gameplay design and systems reference.
 
+## 🎯 Prime Directive
+
+**See:** `00-design-requirements.md` → [Prime Directive](00-design-requirements.md#-prime-directive)
+
+Core vision: The game should *feel* like talking to an AI — natural, forgiving, conversational — but cost nothing to run. Zero runtime tokens. All intelligence is local parsing and engineering.
+
+---
+
 ## Design Fundamentals
 - `game-design-foundations.md` — Core design principles
 - `design-directives.md` — Design guidelines and rules

@@ -43,7 +43,7 @@
     }
 
     // --- Build version (embedded at build time) ---
-    const BUILD_TIMESTAMP = "2026-03-21 21:30";
+    const BUILD_TIMESTAMP = "2026-03-22 06:00";
 
     // --- Size formatting ---
     function formatSize(bytes) {

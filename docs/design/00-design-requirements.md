@@ -1,5 +1,23 @@
 # Design Requirements & Directives
 
+## 🎯 Prime Directive
+
+> **The game should feel like talking to an AI — but cost nothing to run.**
+
+The parser and interaction model must feel like conversing with an intelligent agent (like GitHub Copilot) — natural, forgiving, conversational. Players should never feel like they're fighting a rigid noun-verb engine.
+
+**BUT:** We achieve this through engineering alone. Zero runtime AI tokens. No API calls per player action. The game runs entirely on the client. The illusion of intelligence comes from:
+
+- Robust natural language parsing (synonyms, articles, prepositions, fuzzy matching)
+- GOAP-style goal resolution (local, not LLM-driven)
+- Helpful error messages that guide rather than punish
+- Progressive search traverse that narrates discovery
+- Context retention (pronouns, last-noun, compound commands)
+
+**The test:** If a player types something reasonable in English, the game should understand it — or gracefully explain what it didn't understand with a helpful suggestion.
+
+---
+
 **Version:** 1.0  
 **Last Updated:** 2026-03-21  
 **Author:** Brockman (Documentation)  

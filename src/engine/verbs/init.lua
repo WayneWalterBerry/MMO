@@ -1736,9 +1736,12 @@ function verbs.create()
         local target = nil
         local scope = nil
         
-        -- Treat "around", "room", "here" as bare search (no target)
+        -- BUG-073: Treat "the room", "the area" as sweep keywords
+        -- Also "around", "room", "here", etc.
         local sweep_words = { [""] = true, ["around"] = true, ["room"] = true, ["here"] = true,
-                              ["around me"] = true, ["surroundings"] = true }
+                              ["around me"] = true, ["surroundings"] = true,
+                              ["the room"] = true, ["the area"] = true, ["area"] = true,
+                              ["everywhere"] = true, ["this place"] = true }
         
         if sweep_words[noun] then
             -- Bare search - undirected room sweep

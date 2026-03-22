@@ -54,6 +54,12 @@ function preprocess.natural_language(input)
         or lower:match("^look%s+around$") then
         return "look", ""
     end
+    
+    -- BUG-074: "look for X" → find X (search for X)
+    local look_for_target = lower:match("^look%s+for%s+(.+)")
+    if look_for_target then
+        return "find", look_for_target
+    end
 
     -- Question patterns → time
     if lower:match("^what%s+time")

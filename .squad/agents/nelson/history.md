@@ -545,3 +545,57 @@ Due to BUG-067 and BUG-068 hangs, could NOT complete:
 **Verdict**: PASS with caveats - core mechanics excellent, but BUG-071 is potential showstopper
 
 **Report**: test-pass/2026-03-22-pass-023.md
+
+
+## 2026-03-22: Creative Search Phrasing + Nightstand Regression (Pass 024)
+
+**Focus**: Two-part playtest — (1) creative/natural language search variations, (2) nightstand full regression
+
+**Tested**: 27/52 tests completed (52% complete — 48% blocked by hangs)
+
+**Part 1: Creative Search Phrasing**
+- ✅ 'search around' — perfect area search, auto-opens containers
+- ✅ 'find nightstand' — excellent targeted search
+- ✅ 'examine nightstand' — discovers surfaces + drawer beautifully
+- ⚠️ 'search for nightstand' — context-dependent (works after finding)
+- ❌ BUG-073: 'search the room' interprets "the room" as object name (should → 'search around')
+- ❌ BUG-074: 'look for the matchbox' triggers 'look' instead of 'find' (HIGH priority)
+- ❌ BUG-075: 'search nightstand' finds nothing (CRITICAL regression — drawer exists but not discovered)
+- ❌ BUG-076: 'find something to light' HANGS game (CRITICAL)
+- ❌ BUG-077: 'search for a match' HANGS game (CRITICAL, likely same root as BUG-076)
+
+**Part 2: Nightstand Regression**
+- ✅ Full chain works: feel around → examine nightstand → open drawer → feel drawer → get matchbox → open matchbox → get match → light match → look
+- ✅ Writing quality exceptional throughout
+- ❌ BUG-075 confirmed: 'search nightstand' regression (says "nothing there" despite drawer+matchbox)
+- ⚠️ Inconsistency: 'search around' opens drawers automatically, 'search nightstand' does not
+
+**Critical Issues**:
+1. **BUG-076, BUG-077** — Game hangs (infinite loop) on abstract/multi-word targets
+2. **BUG-075** — Discovery regression breaks natural 'search [object]' command
+3. **BUG-074** — "look for X" is common English but misinterpreted as "look"
+4. **BUG-073** — "search the room" should work like "search around"
+
+**Incomplete Testing** (~25 tests blocked):
+- Compound commands ('search X for Y')
+- Abstract targets ('something to...', 'anything...')
+- Question phrasings ('where is...', 'what's in...')
+- Creative verbs ('hunt', 'rummage', 'check')
+
+**Player Experience**:
+- Confused Newbie: C+ (major command misfires)
+- Impatient Gamer: D (hangs unacceptable)
+- Natural Language Speaker: D+ (too many natural phrasings fail)
+
+**Verdict**: ⚠️ CONDITIONAL PASS — core critical path works perfectly, writing excellent, but 5 critical bugs (3 P0, 1 P1, 1 P2) must be fixed before release. DO NOT SHIP until hangs resolved.
+
+**Action Required**:
+1. Fix BUG-076, BUG-077 (hangs) — blocks further testing
+2. Fix BUG-075 (search regression) — breaks discovery
+3. Fix BUG-074 ("look for X")
+4. Re-run Pass-025 with remaining creative phrasings
+
+**Reports**:
+- Test pass: test-pass/2026-03-22-pass-024.md
+- Bug inbox: .squad/decisions/inbox/nelson-search-playtest-bugs.md
+

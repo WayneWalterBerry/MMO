@@ -33,9 +33,11 @@ end
 -- @param object_id string
 -- @param registry registry instance
 -- @param depth number (current nesting depth)
+-- @param include_nested_containers boolean (true when scope search)
 -- @return list of queue entries
-local function expand_object(object_id, registry, depth)
+local function expand_object(object_id, registry, depth, include_nested_containers)
     depth = depth or 0
+    include_nested_containers = include_nested_containers or false
     
     -- Prevent infinite recursion
     if depth > 5 then
@@ -80,10 +82,20 @@ local function expand_object(object_id, registry, depth)
         end
     end
     
-    -- Then expand nested containers (recursive)
-    if containers.is_container(obj) and not containers.is_locked(obj) then
-        -- Don't recurse into closed containers here - they'll be opened during search
-        -- Just note that they exist
+    -- BUG-075: Then expand nested containers (recursive) when doing a scoped search
+    if include_nested_containers and containers.is_container(obj) then
+        -- Get the sub-containers (e.g., drawers inside nightstand)
+        local contents = containers.get_contents(obj, registry)
+        for _, child_id in ipairs(contents) do
+            local child = registry:get(child_id)
+            if child and containers.is_container(child) then
+                -- Recursively expand nested containers
+                local child_entries = expand_object(child_id, registry, depth + 1, include_nested_containers)
+                for _, child_entry in ipairs(child_entries) do
+                    entries[#entries + 1] = child_entry
+                end
+            end
+        end
     end
     
     return entries
@@ -103,11 +115,14 @@ function traverse.build_queue(room, scope, target, registry)
     
     -- If scope provided, filter to just that object
     local search_list = proximity_list
+    local include_nested_containers = false
     if scope then
         search_list = {}
         for _, obj_id in ipairs(proximity_list) do
             if obj_id == scope then
                 search_list[#search_list + 1] = obj_id
+                -- BUG-075: When searching a specific object, include nested containers
+                include_nested_containers = true
                 break
             end
         end
@@ -115,7 +130,7 @@ function traverse.build_queue(room, scope, target, registry)
     
     -- Expand each object into searchable entries
     for _, obj_id in ipairs(search_list) do
-        local entries = expand_object(obj_id, registry, 0)
+        local entries = expand_object(obj_id, registry, 0, include_nested_containers)
         for _, entry in ipairs(entries) do
             queue[#queue + 1] = entry
         end
@@ -132,8 +147,16 @@ end
 -- @param object object instance
 -- @param target string
 -- @param registry registry instance
+-- @param depth number (recursion depth tracking)
 -- @return boolean
-local function matches_target(object, target, registry)
+local function matches_target(object, target, registry, depth)
+    depth = depth or 0
+    
+    -- BUG-076, BUG-077: Prevent infinite recursion with depth limit
+    if depth > 3 then
+        return false
+    end
+    
     if not object or not target then
         return false
     end
@@ -169,7 +192,7 @@ local function matches_target(object, target, registry)
         local contents = containers.get_contents(object, registry)
         for _, child_id in ipairs(contents) do
             local child = registry:get(child_id)
-            if child and matches_target(child, target, registry) then
+            if child and matches_target(child, target, registry, depth + 1) then
                 return true
             end
         end
@@ -222,7 +245,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                     if child then
                         -- Check if child matches target
                         if target and not is_goal_search then
-                            if matches_target(child, target, registry) then
+                            if matches_target(child, target, registry, 0) then
                                 result.found = true
                                 result.item = child
                                 result.narrative = result.narrative .. "\n" .. narrator.found_target(ctx, child, obj)
@@ -249,7 +272,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
     
     -- Check if this object matches the target
     if target and not is_goal_search then
-        if matches_target(obj, target, registry) then
+        if matches_target(obj, target, registry, 0) then
             result.found = true
             result.item = obj
             result.narrative = narrator.found_target(ctx, obj, nil)

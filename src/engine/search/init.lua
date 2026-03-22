@@ -146,6 +146,13 @@ function search.tick(ctx)
         return false
     end
     
+    -- BUG-076, BUG-077: Safety limit - prevent infinite loops
+    if _state.current_step > 100 then
+        print("[Search aborted: too many steps]")
+        reset_state()
+        return false
+    end
+    
     -- Check if queue exhausted
     if _state.current_index > #_state.queue then
         -- Search complete - exhausted

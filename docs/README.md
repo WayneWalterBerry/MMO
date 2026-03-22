@@ -7,6 +7,7 @@ This is the main documentation hub. Browse by purpose:
 
 ## Design & Gameplay
 - **`design/`** — Gameplay design: player health, injuries, healing items, levels
+  - **🎯 Prime Directive:** Game feels like talking to an AI — natural and forgiving — but runs entirely on client with zero runtime tokens. See `design/00-design-requirements.md`
 
 ## Reference Documentation
 
