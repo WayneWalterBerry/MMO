@@ -887,6 +887,20 @@ local has_some_light = presentation.has_some_light
 local vision_blocked_by_worn = presentation.vision_blocked_by_worn
 
 ---------------------------------------------------------------------------
+-- Container sensory gating: check if a container's contents are accessible
+-- to a given sense.  Uses _state (FSM) — "open" in state name means open.
+-- sense: "visual" or "tactile"
+-- Returns true if contents should be revealed to that sense.
+---------------------------------------------------------------------------
+local function container_contents_accessible(obj, sense)
+    if not obj._state then return true end
+    if obj._state:find("open") then return true end
+    -- Closed: transparent containers still allow visual access
+    if sense == "visual" and obj.transparent then return true end
+    return false
+end
+
+---------------------------------------------------------------------------
 -- Helper: find a mutation entry on an object for a given verb
 -- Checks exact match first, then verb_* patterns (e.g. "break" → "break_mirror")
 ---------------------------------------------------------------------------
@@ -1237,7 +1251,9 @@ function verbs.create()
             end
 
             -- BUG-064: Enumerate simple container contents visually (if no on_look)
-            if not obj.on_look and obj.container and obj.contents and #obj.contents > 0 then
+            -- Sensory gating: only show contents if container is open (or transparent)
+            if not obj.on_look and obj.container and obj.contents and #obj.contents > 0
+                and container_contents_accessible(obj, "visual") then
                 local items = {}
                 for _, id in ipairs(obj.contents) do
                     local item = ctx.registry:get(id)
@@ -1367,7 +1383,9 @@ function verbs.create()
         end
 
         -- BUG-064: Enumerate simple container contents visually (if no on_look)
-        if not obj.on_look and obj.container and obj.contents and #obj.contents > 0 then
+        -- Sensory gating: only show contents if container is open (or transparent)
+        if not obj.on_look and obj.container and obj.contents and #obj.contents > 0
+            and container_contents_accessible(obj, "visual") then
             local items = {}
             for _, id in ipairs(obj.contents) do
                 local item = ctx.registry:get(id)
@@ -1455,7 +1473,9 @@ function verbs.create()
             end
 
             -- BUG-064: Enumerate simple container contents by touch
-            if check_obj.container and check_obj.contents and #check_obj.contents > 0 then
+            -- Sensory gating: only show contents if container is open
+            if check_obj.container and check_obj.contents and #check_obj.contents > 0
+                and container_contents_accessible(check_obj, "tactile") then
                 local items = {}
                 for _, id in ipairs(check_obj.contents) do
                     local item = ctx.registry:get(id)
@@ -1620,7 +1640,9 @@ function verbs.create()
                     print("You feel " .. noun:match("^(%S+)") .. " " .. (cobj.name or "that") .. " but find nothing.")
                 end
                 -- Also check simple container contents for "inside" prep
-                if surface_prep == "inside" and cobj.container and cobj.contents and #cobj.contents > 0 then
+                -- Sensory gating: only show contents if container is open
+                if surface_prep == "inside" and cobj.container and cobj.contents and #cobj.contents > 0
+                    and container_contents_accessible(cobj, "tactile") then
                     local items = {}
                     for _, id in ipairs(cobj.contents) do
                         local item = ctx.registry:get(id)
@@ -1640,7 +1662,8 @@ function verbs.create()
             -- When surface_prep is set but the specific surface doesn't exist,
             -- only check simple container contents (don't show unrelated surfaces)
             if surface_prep then
-                if cobj.container and cobj.contents and #cobj.contents > 0 then
+                if cobj.container and cobj.contents and #cobj.contents > 0
+                    and container_contents_accessible(cobj, "tactile") then
                     local items = {}
                     for _, id in ipairs(cobj.contents) do
                         local item = ctx.registry:get(id)
@@ -1675,7 +1698,9 @@ function verbs.create()
                 end
             end
             -- Check simple container contents
-            if cobj.container and cobj.contents and #cobj.contents > 0 then
+            -- Sensory gating: only show contents if container is open
+            if cobj.container and cobj.contents and #cobj.contents > 0
+                and container_contents_accessible(cobj, "tactile") then
                 local items = {}
                 for _, id in ipairs(cobj.contents) do
                     local item = ctx.registry:get(id)
@@ -1766,7 +1791,9 @@ function verbs.create()
         end
 
         -- Enumerate simple container contents by touch
-        if check_obj.container and check_obj.contents and #check_obj.contents > 0 then
+        -- Sensory gating: only show contents if container is open
+        if check_obj.container and check_obj.contents and #check_obj.contents > 0
+            and container_contents_accessible(check_obj, "tactile") then
             local items = {}
             for _, id in ipairs(check_obj.contents) do
                 local item = ctx.registry:get(id)
