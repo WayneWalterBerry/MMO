@@ -157,7 +157,7 @@ local function make_bedroom_ctx()
         name = "a small matchbox",
         keywords = {"matchbox", "box", "matches"},
         description = "A small cardboard box. One side is rough -- a striker strip.",
-        is_container = true,
+        container = true,
         is_open = false,
         is_locked = false,
         contents = {},
@@ -249,6 +249,8 @@ local function make_spent_match(reg, location)
         description = "A blackened, spent match stub.",
         is_fresh = false,
         is_spent = true,
+        _state = "spent",
+        states = { spent = { terminal = true } },
     }
     reg:register("spent-match-1", spent)
     return spent
