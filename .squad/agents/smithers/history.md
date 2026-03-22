@@ -971,3 +971,55 @@ Set `ctx.current_verb` at three dispatch points: `loop/init.lua`, `parser/init.l
 **Files Created:** `test/inventory/test-search-order.lua`
 
 ---
+
+### Session 2026-03-22: BUG-091/092/089 Game Mechanic Fixes (Pass 026)
+
+**Task:** Fix P1/P2 gameplay bugs found in Nelson's Pass 026 nightstand regression testing.
+
+**BUG-091 (HIGH) — take match picks up spent stub instead of fresh match:**
+- Root cause: Terminal-item fallback in `take` handler only searched hand-held containers (`ctx.player.hands`). If matchbox was on a surface or in the room (not yet picked up), spent matches on the floor were grabbed first.
+- Fix: Extended the fallback to also search visible containers in the room — surface-hosted containers (e.g., matchbox on nightstand top) and non-surface containers in room contents.
+- Key insight: `find_visible` uses acquisition order (Room → Surfaces → Parts → Hands → Bags), so spent matches on floor hit first. The fallback must search all container sources.
+
+**BUG-092 (MEDIUM) — Status bar match counter never decrements:**
+- Root cause: `status.lua` did `ctx.registry:get("matchbox")` which returns the registry's copy. After mutation (open/close), `reg:register(object_id, new_obj)` replaces the registry entry with a NEW object. But `ctx.player.hands[i]` still references the OLD object. Match removals modified the old object's `.contents`, invisible to the registry copy.
+- Fix: Status bar now searches player hands first for a matchbox-keyword container, then visible room containers, then falls back to registry. This finds the actual live object being modified.
+- Key learning: Mutation creates a new object and registers it under the old key, but hand references become stale. Any code reading game state should prefer the hand reference over registry lookup.
+
+**BUG-089 (LOW) — feel inside drawer shows nightstand top surface too:**
+- Root cause: `feel in/inside X` set `container_noun` but not `surface_prep`, so it fell through to the generic all-surfaces loop instead of limiting to the "inside" zone.
+- Fix: Set `surface_prep = "inside"` when preposition is "in" or "inside". The existing surface_prep handler then correctly limits to the named zone. Added fallback for simple containers when surface_prep is set but no matching surface exists.
+
+**Parser synonyms added:** `hunt for X` → `search X`, `hunt around` → `search around`, `rummage for/through/around` → search equivalents.
+
+**Testing:** All 10 test files pass. Game boots clean. Parser synonyms verified.
+
+**Files Changed:** `src/engine/verbs/init.lua`, `src/engine/ui/status.lua`, `src/engine/parser/preprocess.lua`
+
+---
+
+### Session 2026-07-25: Pass 025+026 Bug Sweep (13 bugs fixed)
+
+**Task:** Fix 5 CRITICAL (P0) and 8 HIGH (P1) bugs from Nelson's test passes 025 and 026. All were in the parser pipeline, search system, or verb handlers.
+
+**Root Causes Found:**
+1. **Missing preprocess rules** — "look at X" and "check X" fell through to Tier 2 embedding matcher, which has no timeout. Fixed by adding explicit preprocess rules in natural_language().
+2. **Articles in search targets** — "find the matchbox" passed "the matchbox" as target, which never matched object keywords. Strip_articles() added as a public preprocess utility; applied consistently across all find/search paths.
+3. **Leading adverbs not stripped** — "thoroughly search" had "thoroughly" as first word, not trailing. Added leading adverb stripping alongside existing trailing strip.
+4. **Scoped search silent on contents** — Undirected scoped search (`search nightstand`) only looked for targets, never enumerated what was found. Added content enumeration path when target is nil.
+5. **Parts not recognized as search scopes** — "drawer" is a part of nightstand, not a room object. Added part→parent fallback in both verb handler (via find_visible return values) and traverse.build_queue.
+6. **Goal planner unbounded** — No limit on plan steps or visited set size. Added MAX_PLAN_STEPS=20 and visited cap=50.
+7. **Narrator template doubled articles** — Templates had "You feel the {object}" but format_object_name already adds articles. Removed "the" from templates.
+
+**Key Design Decisions:**
+- strip_articles() is a PUBLIC function on preprocess module (used by verbs and search modules)
+- Pipeline order enforced: politeness → adverbs → articles → compound → verb dispatch
+- "everything"/"anything"/"all" are sweep keywords in both preprocess and verb handler
+- Container question patterns ("what's inside X") return "examine" not "look" — cleaner routing
+- Depth limit for nested container traversal reduced from 5 to 3 (matches matches_target limit)
+
+**Testing:** All 13 test files pass (352+ tests). New regression tests from Nelson's passes cover all fixed bugs.
+
+**Files Changed:** preprocess.lua, goal_planner.lua, traverse.lua, narrator.lua, verbs/init.lua
+
+---
