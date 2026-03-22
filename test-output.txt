@@ -1,0 +1,818 @@
+========================================
+  MMO Test Suite
+========================================
+
+Found 15 test file(s):
+
+>> Running: injuries/test-injury-engine.lua
+
+=== compute_health ΓÇö derived health calculation ===
+  PASS full health with no injuries
+  PASS health reduced by single injury damage
+  PASS health reduced by multiple injuries (additive)
+  PASS health clamped at 0 (never negative)
+
+=== inflict ΓÇö injury creation ===
+  PASS inflict adds injury to player
+  PASS injury type matches
+  PASS initial damage set from definition
+  PASS damage_per_tick set from definition
+  PASS source recorded
+  PASS initial state is active
+  PASS turns_active starts at 0
+  PASS infliction message printed
+  PASS bruise gets one-time damage
+  PASS bruise has no per-tick damage
+
+=== tick ΓÇö per-turn injury processing ===
+  PASS damage before tick
+  PASS damage after 1 tick (15 + 8)
+  PASS turns_active incremented
+  PASS health after 1 tick
+  PASS damage after 5 ticks (15 + 40)
+  PASS health after 5 ticks
+  PASS two injuries stacked
+  PASS health with 2 injuries (100 - 15 - 15)
+  PASS double drain after tick
+
+=== tick ΓÇö auto-healing (bruise heals after N turns) ===
+  PASS bruise inflicted
+  PASS health with bruise
+  PASS bruise active after tick 1
+  PASS bruise active after tick 2
+  PASS bruise removed after auto-heal (tick 3)
+  PASS full health after bruise heals
+
+=== tick ΓÇö death detection ===
+  PASS health before lethal tick
+  PASS death detected when health <= 0 after tick
+  PASS no death when health > 0
+
+=== try_heal ΓÇö healing injuries ===
+  PASS try_heal returns true on success
+  PASS injury transitioned to treated
+  PASS damage_per_tick set to 0 after treatment
+  PASS healing message printed
+  PASS wrong cure type fails
+  PASS mismatch message printed
+
+=== tick ΓÇö treated injury auto-heals and is removed ===
+  PASS injury in treated state
+  PASS no more tick damage
+  PASS still present before auto-heal completes
+  PASS treated injury removed after auto-heal turns
+  PASS full health restored after treated injury heals
+
+=== list ΓÇö injuries verb output ===
+  PASS no injuries shows feel-fine message
+  PASS injuries header shown
+  PASS injury name shown
+  PASS treatment hint in symptom text
+
+=== tick ΓÇö safe with no injuries ===
+  PASS no messages with no injuries
+  PASS no death with no injuries
+
+--- Results ---
+  Passed: 49
+  Failed: 0
+>> injuries/test-injury-engine.lua ΓÇö OK
+
+>> Running: injuries/test-self-infliction.lua
+
+=== inflict ΓÇö body location on injuries ===
+  PASS inflict with location adds injury
+  PASS injury stores body location
+  PASS injury type is bleeding
+  PASS source is self-inflicted
+  PASS inflict without location stores nil
+
+=== inflict ΓÇö override damage from weapon ===
+  PASS override_damage overrides definition initial_damage
+  PASS location set with override_damage
+  PASS minor-cut override_damage works
+  PASS minor-cut still has 0 damage_per_tick
+
+=== list ΓÇö injuries verb shows location ===
+  PASS list output includes body location
+  PASS list output includes injury name
+  PASS list shows torso location
+  PASS list shows right hand location
+
+=== find_by_id ΓÇö find injury by instance ID ===
+  PASS find_by_id finds first injury
+  PASS find_by_id returns correct index
+  PASS find_by_id returns correct injury
+  PASS find_by_id returns nil for unknown ID
+
+=== resolve_target ΓÇö injury targeting ===
+  PASS auto-target works with single treatable injury
+  PASS no error on auto-target
+  PASS auto-target returns the bleeding injury
+  PASS auto-target fails with multiple treatable injuries
+  PASS disambiguation prompt shown
+  PASS target by location finds injury
+  PASS target by location returns correct injury
+  PASS target by type finds injury
+  PASS target by type returns correct injury
+  PASS target by ordinal finds injury
+  PASS target by ordinal returns second injury
+  PASS resolve_target returns nil with no injuries
+  PASS appropriate error for no injuries
+  PASS resolve_target skips already-treated injuries
+  PASS target by display name substring works
+
+=== apply_treatment ΓÇö bandage dual binding ===
+  PASS bandage.applied_to points to injury
+  PASS bandage FSM transitions to applied
+  PASS injury has treatment reference
+  PASS injury.treatment.type is bandage
+  PASS injury.treatment.item_id is bandage
+  PASS injury.treatment.healing_boost is 2
+  PASS injury FSM transitions to treated
+  PASS injury drain stops (damage_per_tick = 0)
+  PASS minor-cut transitions to treated
+  PASS bandage applied to minor-cut
+  PASS bandaged injury has 0 drain
+  PASS total drain is 0 with bandage
+
+=== remove_treatment ΓÇö bandage removal ===
+  PASS remove_treatment succeeds
+  PASS bandage.applied_to cleared
+  PASS bandage transitions to soiled
+  PASS injury.treatment cleared
+  PASS injury reverts to active state
+  PASS injury drain resumes
+  PASS remove_treatment fails if not applied
+  PASS error message for non-applied bandage
+  PASS remove_treatment succeeds even when injury is gone
+  PASS bandage transitions to soiled on orphan removal
+  PASS bandage.applied_to cleared on orphan removal
+
+=== bandage exclusivity ΓÇö one injury at a time ===
+  PASS bandage is bound to first injury
+  PASS bandage bound to injury 1, not 2
+
+=== compute_total_drain ΓÇö sum of active drain ===
+  PASS no injuries = 0 drain
+  PASS one bleeding = 5 drain
+  PASS two bleedings = 10 drain
+  PASS one bandaged + one untreated = 5 drain
+
+=== weapon damage encoding ΓÇö on_stab/on_cut/on_slash profiles ===
+  PASS dagger on_stab damage is 8
+  PASS dagger on_stab injury_type is bleeding
+  PASS dagger on_stab description has %s placeholder
+  PASS weapon damage applied as initial damage
+  PASS weapon injury_type determines injury type
+  PASS body location stored
+  PASS description %s replaced with body area
+  PASS knife on_cut damage is 3
+  PASS knife on_cut injury_type is minor-cut
+  PASS knife has no on_slash profile
+
+=== body area damage modifiers ===
+  PASS torso modifier: 8 * 1.5 = 12
+  PASS head modifier: 8 * 2.0 = 16
+  PASS arm modifier: 8 * 1.0 = 8
+
+=== random body area ΓÇö weighted selection ===
+  PASS arms are most common targets (374/1000)
+  PASS head never selected randomly (weight 0)
+  PASS torso+stomach less common than arms
+  PASS left arm appears in random selection
+  PASS right arm appears in random selection
+  PASS left hand appears in random selection
+  PASS right hand appears in random selection
+  PASS left leg appears in random selection
+  PASS right leg appears in random selection
+  PASS torso appears in random selection
+  PASS stomach appears in random selection
+
+=== format_injury_options ΓÇö disambiguation display ===
+  PASS options header shown
+  PASS left arm option shown
+  PASS right leg option shown
+  PASS first option numbered
+  PASS second option numbered
+
+=== full lifecycle ΓÇö inflict ΓåÆ bandage ΓåÆ heal ===
+  PASS step 1: injury inflicted
+  PASS step 1: health = 100 - 8 = 92
+  PASS step 1: drain = 5/tick
+  PASS step 2: damage = 8 + 5 = 13
+  PASS step 2: health = 100 - 13 = 87
+  PASS step 3: drain stopped
+  PASS step 3: injury treated
+  PASS step 3: bandage applied
+  PASS step 4: damage frozen while bandaged
+  PASS step 4: total drain = 0
+  PASS step 5: bandage soiled
+  PASS step 5: injury reverted to active
+  PASS step 5: drain resumed
+  PASS step 6: damage increasing again
+
+=== list ΓÇö treated injury marker ===
+  PASS list shows [treated] marker for bandaged injury
+
+--- Results ---
+  Passed: 105
+  Failed: 0
+>> injuries/test-self-infliction.lua ΓÇö OK
+
+>> Running: inventory/test-inventory.lua
+
+=== take ΓÇö basic pickup from room ===
+You take a red apple.
+  PASS take portable object from room moves it to hand
+You take a brass key.
+You take a gold coin.
+  PASS take uses first empty hand (left first)
+  PASS take with empty noun prints prompt
+  PASS take nonexistent object prints error
+  PASS take non-portable object prints error
+  PASS take when hands are full prints error
+  PASS take something already held prints already-have message
+You take a dusty book.
+  PASS 'get' is an alias for take
+You take a coil of rope.
+  PASS 'grab' is an alias for take
+
+=== take ΓÇö two-handed objects ===
+You take a large crate with both hands.
+  PASS take two-handed object occupies both hands
+  PASS take two-handed object fails if one hand occupied
+
+=== drop ΓÇö basic drop to room ===
+You drop a smooth stone.
+  PASS drop held object places it in room
+  PASS drop with empty noun prints prompt
+  PASS drop something not held prints error
+You drop a big box.
+  PASS drop two-handed object frees both hands
+  PASS drop item in bag gives helpful message
+
+=== take from container ΓÇö 'take X from Y' ===
+You take a wooden match from a matchbox.
+  PASS take item from carried container
+You take a bottle of wine from a wine rack.
+  PASS take from visible room container (not held)
+  PASS take from container with nothing matching prints error
+  PASS take from nonexistent container prints error
+  PASS take from non-container visible object prints error
+
+=== take from surface-based container ===
+You take a leather diary from the nightstand.
+  PASS take from surface container (accessible)
+  PASS take from inaccessible surface fails gracefully
+
+=== put ΓÇö put item in/on container ===
+You put a gold coin in a leather pouch.
+  PASS put item in simple container
+You put a ceramic mug on a wooden table.
+  PASS put item on surface-based furniture
+You put a pair of socks in a dresser.
+  PASS put item in surface-based inside
+  PASS put without holding item gives error
+  PASS put with incomplete syntax gives help
+  PASS put into nonexistent target gives error
+
+=== put ΓÇö containment validation ===
+  PASS put rejects item that is too large
+  PASS put rejects when container is full (capacity)
+  PASS can't put object inside itself (same reference)
+
+=== inventory ΓÇö listing what you carry ===
+  PASS inventory shows empty hands when nothing carried
+  PASS inventory shows item in left hand
+  PASS inventory shows items in both hands
+  PASS inventory shows bag contents
+  PASS 'i' is alias for inventory
+
+=== containment module ΓÇö direct unit tests ===
+  PASS can_contain allows valid item in container
+  PASS can_contain rejects non-container
+  PASS can_contain checks max_item_size
+  PASS can_contain checks weight capacity
+  PASS can_contain validates category accept list
+  PASS can_contain validates category reject list
+  PASS can_contain with surface ΓÇö accessible
+  PASS can_contain with surface ΓÇö inaccessible
+  PASS can_contain with nonexistent surface
+  PASS multi-surface object without surface_name prompts user
+
+=== round-trip ΓÇö take then drop, drop then take ===
+You take a flask.
+You drop a flask.
+  PASS take then drop returns object to room
+You put an oil lantern in a wooden crate.
+You take an oil lantern from a wooden crate.
+  PASS put into container then take from container round-trip
+
+=== registry ΓÇö object store basics ===
+  PASS register and get round-trip
+  PASS remove removes object
+  PASS find_by_keyword matches name
+  PASS find_by_keyword matches keywords array
+  PASS list returns all objects
+  PASS total_weight sums objects at location
+
+=== find_visible ΓÇö object discovery in rooms ===
+You take an oil lamp.
+  PASS find_visible locates object in room contents
+You take a fountain pen.
+  PASS find_visible finds object on accessible surface
+  PASS find_visible skips hidden objects
+
+=== edge cases ΓÇö articles and keyword matching ===
+You take an ancient scroll.
+  PASS take with article 'the' works
+You take a top hat.
+  PASS 'pick up X' syntax works
+
+--- Results ---
+  Passed: 60
+  Failed: 0
+>> inventory/test-inventory.lua ΓÇö OK
+
+>> Running: inventory/test-search-order.lua
+
+=== verb-dependent search ΓÇö interaction verbs (hands first) ===
+  PASS 'light candle' acts on held candle (find_in_inventory path)
+  PASS 'drink wine' acts on wine in hands
+  PASS 'open box' finds held box over room box
+  PASS 'close' is an interaction verb (hands first)
+
+=== verb-dependent search ΓÇö acquisition verbs (room first) ===
+  PASS 'take candle' finds room candle over held candle
+  PASS 'examine painting' finds painting in room
+  PASS 'feel statue' finds statue in room (acquisition)
+  PASS 'search' uses acquisition order (room first)
+
+=== verb-dependent search ΓÇö disambiguation (same keyword, different locations) ===
+  PASS same keyword resolves differently for open vs take
+  PASS close vs examine resolve same keyword to different objects
+
+=== verb-dependent search ΓÇö fallback (object in only one location) ===
+  PASS interaction verb finds room object when nothing in hands
+  PASS acquisition verb finds hand object when nothing in room
+
+--- Results ---
+  Passed: 12
+  Failed: 0
+>> inventory/test-search-order.lua ΓÇö OK
+
+>> Running: nightstand/test-container-gating.lua
+
+=== 1. CLOSED CONTAINER ΓÇö Contents hidden ===
+  PASS examine closed chest ΓåÆ does NOT list contents
+  PASS look at closed chest ΓåÆ does NOT list contents
+  PASS look closed chest ΓåÆ does NOT list contents
+  PASS feel closed chest ΓåÆ does NOT list contents
+  PASS feel inside closed chest ΓåÆ does NOT list contents
+  PASS examine closed chest in dark ΓåÆ does NOT list contents
+
+=== 2. OPEN CONTAINER ΓÇö Contents visible ===
+  PASS examine open chest ΓåÆ lists contents
+  PASS look at open chest ΓåÆ lists contents
+  PASS feel open chest ΓåÆ lists contents
+  PASS feel inside open chest ΓåÆ lists contents
+  PASS examine open chest in dark ΓåÆ lists contents by touch
+
+=== 3. TRANSPARENT CONTAINER ΓÇö Vision when closed, no touch ===
+  PASS examine closed transparent bottle ΓåÆ shows contents visually
+  PASS look at closed transparent bottle ΓåÆ shows contents visually
+  PASS feel closed transparent bottle ΓåÆ does NOT show contents
+  PASS feel inside closed transparent bottle ΓåÆ does NOT show contents
+  PASS examine open transparent bottle ΓåÆ shows contents
+  PASS feel open transparent bottle ΓåÆ shows contents
+
+=== 4. NO STATE CONTAINER ΓÇö Backward compatibility ===
+  PASS container without _state still shows contents
+
+--- Results ---
+  Passed: 18
+  Failed: 0
+>> nightstand/test-container-gating.lua ΓÇö OK
+
+>> Running: nightstand/test-nightstand-chain.lua
+
+=== 1. FEEL INTERACTIONS ΓÇö Discovery chain (Pass-026 Phase 1) ===
+  PASS feel around ΓåÆ lists nightstand among room objects
+  PASS feel nightstand ΓåÆ reveals drawer handle and top surface items
+  PASS open drawer ΓåÆ opens successfully
+  PASS BUG-089: feel inside drawer ΓåÆ shows ONLY drawer contents
+
+=== 2. MATCHBOX AND MATCH INTERACTIONS (Pass-026 Phase 2) ===
+  PASS examine matchbox ΓåÆ shows 7 matches
+  PASS take match ΓåÆ gets a fresh match from matchbox
+  PASS BUG-091: 'take match' with spent match on floor ΓåÆ gets FRESH match
+  PASS light/strike match ΓåÆ match lights
+
+=== 3. CANDLE LIGHTING ΓÇö Critical path (BUG-090) ===
+  PASS BUG-090: 'light candle' should NOT hang
+  PASS BUG-090: light candle ΓåÆ should light the candle when match available
+
+=== 4. MATCH COUNTER (BUG-092) ===
+  PASS BUG-092: match counter should decrement when match is used
+  PASS BUG-092: match counter tracks actual matchbox contents
+
+=== 5. SAFETY ΓÇö No command should hang ===
+  PASS 'search nightstand' completes within timeout
+  PASS 'search the room' completes within timeout
+  PASS 'find matchbox' in bedroom completes within timeout
+
+--- Results ---
+  Passed: 15
+  Failed: 0
+>> nightstand/test-nightstand-chain.lua ΓÇö OK
+
+>> Running: parser/test-context.lua
+
+=== Context retention ΓÇö pronoun resolution ===
+  PASS 'open it' after 'examine nightstand' resolves pronoun
+
+=== Context retention ΓÇö bare noun inference (BUG: context not used) ===
+  PASS [KNOWN BUG] bare 'open' after 'search wardrobe' targets wardrobe
+
+=== Parser edge cases ===
+  PASS 'search everything' does not crash
+  PASS 'pry' is aliased to 'open' handler (BUG-049)
+
+--- Results ---
+  Passed: 4
+  Failed: 0
+>> parser/test-context.lua ΓÇö OK
+
+>> Running: parser/test-on-traverse.lua
+
+=== on_traverse ΓÇö no effect (normal exits) ===
+  PASS string exit (no on_traverse) does nothing
+  PASS table exit without on_traverse does nothing
+  PASS on_traverse with unknown type does nothing
+
+=== on_traverse ΓÇö wind_effect extinguishes lit candle ===
+  PASS wind_effect extinguishes a lit candle in hand
+
+=== on_traverse ΓÇö wind_effect ignores unlit candle ===
+  PASS wind_effect does NOT extinguish unlit candle
+  PASS wind_effect does NOT extinguish already-extinguished candle
+
+=== on_traverse ΓÇö wind_effect spares wind-resistant items ===
+  PASS wind_effect spares wind-resistant lantern
+
+=== on_traverse ΓÇö items not in extinguishes list unaffected ===
+  PASS lit item NOT in extinguishes list is unaffected
+
+=== on_traverse ΓÇö mixed scenario (candle + lantern) ===
+  PASS wind extinguishes candle but spares wind-resistant lantern
+
+=== on_traverse ΓÇö extensibility (custom effect type) ===
+  PASS custom effect type can be registered and fires
+
+=== on_traverse ΓÇö nested format (BUG-060) ===
+  PASS nested wind_effect format extinguishes a lit candle
+  PASS nested format spares wind-resistant lantern
+  PASS nested format with ambiguous keys (multiple tables) is safe
+
+=== on_traverse ΓÇö on_traverse with missing fields is safe ===
+  PASS wind_effect with empty extinguishes list is safe
+  PASS on_traverse with no type field is safe
+
+--- Results ---
+  Passed: 15
+  Failed: 0
+>> parser/test-on-traverse.lua ΓÇö OK
+
+>> Running: parser/test-pass027-bugs.lua
+
+=== 1. BUG-082: 'search the drawer for a match' ΓÇö scoped X-for-Y ===
+  PASS BUG-082: preprocess 'search the drawer for a match' ΓåÆ search, drawer for match
+  PASS BUG-082: articles stripped from both scope and target
+  PASS BUG-082: 'search nightstand for candle' ΓåÆ search, nightstand for candle
+  PASS BUG-082: 'search the bed for a knife' ΓåÆ search, bed for knife
+  PASS BUG-082: does NOT hang (completes in bounded time)
+
+=== 2. BUG-083: 'could you search for matches' ΓÇö politeness + compound ===
+  PASS BUG-083: 'could you search for matches' ΓåÆ search, matches
+  PASS BUG-083: 'please search for the matchbox' ΓåÆ search, matchbox
+  PASS BUG-083: 'would you search for a candle' ΓåÆ search, candle
+  PASS BUG-083: 'can you find the key' ΓåÆ find, key
+  PASS BUG-083: 'could you look for matches' ΓåÆ find, matches
+  PASS BUG-083: does NOT hang
+
+=== 3. BUG-084: 'find a match and light it' ΓÇö compound X and Y ===
+  PASS BUG-084: compound splits into two sub-commands
+  PASS BUG-084: 'find a match' preprocesses with article stripped
+  PASS BUG-084: 'light it' preprocesses to light, it
+  PASS BUG-084: 'take a match and strike it' splits correctly
+  PASS BUG-084: 'find a match and light it' does NOT hang
+  PASS BUG-084: article stripping works on each compound fragment
+  PASS BUG-084: 'open the matchbox and take a match' splits and strips
+
+=== 4. BUG-091: 'take match' ΓÇö spent vs fresh match priority ===
+  PASS BUG-091: match object has terminal state 'spent'
+  PASS BUG-091: match 'spent' state is consumable
+  PASS BUG-091: match 'unlit' state is NOT terminal
+  PASS BUG-091: match 'lit' state is NOT terminal
+  PASS BUG-091: matchbox has accessible flag (open vs closed)
+
+=== 5. BUG-093: 'rummage around' ΓÇö verb synonym recognition ===
+  PASS BUG-093: 'rummage around' ΓåÆ search, around
+  PASS BUG-093: 'rummage for matches' ΓåÆ search, matches
+  PASS BUG-093: 'rummage through the wardrobe' ΓåÆ search, wardrobe
+  PASS BUG-093: bare 'rummage' ΓåÆ search, around (sweep)
+  PASS BUG-093: 'rummage nightstand' ΓåÆ search, nightstand
+  PASS BUG-093: does NOT hang
+
+=== 6. BUG-094: 'look for a candle' ΓÇö look-for + article ===
+  PASS BUG-094: 'look for a candle' ΓåÆ find, candle
+  PASS BUG-094: 'look for the matchbox' ΓåÆ find, matchbox
+  PASS BUG-094: 'look for an apple' ΓåÆ find, apple
+  PASS BUG-094: 'look for matches' ΓåÆ find, matches (no article)
+  PASS BUG-094: does NOT hang
+
+=== 7. Cross-bug edge cases ===
+  PASS Politeness + rummage: 'could you rummage around' ΓåÆ search, around
+  PASS Adverb + search scope: 'carefully search the drawer for a match'
+  PASS Politeness + look for: 'please look for a candle' ΓåÆ find, candle
+  PASS Compound + politeness: 'could you find a match' ΓåÆ find, match
+  PASS Triple compound: 'open drawer, take match and light it' splits to 3
+  PASS Adverb + rummage: 'frantically rummage around' ΓåÆ search, around
+
+--- Results ---
+  Passed: 40
+  Failed: 0
+>> parser/test-pass027-bugs.lua ΓÇö OK
+
+>> Running: parser/test-preprocess-phrases.lua
+
+=== 1. LOOK AT / CHECK ΓåÆ EXAMINE (BUG-086, BUG-087) ===
+  PASS BUG-087: 'look at nightstand' ΓåÆ examine nightstand
+  PASS BUG-087: 'look at the bed' ΓåÆ examine bed (article stripped)
+  PASS BUG-086: 'check the nightstand' ΓåÆ examine nightstand
+  PASS BUG-086: 'check nightstand' ΓåÆ examine nightstand
+
+=== 2. ARTICLE STRIPPING ΓÇö 'the'/'a'/'an' from targets (BUG-081) ===
+  PASS BUG-081: 'find the matchbox' ΓåÆ article 'the' stripped from target
+  PASS BUG-081: 'find a candle' ΓåÆ article 'a' stripped from target
+  PASS BUG-081: 'find an apple' ΓåÆ article 'an' stripped from target
+  PASS BUG-081: 'search for the matchbox' ΓåÆ article stripped from target
+
+=== 3. LOOK FOR ΓåÆ FIND conversion (BUG-074 regression) ===
+  PASS BUG-074 regression: 'look for a candle' ΓåÆ find candle
+  PASS BUG-074 regression: 'look for matches' ΓåÆ find matches
+  PASS BUG-074 regression: 'look for the key' ΓåÆ find key
+
+=== 4. POLITENESS STRIPPING (BUG-083) ===
+  PASS BUG-083: 'could you search for matches' ΓåÆ search matches
+  PASS 'please search the nightstand' ΓåÆ search nightstand (verified pass)
+  PASS 'can I search the room' ΓåÆ search room (verified pass)
+  PASS 'could you find the matchbox' ΓåÆ find matchbox
+
+=== 5. ADVERB STRIPPING (BUG-085) ===
+  PASS BUG-085: 'thoroughly search the room' ΓåÆ search room
+  PASS 'carefully search the nightstand' ΓåÆ search nightstand (verified pass)
+  PASS BUG-085: 'quickly search around' ΓåÆ search around
+  PASS BUG-085: 'slowly open the drawer' ΓåÆ open drawer
+
+=== 6. SWEEP KEYWORDS ΓÇö 'everything'/'anything' (BUG-078) ===
+  PASS BUG-078: 'find everything' ΓåÆ triggers sweep, not literal target
+  PASS BUG-078: 'find anything' ΓåÆ triggers sweep
+  PASS BUG-078: 'search for everything' ΓåÆ sweep
+
+=== 7. QUESTION TRANSFORMS (BUG-082, BUG-084) ===
+  PASS BUG-084: 'what can I find?' ΓåÆ search sweep (no hang)
+  PASS 'what's in the nightstand?' ΓåÆ examine nightstand (verified pass)
+  PASS BUG-082: 'is there anything in the drawer?' ΓåÆ examine drawer
+  PASS 'what's inside the wardrobe?' ΓåÆ examine wardrobe
+
+=== 8. SYNONYM RECOGNITION ΓÇö 'hunt for' (Pass-025 T-026) ===
+  PASS 'hunt for matches' ΓåÆ find/search matches
+  PASS 'hunt around' ΓåÆ search around
+
+--- Results ---
+  Passed: 28
+  Failed: 0
+>> parser/test-preprocess-phrases.lua ΓÇö OK
+
+>> Running: parser/test-preprocess.lua
+
+=== preprocess.parse ΓÇö basic verb/noun splitting ===
+  PASS single word returns verb only
+  PASS two words split into verb and noun
+  PASS multi-word noun preserved
+  PASS leading/trailing whitespace trimmed
+  PASS input lowercased
+  PASS bare 'I' is kept as verb (inventory shortcut)
+  PASS 'I want to look' strips pronoun preamble
+
+=== preprocess.natural_language ΓÇö question patterns ===
+  PASS 'what am I holding' maps to inventory
+  PASS 'what am I carrying' maps to inventory
+  PASS 'where am I' maps to look
+  PASS 'what do I see' maps to look
+  PASS 'what time is it' maps to time
+
+=== preprocess.natural_language ΓÇö preamble stripping ===
+  PASS 'I want to look around' strips preamble ΓåÆ look
+  PASS 'I'd like to open the crate' strips preamble ΓåÆ open crate
+  PASS 'I need to take the key' strips preamble ΓåÆ take key
+
+=== preprocess.natural_language ΓÇö verb aliases (BUG-049) ===
+  PASS 'pry open crate' maps to open crate
+  PASS 'use crowbar on crate' maps to open crate
+  PASS 'put out candle' maps to extinguish candle
+  PASS 'take off gloves' maps to remove gloves
+
+=== preprocess.natural_language ΓÇö edge cases ===
+  PASS empty string returns nil
+  PASS whitespace-only returns nil
+  PASS unrecognized phrase returns nil (falls through)
+
+=== preprocess.split_commands ΓÇö multi-command input (Issue #1) ===
+  PASS comma-separated commands split into 3
+  PASS single command with no separator returns 1
+  PASS empty segments ignored (double comma)
+  PASS semicolon separator splits commands
+  PASS 'then' word separator splits commands
+  PASS trailing comma produces 1 command
+  PASS trailing semicolon produces 1 command
+  PASS mixed separators (comma + semicolon + then)
+  PASS empty input returns empty list
+  PASS nil input returns empty list
+  PASS whitespace-only input returns empty list
+  PASS quoted text not split on comma
+  PASS 'then' inside a word does not split
+
+--- Results ---
+  Passed: 35
+  Failed: 0
+>> parser/test-preprocess.lua ΓÇö OK
+
+>> Running: search/test-search-scoped.lua
+
+=== 1. SCOPED SEARCH ΓÇö Content discovery (BUG-079) ===
+  PASS BUG-079: 'search nightstand' finds surface AND nested contents
+  PASS BUG-079: 'search bed' finds bed contents
+
+=== 2. WARDROBE DEPTH LIMIT ΓÇö No infinite loop (BUG-080) ===
+  PASS BUG-080: 'search wardrobe' completes without hanging
+  PASS BUG-080: nested containers don't cause infinite recursion
+
+=== 3. DRAWER AS VALID SCOPE (BUG-082) ===
+  PASS BUG-082: 'search the drawer for a match' ΓåÆ drawer recognized as scope
+
+=== 4. COMPOUND SCOPED+TARGETED SEARCH (verified passes) ===
+  PASS 'search nightstand for matchbox' ΓåÆ compound works (verified pass)
+  PASS 'find matches in nightstand' ΓåÆ compound works (verified pass)
+
+=== 5. NARRATION ΓÇö Article handling (BUG-088) ===
+  PASS BUG-088: narrator should NOT double articles in 'You feel...' text
+  PASS BUG-088: narrator should NOT double articles for nightstand
+  PASS BUG-088: search sweep narration has no doubled articles
+  PASS BUG-081/088: failure message should NOT include articles
+
+=== 6. SAFETY ΓÇö Timeout and depth limits ===
+  PASS No search should exceed 100 ticks (safety limit)
+  PASS Targeted search for nonexistent item completes promptly
+
+--- Results ---
+  Passed: 13
+  Failed: 0
+>> search/test-search-scoped.lua ΓÇö OK
+
+>> Running: search/test-search-traverse.lua
+
+=== 1. MODULE API ΓÇö search.search() and search.find() ===
+  PASS search.search() with no target starts room sweep
+  PASS search.search() with target starts targeted search
+  PASS search.search() with scope limits to one object
+[Search interrupted]
+  PASS search.find() requires a target
+  PASS search.find() with target starts search
+[Search interrupted]
+  PASS search.is_searching() returns false when idle
+  PASS search.is_searching() returns true during search
+  PASS search.abort() stops search
+  PASS search.abort() when idle does nothing
+
+=== 2. SEARCH TICK ΓÇö Progressive traversal ===
+  PASS search.tick() returns false when idle
+  PASS search.tick() processes one step
+  PASS search.tick() eventually completes room sweep
+  PASS search.tick() stops when target found
+  PASS search.tick() completes with 'not found' if target doesn't exist
+
+=== 3. TRAVERSE MODULE ΓÇö Queue building ===
+  PASS traverse.build_queue() creates queue from proximity list
+  PASS traverse.build_queue() respects scope parameter
+  PASS traverse.get_proximity_list() returns room's list
+  PASS traverse.get_proximity_list() falls back to contents
+
+=== 4. CONTAINERS MODULE ΓÇö Detection and manipulation ===
+  PASS containers.is_container() detects containers
+  PASS containers.is_container() returns false for non-containers
+  PASS containers.is_locked() detects locked containers
+  PASS containers.is_open() detects closed containers
+  PASS containers.can_auto_open() checks if container can be opened
+  PASS containers.can_auto_open() returns false for locked
+  PASS containers.open() opens unlocked container
+  PASS containers.open() fails on locked container
+  PASS containers.get_contents() returns contents list
+
+=== 5. NARRATOR MODULE ΓÇö Narrative generation ===
+  PASS narrator.step_narrative() generates prose
+  PASS narrator.container_open() generates opening text
+  PASS narrator.container_locked() generates locked text
+  PASS narrator.found_target() generates discovery text
+
+=== 6. GOALS MODULE ΓÇö Goal parsing and matching ===
+  PASS goals.parse_goal() parses 'something that can light'
+  PASS goals.parse_goal() parses 'something to cut'
+  PASS goals.parse_goal() parses 'something sharp'
+  PASS goals.parse_goal() returns nil for non-goal query
+  PASS goals.matches_goal() matches fire_source to 'light' action
+  PASS goals.matches_goal() doesn't match unrelated objects
+  PASS goals.matches_goal() matches property flags
+
+=== 7. PARSER INTEGRATION ΓÇö preprocess.lua search patterns ===
+  PASS preprocess: 'search' parses as search verb
+  PASS preprocess: 'search around' normalizes
+  PASS preprocess: 'search for matchbox' extracts target
+  PASS preprocess: 'search nightstand for matchbox' extracts both
+  PASS preprocess: 'find matchbox' parses as find
+  PASS preprocess: 'find matchbox in nightstand' extracts both
+
+=== 8. INTEGRATION ΓÇö Full search workflow ===
+  PASS INTEGRATION: Room sweep finds all objects
+  PASS INTEGRATION: Targeted search finds matchbox
+  PASS INTEGRATION: Search auto-opens unlocked containers
+  PASS INTEGRATION: Search skips locked containers
+  PASS INTEGRATION: Scoped search limits to one object
+  PASS INTEGRATION: Goal search finds fire_source
+  PASS INTEGRATION: Abort interrupts active search
+  PASS INTEGRATION: Empty room produces appropriate message
+
+--- Results ---
+  Passed: 52
+  Failed: 0
+>> search/test-search-traverse.lua ΓÇö OK
+
+>> Running: verbs/test-parser-synonyms.lua
+
+=== Issue #4 ΓÇö sleep without 'for' keyword ===
+  PASS 'sleep 6 hours' works without 'for'
+  PASS 'sleep 3 hours' works
+  PASS 'sleep 1 hour' works
+  PASS 'sleep for 2 hours' still works (backward compat)
+  PASS 'sleep 30 minutes' works
+  PASS 'sleep until dawn' still works
+  PASS 'sleep until morning' works
+
+=== Issue #2 ΓÇö 'move' as synonym for 'go' ===
+  PASS 'move' verb handler exists
+  PASS 'move' maps to same handler as 'go'
+  PASS 'walk', 'run', 'head', 'travel' are also synonyms
+
+--- Results ---
+  Passed: 10
+  Failed: 0
+>> verbs/test-parser-synonyms.lua ΓÇö OK
+
+>> Running: verbs/test-search-find.lua
+
+=== search around ΓÇö all senses, works in dark and light ===
+  PASS search around in DARK returns objects with tactile descriptions
+  PASS search around in LIGHT returns objects with visual descriptions
+  PASS search with no noun defaults to search around
+
+=== find [object] ΓÇö all senses, works in dark and light ===
+  PASS find nightstand in DARK uses touch
+  PASS find nightstand in LIGHT uses vision
+  PASS find synonym works same as find
+
+=== look around ΓÇö vision ONLY, requires light ===
+  PASS look around in DARK says too dark
+  PASS look around in LIGHT shows room description
+  PASS look at nightstand in DARK says too dark
+
+=== Discovered objects remain interactable in darkness ===
+  PASS after finding nightstand in dark, can reference its parts
+
+=== Preprocessor: search/find natural language patterns ===
+  PASS 'search for X' normalizes to 'search X'
+  PASS 'find the nightstand' works
+
+=== search/find verb tests complete ===
+These tests validate the Wayne directive 2026-03-22T04:03:
+  - search/find use ALL senses (work in dark AND light)
+  - look/see use vision ONLY (require light)
+  - search around in dark finds objects by touch
+  - find [object] adapts to lighting conditions
+  - Discovered objects remain interactable
+>> verbs/test-search-find.lua ΓÇö OK
+
+========================================
+  RESULT: All 15 test file(s) PASSED
+========================================
