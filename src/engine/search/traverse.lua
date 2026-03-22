@@ -220,7 +220,132 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
         narrative = "",
     }
     
-    -- Get the object
+    -- BUG-075: Handle surface entries (e.g., nightstand's "inside" surface = drawer)
+    if entry.type == "surface" and entry.parent_id and entry.surface_name then
+        local parent = registry:get(entry.parent_id)
+        if not parent then
+            result.narrative = ""
+            return result
+        end
+        
+        -- Get current state's surfaces template (for accessibility check)
+        -- But use parent's actual surfaces for contents (where items are)
+        local surface_template = parent.surfaces and parent.surfaces[entry.surface_name]
+        if parent._state and parent.states and parent.states[parent._state] then
+            local state_obj = parent.states[parent._state]
+            if state_obj.surfaces and state_obj.surfaces[entry.surface_name] then
+                surface_template = state_obj.surfaces[entry.surface_name]
+            end
+        end
+        
+        -- Check if surface exists
+        if not surface_template then
+            result.narrative = ""
+            return result
+        end
+        
+        -- If surface is not accessible, try to open parent
+        if surface_template.accessible == false then
+            -- Check if parent is locked (via FSM state or container flag)
+            local is_locked = containers.is_locked(parent)
+            if is_locked then
+                result.narrative = narrator.container_locked(ctx, parent)
+                return result
+            end
+            
+            -- Check if parent has FSM transitions
+            local fsm_ok, fsm_mod = pcall(require, "engine.fsm")
+            if fsm_ok and fsm_mod and parent._state and parent.transitions then
+                -- Try FSM "open" transition - find the target state
+                local target_state = nil
+                for _, t in ipairs(parent.transitions) do
+                    if t.from == parent._state and t.verb == "open" then
+                        target_state = t.to
+                        break
+                    end
+                end
+                
+                if target_state then
+                    local trans, err = fsm_mod.transition(registry, parent.id, target_state, ctx, "open")
+                    if trans then
+                        result.narrative = trans.message or "You open the " .. (parent.name or parent.id) .. "."
+                        -- Re-fetch surface template after state change
+                        surface_template = parent.surfaces and parent.surfaces[entry.surface_name]
+                        if parent._state and parent.states and parent.states[parent._state] then
+                            local state_obj = parent.states[parent._state]
+                            if state_obj.surfaces and state_obj.surfaces[entry.surface_name] then
+                                surface_template = state_obj.surfaces[entry.surface_name]
+                            end
+                        end
+                        if not surface_template or surface_template.accessible == false then
+                            -- Still not accessible after opening - give up
+                            return result
+                        end
+                    else
+                        -- FSM transition failed
+                        result.narrative = err or "You can't open that."
+                        return result
+                    end
+                else
+                    -- No open transition found
+                    result.narrative = "You can't open that."
+                    return result
+                end
+            else
+                -- No FSM - try container interface
+                local open_result = containers.open(ctx, parent)
+                if open_result.success then
+                    result.narrative = narrator.container_open(ctx, parent)
+                    -- Re-fetch surface template after state change
+                    surface_template = parent.surfaces and parent.surfaces[entry.surface_name]
+                    if parent._state and parent.states and parent.states[parent._state] then
+                        local state_obj = parent.states[parent._state]
+                        if state_obj.surfaces and state_obj.surfaces[entry.surface_name] then
+                            surface_template = state_obj.surfaces[entry.surface_name]
+                        end
+                    end
+                    if not surface_template or surface_template.accessible == false then
+                        -- Still not accessible after opening - give up
+                        return result
+                    end
+                else
+                    result.narrative = open_result.narrative or ""
+                    return result
+                end
+            end
+        end
+        
+        -- Now surface is accessible - check its contents
+        -- ALWAYS use parent.surfaces for contents (not state template)
+        local actual_surface = parent.surfaces and parent.surfaces[entry.surface_name]
+        local contents = actual_surface and actual_surface.contents or {}
+        for _, child_id in ipairs(contents) do
+            local child = registry:get(child_id)
+            if child then
+                -- Check if child matches target
+                if target and not is_goal_search then
+                    if matches_target(child, target, registry, 0) then
+                        result.found = true
+                        result.item = child
+                        result.narrative = result.narrative .. "\n" .. narrator.found_target(ctx, child, parent)
+                        return result
+                    end
+                elseif is_goal_search and goal_type and goal_value then
+                    if goals.matches_goal(child, goal_type, goal_value, registry) then
+                        result.found = true
+                        result.item = child
+                        result.narrative = result.narrative .. "\n" .. narrator.found_target(ctx, child, parent)
+                        return result
+                    end
+                end
+            end
+        end
+        
+        -- Surface checked, no match found
+        return result
+    end
+    
+    -- Get the object (for non-surface entries)
     local obj = registry:get(entry.object_id)
     if not obj then
         result.narrative = ""
