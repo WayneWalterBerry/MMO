@@ -72,7 +72,18 @@
 - [ ] Integrate with existing sleep command — sleep now also ticks injuries
 - [ ] Death-during-unconsciousness handler: special narration
 - [ ] Wake-up handler: narration + time advancement
-- [ ] **TEST GATE:** Write unit tests for all states/transitions
+- [ ] **`hit` verb:** Allow players to hit themselves (like `stab` for self-infliction testing):
+  - `hit head` → unconsciousness injury (severity-based duration)
+  - `hit arm` / `hit leg` → bruise injury (pain category, affects actions)
+  - `hit` with no target → "Hit what?" (Prime Directive friendly)
+  - This is the primary way to TEST unconsciousness — player can trigger it on themselves
+- [ ] Armor interaction: if wearing a helmet, `hit head` reduces or prevents unconsciousness
+- [ ] **TEST GATE:** Write unit tests for all states/transitions including:
+  - hit head → unconscious → injuries tick → wake up
+  - hit head → unconscious → bleed out → die (if also stabbed)
+  - sleep with injuries → bleed out → die
+  - hit head with helmet → reduced/no unconsciousness
+  - hit arm → bruise (pain, not unconsciousness)
 - [ ] `git commit && git push`
 
 ### 🧪 Nelson Sanity Check
