@@ -97,6 +97,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] Verify stripping doesn't break compound patterns (BUG-083: "could you search for matches")
 - [ ] Add missing adverbs: "thoroughly", "slowly", "gently", "firmly", "softly"
 - [ ] Ensure strip order: politeness BEFORE adverbs BEFORE compound extraction
+- [ ] **TEST GATE:** Write Tier 0 unit tests → run ALL tests → zero regressions before proceeding
 
 #### Tier 1: Question Transforms (HIGH impact, LOW risk)
 - [~] "what's in the X?" → "examine X" (done, needs more patterns)
@@ -106,6 +107,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] "where is the X?" → "search for X"
 - [ ] "how do I X?" → contextual help
 - [ ] "what is this?" → "examine" with context resolution
+- [ ] **TEST GATE:** Write Tier 1 unit tests → run ALL tests → zero regressions before proceeding
 
 #### Tier 2: Error Message Overhaul (HIGH impact, LOW risk)
 - [~] "I don't understand" → "I'm not sure what you mean. Try 'help'..." (done by Smithers)
@@ -113,6 +115,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] Every error message should suggest a valid action
 - [ ] Never echo the failed parse back literally ("No the matchbox found" — BUG-081)
 - [ ] Context-aware errors: "You can't see in the dark — try 'feel' instead"
+- [ ] **TEST GATE:** Write Tier 2 unit tests → run ALL tests → zero regressions before proceeding
 
 #### Tier 3: Idiom Library (MEDIUM impact, LOW risk)
 - [ ] "set fire to X" → "light X"
@@ -122,6 +125,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] "have a look" → "look"
 - [ ] "take a peek" → "look"
 - [ ] Table-driven: each idiom = `{ pattern, replacement }`
+- [ ] **TEST GATE:** Write Tier 3 unit tests → run ALL tests → zero regressions before proceeding
 
 #### Tier 4: Context Window (HIGH impact, MEDIUM risk)
 - [ ] Track last 3-5 discovered/interacted objects
@@ -130,6 +134,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] Bare "pick up" after discovery → take the discovered item
 - [ ] "go back" → return to previous room
 - [ ] Integrate with search module's found_items tracking
+- [ ] **TEST GATE:** Write Tier 4 unit tests → run ALL tests → zero regressions before proceeding
 
 #### Tier 5: Fuzzy Noun Resolution (MEDIUM impact, MEDIUM risk)
 - [ ] "the wooden thing" → match objects by `material = "wood"`
@@ -137,6 +142,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] "that bottle" → partial name match when unambiguous
 - [ ] Disambiguation prompt when multiple matches: "Which do you mean: the glass bottle or the wine bottle?"
 - [ ] Levenshtein distance for typo tolerance: "nighstand" → "nightstand"
+- [ ] **TEST GATE:** Write Tier 5 unit tests → run ALL tests → zero regressions before proceeding
 
 #### Tier 6: Generalized GOAP (MEDIUM impact, MEDIUM risk)
 - [ ] Extend beyond fire_source prerequisite chain
@@ -144,6 +150,7 @@ Each pipeline stage gets its own test file with deep coverage. These are the reg
 - [ ] "read the book" → auto-light candle if dark
 - [ ] Property-based goal matching (not hardcoded verb chains)
 - [ ] Safety limits on plan depth (BUG-090 root cause)
+- [ ] **TEST GATE:** Write Tier 6 unit tests → run ALL tests → zero regressions before proceeding
 
 ### Other
 - [ ] Combat precursor: stab/cut/slash deeper testing
