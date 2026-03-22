@@ -6,6 +6,7 @@ return {
 
     id = "vanity",
     material = "oak",
+    is_mirror = true,
     keywords = {"vanity", "mirror", "vanity mirror", "dressing table", "desk", "table", "looking glass", "oak vanity"},
     size = 8,
     weight = 40,

@@ -68,6 +68,78 @@ function loop.run(context)
       context.update_status(context)
     end
 
+    -- ═══ CONSCIOUSNESS GATE ═══
+    -- If unconscious, skip input and run forced ticks until wake or death
+    local player = context.player
+    if player and player.consciousness
+       and player.consciousness.state == "unconscious" then
+      local inj_ok2, inj_mod2 = pcall(require, "engine.injuries")
+
+      -- Tick injuries during unconsciousness
+      if inj_ok2 and inj_mod2 then
+        local msgs, died = inj_mod2.tick(player)
+        for _, msg in ipairs(msgs or {}) do
+          print(msg)
+        end
+        if died then
+          -- Death during unconsciousness
+          local cause = player.consciousness.cause or "your injuries"
+          local death_messages = {
+            ["blow-to-head"] = "You never wake up. The bleeding was too much.",
+            ["poison-gas"]   = "The gas fills your lungs. You stop breathing.",
+            ["knockout"]     = "Darkness takes you, and this time it doesn't let go.",
+          }
+          print("")
+          print(death_messages[cause] or "You never wake up. Your injuries were too much.")
+          print("")
+          print("YOU HAVE DIED.")
+          context.game_over = true
+          if context.headless then io.write("---END---\n"); io.flush() end
+          break
+        end
+      end
+
+      -- Decrement wake timer
+      player.consciousness.wake_timer = player.consciousness.wake_timer - 1
+
+      -- Check wake-up
+      if player.consciousness.wake_timer <= 0 then
+        -- Transition: waking → conscious
+        local cause = player.consciousness.cause or "unknown"
+        local wake_narrations = {
+          ["blow-to-head"] = "Your eyes flutter open. Your head throbs with a dull, persistent ache. Stars still dance at the edges of your vision.",
+          ["poison-gas"]   = "You gasp and cough. Your throat is raw. The poison has run its course.",
+          ["knockout"]     = "Pain drags you back to consciousness. Every muscle aches.",
+        }
+        print("")
+        print(wake_narrations[cause] or "You slowly regain consciousness.")
+
+        -- Health status on wake
+        if inj_ok2 and inj_mod2 then
+          local health = inj_mod2.compute_health(player)
+          if health < player.max_health * 0.5 then
+            print("You feel weak. Something is very wrong.")
+          elseif health < player.max_health * 0.75 then
+            print("You feel battered but alive.")
+          end
+        end
+        print("")
+
+        -- Reset consciousness state
+        player.consciousness.state = "conscious"
+        player.consciousness.wake_timer = 0
+        player.consciousness.cause = nil
+        player.consciousness.unconscious_since = nil
+      else
+        -- Still unconscious — emit a brief sensory fragment
+        if context.headless then io.write("---END---\n"); io.flush() end
+      end
+      goto continue
+    end
+
+    -- ═══ UNCONSCIOUS INPUT REJECTION ═══
+    -- (This is a safety check — normally the gate above handles it)
+
     -- If search is active and no input yet, process one search step
     local search_ok, search_mod = pcall(require, "engine.search")
     if search_ok and search_mod and search_mod.is_searching() then

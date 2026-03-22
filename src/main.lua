@@ -282,6 +282,12 @@ local player = {
     location = start_room_id,
     max_health = 100,        -- base maximum health
     injuries = {},           -- active injury instances (health is derived from this)
+    consciousness = {        -- consciousness state machine (conscious/unconscious/waking)
+        state = "conscious",
+        wake_timer = 0,
+        cause = nil,
+        unconscious_since = nil,
+    },
     state = {
         bloody = false,
         poisoned = false,

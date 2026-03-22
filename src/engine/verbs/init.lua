@@ -1331,6 +1331,22 @@ function verbs.create()
                 err_not_found(ctx)
                 return
             end
+            -- Mirror integration: is_mirror flag → appearance subsystem
+            if obj.is_mirror then
+                local app_ok, app_mod = pcall(require, "engine.player.appearance")
+                if app_ok and app_mod then
+                    print(app_mod.describe(ctx.player, ctx.registry))
+                else
+                    -- Fallback if appearance module fails to load
+                    if obj.on_look then
+                        print(obj.on_look(obj, ctx.registry))
+                    else
+                        print(obj.description or "You see nothing special.")
+                    end
+                end
+                return
+            end
+
             if obj.on_look then
                 print(obj.on_look(obj, ctx.registry))
             else
@@ -1393,6 +1409,16 @@ function verbs.create()
             local obj, loc_type, parent_obj = find_visible(ctx, surface_target)
             if not obj then
                 err_not_found(ctx)
+                return
+            end
+            -- Mirror integration: "look in mirror" triggers appearance subsystem
+            if (prep == "in" or prep == "inside") and obj.is_mirror then
+                local app_ok, app_mod = pcall(require, "engine.player.appearance")
+                if app_ok and app_mod then
+                    print(app_mod.describe(ctx.player, ctx.registry))
+                else
+                    print("You see your reflection, but can't make out details.")
+                end
                 return
             end
             -- BUG-097: If we found a part, redirect to the parent for surface access
@@ -3763,6 +3789,120 @@ function verbs.create()
     handlers["stick"] = handlers["stab"]
 
     ---------------------------------------------------------------------------
+    -- HIT {body area}  /  PUNCH / STRIKE / BASH / BONK / SMASH / THUMP
+    -- Self-infliction for blunt trauma: head → unconsciousness, limbs → bruise
+    ---------------------------------------------------------------------------
+    handlers["hit"] = function(ctx, noun)
+        if noun == "" then
+            print("Hit what?")
+            return
+        end
+
+        local is_self, body_area, tool_word = parse_self_infliction(noun)
+        if not is_self then
+            -- Not self — in V1, hit is self-only
+            print("You can only hit yourself right now. (Try: hit head)")
+            return
+        end
+
+        -- Resolve body area (default to random if "self")
+        if not body_area then
+            body_area = random_body_area()
+        end
+
+        -- Load injury module
+        local inj_ok, injury_mod = pcall(require, "engine.injuries")
+        if not inj_ok then
+            print("Something goes wrong.")
+            return
+        end
+
+        -- Head hit → concussion (unconsciousness)
+        if body_area == "head" then
+            local base_duration = 5  -- bare fist: 5 turns
+
+            -- Check for helmet (worn head armor) — reduces duration
+            local helmet = nil
+            if ctx.player.worn then
+                for _, worn_id in ipairs(ctx.player.worn) do
+                    local obj = ctx.registry and ctx.registry.get and ctx.registry:get(worn_id)
+                    if not obj then
+                        obj = _hobj(worn_id, ctx.registry)
+                    end
+                    if obj and (obj.wear_slot == "head" or obj.is_helmet) then
+                        helmet = obj
+                        break
+                    end
+                end
+            end
+
+            local reduction = 0
+            if helmet then
+                reduction = helmet.reduces_unconsciousness or 0.5
+            end
+
+            local final_duration = math.max(1, math.floor(base_duration * (1 - reduction)))
+
+            -- Suppress inflict message (we print our own narration)
+            local old_print = _G.print
+            _G.print = function() end
+            local instance = injury_mod.inflict(ctx.player, "concussion", "self-inflicted (bare fist, hit)", "head", 5)
+            _G.print = old_print
+
+            if not instance then
+                print("You hit your head, but it doesn't seem to have much effect.")
+                return
+            end
+
+            -- Trigger unconsciousness
+            ctx.player.consciousness = ctx.player.consciousness or {}
+            ctx.player.consciousness.state = "unconscious"
+            ctx.player.consciousness.wake_timer = final_duration
+            ctx.player.consciousness.cause = "blow-to-head"
+            ctx.player.consciousness.unconscious_since = ctx.time_offset or 0
+
+            if helmet then
+                if final_duration <= 1 then
+                    print("You punch your helmeted head. It clangs metallically. Your ears ring, but the helmet took most of the impact.")
+                else
+                    print("You slam your fist against your helmeted head. The impact rattles you even through the protection. Stars flash across your vision...")
+                end
+            else
+                print("You slam your fist hard against the side of your head. Stars explode across your vision. The world tilts and fades...")
+            end
+            return
+        end
+
+        -- Non-head hit → bruise
+        local old_print = _G.print
+        _G.print = function() end
+        local instance = injury_mod.inflict(ctx.player, "bruised", "self-inflicted (bare fist, hit)", body_area, 4)
+        _G.print = old_print
+
+        if not instance then
+            print("You punch yourself, but it doesn't seem to have much effect.")
+            return
+        end
+
+        -- Narration by body area
+        local narrations = {
+            ["left arm"]   = "You punch yourself in the left arm. Sharp pain blooms across the muscle.",
+            ["right arm"]  = "You punch yourself in the right arm. Sharp pain blooms across the muscle.",
+            ["left hand"]  = "You drive your fist into your left hand. The knuckles ache.",
+            ["right hand"] = "You drive your fist into your right hand. The knuckles ache.",
+            ["left leg"]   = "You drive your fist down against your left leg. Intense pain shoots through the limb.",
+            ["right leg"]  = "You drive your fist down against your right leg. Intense pain shoots through the limb.",
+            ["torso"]      = "You drive your fist into your ribs. Air explodes from your lungs.",
+            ["stomach"]    = "You punch yourself in the stomach. You double over, gasping.",
+        }
+        print(narrations[body_area] or ("You punch your " .. body_area .. ". That hurt."))
+    end
+    handlers["punch"]  = handlers["hit"]
+    handlers["bash"]   = handlers["hit"]
+    handlers["bonk"]   = handlers["hit"]
+    handlers["thump"]  = handlers["hit"]
+
+    ---------------------------------------------------------------------------
     -- CUT {target} WITH {tool}  /  CUT SELF WITH {tool}
     ---------------------------------------------------------------------------
     handlers["cut"] = function(ctx, noun)
@@ -4219,12 +4359,20 @@ function verbs.create()
 
     ---------------------------------------------------------------------------
     -- STRIKE {A} ON {B} -- compound tool verb for fire-making
+    -- Also handles "strike head", "strike arm" as hit synonyms.
     -- FSM path: A is a match with inline states, B is something with has_striker.
     -- Legacy path: matchbox with fire_source charges.
     ---------------------------------------------------------------------------
     handlers["strike"] = function(ctx, noun)
         if noun == "" then
             print("Strike what? (Try: strike match on matchbox)")
+            return
+        end
+
+        -- Try body area self-hit first (e.g., "strike arm", "strike head")
+        local is_self, body_area = parse_self_infliction(noun)
+        if is_self and body_area then
+            handlers["hit"](ctx, noun)
             return
         end
 
@@ -5004,6 +5152,25 @@ function verbs.create()
                     p.state.bloody = false
                     p.state.bleed_ticks = nil
                     sleep_messages[#sleep_messages + 1] = "The bleeding stopped while you slept."
+                end
+            end
+            -- Tick injuries during sleep (bleeding can kill you in your sleep)
+            local sleep_inj_ok, sleep_injury_mod = pcall(require, "engine.injuries")
+            if sleep_inj_ok and sleep_injury_mod and ctx.player
+               and ctx.player.injuries and #ctx.player.injuries > 0 then
+                local inj_msgs, died = sleep_injury_mod.tick(ctx.player)
+                for _, msg in ipairs(inj_msgs or {}) do
+                    sleep_messages[#sleep_messages + 1] = msg
+                end
+                if died then
+                    -- Player bled out during sleep
+                    print("")
+                    print("You drift deeper into sleep. The pain fades. Everything fades.")
+                    print("You never wake up.")
+                    print("")
+                    print("YOU HAVE DIED.")
+                    ctx.game_over = true
+                    return
                 end
             end
         end
