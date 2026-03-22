@@ -56,6 +56,7 @@
 - [x] Full test suite: **872 pass / 0 fail** ✅ (1 flaky timing test excluded)
 - [x] ⚛️ Smithers — Tier 5: Fuzzy noun resolution. New `fuzzy.lua` module — material matching, partial name, property matching, disambiguation prompts, Levenshtein typo tolerance. Fallback only (zero happy-path cost). 52 new tests.
 - [x] **📊 GRADE after Tier 5:** A- (88%) — typos and vague nouns now tolerated
+- [x] 🧪 Nelson Pass 033: 53% pass. Pronouns (it/that) work, go back works, GOAP flawless. BUT: BUG-105/106 still hang ("what do I do?", "what now?"), bare "pick up" no auto-fill, "look under this" hangs (BUG-112).
 - [x] Full test suite: **927 pass / 0 fail** ✅
 
 ---
