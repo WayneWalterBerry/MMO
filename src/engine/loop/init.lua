@@ -265,7 +265,7 @@ function loop.run(context)
         if question_words[verb] then
           print("Try 'feel' to explore by touch, or 'look' if you have light. Type 'help' for a full list of commands.")
         else
-          print("I don't understand '" .. verb .. "'. Try 'look', 'examine', 'take', 'open', or type 'help' for a full list.")
+          print("That's not something you can do here. Try 'look', 'examine', 'take', or type 'help' for a full list.")
         end
       end
 

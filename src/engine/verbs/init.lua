@@ -53,11 +53,11 @@ local function err_not_found()
 end
 
 local function err_cant_do_that()
-    print("That doesn't seem to work. Try a different approach, or type 'help' for ideas.")
+    print("That doesn't seem to work. Maybe try examining it first, or type 'help' for ideas.")
 end
 
 local function err_nothing_happens(obj)
-    print("Nothing obvious happens. Maybe try examining it first?")
+    print("Nothing obvious happens. Try examining it more closely, or try a different approach.")
 end
 
 ---------------------------------------------------------------------------
@@ -1123,8 +1123,7 @@ function verbs.create()
             local light = get_light_level(ctx)
             if light == "dark" then
                 print("**" .. (ctx.current_room.name or "Unknown room") .. "**")
-                print("\nIt is too dark to see. You need a light source.")
-                print("(Try 'feel' to grope around in the darkness.)")
+                print("It is too dark to see. You need a light source. Try 'feel' to grope around in the darkness.")
                 local hour, minute = get_game_time(ctx)
                 print("\n" .. time_of_day_desc(hour) .. " It is " .. format_time(hour, minute) .. ".")
                 return
@@ -1200,7 +1199,7 @@ function verbs.create()
                 return
             end
             if not has_some_light(ctx) then
-                print("It is too dark to see anything.")
+                print("It is too dark to see anything. Try 'feel' to explore by touch.")
                 return
             end
             local obj = find_visible(ctx, target)
@@ -1283,7 +1282,7 @@ function verbs.create()
                 return
             end
             if not has_some_light(ctx) then
-                print("It is too dark to see anything.")
+                print("It is too dark to see anything. Try 'feel' to explore by touch.")
                 return
             end
             local obj, loc_type, parent_obj = find_visible(ctx, surface_target)
@@ -1339,7 +1338,7 @@ function verbs.create()
             return
         end
         if not has_some_light(ctx) then
-            print("It is too dark to see anything.")
+            print("It is too dark to see anything. Try 'feel' to explore by touch.")
             return
         end
         local obj = find_visible(ctx, noun)
@@ -1406,7 +1405,7 @@ function verbs.create()
     end
 
     handlers["examine"] = function(ctx, noun)
-        if noun == "" then print("Examine what?") return end
+        if noun == "" then print("Examine what? Try 'look' to see what's around you.") return end
         local blocked = vision_blocked_by_worn(ctx)
         if blocked then
             -- Vision blocked but player knows what they're holding
@@ -1439,7 +1438,7 @@ function verbs.create()
                         return
                     end
                 end
-                print("You can't find anything like that in the darkness.")
+                print("You can't find anything like that in the darkness. Try 'feel' to explore by touch.")
                 return
             end
             if obj.on_feel then
@@ -1500,9 +1499,9 @@ function verbs.create()
     handlers["check"] = handlers["examine"]
     handlers["inspect"] = handlers["examine"]
     handlers["read"] = function(ctx, noun)
-        if noun == "" then print("Read what?") return end
+        if noun == "" then print("Read what? Try 'look' to see what's here, then 'read [item]'.") return end
         if not has_some_light(ctx) then
-            print("It is too dark to read anything.")
+            print("It is too dark to read anything. You'll need a light source first.")
             return
         end
 
@@ -1513,7 +1512,7 @@ function verbs.create()
         end
 
         if not obj then
-            print("You don't see any " .. noun .. " to read.")
+            print("You don't see anything called that to read. Try 'look' to see what's around you.")
             return
         end
 
@@ -1614,14 +1613,14 @@ function verbs.create()
             if ctx.last_object and (ctx.last_object.surfaces or (ctx.last_object.container and ctx.last_object.contents)) then
                 container_noun = ctx.last_object.id
             else
-                print("Feel inside what?")
+                print("Feel inside what? Try 'feel' to explore your surroundings by touch.")
                 return
             end
         end
         if container_noun then
             local cobj, loc_type, parent_obj = find_visible(ctx, container_noun)
             if not cobj then
-                print("You can't feel anything like that nearby.")
+                print("You can't feel anything like that nearby. Try 'feel' to explore what's around you.")
                 return
             end
             -- BUG-058: If we found a part, redirect to the parent for surface access
@@ -1756,7 +1755,7 @@ function verbs.create()
                     return
                 end
             end
-            print("You can't feel anything like that nearby.")
+            print("You can't feel anything like that nearby. Try 'feel' to explore what's around you.")
             return
         end
 
@@ -5340,7 +5339,7 @@ function verbs.create()
     ---------------------------------------------------------------------------
     handlers["apply"] = function(ctx, noun)
         if noun == "" then
-            print("Apply what?")
+            print("Apply what? Try 'examine' to check what you're carrying.")
             return
         end
 

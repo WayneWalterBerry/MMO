@@ -181,12 +181,12 @@ end
 -- @return string
 function narrator.completion(ctx, found_items, target)
     if target then
-        return "You finish searching. No " .. target .. " found."
+        return "You finish searching but didn't find anything matching that. Try 'search' to see everything in the area."
     else
         if #found_items > 0 then
             return "You finish searching the area."
         else
-            return "You finish searching the area. Nothing interesting."
+            return "You finish searching the area thoroughly, but didn't find anything new. Try 'look' to get your bearings."
         end
     end
 end

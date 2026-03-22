@@ -152,6 +152,44 @@ local function strip_filler(text)
     return text
 end
 
+---------------------------------------------------------------------------
+-- Idiom Library (Tier 3)
+-- Table-driven expansion of common English phrases into canonical commands.
+-- Each entry: { pattern = Lua pattern, replacement = gsub replacement }.
+-- Easy to extend: just append new entries to preprocess.IDIOM_TABLE.
+---------------------------------------------------------------------------
+local IDIOM_TABLE = {
+    { pattern = "^set%s+fire%s+to%s+(.+)$",        replacement = "light %1" },
+    { pattern = "^put%s+down%s+(.+)$",              replacement = "drop %1" },
+    { pattern = "^blow%s+out%s+(.+)$",              replacement = "extinguish %1" },
+    { pattern = "^have%s+a%s+look%s+at%s+(.+)$",    replacement = "examine %1" },
+    { pattern = "^take%s+a%s+look%s+at%s+(.+)$",    replacement = "examine %1" },
+    { pattern = "^take%s+a%s+peek%s+at%s+(.+)$",    replacement = "examine %1" },
+    { pattern = "^have%s+a%s+look$",                replacement = "look" },
+    { pattern = "^take%s+a%s+look$",                replacement = "look" },
+    { pattern = "^take%s+a%s+peek$",                replacement = "look" },
+    { pattern = "^get%s+rid%s+of%s+(.+)$",          replacement = "drop %1" },
+    { pattern = "^make%s+use%s+of%s+(.+)$",         replacement = "use %1" },
+    { pattern = "^go%s+to%s+sleep$",                replacement = "sleep" },
+    { pattern = "^lay%s+down$",                     replacement = "sleep" },
+    { pattern = "^lie%s+down$",                     replacement = "sleep" },
+}
+
+-- Expose for external extension
+preprocess.IDIOM_TABLE = IDIOM_TABLE
+
+--- Stage: expand_idioms
+--- Expand common English idioms into canonical game commands.
+local function expand_idioms(text)
+    for _, idiom in ipairs(IDIOM_TABLE) do
+        local new_text = text:gsub(idiom.pattern, idiom.replacement)
+        if new_text ~= text then
+            return new_text, true
+        end
+    end
+    return text
+end
+
 --- Stage: transform_questions
 --- Convert question patterns into imperative commands.
 local function transform_questions(text)
@@ -532,6 +570,7 @@ end
 preprocess.pipeline = {
     normalize,                -- Trim, lowercase, strip question marks
     strip_filler,             -- Iterative: preambles + politeness + adverbs
+    expand_idioms,            -- Tier 3: common English phrases → canonical commands
     transform_questions,      -- Question patterns → imperative commands
     transform_look_patterns,  -- look at/for/around, check → canonical verbs
     transform_search_phrases, -- search/hunt/rummage/find compounds
@@ -546,6 +585,7 @@ preprocess.stages = {
     strip_adverbs = strip_adverbs,
     strip_preambles = strip_preambles,
     strip_filler = strip_filler,
+    expand_idioms = expand_idioms,
     transform_questions = transform_questions,
     transform_look_patterns = transform_look_patterns,
     transform_search_phrases = transform_search_phrases,
