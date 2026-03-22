@@ -1168,6 +1168,7 @@ local function move_spatial_object(ctx, obj, verb)
     -- If this is a covering object, dump underneath surface items to floor
     if obj.covering and obj.surfaces and obj.surfaces.underneath then
         local underneath = obj.surfaces.underneath
+        underneath.accessible = true   -- reveal surface after move (#26)
         for i = #(underneath.contents or {}), 1, -1 do
             local item_id = underneath.contents[i]
             room.contents[#room.contents + 1] = item_id

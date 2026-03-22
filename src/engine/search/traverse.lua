@@ -58,6 +58,11 @@ local function expand_object(object_id, registry, depth, include_nested_containe
     if not obj then
         return {}
     end
+
+    -- Spatial visibility: hidden objects are invisible to search (#26)
+    if obj.hidden then
+        return {}
+    end
     
     local entries = {}
     
@@ -185,6 +190,11 @@ local function matches_target(object, target, registry, depth, visited)
         return false
     end
 
+    -- Spatial visibility: hidden objects never match (#26)
+    if object.hidden then
+        return false
+    end
+
     -- Cycle detection: skip objects already checked in this match walk.
     -- Prevents infinite recursion from circular containment references.
     local oid = object.id
@@ -285,7 +295,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
             return result
         end
         
-        -- If surface is not accessible, try to open parent
+        -- If surface is not accessible, peek without changing state (#24)
         if surface_template.accessible == false then
             -- Check if parent is locked (via FSM state or container flag)
             local is_locked = containers.is_locked(parent)
@@ -293,67 +303,70 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 result.narrative = narrator.container_locked(ctx, parent)
                 return result
             end
+
+            -- Only peek inside container surfaces (drawers, wardrobes, etc.)
+            -- Non-container inaccessible surfaces (e.g., rug's "underneath")
+            -- are truly hidden and can't be searched until made accessible (#26)
+            if not containers.is_container(parent) then
+                result.narrative = ""
+                return result
+            end
             
-            -- Check if parent has FSM transitions
-            local fsm_ok, fsm_mod = pcall(require, "engine.fsm")
-            if fsm_ok and fsm_mod and parent._state and parent.transitions then
-                -- Try FSM "open" transition - find the target state
-                local target_state = nil
-                for _, t in ipairs(parent.transitions) do
-                    if t.from == parent._state and t.verb == "open" then
-                        target_state = t.to
-                        break
-                    end
-                end
-                
-                if target_state then
-                    local trans, err = fsm_mod.transition(registry, parent.id, target_state, ctx, "open")
-                    if trans then
-                        result.narrative = trans.message or "You open the " .. (parent.name or parent.id) .. "."
-                        -- Re-fetch surface template after state change
-                        surface_template = parent.surfaces and parent.surfaces[entry.surface_name]
-                        if parent._state and parent.states and parent.states[parent._state] then
-                            local state_obj = parent.states[parent._state]
-                            if state_obj.surfaces and state_obj.surfaces[entry.surface_name] then
-                                surface_template = state_obj.surfaces[entry.surface_name]
-                            end
+            -- Peek at contents without opening (#24: read-only search)
+            local actual_surface = parent.surfaces and parent.surfaces[entry.surface_name]
+            local contents = actual_surface and actual_surface.contents or {}
+            
+            -- Undirected search: enumerate contents
+            if not target and not is_goal_search then
+                if #contents > 0 then
+                    local items = {}
+                    for _, child_id in ipairs(contents) do
+                        local child = registry:get(child_id)
+                        if child then
+                            items[#items + 1] = child.name or child.id
                         end
-                        if not surface_template or surface_template.accessible == false then
-                            -- Still not accessible after opening - give up
+                    end
+                    result.narrative = narrator.container_contents_no_target(ctx, parent, items, nil)
+                else
+                    result.narrative = narrator.container_contents_no_target(ctx, parent, {}, nil)
+                end
+                return result
+            end
+            
+            -- Targeted search: check contents for match, report what's there if not found (#27)
+            for _, child_id in ipairs(contents) do
+                local child = registry:get(child_id)
+                if child then
+                    if target and not is_goal_search then
+                        if matches_target(child, target, registry, 0) then
+                            result.found = true
+                            result.item = child
+                            result.narrative = narrator.container_peek(ctx, parent) .. "\n" .. narrator.found_target(ctx, child, parent)
                             return result
                         end
-                    else
-                        -- FSM transition failed
-                        result.narrative = err or "You can't open that."
-                        return result
-                    end
-                else
-                    -- No open transition found
-                    result.narrative = "You can't open that."
-                    return result
-                end
-            else
-                -- No FSM - try container interface
-                local open_result = containers.open(ctx, parent)
-                if open_result.success then
-                    result.narrative = narrator.container_open(ctx, parent)
-                    -- Re-fetch surface template after state change
-                    surface_template = parent.surfaces and parent.surfaces[entry.surface_name]
-                    if parent._state and parent.states and parent.states[parent._state] then
-                        local state_obj = parent.states[parent._state]
-                        if state_obj.surfaces and state_obj.surfaces[entry.surface_name] then
-                            surface_template = state_obj.surfaces[entry.surface_name]
+                    elseif is_goal_search and goal_type and goal_value then
+                        if goals.matches_goal(child, goal_type, goal_value, registry) then
+                            result.found = true
+                            result.item = child
+                            result.narrative = narrator.container_peek(ctx, parent) .. "\n" .. narrator.found_target(ctx, child, parent)
+                            return result
                         end
                     end
-                    if not surface_template or surface_template.accessible == false then
-                        -- Still not accessible after opening - give up
-                        return result
-                    end
-                else
-                    result.narrative = open_result.narrative or ""
-                    return result
                 end
             end
+            
+            -- Target not found inside — report what IS there (#27)
+            if target then
+                local items = {}
+                for _, child_id in ipairs(contents) do
+                    local child = registry:get(child_id)
+                    if child then
+                        items[#items + 1] = child.name or child.id
+                    end
+                end
+                result.narrative = narrator.container_contents_no_target(ctx, parent, items, target)
+            end
+            return result
         end
         
         -- Now surface is accessible - check its contents
@@ -410,22 +423,19 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
         return result
     end
     
-    -- If it's a container and it's closed, try to open it
+    -- If it's a container and it's closed, peek without opening (#24)
     if entry.is_container and not entry.is_open then
         if entry.is_locked then
             -- Locked - skip with note
             result.narrative = narrator.container_locked(ctx, obj)
             return result
         else
-            -- Unlocked - auto-open
-            local open_result = containers.open(ctx, obj)
-            if open_result.success then
-                result.narrative = narrator.container_open(ctx, obj)
-                -- After opening, check contents
-                local contents = containers.get_contents(obj, registry)
+            -- Peek at contents without changing state (#24: read-only search)
+            local contents = containers.get_contents(obj, registry)
 
-                -- BUG-079: Undirected scoped search should enumerate container contents
-                if not target and not is_goal_search and #contents > 0 then
+            -- BUG-079: Undirected scoped search should enumerate container contents
+            if not target and not is_goal_search then
+                if #contents > 0 then
                     local items = {}
                     for _, child_id in ipairs(contents) do
                         local child = registry:get(child_id)
@@ -433,39 +443,47 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                             items[#items + 1] = child.name or child.id
                         end
                     end
-                    if #items > 0 then
-                        result.narrative = result.narrative .. "\nInside you find: " .. table.concat(items, ", ") .. "."
-                    end
-                    return result
+                    result.narrative = narrator.container_contents_no_target(ctx, obj, items, nil)
+                else
+                    result.narrative = narrator.container_contents_no_target(ctx, obj, {}, nil)
                 end
+                return result
+            end
 
-                for _, child_id in ipairs(contents) do
-                    local child = registry:get(child_id)
-                    if child then
-                        -- Check if child matches target
-                        if target and not is_goal_search then
-                            if matches_target(child, target, registry, 0) then
-                                result.found = true
-                                result.item = child
-                                result.narrative = result.narrative .. "\n" .. narrator.found_target(ctx, child, obj)
-                                return result
-                            end
-                        elseif is_goal_search and goal_type and goal_value then
-                            if goals.matches_goal(child, goal_type, goal_value, registry) then
-                                result.found = true
-                                result.item = child
-                                result.narrative = result.narrative .. "\n" .. narrator.found_target(ctx, child, obj)
-                                return result
-                            end
+            -- Targeted search: check contents, report what's there if not found (#27)
+            for _, child_id in ipairs(contents) do
+                local child = registry:get(child_id)
+                if child then
+                    if target and not is_goal_search then
+                        if matches_target(child, target, registry, 0) then
+                            result.found = true
+                            result.item = child
+                            result.narrative = narrator.container_peek(ctx, obj) .. "\n" .. narrator.found_target(ctx, child, obj)
+                            return result
+                        end
+                    elseif is_goal_search and goal_type and goal_value then
+                        if goals.matches_goal(child, goal_type, goal_value, registry) then
+                            result.found = true
+                            result.item = child
+                            result.narrative = narrator.container_peek(ctx, obj) .. "\n" .. narrator.found_target(ctx, child, obj)
+                            return result
                         end
                     end
                 end
-                -- If we get here, container was opened but target not found inside
-                return result
-            else
-                result.narrative = open_result.narrative or ""
-                return result
             end
+
+            -- Target not found inside — report what IS there (#27)
+            if target then
+                local items = {}
+                for _, child_id in ipairs(contents) do
+                    local child = registry:get(child_id)
+                    if child then
+                        items[#items + 1] = child.name or child.id
+                    end
+                end
+                result.narrative = narrator.container_contents_no_target(ctx, obj, items, target)
+            end
+            return result
         end
     end
     

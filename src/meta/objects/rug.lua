@@ -26,7 +26,7 @@ return {
     moved_on_feel = "The rug is bunched against the wall, its rough weave folded over itself.",
 
     surfaces = {
-        underneath = { capacity = 3, max_item_size = 2, contents = {"brass-key"} },
+        underneath = { capacity = 3, max_item_size = 2, contents = {"brass-key"}, accessible = false },
     },
 
     location = nil,

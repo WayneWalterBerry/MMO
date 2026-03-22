@@ -174,6 +174,42 @@ function narrator.found_target(ctx, item, container)
     return narrative
 end
 
+--- Generate narrative for peeking inside a container without opening (#24)
+-- @param ctx game context
+-- @param container container being peeked into
+-- @return string
+function narrator.container_peek(ctx, container)
+    local name = container.name or container.id or "it"
+    -- Strip leading article for "the" prefix
+    local display = name:gsub("^[Aa]n? ", ""):gsub("^[Tt]he ", "")
+    return "You check inside the " .. display .. "."
+end
+
+--- Generate narrative for container contents when target not found (#27)
+-- @param ctx game context
+-- @param container container that was checked
+-- @param items list of item name strings found inside
+-- @param target string the player was searching for
+-- @return string
+function narrator.container_contents_no_target(ctx, container, items, target)
+    local name = container.name or container.id or "it"
+    local display = name:gsub("^[Aa]n? ", ""):gsub("^[Tt]he ", "")
+    if #items == 0 then
+        if target then
+            return "You check inside the " .. display .. ". It's empty. No " .. target .. " here."
+        else
+            return "You check inside the " .. display .. ". It's empty."
+        end
+    else
+        local list = table.concat(items, ", ")
+        if target then
+            return "You check inside the " .. display .. ". Inside you see " .. list .. ", but no " .. target .. "."
+        else
+            return "You check inside the " .. display .. ". Inside you see " .. list .. "."
+        end
+    end
+end
+
 --- Generate narrative for search completion (exhausted)
 -- @param ctx game context
 -- @param found_items list of discovered objects
