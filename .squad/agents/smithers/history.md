@@ -1144,3 +1144,39 @@ Set `ctx.current_verb` at three dispatch points: `loop/init.lua`, `parser/init.l
 **Files Created:** `test/nightstand/test-container-gating-pass028.lua`
 
 ---
+
+### Session 2026-07-25: Phase 6 — Combat Verb Tests, BUG-061 Wine FSM Fix, Treatment Audit
+
+**Task:** Phase 6 remaining game systems — combat verb testing, wine FSM bug fix, treatment object status check.
+
+**Combat verb tests (25 tests):**
+- Stab: empty noun prompt, self with knife (bleeding injury, bloody state, body area description), no weapon, wrong weapon (pillow), non-self target (self-only message), body area targeting (left arm, torso with 1.5x damage modifier), uncarried weapon error.
+- Cut: empty noun prompt, self with knife (minor-cut injury, description), no weapon, dark room gating, world object mutation (rag with cutting_edge tool), uncuttable object rejection.
+- Slash: empty noun prompt, knife fails (no on_slash profile), proper slashing weapon works, falls through to cut for world objects.
+- Aliases: jab→stab, pierce→stab, slice→cut, carve→slash all verified.
+
+**BUG-061 wine FSM fix:**
+- Root cause: Wine bottle `type_id` in `storage-cellar.lua` was `fb17g5e6-8293-4c34-ef56-013278901234` — contains non-hex characters (g), doesn't match wine-bottle.lua GUID `{1143ab52-ba47-4610-bd1f-6c9aa6167287}`.
+- Fix: Updated type_id to `1143ab52-ba47-4610-bd1f-6c9aa6167287` (normalized GUID without braces).
+- Previous partial fixes (ID mismatch, `.inside` suffix) were already applied. This type_id mismatch was the remaining blocker preventing instance resolution.
+
+**Wine FSM regression tests (23 tests):**
+- Initial state verification, FSM structure recognition.
+- Transition coverage: sealed→open (open/uncork), open→empty (drink/pour), sealed→broken (break/smash), open→broken.
+- Mutation verification: weight changes, keyword additions (open, empty).
+- Blocked paths: drink from sealed returns no_transition, terminal states block all transitions.
+- Data integrity: type_id matches GUID, location uses `.inside` suffix, wine-rack contents reference correct ID.
+- get_transitions: sealed offers open+break (not drink/pour), open offers drink+pour+break (not open).
+
+**Treatment objects audit:**
+- `bandage.lua`: Fully implemented FSM object with clean→applied→soiled lifecycle, dual-binding to injury instances, reusable. Tests already exist in `test/injuries/test-self-infliction.lua`.
+- `salve`: Design doc only (`docs/design/player/healing-items.md`), no object file. Treats burns.
+- `nightshade antidote`: Design doc only, no object file. Injury type `poisoned-nightshade` exists in `src/meta/injuries/`.
+- No implementation work needed now — these are future content items.
+
+**Testing:** 35 test files, 1043 tests, 0 failures.
+
+**Files Changed:** `src/meta/world/storage-cellar.lua`
+**Files Created:** `test/verbs/test-combat-verbs.lua`, `test/verbs/test-wine-fsm.lua`
+
+---

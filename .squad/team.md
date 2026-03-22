@@ -21,6 +21,7 @@
 | 🏗️ Bart | Architect | ⚙️ Engineering | .squad/agents/bart/charter.md | Active |
 | 🔬 Frink | Researcher | 🔬 Research | .squad/agents/frink/charter.md | Active |
 | 🧪 Nelson | Tester | ⚙️ Engineering | .squad/agents/nelson/charter.md | Active |
+| 🏠 Marge | Test Manager | ⚙️ Engineering | .squad/agents/marge/charter.md | Active |
 | ⚛️ Smithers | UI Engineer | ⚙️ Engineering | .squad/agents/smithers/charter.md | Active |
 | 📝 Brockman | Documentation | 📝 Docs | .squad/agents/brockman/charter.md | Active |
 | 🏗️ Chalmers | Project Manager | 📋 Operations | .squad/agents/chalmers/charter.md | Active |
