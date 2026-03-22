@@ -2,11 +2,19 @@
 -- Input preprocessing pipeline: natural language normalization and basic parsing.
 -- Owned by Smithers (UI Engineer). Pure functions, no side effects.
 --
+-- Architecture: Table-driven pipeline of composable transform stages.
+-- Each stage: string → string (pure transform). Pipeline controls execution order.
+-- See docs/architecture/engine/parser/parser-strategy.md for rationale.
+--
 -- Extracts:
 --   preprocess.natural_language(input) -> verb, noun or nil, nil
 --   preprocess.parse(input) -> verb, noun
+--   preprocess.pipeline -> ordered table of transform stages (externally accessible)
 
 local preprocess = {}
+
+--- Debug flag: when true, prints input→output at each pipeline stage.
+preprocess.debug = false
 
 --- strip_articles(noun) -> string
 --- Strips leading articles ("the", "a", "an") from a noun phrase (BUG-081).
@@ -30,416 +38,520 @@ function preprocess.parse(input)
     return verb, noun
 end
 
---- natural_language(input) -> verb, noun or nil, nil
---- Converts common question patterns and multi-word phrases into known verbs.
---- Returns nil, nil if no pattern matches (caller should fall through to parse).
-function preprocess.natural_language(input, _depth)
-    _depth = _depth or 0
-    -- Recursion safety: preamble stripping is input-consuming (each call
-    -- has strictly shorter input), so it terminates naturally. This counter
-    -- is a belt-and-suspenders guard against adversarial "i want to" × 100.
-    if _depth > 10 then return nil, nil end
+---------------------------------------------------------------------------
+-- Pipeline Stage Functions
+-- Each takes a string, returns a string (primary contract).
+-- Convention: stages may return (text, true) as second value to signal
+-- they recognized/claimed the input, even if the output text is identical.
+-- This lets the pipeline runner distinguish "no match" from "matched but
+-- text was already canonical." Pure transforms, no state mutation.
+---------------------------------------------------------------------------
 
-    local lower = input:lower():match("^%s*(.-)%s*$")
-    if not lower or lower == "" then return nil, nil end
+--- Stage: normalize
+--- Trim whitespace, lowercase, strip trailing question marks.
+local function normalize(text)
+    if not text or text == "" then return "" end
+    local result = text:lower():match("^%s*(.-)%s*$")
+    if not result then return "" end
+    result = result:gsub("%?+$", "")
+    return result
+end
 
-    -- Prime Directive: Strip question marks first
-    lower = lower:gsub("%?+$", "")
+--- Stage: strip_politeness
+--- Remove politeness prefixes: "please", "kindly", "could you", etc.
+local function strip_politeness(text)
+    text = text:gsub("^please%s+", "")
+    text = text:gsub("^kindly%s+", "")
+    text = text:gsub("^could%s+you%s+", "")
+    text = text:gsub("^can%s+you%s+", "")
+    text = text:gsub("^would%s+you%s+", "")
+    text = text:gsub("^will%s+you%s+", "")
+    text = text:gsub("^let%s+me%s+", "")
+    text = text:gsub("^try%s+to%s+", "")
+    text = text:gsub("^attempt%s+to%s+", "")
+    text = text:gsub("^maybe%s+i%s+should%s+", "")
+    return text
+end
 
-    -- Prime Directive: Strip politeness words BEFORE any parsing
-    lower = lower:gsub("^please%s+", "")
-    lower = lower:gsub("^kindly%s+", "")
-    lower = lower:gsub("^could%s+you%s+", "")
-    lower = lower:gsub("^can%s+you%s+", "")
-    lower = lower:gsub("^would%s+you%s+", "")
-    lower = lower:gsub("^will%s+you%s+", "")
-    lower = lower:gsub("^let%s+me%s+", "")
-    lower = lower:gsub("^try%s+to%s+", "")
-    lower = lower:gsub("^attempt%s+to%s+", "")
-    lower = lower:gsub("^maybe%s+i%s+should%s+", "")
+--- Stage: strip_adverbs (BUG-085)
+--- Remove leading and trailing adverbs/modifiers.
+local function strip_adverbs(text)
+    -- Leading adverbs
+    text = text:gsub("^carefully%s+", "")
+    text = text:gsub("^closely%s+", "")
+    text = text:gsub("^quickly%s+", "")
+    text = text:gsub("^slowly%s+", "")
+    text = text:gsub("^gently%s+", "")
+    text = text:gsub("^thoroughly%s+", "")
+    text = text:gsub("^quietly%s+", "")
+    text = text:gsub("^frantically%s+", "")
+    text = text:gsub("^desperately%s+", "")
+    -- Trailing adverbs/modifiers
+    text = text:gsub("%s+carefully$", "")
+    text = text:gsub("%s+closely$", "")
+    text = text:gsub("%s+quickly$", "")
+    text = text:gsub("%s+slowly$", "")
+    text = text:gsub("%s+gently$", "")
+    text = text:gsub("%s+thoroughly$", "")
+    text = text:gsub("%s+quietly$", "")
+    text = text:gsub("%s+frantically$", "")
+    text = text:gsub("%s+desperately$", "")
+    text = text:gsub("%s+again$", "")
+    text = text:gsub("%s+now$", "")
+    text = text:gsub("%s+here$", "")
+    return text
+end
 
-    -- Prime Directive: Strip leading adverbs (BUG-085)
-    lower = lower:gsub("^carefully%s+", "")
-    lower = lower:gsub("^closely%s+", "")
-    lower = lower:gsub("^quickly%s+", "")
-    lower = lower:gsub("^slowly%s+", "")
-    lower = lower:gsub("^gently%s+", "")
-    lower = lower:gsub("^thoroughly%s+", "")
-    lower = lower:gsub("^quietly%s+", "")
-    lower = lower:gsub("^frantically%s+", "")
-    lower = lower:gsub("^desperately%s+", "")
+--- Stage: strip_preambles (BUG-036)
+--- Iteratively remove "I want to", "I need to", "I'd like to", etc.
+--- Iterative (not recursive) — each pass strictly shortens input.
+local function strip_preambles(text)
+    for _ = 1, 10 do
+        local rest = text:match("^i%s+want%s+to%s+(.+)")
+            or text:match("^i%s+need%s+to%s+(.+)")
+            or text:match("^i'?d%s+like%s+to%s+(.+)")
+            or text:match("^i%s+would%s+like%s+to%s+(.+)")
+            or text:match("^i'?ll%s+(.+)")
+            or text:match("^i%s+need%s+(.+)")
+            or text:match("^i%s+want%s+(.+)")
+        if not rest then break end
+        text = rest
+    end
+    return text
+end
 
-    -- Prime Directive: Strip trailing adverbs from noun phrases
-    lower = lower:gsub("%s+carefully$", "")
-    lower = lower:gsub("%s+closely$", "")
-    lower = lower:gsub("%s+quickly$", "")
-    lower = lower:gsub("%s+slowly$", "")
-    lower = lower:gsub("%s+gently$", "")
-    lower = lower:gsub("%s+thoroughly$", "")
-    lower = lower:gsub("%s+quietly$", "")
-    lower = lower:gsub("%s+frantically$", "")
-    lower = lower:gsub("%s+desperately$", "")
-    lower = lower:gsub("%s+again$", "")
-    lower = lower:gsub("%s+now$", "")
-    lower = lower:gsub("%s+here$", "")
+--- Stage: strip_filler
+--- Iteratively strips preambles, politeness, and adverbs until stable.
+--- Replaces the recursive natural_language re-entry pattern; single-pass,
+--- always terminates (each iteration strictly shortens input or stops).
+local function strip_filler(text)
+    for _ = 1, 10 do
+        local prev = text
+        text = strip_preambles(text)
+        text = strip_politeness(text)
+        text = strip_adverbs(text)
+        if text == prev then break end
+    end
+    return text
+end
 
-    -- Prime Directive: Convert questions to commands
-    -- "what's in the X?" → "examine X"
-    local whats_in = lower:match("^what'?s%s+in%s+the%s+(.+)$")
-        or lower:match("^what'?s%s+in%s+(.+)$")
+--- Stage: transform_questions
+--- Convert question patterns into imperative commands.
+local function transform_questions(text)
+    -- "what's in the X" → "examine X"
+    local whats_in = text:match("^what'?s%s+in%s+the%s+(.+)$")
+        or text:match("^what'?s%s+in%s+(.+)$")
     if whats_in then
-        return "examine", whats_in
+        return "examine " .. whats_in
     end
-    
-    -- "is there anything in X?" → "search X"
-    local is_anything_in = lower:match("^is%s+there%s+anything%s+in%s+(.+)$")
+
+    -- "is there anything in X" → "search X"
+    local is_anything_in = text:match("^is%s+there%s+anything%s+in%s+(.+)$")
     if is_anything_in then
-        return "search", is_anything_in
+        return "search " .. is_anything_in
     end
-    
-    -- "can I open X?" → "open X"
-    local can_i_verb, can_i_target = lower:match("^can%s+i%s+(%w+)%s+(.+)$")
+
+    -- "can I verb target" → "verb target"
+    local can_i_verb, can_i_target = text:match("^can%s+i%s+(%w+)%s+(.+)$")
     if can_i_verb and can_i_target then
-        return can_i_verb, can_i_target
-    end
-    
-    -- "what is this?" → "examine this"
-    if lower:match("^what%s+is%s+this$") then
-        return "examine", "this"
+        return can_i_verb .. " " .. can_i_target
     end
 
-    -- "what can I find?" → "search" (BUG-084)
-    if lower:match("^what%s+can%s+i%s+find") then
-        return "search", ""
+    -- "what is this" → "examine this"
+    if text:match("^what%s+is%s+this$") then
+        return "examine this"
     end
 
-    -- BUG-036: Strip "I want to / I need to / I'd like to" preambles
-    local preamble_rest = lower:match("^i%s+want%s+to%s+(.+)")
-        or lower:match("^i%s+need%s+to%s+(.+)")
-        or lower:match("^i'?d%s+like%s+to%s+(.+)")
-        or lower:match("^i%s+would%s+like%s+to%s+(.+)")
-        or lower:match("^i'?ll%s+(.+)")
-        or lower:match("^i%s+need%s+(.+)")
-        or lower:match("^i%s+want%s+(.+)")
-    if preamble_rest then
-        local v2, n2 = preprocess.natural_language(preamble_rest, _depth + 1)
-        if v2 then return v2, n2 end
-        return preprocess.parse(preamble_rest)
+    -- "what can I find" → "search" (BUG-084)
+    if text:match("^what%s+can%s+i%s+find") then
+        return "search"
     end
 
-    -- Question patterns → look
+    -- "what is around" / "what do I see" / "where am I" → "look"
     -- BUG-037: added "what's around me" pattern
-    if lower:match("^what%s+is%s+around")
-        or lower:match("^what'?s%s+around")
-        or lower:match("^what%s+do%s+i%s+see")
-        or lower:match("^what%s+can%s+i%s+see")
-        or lower:match("^where%s+am%s+i")
-        or lower:match("^look%s+around$") then
-        return "look", ""
-    end
-
-    -- BUG-087: "look at X" → "examine X" (normalize before verb dispatch)
-    local look_at_target = lower:match("^look%s+at%s+(.+)")
-    if look_at_target then
-        return "examine", look_at_target
-    end
-
-    -- BUG-086: "check X" → "examine X" (prevent fallthrough to embedding matcher)
-    local check_target = lower:match("^check%s+(.+)")
-    if check_target then
-        return "examine", check_target
-    end
-    
-    -- BUG-074: "look for X" → find X (search for X)
-    -- BUG-081: strip articles from target
-    local look_for_target = lower:match("^look%s+for%s+(.+)")
-    if look_for_target then
-        return "find", preprocess.strip_articles(look_for_target)
+    if text:match("^what%s+is%s+around")
+        or text:match("^what'?s%s+around")
+        or text:match("^what%s+do%s+i%s+see")
+        or text:match("^what%s+can%s+i%s+see")
+        or text:match("^where%s+am%s+i") then
+        return "look"
     end
 
     -- Question patterns → time
-    if lower:match("^what%s+time")
-        or lower:match("^what%s+is%s+the%s+time") then
-        return "time", ""
+    if text:match("^what%s+time")
+        or text:match("^what%s+is%s+the%s+time") then
+        return "time"
     end
 
-    -- Question patterns → inventory
-    -- BUG-038: added "what am I holding" pattern
-    if lower:match("^what%s+am%s+i%s+carry")
-        or lower:match("^what%s+am%s+i%s+hold")
-        or lower:match("^what%s+do%s+i%s+have") then
-        return "inventory", ""
+    -- Question patterns → inventory (BUG-038)
+    if text:match("^what%s+am%s+i%s+carry")
+        or text:match("^what%s+am%s+i%s+hold")
+        or text:match("^what%s+do%s+i%s+have") then
+        return "inventory"
     end
 
-    -- Question patterns → examine in (container queries with noun)
-    local container_noun = lower:match("^what'?s%s+in%s+(.+)")
-        or lower:match("^what%s+is%s+in%s+(.+)")
-        or lower:match("^what'?s%s+inside%s+(.+)")
-        or lower:match("^what%s+is%s+inside%s+(.+)")
+    -- Container queries with noun: "what's in X", "what is inside X"
+    local container_noun = text:match("^what'?s%s+in%s+(.+)")
+        or text:match("^what%s+is%s+in%s+(.+)")
+        or text:match("^what'?s%s+inside%s+(.+)")
+        or text:match("^what%s+is%s+inside%s+(.+)")
     if container_noun then
-        return "examine", container_noun
+        return "examine " .. container_noun
     end
 
-    -- Bare "what's inside" (no noun) → look
-    if lower:match("^what'?s%s+inside$")
-        or lower:match("^what%s+is%s+inside$") then
-        return "look", ""
+    -- Bare "what's inside" (no noun) → "look"
+    if text:match("^what'?s%s+inside$")
+        or text:match("^what%s+is%s+inside$") then
+        return "look"
     end
 
     -- Question patterns → help
-    if lower:match("^what%s+can%s+i%s+do")
-        or lower:match("^how%s+do%s+i") then
-        return "help", ""
+    if text:match("^what%s+can%s+i%s+do")
+        or text:match("^how%s+do%s+i") then
+        return "help"
     end
 
-    -- Grope/feel compound phrases → feel (room sweep)
-    if lower:match("^grope%s+around%s+")
-        or lower:match("^feel%s+around%s+") then
-        return "feel", ""
+    -- "what am I wearing" → "inventory"
+    if text:match("^what%s+am%s+i%s+wear") then
+        return "inventory"
     end
 
-    -- Search/find compound phrases → search (all-sense discovery)
-    -- "search around", "search for X", "find X", "hunt for X", "rummage for X"
-    -- Compound: "search [scope] for [target]", "find [target] in [scope]"
-    if lower:match("^search%s+around%s*") then
-        return "search", "around"
+    return text
+end
+
+--- Stage: transform_look_patterns
+--- Normalize look/check/look-for into canonical verbs.
+local function transform_look_patterns(text)
+    -- "look around" → "look" (BUG-037)
+    if text:match("^look%s+around$") then
+        return "look"
     end
-    
-    -- "search [scope] for [target]" → pass whole thing to verb handler
-    -- BUG-081: strip articles from both scope and target
-    local search_scope_for = lower:match("^search%s+(.+)%s+for%s+(.+)")
+
+    -- BUG-087: "look at X" → "examine X"
+    local look_at_target = text:match("^look%s+at%s+(.+)")
+    if look_at_target then
+        return "examine " .. look_at_target
+    end
+
+    -- BUG-086: "check X" → "examine X"
+    local check_target = text:match("^check%s+(.+)")
+    if check_target then
+        return "examine " .. check_target
+    end
+
+    -- BUG-074: "look for X" → "find X" (BUG-081: strip articles)
+    local look_for_target = text:match("^look%s+for%s+(.+)")
+    if look_for_target then
+        return "find " .. preprocess.strip_articles(look_for_target)
+    end
+
+    return text
+end
+
+--- Stage: transform_search_phrases
+--- Normalize search/hunt/rummage/find/feel compound phrases.
+--- Returns (text, true) on match — some patterns produce identical output
+--- (e.g., "search around" is already canonical) but still count as recognized.
+local function transform_search_phrases(text)
+    -- Grope/feel compound phrases → "feel" (room sweep)
+    if text:match("^grope%s+around%s+")
+        or text:match("^feel%s+around%s+") then
+        return "feel", true
+    end
+
+    -- "search around" → "search around"
+    if text:match("^search%s+around%s*") then
+        return "search around", true
+    end
+
+    -- "search [scope] for [target]" (BUG-081: strip articles)
+    local search_scope_for = text:match("^search%s+(.+)%s+for%s+(.+)")
     if search_scope_for then
-        local raw = lower:match("^search%s+(.+)$")
+        local raw = text:match("^search%s+(.+)$")
         local scope_raw, target_raw = raw:match("^(.-)%s+for%s+(.+)$")
         if scope_raw and target_raw then
-            return "search", preprocess.strip_articles(scope_raw)
-                .. " for " .. preprocess.strip_articles(target_raw)
+            return "search " .. preprocess.strip_articles(scope_raw)
+                .. " for " .. preprocess.strip_articles(target_raw), true
         end
-        return "search", raw
+        return "search " .. raw, true
     end
-    
-    -- "search for [target]" → target only
-    -- BUG-081: strip articles from target
-    -- BUG-078: "search for everything/anything/all" → sweep
-    local search_target = lower:match("^search%s+for%s+(.+)")
+
+    -- "search for [target]" (BUG-081, BUG-078: everything/anything/all → sweep)
+    local search_target = text:match("^search%s+for%s+(.+)")
     if search_target then
         local stripped = preprocess.strip_articles(search_target)
         if stripped == "everything" or stripped == "anything" or stripped == "all" then
-            return "search", ""
+            return "search", true
         end
-        return "search", stripped
+        return "search " .. stripped, true
     end
 
-    -- "hunt for [target]" / "hunt around" → search synonym
-    -- BUG-081: strip articles from target
-    local hunt_target = lower:match("^hunt%s+for%s+(.+)")
+    -- "hunt for [target]" / "hunt around" → search (BUG-081)
+    local hunt_target = text:match("^hunt%s+for%s+(.+)")
     if hunt_target then
-        return "search", preprocess.strip_articles(hunt_target)
+        return "search " .. preprocess.strip_articles(hunt_target), true
     end
-    if lower:match("^hunt%s+around%s*") then
-        return "search", "around"
+    if text:match("^hunt%s+around%s*") then
+        return "search around", true
     end
 
-    -- "rummage for [target]" / "rummage around" / "rummage through X"
-    -- BUG-081: strip articles from target
-    -- BUG-093: "rummage" and all its forms → search
-    local rummage_target = lower:match("^rummage%s+for%s+(.+)")
+    -- "rummage" and all forms → search (BUG-081, BUG-093)
+    local rummage_target = text:match("^rummage%s+for%s+(.+)")
     if rummage_target then
-        return "search", preprocess.strip_articles(rummage_target)
+        return "search " .. preprocess.strip_articles(rummage_target), true
     end
-    local rummage_through = lower:match("^rummage%s+through%s+(.+)")
+    local rummage_through = text:match("^rummage%s+through%s+(.+)")
     if rummage_through then
-        return "search", rummage_through
+        return "search " .. rummage_through, true
     end
-    if lower:match("^rummage%s+around%s*") then
-        return "search", "around"
+    if text:match("^rummage%s+around%s*") then
+        return "search around", true
     end
-    -- BUG-093: bare "rummage" or "rummage [scope]" → search
-    local rummage_bare = lower:match("^rummage$")
-    if rummage_bare then
-        return "search", "around"
+    if text:match("^rummage$") then
+        return "search around", true
     end
-    local rummage_scope = lower:match("^rummage%s+(.+)")
+    local rummage_scope = text:match("^rummage%s+(.+)")
     if rummage_scope then
-        return "search", preprocess.strip_articles(rummage_scope)
+        return "search " .. preprocess.strip_articles(rummage_scope), true
     end
-    
-    -- "find [target] in [scope]" → pass whole thing to verb handler
-    -- BUG-081: strip articles from target and scope
-    local find_in = lower:match("^find%s+(.+)%s+in%s+(.+)")
+
+    -- "find [target] in [scope]" (BUG-081: strip articles)
+    local find_in = text:match("^find%s+(.+)%s+in%s+(.+)")
     if find_in then
-        local raw = lower:match("^find%s+(.+)$")
+        local raw = text:match("^find%s+(.+)$")
         local target_raw, scope_raw = raw:match("^(.-)%s+in%s+(.+)$")
         if target_raw and scope_raw then
-            return "find", preprocess.strip_articles(target_raw)
-                .. " in " .. preprocess.strip_articles(scope_raw)
+            return "find " .. preprocess.strip_articles(target_raw)
+                .. " in " .. preprocess.strip_articles(scope_raw), true
         end
-        return "find", raw
+        return "find " .. raw, true
     end
-    
-    -- "find [target]"
-    -- BUG-081: strip articles from target
-    -- BUG-078: "find everything/anything/all" → undirected sweep
-    local find_target = lower:match("^find%s+(.+)")
+
+    -- "find [target]" (BUG-081, BUG-078: everything/anything/all → sweep)
+    local find_target = text:match("^find%s+(.+)")
     if find_target then
         local stripped = preprocess.strip_articles(find_target)
         if stripped == "everything" or stripped == "anything" or stripped == "all" then
-            return "search", ""
+            return "search", true
         end
-        return "find", stripped
+        return "find " .. stripped, true
     end
 
-    -- BUG-049: "pry open X" → open X
-    local pry_target = lower:match("^pry%s+open%s+(.+)")
+    return text
+end
+
+--- Stage: transform_compound_actions
+--- Normalize compound verb phrases (pry open, use X on Y, put/take, etc.)
+local function transform_compound_actions(text)
+    -- BUG-049: "pry open X" → "open X"
+    local pry_target = text:match("^pry%s+open%s+(.+)")
     if pry_target then
-        return "open", pry_target
+        return "open " .. pry_target
     end
 
-    -- "use crowbar/bar on X" → open X (lever tool to force open)
-    local crowbar_target = lower:match("^use%s+crowbar%s+on%s+(.+)")
-        or lower:match("^use%s+bar%s+on%s+(.+)")
-        or lower:match("^use%s+pry%s*bar%s+on%s+(.+)")
+    -- "use crowbar/bar on X" → "open X"
+    local crowbar_target = text:match("^use%s+crowbar%s+on%s+(.+)")
+        or text:match("^use%s+bar%s+on%s+(.+)")
+        or text:match("^use%s+pry%s*bar%s+on%s+(.+)")
     if crowbar_target then
-        return "open", crowbar_target
+        return "open " .. crowbar_target
     end
 
-    -- "report bug" / "report a bug" → report_bug
-    if lower:match("^report%s+a?%s*bug")
-        or lower:match("^bug%s+report")
-        or lower:match("^file%s+a?%s*bug") then
-        return "report_bug", ""
+    -- "report bug" / "report a bug" → "report_bug"
+    if text:match("^report%s+a?%s*bug")
+        or text:match("^bug%s+report")
+        or text:match("^file%s+a?%s*bug") then
+        return "report_bug"
     end
 
-    -- Composite part phrases: "take out X", "pull out X" → pull
-    local pull_target = lower:match("^take%s+out%s+(.+)")
-        or lower:match("^pull%s+out%s+(.+)")
-        or lower:match("^yank%s+out%s+(.+)")
+    -- "take out X", "pull out X", "yank out X" → "pull X"
+    local pull_target = text:match("^take%s+out%s+(.+)")
+        or text:match("^pull%s+out%s+(.+)")
+        or text:match("^yank%s+out%s+(.+)")
     if pull_target then
-        return "pull", pull_target
+        return "pull " .. pull_target
     end
 
-    -- Spatial movement phrases: "roll up X" → move X
-    local roll_target = lower:match("^roll%s+up%s+(.+)")
-        or lower:match("^roll%s+(.+)%s+up$")
+    -- "roll up X" → "move X"
+    local roll_target = text:match("^roll%s+up%s+(.+)")
+        or text:match("^roll%s+(.+)%s+up$")
     if roll_target then
-        return "move", roll_target
+        return "move " .. roll_target
     end
 
-    -- "pull back X" → move X
-    local pullback_target = lower:match("^pull%s+back%s+(.+)")
+    -- "pull back X" → "move X"
+    local pullback_target = text:match("^pull%s+back%s+(.+)")
     if pullback_target then
-        return "move", pullback_target
+        return "move " .. pullback_target
     end
 
-    -- "uncork X", "pop cork" → uncork
-    local uncork_target = lower:match("^pop%s+(.+)")
+    -- "pop cork" → "uncork bottle"
+    local uncork_target = text:match("^pop%s+(.+)")
     if uncork_target and uncork_target:match("cork") then
-        return "uncork", "bottle"
+        return "uncork bottle"
     end
 
-    -- "use X on Y" → sew Y with X (crafting shorthand)
-    -- BUG-039: expanded to handle fire tools and generic "apply X to Y"
-    local use_tool, use_target = lower:match("^use%s+(.+)%s+on%s+(.+)$")
+    -- "use X on Y" → dispatch by tool type (BUG-039)
+    local use_tool, use_target = text:match("^use%s+(.+)%s+on%s+(.+)$")
     if use_tool and use_target then
         if use_tool:match("needle") or use_tool:match("thread") then
-            return "sew", use_target .. " with " .. use_tool
+            return "sew " .. use_target .. " with " .. use_tool
         end
         if use_tool:match("key") then
-            return "unlock", use_target .. " with " .. use_tool
+            return "unlock " .. use_target .. " with " .. use_tool
         end
         if use_tool:match("match") or use_tool:match("lighter")
             or use_tool:match("flint") or use_tool:match("torch")
             or use_tool:match("fire") or use_tool:match("flame") then
-            return "light", use_target .. " with " .. use_tool
+            return "light " .. use_target .. " with " .. use_tool
         end
-        -- Generic fallback: "use X on Y" → "apply" semantics via put
-        return "put", use_tool .. " on " .. use_target
+        return "put " .. use_tool .. " on " .. use_target
     end
 
-    -- "push X back" / "put X back in Y" → put
-    local push_back_target = lower:match("^push%s+(.+)%s+back")
+    -- "push X back" → "put X in X"
+    local push_back_target = text:match("^push%s+(.+)%s+back")
     if push_back_target then
-        return "put", push_back_target .. " in " .. push_back_target
+        return "put " .. push_back_target .. " in " .. push_back_target
     end
 
-    -- "put X back" → put X in (context-dependent, let verb handler sort it)
-    local put_back_item, put_back_target2 = lower:match("^put%s+(.+)%s+back%s+in%s+(.+)")
+    -- "put X back in Y" → "put X in Y"
+    local put_back_item, put_back_target2 = text:match("^put%s+(.+)%s+back%s+in%s+(.+)")
     if put_back_item then
-        return "put", put_back_item .. " in " .. put_back_target2
+        return "put " .. put_back_item .. " in " .. put_back_target2
     end
 
-    -- Extinguish phrases: "put out X", "blow out X" → extinguish
-    local extinguish_target = lower:match("^put%s+out%s+(.+)")
-        or lower:match("^blow%s+out%s+(.+)")
+    -- "put out X", "blow out X" → "extinguish X"
+    local extinguish_target = text:match("^put%s+out%s+(.+)")
+        or text:match("^blow%s+out%s+(.+)")
     if extinguish_target then
-        return "extinguish", extinguish_target
+        return "extinguish " .. extinguish_target
     end
 
-    -- Wear/equip phrases: "put on X", "dress in X" → wear
-    local wear_target = lower:match("^put%s+on%s+(.+)")
-        or lower:match("^dress%s+in%s+(.+)")
+    -- "put on X", "dress in X" → "wear X"
+    local wear_target = text:match("^put%s+on%s+(.+)")
+        or text:match("^dress%s+in%s+(.+)")
     if wear_target then
-        return "wear", wear_target
+        return "wear " .. wear_target
     end
 
-    -- Remove/unequip phrases: "take off X" → remove
-    local remove_target = lower:match("^take%s+off%s+(.+)")
+    -- "take off X" → "remove X"
+    local remove_target = text:match("^take%s+off%s+(.+)")
     if remove_target then
-        return "remove", remove_target
+        return "remove " .. remove_target
     end
 
-    -- Wear query: "what am i wearing" → inventory
-    if lower:match("^what%s+am%s+i%s+wear") then
-        return "inventory", ""
-    end
+    return text
+end
 
-    -- Sleep phrases: "take a nap", "go to sleep", "lie down", "go to bed"
-    if lower:match("^take%s+a%s+nap") then
-        return "sleep", ""
+--- Stage: transform_movement
+--- Normalize sleep, stair, and clock phrases.
+local function transform_movement(text)
+    -- Sleep phrases
+    if text:match("^take%s+a%s+nap") then
+        return "sleep"
     end
-    local go_sleep_noun = lower:match("^go%s+to%s+sleep%s*(.*)")
+    local go_sleep_noun = text:match("^go%s+to%s+sleep%s*(.*)")
     if go_sleep_noun then
-        return "sleep", go_sleep_noun
+        if go_sleep_noun == "" then return "sleep" end
+        return "sleep " .. go_sleep_noun
     end
-    if lower:match("^go%s+to%s+bed") then
-        return "sleep", ""
+    if text:match("^go%s+to%s+bed") then
+        return "sleep"
     end
-    if lower:match("^lie%s+down") then
-        return "sleep", ""
-    end
-
-    -- Movement phrases: stairs, through, into
-    if lower:match("^go%s+down%s+the%s+stair")
-        or lower:match("^climb%s+down%s+the%s+stair")
-        or lower:match("^descend%s+the%s+stair")
-        or lower:match("^descend%s+stair") then
-        return "down", ""
-    end
-    if lower:match("^go%s+up%s+the%s+stair")
-        or lower:match("^climb%s+up%s+the%s+stair")
-        or lower:match("^ascend%s+the%s+stair")
-        or lower:match("^ascend%s+stair") then
-        return "up", ""
+    if text:match("^lie%s+down") then
+        return "sleep"
     end
 
-    -- Clock adjustment phrases: "turn hands", "set clock", "adjust clock"
-    local clock_target = lower:match("^turn%s+hands%s*(.*)$")
-        or lower:match("^turn%s+the%s+hands%s*(.*)$")
+    -- Stair movement
+    if text:match("^go%s+down%s+the%s+stair")
+        or text:match("^climb%s+down%s+the%s+stair")
+        or text:match("^descend%s+the%s+stair")
+        or text:match("^descend%s+stair") then
+        return "down"
+    end
+    if text:match("^go%s+up%s+the%s+stair")
+        or text:match("^climb%s+up%s+the%s+stair")
+        or text:match("^ascend%s+the%s+stair")
+        or text:match("^ascend%s+stair") then
+        return "up"
+    end
+
+    -- Clock adjustment: "turn hands", "adjust clock", "set clock"
+    local clock_target = text:match("^turn%s+hands%s*(.*)$")
+        or text:match("^turn%s+the%s+hands%s*(.*)$")
     if clock_target then
         local target = clock_target ~= "" and clock_target or "clock"
-        return "set", target
+        return "set " .. target
     end
-    if lower:match("^adjust%s+the%s+clock") or lower:match("^adjust%s+clock") then
-        return "set", "clock"
+    if text:match("^adjust%s+the%s+clock") or text:match("^adjust%s+clock") then
+        return "set clock"
     end
-    if lower:match("^set%s+the%s+clock") or lower:match("^set%s+clock") then
-        return "set", "clock"
+    if text:match("^set%s+the%s+clock") or text:match("^set%s+clock") then
+        return "set clock"
     end
 
-    -- If we stripped any politeness/adverbs, the input changed - try basic parse
-    -- This handles cases like "please open nightstand" → "open nightstand" → parse
-    if lower ~= input:lower():match("^%s*(.-)%s*$"):gsub("%?+$", "") then
-        return preprocess.parse(lower)
+    return text
+end
+
+---------------------------------------------------------------------------
+-- Pipeline Definition
+-- Ordered table of transform stages. Externally accessible for extension.
+-- Adding a new stage: table.insert(preprocess.pipeline, N, my_transform)
+-- Disabling a stage: table.remove(preprocess.pipeline, N)
+---------------------------------------------------------------------------
+
+preprocess.pipeline = {
+    normalize,                -- Trim, lowercase, strip question marks
+    strip_filler,             -- Iterative: preambles + politeness + adverbs
+    transform_questions,      -- Question patterns → imperative commands
+    transform_look_patterns,  -- look at/for/around, check → canonical verbs
+    transform_search_phrases, -- search/hunt/rummage/find compounds
+    transform_compound_actions, -- pry, use X on Y, put/take, pull, wear
+    transform_movement,       -- sleep, stairs, clock
+}
+
+-- Expose individual stage functions for testing and reuse
+preprocess.stages = {
+    normalize = normalize,
+    strip_politeness = strip_politeness,
+    strip_adverbs = strip_adverbs,
+    strip_preambles = strip_preambles,
+    strip_filler = strip_filler,
+    transform_questions = transform_questions,
+    transform_look_patterns = transform_look_patterns,
+    transform_search_phrases = transform_search_phrases,
+    transform_compound_actions = transform_compound_actions,
+    transform_movement = transform_movement,
+}
+
+--- natural_language(input) -> verb, noun or nil, nil
+--- Runs the preprocessing pipeline, then parses the result.
+--- Returns nil, nil if no transform matched (caller should fall through to parse).
+function preprocess.natural_language(input, _depth)
+    -- _depth accepted for backward compatibility but unused (pipeline is iterative)
+    if not input then return nil, nil end
+
+    local text = input
+    local matched = false
+    for i, transform in ipairs(preprocess.pipeline) do
+        local before = text
+        local result, stage_matched = transform(text)
+        text = result
+        if stage_matched or text ~= before then
+            matched = true
+        end
+        if preprocess.debug and (stage_matched or text ~= before) then
+            print(string.format("  [pipeline %d] %q → %q%s",
+                i, before, text, stage_matched and " (claimed)" or ""))
+        end
+    end
+
+    if text == "" then return nil, nil end
+
+    -- If any stage transformed or recognized the text, parse the result
+    local original = normalize(input)
+    if matched or text ~= original then
+        return preprocess.parse(text)
     end
 
     return nil, nil
