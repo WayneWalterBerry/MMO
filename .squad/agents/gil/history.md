@@ -57,3 +57,14 @@
 - **Deploy Status:** ✅ Live site deployed with all fixes
 - **Testing:** Nelson Pass 035: 50/50 PASS, zero hangs with --headless mode
 - **Next Phase:** Ready for ongoing web layer support and maintenance
+
+### 2026-03-22: Deploy Phase 3 — hit verb, unconsciousness, mirror
+- **Timestamp:** 2026-03-22T14:46Z
+- **Status:** ✅ COMPLETE — Phase 3 deployed to GitHub Pages
+- **Pages commit:** `087cee6` (main branch, 6 files changed, +564 lines)
+- **Engine bundle:** 130.7 KB compressed (+4.8 KB from previous 126 KB), 91 meta files (78 objects, 7 rooms, 5 templates, 1 level)
+- **Cache-bust stamp:** `20260322144632` stamped into `bootstrapper.js` and `index.html`
+- **Files deployed:** `index.html`, `bootstrapper.js`, `game-adapter.lua`, `engine.lua(.gz)`, 1 new meta object (`eda1257d-...`)
+- ⚠️ **Recurring issue:** `Copy-Item -Force` silently failed to overwrite `index.html` and `bootstrapper.js` again (same as 2026-07-27 deploy). Workaround: `Remove-Item` first, then `Copy-Item`. This should be scripted into the deploy process.
+- **What shipped (Smithers Phase 3):** hit verb, unconsciousness system, mirror object
+- **Verification:** Live site at `https://waynewalterberry.github.io/play/` returns HTTP 200. CDN propagation may delay new stamp by 1–3 minutes.
