@@ -41,6 +41,45 @@
 
 ## Recent Updates
 
+### Session: Parser Strategy Documentation (2026-03-25)
+**Status:** ✅ COMPLETE  
+**Requested by:** Wayne "Effe" Berry (Decision Architect)
+
+**Task:** Document strategic analysis of three AI buzzwords evaluated against Prime Directive, with architectural recommendations.
+
+**Deliverable:** `docs/architecture/engine/parser/parser-strategy.md`
+
+**Analysis:**
+1. **Decision Matrix Skill** — REJECTED
+   - What it claims to solve: Scoring multiple parser interpretations
+   - What we already have: GOAP + embedding matcher disambiguation
+   - Real problem: Coverage, not decision logic (need better idioms/synonyms)
+   - Verdict: Expand idiom table instead of adding framework
+
+2. **Humanizer** — REJECTED
+   - What it claims to solve: Making AI responses sound natural
+   - What we already have: narrator.lua + error message overhaul (Tier 2 roadmap)
+   - Real problem: Template rotation bug, error messages need polish
+   - Verdict: Fix existing systems instead of wrapping them
+
+3. **Orchestration Framework** — REJECTED (but pattern KEPT)
+   - What it claims to solve: Coordinating pipeline stages
+   - What we already have: Game loop IS orchestrator
+   - Real pattern worth keeping: Table-driven pipeline from roadmap section 6
+   - Why framework fails: Zero-token constraint makes simplicity paramount
+   - Verdict: Use good pipeline design (table-driven), not orchestration framework
+
+**Key Insight:**
+- Prime Directive gap is **coverage**, not architecture
+- Existing systems need polish, not frameworks
+- Best pattern: Composable pipeline stages (10-50 lines each)
+
+**Roadmap Reference:**
+- Section 6 of prime-directive-roadmap.md details the pipeline refactor
+- Shows extensible architecture without framework overhead
+
+**Commit:** `a86f9d7` — docs: Add parser strategy document (buzzword analysis & architectural decisions)
+
 ### Session: BUG-067/068 Investigation (2026-03-21)
 **Status:** ✅ CANNOT REPRODUCE — Bugs not present  
 **Requested by:** Wayne "Effe" Berry
@@ -533,6 +572,27 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 ### Session: Player Architecture Revision — Derived Health, First-Class Inventory (2026-07-22)
 **Status:** ✅ COMPLETE
 **Directive:** Wayne directive 2026-03-21T19:17Z — Player architecture refinements
+
+---
+
+## Learnings
+
+### On Architectural Buzzwords vs. Prime Directive Constraints (2026-03-25)
+**Context:** Evaluated three AI systems buzzwords (Decision Matrix Skill, Humanizer, Orchestration Framework) against the Prime Directive ("feel like Copilot, cost like Zork").
+
+**Key Insight:** Buzzwords designed for systems that call AI models (token cost, complex state management) don't fit zero-token constraints.
+
+**Decision Pattern:**
+- When a buzzword describes a pattern you already have (e.g., GOAP IS decision-making) — don't add the framework, expand the existing system
+- When a buzzword would wrap existing code (e.g., Humanizer around narrator.lua) — polish the original instead
+- When a buzzword requires infrastructure you don't have (e.g., orchestration framework) — use simple design patterns instead
+
+**Applied Result:**
+- Rejected formal Decision Matrix (idiom expansion > framework)
+- Rejected Humanizer Layer (narrator + error message polish > wrapper)
+- Rejected Orchestration Framework (table-driven pipeline > engine)
+
+**Takeaway:** The gap in parser coverage is engineering discipline, not missing patterns. Coverage = width (more synonyms) + tone (better errors) + context (discovery memory). Architecture IS solid; execution is what matters.
 
 **What Changed:**
 1. **health.md** — Full rewrite. Health is now DERIVED (max_health - sum(injury.damage)), not stored. Removed player.health field. Removed old damage pipeline that mutated health directly. Healing now removes injury damage instead of "adding HP." Death check uses compute_health().
