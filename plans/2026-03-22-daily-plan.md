@@ -62,6 +62,7 @@
 - [x] Full test suite: **968 pass / 0 fail** ✅
 - [x] ⚛️ Smithers — Fixed BUG-105/106/112: belt-and-suspenders help safety net, look under/beneath → examine. 27 new tests.
 - [x] Full test suite: **995 pass / 0 fail** ✅
+- [ ] ⚛️ Smithers — Fixing BUG-113/114/115 (context window gaps: bare pick up, discovery phrases, spatial references) 🔄
 
 ---
 
