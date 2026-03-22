@@ -46,3 +46,14 @@
   - CBG: 5 design docs, Bart: 2 architecture docs (no runtime impact, bundled in engine)
 - All 5 deploy-checklist files copied: `index.html`, `bootstrapper.js`, `game-adapter.lua`, `engine.lua.gz`, `meta/*`
 - ⚠️ First copy of `bootstrapper.js` and `index.html` silently didn't overwrite (identical LastWriteTime?). Had to re-copy individually to get the cache-bust stamps to land. Watch for this in future deploys.
+
+### 2026-03-22 (Afternoon): Phase 7 Completion — First Assignment
+- **Timestamp:** 2026-03-22T20:05Z
+- **Status:** ✅ COMPLETE — All web bugs fixed, live deployment complete
+- **Assignment Summary:** Fixed 3 web issues in first assignment as new Web Engineer
+  1. **Issue #12:** Copy button rendering in terminal (SVG icon, clipboard API, feedback animation)
+  2. **Issue #13:** Bug report truncation (web bridge transcript trim to last 3 entries)
+  3. **Issue #18:** Safari cache-busting (meta tags + query strings + build auto-stamp)
+- **Deploy Status:** ✅ Live site deployed with all fixes
+- **Testing:** Nelson Pass 035: 50/50 PASS, zero hangs with --headless mode
+- **Next Phase:** Ready for ongoing web layer support and maintenance

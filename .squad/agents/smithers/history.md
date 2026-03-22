@@ -1217,3 +1217,23 @@ Set `ctx.current_verb` at three dispatch points: `loop/init.lua`, `parser/init.l
 **Files Created:** `test/parser/test-issue-14-15-16-17.lua`
 
 ---
+
+### Session 2026-03-22: Deployment & Parser Bugs (Phase 7 Complete)
+
+**Task:** Deploy all fixes to live site. Deploy gate unblocked after Marge verified no critical issues.
+
+**Status:** ✅ COMPLETE — Live deployment complete, 1,088 tests passing
+
+**Summary:** Issues #14–#17 (parser bugs) fixed and verified. Test suite passing. Deployment prerequisites cleared. Live site live.
+
+**Key Findings:**
+- Nelson Pass 035: 50/50 PASS, zero hangs with --headless mode
+- All 4 parser bugs (#14-17) fixed in this session
+- Decisions D-MODSTRIP, D-ALREADY-LIT, D-CONDITIONAL, D-GOAP-NARRATE documented
+- Implementation gap found: sleep verb doesn't call injury_mod.tick() — needs fix before Phase 3
+
+**Files Updated:** All parser pipeline files finalized
+
+**Next Phase:** Phase 3 implementation (consciousness + appearance) ready to begin. Bart is designing architecture, Smithers will implement engine side.
+
+---
