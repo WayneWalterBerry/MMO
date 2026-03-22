@@ -296,10 +296,12 @@
 **The goal:** Make it architecturally impossible for the parser to hang. Not "fix known inputs" — make the CLASS of inputs safe.
 
 ### 🏗️ Bart: Deep RCA — why can the parser hang at all?
-- [ ] Trace the exact code path for BUG-105/106/116/117/118 in the LIVE game (not unit tests)
+- [ ] **First: add detailed trace logging to the parser pipeline and game loop dispatch.** Log entry/exit of every pipeline stage, every verb dispatch, every fallback path. When a hang occurs, the log shows exactly where it got stuck. This is the diagnostic tool — build it first, then use it.
+- [ ] Reproduce BUG-105/106/116/117/118 in the LIVE game with trace logging ON
+- [ ] Read the trace — which stage/function is the last one that runs before the hang?
 - [ ] Why do unit tests pass but live play hangs? What's different about the game loop context?
 - [ ] Propose a fix that makes hangs impossible, not just unlikely
-- [ ] Document in GitHub Issue comments with RCA
+- [ ] Document findings in GitHub Issue comments with RCA
 
 ### ⚛️ Smithers: Implement Bart's fix + global safety net
 - [ ] Implement the architectural fix Bart proposes
