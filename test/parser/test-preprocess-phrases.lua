@@ -85,10 +85,10 @@ test("BUG-074 regression: 'look for a candle' → find candle", function()
     eq("candle", n, "Article 'a' should be stripped from target")
 end)
 
-test("BUG-074 regression: 'look for matches' → find matches", function()
+test("BUG-074 regression: 'look for matches' → find match (BUG-111: singularized)", function()
     local v, n = preprocess.natural_language("look for matches")
     eq("find", v, "Should convert 'look for' to 'find'")
-    eq("matches", n, "Target should be 'matches'")
+    eq("match", n, "Target should be singularized to 'match' (BUG-111)")
 end)
 
 test("BUG-074 regression: 'look for the key' → find key", function()
@@ -101,10 +101,10 @@ end)
 h.suite("4. POLITENESS STRIPPING (BUG-083)")
 -------------------------------------------------------------------------------
 
-test("BUG-083: 'could you search for matches' → search matches", function()
+test("BUG-083: 'could you search for matches' → search match (BUG-111: singularized)", function()
     local v, n = preprocess.natural_language("could you search for matches")
     eq("search", v, "Should strip 'could you' and parse 'search for matches'")
-    eq("matches", n, "Should extract 'matches' as target")
+    eq("match", n, "Should singularize 'matches' to 'match' (BUG-111)")
 end)
 
 test("'please search the nightstand' → search nightstand (verified pass)", function()
@@ -219,11 +219,11 @@ end)
 h.suite("8. SYNONYM RECOGNITION — 'hunt for' (Pass-025 T-026)")
 -------------------------------------------------------------------------------
 
-test("'hunt for matches' → find/search matches", function()
+test("'hunt for matches' → find/search match (BUG-111: singularized)", function()
     local v, n = preprocess.natural_language("hunt for matches")
     truthy(v == "find" or v == "search",
            "'hunt for' should be synonym for find/search, got: " .. tostring(v))
-    eq("matches", n, "Should extract 'matches' as target")
+    eq("match", n, "Should singularize 'matches' to 'match' (BUG-111)")
 end)
 
 test("'hunt around' → search around", function()

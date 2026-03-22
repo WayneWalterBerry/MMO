@@ -46,9 +46,9 @@ test("'search for the matchbox' → 'search matchbox'", function()
     eq("search matchbox", result)
 end)
 
-test("'search for matches' → 'search matches'", function()
+test("'search for matches' → 'search match' (BUG-111: singularized)", function()
     local result = transform_search_phrases("search for matches")
-    eq("search matches", result)
+    eq("search match", result)
 end)
 
 test("'search for everything' → 'search' (sweep)", function()
@@ -108,9 +108,9 @@ test("'find a candle' → 'find candle'", function()
     eq("find candle", result)
 end)
 
-test("'find matches' → 'find matches'", function()
+test("'find matches' → 'find match' (BUG-111: singularized)", function()
     local result = transform_search_phrases("find matches")
-    eq("find matches", result)
+    eq("find match", result)
 end)
 
 test("'find everything' → 'search' (sweep)", function()
@@ -132,9 +132,9 @@ end)
 h.suite("Stage 5: transform_search_phrases — 'hunt for X'")
 -------------------------------------------------------------------------------
 
-test("'hunt for matches' → 'search matches'", function()
+test("'hunt for matches' → 'search match' (BUG-111: singularized)", function()
     local result = transform_search_phrases("hunt for matches")
-    eq("search matches", result)
+    eq("search match", result)
 end)
 
 test("'hunt for the key' → 'search key' (article stripped)", function()

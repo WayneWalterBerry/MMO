@@ -39,6 +39,32 @@ function preprocess.parse(input)
 end
 
 ---------------------------------------------------------------------------
+-- BUG-056: Plural-to-singular mapping for noun resolution.
+-- Room descriptions use plurals ("torches", "portraits") but objects have
+-- singular keywords. Returns a list of candidate singular forms to try.
+-- (Defined early so pipeline stages can use it.)
+---------------------------------------------------------------------------
+local function singularize_word(word)
+    if not word or #word < 3 then return {} end
+    local forms = {}
+    -- -ies → -y (berries → berry, entries → entry)
+    local ies_stem = word:match("^(.+)ies$")
+    if ies_stem and #ies_stem >= 1 then forms[#forms+1] = ies_stem .. "y" end
+    -- -es → strip, only after sibilants: ch, sh, s, x, z
+    -- (torches → torch, boxes → box, matches → match)
+    local es_stem = word:match("^(.+)es$")
+    if es_stem and #es_stem >= 2
+        and (es_stem:match("ch$") or es_stem:match("sh$")
+             or es_stem:match("[sxz]$")) then
+        forms[#forms+1] = es_stem
+    end
+    -- -s → strip, but not -ss (portraits → portrait, candles → candle)
+    local s_stem = word:match("^(.+[^s])s$")
+    if s_stem and #s_stem >= 2 then forms[#forms+1] = s_stem end
+    return forms
+end
+
+---------------------------------------------------------------------------
 -- Pipeline Stage Functions
 -- Each takes a string, returns a string (primary contract).
 -- Convention: stages may return (text, true) as second value to signal
@@ -124,9 +150,13 @@ end
 --- Iterative (not recursive) — each pass strictly shortens input.
 local function strip_preambles(text)
     for _ = 1, 10 do
-        local rest = text:match("^i%s+want%s+to%s+(.+)")
+        local rest = text:match("^i%s+want%s+to%s+know%s+(.+)")
+            or text:match("^i%s+want%s+to%s+(.+)")
+            or text:match("^i%s+need%s+to%s+know%s+(.+)")
             or text:match("^i%s+need%s+to%s+(.+)")
+            or text:match("^i'?d%s+like%s+to%s+know%s+(.+)")
             or text:match("^i'?d%s+like%s+to%s+(.+)")
+            or text:match("^i%s+would%s+like%s+to%s+know%s+(.+)")
             or text:match("^i%s+would%s+like%s+to%s+(.+)")
             or text:match("^i'?ll%s+(.+)")
             or text:match("^i%s+need%s+(.+)")
@@ -137,8 +167,35 @@ local function strip_preambles(text)
     return text
 end
 
+--- Stage: strip_gerunds (BUG-107)
+--- Convert a leading gerund verb to its base form after politeness stripping.
+--- E.g., "would you mind examining X" → strips to "examining X" → "examine X".
+local GERUND_MAP = {
+    examining = "examine", looking = "look", searching = "search",
+    opening = "open", closing = "close", taking = "take",
+    checking = "check", feeling = "feel", reading = "read",
+    smelling = "smell", listening = "listen", breaking = "break",
+    tasting = "taste", lighting = "light", dropping = "drop",
+    wearing = "wear", climbing = "climb", moving = "move",
+    pulling = "pull", pushing = "push", finding = "find",
+    getting = "get", giving = "give", hiding = "hide",
+    picking = "pick", drinking = "drink", eating = "eat",
+    using = "use",
+}
+local function strip_gerunds(text)
+    local first, rest = text:match("^(%S+)%s+(.+)$")
+    if first and GERUND_MAP[first] then
+        return GERUND_MAP[first] .. " " .. rest
+    end
+    -- Bare gerund with no target
+    if GERUND_MAP[text] then
+        return GERUND_MAP[text]
+    end
+    return text
+end
+
 --- Stage: strip_filler
---- Iteratively strips preambles, politeness, and adverbs until stable.
+--- Iteratively strips preambles, politeness, adverbs, and gerunds until stable.
 --- Replaces the recursive natural_language re-entry pattern; single-pass,
 --- always terminates (each iteration strictly shortens input or stops).
 local function strip_filler(text)
@@ -147,6 +204,7 @@ local function strip_filler(text)
         text = strip_preambles(text)
         text = strip_politeness(text)
         text = strip_adverbs(text)
+        text = strip_gerunds(text)
         if text == prev then break end
     end
     return text
@@ -165,6 +223,8 @@ local IDIOM_TABLE = {
     { pattern = "^have%s+a%s+look%s+at%s+(.+)$",    replacement = "examine %1" },
     { pattern = "^take%s+a%s+look%s+at%s+(.+)$",    replacement = "examine %1" },
     { pattern = "^take%s+a%s+peek%s+at%s+(.+)$",    replacement = "examine %1" },
+    { pattern = "^have%s+a%s+look%s+around$",        replacement = "look" },
+    { pattern = "^take%s+a%s+look%s+around$",        replacement = "look" },
     { pattern = "^have%s+a%s+look$",                replacement = "look" },
     { pattern = "^take%s+a%s+look$",                replacement = "look" },
     { pattern = "^take%s+a%s+peek$",                replacement = "look" },
@@ -212,9 +272,10 @@ local function transform_questions(text)
         return can_i_verb .. " " .. can_i_target
     end
 
-    -- "what is this" → "examine this" (context resolution downstream)
+    -- "what is this" / "what's this" → "look" (BUG-104: "examine this" hung
+    -- on unresolved pronoun; "look" is safe without context resolution)
     if text:match("^what%s+is%s+this$") or text:match("^what'?s%s+this$") then
-        return "examine this"
+        return "look"
     end
 
     -- "what can I find" → "search" (BUG-084)
@@ -222,13 +283,14 @@ local function transform_questions(text)
         return "search"
     end
 
-    -- "where is the X" → "search for X"
+    -- "where is the X" → "find X" (BUG-110: "search for X" was interpreted
+    -- as scope search on the object rather than searching FOR the object)
     local where_is_target = text:match("^where%s+is%s+the%s+(.+)$")
         or text:match("^where%s+is%s+(.+)$")
         or text:match("^where'?s%s+the%s+(.+)$")
         or text:match("^where'?s%s+(.+)$")
     if where_is_target then
-        return "search for " .. where_is_target
+        return "find " .. where_is_target
     end
 
     -- "what is around" / "what do I see" / "where am I" → "look"
@@ -319,6 +381,15 @@ end
 --- Normalize search/hunt/rummage/find/feel compound phrases.
 --- Returns (text, true) on match — some patterns produce identical output
 --- (e.g., "search around" is already canonical) but still count as recognized.
+---
+--- BUG-111: Singularize target nouns so "matches" → "match" for better
+--- substring matching against game objects (e.g., "matchbox").
+local function singularize_target(noun)
+    local forms = singularize_word(noun)
+    if #forms > 0 then return forms[1] end
+    return noun
+end
+
 local function transform_search_phrases(text)
     -- Grope/feel compound phrases → "feel" (room sweep)
     if text:match("^grope%s+around%s+")
@@ -344,19 +415,20 @@ local function transform_search_phrases(text)
     end
 
     -- "search for [target]" (BUG-081, BUG-078: everything/anything/all → sweep)
+    -- BUG-111: singularize target for better fuzzy matching
     local search_target = text:match("^search%s+for%s+(.+)")
     if search_target then
         local stripped = preprocess.strip_articles(search_target)
         if stripped == "everything" or stripped == "anything" or stripped == "all" then
             return "search", true
         end
-        return "search " .. stripped, true
+        return "search " .. singularize_target(stripped), true
     end
 
-    -- "hunt for [target]" / "hunt around" → search (BUG-081)
+    -- "hunt for [target]" / "hunt around" → search (BUG-081, BUG-111)
     local hunt_target = text:match("^hunt%s+for%s+(.+)")
     if hunt_target then
-        return "search " .. preprocess.strip_articles(hunt_target), true
+        return "search " .. singularize_target(preprocess.strip_articles(hunt_target)), true
     end
     if text:match("^hunt%s+around%s*") then
         return "search around", true
@@ -394,14 +466,14 @@ local function transform_search_phrases(text)
         return "find " .. raw, true
     end
 
-    -- "find [target]" (BUG-081, BUG-078: everything/anything/all → sweep)
+    -- "find [target]" (BUG-081, BUG-078: everything/anything/all → sweep, BUG-111)
     local find_target = text:match("^find%s+(.+)")
     if find_target then
         local stripped = preprocess.strip_articles(find_target)
         if stripped == "everything" or stripped == "anything" or stripped == "all" then
             return "search", true
         end
-        return "find " .. stripped, true
+        return "find " .. singularize_target(stripped), true
     end
 
     return text
@@ -603,6 +675,7 @@ preprocess.stages = {
     strip_politeness = strip_politeness,
     strip_adverbs = strip_adverbs,
     strip_preambles = strip_preambles,
+    strip_gerunds = strip_gerunds,
     strip_filler = strip_filler,
     expand_idioms = expand_idioms,
     transform_questions = transform_questions,
@@ -645,30 +718,6 @@ function preprocess.natural_language(input, _depth)
     return nil, nil
 end
 
----------------------------------------------------------------------------
--- BUG-056: Plural-to-singular mapping for noun resolution.
--- Room descriptions use plurals ("torches", "portraits") but objects have
--- singular keywords. Returns a list of candidate singular forms to try.
----------------------------------------------------------------------------
-local function singularize_word(word)
-    if not word or #word < 3 then return {} end
-    local forms = {}
-    -- -ies → -y (berries → berry, entries → entry)
-    local ies_stem = word:match("^(.+)ies$")
-    if ies_stem and #ies_stem >= 1 then forms[#forms+1] = ies_stem .. "y" end
-    -- -es → strip, only after sibilants: ch, sh, s, x, z
-    -- (torches → torch, boxes → box, matches → match)
-    local es_stem = word:match("^(.+)es$")
-    if es_stem and #es_stem >= 2
-        and (es_stem:match("ch$") or es_stem:match("sh$")
-             or es_stem:match("[sxz]$")) then
-        forms[#forms+1] = es_stem
-    end
-    -- -s → strip, but not -ss (portraits → portrait, candles → candle)
-    local s_stem = word:match("^(.+[^s])s$")
-    if s_stem and #s_stem >= 2 then forms[#forms+1] = s_stem end
-    return forms
-end
 
 --- split_commands(input) -> list of command strings
 --- Splits a raw input line on commas, semicolons, or the word "then" to support

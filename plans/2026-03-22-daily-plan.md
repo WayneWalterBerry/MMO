@@ -49,6 +49,9 @@
 - [x] **📊 GRADE after Tier 2+3:** A- (82%) — errors guide, idioms expand natural phrasing
 - [x] Full test suite: **801 pass / 0 fail** ✅
 - [x] 🧪 Nelson Pass 031: 64% pass. 3 hangs (BUG-104/105/106: "what's this?", "what do I do?", "what now?"). 3 fails (BUG-107/108/109: missing preambles). Critical path intact.
+- [x] ⚛️ Smithers — Tier 4: Context window. 5-object stack, enhanced pronouns (it/that/this/one), search discovery integration, bare "pick up", "go back". 41 new tests.
+- [x] **📊 GRADE after Tier 4:** A- (85%) — context makes discovery feel remembered
+- [x] 🧪 Nelson Pass 032: 86% pass. All 8 idioms work. Error messages much improved. 3 minor bugs (politeness+idiom combo, bare examine, unlit candle message).
 
 ---
 
