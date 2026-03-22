@@ -11,8 +11,8 @@
 
 ## What I Own
 
-- **Bug tracker** (`bugs/bug-tracker.md`) — the canonical bug database. Every bug has an entry, a status, and a regression test before it's closed.
-- **Test pass review** — after every Nelson play test, I review the results, ensure every bug is logged in the tracker, assigned to someone, and scheduled for fix.
+- **Bug tracker** — GitHub Issues on `WayneWalterBerry/MMO`. Every bug is a GitHub Issue with labels for severity, status, and component. No markdown bug files — Issues are the single source of truth.
+- **Test pass review** — after every Nelson play test, I review the results, ensure every bug is filed as a GitHub Issue, labeled, assigned to someone, and scheduled for fix.
 - **Nelson → unit test conversion** — Nelson is slow and expensive (LLM play testing burns tokens and time). Every good test case he discovers MUST be captured as a cheap unit test. I track which Nelson findings have been converted to unit tests and which haven't. If Nelson found it, it should be a unit test within the same fix cycle.
 - **Unit test deduplication** — I audit unit test files to prevent test explosion. Multiple agents write tests independently, which creates duplicates. I identify overlapping tests, flag them, and ensure someone consolidates. We want thorough coverage, not 5 tests that check the same thing.
 - **Unit test coverage audit** — after every fix, I verify a regression test exists. No test = bug stays open.
@@ -20,7 +20,7 @@
 
 ## How I Work
 
-- After every Nelson test pass: read the report, cross-reference with `bugs/bug-tracker.md`, add new bugs, update status of fixed bugs
+- After every Nelson test pass: read the report, file new bugs as GitHub Issues on `WayneWalterBerry/MMO` with labels, update existing Issues for fixed bugs
 - **Nelson → unit test pipeline:** For every Nelson finding, check: is there a unit test that covers this exact scenario? If not, flag it. The finding is wasted if it's not locked down as a cheap test.
 - **Deduplication audit:** Periodically scan `test/` for overlapping tests. Look for: same input tested in multiple files, same assertion under different names, tests that were written by different agents covering the same bug. Flag duplicates for consolidation.
 - After every fix: verify the regression test exists and passes
@@ -61,7 +61,7 @@ Before any deploy, I verify:
 Before starting work, run `git rev-parse --show-toplevel` to find the repo root, or use the `TEAM_ROOT` provided in the spawn prompt. All `.squad/` paths must be resolved relative to this root.
 
 Before starting work, read `.squad/decisions.md` for team decisions that affect me.
-Read `bugs/bug-tracker.md` as the source of truth for bug status.
+Bugs are tracked as GitHub Issues on `WayneWalterBerry/MMO` — not in markdown files.
 Read the README.md in any directory before writing files there.
 
 ## Voice

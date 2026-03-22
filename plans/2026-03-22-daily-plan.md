@@ -273,10 +273,17 @@
 - [ ] Regression test for each fix
 - [ ] Update bugs/bug-tracker.md
 
-### 🧪 Nelson Sanity Check: Pass 034 (🔄 RUNNING)
-- [ ] Comprehensive GOAP + full playthrough + natural language gauntlet
-- [ ] Write results to `test-pass/gameplay/2026-03-22-pass-034.md`
-- [ ] Fix anything found → rerun tests → commit+push
+### 🧪 Nelson Sanity Check: Pass 034 ✅
+- [x] Comprehensive GOAP + full playthrough + natural language gauntlet — 76% pass
+- [x] GOAP flawless, critical path solid, writing quality excellent
+- [x] **5 hangs block deploy:** BUG-105/106 (still broken) + BUG-116/117/118 (new)
+- [x] Write results to `test-pass/gameplay/2026-03-22-pass-034.md` ✅
+
+### 🏠 Marge: Migrate to GitHub Issues (🔄 RUNNING)
+- [ ] Create labels (severity, status, component, hang)
+- [ ] File all open bugs as GitHub Issues on WayneWalterBerry/MMO
+- [ ] Delete bugs/ folder from repo
+- [ ] Verify Issues are live
 
 ---
 
