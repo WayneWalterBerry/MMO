@@ -601,7 +601,9 @@ function loop.run(context)
     end
 
     -- Injury tick: advance injury FSMs, accumulate damage, check death
-    if context.player and context.player.injuries and #context.player.injuries > 0 then
+    -- Issue #29: Skip if game_over already set (e.g., sleep bleedout death)
+    if not context.game_over
+       and context.player and context.player.injuries and #context.player.injuries > 0 then
       local inj_ok, injury_mod = pcall(require, "engine.injuries")
       if inj_ok and injury_mod then
         local msgs, died = injury_mod.tick(context.player)

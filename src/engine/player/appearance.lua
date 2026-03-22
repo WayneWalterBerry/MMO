@@ -12,7 +12,19 @@ local appearance = {}
 ---------------------------------------------------------------------------
 
 --- Combine phrases into natural English with Oxford comma.
+--- Deduplicates identical phrases (Issue #31: duplicate bruise text).
 local function compose_natural(phrases)
+    -- Deduplicate identical phrases
+    local seen = {}
+    local unique = {}
+    for _, p in ipairs(phrases) do
+        if not seen[p] then
+            seen[p] = true
+            unique[#unique + 1] = p
+        end
+    end
+    phrases = unique
+
     if #phrases == 0 then return nil end
     if #phrases == 1 then return phrases[1] end
     if #phrases == 2 then return phrases[1] .. " and " .. phrases[2] end
@@ -291,6 +303,8 @@ function appearance.describe(player, registry)
 
     -- Capitalize first letter of composed description
     local desc = table.concat(phrases, ". ")
+    -- Issue #30: Capitalize first letter after every ". " separator
+    desc = desc:gsub("%.%s+(%l)", function(c) return ". " .. c:upper() end)
     desc = desc:sub(1, 1):upper() .. desc:sub(2)
     if not desc:match("[%.!?]$") then desc = desc .. "." end
 

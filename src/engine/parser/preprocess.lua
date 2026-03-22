@@ -285,6 +285,35 @@ local function transform_questions(text)
         return "search " .. is_anything_in
     end
 
+    -- Issue #23: Existence questions → search
+    -- "is there a/an X in the room/here/nearby/around?" → "search X"
+    local is_there_in = text:match("^is%s+there%s+an?%s+(.-)%s+in%s+the%s+room$")
+        or text:match("^is%s+there%s+an?%s+(.-)%s+here$")
+        or text:match("^is%s+there%s+an?%s+(.-)%s+nearby$")
+        or text:match("^is%s+there%s+an?%s+(.-)%s+around$")
+    if is_there_in then
+        return "search " .. is_there_in
+    end
+
+    -- "is there a/an X?" → "search X" (bare existence question)
+    local is_there_bare = text:match("^is%s+there%s+an?%s+(.+)$")
+    if is_there_bare then
+        return "search " .. is_there_bare
+    end
+
+    -- "do you see a/an X?" → "search X"
+    local do_you_see = text:match("^do%s+you%s+see%s+an?%s+(.+)$")
+    if do_you_see then
+        return "search " .. do_you_see
+    end
+
+    -- "can I find a/an X?" → "search X" (specific override before generic "can I verb")
+    local can_i_find = text:match("^can%s+i%s+find%s+an?%s+(.+)$")
+        or text:match("^can%s+i%s+find%s+(.+)$")
+    if can_i_find then
+        return "search " .. can_i_find
+    end
+
     -- "can I verb target" → "verb target" (strip question wrapper)
     local can_i_verb, can_i_target = text:match("^can%s+i%s+(%w+)%s+(.+)$")
     if can_i_verb and can_i_target then
