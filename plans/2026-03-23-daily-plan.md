@@ -44,19 +44,29 @@
 
 ### Implementation Tasks
 
-#### Phase 1: Design (CBG + Bart)
-- [ ] Design doc: `docs/design/injuries/unconsciousness.md`
+#### Phase 1: Design Docs (CBG + design team)
+- [ ] `docs/design/injuries/unconsciousness.md` — Full design doc:
   - Unconsciousness FSM states: conscious → unconscious → waking → conscious
   - Duration mechanics: fixed vs random (e.g., 5-10 turns for head blow)
-  - Interaction with existing injury ticking (bleeding continues)
-  - Interaction with voluntary sleep (same risk — injuries tick)
+  - Interaction with existing injury ticking (bleeding continues during unconsciousness)
+  - Interaction with voluntary sleep (same risk — injuries tick during sleep too)
   - Death conditions: health ≤ 0 while unconscious = permanent death
   - Wake-up narration templates (vary by cause)
   - What triggers unconsciousness? (blow to head, poison, gas, magic?)
-- [ ] Bart reviews engine implications — does the game loop need changes for forced-sleep state?
+- [ ] Update `docs/design/injuries/` index if one exists — add unconsciousness to injury category list
 - [ ] `git commit && git push`
 
-#### Phase 2: Engine (Smithers + Bart)
+#### Phase 2: Architecture Docs (Bart)
+- [ ] `docs/architecture/player/` — Update player model architecture:
+  - Player consciousness state (conscious/unconscious/sleeping)
+  - How the game loop handles forced-sleep (skip input, tick injuries, check death, decrement timer)
+  - Interaction between sleep command and injury ticking (voluntary sleep now dangerous)
+  - Death-during-unconsciousness handler architecture
+  - Wake-up event and narration dispatch
+- [ ] Review engine implications — does `src/engine/loop/init.lua` need a state machine for player consciousness?
+- [ ] `git commit && git push`
+
+#### Phase 3: Engine Implementation (Smithers + Bart)
 - [ ] Implement unconsciousness state in the player model
 - [ ] Game loop: if player is unconscious, skip command input, tick injuries, check death, decrement wake timer
 - [ ] Integrate with existing sleep command — sleep now also ticks injuries
