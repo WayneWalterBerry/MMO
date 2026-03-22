@@ -1180,3 +1180,40 @@ Set `ctx.current_verb` at three dispatch points: `loop/init.lua`, `parser/init.l
 **Files Created:** `test/verbs/test-combat-verbs.lua`, `test/verbs/test-wine-fsm.lua`
 
 ---
+
+### Session: Play-Test Bug Fixes (Issues #14, #15, #16, #17)
+
+**Task:** Fix 4 parser/UX bugs found during Wayne's live play-test session.
+
+**Bug #14 — 'search the whole room' treats 'whole' as noun target:**
+- Added `strip_noun_modifiers` pipeline stage in `preprocess.lua` (runs after strip_filler)
+- Strips quantifier modifiers: 'whole', 'entire', 'every', 'all of the', 'all of'
+- Collapses double-spaces, trims result. Pipeline stage exposed via `preprocess.stages`
+
+**Bug #15 — 'light a lit candle' says "You can't light...":**
+- Added already-lit detection at top of `light` handler in `verbs/init.lua`
+- Checks `obj.states[obj._state].casts_light` — if true, prints first sentence of the lit state's description
+- Prime Directive compliant: describes world state, never says "can't"
+
+**Bug #16 — Conditional compound commands produce triple error messages:**
+- Added conditional clause detection in `loop/init.lua` after sub_command splitting
+- Detects 'if', 'when', 'unless', 'once', 'after you', 'in case' at start of segments
+- Trims everything from conditional onward, replaces with ONE helpful message
+- Uses `__conditional_trimmed__` sentinel in sub_command list
+
+**Bug #17 — GOAP auto-chain steps invisible to player:**
+- Added `STEP_NARRATION` table in `goal_planner.lua` mapping verbs to narration functions
+- `execute()` prints brief narration before each GOAP step (take→"You look for X...", open→"You need to open X first.")
+- Handler's own output follows naturally after the narration prefix
+
+**Key Design Decisions:**
+- Modifier stripping is a separate pipeline stage (not folded into strip_filler) because modifiers appear inside noun phrases, not at sentence boundaries
+- Already-lit check uses FSM state data (`casts_light`) not string matching — works for any lightable object (candle, lantern, torch)
+- Conditional detection is in the loop, not in split_commands, because it needs to control execution flow (skip remaining sub-commands)
+
+**Result:** 20 new regression tests (`test/parser/test-issue-14-15-16-17.lua`), 38 test files, all pass.
+
+**Files Changed:** `src/engine/parser/preprocess.lua`, `src/engine/verbs/init.lua`, `src/engine/loop/init.lua`, `src/engine/parser/goal_planner.lua`
+**Files Created:** `test/parser/test-issue-14-15-16-17.lua`
+
+---
