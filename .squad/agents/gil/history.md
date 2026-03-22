@@ -35,3 +35,14 @@
 - ⚠️ The `CACHEBUST` placeholder in source files is replaced by the build. Don't commit a real timestamp manually — let the build do it.
 - Updated `.squad/skills/web-publish/SKILL.md` with a new "Cache-Busting" section documenting the approach.
 - Left Issue #18 open for Marge to verify and close.
+
+### 2026-07-27: Full Deploy — Issues #12, #13, #14, #15, #16, #17, #18
+- Deployed to GitHub Pages commit `392e549` (96 files in `play/`).
+- Engine bundle: 126 KB compressed, 91 meta files (78 objects, 7 rooms, 5 templates, 1 level).
+- Cache-bust timestamp `20260322131103` stamped into `bootstrapper.js` and `index.html`.
+- **What shipped:**
+  - Gil: Copy button (#12), bug report transcript fix (#13), Safari cache-busting (#18)
+  - Smithers: Whole room parser (#14), lit candle (#15), compound errors (#16), GOAP narration (#17)
+  - CBG: 5 design docs, Bart: 2 architecture docs (no runtime impact, bundled in engine)
+- All 5 deploy-checklist files copied: `index.html`, `bootstrapper.js`, `game-adapter.lua`, `engine.lua.gz`, `meta/*`
+- ⚠️ First copy of `bootstrapper.js` and `index.html` silently didn't overwrite (identical LastWriteTime?). Had to re-copy individually to get the cache-bust stamps to land. Watch for this in future deploys.
