@@ -101,6 +101,16 @@
 - [ ] Nelson tests: get injured → go unconscious → wake up (or die)
 - [ ] Nelson tests: get injured → sleep voluntarily → bleed out
 - [ ] Nelson tests: get injured → get knocked out → bleed out while unconscious
+- [ ] Nelson tests injury listing — natural phrasing: "health", "status", "how am I", "check my wounds", "am I hurt?", "what's wrong with me?", "injuries"
+- [ ] Nelson tests inventory/hands — natural phrasing:
+  - "inventory" / "i" — does it show hands + worn + bags?
+  - "what am I holding?" — should show hand slots
+  - "what's in my hands?" — same
+  - "what am I carrying?" — should show everything
+  - "look at my hands" — should describe what's in them
+  - "am I holding anything?" — yes/no + what
+  - "what do I have?" — should show full inventory
+  - "drop what I'm holding" — should work with context
 - [ ] Write results + file Issues for any bugs
 
 #### Phase 3: Objects (Flanders)
