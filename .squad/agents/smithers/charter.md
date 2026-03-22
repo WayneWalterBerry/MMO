@@ -80,4 +80,6 @@
 
 ## Model
 
-- Preferred: auto (writes code → sonnet; design docs/analysis → haiku)
+- **Preferred:** `claude-opus-4.6` (use `claude-opus-4.6-fast` when available)
+- **Rationale:** Smithers writes complex parser and engine code — premium model produces fewer bugs and better architectural judgment
+- **Fallback:** `claude-sonnet-4.5` if throttled or unavailable
