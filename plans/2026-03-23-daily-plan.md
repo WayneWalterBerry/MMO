@@ -1,30 +1,97 @@
 # Daily Plan — 2026-03-23
 
 **Owner:** Wayne "Effe" Berry
-**Focus:** Injury system expansion (unconsciousness), mirror/player appearance subsystem, deploy
+**Focus:** Bug burndown from Wayne's play-test, search system improvements, web parity
+**Updated:** 2026-03-22 10:04 PM PST (pulled forward from tomorrow — most work already done today)
 
 ---
 
-## Carry-Over from 2026-03-22
+## ✅ COMPLETED (pulled forward from 2026-03-22 afternoon)
 
-### Hang Elimination Sprint ✅ COMPLETE
-- [x] Bart: trace logging + RCA — 3 mechanisms found, visited sets, global safety net
-- [x] Smithers/Bart: implemented `debug.sethook` 2s deadline + `pcall` wrapper
-- [x] Nelson: Pass 035 — **50/50 PASS, ZERO HANGS** (false positives from TUI rendering)
-- [x] Marge: closed all 6 hang Issues (#2, #5, #6, #9, #10, #11), **DEPLOY GREEN LIGHT**
-- [ ] Deploy (run `deploy.ps1`, verify live site)
+### Carry-Over Items ✅
+- [x] Deploy to live site (3 deploys today: Phase 7, parser fixes, Phase 3)
+- [x] Bart: `--headless` testing mode implemented
+- [x] LLM play testing skill updated to mandate `--headless`
+- [x] Marge: closed Issues #1, #4, #7, #8 (already fixed), #2, #5, #6, #9, #10, #11 (hangs)
+- [x] Gil hired as Web Engineer — owns deploys, web builds, browser fixes
 
-### Headless Testing Hook (from hang investigation)
-- [ ] Bart: `--headless` mode for automated testing — disables TUI rendering, plain text output
-- [ ] Update LLM play testing skill to always use `--headless`
-- [ ] Prevents future TUI false positive hang reports
+### Phase 1: Design Docs ✅
+- [x] `docs/design/injuries/unconsciousness.md` — FSM, severity-based duration, armor protection
+- [x] `docs/design/injuries/self-hit.md` — Hit verb self-infliction, body areas
+- [x] `docs/verbs/hit.md` — Verb reference: punch/strike/bash/bonk
+- [x] `docs/design/objects/mirror.md` — `is_mirror` flag, appearance trigger
+- [x] `docs/design/player/appearance.md` — Layer-based rendering, health tiers
+- [x] `docs/design/objects/spatial-relationships.md` — hiding vs on-top-of (NEW)
 
-### Open GitHub Issues (WayneWalterBerry/MMO) — 5 remaining
-- #1 BUG-069: dawn sleep error message (severity:medium)
-- #3 BUG-072: screen flicker during progressive object discovery (severity:low)
-- #4 BUG-104b: politeness + idiom combo breaks parser (severity:medium)
-- #7 BUG-105b: bare examine gives bad message (severity:low)
-- #8 BUG-106b: blow out unlit candle message (severity:low)
+### Phase 2: Architecture Docs ✅
+- [x] `docs/architecture/player/appearance-subsystem.md` — Layered renderer, mirror integration
+- [x] `docs/architecture/player/consciousness-state.md` — State machine, forced ticks, death handler
+- [x] `docs/architecture/objects/spatial-relationships.md` — Hidden object visibility rules (NEW)
+
+### Phase 3: Engine Implementation ✅
+- [x] Hit verb: hit/punch/bash/bonk/thump — head→KO, limb→bruise, helmet reduces
+- [x] Unconsciousness: state machine, game loop gate, bleed-out death, wake narration
+- [x] Sleep injury fix: sleep now ticks injuries (was safe before)
+- [x] Appearance subsystem: `appearance.lua` — layered body renderer
+- [x] Mirror: vanity `is_mirror` flag → appearance.describe()
+- [x] Tests: 1,117+ pass across 39 files
+- [x] Nelson Pass 036: 29/37 pass, 4 presentation bugs (#28-31)
+
+### Phase 3b: Spatial Relationships ⏳ (Smithers working now)
+- [ ] Fix traverse.lua: hidden objects skip search (#26)
+- [ ] Search peek mode: don't change container state (#24)
+- [ ] Search narration: report container contents (#27)
+- [ ] Tests for hiding, peek, narration
+
+---
+
+## 📋 Open Issues — 19 remaining (Marge triaged, ranked, assigned)
+
+### P0 — Critical Blockers
+| # | Title | Owner | Status |
+|---|-------|-------|--------|
+| #25 | Deploy Copy-Item silent failure | Gil | Queued |
+| #24 | Search opens containers as side effect | Smithers | 🔧 In progress |
+
+### P1 — Essential Features
+| # | Title | Owner | Status |
+|---|-------|-------|--------|
+| #26 | Hidden objects bypass search | Smithers | 🔧 In progress |
+| #27 | Search should report container contents | Smithers | 🔧 In progress |
+| #23 | "Is there a X?" should trigger search | Smithers | Queued |
+| #22 | Search stops at matchbox, doesn't look inside | Smithers | Queued |
+| #17 | GOAP auto-chain steps invisible | Smithers | Fixed (needs verify) |
+| #21 | Missing web status bar | Gil | Queued |
+| #20 | Bug report transcript truncation | Gil | Queued |
+| #14 | "search whole room" — whole as noun | Smithers | Fixed (needs verify) |
+
+### P2 — Polish
+| # | Title | Owner | Status |
+|---|-------|-------|--------|
+| #3 | Screen flicker | Bart | Queued |
+| #15 | Lit candle message awkward | Smithers | Fixed (needs verify) |
+| #16 | Compound errors triple message | Smithers | Fixed (needs verify) |
+| #28 | "reflection" not mirror keyword | Smithers | Queued |
+| #29 | Double death message on sleep bleedout | Smithers | Queued |
+| #30 | Lowercase after periods in appearance | Smithers | Queued |
+| #31 | Duplicate bruise text | Smithers | Queued |
+| #18 | Safari cache (needs iPhone verify) | Gil | Fixed (needs verify) |
+
+### P3 — Features
+| # | Title | Owner | Status |
+|---|-------|-------|--------|
+| #19 | Level intro text from level data | Moe | Deferred |
+
+---
+
+## Process Rules
+1. Nelson play-tests between every phase
+2. Commit+push between every step
+3. Bugs tracked in GitHub Issues (WayneWalterBerry/MMO)
+4. Engineers don't close Issues — Marge verifies and closes
+5. Nelson uses `--headless` for all automated testing
+6. Nelson gives Bart feedback on headless mode
+7. Search = observation (no side effects), Open = action
 
 ---
 
@@ -66,25 +133,10 @@
 - [x] **Found bug:** Current sleep verb doesn't call `injury_mod.tick()` — sleeping with bleeding is currently safe (shouldn't be)
 - [x] `git commit && git push`
 
-#### Phase 3: Engine Implementation (Smithers + Bart)
-- [ ] Implement unconsciousness state in the player model
-- [ ] Game loop: if player is unconscious, skip command input, tick injuries, check death, decrement wake timer
-- [ ] Integrate with existing sleep command — sleep now also ticks injuries
-- [ ] Death-during-unconsciousness handler: special narration
-- [ ] Wake-up handler: narration + time advancement
-- [ ] **`hit` verb:** Allow players to hit themselves (like `stab` for self-infliction testing):
-  - `hit head` → unconsciousness injury (severity-based duration)
-  - `hit arm` / `hit leg` → bruise injury (pain category, affects actions)
-  - `hit` with no target → "Hit what?" (Prime Directive friendly)
-  - This is the primary way to TEST unconsciousness — player can trigger it on themselves
-- [ ] Armor interaction: if wearing a helmet, `hit head` reduces or prevents unconsciousness
-- [ ] **TEST GATE:** Write unit tests for all states/transitions including:
-  - hit head → unconscious → injuries tick → wake up
-  - hit head → unconscious → bleed out → die (if also stabbed)
-  - sleep with injuries → bleed out → die
-  - hit head with helmet → reduced/no unconsciousness
-  - hit arm → bruise (pain, not unconsciousness)
-- [ ] `git commit && git push`
+#### Phase 3: Engine Implementation (Smithers + Bart) ✅ COMPLETED 2026-03-22
+- [x] All items implemented — hit verb, unconsciousness, sleep fix, appearance, mirror
+- [x] 1,117+ tests pass, Nelson Pass 036: 29/37 pass, 4 presentation bugs (#28-31)
+- [x] `git commit && git push`
 
 ### 🧪 Nelson Sanity Check
 - [ ] Nelson tests: get injured → go unconscious → wake up (or die)
