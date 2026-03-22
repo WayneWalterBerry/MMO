@@ -661,3 +661,33 @@ Due to BUG-067 and BUG-068 hangs, could NOT complete:
 - Test infrastructure pattern: search/nightstand tests use h.summary() without os.exit for soft failure; parser tests use os.exit(1) for hard failure
 - test/run-tests.lua updated to include nightstand/ directory in test discovery
 
+### Pass 036: Phase 3 Play Test — Hit, Unconsciousness, Mirror (2026-03-22)
+
+**Status:** ✅ COMPLETE — 37 tests, 29 pass, 5 warn, 3 fail, 4 bugs filed
+
+**Features Tested:** hit/punch/bash/bonk/thump verb, body targeting, unconsciousness state machine, sleep + injury ticking, appearance subsystem, mirror
+
+**Key Findings:**
+- Hit verb works across ALL synonyms (hit/punch/bash/bonk/thump/strike) and ALL body parts (head, arms, legs, hands, torso, stomach) — extremely solid
+- Head hits cause KO with 5-turn unconscious timer and atmospheric wake narration
+- Bleeding-out-while-unconscious works correctly — lethal injuries kill during KO
+- Sleep + injury ticking works — bleeding degrades during sleep, can cause death
+- Mirror/appearance system renders held items, injuries, blood state, and health pallor into natural prose
+- Empty-handed mirror shows "unremarkable figure in plain clothes" — lovely default
+- Mirror in darkness falls back to tactile description — correct and atmospheric
+
+**Bugs Found (4):**
+- BUG-120 (MEDIUM): "reflection" not recognized as mirror keyword → GitHub Issue #28
+- BUG-121 (LOW): Double death message during sleep bleedout → GitHub Issue #29
+- BUG-122 (MEDIUM): Capitalization errors in mirror appearance rendering → GitHub Issue #30
+- BUG-123 (LOW): Duplicate injuries not aggregated in mirror → GitHub Issue #31
+
+**Learnings:**
+- Piped headless mode auto-ticks through unconsciousness without reading input — commands buffer and execute after wake
+- "sleep until dawn" is the fastest way to get persistent light for testing (no match juggling)
+- The appearance composition pipeline joins segments without capitalizing sentence starts — each renderer returns lowercase
+- Self-hit system is elegant: same verb handler, body part picker selects random part when none specified
+- Death system has two separate paths (injury-tick death vs verb-caused death) that can both fire during sleep — needs gating flag
+- `examine mirror` and `examine vanity` both trigger appearance; `look mirror` shows object description — inconsistent but defensible since examine focuses on the glass while look surveys the furniture
+- Multiple stabs to same body part stack injuries independently rather than increasing severity — design choice worth questioning
+
