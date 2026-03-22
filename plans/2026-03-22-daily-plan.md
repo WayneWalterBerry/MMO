@@ -29,7 +29,8 @@
 - [x] ⚛️ Smithers (P0) — Fixed 13 bugs: 5 hangs (BUG-080/084/086/087/090) + 8 parser/search issues
 - [x] ⚛️ Smithers (P1) — Fixed 4 bugs: spent match (BUG-091), match counter (BUG-092), scope bleed (BUG-089), synonyms
 - [x] 🧪 Nelson — 56 regression unit tests written (38 pass, 18 fail → mapped to known bugs)
-- [x] Full test suite: **419 pass / 2 fail** (down from 302 pass / 18 fail)
+- [x] Full test suite: **421 pass / 0 fail** ✅
+- [x] 🧪 Nelson Pass 027: 18/25 pass (72%). Release blocker cleared (`light candle` works!). 11/15 bugs fixed. Still broken: BUG-082/083/084 (compound hangs), BUG-091 (spent match). New: BUG-093 (rummage hangs), BUG-094 (look for a candle hangs)
 
 ---
 
