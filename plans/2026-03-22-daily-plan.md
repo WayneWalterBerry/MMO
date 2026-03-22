@@ -264,14 +264,14 @@
 - [x] **🔴 DEPLOY BLOCKED** until BUG-105/106 confirmed fixed (common player phrases hang)
 - [x] Bug tracker updated with corrections
 
-### ⚛️ Smithers: Remaining Open Bugs (🔄 RUNNING)
-- [ ] BUG-069: dawn sleep error message
-- [ ] BUG-071: rapid command spam hang (verify if still reproducible)
-- [ ] BUG-104b: politeness + idiom combo
-- [ ] BUG-105b: bare examine bad message
-- [ ] BUG-106b: blow out unlit candle message
-- [ ] Regression test for each fix
-- [ ] Update bugs/bug-tracker.md
+### ⚛️ Smithers: Remaining Open Bugs ✅
+- [x] BUG-069: sleep-until-dawn daytime check fixed
+- [x] BUG-071: cannot-reproduce (100x stress test clean)
+- [x] BUG-104b: pipeline order verified correct + tested
+- [x] BUG-105b: bare examine now prompts "Examine what?"
+- [x] BUG-106b: blow out unlit candle says "not lit"
+- [x] 23 regression tests added
+- [x] Full test suite: **1,088 pass / 0 fail** ✅
 
 ### 🧪 Nelson Sanity Check: Pass 034 ✅
 - [x] Comprehensive GOAP + full playthrough + natural language gauntlet — 76% pass
