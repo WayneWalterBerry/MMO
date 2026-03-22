@@ -6,7 +6,7 @@
 - **Architecture:** 8 Core Principles (code-derived mutable objects, FSM-driven behavior, sensory space, generic mutation via Principle 8)
 - **Reference Model:** Dwarf Fortress (property-bag architecture, emergent behavior from metadata)
 - **Stack:** Pure Lua, no external dependencies
-- **My Focus:** UI layer (text output, presentation, player feedback) and Parser pipeline (Tiers 1-5, verb resolution, disambiguation, GOAP)
+- **My Focus:** UI layer (text output, presentation, player feedback) and Parser pipeline (Tiers 1-6, verb resolution, disambiguation, GOAP)
 
 ## Onboarding
 - Hired 2026-03-21 as UI Engineer in Engineering Department
@@ -14,6 +14,36 @@
 - Primary output: `docs/architecture/ui/` documentation
 
 ## Learnings
+
+### Session: Tier 6 — Generalized GOAP
+
+**Task:** Extend the goal planner beyond the fire_source prerequisite chain to handle multi-step goals generically. Property-based goal matching replaces hardcoded verb chains.
+
+**Changes — `src/engine/parser/goal_planner.lua`:**
+- **Property-based requirements:** Verbs declare requirement types (`LIGHT_VERBS` table: read, write need light). Objects declare capabilities via `provides_tool`, `casts_light`, FSM states. The planner matches requirements to capabilities automatically.
+- **`plan_for_light(ctx, visited, depth)`:** Backward-chains room light requirement. Finds lightable objects (candle in any reachable location with FSM transition to a `casts_light` state), then chains to fire_source for the tool requirement. Full chain: take match → strike match → light candle.
+- **`plan_for_key(key_id, ctx, visited, depth)`:** Plans key retrieval for locked exits. Uses `find_by_id()` to locate the exact key anywhere (hands, room, containers, surfaces, nested). Plans open+take steps for inaccessible locations.
+- **`plan_generic_tool(capability, ctx, visited, depth)`:** Generic fallback for any `provides_tool` capability not handled by specialized resolvers. Searches all reachable objects and plans retrieval.
+- **`find_lightable(ctx)`:** Discovers objects that can cast light via FSM state transition. Searches hands, room, surfaces, containers, nested containers.
+- **`find_by_id(ctx, target_id)`:** Exact-ID object search across all reachable locations. Returns entry metadata (where, parent, accessible).
+- **`plan_retrieval(entry)`:** Shared helper that generates open+take steps for any object found at a specific location.
+- **`find_locked_exit(ctx, noun)`:** Matches noun against room exits to find locked doors with key_id.
+- **Refactored `plan_for_tool()`:** Now dispatches to `plan_fire_source()` (existing match/striker logic, preserved intact) or `plan_generic_tool()` by capability type.
+- **Refactored `plan()`:** Checks verb-level requirements (light, key) BEFORE object-level prerequisites. The GOAP fires before the verb handler via loop/init.lua, so when the handler runs, the prerequisite is already satisfied.
+- **Safety limit:** `MAX_DEPTH` raised from 5 to 7 (reasonable for multi-step chains like read→light→fire→match). Execute shows step count in error message: "(That would take too many steps — N needed, limit is 20.)"
+- **Test-only exports:** `_plan_for_light`, `_plan_for_key`, `_plan_for_tool`, `_find_lightable`, `_find_by_id`, `_MAX_DEPTH` for unit testing.
+
+**New scenarios enabled:**
+1. **"read book" in dark** → auto-light candle → auto-strike match → auto-take match from matchbox
+2. **"unlock door"** → auto-find key in container → auto-open container → auto-take key
+3. **"write on paper" in dark** → same light chain as read
+4. **Any verb needing a tool** → auto-find and retrieve from containers/surfaces
+
+**Key Design Decision:** Verb-level requirements (light for read/write, key for unlock) are checked BEFORE object-level prerequisites. This is because the verb itself may fail without the requirement, regardless of the target object's properties. The planner runs before the handler in loop/init.lua, so the world state is already prepared when the handler executes.
+
+**Result:** 44 new tests (test-goap-tier6.lua), 968 total pass, 0 fail. All 32 test files pass.
+
+---
 
 ### Session: Tier 5 — Fuzzy Noun Resolution
 
