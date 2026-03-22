@@ -43,6 +43,8 @@
 - [x] 🧪 Nelson Pass 029: **0 hangs, 0 failures, 0 regressions.** All 9 hang bugs verified fixed with correct output. Pipeline refactor clean.
 - [x] Full test suite: **713 pass / 0 fail** ✅
 - [x] **📊 GRADE after Step 0:** C+ (65%) — structural refactor, no behavior change yet
+- [x] ⚛️ Smithers — Tier 0+1: 4 politeness patterns, 5 adverbs, 6 question transforms. BUG-083 verified. 751→766 pass.
+- [x] **📊 GRADE after Tier 0+1:** B- (72%) — politeness/adverbs fully covered, questions handled, strip order correct
 
 ---
 
