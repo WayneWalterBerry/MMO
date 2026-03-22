@@ -4458,8 +4458,12 @@ function verbs.create()
             -- Default: 1 hour nap
             sleep_hours = 1
         else
-            -- "for X hours" / "for X minutes"
+            -- "for X hours" / "for X minutes" OR "X hours" / "X minutes" (optional "for")
             local num, unit = noun:match("for%s+(%d+)%s*(%a+)")
+            if not num then
+                -- Try without "for" keyword
+                num, unit = noun:match("^(%d+)%s*(%a+)")
+            end
             if num then
                 num = tonumber(num)
                 unit = unit:lower()
@@ -4799,6 +4803,7 @@ function verbs.create()
     handlers["run"]    = handlers["go"]
     handlers["head"]   = handlers["go"]
     handlers["travel"] = handlers["go"]
+    handlers["move"]   = handlers["go"]
 
     -- ENTER {thing} -- move through an exit matched by keyword
     handlers["enter"] = function(ctx, noun)
