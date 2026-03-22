@@ -1276,3 +1276,54 @@ Set `ctx.current_verb` at three dispatch points: `loop/init.lua`, `parser/init.l
 **Next Phase:** Phase 3 implementation (consciousness + appearance) ready to begin. Bart is designing architecture, Smithers will implement engine side.
 
 ---
+
+---
+
+## Session: Spatial Relationships Fixes (#24, #26, #27)
+
+**Date:** 2026-03-22
+**Requested by:** Wayne "Effe" Berry
+**Commit:** 70fc91f
+
+### Task
+Implement three spatial relationship fixes from Bart's architecture doc and CBG's design doc.
+
+### What I Did
+
+**Fix 1 — Hidden objects bypass search (#26):**
+- Added `if obj.hidden then return {} end` to `traverse.lua:expand_object()`
+- Added `if object.hidden then return false end` to `traverse.lua:matches_target()`
+- Added `accessible = false` to rug's underneath surface in `rug.lua`
+- Added `underneath.accessible = true` in verbs/init.lua move handler
+- Key insight: non-container inaccessible surfaces (rug underneath) are truly hidden and must not be peeked into, unlike container surfaces (drawer inside)
+
+**Fix 2 — Search shouldn't change container state (#24):**
+- Replaced all `containers.open()` and FSM `transition()` calls in `traverse.step()` with read-only content reads
+- Search now "peeks" inside containers without triggering open transitions
+- Containers stay in their original open/closed state after search
+
+**Fix 3 — Search reports container contents (#27):**
+- Added `narrator.container_peek()` for "You check inside the wardrobe." narration
+- Added `narrator.container_contents_no_target()` for reporting actual contents when target isn't found
+- Empty containers: "You check inside the chest. It's empty. No sword here."
+- Non-empty: "You check inside the wardrobe. Inside you see a burlap sack, but no chamber pot."
+
+### Tests Written
+17 regression tests in `test/search/test-search-spatial.lua`:
+- Suite 1: Hidden objects not found by search (5 tests)
+- Suite 2: Moving rug reveals trap door (3 tests)
+- Suite 3: Search doesn't change container state (4 tests)
+- Suite 4: Search reports container contents (5 tests)
+
+**Full suite:** All 40 test files pass (39 existing + 1 new).
+
+### Files Changed
+- `src/engine/search/traverse.lua` — hidden-object filtering + read-only peek
+- `src/engine/search/narrator.lua` — container peek/contents narration
+- `src/engine/verbs/init.lua` — set underneath.accessible on move
+- `src/meta/objects/rug.lua` — accessible=false on underneath surface
+- `test/search/test-search-spatial.lua` — 17 regression tests
+
+### Issues
+- Commented on #24, #26, #27 that fixes are committed
+- Left all three issues open for Marge/Nelson to verify
