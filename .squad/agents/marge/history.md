@@ -54,3 +54,58 @@
 **Next Steps:**
 - Smithers deploying to live site
 - Post-deploy: investigate #3 (cosmetic screen flicker)
+
+---
+
+## Session: Issue Triage Sprint (2026-03-25T22:00Z)
+**Status:** ✅ COMPLETE  
+**Task:** Triage, rank, and assign ALL 19 open GitHub issues
+
+**Process:**
+1. Listed all 19 open issues via `gh issue list --state open`
+2. Read each issue in detail to understand context, severity, and implementation needs
+3. Determined for each: Priority (P0-P3), Owner (team member), Effort estimate
+4. Added triage comments to GitHub with priority + assignment + rationale
+5. Created comprehensive summary table ranking issues
+6. Output saved to `.squad/decisions/inbox/marge-issue-triage.md`
+
+**Results:**
+- **19 issues analyzed and triaged** ✅
+- **All issues have GitHub comments** with priority, owner, effort estimate
+- **Priority breakdown:**
+  - P0 (Critical blockers): 2 issues (#25 deploy, #24 search)
+  - P1 (Essential features): 8 issues (discovery, web, GOAP, design)
+  - P2 (Polish): 8 issues (text, parser, UI bugs)
+  - P3 (Deferred): 1 issue (feature)
+
+**Key Findings:**
+- **P0 BLOCKERS:** Deploy automation broken (#25), Search side-effects wrong (#24)
+- **P1 CRITICALS:** GOAP narration missing (#17), Search container recursion needed (#22), Spatial design gap (#26)
+- **P1 QUICK WINS:** Parser question patterns (#23), Filler word strip (#14) — < 1 hour each
+- **Total effort:** ~40-50 hours across all issues
+- **Team capacity:** Smithers (11 issues), Gil (4 issues), Bart (2 issues), Flanders (1 issue), CBG (1 decision), Moe (1 deferred)
+
+**Design Dependency Identified:**
+- **#26 (Object spatial relationships)** blocks trap door visibility logic
+- Requires CBG design decision, then Bart architecture, then Flanders object metadata
+- Frames question: How does "hiding" work? (rug over trap door vs candle on nightstand)
+
+**Recommended Fix Order:**
+1. **Phase 1 (This week):** #25, #24 (P0 blockers)
+2. **Phase 2 (Next sprint):** #23, #14, #22, #17, #21, #18, #27 (P1 essentials)
+3. **Phase 3 (After Phase 2):** #26 (design-gated), #16, #20 (supporting)
+4. **Phase 4 (Post-launch):** #29, #30, #28, #31, #3, #15, #19 (P2/P3 polish)
+
+**Quality Notes:**
+- All issues have clear acceptance criteria and implementation guidance
+- Design issues (#26) properly flagged as architecture-gated
+- Web issues (#25, #18, #21, #20) grouped as platform quality work
+- Parser/search cluster (5 issues) recognized as high-impact UX component
+- Nothing is currently blocking deploy (P0s identified but not yet blocking the current release)
+
+**Output Files:**
+- `.squad/decisions/inbox/marge-issue-triage.md` — Full ranked issue board
+- GitHub issue comments — On each issue (#3 through #31)
+- Triage analysis — Effort breakdown, assignment map, dependency graph
+
+**Next:** Wayne can now prioritize sprints based on clear priority/effort/owner data. Smithers and Gil have clear assignments. Bart and CBG have decision/architecture items queued.

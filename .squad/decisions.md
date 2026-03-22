@@ -1,9 +1,9 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-22T21:44Z  
+**Last Updated:** 2026-03-22T22:05Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
-**New Decisions:** D-HIT001, D-HIT002, D-HIT003, D-CONSC-GATE, D-APP-STATELESS, D-SLEEP-INJURY
+**New Decisions:** D-HIT001, D-HIT002, D-HIT003, D-CONSC-GATE, D-APP-STATELESS, D-SLEEP-INJURY, D-SPATIAL-HIDE, D-SPATIAL-ARCH, D-PEEK
 
 ---
 
@@ -1390,6 +1390,105 @@ Issue #13 — bug report URL truncation fixed in the web JS bridge (`bootstrappe
 
 ---
 
-**End of 2026-03-22T20:05Z Afternoon Session Merge**  
-**Total Active Decisions:** 65  
-**Last Merge:** 2026-03-22T20:05Z (Scribe)
+## SPATIAL RELATIONSHIPS & DISCOVERY (Evening Session 2026-03-22T22:05Z)
+
+### D-SPATIAL-HIDE: Spatial Relationships — Hiding vs On-Top-Of
+**Author:** Comic Book Guy (Creative Director)  
+**Date:** 2026-03-22  
+**Status:** Design Complete, Pending Implementation  
+**Related Issues:** #26, Wayne iPhone playtest (#19-27)
+
+The game must explicitly distinguish between two fundamentally different spatial relationships:
+
+1. **Resting On** — Both objects visible (e.g., candle on nightstand)
+2. **Covering/Hiding** — Top visible, bottom HIDDEN (e.g., rug over trap door)
+
+This distinction is the core mystery mechanic. Without it, the game is a flat list of items. With it, the game becomes a treasure hunt.
+
+**Four Relationship Types:**
+| Relationship | Example | Top Visible? | Bottom Visible? | Verb |
+|--------------|---------|--------------|-----------------|------|
+| Resting On | Candle on nightstand | ✓ | ✓ | PUT ON, TAKE FROM |
+| Covering | Rug over trap door | ✓ | ✗ | MOVE, LIFT, PULL BACK |
+| Behind | Curtains over window | ✓ | ✗ | PULL ASIDE, OPEN, LOOK BEHIND |
+| Inside | Matches in matchbox | ~ | ~ | OPEN, CLOSE, PUT IN |
+
+**Discovery Progression (Three-Phase Reveal):**
+1. **Hidden Phase:** Object does NOT appear in SEARCH results
+2. **Hint Phase:** EXAMINE of covering object gives ONE sentence hint
+3. **Reveal Phase:** Interaction verb (MOVE, LIFT, PULL) triggers dramatic discovery message
+
+**Key Constraints:**
+- Hidden objects are invisible until trigger occurs
+- Hints are ONE sentence, suggestive but not spoilery
+- Discovery narration is 2-3 sentences, sensory
+- Objects declare behavior; engine executes
+- Object is NOT on critical path (reward, not requirement)
+
+**Design Rationale:** This pattern enables emergent learning through exploration without tutorial text. Players learn "I should look UNDER things" and "I should MOVE furniture" through discovery.
+
+---
+
+### D-SPATIAL-ARCH: Spatial Relationships — Engine Architecture
+**Author:** Bart (Architect)  
+**Date:** 2026-03-22  
+**Status:** Design Complete, Implementation In Progress  
+**Related Issues:** #24, #26, #27  
+**Deliverable:** `docs/architecture/objects/spatial-relationships.md`
+
+Engine architecture for spatial concealment relationships follows three rules:
+
+1. **Covering objects own the relationship.** The `covering` array on the covering object (e.g., rug) declares what it hides. The hidden object declares `hidden = true` and provides an FSM with `hidden → revealed` transition. The room does not track relationships — objects are self-describing.
+
+2. **traverse.lua must filter hidden objects.** `expand_object()` must check `obj.hidden` and skip hidden objects entirely. `matches_target()` must also return `false` for hidden objects. This is a bug fix — the search engine currently walks past the `hidden` flag without checking it.
+
+3. **The `behind` relationship uses the same pattern.** Future `hiding_behind` field on blocker objects (wardrobe, curtains) follows identical mechanics to `covering`. The engine treats both as concealment; only the reveal verb differs.
+
+**Design Rationale:** Object-level metadata (not room-level relationship tables) because:
+- Follows Principle 8: objects declare behavior, engine executes
+- Composable: rug carries its `covering` list if moved to another room
+- No second source of truth — one place to author, one place to debug
+
+**Bugs Fixed:**
+- traverse.lua: No hidden-object check in expand_object() or matches_target()
+- rug.lua: surfaces.underneath lacks accessible = false
+- Move handler: Should set underneath.accessible = true when covering object is moved
+
+---
+
+### D-PEEK: Read-Only Search Peek for Containers
+**Author:** Smithers (Engine Engineer)  
+**Date:** 2026-03-22  
+**Status:** Implemented  
+**Issues:** #24, #26, #27  
+**Commits:** 70fc91f (exemplar)
+
+The search system had three related bugs in how it interacted with spatial relationships:
+1. Hidden objects (trap door under rug) were discoverable by search (#26)
+2. Search auto-opened containers (drawers, wardrobes) as a side effect (#24)
+3. Search didn't report container contents when the target wasn't found (#27)
+
+**Decision: Read-Only Peek (Not Open)**
+
+Search now "peeks" inside closed containers without changing their state. The old code called `containers.open()` and FSM `transition()` during search, which mutated object state. The new code reads `contents` directly without triggering any state transitions.
+
+**Key Distinction:** Container surfaces (nightstand drawer) can be peeked into during search. Non-container inaccessible surfaces (rug's underneath) are truly hidden and cannot be peeked — they require the covering object to be physically moved first.
+
+**Hidden Object Filtering:** Added `obj.hidden` checks to both `expand_object()` and `matches_target()` in traverse.lua. Hidden objects are ghosts — completely invisible to the search engine until explicitly revealed by the move verb handler.
+
+**Content Reporting:** Added narrator functions to report what IS inside a container when the target isn't found. This gives players useful information about the game world during search.
+
+**Alternatives Considered:**
+1. **Save/restore state:** Open the container, search, then close it again. Rejected — fragile, could fail if FSM transitions have side effects
+2. **Separate "search-open" FSM event:** Add a special "peek" transition to container FSMs. Rejected — overengineered
+
+**Consequences:**
+- Search is now purely observational — it never mutates game state
+- Players must explicitly `open` containers if they want to change their state
+- The `accessible` flag on surfaces now has two semantics: container-accessible (peekable) vs. physically-blocked (not peekable)
+
+---
+
+**End of 2026-03-22T22:05Z Evening Bug Burndown Merge**  
+**Total Active Decisions:** 68  
+**Last Merge:** 2026-03-22T22:05Z (Scribe)
