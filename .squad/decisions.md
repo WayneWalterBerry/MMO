@@ -1,9 +1,9 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-22T19:41Z  
+**Last Updated:** 2026-03-22T20:05Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
-**New Decisions:** D-HEADLESS
+**New Decisions:** D-HEADLESS, D-MODSTRIP, D-ALREADY-LIT, D-CONDITIONAL, D-GOAP-NARRATE, D-APP001–D-APP006, D-CONSC001–D-CONSC008, D-WEB-BUG13
 
 ---
 
@@ -1149,3 +1149,199 @@ When an open question gets answered/resolved, remove it from `docs/design/open-q
 **End of 2026-03-21T00:16Z Mutation Research Merge**  
 **Total Active Decisions:** 56  
 **Last Merge:** 2026-03-21T00:16Z (Scribe)
+
+---
+
+## PARSER IMPROVEMENTS & DESIGN (2026-03-22T20:05Z)
+
+### D-MODSTRIP: Noun Modifier Stripping is a Separate Pipeline Stage
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-23  
+**Status:** Implemented  
+**Affects:** preprocess.lua, loop/init.lua, verbs/init.lua
+
+Quantifier modifiers ("whole", "entire", "every", "all of the") are stripped in their own pipeline stage (`strip_noun_modifiers`), NOT folded into `strip_filler`. Rationale: filler stripping operates on sentence-level prefixes/suffixes, but modifiers appear _inside_ noun phrases ("the **whole** room"). Separate stage keeps concerns clean and is independently testable.
+
+---
+
+### D-ALREADY-LIT: FSM State Detection for Already-Lit Objects
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-23  
+**Status:** Implemented  
+**Affects:** verbs/init.lua, candle.lua
+
+The `light` handler checks `obj.states[obj._state].casts_light` to detect already-lit objects. This is property-based (works for any FSM object with casts_light) rather than string-matching state names. Follows the Prime Directive: describes the world state ("A tallow candle burns with a steady flame...") instead of telling the player what they can't do.
+
+---
+
+### D-CONDITIONAL: Conditional Clauses Detected in Loop, Not Parser
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-23  
+**Status:** Implemented  
+**Affects:** loop/init.lua, preprocess.lua
+
+Conditional clause detection ("if you find X", "when you see X") lives in `loop/init.lua` during sub-command execution, not in `preprocess.split_commands`. Rationale: the parser's job is to split text faithfully; the loop's job is to decide what to execute. Moving it to the loop keeps the parser pure and gives the loop control over how many sub-commands to skip.
+
+---
+
+### D-GOAP-NARRATE: GOAP Steps Narrate via Verb-Keyed Table
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-23  
+**Status:** Implemented  
+**Affects:** goal_planner.lua, verbs/init.lua
+
+GOAP `execute()` uses a `STEP_NARRATION` table mapping verbs to narration functions. This is extensible (add new verbs by adding table entries) and keeps narration separate from handler logic. Each GOAP step gets a brief prefix message before the handler runs.
+
+---
+
+## DESIGN PHASE: APPEARANCE & CONSCIOUSNESS SUBSYSTEMS (2026-03-22T20:05Z)
+
+### D-APP001: Appearance is an Engine Subsystem
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed (pending implementation)  
+**Affects:** src/engine/player/appearance.lua
+
+Appearance is an engine subsystem at `src/engine/player/appearance.lua`, not object logic. Objects set `is_mirror` flag; engine calls `appearance.describe(player)`.
+
+---
+
+### D-APP002: Layered Head-to-Toe Rendering
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+**Affects:** appearance subsystem
+
+Layered head-to-toe rendering (head, torso, arms, hands, legs, feet, overall). Each layer is an independent function returning a phrase or nil.
+
+---
+
+### D-APP003: Nil Layers Silently Skipped
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+
+Nil layers are silently skipped — no "you see nothing" filler.
+
+---
+
+### D-APP004: Appearance Generic Over Player State
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+
+`appearance.describe()` takes any player state table — works for self (mirror) or another player (future multiplayer).
+
+---
+
+### D-APP005: Injury Phrases via 4-Stage Pipeline
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+
+Injury phrases are composed via a 4-stage pipeline: location → severity → treatment → natural phrase.
+
+---
+
+### D-APP006: Object Appearance Metadata Optional
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+
+Object appearance metadata (`appearance.worn_description`) is optional with graceful fallback to `name`.
+
+---
+
+### D-CONSC001: Consciousness is Player-Level Field
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+
+Consciousness is a player-level field (`player.consciousness`) — not engine-level.
+
+---
+
+### D-CONSC002: Binary Conscious/Unconscious Only
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+
+Binary conscious/unconscious only — no dazed/intermediate state (Wayne directive).
+
+---
+
+### D-CONSC003: Game Loop Uses Simple If/Else
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+
+Game loop uses simple `if/else` on `player.consciousness.state`, not a formal FSM module.
+
+---
+
+### D-CONSC004: Injury System Unchanged
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+
+Injury system (`injury_mod.tick`) is unchanged — consciousness calls it, no coupling.
+
+---
+
+### D-CONSC005: Sleep and Unconsciousness Share Ticking Model
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+
+Sleep and unconsciousness share the same "inactive ticking" model — both tick injuries per turn.
+
+---
+
+### D-CONSC006: Death Check Before Wake Timer
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+
+Death check runs before wake timer check — can't wake up from death.
+
+---
+
+### D-CONSC007: Missing Consciousness Field = Conscious
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+
+Missing `consciousness` field = conscious (backward compatible with old saves).
+
+---
+
+### D-CONSC008: Wake Timer is Turn-Based
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** Designed  
+
+Wake timer is turn-based, not time-based.
+
+---
+
+## WEB LAYER FIXES & DEPLOYMENT (2026-03-22T20:05Z)
+
+### D-WEB-BUG13: Bug Report Transcript in Web Bridge Layer
+**Author:** Gil (Web Engineer)  
+**Date:** 2026-03-22  
+**Status:** Implemented  
+**Affects:** bootstrapper.js, web bridge
+
+Issue #13 — bug report URL truncation fixed in the web JS bridge (`bootstrapper.js` → `window._openUrl`) rather than modifying engine code. The bridge parses the URL, identifies the transcript section, and trims it to the last 3 command/response pairs before opening GitHub issue.
+
+**Rationale:**
+- Stays within Gil's web-layer charter (no `src/engine/` modifications)
+- The engine's 50-entry transcript is still useful for TUI users who `report bug` from terminal
+- Web-specific URL length concerns are a web-layer problem
+- If the engine handler is later updated to also trim, the JS bridge is harmless (trimming 3 entries to 3 is a no-op)
+
+---
+
+**End of 2026-03-22T20:05Z Afternoon Session Merge**  
+**Total Active Decisions:** 65  
+**Last Merge:** 2026-03-22T20:05Z (Scribe)
