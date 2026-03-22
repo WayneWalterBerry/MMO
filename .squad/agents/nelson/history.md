@@ -522,3 +522,26 @@ Due to BUG-067 and BUG-068 hangs, could NOT complete:
 
 **File:** test-pass/2026-03-21-pass-021.md
 
+
+## 2026-03-22: Search/Find Discovery Chain Testing (Pass 023)
+
+**Focus**: New search/find verbs + GOAP parser chaining for nightstand discovery
+
+**Tested**: 13 scenarios covering search/find in darkness, look vs search distinction, drawer chain progression, nested extraction
+
+**Key Findings**:
+- ✅ search/find verbs work excellently in darkness - tactile descriptions are atmospheric
+- ✅ GOAP parser chains discovery correctly: find nightstand → open drawer → search drawer → get matchbox → take match → light match
+- ✅ Minimum expressions work: 'open drawer' (not 'open nightstand drawer'), 'search drawer' (not magic words)
+- ✅ Natural language tolerance: 'search for X' works, strips prepositions
+- ✅ Nested extraction: 'take match from matchbox' works perfectly
+- ✅ look vs search distinction clear: 'look around' fails in dark (vision), 'find bed' works (touch)
+- 🐛 BUG-071 (CRITICAL): Rapid commands can hang game - needs investigation
+- 🐛 BUG-070 (Minor): Excessive blank lines push prompt off screen
+- 🐛 BUG-072 (Polish): Screen flicker during progressive object discovery
+
+**Untested Critical**: Can player 'find matchbox' BEFORE opening drawer? (hidden object discovery)
+
+**Verdict**: PASS with caveats - core mechanics excellent, but BUG-071 is potential showstopper
+
+**Report**: test-pass/2026-03-22-pass-023.md

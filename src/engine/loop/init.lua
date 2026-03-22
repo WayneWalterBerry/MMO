@@ -298,7 +298,6 @@ function loop.run(context)
         if obj and obj._state then
           local msg = fsm_mod.tick(reg, obj_id, env_context)
           if msg then
-            print("")
             print(msg)
           end
         end
@@ -309,7 +308,6 @@ function loop.run(context)
       local SECONDS_PER_TICK = 360
       local timer_msgs = fsm_mod.tick_timers(reg, SECONDS_PER_TICK)
       for _, entry in ipairs(timer_msgs) do
-        print("")
         print(entry.message)
         -- Remove spent consumables from player's hands after auto-transition
         if context.player then
@@ -345,13 +343,11 @@ function loop.run(context)
       if inj_ok and injury_mod then
         local msgs, died = injury_mod.tick(context.player)
         for _, msg in ipairs(msgs) do
-          print("")
           print(msg)
         end
         if died then
           print("")
           print("Your injuries have overwhelmed you.")
-          print("")
           print("YOU HAVE DIED.")
           context.game_over = true
         end
@@ -360,7 +356,6 @@ function loop.run(context)
 
     -- Game over check (death by poison, etc.)
     if context.game_over then
-      print("")
       print("Game over. Thanks for playing.")
       break
     end

@@ -1939,7 +1939,6 @@ function verbs.create()
                 print("Fire courses through your veins. Your throat constricts.")
                 print("The world tilts. Your knees buckle.")
                 print("A spreading numbness crawls from your stomach to your fingertips.")
-                print("")
                 print("You collapse to the floor. The darkness -- already absolute -- becomes eternal.")
                 print("")
                 print("*** YOU HAVE DIED ***")
@@ -4429,7 +4428,6 @@ function verbs.create()
                                 print("")
                                 print("Your body crumples to the cold stone floor. The poison works swiftly --")
                                 print("a spreading numbness, a ringing silence, and then... nothing.")
-                                print("")
                                 print("YOU HAVE DIED.")
                                 ctx.game_over = true
                             end
@@ -4439,7 +4437,6 @@ function verbs.create()
                             print("")
                             print("Your body crumples to the cold stone floor. The poison works swiftly --")
                             print("a spreading numbness, a ringing silence, and then... nothing.")
-                            print("")
                             print("YOU HAVE DIED.")
                             ctx.game_over = true
                         end
@@ -4888,7 +4885,6 @@ function verbs.create()
         else
             print("You arrive at " .. (target_room.name or "a new area") .. ".")
         end
-        print("")
 
         -- First visit: full auto-look; revisit: short description only
         if first_visit then
