@@ -18,7 +18,7 @@ return {
     portable = false,
 
     surfaces = {
-        inside = { capacity = 8, max_item_size = 4, contents = {"wool-cloak", "sack"} },
+        inside = { capacity = 8, max_item_size = 4, accessible = false, contents = {"wool-cloak", "sack"} },
     },
 
     location = nil,

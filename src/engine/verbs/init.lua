@@ -1286,28 +1286,35 @@ function verbs.create()
                 print("It is too dark to see anything.")
                 return
             end
-            local obj = find_visible(ctx, surface_target)
+            local obj, loc_type, parent_obj = find_visible(ctx, surface_target)
             if not obj then
                 err_not_found()
                 return
             end
-            if obj.surfaces then
+            -- BUG-097: If we found a part, redirect to the parent for surface access
+            local target_name = obj.name or obj.id
+            local check_obj = obj
+            if loc_type == "part" and parent_obj then
+                check_obj = parent_obj
+            end
+            if check_obj.surfaces then
                 local surface_name =
                     (prep == "under" or prep == "underneath" or prep == "beneath") and "underneath"
                     or (prep == "in" or prep == "inside") and "inside"
                     or (prep == "on" or prep == "top") and "top"
                     or (prep == "behind") and "behind"
                     or nil
-                local zone = surface_name and obj.surfaces[surface_name]
+                local zone = surface_name and check_obj.surfaces[surface_name]
                 if zone then
                     if zone.accessible == false then
-                        print("You can't see " .. prep .. " " .. (obj.name or obj.id) .. " right now.")
+                        local closed_name = target_name:gsub("^a ", "the "):gsub("^an ", "the ")
+                        print("The " .. (closed_name:gsub("^[Tt]he ", "")) .. " is closed.")
                         return
                     end
                     if #(zone.contents or {}) == 0 then
-                        print("There is nothing " .. prep .. " " .. (obj.name or obj.id) .. ".")
+                        print("There is nothing " .. prep .. " " .. (check_obj.name or check_obj.id) .. ".")
                     else
-                        print("You find " .. prep .. " " .. (obj.name or obj.id) .. ":")
+                        print("You find " .. prep .. " " .. (check_obj.name or check_obj.id) .. ":")
                         for _, id in ipairs(zone.contents) do
                             local item = ctx.registry:get(id)
                             print("  " .. (item and item.name or id))
@@ -1618,6 +1625,8 @@ function verbs.create()
                 return
             end
             -- BUG-058: If we found a part, redirect to the parent for surface access
+            -- BUG-096: Preserve the target name for gating messages
+            local target_name = cobj.name or "that"
             if loc_type == "part" and parent_obj then
                 cobj = parent_obj
             end
@@ -1626,7 +1635,7 @@ function verbs.create()
             if surface_prep and cobj.surfaces and cobj.surfaces[surface_prep] then
                 local zone = cobj.surfaces[surface_prep]
                 if zone.accessible == false then
-                    print("You can't reach " .. noun:match("^(%S+)") .. " " .. (cobj.name or "that") .. ".")
+                    print("You can't reach " .. noun:match("^(%S+)") .. " " .. target_name .. ".")
                     return
                 end
                 if #(zone.contents or {}) > 0 then
