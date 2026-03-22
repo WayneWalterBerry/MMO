@@ -80,6 +80,17 @@ local pipeline = {
 }
 ```
 
+#### Step 0.5: Per-Stage Unit Tests (IMMEDIATELY after refactor — before any Tier work)
+Each pipeline stage gets its own test file with deep coverage. These are the regression guards that prevent one stage's changes from silently breaking another.
+
+- [ ] `test/parser/pipeline/test-strip-politeness.lua` — "please X", "could you X", "can I X", "would you X", "let me X", "try to X", "I want to X", "I'd like to X", combinations, edge cases (word "please" inside a noun like "please-note"), no-op on already clean input
+- [ ] `test/parser/pipeline/test-strip-adverbs.lua` — "carefully X", "thoroughly X", "quickly X", "slowly X", "gently X", position variants (start/middle/end), multi-adverb ("very carefully X"), adverb-like nouns preserved ("carefully" vs object named "careful")
+- [ ] `test/parser/pipeline/test-transform-questions.lua` — "what's in X?", "is there X?", "can I X?", "where is X?", "what is this?", "how do I X?", "what can I find?", question marks stripped, non-questions pass through unchanged
+- [ ] `test/parser/pipeline/test-expand-idioms.lua` — "set fire to X" → "light X", "pick up X" → "take X", "put down X" → "drop X", "blow out X" → "extinguish X", "have a look" → "look", partial matches don't fire, order independence
+- [ ] `test/parser/pipeline/test-resolve-pronouns.lua` — "it" → last object, "that" → last object, "this" → context, "them" → plural context, no context = no resolution, context resets on room change
+- [ ] `test/parser/pipeline/test-disambiguate-nouns.lua` — partial name match, material match, typo tolerance, ambiguity prompt, no-match fallthrough
+- [ ] `test/parser/pipeline/test-pipeline-integration.lua` — full pipeline end-to-end: "please carefully search the nightstand for the matchbox" → "search nightstand for matchbox", stage ordering verification, disabled stage skipped, custom stage injection
+
 #### Tier 0: Stripping Layer (HIGH impact, LOW risk)
 - [~] Politeness stripping — "please", "could you", "let me" (done by Smithers, needs testing)
 - [~] Adverb stripping — "carefully", "thoroughly", "quickly" (done, incomplete list — BUG-085)
