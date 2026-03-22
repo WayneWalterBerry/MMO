@@ -825,3 +825,24 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 - D-INJURY015: Bandage dual-binding uses mutual references (bandage.applied_to ↔ injury.treatment) — both sides know about the relationship
 - D-INJURY016: Bandage removal reverts injury to active state and resumes damage_per_tick — premature removal has consequences
 - D-INJURY017: Treatment targeting uses 5-priority resolution (ID/name/location/type/ordinal) with auto-target for single-injury cases
+
+## Learnings
+
+### Session: Appearance Subsystem + Consciousness Architecture (2026-03-23)
+**Status:** ✅ COMPLETE
+**Requested by:** Wayne "Effe" Berry
+
+**Deliverables:**
+- `docs/architecture/player/appearance-subsystem.md` — Layered renderer pipeline (head→feet→overall), injury phrase composition, mirror integration, multiplayer-ready design
+- `docs/architecture/player/consciousness-state.md` — Conscious/unconscious/waking state machine, forced-tick game loop integration, sleep+injury danger, death-during-unconsciousness handler
+
+**Key Architectural Findings:**
+- Player state (`main.lua:278-290`): hands[2], worn{}, injuries[], max_health=100, state{bloody, poisoned, has_flame}
+- NO consciousness/sleep fields exist yet — need to add `player.consciousness` table
+- Game loop (`loop/init.lua`): injury tick happens post-command at line ~498; death check at ~502
+- Sleep verb (`verbs/init.lua:4827+`) ticks object FSMs but does NOT tick `injury_mod.tick()` — gap that needs fixing for "sleep is dangerous with injuries"
+- Injury system (`engine/injuries.lua`) is already a pure function of player state — consciousness system can call it without coupling
+- Vanity mirror (`meta/objects/vanity.lua:31-42`) has hardcoded reflection text — needs replacement with dynamic appearance call
+- 5 injury types exist: bleeding, bruised, burn, minor-cut, poisoned-nightshade
+
+**Decisions Made:** D-APP001 through D-APP006 (appearance), D-CONSC001 through D-CONSC008 (consciousness)
