@@ -5,6 +5,8 @@
 
 local goal_planner = {}
 local MAX_DEPTH = 5
+-- BUG-090: Maximum plan steps to prevent infinite prerequisite chains
+local MAX_PLAN_STEPS = 20
 local preprocess = require("engine.parser.preprocess")
 
 -- Verb synonyms: verbs that should trigger the same GOAP prerequisite chain
@@ -301,6 +303,11 @@ local function plan_for_tool(capability, ctx, visited, depth)
     if has_tool(ctx, capability) then return {} end
     visited = visited or {}
 
+    -- BUG-090: Safety limit on visited set size to prevent runaway planning
+    local visited_count = 0
+    for _ in pairs(visited) do visited_count = visited_count + 1 end
+    if visited_count > 50 then return nil end
+
     if capability == "fire_source" then
         -- Drop any spent/terminal matches from hands
         local spent_drops = {}
@@ -445,8 +452,13 @@ end
 --- Execute planned steps through Tier 1 dispatch. Returns true on success.
 function goal_planner.execute(steps, ctx)
     if not steps or #steps == 0 then return true end
+    -- BUG-090: Safety limit to prevent infinite prerequisite chains
+    if #steps > MAX_PLAN_STEPS then
+        print("(That's too complex to figure out right now. Try breaking it into simpler steps.)")
+        return false
+    end
     print("\nYou'll need to prepare first...\n")
-    for _, step in ipairs(steps) do
+    for i, step in ipairs(steps) do
         local handler = ctx.verbs[step.verb]
         if not handler then
             print("(You're not sure how to " .. step.verb .. ".)")

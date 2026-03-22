@@ -8,6 +8,13 @@
 
 local preprocess = {}
 
+--- strip_articles(noun) -> string
+--- Strips leading articles ("the", "a", "an") from a noun phrase (BUG-081).
+function preprocess.strip_articles(noun)
+    if not noun then return "" end
+    return noun:gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+end
+
 --- parse(input) -> verb, noun
 --- Splits a raw input string into the first word (verb) and the rest (noun).
 --- Handles leading "I" pronoun: "i" is inventory only when typed alone.
@@ -124,11 +131,24 @@ function preprocess.natural_language(input)
         or lower:match("^look%s+around$") then
         return "look", ""
     end
+
+    -- BUG-087: "look at X" → "examine X" (normalize before verb dispatch)
+    local look_at_target = lower:match("^look%s+at%s+(.+)")
+    if look_at_target then
+        return "examine", look_at_target
+    end
+
+    -- BUG-086: "check X" → "examine X" (prevent fallthrough to embedding matcher)
+    local check_target = lower:match("^check%s+(.+)")
+    if check_target then
+        return "examine", check_target
+    end
     
     -- BUG-074: "look for X" → find X (search for X)
+    -- BUG-081: strip articles from target
     local look_for_target = lower:match("^look%s+for%s+(.+)")
     if look_for_target then
-        return "find", look_for_target
+        return "find", preprocess.strip_articles(look_for_target)
     end
 
     -- Question patterns → time
@@ -145,13 +165,13 @@ function preprocess.natural_language(input)
         return "inventory", ""
     end
 
-    -- Question patterns → look in (container queries with noun)
+    -- Question patterns → examine in (container queries with noun)
     local container_noun = lower:match("^what'?s%s+in%s+(.+)")
         or lower:match("^what%s+is%s+in%s+(.+)")
         or lower:match("^what'?s%s+inside%s+(.+)")
         or lower:match("^what%s+is%s+inside%s+(.+)")
     if container_noun then
-        return "look", "in " .. container_noun
+        return "examine", container_noun
     end
 
     -- Bare "what's inside" (no noun) → look
@@ -180,30 +200,45 @@ function preprocess.natural_language(input)
     end
     
     -- "search [scope] for [target]" → pass whole thing to verb handler
+    -- BUG-081: strip articles from both scope and target
     local search_scope_for = lower:match("^search%s+(.+)%s+for%s+(.+)")
     if search_scope_for then
-        return "search", lower:match("^search%s+(.+)$")
+        local raw = lower:match("^search%s+(.+)$")
+        local scope_raw, target_raw = raw:match("^(.-)%s+for%s+(.+)$")
+        if scope_raw and target_raw then
+            return "search", preprocess.strip_articles(scope_raw)
+                .. " for " .. preprocess.strip_articles(target_raw)
+        end
+        return "search", raw
     end
     
     -- "search for [target]" → target only
+    -- BUG-081: strip articles from target
+    -- BUG-078: "search for everything/anything/all" → sweep
     local search_target = lower:match("^search%s+for%s+(.+)")
     if search_target then
-        return "search", search_target
+        local stripped = preprocess.strip_articles(search_target)
+        if stripped == "everything" or stripped == "anything" or stripped == "all" then
+            return "search", ""
+        end
+        return "search", stripped
     end
 
     -- "hunt for [target]" / "hunt around" → search synonym
+    -- BUG-081: strip articles from target
     local hunt_target = lower:match("^hunt%s+for%s+(.+)")
     if hunt_target then
-        return "search", hunt_target
+        return "search", preprocess.strip_articles(hunt_target)
     end
     if lower:match("^hunt%s+around%s*") then
         return "search", "around"
     end
 
     -- "rummage for [target]" / "rummage around" / "rummage through X"
+    -- BUG-081: strip articles from target
     local rummage_target = lower:match("^rummage%s+for%s+(.+)")
     if rummage_target then
-        return "search", rummage_target
+        return "search", preprocess.strip_articles(rummage_target)
     end
     local rummage_through = lower:match("^rummage%s+through%s+(.+)")
     if rummage_through then
@@ -214,15 +249,28 @@ function preprocess.natural_language(input)
     end
     
     -- "find [target] in [scope]" → pass whole thing to verb handler
+    -- BUG-081: strip articles from target and scope
     local find_in = lower:match("^find%s+(.+)%s+in%s+(.+)")
     if find_in then
-        return "find", lower:match("^find%s+(.+)$")
+        local raw = lower:match("^find%s+(.+)$")
+        local target_raw, scope_raw = raw:match("^(.-)%s+in%s+(.+)$")
+        if target_raw and scope_raw then
+            return "find", preprocess.strip_articles(target_raw)
+                .. " in " .. preprocess.strip_articles(scope_raw)
+        end
+        return "find", raw
     end
     
     -- "find [target]"
+    -- BUG-081: strip articles from target
+    -- BUG-078: "find everything/anything/all" → undirected sweep
     local find_target = lower:match("^find%s+(.+)")
     if find_target then
-        return "find", find_target
+        local stripped = preprocess.strip_articles(find_target)
+        if stripped == "everything" or stripped == "anything" or stripped == "all" then
+            return "search", ""
+        end
+        return "find", stripped
     end
 
     -- BUG-049: "pry open X" → open X

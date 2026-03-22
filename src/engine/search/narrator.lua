@@ -28,16 +28,17 @@ end
 -- Narrative templates
 ---------------------------------------------------------------------------
 
+-- BUG-088: Templates use {object} directly — format_object_name adds articles
 local STEP_TEMPLATES = {
     vision = {
-        "Your eyes scan the {object} — nothing notable.",
-        "You look at the {object}. Nothing interesting.",
-        "You glance at the {object}. Nothing there.",
+        "Your eyes scan {object} — nothing notable.",
+        "You look at {object}. Nothing interesting.",
+        "You glance at {object}. Nothing there.",
     },
     touch = {
-        "You feel the {object} — nothing there.",
-        "Your fingers explore the {object}. Nothing.",
-        "You reach out to the {object}. Nothing.",
+        "You feel {object} — nothing there.",
+        "Your fingers explore {object}. Nothing.",
+        "You reach out to {object}. Nothing.",
     },
 }
 
@@ -83,13 +84,17 @@ local function format_object_name(object)
     
     local name = object.name or object.id or "object"
     
-    -- Add article if not present
+    -- BUG-088: Don't add article if name already has one
     if not name:match("^[Tt]he ") and not name:match("^[Aa]n? ") then
-        local first_char = name:sub(1, 1):lower()
-        if first_char == "a" or first_char == "e" or first_char == "i" or first_char == "o" or first_char == "u" then
-            name = "an " .. name
-        else
-            name = "a " .. name
+        -- Only add article if name doesn't start with an article-like word
+        local lower_name = name:lower()
+        if not lower_name:match("^the ") and not lower_name:match("^a ") and not lower_name:match("^an ") then
+            local first_char = name:sub(1, 1):lower()
+            if first_char == "a" or first_char == "e" or first_char == "i" or first_char == "o" or first_char == "u" then
+                name = "an " .. name
+            else
+                name = "a " .. name
+            end
         end
     end
     

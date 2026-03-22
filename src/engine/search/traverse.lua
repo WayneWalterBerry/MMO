@@ -39,8 +39,8 @@ local function expand_object(object_id, registry, depth, include_nested_containe
     depth = depth or 0
     include_nested_containers = include_nested_containers or false
     
-    -- Prevent infinite recursion
-    if depth > 5 then
+    -- BUG-080: Prevent infinite recursion (max depth 3 for nested containers)
+    if depth > 3 then
         return {}
     end
     
@@ -126,6 +126,24 @@ function traverse.build_queue(room, scope, target, registry)
                 break
             end
         end
+        -- BUG-082: If scope not found in proximity list, check parts of room objects
+        -- This handles sub-components (e.g., "drawer" is a part of nightstand)
+        if #search_list == 0 and registry then
+            for _, obj_id in ipairs(proximity_list) do
+                local obj = registry:get(obj_id)
+                if obj and obj.parts then
+                    for part_key, part in pairs(obj.parts) do
+                        if part.id == scope or part_key == scope then
+                            -- Use the parent object but with nested containers enabled
+                            search_list[#search_list + 1] = obj_id
+                            include_nested_containers = true
+                            break
+                        end
+                    end
+                    if #search_list > 0 then break end
+                end
+            end
+        end
     end
     
     -- Expand each object into searchable entries
@@ -162,6 +180,8 @@ local function matches_target(object, target, registry, depth)
     end
     
     target = target:lower()
+    -- BUG-081: Strip articles from target before matching
+    target = target:gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
     
     -- Exact ID match
     if object.id and object.id:lower() == target then
@@ -319,6 +339,23 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
         -- ALWAYS use parent.surfaces for contents (not state template)
         local actual_surface = parent.surfaces and parent.surfaces[entry.surface_name]
         local contents = actual_surface and actual_surface.contents or {}
+
+        -- BUG-079: Undirected scoped search should enumerate surface contents
+        if not target and not is_goal_search and #contents > 0 then
+            local items = {}
+            for _, child_id in ipairs(contents) do
+                local child = registry:get(child_id)
+                if child then
+                    items[#items + 1] = child.name or child.id
+                end
+            end
+            if #items > 0 then
+                result.narrative = (result.narrative ~= "" and result.narrative .. "\n" or "")
+                    .. "Inside you find: " .. table.concat(items, ", ") .. "."
+            end
+            return result
+        end
+
         for _, child_id in ipairs(contents) do
             local child = registry:get(child_id)
             if child then
@@ -365,6 +402,22 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 result.narrative = narrator.container_open(ctx, obj)
                 -- After opening, check contents
                 local contents = containers.get_contents(obj, registry)
+
+                -- BUG-079: Undirected scoped search should enumerate container contents
+                if not target and not is_goal_search and #contents > 0 then
+                    local items = {}
+                    for _, child_id in ipairs(contents) do
+                        local child = registry:get(child_id)
+                        if child then
+                            items[#items + 1] = child.name or child.id
+                        end
+                    end
+                    if #items > 0 then
+                        result.narrative = result.narrative .. "\nInside you find: " .. table.concat(items, ", ") .. "."
+                    end
+                    return result
+                end
+
                 for _, child_id in ipairs(contents) do
                     local child = registry:get(child_id)
                     if child then

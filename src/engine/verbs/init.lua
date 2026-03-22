@@ -1794,27 +1794,39 @@ function verbs.create()
         local target = nil
         local scope = nil
         
+        -- BUG-081: Strip articles from bare noun before further processing
+        local stripped_noun = preprocess.strip_articles(noun)
+        
         -- BUG-073: Treat "the room", "the area" as sweep keywords
-        -- Also "around", "room", "here", etc.
+        -- BUG-078: "everything", "anything", "all" → undirected sweep
         local sweep_words = { [""] = true, ["around"] = true, ["room"] = true, ["here"] = true,
                               ["around me"] = true, ["surroundings"] = true,
                               ["the room"] = true, ["the area"] = true, ["area"] = true,
-                              ["everywhere"] = true, ["this place"] = true }
+                              ["everywhere"] = true, ["this place"] = true,
+                              ["everything"] = true, ["anything"] = true, ["all"] = true }
         
-        if sweep_words[noun] then
+        if sweep_words[noun] or sweep_words[stripped_noun] then
             -- Bare search - undirected room sweep
             search_mod.search(ctx, nil, nil)
             return
         end
         
         -- Pattern: "search [scope] for [target]"
-        local scope_part, target_part = noun:match("^(.-)%s+for%s+(.+)$")
+        local scope_part, target_part = stripped_noun:match("^(.-)%s+for%s+(.+)$")
         if scope_part and target_part then
+            -- BUG-081: strip articles from scope and target
+            scope_part = preprocess.strip_articles(scope_part)
+            target_part = preprocess.strip_articles(target_part)
             -- Resolve scope to object ID
-            local scope_obj = find_visible(ctx, scope_part)
+            -- BUG-082: Try find_visible — if scope is a part (drawer), use parent
+            local scope_obj, scope_loc, scope_parent = find_visible(ctx, scope_part)
             if not scope_obj then
                 print("You don't see " .. scope_part .. " here.")
                 return
+            end
+            -- BUG-082: If scope resolves to a part, use its parent for search
+            if scope_loc == "part" and scope_parent then
+                scope_obj = scope_parent
             end
             search_mod.search(ctx, target_part, scope_obj.id)
             return
@@ -1826,13 +1838,17 @@ function verbs.create()
         --   2. A target to find ("search matchbox")
         -- Prefer scope interpretation (search a specific object)
         
-        local obj = find_visible(ctx, noun)
+        local obj, obj_loc, obj_parent = find_visible(ctx, stripped_noun)
         if obj then
-            -- Found an object - treat as scope
+            -- BUG-082: If obj is a part (drawer), use its parent for search
+            if obj_loc == "part" and obj_parent then
+                obj = obj_parent
+            end
+            -- Found an object - treat as scope (BUG-079: scoped undirected search)
             search_mod.search(ctx, nil, obj.id)
         else
             -- Not found as object - treat as target (room-wide search)
-            search_mod.search(ctx, noun, nil)
+            search_mod.search(ctx, stripped_noun, nil)
         end
     end
     
@@ -1842,9 +1858,21 @@ function verbs.create()
             return
         end
         
+        -- BUG-081: Strip articles from noun
+        local stripped_noun = preprocess.strip_articles(noun)
+        
+        -- BUG-078: "find everything/anything/all" → undirected sweep
+        if stripped_noun == "everything" or stripped_noun == "anything" or stripped_noun == "all" then
+            search_mod.search(ctx, nil, nil)
+            return
+        end
+        
         -- Pattern: "find [target] in [scope]"
-        local target_part, scope_part = noun:match("^(.-)%s+in%s+(.+)$")
+        local target_part, scope_part = stripped_noun:match("^(.-)%s+in%s+(.+)$")
         if target_part and scope_part then
+            -- BUG-081: strip articles
+            target_part = preprocess.strip_articles(target_part)
+            scope_part = preprocess.strip_articles(scope_part)
             -- Resolve scope to object ID
             local scope_obj = find_visible(ctx, scope_part)
             if not scope_obj then
@@ -1856,7 +1884,7 @@ function verbs.create()
         end
         
         -- Simple "find [target]" - room-wide targeted search
-        search_mod.find(ctx, noun, nil)
+        search_mod.find(ctx, stripped_noun, nil)
     end
 
     ---------------------------------------------------------------------------
