@@ -1,9 +1,19 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-20T22:40Z  
+**Last Updated:** 2026-03-22  
 **Merger:** Scribe  
 **Source:** 32 inbox files + existing decisions.md (deduplicated, reorganized by category)  
 **Merged:** brockman-daily-editions.md, brockman-directive-sweep.md, brockman-doc-maintenance.md, brockman-puzzle-docs.md, nelson-pass-008-bugs.md
+
+---
+
+## TESTING DECISIONS
+
+### D-PIPE-TESTS: Per-Stage Pipeline Unit Tests
+**Author:** Nelson (Tester)  
+**Date:** 2026-03-22  
+**Status:** Active  
+Created `test/parser/pipeline/` with 7 isolated test files (224 tests total) covering each composable stage of the table-driven parser pipeline. Tests call individual stage functions via `preprocess.stages.*` for isolation; integration test exercises full pipeline. Each file independently runnable: `lua test/parser/pipeline/test-<name>.lua`.
 
 ---
 

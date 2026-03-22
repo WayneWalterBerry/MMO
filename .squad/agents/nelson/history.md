@@ -41,6 +41,26 @@
 
 ## Recent Updates
 
+### Phase 5 Step 0.5: Per-Stage Pipeline Unit Tests (2026-03-22)
+
+**Status:** ✅ COMPLETE — 224 tests, 224 passed, 0 failed (100%)
+
+Created 7 test files in `test/parser/pipeline/` covering all pipeline stages:
+
+| Test File | Stage | Tests | Status |
+|-----------|-------|-------|--------|
+| test-normalize.lua | Stage 1: trim, lowercase, strip ? | 24 | ✅ PASS |
+| test-strip-filler.lua | Stage 2: politeness + adverbs + preambles | 44 | ✅ PASS |
+| test-transform-questions.lua | Stage 3: question → command | 32 | ✅ PASS |
+| test-transform-look-patterns.lua | Stage 4: look at/for/around, check | 25 | ✅ PASS |
+| test-transform-search-phrases.lua | Stage 5: search/hunt/rummage/find | 32 | ✅ PASS |
+| test-transform-compound-actions.lua | Stage 6: pry, use X on Y, put/take | 39 | ✅ PASS |
+| test-pipeline-integration.lua | Full pipeline end-to-end | 28 | ✅ PASS |
+
+**Key coverage:** Happy paths, edge cases, no-ops, combinations, multi-stage interactions, disabled-stage skipping, stage ordering verification. Each file independently runnable.
+
+**Existing tests unaffected:** test-preprocess.lua (35 pass), test-preprocess-phrases.lua (28 pass).
+
 ### Pass-022: Issue Fixes Validation (2026-03-22)
 
 **Status:** ✅ COMPLETE — 42 tests, 41 passed, 1 failed (98%)

@@ -37,7 +37,9 @@
 - [x] 🏗️ Bart — Chest design docs: `docs/objects/chest.md` + `docs/design/chest-mechanics.md` (two-handed carry)
 - [x] 🏗️ Bart — Hang root cause: 3 mechanisms found. Container cycles → visited sets (replaces depth limits). Embedding matcher already single-pass. Analysis at `docs/architecture/engine/parser/hang-root-cause-analysis.md`
 - [x] 🧪 Nelson Pass 028: 22 tests, 77% pass. Container gating works for nightstand. GOAP auto-chain flawless. New: BUG-095 (wardrobe gating), BUG-096 (drawer name), BUG-097 (look inside closed)
-- [x] Full test suite: **479 pass / 0 fail** ✅
+- [x] ⚛️ Smithers — Phase 5 Step 0: Pipeline refactor complete. 7 composable stages, table-driven, debug logging. Zero behavior change, 479 pass.
+- [x] 🧪 Nelson — Phase 5 Step 0.5: 224 per-stage pipeline tests across 7 files, all passing
+- [x] Full test suite: **479+224 tests / 0 fail** ✅
 
 ---
 
