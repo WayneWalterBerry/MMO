@@ -17,8 +17,12 @@ This is the canonical bug database for the MMO project. Every bug found by Nelso
 | BUG-071 | Rapid `look around` command spam can hang game | pass-023 | no | unassigned | ❌ |
 | BUG-072 | Screen flicker during progressive object discovery | pass-023 | no | unassigned | ❌ |
 | BUG-104b | `please could you have a look around` — politeness + idiom combo breaks parser | pass-032 | no | unassigned | ❌ |
-| BUG-105b | Bare `examine` (no noun) says "can't find that" instead of asking what | pass-032 | no | unassigned | ❌ |
-| BUG-106b | `blow out the candle` (unlit) says "can't extinguish" — implies candles can't be blown out | pass-032 | no | unassigned | ❌ |
+| BUG-105 | `what do I do?` causes infinite hang — game crash on common player phrase | pass-031 | no | unassigned | ❌ CRITICAL |
+| BUG-106 | `what now?` causes infinite hang — game crash on common player phrase | pass-031 | no | unassigned | ❌ CRITICAL |
+| BUG-112 | `look under this` hangs after examining object — pronoun + look-under pattern | pass-033 | no | unassigned | ❌ |
+| BUG-113 | `pick up` (bare, no noun) after search discovery doesn't auto-fill context | pass-033 | no | unassigned | ❌ |
+| BUG-114 | `take the one I found` — discovery context not tracked across commands | pass-033 | no | unassigned | ❌ |
+| BUG-115 | `the thing on the nightstand` — vague spatial references not resolved | pass-033 | no | unassigned | ❌ |
 
 ## Fixed Bugs
 
@@ -38,25 +42,19 @@ This is the canonical bug database for the MMO project. Every bug found by Nelso
 | BUG-088 | Doubled article in search narration "You feel the a..." | pass-025 | yes | smithers | ✅ |
 | BUG-089 | `feel inside drawer` shows nightstand top surface too | pass-026 | yes | smithers | ✅ |
 | BUG-090 | `light candle` hangs — RELEASE BLOCKER — goal planner stuck | pass-026 | yes | smithers | ✅ |
-| BUG-091 | `take match` picks up spent match from floor, not fresh | pass-026 | yes | smithers | ✅ |
-| BUG-092 | Status bar match counter never decrements | pass-026 | yes | smithers | ✅ |
+| BUG-091 | `take match` picks up spent match from floor, not fresh | pass-026 | yes | smithers | ⚠️ partial (auto-chain works, manual fails) |
+| BUG-092 | Status bar match counter never decrements | pass-026 | yes | smithers | ⚠️ partial (works auto-chain, fails manual) |
 | BUG-093 | `rummage around` hangs — missing synonym | pass-027 | yes | smithers | ✅ |
 | BUG-094 | `look for a candle` hangs | pass-027 | yes | smithers | ✅ |
 | BUG-095 | Wardrobe shows contents while closed | pass-028 | yes | smithers | ✅ |
 | BUG-096 | Gating message says "nightstand" when targeting "drawer" | pass-028 | yes | smithers | ✅ |
 | BUG-097 | `look inside drawer` (closed, lit) shows description not closed message | pass-028 | yes | smithers | ✅ |
 | BUG-104 | `what's this?` hangs | pass-031 | yes | smithers | ✅ |
-| BUG-105 | `what do I do?` hangs | pass-031 | yes | smithers (belt-and-suspenders) | ✅ |
-| BUG-106 | `what now?` hangs | pass-031 | yes | smithers (belt-and-suspenders) | ✅ |
 | BUG-107 | `would you mind examining X` — preamble not stripped | pass-031 | yes | smithers (gerund stripping) | ✅ |
 | BUG-108 | `I'd like to know what's in X` — preamble not stripped | pass-031 | yes | smithers | ✅ |
 | BUG-109 | `have a look` idiom not working in game | pass-031 | yes | smithers | ✅ |
 | BUG-110 | `where is the matchbox?` searches wrong thing | pass-031 | yes | smithers | ✅ |
 | BUG-111 | `search for matches` — "matches" doesn't fuzzy-match "matchbox" | pass-031 | yes | smithers (singularize) | ✅ |
-| BUG-112 | `look under this` hangs | pass-033 | yes | smithers (look under pattern) | ✅ |
-| BUG-113 | Bare `pick up` no auto-fill from discovery context | pass-033 | yes | smithers (context fallback) | ✅ |
-| BUG-114 | `take the one I found` — discovery context not tracked | pass-033 | yes | smithers (discovery pronouns) | ✅ |
-| BUG-115 | `the thing on the nightstand` — vague spatial reference | pass-033 | yes | smithers (spatial pattern) | ✅ |
 
 ## Notation
 

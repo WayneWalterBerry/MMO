@@ -257,10 +257,12 @@
 - [x] BUG-113/114/115 context window gaps fixed + 19 regression tests
 - [x] `git commit && git push` ✅
 
-### 🏠 Marge: First Bug Audit (🔄 RUNNING)
-- [ ] Review all 11 Nelson test passes, cross-reference with bug tracker
-- [ ] Identify missing bugs, coverage gaps, Nelson→unit test conversion gaps, duplicates
-- [ ] Write audit report to `bugs/audit-2026-03-22.md`
+### 🏠 Marge: First Bug Audit ✅
+- [x] Reviewed all 11 Nelson test passes, cross-referenced with bug tracker
+- [x] Audit report at `bugs/audit-2026-03-22.md`
+- [x] Findings: 98% coverage, 3 bugs need regression tests (BUG-070/091/092), 2 duplicate test candidates, 4 hang bugs need RCA docs
+- [x] **🔴 DEPLOY BLOCKED** until BUG-105/106 confirmed fixed (common player phrases hang)
+- [x] Bug tracker updated with corrections
 
 ### ⚛️ Smithers: Remaining Open Bugs (🔄 RUNNING)
 - [ ] BUG-069: dawn sleep error message
