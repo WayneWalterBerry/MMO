@@ -34,11 +34,14 @@ Write-Host "Building meta files..."
 & powershell -ExecutionPolicy Bypass -File (Join-Path $ScriptDir "build-meta.ps1")
 
 # Step 2: Copy static assets to dist
+# Remove before copy — Copy-Item -Force silently fails to overwrite on Windows (#25)
 Write-Host ""
 Write-Host "Copying static assets to dist/..."
-Copy-Item (Join-Path $ScriptDir "index.html") $DistDir -Force
-Copy-Item (Join-Path $ScriptDir "bootstrapper.js") $DistDir -Force
-Copy-Item (Join-Path $ScriptDir "game-adapter.lua") $DistDir -Force
+foreach ($file in @("index.html", "bootstrapper.js", "game-adapter.lua")) {
+    $dest = Join-Path $DistDir $file
+    if (Test-Path $dest) { Remove-Item $dest -Force }
+    Copy-Item (Join-Path $ScriptDir $file) $DistDir -Force
+}
 
 # Copy SLM data if it exists
 $slmFile = Join-Path $RepoRoot "src\assets\parser\embedding-index.json"

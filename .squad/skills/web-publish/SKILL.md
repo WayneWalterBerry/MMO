@@ -37,9 +37,12 @@ New-Item -ItemType Directory -Path $playDir -Force
 
 # ⚠️ CRITICAL: Copy index.html EVERY TIME — it contains all CSS.
 # This file was missed in a prior deploy and caused CSS fixes to not appear.
-Copy-Item web/index.html       $playDir/
-Copy-Item web/bootstrapper.js  $playDir/
-Copy-Item web/game-adapter.lua $playDir/
+# Remove before copy — Copy-Item -Force silently fails on Windows (#25)
+foreach ($f in @("index.html", "bootstrapper.js", "game-adapter.lua")) {
+    $dest = "$playDir/$f"
+    if (Test-Path $dest) { Remove-Item $dest -Force }
+    Copy-Item "web/$f" $playDir/
+}
 
 # Copy all built/dist files (engine bundle, meta files, etc.)
 Copy-Item web/dist/*           $playDir/ -Recurse -Force

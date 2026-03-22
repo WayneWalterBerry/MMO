@@ -68,3 +68,8 @@
 - ⚠️ **Recurring issue:** `Copy-Item -Force` silently failed to overwrite `index.html` and `bootstrapper.js` again (same as 2026-07-27 deploy). Workaround: `Remove-Item` first, then `Copy-Item`. This should be scripted into the deploy process.
 - **What shipped (Smithers Phase 3):** hit verb, unconsciousness system, mirror object
 - **Verification:** Live site at `https://waynewalterberry.github.io/play/` returns HTTP 200. CDN propagation may delay new stamp by 1–3 minutes.
+
+### 2026-07-27: Fixed Issues #25 and #20
+- **#25 (P0) — Deploy Copy-Item silent failure:** `Copy-Item -Force` silently fails to overwrite files on Windows. Fixed `web/deploy.ps1` to `Remove-Item` before `Copy-Item` for static assets (index.html, bootstrapper.js, game-adapter.lua). Updated `.squad/skills/web-publish/SKILL.md` deploy steps with the same pattern. The recurring workaround from two previous deploys is now permanent.
+- **#20 (P1) — Bug report transcript only captures 1 line:** Follow-up to #13. The Lua-side transcript recorded full output but the JS bridge had no independent buffer. Added a JS-side session transcript buffer to `web/bootstrapper.js` that groups all `appendOutput` calls between `>` prompts as one response block. `_openUrl` now uses this buffer (with accurate multi-line responses) instead of parsing the Lua-generated transcript text. Falls back to original #13 regex logic if JS buffer is empty.
+- Both issues left open for Marge to verify and close.

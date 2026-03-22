@@ -20,6 +20,23 @@
                   .replace(/"/g, '&quot;');
     }
 
+    // --- Session transcript buffer (#20) ---
+    // Groups all output lines between two > prompts as one response block.
+    var sessionTranscript = [];
+    var _currentCmd = null;
+    var _currentResponseLines = [];
+
+    function flushTranscriptEntry() {
+        if (_currentCmd !== null) {
+            sessionTranscript.push({
+                input: _currentCmd,
+                output: _currentResponseLines.join('\n')
+            });
+            while (sessionTranscript.length > 50) sessionTranscript.shift();
+        }
+        _currentResponseLines = [];
+    }
+
     function appendOutput(text, className) {
         var div = document.createElement('div');
         div.className = className || 'output-line';
@@ -32,6 +49,11 @@
         }
         outputEl.appendChild(div);
         outputEl.scrollTop = outputEl.scrollHeight;
+
+        // Record response line for transcript (#20)
+        if (_currentCmd !== null) {
+            _currentResponseLines.push(text != null ? String(text) : '');
+        }
     }
 
     function showStatus(message) {
@@ -77,17 +99,38 @@
     // JS bridge: open URL in new tab (used by "report bug" command)
     // Fix #13: Trim transcript to last 3 command/response pairs so GitHub
     // doesn't truncate the URL and show stale welcome text instead.
+    // Fix #20: Use JS-side sessionTranscript buffer (groups all output lines
+    // between > prompts) instead of relying solely on the Lua-generated text.
     window._openUrl = function (url) {
         try {
+            // Flush any in-progress command before building the report
+            flushTranscriptEntry();
+            _currentCmd = null;
+
             var urlObj = new URL(url);
             if (urlObj.pathname.indexOf('/issues/new') !== -1) {
                 var body = urlObj.searchParams.get('body');
-                if (body) {
+                if (body && sessionTranscript.length > 0) {
+                    // Rebuild transcript from JS buffer (accurate multi-line responses)
+                    var blocks = sessionTranscript.slice(-3);
+                    var transcriptText = blocks.map(function (entry) {
+                        return '> ' + entry.input + '\n' + entry.output + '\n';
+                    }).join('\n');
+
+                    var match = body.match(/(### Session Transcript[^\n]*)\n\n```\n[\s\S]*?```([\s]*)$/);
+                    if (match) {
+                        var header = match[1].replace(/last \d+/, 'last ' + blocks.length);
+                        body = body.replace(match[0], header + '\n\n```\n' + transcriptText + '```' + match[2]);
+                        urlObj.searchParams.set('body', body);
+                        url = urlObj.toString();
+                    }
+                } else if (body) {
+                    // Fallback: trim Lua-generated transcript (original #13 logic)
                     var match = body.match(/(### Session Transcript[^\n]*\n\n```\n)([\s\S]*?)(```[\s]*)$/);
                     if (match) {
-                        var blocks = match[2].split(/(?=^> )/m).filter(function (b) { return b.trim(); });
-                        var last3 = blocks.slice(-3).join('');
-                        var count = Math.min(blocks.length, 3);
+                        var luaBlocks = match[2].split(/(?=^> )/m).filter(function (b) { return b.trim(); });
+                        var last3 = luaBlocks.slice(-3).join('');
+                        var count = Math.min(luaBlocks.length, 3);
                         var header = match[1].replace(/last \d+/, 'last ' + count);
                         body = body.replace(match[0], header + last3 + match[3]);
                         urlObj.searchParams.set('body', body);
@@ -110,6 +153,11 @@
             inputEl.value = '';
             history.push(text);
             historyIndex = history.length;
+
+            // Flush previous command/response pair into transcript (#20)
+            flushTranscriptEntry();
+            _currentCmd = text;
+
             var echoDiv = document.createElement('div');
             echoDiv.className = 'input-echo';
             var promptSpan = document.createElement('span');
