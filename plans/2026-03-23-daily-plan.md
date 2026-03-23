@@ -2,7 +2,7 @@
 
 **Owner:** Wayne "Effe" Berry
 **Focus:** Bug burndown from Wayne's play-test, search system improvements, web parity
-**Updated:** 2026-03-23 8:22 AM PST (plan audit — checkboxes synced with git history)
+**Updated:** 2026-03-23 9:39 AM PST (session in progress — plan synced with completed work)
 
 ---
 
@@ -45,43 +45,21 @@
 
 ---
 
-## 📋 Open Issues — 11 remaining (Marge triaged, ranked, assigned)
+## 📋 Open Issues — 3 remaining (Marge triaged, ranked, assigned)
 
-### P0 — Critical Blockers
-| # | Title | Owner | Status |
-|---|-------|-------|--------|
-| #25 | Deploy Copy-Item silent failure | Gil | Fixed (committed) |
-| #24 | Search opens containers as side effect | Smithers | Fixed (committed) |
-| — | CI: squad-main-guard fails on every push to main | Gil | Fixed (committed) |
+### Active Issues
 
-### P1 — Essential Features
-| # | Title | Owner | Status |
-|---|-------|-------|--------|
-| #26 | Hidden objects bypass search | Smithers | Fixed (committed) |
-| #27 | Search should report container contents | Smithers | Fixed (committed) |
-| #23 | "Is there a X?" should trigger search | Smithers | Fixed (committed) |
-| #22 | Search stops at matchbox, doesn't look inside | Smithers | Queued |
-| #17 | GOAP auto-chain steps invisible | Smithers | Fixed (needs verify) |
-| #21 | Missing web status bar | Gil | Fixed (committed) |
-| #20 | Bug report transcript truncation | Gil | Fixed (committed) |
-| #14 | "search whole room" — whole as noun | Smithers | Fixed (needs verify) |
-
-### P2 — Polish
 | # | Title | Owner | Status |
 |---|-------|-------|--------|
 | #3 | Screen flicker | Bart | Queued |
-| #15 | Lit candle message awkward | Smithers | Fixed (needs verify) |
-| #16 | Compound errors triple message | Smithers | Fixed (needs verify) |
-| #28 | "reflection" not mirror keyword | Smithers | Fixed (committed) |
-| #29 | Double death message on sleep bleedout | Smithers | Fixed (committed) |
-| #30 | Lowercase after periods in appearance | Smithers | Fixed (committed) |
-| #31 | Duplicate bruise text | Smithers | Fixed (committed) |
-| #18 | Safari cache (needs iPhone verify) | Gil | Fixed (needs verify) |
-
-### P3 — Features
-| # | Title | Owner | Status |
-|---|-------|-------|--------|
+| #18 | Safari cache (needs iPhone verify) | Wayne | Needs verify |
 | #19 | Level intro text from level data | Moe | Deferred |
+
+### ✅ Closed This Session (verified & closed by Marge)
+
+**Critical & Essential (20 issues):** #14, #15, #16, #17, #20, #21, #22, #23, #24, #25, #26, #27, #28, #29, #30, #31, #33, #34
+
+**Parser Phrase Routing (5 issues, fixed by Smithers):** #35, #36, #37, #38, #39
 
 ---
 
@@ -140,17 +118,17 @@
 - [x] `git commit && git push`
 
 ### 🧪 Nelson Sanity Check
-- [ ] Nelson tests: get injured → go unconscious → wake up (or die)
-- [ ] Nelson tests: get injured → sleep voluntarily → bleed out
-- [ ] Nelson tests: get injured → get knocked out → bleed out while unconscious
-- [ ] Nelson tests injury listing — natural phrasing: "health", "status", "how am I", "check my wounds", "am I hurt?", "what's wrong with me?", "injuries"
+- [x] Nelson tests: get injured → go unconscious → wake up (or die) — **PASS**
+- [x] Nelson tests: get injured → sleep voluntarily → bleed out — **PASS**
+- [x] Nelson tests: get injured → get knocked out → bleed out while unconscious — **PASS**
+- [x] Nelson tests injury listing — natural phrasing: "health", "status", "how am I", "check my wounds", "am I hurt?", "what's wrong with me?", "injuries" — **PARTIAL: #35-36 found parser gaps, now fixed**
   - "Where am I bleeding from?" — should list bleeding injury locations
   - "Why don't I feel well?" — should describe all active injuries/effects
   - "Where is that blood coming from?" — should identify bleeding source
   - "Am I going to be ok?" — should give prognosis based on injury severity
   - "How bad is it?" — should describe injury severity
   - "What happened to my arm?" — should describe injuries to specific body part
-- [ ] Nelson tests inventory/hands — natural phrasing:
+- [x] Nelson tests inventory/hands — natural phrasing — **PARTIAL: #38 found parser gaps, now fixed**
   - "inventory" / "i" — does it show hands + worn + bags?
   - "what am I holding?" — should show hand slots
   - "what's in my hands?" — same
@@ -159,7 +137,38 @@
   - "am I holding anything?" — yes/no + what
   - "what do I have?" — should show full inventory
   - "drop what I'm holding" — should work with context
-- [ ] Write results + file Issues for any bugs
+- [x] Write results + file Issues for any bugs
+
+**Pass 038: 22/38 pass. 5 bugs filed (#35-39), all fixed by Smithers in 351bfa3**
+
+### Today's Session (2026-03-23 Morning) ✅
+
+#### Bug Burndown
+- [x] Marge: verified & closed 20 issues (#14-17, #20-31, #33-34, #35-39)
+- [x] Smithers: fixed #22 (matchbox search) + #34 (container reporting) — 12 tests
+- [x] Smithers: fixed #35-39 (parser phrase routing) — 30+ transforms, 2 new verbs
+- [x] Nelson: Pass 038 sanity check — 22/38, filed #35-39
+
+#### Design & Architecture  
+- [x] CBG: poison bottle design doc (docs/design/objects/poison-bottle.md)
+- [x] CBG: bear trap design doc (docs/design/objects/bear-trap.md)
+- [x] CBG: injury hook taxonomy (4 categories: consumption, contact, proximity, duration)
+- [x] Bart: engine hooks architecture (docs/architecture/engine/event-hooks.md)
+- [x] Bart: proposed Effect Processing Pipeline (effects.lua)
+- [x] Frink: classic IF research on poison/trap mechanics (docs/research/injury-objects-classic-if.md)
+
+#### Object Implementation
+- [x] Flanders: poison-bottle.lua (nested parts, consumable effects, FSM)
+- [x] Flanders: bear-trap.lua (contact injury, 3-state FSM, disarm mechanics)
+- [x] Flanders: crushing-wound.lua injury type (blunt + bleeding combo)
+- [x] Flanders: object reference docs (docs/objects/poison-bottle.md, docs/objects/bear-trap.md)
+
+#### Infrastructure
+- [x] Gil: fixed squad-main-guard.yml CI workflow (removed main from push trigger)
+- [x] Brockman: March 22 evening newspaper edition
+- [x] Chalmers: plan audit — checkboxes synced with git history
+
+---
 
 #### Phase 3: Objects (Flanders)
 - [ ] Create injury-causing objects that trigger unconsciousness
