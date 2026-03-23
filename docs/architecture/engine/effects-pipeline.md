@@ -1,65 +1,51 @@
 # Unified Effect Processing Pipeline — Architecture
 
-**Version:** 1.0  
-**Date:** 2026-07-26  
-**Author:** Bart (Architect)  
-**Status:** Architecture Specification  
+**Version:** 2.0 (Implementation Record)  
+**Date:** 2026-07-26 (proposed) · Updated 2026-07-27 (shipped)  
+**Author:** Bart (Architect) — design · Smithers (UI Engineer) — implementation  
+**Status:** ✅ IMPLEMENTED — `src/engine/effects.lua`  
 **Decision:** D-EFFECTS-PIPELINE  
 **Requested by:** Wayne "Effe" Berry  
 **Prerequisite reading:** `event-hooks.md` (hook taxonomy + gap analysis)
 
 ---
 
-## 1. Problem Statement
+## 1. Problem Statement (Historical)
 
-### 1.1 Current State
+> This section records the pre-pipeline state. The problems described here are now resolved.
 
-Today, when an object causes something to happen — an injury, a status effect, a narration — the **verb handler** contains inline code that interprets the object's metadata and calls the appropriate subsystem. Three distinct patterns exist:
+### 1.1 Pre-Pipeline State
 
-| Pattern | Example | Where the logic lives |
+Before the pipeline shipped, when an object caused something to happen — an injury, a status effect, a narration — the **verb handler** contained inline code that interpreted the object's metadata and called the appropriate subsystem. Three distinct patterns existed:
+
+| Pattern | Example | Where the logic lived |
 |---------|---------|----------------------|
-| **String tag on transition** | `effect = "poison"` on drink transition | Drink verb handler checks `trans.effect == "poison"`, calls `injuries.inflict()` with hardcoded parameters |
-| **String tag on state** | `on_taste_effect = "poison"` on open state | Taste verb handler checks `obj.on_taste_effect == "poison"`, runs inline death sequence with `os.exit(0)` |
-| **Structured table on state** | `on_feel_effect = { type = "inflict_injury", ... }` | Not yet consumed — verb handlers don't read structured effect tables |
-
-The inline handling is brittle. The drink verb hardcodes `"poisoned-nightshade"` as the injury type for any `"poison"` string. The taste verb runs an entirely separate death sequence that bypasses the injury system entirely. Both patterns share a fundamental flaw.
+| **String tag on transition** | `effect = "poison"` on drink transition | Drink verb handler checked `trans.effect == "poison"`, called `injuries.inflict()` with hardcoded parameters |
+| **String tag on state** | `on_taste_effect = "poison"` on open state | Taste verb handler checked `obj.on_taste_effect == "poison"`, ran inline death sequence with `os.exit(0)` |
+| **Structured table on state** | `on_feel_effect = { type = "inflict_injury", ... }` | Not consumed — verb handlers didn't read structured effect tables |
 
 ### 1.2 The Core Violation
 
-Every new injury-causing object requires editing engine verb handler code. This violates Principle 8:
+Every new injury-causing object required editing engine verb handler code. This violated Principle 8:
 
 > *"All behavior declared in metadata, zero engine knowledge needed."*
 
-Today, the engine **knows** that `"poison"` means nightshade. The engine **knows** that tasting poison should print specific death text and call `os.exit(0)`. The engine decides the injury type, the damage, the narration — all information that should live in the object.
+The engine **knew** that `"poison"` meant nightshade. The engine **knew** that tasting poison should print specific death text and call `os.exit(0)`. The engine decided the injury type, the damage, the narration — all information that should live in the object.
 
-### 1.3 What This Costs
+### 1.3 What It Cost
 
-- **New poison types** (viper venom, mild food poisoning) require verb handler edits for each trigger verb
-- **New effect categories** (buffs, debuffs, healing, environmental) have no standard path
-- **Inconsistent behavior** — drinking poison goes through the injury system; tasting poison bypasses it entirely and calls `os.exit(0)` directly
-- **Duplicated logic** — each sensory verb re-implements its own effect dispatch (`on_taste_effect`, `on_feel_effect`, etc.)
-- **Content authors** (Flanders, CBG) cannot add injury-causing objects without engine changes
+- **New poison types** (viper venom, mild food poisoning) required verb handler edits for each trigger verb
+- **Inconsistent behavior** — drinking poison went through the injury system; tasting poison bypassed it entirely and called `os.exit(0)` directly
+- **Duplicated logic** — each sensory verb re-implemented its own effect dispatch
+- **Content authors** (Flanders, CBG) could not add injury-causing objects without engine changes
 
-### 1.4 What Already Works
+### 1.4 Resolution
 
-The good news: Flanders has already built two objects (`poison-bottle.lua`, `bear-trap.lua`) using the **structured effect table format** proposed in `event-hooks.md`. The objects are ready. The engine just can't read them yet.
-
-```lua
--- Already in poison-bottle.lua (Flanders)
-effect = {
-    type = "inflict_injury",
-    injury_type = "poisoned-nightshade",
-    source = "poison-bottle",
-    damage = 10,
-    message = "A bitter, almost sweet taste burns down your throat...",
-}
-```
-
-The pipeline we need is a ~100-line module that bridges these declarations to the existing subsystems.
+The pipeline is now implemented in `src/engine/effects.lua` (232 lines). Objects declare structured effect tables; the engine routes them. The `os.exit(0)` bug is fixed — all injury paths go through `injuries.inflict()`. Content authors can add new injury-causing objects with zero engine changes.
 
 ---
 
-## 2. Proposed Architecture: Effect Processing Pipeline
+## 2. Architecture: Effect Processing Pipeline (As Implemented)
 
 ### 2.1 Design Principle
 
@@ -73,95 +59,133 @@ PIPELINE says: "This is an inflict_injury effect — routing to injuries.inflict
 
 No component knows the other's business. No hardcoded mappings. No verb handler edits for new objects.
 
-### 2.2 Effect Declaration Format
+### 2.2 Effect Declaration Formats
 
-Objects declare effects as structured Lua tables attached to hook points in their metadata. Every effect has a `type` field that identifies the processor, plus type-specific parameters:
+The pipeline accepts three declaration formats, normalized internally by `effects.normalize()`:
+
+| Format | Example | When to use |
+|--------|---------|-------------|
+| **Legacy string** | `effect = "poison"` | Backward compat only. Mapped via `legacy_map`. |
+| **Single table** | `effect = { type = "inflict_injury", ... }` | One effect fires. |
+| **Array of tables** | `effect = { { type = "inflict_injury", ... }, { type = "narrate", ... } }` | Multiple effects fire in order. |
+
+**Real example from poison-bottle.lua (shipped):**
 
 ```lua
--- Consumption effect (on FSM transition)
-transitions = {
-    {
-        from = "open", to = "empty", verb = "drink",
-        message = "You raise the bottle to your lips...",
-        effect = {
-            { type = "inflict_injury", injury_type = "poisoned-nightshade",
-              source = "poison-bottle", damage = 10 },
-            { type = "narrate",
-              message = "A bitter, almost sweet taste burns down your throat." },
-            { type = "mutate", target = "self", field = "is_consumable",
-              value = false },
-        },
-    },
-}
+-- Single structured effect on a transition (poison-bottle.lua, drink transition)
+effect = {
+    type = "inflict_injury",
+    injury_type = "poisoned-nightshade",
+    source = "poison-bottle",
+    damage = 10,
+    message = "A bitter, almost sweet taste burns down your throat. Your heart begins to race.",
+},
 
--- Contact effect (on sensory verb)
-states = {
-    set = {
-        on_feel = "SNAP! The jaws clamp shut on your hand!",
-        on_feel_effect = {
-            { type = "inflict_injury", injury_type = "crushing-wound",
-              source = "bear-trap", location = "hand", damage = 15 },
-            { type = "narrate",
-              message = "The trap's iron jaws crush your hand. Pain whites out your vision." },
-        },
-    },
-}
+-- Single structured effect on a state callback (poison-bottle.lua, open.on_taste_effect)
+on_taste_effect = {
+    type = "inflict_injury",
+    injury_type = "poisoned-nightshade",
+    source = "poison-bottle",
+    damage = 5,
+    message = "The taste alone is enough. Burning sweetness sears your tongue and throat.",
+    pipeline_routed = true,
+},
 
--- Proximity effect (on room entry — future)
-on_enter_room = {
-    { type = "inflict_injury", injury_type = "bruised", source = "pit-trap",
-      location = "leg", damage = 6 },
-    { type = "narrate", message = "The floor gives way! You tumble into a shallow pit." },
-}
+-- Array of effects for atomic processing (poison-bottle.lua, drink pipeline_effects)
+pipeline_effects = {
+    { type = "inflict_injury", injury_type = "poisoned-nightshade",
+      source = "poison-bottle", damage = 10,
+      message = "A bitter, almost sweet taste burns down your throat. Your heart begins to race." },
+    { type = "mutate", target = "self", field = "weight", value = 0.1 },
+    { type = "mutate", target = "self", field = "is_consumable", value = false },
+},
 ```
 
-**Single effect shorthand:** When only one effect fires, a bare table (without the array wrapper) is accepted:
+### 2.3 Shipped Effect Types
+
+Five built-in handlers are registered at module load time. Each maps to an existing subsystem:
+
+| Effect Type | What It Does | Subsystem Called | Parameters | Status |
+|-------------|-------------|-----------------|------------|--------|
+| `inflict_injury` | Applies an injury to the player | `injuries.inflict()` via `pcall` | `injury_type`, `source`, `location`, `damage`, `message` | ✅ Shipped |
+| `narrate` | Prints a message to the player | `print()` | `message` | ✅ Shipped |
+| `mutate` | Changes a field on an object | Direct field assignment | `target` (`"self"` or object ID), `field`, `value` | ✅ Shipped |
+| `add_status` | Adds a status condition to the player | `player.state[]` table | `status`, `duration`, `severity`, `message` | ✅ Shipped |
+| `remove_status` | Removes a status condition from the player | `player.state[]` table | `status`, `message` | ✅ Shipped |
+
+**Not yet implemented** (registered when subsystems arrive):
+
+| Effect Type | Subsystem | Use Case |
+|-------------|-----------|----------|
+| `trigger_event` | event dispatch | Fire named event into game loop |
+| `fsm_transition` | `fsm.transition()` | Force state change on another object |
+| `spawn_object` | loader + registry | Materialize a new object |
+| `destroy_object` | registry | Remove an object from the world |
+
+### 2.4 Effect Processor Module — Actual Implementation
+
+The shipped module (`src/engine/effects.lua`, 232 lines) is reproduced below. This is the **actual code**, not a proposal.
+
+#### Public API
+
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `effects.register(effect_type, handler_fn)` | `(string, function(effect, ctx) → any)` | Register a handler for an effect type |
+| `effects.unregister(effect_type)` | `(string)` | Remove a handler (primarily for testing) |
+| `effects.has_handler(effect_type)` | `(string) → boolean` | Check if a handler is registered |
+| `effects.normalize(raw)` | `(string\|table) → table[]\|nil` | Normalize any declaration to an array of `{type=...}` tables |
+| `effects.process(raw, ctx)` | `(string\|table, table) → boolean` | Main entry point — normalize, intercept, dispatch |
+| `effects.add_interceptor(phase, fn)` | `("before"\|"after", function(effect, ctx))` | Register before/after interceptor |
+| `effects.clear_interceptors()` | `()` | Clear all interceptors (testing) |
+
+#### Handler Registry
 
 ```lua
-effect = { type = "inflict_injury", injury_type = "minor-cut", damage = 3 }
-```
-
-The processor normalizes both forms internally.
-
-### 2.3 Effect Types
-
-The pipeline ships with these built-in effect types. Each maps to an existing subsystem:
-
-| Effect Type | What It Does | Subsystem Called | Parameters |
-|-------------|-------------|-----------------|------------|
-| `inflict_injury` | Applies an injury to the player | `injuries.inflict()` | `injury_type`, `source`, `location`, `damage` |
-| `narrate` | Prints a message to the player | `print()` / narrator | `message`, `style` (optional) |
-| `mutate` | Changes a field on an object | mutation system | `target`, `field`, `value` |
-| `add_status` | Adds a status condition to the player | player state | `status`, `duration`, `severity` |
-| `remove_status` | Removes a status condition | player state | `status` |
-| `trigger_event` | Fires a named event into the game loop | event dispatch | `event`, `args` |
-| `fsm_transition` | Forces a state change on another object | `fsm.transition()` | `target_id`, `to_state`, `verb_hint` |
-| `spawn_object` | Creates a new object in the world | loader + registry | `template`, `location`, `overrides` |
-| `destroy_object` | Removes an object from the world | registry | `target_id` |
-| `play_sound` | Emits a sound description (future: audio) | narrator | `sound`, `intensity` |
-
-**Day-one implementation:** `inflict_injury` and `narrate`. These cover all current use cases (poison bottle, bear trap, glass shard). Other types are registered as the subsystems that back them come online.
-
-### 2.4 Effect Processor Module (`effects.lua`)
-
-```lua
--- src/engine/effects.lua
--- Unified effect processor. Objects declare effects; this module routes them.
---
--- Ownership: Bart (Architect)
--- Decision: D-EFFECTS-PIPELINE
-
 local effects = {}
 local handlers = {}
 
---- Register a handler for an effect type.
--- @param effect_type  string           The type value (e.g. "inflict_injury")
--- @param handler_fn   function(effect, ctx) -> boolean
 function effects.register(effect_type, handler_fn)
     handlers[effect_type] = handler_fn
 end
 
---- Normalize legacy string effects to structured tables.
+function effects.unregister(effect_type)
+    handlers[effect_type] = nil
+end
+
+function effects.has_handler(effect_type)
+    return handlers[effect_type] ~= nil
+end
+```
+
+#### Interceptor Infrastructure
+
+```lua
+local interceptors = { before = {}, after = {} }
+
+function effects.add_interceptor(phase, fn)
+    interceptors[phase] = interceptors[phase] or {}
+    interceptors[phase][#interceptors[phase] + 1] = fn
+end
+
+function effects.clear_interceptors()
+    interceptors = { before = {}, after = {} }
+end
+
+-- Returns true if cancelled (before phase only).
+function effects._run_interceptors(phase, effect, ctx)
+    for _, fn in ipairs(interceptors[phase] or {}) do
+        local result = fn(effect, ctx)
+        if phase == "before" and result == "cancel" then
+            return true -- cancelled
+        end
+    end
+    return false
+end
+```
+
+#### Legacy Normalization
+
+```lua
 local legacy_map = {
     poison = { type = "inflict_injury", injury_type = "poisoned-nightshade",
                source = "unknown", damage = 10 },
@@ -185,62 +209,145 @@ function effects.normalize(raw)
         return nil
     end
     if type(raw) == "table" then
-        if raw.type then return { raw } end      -- single effect
-        if raw[1] then return raw end              -- array of effects
+        if raw.type then return { raw } end   -- single effect → wrap in array
+        if raw[1] then return raw end          -- already an array of effects
     end
     return nil
 end
+```
 
---- Process an effect declaration.
--- Accepts: string ("poison"), single table ({type=...}), or array of tables.
--- @param raw    string|table   The effect declaration from object metadata
--- @param ctx    table          Game context (player, registry, source object, etc.)
--- @return boolean              true if at least one effect was processed
+Note: `normalize()` returns a **copy** of legacy map entries to prevent mutation of templates across calls.
+
+#### Main Processing Entry Point
+
+```lua
 function effects.process(raw, ctx)
     local effect_list = effects.normalize(raw)
     if not effect_list then return false end
 
+    ctx = ctx or {}
     local any = false
+
     for _, effect in ipairs(effect_list) do
-        -- before_effect hook: interceptors can cancel or modify
+        -- Phase 1: before_effect interceptors can cancel or modify
         local cancelled = effects._run_interceptors("before", effect, ctx)
         if not cancelled then
+            -- Phase 2: dispatch to registered handler
             local handler = handlers[effect.type]
             if handler then
                 handler(effect, ctx)
                 any = true
             end
-            -- after_effect hook: post-processing
+            -- Phase 3: after_effect interceptors (cleanup, narration, achievements)
             effects._run_interceptors("after", effect, ctx)
         end
     end
+
     return any
 end
-
---- Interceptor registry for before/after hooks.
-local interceptors = { before = {}, after = {} }
-
-function effects.add_interceptor(phase, fn)
-    interceptors[phase] = interceptors[phase] or {}
-    interceptors[phase][#interceptors[phase] + 1] = fn
-end
-
-function effects._run_interceptors(phase, effect, ctx)
-    for _, fn in ipairs(interceptors[phase] or {}) do
-        local result = fn(effect, ctx)
-        if phase == "before" and result == "cancel" then
-            return true  -- cancelled
-        end
-    end
-    return false
-end
-
-return effects
 ```
 
-### 2.5 Processing Flow
+### 2.5 Built-in Handler Implementations
 
-The complete path from player input to subsystem action:
+All five built-in handlers are registered at the bottom of `effects.lua` at module load time.
+
+#### `inflict_injury` — Routes to `injuries.inflict()` (safe `pcall`)
+
+```lua
+effects.register("inflict_injury", function(effect, ctx)
+    local inj_ok, injury_mod = pcall(require, "engine.injuries")
+    if not inj_ok then return nil end
+
+    local instance = injury_mod.inflict(
+        ctx.player,
+        effect.injury_type,
+        effect.source or ctx.source_id or "unknown",
+        effect.location,
+        effect.damage
+    )
+
+    if effect.message then
+        print(effect.message)
+    end
+
+    -- Check for instant death after injury infliction
+    if instance and ctx.player then
+        local health = injury_mod.compute_health(ctx.player)
+        if health <= 0 then
+            ctx.game_over = true
+        end
+    end
+
+    return instance
+end)
+```
+
+Key detail: Uses `pcall(require, "engine.injuries")` for safe require — the module gracefully degrades if the injury system isn't loaded. Sets `ctx.game_over = true` on lethal damage (no more `os.exit(0)` inline).
+
+#### `narrate` — Prints message text
+
+```lua
+effects.register("narrate", function(effect, ctx)
+    if effect.message then
+        print(effect.message)
+    end
+end)
+```
+
+#### `add_status` — Adds status condition to player state
+
+```lua
+effects.register("add_status", function(effect, ctx)
+    if not effect.status or not ctx.player then return end
+    ctx.player.state = ctx.player.state or {}
+    ctx.player.state[effect.status] = {
+        active = true,
+        duration = effect.duration,
+        severity = effect.severity,
+    }
+    if effect.message then
+        print(effect.message)
+    end
+end)
+```
+
+#### `remove_status` — Removes status condition
+
+```lua
+effects.register("remove_status", function(effect, ctx)
+    if not effect.status or not ctx.player then return end
+    ctx.player.state = ctx.player.state or {}
+    ctx.player.state[effect.status] = nil
+    if effect.message then
+        print(effect.message)
+    end
+end)
+```
+
+#### `mutate` — Changes a field on an object
+
+```lua
+effects.register("mutate", function(effect, ctx)
+    if not effect.field then return end
+    local target_obj
+    if effect.target == "self" and ctx.source then
+        target_obj = ctx.source
+    elseif effect.target and ctx.registry then
+        target_obj = ctx.registry:get(effect.target)
+    elseif ctx.source then
+        target_obj = ctx.source
+    end
+    if target_obj then
+        target_obj[effect.field] = effect.value
+    end
+end)
+```
+
+Target resolution order: `"self"` → `ctx.source`, named ID → `ctx.registry:get()`, fallback → `ctx.source`.
+
+### 2.6 Processing Flow
+
+The complete path from player input to subsystem action (as implemented):
 
 ```
 Player types "drink bottle"
@@ -260,21 +367,28 @@ Drink verb handler:
      │           │
      │           ▼
      │         effects.normalize(trans.effect)
+     │           → single table? wraps in array: { {type=...} }
+     │           → string "poison"? maps via legacy_map
+     │           → array? returns as-is
      │           │
      │           ▼
-     │         For each effect in list:
+     │         For each effect in normalized list:
      │           │
-     │           ├── Run before_effect interceptors
-     │           │     (armor check? resistance? can modify/cancel)
+     │           ├── Phase 1: Run before_effect interceptors
+     │           │     → any returns "cancel"? skip this effect
+     │           │     → can modify effect table in-place (e.g. armor reduces damage)
      │           │
-     │           ├── Dispatch to handler by effect.type
-     │           │     ├── "inflict_injury" → injuries.inflict(player, ...)
+     │           ├── Phase 2: Dispatch to handler by effect.type
+     │           │     ├── "inflict_injury" → pcall(require "engine.injuries") → injuries.inflict()
+     │           │     │                      → prints effect.message → checks game_over
      │           │     ├── "narrate"        → print(effect.message)
-     │           │     ├── "add_status"     → player.statuses[status] = {...}
-     │           │     └── "mutate"         → obj[field] = value
+     │           │     ├── "add_status"     → player.state[status] = {active, duration, severity}
+     │           │     ├── "remove_status"  → player.state[status] = nil
+     │           │     └── "mutate"         → resolve target → obj[field] = value
      │           │
-     │           └── Run after_effect interceptors
-     │                 (narration hooks, achievement checks)
+     │           └── Phase 3: Run after_effect interceptors
+     │                 → cannot cancel (effect already happened)
+     │                 → use cases: achievement triggers, NPC reactions, narration
      │
      └── NO → continue (no effects)
   │
@@ -285,14 +399,14 @@ Drink verb handler:
 Post-command: injuries.tick(player) runs on game loop tick
 ```
 
-### 2.6 Architecture Diagram
+### 2.7 Architecture Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        EFFECT SOURCES                               │
 │                                                                     │
 │  FSM Transition         Sensory Callback        Engine Hook         │
-│  (trans.effect)         (on_feel_effect)        (on_enter_room)     │
+│  (trans.effect)         (on_taste_effect)       (on_enter_room)     │
 │       │                       │                      │              │
 │       └───────────┬───────────┴──────────────────────┘              │
 │                   ▼                                                 │
@@ -303,6 +417,7 @@ Post-command: injuries.tick(player) runs on game loop tick
 │         ┌────────▼─────────┐                                        │
 │         │ effects.normalize│  Accepts: string | table | array       │
 │         │ (legacy compat)  │  Returns: array of {type=...} tables   │
+│         │                  │  Copies legacy map entries (no mutate) │
 │         └────────┬─────────┘                                        │
 │                  │                                                  │
 │         ┌────────▼─────────┐                                        │
@@ -310,15 +425,16 @@ Post-command: injuries.tick(player) runs on game loop tick
 │         │ interceptors     │  (e.g. armor reduces damage)           │
 │         └────────┬─────────┘                                        │
 │                  │                                                  │
-│    ┌─────────────┼─────────────┬──────────────┬──────────────┐      │
-│    ▼             ▼             ▼              ▼              ▼      │
-│ ┌────────┐ ┌─────────┐ ┌──────────┐ ┌───────────┐ ┌──────────┐    │
-│ │inflict │ │ narrate  │ │ mutate   │ │add_status │ │ trigger  │    │
-│ │_injury │ │          │ │          │ │           │ │ _event   │    │
-│ │        │ │ print()  │ │ obj[k]=v │ │player.    │ │ event    │    │
-│ │injuries│ │ narrator │ │ mutation │ │statuses[] │ │ dispatch │    │
-│ │.inflict│ │          │ │          │ │           │ │          │    │
-│ └────────┘ └─────────┘ └──────────┘ └───────────┘ └──────────┘    │
+│    ┌─────────────┼──────────────┬───────────────┬──────────────┐    │
+│    ▼             ▼              ▼               ▼              ▼    │
+│ ┌────────┐ ┌─────────┐ ┌───────────┐ ┌───────────┐ ┌────────────┐ │
+│ │inflict │ │ narrate  │ │add_status │ │remove_    │ │  mutate    │ │
+│ │_injury │ │          │ │           │ │status     │ │            │ │
+│ │        │ │ print()  │ │player.    │ │player.    │ │ obj[k]=v   │ │
+│ │pcall   │ │          │ │state[]    │ │state[]=nil│ │ via target │ │
+│ │injuries│ │          │ │           │ │           │ │ resolution │ │
+│ │.inflict│ │          │ │           │ │           │ │            │ │
+│ └────────┘ └─────────┘ └───────────┘ └───────────┘ └────────────┘ │
 │    │                                                                │
 │    ▼                                                                │
 │ ┌────────────────┐                                                  │
@@ -330,15 +446,15 @@ Post-command: injuries.tick(player) runs on game loop tick
 
 ---
 
-## 3. Integration Points
+## 3. Integration Points (As Implemented)
 
 ### 3.1 Verb Handlers → Effect Processor
 
-Every verb handler that currently checks for effect strings gets a surgical refactoring. The pattern is identical each time:
+Verb handlers that previously checked for effect strings now delegate to `effects.process()`:
 
-**Before (current — inline dispatch):**
+**Before (was — inline dispatch):**
 ```lua
--- In drink verb handler (line ~4840)
+-- In drink verb handler
 if trans.effect == "poison" then
     local inj_ok, injury_mod = pcall(require, "engine.injuries")
     if inj_ok then
@@ -348,7 +464,7 @@ if trans.effect == "poison" then
 end
 ```
 
-**After (unified — one-line delegation):**
+**After (shipped — one-line delegation):**
 ```lua
 -- In drink verb handler
 if trans.effect then
@@ -356,28 +472,25 @@ if trans.effect then
 end
 ```
 
-That's it. The object's effect table carries the injury type, damage, source, and message. The pipeline routes it. The verb handler doesn't know or care what happens.
+The object's effect table carries the injury type, damage, source, and message. The pipeline routes it. The verb handler doesn't know or care what happens.
 
 ### 3.2 Sensory Verbs → Effect Processor
 
 Each sensory verb (feel, taste, smell, listen, look) follows the same post-pattern:
 
-**Before (current — per-verb inline checks):**
+**Before (was — per-verb inline checks):**
 ```lua
--- In taste verb handler (line ~2146)
+-- In taste verb handler
 if obj.on_taste_effect then
     if obj.on_taste_effect == "poison" then
         print("Fire courses through your veins...")
         print("*** YOU HAVE DIED ***")
-        os.exit(0)  -- bypasses injury system entirely!
-    elseif obj.on_taste_effect == "nausea" then
-        print("Your stomach lurches...")
-        ctx.player.state.nauseated = true
+        os.exit(0)  -- bypassed injury system entirely!
     end
 end
 ```
 
-**After (unified):**
+**After (shipped — unified):**
 ```lua
 -- In taste verb handler
 local state = fsm_mod.get_state_def(obj)
@@ -386,23 +499,41 @@ if state and state.on_taste_effect then
 end
 ```
 
-This applies to all five sensory verbs. The convention is `on_{sense}_effect` on the current FSM state:
+**Real example — poison-bottle.lua open state (shipped):**
 
-| Hook Field | Verb(s) | Example Object |
-|------------|---------|----------------|
-| `on_feel_effect` | feel, touch | Bear trap (crushing-wound), glass shard (minor-cut) |
-| `on_taste_effect` | taste, lick | Poison bottle in open state (poisoned-nightshade) |
-| `on_smell_effect` | smell, sniff | Noxious gas cloud (nausea status) |
-| `on_listen_effect` | listen, hear | Banshee wail (fear status — future) |
-| `on_look_effect` | look, examine | Medusa gaze (petrification — future) |
+```lua
+-- The on_taste_effect on the open state is a structured table with pipeline_routed flag
+on_taste_effect = {
+    type = "inflict_injury",
+    injury_type = "poisoned-nightshade",
+    source = "poison-bottle",
+    damage = 5,
+    message = "The taste alone is enough. Burning sweetness sears your tongue and throat.",
+    pipeline_routed = true,
+},
+```
+
+The `pipeline_routed = true` flag signals that this effect was authored for pipeline routing (not a legacy string). It's informational — the pipeline processes both flagged and unflagged effects identically.
+
+This applies to all five sensory verbs:
+
+| Hook Field | Verb(s) | Shipped Example |
+|------------|---------|-----------------|
+| `on_taste_effect` | taste, lick | Poison bottle open state (poisoned-nightshade, damage=5) |
+| `on_feel_effect` | feel, touch | Bear trap set state (bleeding), glass shard (minor-cut) |
+| `on_smell_effect` | smell, sniff | (convention ready, no objects yet) |
+| `on_listen_effect` | listen, hear | (convention ready, no objects yet) |
+| `on_look_effect` | look, examine | (convention ready, no objects yet) |
 
 ### 3.3 Injury System Integration
 
-The `inflict_injury` handler calls the existing `injuries.inflict()` API with no changes:
+The `inflict_injury` handler calls the existing `injuries.inflict()` API with no changes to that system. The shipped implementation uses `pcall` for safe require:
 
 ```lua
 effects.register("inflict_injury", function(effect, ctx)
-    local injury_mod = require("engine.injuries")
+    local inj_ok, injury_mod = pcall(require, "engine.injuries")
+    if not inj_ok then return nil end
+
     local instance = injury_mod.inflict(
         ctx.player,
         effect.injury_type,
@@ -410,19 +541,26 @@ effects.register("inflict_injury", function(effect, ctx)
         effect.location,
         effect.damage
     )
+
     if effect.message then
         print(effect.message)
     end
-    -- Check for instant death
-    if instance then
+
+    if instance and ctx.player then
         local health = injury_mod.compute_health(ctx.player)
-        if health <= 0 and ctx then
+        if health <= 0 then
             ctx.game_over = true
         end
     end
+
     return instance
 end)
 ```
+
+Differences from the original proposal:
+- **`pcall` safety**: require is wrapped in `pcall` — if the injury module isn't available, the handler returns nil instead of crashing
+- **`ctx.game_over` flag**: Instead of `os.exit(0)`, lethal damage sets a flag on the context table for the game loop to handle cleanly
+- **Source fallback chain**: `effect.source or ctx.source_id or "unknown"` — three-level fallback
 
 The injury system's existing API (`inflict()`, `tick()`, `compute_health()`, `try_heal()`) is unchanged. The pipeline is an adapter, not a replacement.
 
@@ -446,9 +584,83 @@ Your vision blurs. The room tilts sideways.        ← after_effect interceptor 
 
 For the day-one implementation, the transition message and effect message cover all cases. The `after_effect` narrative hook exists for future atmospheric text (e.g., room reactions to the player's injury).
 
-### 3.5 FSM State Transition Connection
+### 3.5 Object Opt-in: The `effects_pipeline` Flag
 
-Effects fire **after** the FSM transition has been applied. This is deliberate:
+Objects that use structured effect tables set a top-level flag to indicate pipeline routing:
+
+```lua
+-- poison-bottle.lua (shipped)
+return {
+    id = "poison-bottle",
+    effects_pipeline = true,   -- ← all effects on this object are structured tables
+    -- ...
+}
+```
+
+The `effects_pipeline = true` flag signals to the engine that:
+1. All `effect` fields on transitions are structured tables (not legacy strings)
+2. All `on_{sense}_effect` fields on states are structured tables
+3. The object is pipeline-native — no legacy normalization needed
+
+This is a **convention flag**, not enforced by the pipeline module itself. The pipeline processes any format regardless. The flag helps the engine and content authors distinguish migrated objects from legacy ones.
+
+### 3.6 The `pipeline_effects` Array and `pipeline_routed` Flag
+
+Two metadata patterns emerged during the poison bottle migration:
+
+#### `pipeline_effects` — Full effect chain for atomic processing
+
+Transitions can declare a `pipeline_effects` array alongside the single `effect` field. This provides the complete atomic effect chain:
+
+```lua
+-- poison-bottle.lua drink transition (shipped)
+{
+    from = "open", to = "empty", verb = "drink",
+    -- Single effect (backward compat — engine can use this alone)
+    effect = {
+        type = "inflict_injury",
+        injury_type = "poisoned-nightshade",
+        source = "poison-bottle",
+        damage = 10,
+        message = "A bitter, almost sweet taste burns down your throat. Your heart begins to race.",
+    },
+    -- Full pipeline chain for atomic processing (D-EFFECTS-PIPELINE)
+    -- Engine falls back to effect + mutate if pipeline_effects not consumed.
+    pipeline_effects = {
+        { type = "inflict_injury", injury_type = "poisoned-nightshade",
+          source = "poison-bottle", damage = 10,
+          message = "A bitter, almost sweet taste burns down your throat. Your heart begins to race." },
+        { type = "mutate", target = "self", field = "weight", value = 0.1 },
+        { type = "mutate", target = "self", field = "is_consumable", value = false },
+    },
+    -- FSM-level mutations (applied by fsm.transition → apply_mutations)
+    mutate = { ... },
+}
+```
+
+The `pipeline_effects` array includes **all** side effects as pipeline-routed types, including mutations that FSM-level `mutate` also handles. This gives the engine a choice:
+- **Pipeline-aware engine**: Process `pipeline_effects` atomically via `effects.process()`
+- **Fallback engine**: Process `effect` + `mutate` separately (traditional path)
+
+#### `pipeline_routed` — Marks an individual effect as pipeline-authored
+
+```lua
+-- poison-bottle.lua open state on_taste_effect (shipped)
+on_taste_effect = {
+    type = "inflict_injury",
+    injury_type = "poisoned-nightshade",
+    source = "poison-bottle",
+    damage = 5,
+    message = "The taste alone is enough. Burning sweetness sears your tongue and throat.",
+    pipeline_routed = true,   -- ← informational: authored for pipeline routing
+},
+```
+
+The `pipeline_routed = true` flag is informational. The pipeline ignores it during processing — it exists for tooling, debugging, and content author clarity.
+
+### 3.7 FSM State Transition Connection
+
+Effects fire **after** the FSM transition has been applied. This is deliberate and confirmed in the shipped implementation:
 
 1. Transition executes → object state changes (e.g., bottle: open → empty)
 2. Mutations apply → object properties update (weight, keywords, categories)
@@ -458,23 +670,24 @@ This ordering guarantees that the object is in its **post-transition state** whe
 
 **Exception:** `before_effect` interceptors fire before the effect handler runs, but still after the FSM transition. This is correct — the interceptor can cancel the effect (e.g., immunity), but it cannot undo the state transition. The bottle is empty regardless of whether the poison takes hold (the player drank the liquid; whether the poison works is a separate question).
 
-### 3.6 GOAP Planning Integration
+### 3.8 GOAP Planning Integration
 
-The GOAP planner (`goal_planner.lua`) already reads `prerequisites` tables on objects. Effect declarations don't change GOAP planning — the planner doesn't need to understand effects, only state requirements.
+The GOAP planner (`goal_planner.lua`) reads `prerequisites` tables on objects. Effect declarations don't change GOAP planning — the planner doesn't need to understand effects, only state requirements.
 
-However, objects that cause effects SHOULD declare GOAP-visible consequences in their prerequisites to enable avoidance planning:
+Objects that cause effects declare GOAP-visible consequences in their prerequisites to enable avoidance planning. **Real example from poison-bottle.lua (shipped):**
 
 ```lua
+-- poison-bottle.lua prerequisites (shipped)
 prerequisites = {
-    drink = {
-        requires_state = "open",
-        -- GOAP hint: planner knows this action has consequences
-        warns = { "injury", "poisoned-nightshade" },
-    },
-}
+    drink = { requires_state = "open", warns = { "injury", "poisoned-nightshade" } },
+    pour = { requires_state = "open" },
+    open = { requires_state = "sealed", requires_free_hands = true },
+    uncork = { requires_state = "sealed", requires_free_hands = true },
+    taste = { warns = { "injury", "poisoned-nightshade" } },
+},
 ```
 
-The `warns` field is advisory — the planner can use it for future "avoid danger" goals, but it's not required for day-one.
+The `warns` field is advisory — the planner can use it for future "avoid danger" goals.
 
 ---
 
@@ -577,13 +790,13 @@ end)
 
 That's it. Any object can now declare `{ type = "add_buff", buff_type = "strength", duration = 5 }` and the pipeline routes it. No verb handler changes. No pipeline changes.
 
-### 5.2 Planned Future Effect Types
+### 5.2 Future Effect Types
 
 | Effect Type | Subsystem | Use Case | Priority |
 |-------------|-----------|----------|----------|
+| `heal_injury` | injury system | Antidote application, bandage | High (pairs with inflict) |
 | `add_buff` | buff/debuff system | Strength potion, speed boost | Medium |
 | `remove_buff` | buff/debuff system | Debuff cure, buff expiration | Medium |
-| `heal_injury` | injury system | Antidote application, bandage | High (pairs with inflict) |
 | `environmental_damage` | room hazard system | Fire, flooding, cold | Low |
 | `teleport` | room/movement system | Teleportation scroll, trap door | Low |
 | `modify_skill` | skill system | Temporary skill boost/penalty | Medium |
@@ -606,38 +819,21 @@ Each effect in the array runs its own before/after interceptor cycle. If a `befo
 
 ### 5.4 Multiplayer Considerations
 
-For effects on other players (future MMO feature), the ctx table carries the target:
-
-```lua
--- Effect targeting another player (future)
-effect = {
-    type = "inflict_injury",
-    injury_type = "bleeding",
-    target = "other_player",  -- resolved by ctx at runtime
-    source = "silver-dagger",
-    damage = 5,
-}
-```
-
-The `inflict_injury` handler checks `effect.target`:
-- `nil` or `"self"` → `ctx.player` (current behavior)
-- `"other_player"` → `ctx.target_player` (set by combat system)
-- A specific player ID → resolved from player registry
-
-This is a future extension. Day-one always targets `ctx.player`.
+For effects on other players (future MMO feature), the ctx table carries the target. The current `mutate` handler already demonstrates target resolution via `ctx.registry`. The `inflict_injury` handler always targets `ctx.player` today — future combat extends this with `effect.target` resolution.
 
 ---
 
-## 6. Migration Path
+## 6. Migration Status
 
-### 6.1 Backward Compatibility
+### 6.1 Backward Compatibility (Shipped)
 
-The `effects.normalize()` function guarantees zero-breakage migration. String effects still work:
+The `effects.normalize()` function guarantees zero-breakage migration. All three formats work:
 
 ```lua
 -- Legacy format (still works)
 effect = "poison"
--- normalize() → { { type = "inflict_injury", injury_type = "poisoned-nightshade", ... } }
+-- normalize() → { { type = "inflict_injury", injury_type = "poisoned-nightshade",
+--                    source = "unknown", damage = 10 } }
 
 -- New format (preferred)
 effect = { type = "inflict_injury", injury_type = "poisoned-nightshade", damage = 10 }
@@ -651,47 +847,39 @@ effect = {
 -- normalize() → returns as-is
 ```
 
-The legacy map covers all currently used string tags: `"poison"`, `"cut"`, `"burn"`, `"bruise"`, `"nausea"`. Any string not in the map is silently ignored (logged in debug mode).
+The legacy map covers all currently used string tags: `"poison"`, `"cut"`, `"burn"`, `"bruise"`, `"nausea"`. Unrecognized strings return `nil` (silently ignored).
 
-### 6.2 Migration Phases
+### 6.2 Migration Phases (Status)
 
-**Phase 1: Create the pipeline (engine change)**
-- Create `src/engine/effects.lua` with `process()`, `normalize()`, `register()`
-- Register `inflict_injury` and `narrate` handlers
-- Wire before/after interceptor infrastructure (empty day-one)
-- No object changes needed. No verb handler changes yet.
+**Phase 1: Create the pipeline** — ✅ COMPLETE
+- `src/engine/effects.lua` shipped with `process()`, `normalize()`, `register()`, `unregister()`, `has_handler()`
+- Five built-in handlers registered: `inflict_injury`, `narrate`, `add_status`, `remove_status`, `mutate`
+- Before/after interceptor infrastructure shipped (empty — zero overhead)
 
-**Phase 2: Refactor verb handlers (engine change)**
-- Replace inline effect checks with `effects.process()` calls
-- Surgical edits — each replacement is 1-3 lines replacing 10-20 lines
-- Specific locations:
-  - **Drink handler** (line ~4840): Replace `if trans.effect == "poison"` block with `effects.process(trans.effect, ctx)`
-  - **Taste handler** (line ~2146): Replace `if obj.on_taste_effect == "poison"` block with `effects.process(state.on_taste_effect, ctx)`
-  - **Feel handler**: Replace `if obj.on_feel_effect == "cut"` block with `effects.process(state.on_feel_effect, ctx)`
-  - Add generic post-sensory hook: `if state.on_{verb}_effect then effects.process(...) end`
+**Phase 2: Refactor verb handlers** — ✅ COMPLETE
+- Inline effect checks replaced with `effects.process()` calls
+- The `os.exit(0)` bug in the taste handler is eliminated
 
-**Phase 3: Object migration (object changes — Flanders owns)**
-- Objects already using structured effects (poison-bottle, bear-trap): already done
-- Objects using string effects: migrate at Flanders's pace
-- Legacy strings continue to work via `normalize()`
+**Phase 3: Object migration** — ✅ FIRST MIGRATION COMPLETE (poison-bottle)
+- `poison-bottle.lua` fully migrated: `effects_pipeline = true`, structured effect tables, `pipeline_effects` array
+- Objects using legacy string effects continue working via `normalize()`
+- Remaining objects migrate at Flanders's pace
 
-**Phase 4: Register future handlers (as subsystems arrive)**
-- `add_status` when status system exists
-- `heal_injury` when antidote objects are built
-- `add_buff` when buff/debuff system is designed
+**Phase 4: Register future handlers** — ONGOING
+- `add_status` and `remove_status` shipped ahead of schedule
+- `mutate` shipped ahead of schedule
+- `heal_injury` needed when antidote objects are built
 
-### 6.3 Verb Handlers Requiring Refactoring
+### 6.3 Verb Handler Refactoring (Completed)
 
-| Handler | File Location | Current Pattern | Effort |
-|---------|--------------|-----------------|--------|
-| `drink` | `verbs/init.lua` ~line 4840 | `trans.effect == "poison"` → hardcoded `injuries.inflict()` | Small: 1 line replaces ~20 |
-| `taste` | `verbs/init.lua` ~line 2146 | `on_taste_effect == "poison"` → inline death + `os.exit(0)` | Small: 1 line replaces ~15, **fixes `os.exit(0)` bug** |
-| `feel` | `verbs/init.lua` | `on_feel_effect == "cut"` → inline `injuries.inflict()` | Small: 1 line replaces ~5 |
-| `stab`/`cut`/`hit` | `verbs/init.lua` | `obj.on_stab` table → direct `injuries.inflict()` | Medium: already structured, route through pipeline |
+| Handler | Previous Pattern | Status |
+|---------|-----------------|--------|
+| `drink` | `trans.effect == "poison"` → hardcoded `injuries.inflict()` | ✅ Migrated to `effects.process()` |
+| `taste` | `on_taste_effect == "poison"` → inline death + `os.exit(0)` | ✅ Migrated — **`os.exit(0)` bug fixed** |
+| `feel` | `on_feel_effect == "cut"` → inline `injuries.inflict()` | ✅ Migrated to `effects.process()` |
+| `stab`/`cut`/`hit` | `obj.on_stab` table → direct `injuries.inflict()` | Route through pipeline as needed |
 
-**Bonus fix:** The taste handler currently calls `os.exit(0)` on poison, bypassing the injury system entirely. Migrating to the pipeline fixes this — the `inflict_injury` handler goes through `injuries.inflict()` properly, enabling healing, antidotes, and survival mechanics.
-
-### 6.4 What Does NOT Change
+### 6.4 What Did NOT Change
 
 - **FSM architecture** — states, transitions, timers, thresholds: untouched
 - **Injury system API** — `injuries.inflict()`, `tick()`, `compute_health()`, `try_heal()`: untouched
@@ -706,12 +894,12 @@ The legacy map covers all currently used string tags: `"poison"`, `"cut"`, `"bur
 
 ### 7.1 Layer Position
 
-The effect processor sits at **Layer 3.6** in the architecture stack, between the hook framework (Layer 3.5) and the verb system (Layer 4):
+The effect processor sits at **Layer 3.6** in the architecture stack:
 
 ```
 Layer 5:  Meta-code (object .lua files)        — declares effects
 Layer 4:  Verb system (verbs/init.lua)          — triggers effects
-Layer 3.6: Effect processor (effects.lua)       — routes effects    ← NEW
+Layer 3.6: Effect processor (effects.lua)       — routes effects    ← SHIPPED
 Layer 3.5: Hook framework (traverse_effects)    — fires on events
 Layer 3:  FSM engine (fsm/init.lua)             — manages state
 Layer 2:  Injury system (injuries.lua)          — receives effects
@@ -745,32 +933,32 @@ This is not a day-one change. The two systems coexist cleanly.
 
 ---
 
-## 8. Implementation Sizing
+## 8. Implementation Summary
 
-| Task | Owner | Effort | Priority | Enables |
-|------|-------|--------|----------|---------|
-| Create `src/engine/effects.lua` | Bart | ~80 lines | **P0** | Everything |
-| Register `inflict_injury` handler | Bart | ~15 lines | **P0** | All injury-causing objects |
-| Register `narrate` handler | Bart | ~5 lines | **P0** | Effect-attached narration |
-| Refactor drink verb handler | Bart | ~3 lines (replaces ~20) | **P1** | Poison bottle via pipeline |
-| Refactor taste verb handler | Bart | ~3 lines (replaces ~15) | **P1** | Taste effects via pipeline + fixes `os.exit` bug |
-| Refactor feel verb handler | Bart | ~3 lines (replaces ~5) | **P1** | Contact effects via pipeline |
-| Generic `on_{sense}_effect` hook | Bart | ~10 lines | **P1** | All sensory effects generalized |
-| Wire before/after interceptors | Bart | Already in P0 module | **P2** | Armor, resistance, immunity |
-| Register `add_status` handler | Bart | ~10 lines | **P2** | Nausea, hallucination, fear |
-| Migrate `traverse_effects` | Bart | ~20 lines | **P3** | Unified pipeline for all effects |
+| Component | Owner | Lines | Status |
+|-----------|-------|-------|--------|
+| `src/engine/effects.lua` — core module | Smithers (impl), Bart (design) | 232 | ✅ Shipped |
+| `inflict_injury` handler | Smithers | ~25 | ✅ Shipped (with pcall safety, game_over flag) |
+| `narrate` handler | Smithers | ~5 | ✅ Shipped |
+| `add_status` handler | Smithers | ~12 | ✅ Shipped |
+| `remove_status` handler | Smithers | ~8 | ✅ Shipped |
+| `mutate` handler | Smithers | ~15 | ✅ Shipped (with target resolution) |
+| Before/after interceptor infrastructure | Smithers | ~20 | ✅ Shipped (empty — zero overhead) |
+| `unregister()` + `has_handler()` + `clear_interceptors()` | Smithers | ~10 | ✅ Shipped (testing support) |
+| Poison bottle migration | Flanders | — | ✅ Shipped (first pipeline-native object) |
 
-**Total day-one (P0 + P1): ~120 lines of new code, ~60 lines of deletions.**
+**Actual shipped: 232 lines in `effects.lua`. Five handlers. Three-format normalization. Full interceptor infrastructure.**
 
 ---
 
-## Appendix A: Complete Effect Declaration Reference
+## Appendix A: Complete Effect Declaration Reference (Shipped)
 
 ```lua
 -- inflict_injury: Apply injury to player via injuries.inflict()
+-- Handler uses pcall for safe require. Sets ctx.game_over on lethal damage.
 { type = "inflict_injury",
   injury_type = "poisoned-nightshade",  -- REQUIRED: matches meta/injuries/{type}.lua
-  source = "poison-bottle",              -- object that caused it (for narration)
+  source = "poison-bottle",              -- fallback chain: effect.source → ctx.source_id → "unknown"
   location = "hand",                     -- body location (nil = systemic)
   damage = 10,                           -- override initial_damage from definition
   message = "The pain is blinding.",     -- printed after infliction
@@ -779,17 +967,17 @@ This is not a day-one change. The two systems coexist cleanly.
 -- narrate: Print a message to the player
 { type = "narrate",
   message = "The liquid burns your throat...",  -- REQUIRED
-  style = "danger",                              -- future: narrator formatting
 }
 
 -- mutate: Change a field on an object
+-- Target resolution: "self" → ctx.source, named ID → ctx.registry:get(), fallback → ctx.source
 { type = "mutate",
   target = "self",      -- "self" = source object, or an object ID
   field = "is_consumable",
   value = false,
 }
 
--- add_status: Add a temporary status condition to the player
+-- add_status: Add a status condition to the player's state table
 { type = "add_status",
   status = "nauseated",    -- REQUIRED: status identifier
   duration = 12,           -- turns (-1 = permanent until cured)
@@ -797,51 +985,147 @@ This is not a day-one change. The two systems coexist cleanly.
   message = "Your stomach churns.",
 }
 
--- remove_status: Remove a status condition
+-- remove_status: Remove a status condition from the player's state table
 { type = "remove_status",
   status = "nauseated",    -- REQUIRED
   message = "The nausea finally passes.",
 }
+```
 
--- fsm_transition: Force state change on another object
+**Not yet implemented** (register when subsystems arrive):
+
+```lua
+-- fsm_transition: Force state change on another object (FUTURE)
 { type = "fsm_transition",
   target_id = "candle",      -- REQUIRED: object to transition
   to_state = "extinguished", -- REQUIRED: target state
   verb_hint = "extinguish",  -- for FSM transition matching
 }
 
--- trigger_event: Fire a named event into the game loop
+-- trigger_event: Fire a named event into the game loop (FUTURE)
 { type = "trigger_event",
   event = "alarm_triggered",   -- REQUIRED: event name
   args = { room = "cellar" },  -- event-specific payload
 }
 
--- spawn_object: Create a new object
+-- spawn_object: Create a new object (FUTURE)
 { type = "spawn_object",
   template = "smoke-cloud",    -- REQUIRED: object template ID
   location = "current_room",   -- "current_room" | "inventory" | room ID
   overrides = { duration = 5 },
 }
 
--- destroy_object: Remove an object from the world
+-- destroy_object: Remove an object from the world (FUTURE)
 { type = "destroy_object",
   target_id = "glass-vial",   -- REQUIRED: object to remove
   message = "The vial shatters into dust.",
 }
 ```
 
-## Appendix B: Cross-Reference
+## Appendix B: Poison Bottle — Complete Migration Example
+
+The poison bottle (`src/meta/objects/poison-bottle.lua`) is the first object fully migrated to the effects pipeline. This section documents the actual shipped metadata patterns.
+
+### Object-Level Flag
+
+```lua
+return {
+    id = "poison-bottle",
+    effects_pipeline = true,    -- signals pipeline-native object
+    is_consumable = true,
+    consumable_type = "liquid",
+    poison_type = "nightshade",
+    poison_severity = "lethal",
+    -- ...
+}
+```
+
+### Transition Effect (drink → lethal dose)
+
+```lua
+{
+    from = "open", to = "empty", verb = "drink",
+    aliases = {"quaff", "sip", "gulp", "consume"},
+    message = "You raise the bottle to your lips. The liquid burns like liquid fire...",
+    -- Single structured effect (effects.process normalizes to array)
+    effect = {
+        type = "inflict_injury",
+        injury_type = "poisoned-nightshade",
+        source = "poison-bottle",
+        damage = 10,
+        message = "A bitter, almost sweet taste burns down your throat. Your heart begins to race.",
+    },
+    -- Full pipeline chain for atomic processing
+    pipeline_effects = {
+        { type = "inflict_injury", injury_type = "poisoned-nightshade",
+          source = "poison-bottle", damage = 10,
+          message = "A bitter, almost sweet taste burns down your throat. Your heart begins to race." },
+        { type = "mutate", target = "self", field = "weight", value = 0.1 },
+        { type = "mutate", target = "self", field = "is_consumable", value = false },
+    },
+    -- FSM-level mutations (applied by fsm.transition → apply_mutations)
+    mutate = {
+        weight = 0.1,
+        is_consumable = false,
+        categories = { remove = "dangerous" },
+        keywords = { add = "empty" },
+    },
+}
+```
+
+### State Effect (taste → sub-lethal warning dose)
+
+```lua
+-- On the "open" state
+on_taste = "BITTER! Searing fire courses down your throat. Your vision blurs...",
+on_taste_effect = {
+    type = "inflict_injury",
+    injury_type = "poisoned-nightshade",
+    source = "poison-bottle",
+    damage = 5,
+    message = "The taste alone is enough. Burning sweetness sears your tongue and throat.",
+    pipeline_routed = true,
+},
+```
+
+### Safe Path (pour → no effect)
+
+```lua
+{
+    from = "open", to = "empty", verb = "pour",
+    aliases = {"spill", "dump"},
+    message = "You tip the bottle. The green liquid pours out, hissing where it touches the stone floor...",
+    -- No effect field — safe disposal path
+    mutate = {
+        weight = 0.1,
+        is_consumable = false,
+        categories = { remove = "dangerous" },
+        keywords = { add = "empty" },
+    },
+}
+```
+
+### Effect Routing Summary
+
+| Player Action | Effect Path | Damage | Survivable? |
+|---------------|------------|--------|-------------|
+| `drink bottle` | `trans.effect → effects.process() → inflict_injury(poisoned-nightshade, 10)` | 10 | Depends on health |
+| `taste bottle` (open) | `state.on_taste_effect → effects.process() → inflict_injury(poisoned-nightshade, 5)` | 5 | Yes (warning dose) |
+| `pour bottle` | No effect — safe disposal | 0 | Always |
+
+## Appendix C: Cross-Reference
 
 | Document | What It Covers |
 |----------|---------------|
-| `event-hooks.md` | Hook taxonomy, gap analysis, effect pipeline proposal |
+| `event-hooks.md` | Hook taxonomy, gap analysis, pipeline integration with hooks |
 | `event-handlers/about.md` | Hook framework design (12 hooks, registry, dispatch) |
 | `event-handlers/wind_effect.md` | First implemented hook subtype (traverse effects) |
 | `event-handlers/puzzle-designer-guide.md` | Content author guide to using hooks |
 | `docs/design/objects/poison-bottle.md` | Poison bottle design (consumption → injury) |
 | `docs/design/objects/bear-trap.md` | Bear trap design (contact → injury) |
-| `src/meta/objects/poison-bottle.lua` | Poison bottle implementation (structured effects) |
+| `src/meta/objects/poison-bottle.lua` | **Poison bottle implementation — first pipeline-native object** |
 | `src/meta/objects/bear-trap.lua` | Bear trap implementation (structured effects) |
+| `src/engine/effects.lua` | **The pipeline implementation (232 lines)** |
 | `src/engine/injuries.lua` | Injury system API |
 | `src/engine/traverse_effects.lua` | Existing traverse effect processor |
-| This document | Unified Effect Processing Pipeline architecture |
+| This document | Unified Effect Processing Pipeline architecture + implementation record |
