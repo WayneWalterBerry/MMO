@@ -1,5 +1,6 @@
--- vanity.lua — FSM-managed container with mirror
--- States: closed/open × mirror intact/broken. Container: top + drawer + mirror_shelf.
+-- vanity.lua — FSM-managed furniture with mirror
+-- States: closed/open × mirror intact/broken. Surfaces: top + mirror_shelf.
+-- Drawer contents come from room-file nesting (Principle 0.5).
 return {
     guid = "{eda1257d-8240-4c75-9c1b-a7be349a60f5}",
     template = "furniture",
@@ -23,7 +24,6 @@ return {
 
     surfaces = {
         top = { capacity = 6, max_item_size = 4, contents = {} },
-        inside = { capacity = 4, max_item_size = 2, contents = {}, accessible = false },
         mirror_shelf = { capacity = 2, max_item_size = 1, contents = {} },
     },
 
@@ -56,7 +56,6 @@ return {
 
             surfaces = {
                 top = { capacity = 6, max_item_size = 4, contents = {} },
-                inside = { capacity = 4, max_item_size = 2, contents = {}, accessible = false },
                 mirror_shelf = { capacity = 2, max_item_size = 1, contents = {} },
             },
 
@@ -83,24 +82,13 @@ return {
 
             surfaces = {
                 top = { capacity = 6, max_item_size = 4, contents = {} },
-                inside = { capacity = 4, max_item_size = 2, contents = {}, accessible = true },
                 mirror_shelf = { capacity = 2, max_item_size = 1, contents = {} },
             },
 
             on_look = function(self)
                 local text = self.description
                 text = text .. "\n\nYour reflection stares back from the mirror."
-                if self.surfaces and self.surfaces.inside then
-                    local inside = self.surfaces.inside.contents or {}
-                    if #inside == 0 then
-                        text = text .. "\nThe drawer yawns open. It is empty."
-                    else
-                        text = text .. "\nInside the drawer:"
-                        for _, id in ipairs(inside) do
-                            text = text .. "\n  " .. id
-                        end
-                    end
-                end
+                text = text .. "\nThe drawer hangs open."
                 return text
             end,
         },
@@ -116,7 +104,6 @@ return {
 
             surfaces = {
                 top = { capacity = 6, max_item_size = 4, contents = {} },
-                inside = { capacity = 4, max_item_size = 2, contents = {}, accessible = false },
             },
 
             on_look = function(self)
@@ -143,22 +130,11 @@ return {
 
             surfaces = {
                 top = { capacity = 6, max_item_size = 4, contents = {} },
-                inside = { capacity = 4, max_item_size = 2, contents = {}, accessible = true },
             },
 
             on_look = function(self)
                 local text = self.description
-                if self.surfaces and self.surfaces.inside then
-                    local inside = self.surfaces.inside.contents or {}
-                    if #inside == 0 then
-                        text = text .. "\n\nThe drawer yawns open. It is empty."
-                    else
-                        text = text .. "\n\nInside the drawer:"
-                        for _, id in ipairs(inside) do
-                            text = text .. "\n  " .. id
-                        end
-                    end
-                end
+                text = text .. "\n\nThe drawer hangs open."
                 return text
             end,
         },

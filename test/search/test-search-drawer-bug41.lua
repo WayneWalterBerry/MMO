@@ -470,13 +470,13 @@ end)
 h.suite("9. NIGHTSTAND OBJECT — part surface mapping")
 ---------------------------------------------------------------------------
 
-test("nightstand drawer part has surface='inside'", function()
+test("nightstand drawer part has no parent surface mapping (Principle 0.5)", function()
     -- Load the actual nightstand object definition
     local nightstand = dofile(script_dir .. "/../../src/meta/objects/nightstand.lua")
     truthy(nightstand.parts ~= nil, "Nightstand must have parts")
     truthy(nightstand.parts.drawer ~= nil, "Nightstand must have drawer part")
-    eq("inside", nightstand.parts.drawer.surface,
-       "Drawer part must have surface='inside' mapping")
+    eq(nil, nightstand.parts.drawer.surface,
+       "Drawer part must NOT map to parent surface (drawer is first-class container)")
 end)
 
 ---------------------------------------------------------------------------

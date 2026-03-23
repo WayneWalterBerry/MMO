@@ -26,7 +26,7 @@ return {
     keywords = {"nightstand", "night stand", "bedside table", "side table", "small table"},
     size = 4,
     weight = 15,
-    categories = {"furniture", "wooden", "container"},
+    categories = {"furniture", "wooden"},
     room_position = "stands beside the bed",
     portable = false,
     on_smell = "Old pine wood and melted tallow.",
@@ -39,7 +39,6 @@ return {
 
     surfaces = {
         top = { capacity = 3, max_item_size = 2, contents = {} },
-        inside = { capacity = 2, max_item_size = 1, contents = {}, accessible = false },
     },
 
     location = nil,
@@ -59,7 +58,6 @@ return {
             on_feel = "Smooth wooden surface, crusted with hardened wax drippings. A small drawer handle protrudes from the front.",
             surfaces = {
                 top = { capacity = 3, max_item_size = 2, contents = {} },
-                inside = { capacity = 2, max_item_size = 1, contents = {}, accessible = false },
             },
             on_look = function(self, registry)
                 return look_with_top(self, registry) .. "\nThe drawer is closed."
@@ -73,23 +71,9 @@ return {
             on_feel = "Smooth wooden surface, crusted with hardened wax drippings. The drawer slides open under your fingers.",
             surfaces = {
                 top = { capacity = 3, max_item_size = 2, contents = {} },
-                inside = { capacity = 2, max_item_size = 1, contents = {}, accessible = true },
             },
             on_look = function(self, registry)
-                local text = look_with_top(self, registry)
-                if self.surfaces and self.surfaces.inside then
-                    local inside = self.surfaces.inside.contents or {}
-                    if #inside == 0 then
-                        text = text .. "\nThe drawer is open. It is empty."
-                    else
-                        text = text .. "\nInside the drawer:"
-                        for _, id in ipairs(inside) do
-                            local item = registry and registry:get(id)
-                            text = text .. "\n  " .. (item and item.name or id)
-                        end
-                    end
-                end
-                return text
+                return look_with_top(self, registry) .. "\nThe drawer is pulled open."
             end,
         },
 
@@ -173,7 +157,7 @@ return {
             id = "nightstand-drawer",
             detachable = true,
             reversible = true,
-            surface = "inside",  -- maps this part to the parent's "inside" surface
+            -- drawer is a first-class container; no parent surface mapping needed
             keywords = {"drawer", "small drawer", "nightstand drawer"},
             name = "a small drawer",
             description = "A shallow wooden drawer, about 12 inches wide and 6 inches deep.",
@@ -192,12 +176,7 @@ return {
             blocked_message = "The drawer is closed. You need to open it first before you can pull it out.",
 
             factory = function(parent)
-                local inside_contents = {}
-                if parent.surfaces and parent.surfaces.inside then
-                    for _, id in ipairs(parent.surfaces.inside.contents or {}) do
-                        inside_contents[#inside_contents + 1] = id
-                    end
-                end
+                -- Drawer contents come from room-file nesting, not parent surfaces
                 return {
                     guid = "drawer-inst-" .. math.random(100000, 999999),
                     id = "nightstand-drawer",
@@ -235,7 +214,7 @@ return {
                         return text
                     end,
                     location = parent.location,
-                    contents = inside_contents,
+                    contents = {},
                 }
             end,
         },
