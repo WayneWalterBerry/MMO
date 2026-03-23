@@ -92,3 +92,19 @@
 - Deployment pipeline now requires explicit PR review before CI runs
 - Reduced risk of accidental main-branch deployments
 - Ready for sustained release/merge cycle
+
+### 2026-03-23: Deploy — Effects Pipeline + New Objects + Parser Transforms
+- **Timestamp:** 2026-03-23T11:21Z
+- **Status:** ✅ COMPLETE — Deployed to GitHub Pages
+- **Pages commit:** `f780c28` (main branch, 7 files changed, +991 lines)
+- **Engine bundle:** 134.4 KB compressed (+3.7 KB from previous 130.7 KB), 28 engine files + 1 asset file
+- **Meta files:** 92 total (79 objects (+1 new), 7 rooms, 5 templates, 1 level)
+- **Cache-bust stamp:** `20260323112127` stamped into `bootstrapper.js` and `index.html`
+- **Files deployed:** `index.html`, `bootstrapper.js`, `game-adapter.lua`, `engine.lua(.gz)`, 92 meta files
+- **What shipped:**
+  - Effects Pipeline (`effects.lua`) — EP1 through EP10 milestone
+  - Poison bottle + bear trap objects refactored to use Effects Pipeline
+  - 30+ parser phrase transforms (health, injury, inventory, appearance, wait)
+  - All bug fixes from the 2026-03-23 session
+- **Deploy method:** Used `web/deploy.ps1` — clean run, no Copy-Item issues this time
+- **Verification:** Live site at `https://waynewalterberry.github.io/play/` returns HTTP 200 with correct cache-bust stamp
