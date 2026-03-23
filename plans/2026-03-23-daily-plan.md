@@ -2,7 +2,7 @@
 
 **Owner:** Wayne "Effe" Berry
 **Focus:** Bug burndown from Wayne's play-test, search system improvements, web parity
-**Updated:** 2026-03-22 10:04 PM PST (pulled forward from tomorrow — most work already done today)
+**Updated:** 2026-03-23 8:22 AM PST (plan audit — checkboxes synced with git history)
 
 ---
 
@@ -37,32 +37,33 @@
 - [x] Tests: 1,117+ pass across 39 files
 - [x] Nelson Pass 036: 29/37 pass, 4 presentation bugs (#28-31)
 
-### Phase 3b: Spatial Relationships ⏳ (Smithers working now)
-- [ ] Fix traverse.lua: hidden objects skip search (#26)
-- [ ] Search peek mode: don't change container state (#24)
-- [ ] Search narration: report container contents (#27)
-- [ ] Tests for hiding, peek, narration
+### Phase 3b: Spatial Relationships ✅ (Smithers — completed 2026-03-22 evening)
+- [x] Fix traverse.lua: hidden objects skip search (#26)
+- [x] Search peek mode: don't change container state (#24)
+- [x] Search narration: report container contents (#27) — NOTE: #34 later found a reporting bug, now fixed
+- [x] Tests for hiding, peek, narration
 
 ---
 
-## 📋 Open Issues — 19 remaining (Marge triaged, ranked, assigned)
+## 📋 Open Issues — 11 remaining (Marge triaged, ranked, assigned)
 
 ### P0 — Critical Blockers
 | # | Title | Owner | Status |
 |---|-------|-------|--------|
-| #25 | Deploy Copy-Item silent failure | Gil | Queued |
-| #24 | Search opens containers as side effect | Smithers | 🔧 In progress |
+| #25 | Deploy Copy-Item silent failure | Gil | Fixed (committed) |
+| #24 | Search opens containers as side effect | Smithers | Fixed (committed) |
+| — | CI: squad-main-guard fails on every push to main | Gil | Fixed (committed) |
 
 ### P1 — Essential Features
 | # | Title | Owner | Status |
 |---|-------|-------|--------|
-| #26 | Hidden objects bypass search | Smithers | 🔧 In progress |
-| #27 | Search should report container contents | Smithers | 🔧 In progress |
-| #23 | "Is there a X?" should trigger search | Smithers | Queued |
+| #26 | Hidden objects bypass search | Smithers | Fixed (committed) |
+| #27 | Search should report container contents | Smithers | Fixed (committed) |
+| #23 | "Is there a X?" should trigger search | Smithers | Fixed (committed) |
 | #22 | Search stops at matchbox, doesn't look inside | Smithers | Queued |
 | #17 | GOAP auto-chain steps invisible | Smithers | Fixed (needs verify) |
-| #21 | Missing web status bar | Gil | Queued |
-| #20 | Bug report transcript truncation | Gil | Queued |
+| #21 | Missing web status bar | Gil | Fixed (committed) |
+| #20 | Bug report transcript truncation | Gil | Fixed (committed) |
 | #14 | "search whole room" — whole as noun | Smithers | Fixed (needs verify) |
 
 ### P2 — Polish
@@ -71,10 +72,10 @@
 | #3 | Screen flicker | Bart | Queued |
 | #15 | Lit candle message awkward | Smithers | Fixed (needs verify) |
 | #16 | Compound errors triple message | Smithers | Fixed (needs verify) |
-| #28 | "reflection" not mirror keyword | Smithers | Queued |
-| #29 | Double death message on sleep bleedout | Smithers | Queued |
-| #30 | Lowercase after periods in appearance | Smithers | Queued |
-| #31 | Duplicate bruise text | Smithers | Queued |
+| #28 | "reflection" not mirror keyword | Smithers | Fixed (committed) |
+| #29 | Double death message on sleep bleedout | Smithers | Fixed (committed) |
+| #30 | Lowercase after periods in appearance | Smithers | Fixed (committed) |
+| #31 | Duplicate bruise text | Smithers | Fixed (committed) |
 | #18 | Safari cache (needs iPhone verify) | Gil | Fixed (needs verify) |
 
 ### P3 — Features
@@ -166,8 +167,7 @@
   - Enemy blow (combat precursor)?
   - Poison gas (cellar area)?
 - [ ] Design narration for each unconsciousness trigger
-- [ ] `git commit && git push`
-
+- [x] `git commit && git push` (commit f102439)
 ---
 
 ## New Feature: Mirror / Player Appearance Subsystem
@@ -198,13 +198,13 @@
 
 ### Implementation Tasks
 
-#### Phase M1: Design Docs
-- [ ] `docs/design/objects/mirror.md` — Mirror object design:
+#### Phase M1: Design Docs ✅
+- [x] `docs/design/objects/mirror.md` — Mirror object design:
   - `is_mirror` metadata flag on mirror objects
   - How `look at mirror` / `examine mirror` triggers appearance subsystem
   - Mirror placement (bedroom vanity, bathroom, hand mirror as inventory item?)
   - Narration framing: "In the mirror, you see..." vs "Your reflection shows..."
-- [ ] `docs/design/player/appearance.md` — Player appearance subsystem design:
+- [x] `docs/design/player/appearance.md` — Player appearance subsystem design:
   - How appearance is composed from player state
   - Head-to-toe layer ordering
   - Injury + clothing interaction (bandage over wound, blood on shirt)
@@ -212,10 +212,10 @@
   - Held item inclusion
   - Smart phrasing: composing natural English from state flags
   - Multiplayer hook: same subsystem, different player state input
-- [ ] `git commit && git push`
+- [x] `git commit && git push` (commit f102439)
 
-#### Phase M2: Architecture Docs (Bart)
-- [ ] `docs/architecture/player/appearance-subsystem.md` — Architecture:
+#### Phase M2: Architecture Docs (Bart) ✅
+- [x] `docs/architecture/player/appearance-subsystem.md` — Architecture:
   - Where it lives in the engine (`src/engine/player/appearance.lua`)
   - Input: player state table (worn items, injuries, health, held items)
   - Output: composed natural language description string
@@ -225,11 +225,11 @@
   - Injury rendering pipeline: injury → location → severity → treatment → compose phrase
   - Integration point: mirror object `on_examine` hook calls appearance subsystem
   - Future integration point: `look at <player>` calls same subsystem with target's state
-- [ ] Review how player.lua currently stores worn items, injuries, held items
-- [ ] `git commit && git push`
+- [x] Review how player.lua currently stores worn items, injuries, held items
+- [x] `git commit && git push` (commits dbe484e, 1cda161)
 
-#### Phase M3: Engine Implementation (Smithers)
-- [ ] `src/engine/player/appearance.lua` — Player appearance subsystem:
+#### Phase M3: Engine Implementation (Smithers) ✅
+- [x] `src/engine/player/appearance.lua` — Player appearance subsystem:
   - `appearance.describe(player_state)` → full description string
   - Layer renderers: head, torso, arms, hands, legs, feet, overall
   - Injury phrase composer: reads injury type, location, severity, treatment status
@@ -237,10 +237,10 @@
   - Clothing/armor renderer: reads worn item slots, describes each
   - Held item renderer: describes what's in each hand
   - Smart composition: avoids repetition, uses natural English connectives
-- [ ] Mirror object hook: `is_mirror` flag → `on_examine` calls `appearance.describe()`
-- [ ] Parser integration: "look in mirror", "examine mirror", "look at my reflection" all trigger appearance
-- [ ] Create a mirror object in the bedroom (the oak vanity already exists — add mirror property)
-- [ ] **TEST GATE:** Unit tests covering:
+- [x] Mirror object hook: `is_mirror` flag → `on_examine` calls `appearance.describe()`
+- [x] Parser integration: "look in mirror", "examine mirror", "look at my reflection" all trigger appearance
+- [x] Create a mirror object in the bedroom (the oak vanity already exists — add mirror property)
+- [x] **TEST GATE:** Unit tests covering:
   - Naked player → basic description
   - Fully armored player → all slots described
   - Injured player → injuries shown with locations
@@ -250,7 +250,7 @@
   - Holding items → described in hand slots
   - Multiple injuries → all listed naturally
   - Empty slot → skipped gracefully (no "you are wearing nothing on your feet")
-- [ ] `git commit && git push`
+- [x] `git commit && git push` (commit 14b2ef4)
 
 #### Phase M4: Nelson Review
 - [ ] Nelson examines the mirror with various player configurations:
@@ -292,3 +292,7 @@
    - `how am I` / `how do I feel` — Prime Directive natural English
    - Parser should handle all variants: "check my wounds", "am I hurt?", "what's wrong with me?", "injuries", "wounds"
    - **Nelson must test this area after implementation** — wide variety of natural phrasing
+
+
+
+
