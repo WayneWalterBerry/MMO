@@ -252,6 +252,26 @@ local function matches_target(object, target, registry, depth, visited)
     return false
 end
 
+--- Peek inside a matched container for a more specific match (#22)
+-- When search finds a container whose name matches the target (e.g., "matchbox"
+-- matches "match"), peek inside to see if contents match more directly.
+-- Read-only: never mutates state (D-PEEK).
+-- @param obj container object that matched the target
+-- @param target string search target
+-- @param registry registry instance
+-- @return child object if a deeper match is found, nil otherwise
+local function find_deeper_match(obj, target, registry)
+    if not containers.is_container(obj) then return nil end
+    local contents = containers.get_contents(obj, registry)
+    for _, child_id in ipairs(contents) do
+        local child = registry:get(child_id)
+        if child and matches_target(child, target, registry, 0) then
+            return child
+        end
+    end
+    return nil
+end
+
 --- Process one step of traversal
 -- @param ctx game context
 -- @param entry queue entry
@@ -339,9 +359,17 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 if child then
                     if target and not is_goal_search then
                         if matches_target(child, target, registry, 0) then
-                            result.found = true
-                            result.item = child
-                            result.narrative = narrator.container_peek(ctx, parent) .. "\n" .. narrator.found_target(ctx, child, parent)
+                            -- #22: If matched child is a container, peek inside for a more specific match
+                            local deeper = find_deeper_match(child, target, registry)
+                            if deeper then
+                                result.found = true
+                                result.item = deeper
+                                result.narrative = narrator.container_peek(ctx, parent) .. "\n" .. narrator.container_peek(ctx, child) .. "\n" .. narrator.found_target(ctx, deeper, child)
+                            else
+                                result.found = true
+                                result.item = child
+                                result.narrative = narrator.container_peek(ctx, parent) .. "\n" .. narrator.found_target(ctx, child, parent)
+                            end
                             return result
                         end
                     elseif is_goal_search and goal_type and goal_value then
@@ -470,9 +498,17 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 if child then
                     if target and not is_goal_search then
                         if matches_target(child, target, registry, 0) then
-                            result.found = true
-                            result.item = child
-                            result.narrative = narrator.container_peek(ctx, obj) .. "\n" .. narrator.found_target(ctx, child, obj)
+                            -- #22: If matched child is a container, peek inside for a more specific match
+                            local deeper = find_deeper_match(child, target, registry)
+                            if deeper then
+                                result.found = true
+                                result.item = deeper
+                                result.narrative = narrator.container_peek(ctx, obj) .. "\n" .. narrator.container_peek(ctx, child) .. "\n" .. narrator.found_target(ctx, deeper, child)
+                            else
+                                result.found = true
+                                result.item = child
+                                result.narrative = narrator.container_peek(ctx, obj) .. "\n" .. narrator.found_target(ctx, child, obj)
+                            end
                             return result
                         end
                     elseif is_goal_search and goal_type and goal_value then
@@ -486,7 +522,17 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 end
             end
 
-            -- Target not found inside — report what IS there (#27)
+            -- Target not found inside — check if the container itself matches (#22)
+            if target and not is_goal_search then
+                if matches_target(obj, target, registry, 0) then
+                    result.found = true
+                    result.item = obj
+                    result.narrative = narrator.container_peek(ctx, obj) .. "\n" .. narrator.found_target(ctx, obj, nil)
+                    return result
+                end
+            end
+
+            -- Target not found inside or on container — report what IS there (#27)
             if target then
                 local items = {}
                 for _, child_id in ipairs(contents) do
@@ -501,12 +547,96 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
         end
     end
     
+    -- #34: Handle open container objects — check contents, report what's inside
+    if entry.is_container and entry.is_open then
+        local contents = containers.get_contents(obj, registry)
+        
+        -- Undirected search: enumerate contents
+        if not target and not is_goal_search then
+            if #contents > 0 then
+                local items = {}
+                for _, child_id in ipairs(contents) do
+                    local child = registry:get(child_id)
+                    if child then
+                        items[#items + 1] = child.name or child.id
+                    end
+                end
+                result.narrative = narrator.container_contents_no_target(ctx, obj, items, nil)
+            else
+                result.narrative = narrator.step_narrative(ctx, obj, false)
+            end
+            return result
+        end
+        
+        -- Targeted search: check contents for match
+        for _, child_id in ipairs(contents) do
+            local child = registry:get(child_id)
+            if child then
+                if target and not is_goal_search then
+                    if matches_target(child, target, registry, 0) then
+                        local deeper = find_deeper_match(child, target, registry)
+                        if deeper then
+                            result.found = true
+                            result.item = deeper
+                            result.narrative = narrator.container_peek(ctx, child) .. "\n" .. narrator.found_target(ctx, deeper, child)
+                        else
+                            result.found = true
+                            result.item = child
+                            result.narrative = narrator.found_target(ctx, child, obj)
+                        end
+                        return result
+                    end
+                elseif is_goal_search and goal_type and goal_value then
+                    if goals.matches_goal(child, goal_type, goal_value, registry) then
+                        result.found = true
+                        result.item = child
+                        result.narrative = narrator.found_target(ctx, child, obj)
+                        return result
+                    end
+                end
+            end
+        end
+        
+        -- Target not found in contents — check if the container itself matches (#22)
+        if target and not is_goal_search then
+            if matches_target(obj, target, registry, 0) then
+                result.found = true
+                result.item = obj
+                result.narrative = narrator.found_target(ctx, obj, nil)
+                return result
+            end
+        end
+
+        -- Target not found inside or on container — report what IS there (#34)
+        if target and #contents > 0 then
+            local items = {}
+            for _, child_id in ipairs(contents) do
+                local child = registry:get(child_id)
+                if child then
+                    items[#items + 1] = child.name or child.id
+                end
+            end
+            result.narrative = narrator.container_contents_no_target(ctx, obj, items, target)
+        else
+            result.narrative = narrator.step_narrative(ctx, obj, false)
+        end
+        return result
+    end
+    
     -- Check if this object matches the target
     if target and not is_goal_search then
         if matches_target(obj, target, registry, 0) then
-            result.found = true
-            result.item = obj
-            result.narrative = narrator.found_target(ctx, obj, nil)
+            -- #22: If matched object is a container, peek inside for a more specific match
+            local deeper = find_deeper_match(obj, target, registry)
+            if deeper then
+                result.found = true
+                result.item = deeper
+                result.narrative = narrator.container_peek(ctx, obj) .. "\n" .. narrator.found_target(ctx, deeper, obj)
+            else
+                result.found = true
+                result.item = obj
+                result.narrative = narrator.found_target(ctx, obj, nil)
+            end
             return result
         end
     elseif is_goal_search and goal_type and goal_value then
