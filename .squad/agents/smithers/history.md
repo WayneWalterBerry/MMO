@@ -177,3 +177,27 @@ Implemented unified Effects Pipeline as per Bart's D-EFFECTS-PIPELINE architectu
 4. **Fuzzy noun resolution (Tier 5) must NOT participate in search scope detection.** The search handler's scope-vs-target heuristic ("is this noun a visible object?") needs exact matching only. Fuzzy false positives (e.g., "match"→"mat" Levenshtein 2) cause catastrophic misrouting — the entire search gets scoped to the wrong object. Use `ctx._exact_only` flag pattern for any handler that needs exact-only noun resolution.
 
 5. **Why it kept recurring:** Each previous fix (#43/#44) addressed the search engine's container/surface traversal logic, which was correct all along. The real bug was in the verb handler layer ABOVE the search engine. The mismatch between where the bug appeared (search results) and where it lived (verb handler scope detection) made it invisible to targeted fixes.
+
+---
+
+## #48: Search Streaming with Clock Advance (2026-03-24)
+
+**Status:** ✅ COMPLETE — Commit 26f0912, pushed to main
+
+### Problem
+Search results dumped in a block. Player should see items appear one-by-one with game time advancing per item.
+
+### Fix
+- `src/engine/search/init.lua`: Each `search.tick()` now advances `ctx.time_offset` by `MINUTES_PER_STEP / 60` hours (1 game-minute per step), matching the sleep verb convention
+- Added `search.set_on_tick(fn)` hook for future clock system integration — callback receives `(ctx, step_number, queue_entry)` per tick
+- Search was already tick-based (one queue entry per `search.tick()` call), so output was already line-by-line; the missing piece was clock advancement
+
+### Tests
+`test/search/test-search-streaming.lua` — 14 regression tests:
+- Line-by-line output verification (2 tests)
+- Clock advancement per step (4 tests)
+- on_tick hook behavior (3 tests)
+- Backward compatibility (5 tests)
+
+### Key Learning
+6. **Time advancement follows the sleep pattern**: `ctx.time_offset += hours`. The presentation layer reads this offset in `get_game_time(ctx)`. Any verb that "takes time" should increment `ctx.time_offset`.
