@@ -154,3 +154,26 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 - Safe-take transitions (triggered/disarmed states) untouched — no effects to pipeline
 
 **Result:** 45/45 test files pass, 0 failures. Zero regressions. Committed f872ed3 and pushed.
+
+### 2026-07-27: Chamber Pot — Wearable as Improvised Helmet (Issue #54)
+
+**Task:** Make the ceramic chamber pot wearable on the head as an improvised helmet with minimal protection.
+
+**What Changed in chamber-pot.lua:**
+- Added `wear_slot = "head"` (top-level) — engine helmet detection in `appearance.lua` and concussion system
+- Added `is_helmet = true` (top-level) — belt-and-suspenders helmet detection
+- Added `reduces_unconsciousness = 1` (top-level) — reduces KO duration by 1 turn on head hits
+- Added `appearance = { worn_description = "A ceramic chamber pot sits absurdly atop your head." }` — consumed by `render_head()` in `engine/player/appearance.lua`
+- Added `on_smell_worn` — worn-state smell feedback metadata for future ambient smell system
+- Added helmet-related keywords: "helmet", "head pot", "improvised helmet"
+- Added file header comment with doc and issue references
+
+**Engine Integration Points (no engine changes needed):**
+- Wear verb: `wear.provides_armor = 1` + `wear.wear_quality = "makeshift"` triggers existing comedic narration at verbs/init.lua:4636
+- Appearance/mirror: `appearance.worn_description` read by `engine/player/appearance.lua:114` in `render_head()`
+- Concussion reduction: `reduces_unconsciousness` read at `engine/verbs/init.lua:3841` when head hit detected
+- Slot conflict: standard slot/layer conflict system blocks wearing pot if outer headgear already equipped (engine/verbs/init.lua:4576-4611)
+
+**Design Doc Updated:** `docs/objects/chamber-pot.md` — full wearable specification, armor stats, appearance/mirror description, Wayne's design intent (real-world object creativity).
+
+**Result:** 50/50 test files pass, 0 failures. Zero regressions. Committed 011094d and pushed.
