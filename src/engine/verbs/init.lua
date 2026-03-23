@@ -3766,8 +3766,8 @@ function verbs.create()
         local target_part, tool_word = noun:match("^(.+)%s+with%s+(.+)$")
         if not target_part then target_part = noun; tool_word = nil end
 
-        -- Strip "my " prefix
-        local cleaned = target_part:lower():gsub("^my%s+", "")
+        -- Strip possessive prefix ("my", "your")
+        local cleaned = target_part:lower():gsub("^my%s+", ""):gsub("^your%s+", "")
 
         -- Check if targeting self or a body part
         if cleaned == "self" or cleaned == "myself" or cleaned == "me"
@@ -3842,19 +3842,54 @@ function verbs.create()
         local modifier = BODY_AREA_DAMAGE_MODS[body_area] or 1.0
         local effective_damage = math.floor(base_damage * modifier)
 
-        -- Inflict the injury
-        local inj_ok, injury_mod = pcall(require, "engine.injuries")
-        if not inj_ok then
-            print("Something goes wrong.")
-            return true
-        end
-
+        -- Inflict the injury — route through effects pipeline when available (#66)
         local source = "self-inflicted (" .. (weapon.id or "weapon") .. ", " .. verb_name .. ")"
-        local _captured = {}
-        local old_print = _G.print
-        _G.print = function(...) _captured[#_captured + 1] = true end
-        local instance = injury_mod.inflict(ctx.player, profile.injury_type, source, body_area, effective_damage)
-        _G.print = old_print
+        local instance = nil
+
+        if weapon.effects_pipeline and profile.pipeline_effects then
+            -- Build contextualized effect list with body_area and damage overrides
+            local fx_list = {}
+            for _, fx in ipairs(profile.pipeline_effects) do
+                local copy = {}
+                for k, v in pairs(fx) do copy[k] = v end
+                copy.damage = effective_damage
+                copy.location = body_area
+                copy.source = source
+                -- Substitute body area in message
+                if copy.message then
+                    copy.message = string.format(copy.message, body_area)
+                end
+                fx_list[#fx_list + 1] = copy
+            end
+            local fx_ctx = { player = ctx.player, registry = ctx.registry, source = weapon }
+            -- Suppress default infliction messages — we print our own narration
+            local old_print = _G.print
+            local _captured = {}
+            _G.print = function(...) _captured[#_captured + 1] = table.pack(...) end
+            effects.process(fx_list, fx_ctx)
+            _G.print = old_print
+            -- Check if injury was created
+            if ctx.player.injuries then
+                for _, inj in ipairs(ctx.player.injuries) do
+                    if inj.source == source then
+                        instance = inj
+                    end
+                end
+            end
+            if fx_ctx.game_over then ctx.game_over = true end
+        else
+            -- Legacy direct path (weapons without pipeline_effects)
+            local inj_ok, injury_mod = pcall(require, "engine.injuries")
+            if not inj_ok then
+                print("Something goes wrong.")
+                return true
+            end
+            local _captured = {}
+            local old_print = _G.print
+            _G.print = function(...) _captured[#_captured + 1] = true end
+            instance = injury_mod.inflict(ctx.player, profile.injury_type, source, body_area, effective_damage)
+            _G.print = old_print
+        end
 
         if not instance then
             print("The wound doesn't take hold.")
@@ -4637,6 +4672,96 @@ function verbs.create()
                     hand_slot = i
                     break
                 end
+            end
+        end
+
+        if not obj then
+            -- #69/#70: Auto-pickup from room (Infocom pattern) — "wear it" after
+            -- examining an item should pick it up and put it on in one action.
+            local room_obj = find_visible(ctx, kw)
+            if room_obj and room_obj.wear then
+                local slot = first_empty_hand(ctx)
+                if not slot then
+                    print("Your hands are full. Drop something first.")
+                    return
+                end
+                -- Pick up the item from wherever it is
+                local room = ctx.current_room
+                local reg = ctx.registry
+                -- Remove from room contents
+                for i, id in ipairs(room.contents or {}) do
+                    if id == room_obj.id then
+                        table.remove(room.contents, i)
+                        break
+                    end
+                end
+                -- Remove from surfaces
+                if not room_obj.location or room_obj.location ~= "player" then
+                    for _, room_id in ipairs(room.contents or {}) do
+                        local furniture = reg:get(room_id)
+                        if furniture and furniture.surfaces then
+                            for sname, zone in pairs(furniture.surfaces) do
+                                for i, id in ipairs(zone.contents or {}) do
+                                    if id == room_obj.id then
+                                        table.remove(zone.contents, i)
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                room_obj.location = "player"
+                if not room_obj.instance_id then room_obj.instance_id = next_instance_id() end
+                ctx.player.hands[slot] = room_obj
+                obj = room_obj
+                hand_slot = slot
+                -- Narrate the auto-pickup
+                print("You pick up " .. (obj.name or obj.id) .. ".")
+            end
+        end
+
+        if not obj then
+            -- #69/#70: Auto-pickup from room (Infocom pattern) — "wear it" after
+            -- examining an item should pick it up and put it on in one action.
+            local room_obj = find_visible(ctx, kw)
+            if room_obj and room_obj.wear then
+                local slot = first_empty_hand(ctx)
+                if not slot then
+                    print("Your hands are full. Drop something first.")
+                    return
+                end
+                -- Pick up the item from wherever it is
+                local room = ctx.current_room
+                local reg = ctx.registry
+                -- Remove from room contents
+                for i, id in ipairs(room.contents or {}) do
+                    if id == room_obj.id then
+                        table.remove(room.contents, i)
+                        break
+                    end
+                end
+                -- Remove from surfaces
+                for _, room_id in ipairs(room.contents or {}) do
+                    local furniture = reg:get(room_id)
+                    if furniture and furniture.surfaces then
+                        for sname, zone in pairs(furniture.surfaces) do
+                            for i, id in ipairs(zone.contents or {}) do
+                                if id == room_obj.id then
+                                    table.remove(zone.contents, i)
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+                room_obj.location = "player"
+                if not room_obj.instance_id then room_obj.instance_id = next_instance_id() end
+                ctx.player.hands[slot] = room_obj
+                obj = room_obj
+                hand_slot = slot
+                -- Narrate the auto-pickup
+                print("You pick up " .. (obj.name or obj.id) .. ".")
             end
         end
 

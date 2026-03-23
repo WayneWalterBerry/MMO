@@ -315,13 +315,16 @@ function fuzzy.score_object(obj, parsed)
     ---------------------------------------------------------------------------
     -- 3. Partial name match: "bottle" → "small glass bottle"
     -- Requires base noun ≥3 chars to avoid spurious substring matches.
+    -- #71: Check exact keyword/id match first (priority over partial).
     ---------------------------------------------------------------------------
     if #base >= 3 then
+        -- Pass 1: exact match on any keyword/id/name (highest priority)
+        for _, s in ipairs(matchable_strings(obj)) do
+            if s == base then return 10, "exact" end
+        end
+        -- Pass 2: substring match (lower priority)
         for _, s in ipairs(matchable_strings(obj)) do
             if s:find(base, 1, true) then
-                -- Exact keyword/id match scores highest
-                if s == base then return 10, "exact" end
-                -- Substring of name or keyword
                 return 4, "partial"
             end
         end
@@ -329,6 +332,9 @@ function fuzzy.score_object(obj, parsed)
 
     ---------------------------------------------------------------------------
     -- 4. Typo tolerance via Levenshtein distance
+    -- #71: Tighten length ratio check — the shorter word must be at least 75%
+    -- of the longer word's length. Prevents "cloak"→"oak" false positives
+    -- (3/5=60% < 75% → rejected).
     ---------------------------------------------------------------------------
     local max_dist = fuzzy.max_typo_distance(#base)
     if max_dist > 0 then
@@ -336,15 +342,23 @@ function fuzzy.score_object(obj, parsed)
         for _, s in ipairs(matchable_strings(obj)) do
             -- Compare against each word in multi-word strings too
             for word in s:gmatch("%S+") do
-                if math.abs(#word - #base) <= max_dist then
+                local shorter = math.min(#word, #base)
+                local longer = math.max(#word, #base)
+                if math.abs(#word - #base) <= max_dist
+                    and shorter / longer >= 0.75 then
                     local d = fuzzy.levenshtein(base, word)
                     if d < best_dist then best_dist = d end
                 end
             end
             -- Also compare against full string for single-word keywords
-            if not s:find(" ") and math.abs(#s - #base) <= max_dist then
-                local d = fuzzy.levenshtein(base, s)
-                if d < best_dist then best_dist = d end
+            if not s:find(" ") then
+                local shorter = math.min(#s, #base)
+                local longer = math.max(#s, #base)
+                if math.abs(#s - #base) <= max_dist
+                    and shorter / longer >= 0.75 then
+                    local d = fuzzy.levenshtein(base, s)
+                    if d < best_dist then best_dist = d end
+                end
             end
         end
         if best_dist <= max_dist then

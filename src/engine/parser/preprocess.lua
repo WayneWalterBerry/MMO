@@ -210,6 +210,21 @@ local function strip_filler(text)
     return text
 end
 
+--- Stage: strip_possessives (#67)
+--- Strip possessive pronouns ("your", "my") from noun phrases so that
+--- "hit your head" → "hit head", "stab my leg" → "stab leg".
+--- Only strips possessives that appear AFTER the first word (the verb),
+--- to avoid mangling commands like "my inventory".
+local function strip_possessives(text)
+    -- Strip possessives after verb: "verb your X" → "verb X"
+    text = text:gsub("^(%S+%s+)your%s+", "%1")
+    text = text:gsub("^(%S+%s+)my%s+", "%1")
+    -- Handle "pick up your X" (two-word verbs)
+    text = text:gsub("^(%S+%s+%S+%s+)your%s+", "%1")
+    text = text:gsub("^(%S+%s+%S+%s+)my%s+", "%1")
+    return text
+end
+
 --- Stage: strip_noun_modifiers (Issue #14)
 --- Remove quantifier/totality modifiers that players use for emphasis but that
 --- confuse noun resolution: "whole", "entire", "every", "all of the", etc.
@@ -808,6 +823,7 @@ preprocess.pipeline = {
     transform_search_phrases, -- search/hunt/rummage/find compounds
     transform_compound_actions, -- pry, use X on Y, put/take, pull, wear
     transform_movement,       -- sleep, stairs, clock, go back/return
+    strip_possessives,        -- #67: your/my before noun phrases (AFTER phrase routing)
 }
 
 -- Expose individual stage functions for testing and reuse
@@ -818,6 +834,7 @@ preprocess.stages = {
     strip_preambles = strip_preambles,
     strip_gerunds = strip_gerunds,
     strip_filler = strip_filler,
+    strip_possessives = strip_possessives,
     strip_noun_modifiers = strip_noun_modifiers,
     expand_idioms = expand_idioms,
     transform_questions = transform_questions,
