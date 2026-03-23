@@ -5826,6 +5826,23 @@ function verbs.create()
     end
     handlers["treat"] = handlers["apply"]
 
+    -- #39: "wait" — pass a turn without acting (BUG-131)
+    -- Post-command injury tick and time advance happen automatically in the loop.
+    handlers["wait"] = function(ctx, noun)
+        print("Time passes.")
+    end
+    handlers["pass"] = handlers["wait"]
+
+    -- #39/#37: "appearance" — show player appearance description (BUG-131/BUG-129)
+    handlers["appearance"] = function(ctx, noun)
+        local app_ok, app_mod = pcall(require, "engine.player.appearance")
+        if app_ok and app_mod then
+            print(app_mod.describe(ctx.player, ctx.registry))
+        else
+            print("You can't see yourself without a mirror.")
+        end
+    end
+
     return handlers
 end
 

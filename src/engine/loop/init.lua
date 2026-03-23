@@ -354,7 +354,7 @@ function loop.run(context)
         look = true, feel = true, smell = true, listen = true, taste = true,
         inventory = true, i = true, help = true, time = true, quit = true,
         sleep = true, rest = true, nap = true, wait = true, score = true,
-        report_bug = true, injuries = true, injury = true, wounds = true, health = true,
+        report_bug = true, injuries = true, injury = true, wounds = true, health = true, appearance = true,
         -- Direction verbs should never inherit a context noun
         north = true, south = true, east = true, west = true,
         up = true, down = true, n = true, s = true, e = true, w = true,

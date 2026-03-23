@@ -38,8 +38,8 @@ test("'look at the rusty key' → 'examine the rusty key'", function()
     eq("examine the rusty key", transform_look_patterns("look at the rusty key"))
 end)
 
-test("'look at me' → 'examine me'", function()
-    eq("examine me", transform_look_patterns("look at me"))
+test("'look at me' → 'appearance' (BUG-129: self-referential look)", function()
+    eq("appearance", transform_look_patterns("look at me"))
 end)
 
 -------------------------------------------------------------------------------

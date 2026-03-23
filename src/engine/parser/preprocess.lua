@@ -272,6 +272,13 @@ end
 --- Stage: transform_questions
 --- Convert question patterns into imperative commands.
 local function transform_questions(text)
+    -- #38: Hand-specific "what's in my hands" → inventory (BUG-130)
+    -- Must come before generic "what's in X" → "examine X" container query
+    if text:match("^what'?s%s+in%s+my%s+hands")
+        or text:match("^what%s+is%s+in%s+my%s+hands") then
+        return "inventory"
+    end
+
     -- "what's in the X" → "examine X"
     local whats_in = text:match("^what'?s%s+in%s+the%s+(.+)$")
         or text:match("^what'?s%s+in%s+(.+)$")
@@ -341,6 +348,31 @@ local function transform_questions(text)
         return "find " .. where_is_target
     end
 
+    -- #36: Bleeding/injury severity questions → injuries
+    -- MUST come before "where am I" → look to avoid false match (BUG-128)
+    if text:match("^where%s+am%s+i%s+bleeding")
+        or text:match("^how%s+bad%s+is%s+it")
+        or text:match("^how%s+bad%s+are%s+")
+        or text:match("^why%s+don'?t%s+i%s+feel%s+well")
+        or text:match("^why%s+don'?t%s+i%s+feel%s+good") then
+        return "injuries"
+    end
+
+    -- #35: Health/status inquiry phrases → health (BUG-127)
+    if text == "status"
+        or text:match("^how%s+am%s+i")
+        or text:match("^am%s+i%s+hurt")
+        or text:match("^am%s+i%s+injured")
+        or text:match("^am%s+i%s+ok")
+        or text:match("^am%s+i%s+alright")
+        or text:match("^what'?s%s+wrong%s+with%s+me")
+        or text:match("^what%s+is%s+wrong%s+with%s+me")
+        or text:match("^check%s+my%s+wounds")
+        or text:match("^check%s+my%s+injuries")
+        or text:match("^check%s+my%s+health") then
+        return "health"
+    end
+
     -- "what is around" / "what do I see" / "where am I" → "look"
     -- BUG-037: added "what's around me" pattern
     if text:match("^what%s+is%s+around")
@@ -358,9 +390,14 @@ local function transform_questions(text)
     end
 
     -- Question patterns → inventory (BUG-038)
+    -- #38: Added hand/holding queries (BUG-130)
     if text:match("^what%s+am%s+i%s+carry")
         or text:match("^what%s+am%s+i%s+hold")
-        or text:match("^what%s+do%s+i%s+have") then
+        or text:match("^what%s+do%s+i%s+have")
+        or text:match("^what'?s%s+in%s+my%s+hands")
+        or text:match("^what%s+is%s+in%s+my%s+hands")
+        or text:match("^am%s+i%s+holding%s+anything")
+        or text:match("^am%s+i%s+holding%s+something") then
         return "inventory"
     end
 
@@ -403,6 +440,24 @@ local function transform_look_patterns(text)
     -- "look around" → "look" (BUG-037)
     if text:match("^look%s+around$") then
         return "look"
+    end
+
+    -- #37: Self-referential look/examine/check → appearance (BUG-129)
+    -- Must come before generic "look at X" → "examine X"
+    if text:match("^look%s+at%s+myself$")
+        or text:match("^look%s+at%s+self$")
+        or text:match("^look%s+at%s+me$")
+        or text:match("^examine%s+myself$")
+        or text:match("^examine%s+self$")
+        or text:match("^examine%s+me$")
+        or text:match("^check%s+myself$")
+        or text:match("^check%s+self$") then
+        return "appearance"
+    end
+
+    -- #38: "look at my hands" → inventory (BUG-130)
+    if text:match("^look%s+at%s+my%s+hands") then
+        return "inventory"
     end
 
     -- BUG-087: "look at X" → "examine X"
