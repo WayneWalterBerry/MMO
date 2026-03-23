@@ -252,6 +252,10 @@ local IDIOM_TABLE = {
     { pattern = "^go%s+to%s+sleep$",                replacement = "sleep" },
     { pattern = "^lay%s+down$",                     replacement = "sleep" },
     { pattern = "^lie%s+down$",                     replacement = "sleep" },
+    -- #42: "sleep to/til/till dawn" → "sleep until dawn"
+    { pattern = "^sleep%s+to%s+(.+)$",             replacement = "sleep until %1" },
+    { pattern = "^sleep%s+til%s+(.+)$",            replacement = "sleep until %1" },
+    { pattern = "^sleep%s+till%s+(.+)$",           replacement = "sleep until %1" },
 }
 
 -- Expose for external extension

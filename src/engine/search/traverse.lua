@@ -465,6 +465,31 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
         return result
     end
     
+    -- #40: Objects with surfaces have their contents searched via surface entries
+    -- in the queue. Skip the object entry to avoid contradictory narration
+    -- (e.g., "nothing there" followed by surface entry reporting contents).
+    -- For targeted searches, still check if the object itself matches the target.
+    if obj.surfaces then
+        if target and not is_goal_search then
+            if matches_target(obj, target, registry, 0) then
+                result.found = true
+                result.item = obj
+                result.narrative = narrator.found_target(ctx, obj, nil)
+                return result
+            end
+        elseif is_goal_search and goal_type and goal_value then
+            if goals.matches_goal(obj, goal_type, goal_value, registry) then
+                result.found = true
+                result.item = obj
+                result.narrative = narrator.found_target(ctx, obj, nil)
+                return result
+            end
+        end
+        -- No match or undirected — suppress narration; surfaces follow in queue
+        result.narrative = ""
+        return result
+    end
+
     -- If it's a container and it's closed, peek without opening (#24)
     if entry.is_container and not entry.is_open then
         if entry.is_locked then
