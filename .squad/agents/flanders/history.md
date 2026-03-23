@@ -110,3 +110,31 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 - `effects.normalize()` handles both formats transparently
 
 **Result:** 116/116 tests pass. Zero regressions. Committed and pushed.
+
+### 2026-07-26: EP8 — Bear Trap Effects Pipeline Refactor
+
+**Task:** Refactor bear-trap.lua to route through the unified Effects Pipeline (D-EFFECTS-PIPELINE), following the poison-bottle pattern from EP5.
+
+**What Changed:**
+- Added `effects_pipeline = true` flag — signals engine to use `effects.process()` for all effect declarations
+- Added `pipeline_effects` arrays on take and touch transitions (set → triggered) — full atomic pipeline chains: inflict_injury + narrate + mutate effects alongside backward-compatible `effect` + `mutate` blocks
+- Marked `on_feel_effect` as `pipeline_routed = true` — confirms it's consumed by `effects.process()` in the feel verb handler
+- Added GOAP `warns` hints on take, touch, and feel prerequisites per D-EFFECTS-PIPELINE §3.6
+- Updated file header to reference pipeline routing, decision IDs (D-EFFECTS-PIPELINE, D-INJURY001, D-INJURY002), and effect routing paths
+
+**Key Constraint:** Same as EP5 — existing tests access `trans.effect.type` directly (single table format), so `effect` must remain a single structured table. `effects.normalize()` handles this correctly (wraps single table in array).
+
+**Pipeline Integration Points (engine side, already wired by Bart/Smithers):**
+- Take verb handler: `effects.process(trans.effect, ctx)` — contact trigger on armed trap
+- Touch verb handler: `effects.process(trans.effect, ctx)` — contact trigger on armed trap
+- Feel verb handler: `effects.process(state.on_feel_effect, ctx)` — sensory contact injury
+- Disarm: guard function blocks FSM transition before pipeline processing (no change needed)
+- FSM mutations: still via `apply_mutations(obj, trans.mutate)` — FSM engine handles independently
+
+**Backward Compatibility Strategy:**
+- `effect` (single table) + `mutate` block preserved for current FSM engine
+- `pipeline_effects` (array) available for future atomic processing
+- `effects.normalize()` handles both formats transparently
+- Safe-take transitions (triggered/disarmed states) untouched — no effects to pipeline
+
+**Result:** 45/45 test files pass, 0 failures. Zero regressions. Committed f872ed3 and pushed.
