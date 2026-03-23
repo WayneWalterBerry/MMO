@@ -40,6 +40,14 @@
 
 ## Recent Updates
 
+### Pass-039: Regression Retest — Parser Phrases + New Objects (2026-03-23)
+
+**Status:** ✅ COMPLETE — 171 tests, 171 passed, 0 failed (100%)
+
+Regression retest of Smithers' commit 351bfa3 (#35–#39 parser phrase fixes) + Flanders' new objects (poison-bottle, bear-trap, crushing-wound). All parser bugs confirmed fixed. All objects well-formed. Zero regressions.
+
+**Full Report:** test-pass/pass-039-regression.md
+
 ### Pass-038: Phase 3 Sanity Check (2026-03-23)
 
 **Status:** ✅ COMPLETE — 38 tests, 22 passed, 13 failed, 3 warn
@@ -726,4 +734,22 @@ Due to BUG-067 and BUG-068 hangs, could NOT complete:
 - Sleep + bleed-out and unconscious + bleed-out could not be tested in headless because no weapon is accessible in the starting area, but unit tests (test-hit-unconscious.lua) cover both paths
 
 **Full Report:** test-pass/pass-038-sanity-check.md
+
+
+### Pass-039: Regression Retest — Parser Phrases + New Objects (2026-03-23)
+
+**Status:** ✅ COMPLETE — 171 tests, 171 passed, 0 failed (100%)
+
+Regression retest of Smithers' commit 351bfa3 (30+ natural phrase transforms for Issues #35–#39) plus verification of Flanders' new objects (poison-bottle, bear-trap, crushing-wound).
+
+**Learnings:**
+- All 5 parser bugs (BUG-127–131) are confirmed fixed: health queries, injury location, self-appearance, inventory/hands, wait/appearance verbs all route correctly
+- Headless E2E testing confirms parser fixes carry through to actual game responses — not just unit-level routing
+- The new objects (poison-bottle, bear-trap, crushing-wound) are all well-formed with complete FSM lifecycles, sensory properties, and effect pipelines
+- Bear-trap contact injury pipeline fires on both `take` and `touch` — good "observe first" teaching pattern
+- Crushing-wound has proper degradation path (active→worsened→critical→fatal) with escalating tick damage (2→5→12→death)
+- World loader still emits ~40 "base class not found" warnings on startup — pre-existing, not a regression
+- Full test suite (44 files) passes with 0 failures — no regressions from the phrase routing additions
+
+**Full Report:** test-pass/pass-039-regression.md
 
