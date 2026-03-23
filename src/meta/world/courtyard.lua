@@ -20,12 +20,14 @@ return {
     light_level = 1,
 
     instances = {
-        -- Room-level objects
-        { id = "stone-well",    type = "Stone Well",         type_id = "24alqz4x-b5c2-4fd5-18e8-3a260b890123", location = "room" },
-        { id = "well-bucket",   type = "Well Bucket",        type_id = "35bmr05y-c6d3-40e6-29f9-4b371c901234", location = "stone-well" },
-        { id = "ivy",           type = "Ivy",                type_id = "46cns16z-d7e4-41f7-3a0a-5c482d012345", location = "room" },
-        { id = "cobblestone",   type = "Loose Cobblestone",  type_id = "57dot27a-e8f5-4208-4b1b-6d593e123456", location = "room" },
-        { id = "rain-barrel",   type = "Rain Barrel",        type_id = "79fqv49c-0a17-4420-6d3d-8f7b50345678", location = "room" },
+        { id = "stone-well",    type = "Stone Well",         type_id = "24alqz4x-b5c2-4fd5-18e8-3a260b890123",
+            contents = {
+                { id = "well-bucket",   type = "Well Bucket",        type_id = "35bmr05y-c6d3-40e6-29f9-4b371c901234" },
+            },
+        },
+        { id = "ivy",           type = "Ivy",                type_id = "46cns16z-d7e4-41f7-3a0a-5c482d012345" },
+        { id = "cobblestone",   type = "Loose Cobblestone",  type_id = "57dot27a-e8f5-4208-4b1b-6d593e123456" },
+        { id = "rain-barrel",   type = "Rain Barrel",        type_id = "79fqv49c-0a17-4420-6d3d-8f7b50345678" },
     },
 
     exits = {
