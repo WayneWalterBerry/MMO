@@ -1,8 +1,8 @@
 # Daily Plan — 2026-03-23
 
 **Owner:** Wayne "Effe" Berry
-**Focus:** Bug burndown from Wayne's play-test, search system improvements, web parity
-**Updated:** 2026-03-23 9:39 AM PST (session in progress — plan synced with completed work)
+**Focus:** Bug burndown, Effects Pipeline implementation, poison bottle & bear trap
+**Updated:** 2026-03-23 11:11 AM PST (Effects Pipeline EP1-EP10 complete, plan fully synced)
 
 ---
 
@@ -167,6 +167,49 @@
 - [x] Gil: fixed squad-main-guard.yml CI workflow (removed main from push trigger)
 - [x] Brockman: March 22 evening newspaper edition
 - [x] Chalmers: plan audit — checkboxes synced with git history
+- [x] Nelson: Pass 039 regression — 171/171 tests, 0 bugs, all fixes confirmed
+- [x] Marge: closed #35-39 (25 total issues closed this session)
+
+#### Afternoon — Effect Processing Pipeline Implementation
+
+**Phase EP1: Architecture (Bart) — ✅ COMPLETE**
+- [x] Bart: Architecture doc for unified Effect Processing Pipeline (`docs/architecture/engine/effects-pipeline.md`)
+
+**Phase EP2: Poison Bottle Unit Tests — ✅ COMPLETE**
+- [x] Nelson: 116 regression tests written against current code, all pass
+
+**Phase EP2b: Verify Tests Pass — ✅ COMPLETE**
+- [x] Nelson: All 116 pass on current code
+- [x] **Marge: GATE** — Coverage approved, EP3 cleared
+
+**Phase EP3: Implement Effects Pipeline — ✅ COMPLETE**
+- [x] Smithers: Implemented `src/engine/effects.lua` (process, normalize, register, interceptors)
+- [x] **Marge: Full suite 1361/1362 — zero new regressions**
+
+**Phase EP4: Verify Poison Bottle Tests STILL Pass — ✅ COMPLETE**
+- [x] Nelson: 116/116 independently verified
+- [x] **Marge: GATE** — No regressions, EP5 approved
+
+**Phase EP5: Refactor Poison Bottle .lua — ✅ COMPLETE**
+- [x] Flanders: Refactored to use effects pipeline, 116/116 pass
+- [x] **Marge: Zero regressions confirmed**
+
+**Phase EP6: Update Architecture Docs — ✅ COMPLETE**
+- [x] Bart: Updated `effects-pipeline.md` to v2.0 (matches shipped code)
+- [x] Bart: Updated `event-hooks.md` to v2.0 (matches shipped code)
+
+**Phase EP7: Bear Trap Design Docs — ✅ COMPLETE**
+- [x] CBG: Updated bear trap design for pipeline integration (section 8)
+
+**Phase EP8: Bear Trap Implementation — ✅ COMPLETE**
+- [x] Flanders: Refactored bear-trap.lua to use effects pipeline, 0 regressions
+- [x] **Marge: Zero regressions confirmed**
+
+**Phase EP9+EP10: Bear Trap Tests — ✅ COMPLETE**
+- [x] Nelson: 168 bear trap tests written, 168 pass
+- [x] FSM, contact injury, disarm guards, pipeline integration, backward compat all covered
+  - Disarm guard conditions
+  - Regression tests for all discovered bugs
 
 ---
 
