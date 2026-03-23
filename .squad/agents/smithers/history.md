@@ -41,6 +41,10 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ---
 
+## Archives
+
+- `history-archive-2026-03-20T22-40Z-smithers.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): UI architecture, parser pipeline implementation, web performance optimization, 880+ tests
+
 ## Learnings
 
 ### 2026-03-23: Wave2 — Decision Documentation

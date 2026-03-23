@@ -406,3 +406,9 @@ The .lua metadata files ARE the test oracle. Every assertion can be derived by:
 5. Comparing actual runtime behavior against these declared expectations
 
 This is the core advantage over Dwarf Fortress: our metadata is structured, machine-readable Lua — we can auto-generate test cases from it.
+
+---
+
+## Archives
+
+- `history-archive-2026-03-20T22-40Z-lisa.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): onboarding, object testing methodology, FSM coverage strategies, testing framework design

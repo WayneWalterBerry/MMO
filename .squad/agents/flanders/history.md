@@ -44,6 +44,10 @@
 
 **Status:** ✅ MANIFEST COMPLETION READY FOR MERGE
 
+## Archives
+
+- `history-archive-2026-03-20T22-40Z-flanders.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): initial object design, FSM patterns, effects pipeline design, foundational systems
+
 ### Prior Work (2026-03-23)
 - **EP5:** Refactored poison-bottle.lua to pipeline pattern — 116/116 tests pass
 - **EP8:** Refactored bear-trap.lua to pipeline pattern — 0 regressions

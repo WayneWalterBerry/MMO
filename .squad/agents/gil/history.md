@@ -47,6 +47,10 @@
 - All 5 deploy-checklist files copied: `index.html`, `bootstrapper.js`, `game-adapter.lua`, `engine.lua.gz`, `meta/*`
 - ⚠️ First copy of `bootstrapper.js` and `index.html` silently didn't overwrite (identical LastWriteTime?). Had to re-copy individually to get the cache-bust stamps to land. Watch for this in future deploys.
 
+## Archives
+
+- `history-archive-2026-03-20T22-40Z-gil.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): web build pipeline, deploy setup, initial web bugs (copy button, cache-busting, transcript truncation)
+
 ### 2026-03-24 (Evening): Manifest Item #72 — Search Trickle + Deploy
 
 **Task:** Implement gradual reveal of search results (trickle effect) and deploy updated web build

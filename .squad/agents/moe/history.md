@@ -402,3 +402,9 @@ Built all 5 new room .lua files in `src/meta/world/`:
 - **deep-cellar.lua room description:** Added foreshadowing sentence about the draught from the north wall stairway.
 
 **Design principle learned:** Environmental effects on exits (on_traverse) are a new pattern. The exit declares the effect; the engine resolves it against carried object properties. This is the first instance. Always add the effect to BOTH sides of a bidirectional passage, with direction-appropriate descriptions.
+
+---
+
+## Archives
+
+- `history-archive-2026-03-20T22-40Z-moe.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): world builder onboarding, room architecture, map design, level 1 expansion
