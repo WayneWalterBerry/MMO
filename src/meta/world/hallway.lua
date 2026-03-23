@@ -20,18 +20,21 @@ return {
     light_level = 3,
 
     instances = {
-        -- Torches and brackets
-        { id = "torch-lit-west",          type = "Lit Torch",     type_id = "d95glu9s-6077-4a80-c393-e57156345678", location = "room" },
-        { id = "torch-lit-east",          type = "Lit Torch",     type_id = "d95glu9s-6077-4a80-c393-e57156345678", location = "room" },
+        -- Torches
+        { id = "torch-lit-west",          type = "Lit Torch",     type_id = "d95glu9s-6077-4a80-c393-e57156345678" },
+        { id = "torch-lit-east",          type = "Lit Torch",     type_id = "d95glu9s-6077-4a80-c393-e57156345678" },
 
         -- Portraits
-        { id = "portrait-1",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789", location = "room" },
-        { id = "portrait-2",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789", location = "room" },
-        { id = "portrait-3",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789", location = "room" },
+        { id = "portrait-1",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789" },
+        { id = "portrait-2",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789" },
+        { id = "portrait-3",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789" },
 
-        -- Furniture
-        { id = "side-table",              type = "Side Table",    type_id = "f17inw1u-8299-4ca2-e5b5-079378567890", location = "room" },
-        { id = "vase",                    type = "Vase",          type_id = "028jox2v-93a0-4db3-f6c6-180489678901", location = "side-table.top" },
+        -- === Side Table ===
+        { id = "side-table",              type = "Side Table",    type_id = "f17inw1u-8299-4ca2-e5b5-079378567890",
+            on_top = {
+                { id = "vase",                    type = "Vase",          type_id = "028jox2v-93a0-4db3-f6c6-180489678901" },
+            },
+        },
     },
 
     exits = {
