@@ -39,7 +39,34 @@
 - `history-archive-2026-03-22.md` — Mid sessions
 - `history-archive-2026-03-20T22-40Z-bart.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): engine foundation, verb system, parser pipeline, SLEEP, wearables, FSM engine, composite objects, spatial system, multi-room engine, GOAP Tier 3, terminal UI, timed events, 32+ bug fixes across 7 passes
 
+## Learnings
+
+### Effect Pipeline Architecture (2026-07-26)
+- Structured effect tables (`{ type = "inflict_injury", ... }`) already exist in Flanders' objects (poison-bottle.lua, bear-trap.lua) — the objects are ahead of the engine
+- The taste verb handler bypasses the injury system entirely — calls `os.exit(0)` inline instead of `injuries.inflict()`. The pipeline migration fixes this.
+- `traverse_effects.lua` already implements the exact same registry pattern (`register(type, handler)` → `process()`) — good validation that the pattern works; future convergence is natural
+- The legacy normalization map (`"poison"` → structured table) guarantees zero-breakage migration. Objects never need to change simultaneously with the engine.
+- Before/after interceptors (Inform-style) cost zero overhead when empty — infrastructure can ship on day one without performance concerns
+
 ## Recent Updates
+
+### Session: Effects Pipeline Architecture Document (2026-07-26)
+**Status:** ✅ COMPLETE  
+**Requested by:** Wayne "Effe" Berry
+
+**Task:** Write comprehensive architecture document for the unified Effect Processing Pipeline.
+
+**Deliverable:** `docs/architecture/engine/effects-pipeline.md`
+
+**Key Design Decisions:**
+- Objects declare structured effect tables; pipeline dispatches to subsystem handlers by `type` field
+- Before/after interceptors enable armor reduction, immunity cancellation, achievement triggers
+- Legacy string effects (`"poison"`, `"cut"`) normalized automatically — backward compatible
+- Day-one handlers: `inflict_injury` and `narrate`. Others registered as subsystems arrive.
+- ~120 lines new code, ~60 lines of inline verb handler code deleted (net reduction)
+- Fixes taste verb `os.exit(0)` bug — all injury paths go through `injuries.inflict()`
+
+**Decision filed:** `D-EFFECTS-PIPELINE` in `.squad/decisions/inbox/bart-effects-pipeline-arch.md`
 
 ### Session: Parser Strategy Documentation (2026-03-25)
 **Status:** ✅ COMPLETE  
