@@ -63,6 +63,8 @@ This is **not yet designed or architected**. Do not attempt to model living thin
 
 ## 0.5. Room .lua Files Use Deep Nesting
 
+> **📖 Full reference:** [`deep-nesting-syntax.md`](deep-nesting-syntax.md) — Comprehensive syntax guide, copy-paste templates, anti-patterns, and engine integration details.
+
 **Room .lua files describe the physical space through deeply nested object instances.** Objects are placed inline using relationship keys that describe how they sit in the room.
 
 ### The Nesting Pattern

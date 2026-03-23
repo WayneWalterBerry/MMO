@@ -272,6 +272,8 @@ Use this matrix when designing new tools and deciding whether a skill should unl
 
 ### Deep Nesting in Room .lua Files (CORE DIRECTIVE)
 
+> **📖 Full reference:** [`../architecture/objects/deep-nesting-syntax.md`](../architecture/objects/deep-nesting-syntax.md) — Definitive syntax guide with complete examples, anti-patterns, engine integration, and copy-paste templates.
+
 **Approved by Wayne (2026-03-21):** Room .lua files use deep nesting to describe physical space. Object instances nest their children inline using relationship keys that encode topology.
 
 #### The Four Relationship Keys
