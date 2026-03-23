@@ -15,6 +15,7 @@ local fsm_mod = require("engine.fsm")
 local presentation = require("engine.ui.presentation")
 local preprocess = require("engine.parser.preprocess")
 local traverse_effects = require("engine.traverse_effects")
+local effects = require("engine.effects")
 
 -- Tier 4: Context window for recent interaction memory
 local cw_ok, context_window = pcall(require, "engine.parser.context")
@@ -2144,25 +2145,12 @@ function verbs.create()
 
         -- Check for taste effects AFTER printing the taste description
         if obj.on_taste_effect then
-            if obj.on_taste_effect == "poison" then
-                print("")
-                print("Fire courses through your veins. Your throat constricts.")
-                print("The world tilts. Your knees buckle.")
-                print("A spreading numbness crawls from your stomach to your fingertips.")
-                print("You collapse to the floor. The darkness -- already absolute -- becomes eternal.")
-                print("")
-                print("*** YOU HAVE DIED ***")
-                ctx.player.state = ctx.player.state or {}
-                ctx.player.state.poisoned = true
-                ctx.player.state.dead = true
-                os.exit(0)
-            elseif obj.on_taste_effect == "nausea" then
-                print("")
-                print("Your stomach lurches. A wave of nausea washes over you.")
-                print("You retch, gasping. The taste lingers, foul and insistent.")
-                ctx.player.state = ctx.player.state or {}
-                ctx.player.state.nauseated = true
-            end
+            effects.process(obj.on_taste_effect, {
+                player = ctx.player,
+                registry = ctx.registry,
+                source = obj,
+                source_id = obj.id,
+            })
         end
     end
     handlers["lick"] = handlers["taste"]
@@ -4837,28 +4825,22 @@ function verbs.create()
                 local trans = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {}, "drink")
                 if trans then
                     print(trans.message or ("You drink from " .. (obj.name or obj.id) .. "."))
-                    if trans.effect == "poison" then
-                        -- Wire through injury system: inflict nightshade poisoning
+                    if trans.effect then
+                        effects.process(trans.effect, {
+                            player = ctx.player,
+                            registry = ctx.registry,
+                            source = obj,
+                            source_id = obj.id,
+                            game_over = false,
+                        })
+                        -- Propagate game_over back to the main context
+                        local eff_ctx = { player = ctx.player }
                         local inj_ok, injury_mod = pcall(require, "engine.injuries")
                         if inj_ok then
-                            injury_mod.inflict(ctx.player, "poisoned-nightshade", obj.id)
-                            -- Check if instantly lethal
                             local health = injury_mod.compute_health(ctx.player)
                             if health <= 0 then
-                                print("")
-                                print("Your body crumples to the cold stone floor. The poison works swiftly --")
-                                print("a spreading numbness, a ringing silence, and then... nothing.")
-                                print("YOU HAVE DIED.")
                                 ctx.game_over = true
                             end
-                        else
-                            -- Fallback if injury module unavailable
-                            ctx.player.state.poisoned = true
-                            print("")
-                            print("Your body crumples to the cold stone floor. The poison works swiftly --")
-                            print("a spreading numbness, a ringing silence, and then... nothing.")
-                            print("YOU HAVE DIED.")
-                            ctx.game_over = true
                         end
                     end
                 else
