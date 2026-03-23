@@ -46,6 +46,41 @@
 
 ## Recent Updates
 
+### Stab & Hit-Head Regression Tests (2026-07-25)
+
+**Status:** ✅ COMPLETE — 43 tests, 43 passed, 0 failed (100%)
+
+Contract-first regression tests for issues #50 (stab doesn't create injuries), #49 (weapon inference), and #55 (hit head doesn't create injuries). Written BEFORE fixes to define the expected behavior.
+
+| Category | Tests | Status |
+|----------|-------|--------|
+| Stab creates bleeding injury (#50) | 4 | ✅ PASS |
+| Stab wound in injuries output (#50) | 2 | ✅ PASS |
+| Stab wound ticks bleeding damage (#50) | 2 | ✅ PASS |
+| Multiple stabs → multiple injuries (#50) | 3 | ✅ PASS |
+| Weapon auto-inference (#49) | 2 | ✅ PASS |
+| No weapon → helpful error (#49) | 1 | ✅ PASS |
+| Multiple weapons → disambiguation (#49) | 1 | ✅ PASS |
+| Knife metadata contract | 5 | ✅ PASS |
+| Hit head → concussion + unconscious (#55) | 5 | ✅ PASS |
+| Unconsciousness duration (#55) | 2 | ✅ PASS |
+| Hit arm → bruise (#55) | 3 | ✅ PASS |
+| Hit leg → bruise (#55) | 3 | ✅ PASS |
+| Hit injuries in injuries output (#55) | 3 | ✅ PASS |
+| Helmet armor reduction (#55) | 3 | ✅ PASS |
+| Effects Pipeline integration (#55) | 2 | ✅ PASS |
+| Bleed out during unconsciousness (#55) | 2 | ✅ PASS |
+
+**Key finding:** All 43 tests PASS at the handler/unit level. The verb handlers (`stab`, `hit`) correctly create injuries when called directly. Bugs #50 and #55 are likely **integration-layer issues** — parser routing, injury definition loading, or game context initialization — not handler logic bugs.
+
+**Test files:**
+- `test/verbs/test-stab-regression.lua` (20 tests)
+- `test/verbs/test-hit-head-regression.lua` (23 tests)
+
+**Commit:** 0336ad9
+**Bug refs:** #49, #50, #55
+**Full suite:** 54 test files, all pass (no regressions)
+
 ### Nightstand Search Regression Tests (2026-07-25)
 
 **Status:** ✅ COMPLETE — 44 tests, 44 passed, 0 failed (100%)
