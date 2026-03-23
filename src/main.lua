@@ -299,21 +299,6 @@ for _, rm in pairs(rooms) do
     end
 end
 
--- DEBUG: dump drawer state (temporary)
-if debug_mode or headless then
-    local dr = reg:get("drawer")
-    if dr then
-        io.stderr:write("DEBUG drawer: container=" .. tostring(dr.container)
-            .. " contents=" .. tostring(dr.contents)
-            .. " #contents=" .. tostring(dr.contents and #dr.contents or "nil") .. "\n")
-    end
-    local ns = reg:get("nightstand")
-    if ns then
-        io.stderr:write("DEBUG nightstand: contents=" .. tostring(ns.contents)
-            .. " #contents=" .. tostring(ns.contents and #ns.contents or "nil") .. "\n")
-    end
-end
-
 ---------------------------------------------------------------------------
 -- Player state
 ---------------------------------------------------------------------------
