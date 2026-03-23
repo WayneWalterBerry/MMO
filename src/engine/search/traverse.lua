@@ -188,6 +188,44 @@ function traverse.build_queue(room, scope, target, registry, part_surface)
 end
 
 ---------------------------------------------------------------------------
+-- Category synonym table (#68): map common search terms to category names
+---------------------------------------------------------------------------
+local CATEGORY_SYNONYMS = {
+    clothing  = "wearable",
+    clothes   = "wearable",
+    garments  = "wearable",
+    apparel   = "wearable",
+    weapon    = "weapon",
+    weapons   = "weapon",
+    tools     = "tool",
+    lights    = "light source",
+    armor     = "armor",
+    armour    = "armor",
+    drinks    = "consumable",
+    food      = "consumable",
+}
+
+--- Expose for tests
+traverse.CATEGORY_SYNONYMS = CATEGORY_SYNONYMS
+
+---------------------------------------------------------------------------
+-- Exact-match helper (#74): does target match id/name/keyword exactly?
+---------------------------------------------------------------------------
+local function matches_exact(object, target)
+    if not object or not target then return false end
+    target = target:lower()
+    target = target:gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+    if object.id  and object.id:lower()  == target then return true end
+    if object.name and object.name:lower() == target then return true end
+    if object.keywords then
+        for _, kw in ipairs(object.keywords) do
+            if kw:lower() == target then return true end
+        end
+    end
+    return false
+end
+
+---------------------------------------------------------------------------
 -- Process one step of traversal
 ---------------------------------------------------------------------------
 
@@ -253,6 +291,16 @@ local function matches_target(object, target, registry, depth, visited)
         end
     end
     
+    -- #68: Category synonym match — 'clothing' → objects with 'wearable' category
+    local cat_target = CATEGORY_SYNONYMS[target]
+    if cat_target and object.categories then
+        for _, cat in ipairs(object.categories) do
+            if cat:lower() == cat_target then
+                return true
+            end
+        end
+    end
+    
     -- If object is container, check contents recursively (fuzzy)
     if containers.is_container(object) and containers.is_open(object) then
         local contents = containers.get_contents(object, registry)
@@ -267,23 +315,49 @@ local function matches_target(object, target, registry, depth, visited)
     return false
 end
 
---- Peek inside a matched container for a more specific match (#22)
--- When search finds a container whose name matches the target (e.g., "matchbox"
--- matches "match"), peek inside to see if contents match more directly.
--- Read-only: never mutates state (D-PEEK).
--- @param obj container object that matched the target
+--- Peek inside a matched object for a more specific child match (#22, #74).
+-- When search finds an object whose name/keyword matches the target via
+-- substring (e.g., "candle holder" substring-matches "candle"), check whether
+-- any child (container contents or composite parts) is an EXACT match.
+-- If so, prefer the child.  Read-only: never mutates state (D-PEEK).
+-- @param obj object that matched the target
 -- @param target string search target
 -- @param registry registry instance
--- @return child object if a deeper match is found, nil otherwise
+-- @return child object if a deeper/exact match is found, nil otherwise
 local function find_deeper_match(obj, target, registry)
-    if not containers.is_container(obj) then return nil end
     local contents = containers.get_contents(obj, registry)
+    local has_children = #contents > 0 or obj.parts ~= nil
+
+    if not has_children then return nil end
+
+    -- Pass 1: exact match in container contents (highest confidence)
+    for _, child_id in ipairs(contents) do
+        local child = registry:get(child_id)
+        if child and matches_exact(child, target) then
+            return child
+        end
+    end
+
+    -- Pass 2: exact match in composite parts via registry (#74)
+    if obj.parts then
+        for _, part_def in pairs(obj.parts) do
+            if part_def.id then
+                local part_obj = registry:get(part_def.id)
+                if part_obj and matches_exact(part_obj, target) then
+                    return part_obj
+                end
+            end
+        end
+    end
+
+    -- Pass 3: any match in contents (original #22 behavior)
     for _, child_id in ipairs(contents) do
         local child = registry:get(child_id)
         if child and matches_target(child, target, registry, 0) then
             return child
         end
     end
+
     return nil
 end
 
@@ -552,6 +626,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
         end
         
         -- BUG-126 (#34): Target not found in accessible surface — report what IS there (#27)
+        -- #63: Use surface-aware narration for targeted search too (top vs inside)
         if target and #contents > 0 then
             local items = {}
             for _, child_id in ipairs(contents) do
@@ -561,7 +636,13 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 end
             end
             if #items > 0 then
-                result.narrative = narrator.container_contents_no_target(ctx, parent, items, target)
+                if entry.direct_part_search then
+                    result.narrative = narrator.part_contents(ctx, entry.surface_name, parent, items)
+                elseif entry.surface_name then
+                    result.narrative = narrator.surface_contents(ctx, entry.surface_name, parent, items, target)
+                else
+                    result.narrative = narrator.container_contents_no_target(ctx, parent, items, target)
+                end
             end
         end
 
@@ -788,5 +869,10 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
     result.narrative = narrator.step_narrative(ctx, obj, false)
     return result
 end
+
+--- Expose internals for testing (#68, #74)
+traverse._matches_target = matches_target
+traverse._matches_exact  = matches_exact
+traverse._find_deeper_match = find_deeper_match
 
 return traverse
