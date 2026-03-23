@@ -109,6 +109,34 @@ local function expand_object(object_id, registry, depth, include_nested_containe
         end
     end
     
+    -- #85: Expand root container contents into the search queue.
+    -- Objects with surfaces (e.g., nightstand) may also have root `contents`
+    -- holding nested containers (e.g., the drawer). The surface branch in
+    -- traverse.step only checks surface contents, not root contents, so these
+    -- children must be queued explicitly.  Without this, "find match" never
+    -- visits the nightstand drawer (which holds the matchbox with matches).
+    -- Skip items already in a surface to avoid double-processing.
+    if obj.surfaces then
+        local surface_ids = {}
+        for _, zone in pairs(obj.surfaces) do
+            for _, sid in ipairs(zone.contents or {}) do
+                surface_ids[sid] = true
+            end
+        end
+        local root_contents = containers.get_contents(obj, registry)
+        for _, child_id in ipairs(root_contents) do
+            if not surface_ids[child_id] then
+                local child = registry:get(child_id)
+                if child then
+                    local child_entries = expand_object(child_id, registry, depth + 1, include_nested_containers, visited)
+                    for _, child_entry in ipairs(child_entries) do
+                        entries[#entries + 1] = child_entry
+                    end
+                end
+            end
+        end
+    end
+
     -- BUG-075: Then expand nested containers (recursive) when doing a scoped search
     if include_nested_containers and containers.is_container(obj) then
         -- Get the sub-containers (e.g., drawers inside nightstand)

@@ -4748,25 +4748,48 @@ function verbs.create()
         if not obj then
             -- #69/#70: Auto-pickup from room (Infocom pattern) — "wear it" after
             -- examining an item should pick it up and put it on in one action.
-            local room_obj = find_visible(ctx, kw)
-            if room_obj and room_obj.wear then
+            local room_obj, fv_loc, fv_parent, fv_surface = find_visible(ctx, kw)
+            if room_obj and (room_obj.wear or room_obj.wearable) then
                 local slot = first_empty_hand(ctx)
                 if not slot then
                     print("Your hands are full. Drop something first.")
                     return
                 end
-                -- Pick up the item from wherever it is
                 local room = ctx.current_room
                 local reg = ctx.registry
-                -- Remove from room contents
-                for i, id in ipairs(room.contents or {}) do
-                    if id == room_obj.id then
-                        table.remove(room.contents, i)
-                        break
+                -- Remove from wherever find_visible found it
+                if fv_loc == "room" then
+                    for i, id in ipairs(room.contents or {}) do
+                        if id == room_obj.id then
+                            table.remove(room.contents, i)
+                            break
+                        end
                     end
-                end
-                -- Remove from surfaces
-                if not room_obj.location or room_obj.location ~= "player" then
+                elseif fv_loc == "surface" and fv_parent and fv_surface then
+                    local zone = fv_parent.surfaces and fv_parent.surfaces[fv_surface]
+                    if zone and zone.contents then
+                        for i, id in ipairs(zone.contents) do
+                            if id == room_obj.id then
+                                table.remove(zone.contents, i)
+                                break
+                            end
+                        end
+                    end
+                elseif fv_loc == "container" and fv_parent then
+                    for i, id in ipairs(fv_parent.contents or {}) do
+                        if id == room_obj.id then
+                            table.remove(fv_parent.contents, i)
+                            break
+                        end
+                    end
+                else
+                    -- Fallback: try removing from room and all surfaces
+                    for i, id in ipairs(room.contents or {}) do
+                        if id == room_obj.id then
+                            table.remove(room.contents, i)
+                            break
+                        end
+                    end
                     for _, room_id in ipairs(room.contents or {}) do
                         local furniture = reg:get(room_id)
                         if furniture and furniture.surfaces then
@@ -4786,52 +4809,93 @@ function verbs.create()
                 ctx.player.hands[slot] = room_obj
                 obj = room_obj
                 hand_slot = slot
-                -- Narrate the auto-pickup
                 print("You pick up " .. (obj.name or obj.id) .. ".")
             end
         end
 
+        -- #86: Check inside containers in the room (open wardrobe, open drawer, etc.)
         if not obj then
-            -- #69/#70: Auto-pickup from room (Infocom pattern) — "wear it" after
-            -- examining an item should pick it up and put it on in one action.
-            local room_obj = find_visible(ctx, kw)
-            if room_obj and room_obj.wear then
+            local room = ctx.current_room
+            local reg = ctx.registry
+            local found_obj, found_parent, found_surface, is_accessible
+            for _, obj_id in ipairs(room.contents or {}) do
+                local room_item = reg:get(obj_id)
+                if room_item then
+                    -- Check surface contents (e.g., wardrobe "inside")
+                    if room_item.surfaces then
+                        for sname, zone in pairs(room_item.surfaces) do
+                            for _, item_id in ipairs(zone.contents or {}) do
+                                local item = reg:get(item_id)
+                                if item and matches_keyword(item, kw) and (item.wear or item.wearable) then
+                                    found_obj = item
+                                    found_parent = room_item
+                                    found_surface = sname
+                                    -- Determine accessibility from FSM state
+                                    local state_zone = zone
+                                    if room_item._state and room_item.states and room_item.states[room_item._state] then
+                                        local st = room_item.states[room_item._state]
+                                        if st.surfaces and st.surfaces[sname] then
+                                            state_zone = st.surfaces[sname]
+                                        end
+                                    end
+                                    is_accessible = state_zone.accessible ~= false
+                                    break
+                                end
+                            end
+                            if found_obj then break end
+                        end
+                    end
+                    -- Check root container contents
+                    if not found_obj and room_item.contents then
+                        for _, item_id in ipairs(room_item.contents) do
+                            local item = reg:get(item_id)
+                            if item and matches_keyword(item, kw) and (item.wear or item.wearable) then
+                                found_obj = item
+                                found_parent = room_item
+                                found_surface = nil
+                                is_accessible = true
+                                break
+                            end
+                        end
+                    end
+                end
+                if found_obj then break end
+            end
+            if found_obj and is_accessible then
                 local slot = first_empty_hand(ctx)
                 if not slot then
                     print("Your hands are full. Drop something first.")
                     return
                 end
-                -- Pick up the item from wherever it is
-                local room = ctx.current_room
-                local reg = ctx.registry
-                -- Remove from room contents
-                for i, id in ipairs(room.contents or {}) do
-                    if id == room_obj.id then
-                        table.remove(room.contents, i)
-                        break
-                    end
-                end
-                -- Remove from surfaces
-                for _, room_id in ipairs(room.contents or {}) do
-                    local furniture = reg:get(room_id)
-                    if furniture and furniture.surfaces then
-                        for sname, zone in pairs(furniture.surfaces) do
-                            for i, id in ipairs(zone.contents or {}) do
-                                if id == room_obj.id then
-                                    table.remove(zone.contents, i)
-                                    break
-                                end
+                -- Remove from container
+                if found_surface then
+                    local zone = found_parent.surfaces[found_surface]
+                    if zone and zone.contents then
+                        for i, id in ipairs(zone.contents) do
+                            if id == found_obj.id then
+                                table.remove(zone.contents, i)
+                                break
                             end
                         end
                     end
+                else
+                    for i, id in ipairs(found_parent.contents or {}) do
+                        if id == found_obj.id then
+                            table.remove(found_parent.contents, i)
+                            break
+                        end
+                    end
                 end
-                room_obj.location = "player"
-                if not room_obj.instance_id then room_obj.instance_id = next_instance_id() end
-                ctx.player.hands[slot] = room_obj
-                obj = room_obj
+                found_obj.location = "player"
+                if not found_obj.instance_id then found_obj.instance_id = next_instance_id() end
+                ctx.player.hands[slot] = found_obj
+                obj = found_obj
                 hand_slot = slot
-                -- Narrate the auto-pickup
-                print("You pick up " .. (obj.name or obj.id) .. ".")
+                print("You take " .. (obj.name or obj.id) .. " from " .. (found_parent.name or found_parent.id) .. ".")
+            elseif found_obj and not is_accessible then
+                local item_name = (found_obj.name or kw):gsub("^a%s+", ""):gsub("^an%s+", ""):gsub("^the%s+", "")
+                print("You need to take the " .. item_name .. " first.")
+                return
             end
         end
 
