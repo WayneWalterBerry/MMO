@@ -865,3 +865,22 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 - FSM-based reveal (`hidden → revealed`) is preferred over raw flag-clearing because it atomically updates all state-dependent properties.
 
 **Decisions Made:** D-SPATIAL-ARCH (engine architecture for spatial concealment)
+
+### Session: Engine Hooks — Injury Pipeline Architecture (2026-07-22)
+**Status:** ✅ COMPLETE
+**Requested by:** Wayne "Effe" Berry
+
+**Task:** Deep architecture analysis of how .lua object files hook into the engine to cause injuries. Two reference cases: consumable → injury (poison bottle), contact → injury (bear trap).
+
+**Deliverable:** `docs/architecture/engine/event-hooks.md` + decision `bart-engine-hooks.md`
+
+**Key Findings:**
+- The engine has a robust injury system (`injuries.inflict()`, 6 types, FSM-based progression) and a designed hook framework (12 hooks cataloged in `about.md`), but only `on_traverse` is implemented.
+- The critical missing piece is a **unified Effect Processing Pipeline** (`effects.lua`). Today, verb handlers interpret effect strings inline — `effect = "poison"` is a string tag that the drink handler must know how to map to `injuries.inflict("poisoned-nightshade")`. Every new injury-causing object requires verb handler edits.
+- Three ad-hoc effect patterns exist: (A) transition `effect` strings, (B) `on_{verb}_effect` strings on states, (C) structured `on_stab`/`on_cut` tables. Pattern C is the most mature and closest to the proposed design.
+- **Consumable → Injury needs no new hooks.** FSM transition `effect` field + `effects.process()` handles poison, bad food, all consumables.
+- **Contact → Injury on take/feel also needs no new hooks.** Transition effects and sensory `on_feel_effect` already provide the trigger points.
+- **Spatial traps (pit, gas) need `on_enter_room` hook.** This is the only net-new hook required for the injury cases analyzed.
+- Per-object effect ownership (objects declare effects, engine processes them) is correct and should remain the pattern. Per-verb effect handling was rejected.
+
+**Decisions Made:** bart-engine-hooks (Effect Processing Pipeline for injuries)
