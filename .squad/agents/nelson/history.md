@@ -40,6 +40,25 @@
 
 ## Recent Updates
 
+### EP2: Poison Bottle Regression Tests (2026-07-25)
+
+**Status:** ✅ COMPLETE — 116 tests, 116 passed, 0 failed (100%)
+
+Pre-refactoring safety net for the Effects Pipeline refactor. These tests lock down the current poison bottle + nightshade injury behavior so any regression introduced by the refactor is caught immediately.
+
+| Category | Tests | Status |
+|----------|-------|--------|
+| Identity & metadata | 11 | ✅ PASS |
+| FSM state transitions (sealed→open→empty, rejected paths, aliases) | 32 | ✅ PASS |
+| Consumption → injury flow (nightshade definition, inflict/tick/death) | 19 | ✅ PASS |
+| Sensory properties (per-state descriptions, all senses) | 22 | ✅ PASS |
+| Fair warning chain (label, smell, taste hierarchy) | 10 | ✅ PASS |
+| Nested parts (cork detach, factory, label, liquid tracking, GOAP) | 22 | ✅ PASS |
+
+**Test file:** `test/verbs/test-poison-bottle.lua`
+**Commit:** c9047d8
+**Full suite:** 45 test files, all pass (no regressions)
+
 ### Pass-039: Regression Retest — Parser Phrases + New Objects (2026-03-23)
 
 **Status:** ✅ COMPLETE — 171 tests, 171 passed, 0 failed (100%)
@@ -409,6 +428,16 @@ Created 7 test files in `test/parser/pipeline/` covering all pipeline stages:
 - `put` verb requires item to be in player's **hands** specifically (not bag/worn) — if you want to move something from a bag to a container, you must first `take` it from the bag.
 - `drop` only works on items directly in hands — items in bags get a helpful "get it out of the bag first" message rather than auto-extracting.
 - Test runner updated to discover tests from multiple subdirectories (parser + inventory), not just parser.
+
+### EP2: Poison Bottle Regression Testing (2026-07-25)
+
+- **Writing pre-refactor regression tests is the RIGHT approach.** These 116 tests define the contract before the Effects Pipeline refactor starts. If a test that passes now fails after refactoring, the refactor broke something — not the test.
+- **dofile() is the cleanest way to load object/injury definitions** for testing. The `return { ... }` pattern in definition files makes them directly evaluable. No need for complex loaders in unit tests.
+- **The wine-fsm test in test/verbs/ is the gold standard** for FSM object testing: fresh object → registry → transition → assert. Followed same pattern for poison bottle.
+- **on_taste_effect structured table is NOT currently processed** by the taste handler in verbs/init.lua. The handler only checks for hardcoded string enums ("poison", "nausea"), not the `{ type = "inflict_injury", ... }` table. The definition has the data, but it's dead code until the Effects Pipeline refactor connects it.
+- **deep_copy utility handles Lua functions correctly** — functions are copied by reference (not duplicated), which is correct since closures capture their environment.
+- **Injury engine test definitions differ from actual definitions.** test-injury-engine.lua uses `initial_damage = 15` for its test nightshade definition, but the actual `src/meta/injuries/poisoned-nightshade.lua` uses `initial_damage = 10`. My tests lock down the ACTUAL values.
+- **Test count:** Full suite now has 45 test files (was 44). The poison bottle test adds 116 individual assertions.
 ## Learnings
 
 ### Pass 019: BUG-063 Fix Verification (2026-03-21)
