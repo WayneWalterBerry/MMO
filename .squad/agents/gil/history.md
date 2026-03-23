@@ -47,6 +47,28 @@
 - All 5 deploy-checklist files copied: `index.html`, `bootstrapper.js`, `game-adapter.lua`, `engine.lua.gz`, `meta/*`
 - ⚠️ First copy of `bootstrapper.js` and `index.html` silently didn't overwrite (identical LastWriteTime?). Had to re-copy individually to get the cache-bust stamps to land. Watch for this in future deploys.
 
+### 2026-03-24 (Evening): Manifest Item #72 — Search Trickle + Deploy
+
+**Task:** Implement gradual reveal of search results (trickle effect) and deploy updated web build
+
+**Implementation:**
+- Search results now appear incrementally (one per tick) rather than all at once
+- Prevents wall-of-text overwhelming players with massive result dumps
+- Results pushed to output queue, processed during game loop
+- UI streams results with configurable delay between entries
+
+**Testing:** 22 tests covering trickle timing, result order, multi-room consistency — all passing
+
+**Deployment:**
+- Updated web build (`dist/` folder)
+- Deployed to GitHub Pages (`github.io/play/`)
+- Updated cache-busting timestamp (automatic via build process)
+- Verified assets delivered with fresh browser session
+
+**Status:** ✅ COMPLETE — Orchestration log at `.squad/orchestration-log/2026-03-24T18-50-00Z-gil.md`
+
+---
+
 ### 2026-03-22 (Afternoon): Phase 7 Completion — First Assignment
 - **Timestamp:** 2026-03-22T20:05Z
 - **Status:** ✅ COMPLETE — All web bugs fixed, live deployment complete

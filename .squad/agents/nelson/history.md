@@ -30,15 +30,17 @@
 - **Status:** Flanders' pipeline refactors validated, full coverage established
 - **Impact:** 284 new tests, 0 regressions across pipeline milestone
 
-**Current Status:**
+**Current Status (2026-03-24 — Manifest Completion):**
+- Put-Phrasing Test Pass: ✅ COMPLETE (36/36 tests, 15 pass rate)
+- Issue Discovery: ✅ 6 ISSUES FILED (#79-84, all actionable)
 - Engine core: ✅ SOLID
-- Parser: ✅ EXCELLENT (Tier 2 embedding, "move" synonym, "feel around", sleep without "for")
+- Parser: ✅ EXCELLENT (Tier 2 embedding, "move" synonym, "feel around", sleep without "for", pronouns+prepositions+aliases)
 - Level 1 Rooms: ✅ ALL LOAD (5/5 rooms, 15/15 exits correct)
 - Level 1 Puzzle: ✅ COMPLETE — crate `.inside` surface FIXED (BUG-048), iron key accessible
 - Display: ✅ FIXED — duplicate instance descriptions resolved (BUG-050)
 - Critical Path: ✅ VERIFIED END-TO-END (bedroom → cellar → storage-cellar → deep-cellar → hallway)
 - Dawn Light: ✅ NEW FEATURE — sleep until dawn enables `look` without matches
-- Issue Fixes: ✅ ALL VERIFIED (#2, #3, #4, #5, BUG-065)
+- Issue Fixes: ✅ ALL VERIFIED (#2, #3, #4, #5, BUG-065, #72, #78-84)
 
 ## Archives
 

@@ -283,3 +283,63 @@ Room files were refactored from flat `location = "room"` strings to deep nesting
 
 ### Key Learning
 14. **Web adapter must mirror main.lua loading phases.** The adapter duplicates the room-loading pipeline (flatten → fetch objects → resolve → wire containment). When the pipeline changes in main.lua, the adapter MUST be updated in lockstep. The adapter's `load_room()` function should always follow the same phase ordering as `src/main.lua`'s Phase 0/1/2 sequence.
+
+---
+
+## FIX #84: Search doesn't recurse into nested containers (2026-03-23)
+
+**Status:** ✅ COMPLETE — Commit 7e177cd, pushed to main, deployed
+
+### Root Cause
+After the deep nesting refactor, `nested` objects (like the drawer in the nightstand) can themselves be containers with `contents`. The search engine's `matches_target()` only recursed into **open** containers — the `containers.is_open(object)` gate prevented peeking into closed containers like the drawer and matchbox. So "find match" reported "Inside you feel a small drawer, but no match" — it found the drawer but couldn't look inside it.
+
+### Fix (3 changes to traverse.lua)
+1. **`matches_target`**: Removed `containers.is_open()` gate — search now recurses into closed containers, matching the peek semantics the engine already uses elsewhere
+2. **`find_deeper_match`**: Made Pass 3 recursive — when a child matches, recursively check if an even deeper child is a better (exact) match. This finds match-1 (exact keyword "match") inside matchbox inside drawer, rather than stopping at matchbox.
+3. **`matches_direct` helper + surface objects**: New `matches_direct()` checks only the object's own properties (no child recursion). Used at the surface-object entry point to prevent a parent (nightstand) from falsely claiming a match via its children's contents — those children are handled by their own surface queue entries.
+
+### Tests: 14 new regression tests
+`test/search/test-search-nested-containers-084.lua`:
+- 3 tests: `matches_target` recurses into closed containers
+- 3 tests: `find_deeper_match` recurses through multiple nesting levels
+- 3 tests: Full search traversal (find match, find matchbox, find drawer)
+- 3 tests: `traverse.step` unit tests for nested targets
+- 2 tests: `flatten_instances` handles 3-level nesting
+
+**66/66 test files pass — zero regressions.**
+
+### Key Learnings
+15. **Search peek semantics must be consistent.** The engine already peeked into closed surfaces (#24), but `matches_target` gated on `is_open`. Removing the gate aligns matching with the existing peek behavior.
+16. **Surface-parent objects need direct matching.** When a parent has both `surfaces` and `contents`, removing the `is_open` gate from `matches_target` makes the parent match via children's contents. But children are handled by surface queue entries, not the parent entry. The `matches_direct` helper prevents this double-matching.
+17. **Recursive deeper-match finds the most specific item.** Single-level `find_deeper_match` returned matchbox for "find match". Recursive deeper-match follows the chain drawer→matchbox→match-1 to return the actual match object with exact keyword match.
+
+---
+
+## Put Verb Parser Gaps — #81 #82 #83 (2026-07-27)
+
+**Status:** ✅ COMPLETE — Commit 7c638e2, pushed to main
+
+### #81 P2: Pronoun 'that'/'it' not resolved in put verb
+**Root cause:** The put handler's item lookup searched hands using `matches_keyword(candidate, kw)` directly on the raw noun string. Unlike `find_visible()` (which wraps `context_window.resolve()`), the hand search had no pronoun resolution. "put it on nightstand" would try to find keyword "it" in hands — no match.
+**Fix:** Added pronoun resolution via `context_window.resolve()` before hand search. If the item_word is a pronoun ("it", "that", "this", "one"), it resolves to the context window's most recent object, then uses that object's ID for the hand search.
+
+### #82 P2: Put verb needs 'under' and 'inside' prepositions
+**Root cause:** Parser only matched `^(.+)%s+in%s+(.+)$` and `^(.+)%s+on%s+(.+)$`. No patterns for under/underneath/beneath/inside.
+**Fix:** (1) Added pattern matching for "underneath", "beneath", "under" (all map to prep="under") and "inside" (maps to prep="in"). (2) Surface routing: prep="under" maps to `surfaces.underneath` zone. (3) For objects without surfaces, creates flat `target.underneath` array. Order matters: "underneath" and "beneath" must be matched before "under" to avoid greedy substring issues.
+
+### #83 P2: Missing placement verb aliases
+**Root cause:** Only "place" was aliased to put handler. Natural English placement verbs (set, drop, hide, stuff, toss, slide) with directional prepositions had no routing.
+**Fix:** Added transform patterns in `transform_compound_actions` for 6 verb families, each with multiple preposition variants. Careful not to break existing transforms: "set fire to" stays as light, bare "drop X" stays as drop, "set clock" stays as set.
+
+### Tests: 27 new regression tests
+`test/integration/test-bugs-081-082-083.lua`:
+- 4 tests for #81 (pronoun resolution: it/that/this + non-pronoun regression)
+- 7 tests for #82 (under/underneath/beneath/inside preps + surface routing + in/on regression)
+- 16 tests for #83 (6 alias transforms + 4 variant preps + 6 regressions)
+
+**67/67 test files pass — zero regressions.**
+
+### Key Learnings
+15. **Hand-search in put handler must go through pronoun resolution.** Unlike most verbs that use `find_visible()` (which has context_window integration), the put handler does a direct hand-slot scan with `matches_keyword()`. Any verb handler that searches inventory directly must also resolve pronouns first.
+16. **Preposition pattern ordering: longest first.** "underneath" must be matched before "under", otherwise "under" greedily matches "underneath rug" as item="key underneath", target="rug". Same applies to "inside" before "in".
+17. **Placement verb aliases need preposition guards.** "set X on Y" → put, but bare "set X" → clock/adjustment handler. "drop X on Y" → put, but bare "drop X" → drop handler. The preposition is the discriminator — without it, the command stays with the original verb.

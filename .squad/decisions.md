@@ -961,6 +961,17 @@ Reorganized the `docs/` folder to reflect a clear distinction between **design**
 
 ---
 
+## USER DIRECTIVES & PROCESS DECISIONS (2026-03-24 Evening Session)
+
+### UD-2026-03-24T18-42Z: Log All Bugs as GitHub Issues First
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-24  
+**Status:** ENFORCED  
+
+User directive: Every bug Wayne reports MUST be logged as a GitHub issue BEFORE fixing. This ensures every bug has a trackable GitHub issue number for audit trail.
+
+---
+
 ### D-BROCKMAN002: Directive Sweep to Permanent Docs (Wall Clock Misset)
 **Author:** Brockman (Documentation)  
 **Date:** 2026-03-21  

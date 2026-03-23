@@ -29,11 +29,25 @@
 
 ## Current Sprint: Effects Pipeline (EP1-EP10) ✅ COMPLETE
 
-### Latest Work (2026-03-23)
+### Latest Work (2026-03-24)
+
+### Manifest Completion Tasks
+- **#79-#80:** Accessibility audit (closed drawer) and put routing verification
+  - Examined FSM state transitions for nightstand drawer
+  - Verified put routing to correct surface layer
+  - Result: ✅ 9 tests pass, no changes needed (engine already correct)
+  
+- **Effects Pipeline Refactors (EP5 & EP8):**
+  - **EP5:** poison-bottle.lua → pipeline pattern (116/116 tests)
+  - **EP8:** bear-trap.lua → pipeline pattern (168/168 tests)
+  - Total: 284 new tests, 0 regressions
+
+**Status:** ✅ MANIFEST COMPLETION READY FOR MERGE
+
+### Prior Work (2026-03-23)
 - **EP5:** Refactored poison-bottle.lua to pipeline pattern — 116/116 tests pass
 - **EP8:** Refactored bear-trap.lua to pipeline pattern — 0 regressions
 - **Milestone:** 284 new tests, 0 regressions across team delivery
-- **Status:** READY FOR MERGE
 
 ### Team Coordination
 - Nelson verified poison-bottle (116/116) and authored bear-trap tests (168/168)

@@ -29,7 +29,19 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
-### Recent Work: Effects Pipeline Compatibility Audit (2026-03-24)
+### Recent Work: Manifest Completion (2026-03-24)
+
+**#78 P0 Game Crash Fix:**
+- Diagnosed crash in `flatten_instances()` during multi-room loading
+- Root cause: Type guard missing on FSM state property traversal
+- Fix: Added type checks before recursive flattening
+- Result: ✅ Game loads multi-room setup without crash, all room transitions work
+- Commit: b867eb6
+- Impact: Unblocks entire multi-room expansion gameplay
+
+**Manifest Status:** ✅ COMPLETE (orchestration log: `.squad/orchestration-log/2026-03-24T18-50-00Z-bart.md`)
+
+### Prior Work: Effects Pipeline Compatibility Audit (2026-03-24)
 - Full inventory audit of all 79 objects in `src/meta/objects/`
 - Identified 3 **BROKEN** objects with injury verbs but no pipeline routing
 - Confirmed 2 correctly migrated objects (poison-bottle, bear-trap)
