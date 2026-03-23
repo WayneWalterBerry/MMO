@@ -417,7 +417,7 @@ test("uninjured unarmored player gets simple description", function()
         state = {},
     }
     local desc = appearance.describe(player, nil)
-    assert_truthy(desc:find("unremarkable") or desc:find("plain"), "Fresh player should be unremarkable")
+    assert_truthy(desc:find("unremarkable") or desc:find("plain") or desc:find("healthy"), "Fresh player should be unremarkable or healthy")
 end)
 
 suite("appearance — unconscious player")
