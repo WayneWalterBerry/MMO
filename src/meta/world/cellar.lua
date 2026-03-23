@@ -12,8 +12,8 @@ return {
     on_smell = "Damp earth, cold stone, and something faintly metallic -- iron, perhaps, or old blood. The air is thick and stale, as if it has not moved in a very long time.",
 
     instances = {
-        { id = "barrel",         type = "Barrel",         type_id = "c3e8f1a2-b4d7-4596-8e23-f9a1b6c5d402", location = "room" },
-        { id = "torch-bracket",  type = "Torch Bracket",  type_id = "d9f4a2b3-c5e8-4167-9d34-e8b2c7d6f513", location = "room" },
+        { id = "barrel",         type = "Barrel",         type_id = "c3e8f1a2-b4d7-4596-8e23-f9a1b6c5d402" },
+        { id = "torch-bracket",  type = "Torch Bracket",  type_id = "d9f4a2b3-c5e8-4167-9d34-e8b2c7d6f513" },
     },
 
     exits = {
