@@ -1,7 +1,14 @@
 -- bear-trap.lua — Touch-triggered injury object with disarm mechanics
+-- Decision: D-EFFECTS-PIPELINE, D-INJURY001, D-INJURY002
 -- States: set (armed) → triggered (snapped) → disarmed (safe)
 -- Contact pipeline: on_take/on_touch → inflict_injury → crushing-wound
 -- Visible by default — teaches "observe first" pattern.
+--
+-- Effect routing (all paths via effects.process):
+--   take (armed)  → trans.effect  → inflict_injury(crushing-wound, damage=15)
+--   touch (armed) → trans.effect  → inflict_injury(crushing-wound, damage=15)
+--   feel (armed)  → on_feel_effect → inflict_injury(crushing-wound, damage=15)
+--   disarm         → guard blocks pipeline if skill check fails
 return {
     guid = "{d7e3b1a4-5c92-4f08-b6d1-8a3e7c4f29b5}",
     template = "furniture",
@@ -14,6 +21,10 @@ return {
     categories = {"trap", "dangerous", "hazard", "metal", "spring-mechanism"},
     portable = false,
     room_position = "on the floor",
+
+    -- Effects pipeline flag (D-EFFECTS-PIPELINE) — all effect declarations
+    -- on this object are structured tables routed through effects.process().
+    effects_pipeline = true,
 
     -- Trap metadata (drives contact pipeline)
     is_trap = true,
@@ -45,6 +56,7 @@ return {
             room_presence = "A rusted bear trap lies on the floor, its iron jaws slightly parted.",
 
             on_feel = "SNAP! The jaws clamp shut on your hand with a sickening crack!",
+            -- Pipeline-routed via effects.process() — contact injury on feel
             on_feel_effect = {
                 type = "inflict_injury",
                 injury_type = "crushing-wound",
@@ -52,6 +64,7 @@ return {
                 location = "hand",
                 damage = 15,
                 message = "The trap's iron jaws crush your hand. Pain whites out your vision.",
+                pipeline_routed = true,
             },
 
             on_smell = "Rust and old blood. This trap has a history.",
@@ -113,6 +126,7 @@ return {
             from = "set", to = "triggered", verb = "take",
             aliases = {"grab", "pick up", "get"},
             message = "You reach for the trap. The moment your fingers touch the mechanism, the jaws SNAP shut with a violent CRACK! Pain shoots through your hand as iron teeth bite deep into flesh and bone.",
+            -- Single structured effect for pipeline (effects.process normalizes)
             effect = {
                 type = "inflict_injury",
                 injury_type = "crushing-wound",
@@ -121,6 +135,19 @@ return {
                 damage = 15,
                 message = "The trap's iron jaws crush your hand. The pain is blinding.",
             },
+            -- Full pipeline chain for atomic processing (D-EFFECTS-PIPELINE)
+            -- Engine falls back to effect + mutate if pipeline_effects not consumed.
+            pipeline_effects = {
+                { type = "inflict_injury", injury_type = "crushing-wound",
+                  source = "bear-trap", location = "hand", damage = 15,
+                  message = "The trap's iron jaws crush your hand. The pain is blinding." },
+                { type = "narrate",
+                  message = "Blood drips from between the rusted teeth. Your hand is trapped." },
+                { type = "mutate", target = "self", field = "is_armed", value = false },
+                { type = "mutate", target = "self", field = "is_sprung", value = true },
+                { type = "mutate", target = "self", field = "is_dangerous", value = false },
+            },
+            -- FSM-level mutations (applied by fsm.transition → apply_mutations)
             mutate = {
                 is_armed = false,
                 is_sprung = true,
@@ -135,6 +162,7 @@ return {
             from = "set", to = "triggered", verb = "touch",
             aliases = {"handle", "poke", "prod"},
             message = "You reach toward the trap. Your fingers barely brush the pressure plate when the jaws SNAP shut, crushing your hand in a vice of rusted iron. You scream.",
+            -- Single structured effect for pipeline (effects.process normalizes)
             effect = {
                 type = "inflict_injury",
                 injury_type = "crushing-wound",
@@ -143,6 +171,19 @@ return {
                 damage = 15,
                 message = "Iron jaws clamp shut on your fingers with bone-breaking force.",
             },
+            -- Full pipeline chain for atomic processing (D-EFFECTS-PIPELINE)
+            -- Engine falls back to effect + mutate if pipeline_effects not consumed.
+            pipeline_effects = {
+                { type = "inflict_injury", injury_type = "crushing-wound",
+                  source = "bear-trap", location = "hand", damage = 15,
+                  message = "Iron jaws clamp shut on your fingers with bone-breaking force." },
+                { type = "narrate",
+                  message = "The trap's teeth are buried in your flesh. You can feel the pressure on your bones." },
+                { type = "mutate", target = "self", field = "is_armed", value = false },
+                { type = "mutate", target = "self", field = "is_sprung", value = true },
+                { type = "mutate", target = "self", field = "is_dangerous", value = false },
+            },
+            -- FSM-level mutations (applied by fsm.transition → apply_mutations)
             mutate = {
                 is_armed = false,
                 is_sprung = true,
@@ -190,7 +231,7 @@ return {
         },
     },
 
-    -- GOAP prerequisites (for planner)
+    -- GOAP prerequisites (for planner) — warns hints per D-EFFECTS-PIPELINE §3.6
     prerequisites = {
         disarm = {
             requires_state = "triggered",
@@ -200,6 +241,13 @@ return {
         take = {
             -- In "set" state: will trigger injury (trap fires)
             -- In "triggered" or "disarmed" state: safe to take
+            warns = { "injury", "crushing-wound" },
+        },
+        touch = {
+            warns = { "injury", "crushing-wound" },
+        },
+        feel = {
+            warns = { "injury", "crushing-wound" },
         },
     },
 
