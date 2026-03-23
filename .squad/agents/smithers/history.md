@@ -140,3 +140,40 @@ Implemented unified Effects Pipeline as per Bart's D-EFFECTS-PIPELINE architectu
 1. **Surface-based furniture needs "container" category** — without it, inaccessible surfaces are invisible to search. Any furniture with a drawer/compartment needs this.
 2. **Object entries vs surface entries in search queue** — furniture with surfaces generates BOTH, creating duplicate/contradictory narration. The fix suppresses the object entry.
 3. **Parser idiom transforms are the cleanest way to handle natural language variants** — no verb handler changes needed for #42.
+
+---
+
+## BUG-146 (#46): "search for a match" Fuzzy Scope Hijack (2026-03-24)
+
+**Status:** ✅ COMPLETE — Regression tests committed a67141c, pushed to main
+
+### Root Cause (Third Recurrence)
+
+**The bug was NEVER in the search/container code.** It was in the verb handler's scope detection. The Tier 5 fuzzy resolver (`engine/parser/fuzzy.lua`) matched "match" to the rug's keyword "mat" via Levenshtein distance 2 (within threshold for 5-letter words). The search handler then scoped an undirected search to the rug → found nothing.
+
+**Chain:** "search for a match" → preprocess → "search match" → handler calls `find_visible("match")` → exact match fails → Tier 5 fuzzy: levenshtein("match", "mat")=2 ≤ threshold=2 → returns rug → handler does `search(nil, rug.id)` → "Nothing interesting."
+
+### Fix
+
+`ctx._exact_only = true` flag in the search handler suppresses fuzzy resolution during scope detection. The `find_visible` wrapper checks `ctx._exact_only` and skips Tier 5 when set.
+
+- `src/engine/verbs/init.lua` lines 2012-2019: Set flag before `find_visible`, clear after
+- `src/engine/verbs/init.lua` line 704: Check flag in fuzzy gate
+
+### Tests
+
+`test/search/test-search-fuzzy-scope-bug146.lua` — 6 regression tests:
+1. Targeted search for 'match' finds matchbox (not rug)
+2. Deeper-match finds actual match inside matchbox
+3. Search does NOT scope-search the rug
+4. Search works in darkness (light_level=0)
+5. Levenshtein precondition verified
+6. Exact scope search still works
+
+**53/53 test files pass.**
+
+### Key Learning
+
+4. **Fuzzy noun resolution (Tier 5) must NOT participate in search scope detection.** The search handler's scope-vs-target heuristic ("is this noun a visible object?") needs exact matching only. Fuzzy false positives (e.g., "match"→"mat" Levenshtein 2) cause catastrophic misrouting — the entire search gets scoped to the wrong object. Use `ctx._exact_only` flag pattern for any handler that needs exact-only noun resolution.
+
+5. **Why it kept recurring:** Each previous fix (#43/#44) addressed the search engine's container/surface traversal logic, which was correct all along. The real bug was in the verb handler layer ABOVE the search engine. The mismatch between where the bug appeared (search results) and where it lived (verb handler scope detection) made it invisible to targeted fixes.
