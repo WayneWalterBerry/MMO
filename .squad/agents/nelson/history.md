@@ -46,6 +46,49 @@
 
 ## Recent Updates
 
+### Put Verb Phrasing Test Pass (2026-07-25)
+
+**Status:** ✅ COMPLETE — 36 tests (15 passed, 5 failed, 13 missing, 3 blocked)
+
+Full test pass on "put" verb phrasing — all ways a player might place objects in/on/under furniture. Tested in headless mode in the start-room (bedroom).
+
+| Category | Tests | Pass | Fail | Missing | Blocked |
+|----------|-------|------|------|---------|---------|
+| Put ON surfaces | 5 | 4 | 0 | 0 | 1 |
+| Put IN containers | 5 | 3 | 0 | 0 | 2 |
+| Put UNDER things | 3 | 0 | 0 | 3 | 0 |
+| Invalid placements | 3 | 0 | 1 | 2 | 0 |
+| Drawer interactions | 6 | 4 | 1 | 1 | 0 |
+| Other placement verbs | 7 | 1 | 0 | 6 | 0 |
+| Edge cases | 7 | 4 | 3 | 0 | 0 |
+
+**Bugs filed (label: bug):**
+- **#79** — Put in closed drawer bypasses accessibility check (wardrobe blocks correctly)
+- **#80** — "put X in Y" silently misroutes to wrong surface when Y has no inside
+- **#81** — Pronoun "that"/"it" not resolved in put verb hand search
+
+**Features filed (label: feature):**
+- **#82** — Put verb needs "under" and "inside" preposition support
+- **#83** — Missing placement verb aliases (set, drop on, hide, stuff, toss, slide)
+
+**Blockers found during setup:**
+- Deep nesting flattener was already fixed (commit b867eb6)
+- `_fv_parts` live-object lookup already fixed (same commit)
+- Removed leftover debug dump from main.lua (commit 52610e7)
+
+**Key findings:**
+- Core put ON/IN works well for surfaces and open containers
+- "under" preposition completely missing from put verb (3/3 fail)
+- 6 natural placement verbs unrecognized (hide, stuff, toss, slide, set as put, drop on)
+- Closed drawer accepts items but closed wardrobe correctly blocks — inconsistent
+- "put X in nightstand/vanity" silently routes to top surface with misleading "in" narration
+- Nightstand capacity=3 fills quickly (candle-holder + poison-bottle already on top)
+- Brass key under rug inaccessible (rug blocked by bed) — 3 tests couldn't run
+
+**Commit:** 52610e7
+
+---
+
 ### Bedroom Door Regression Tests (2026-07-25)
 
 **Status:** ✅ COMPLETE — 57 tests (50 passed, 0 failed, 7 skipped)
