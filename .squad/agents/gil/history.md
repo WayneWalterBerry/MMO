@@ -167,3 +167,32 @@
   - ✅ #66: `verbs/init.lua` — effects.process self-infliction handler (1 match)
   - ✅ #71: `parser/fuzzy.lua` — 0.75 length ratio threshold (2 matches)
 - **Conclusion:** No systemic deploy gap found. The pipeline (`build-engine.ps1` → `build-meta.ps1` → `deploy.ps1`) correctly propagates ALL src/ changes to the live site. The perceived gap was likely CDN cache (1-3 min propagation) or mobile Safari aggressive caching (mitigated by cache-bust stamps).
+
+### 2026-03-23: Deploy — #63 search fixes, 6 deep-nesting rooms, #68 #74 parser fixes
+- **Timestamp:** 2026-03-23T15:11Z
+- **Status:** ✅ COMPLETE — Deployed to GitHub Pages
+- **Pages commit:** `0268114` (main branch, 12 files changed, +219 −85 lines)
+- **Engine bundle:** 140 KB compressed (907.1 KB raw), 28 engine files + 1 asset file
+- **Meta files:** 101 total (81 objects, 7 rooms, 5 templates, 1 level, 7 injuries)
+- **Cache-bust stamp:** `20260323151146` stamped into `bootstrapper.js` and `index.html`
+- **Total files deployed:** 106
+- **What shipped:**
+  - Nelson: #63 targeted search surface narration + deterministic ordering (d849d69)
+  - Flanders: 6 rooms converted to deep nesting (cellar, courtyard, crypt, deep-cellar, hallway, storage-cellar)
+  - Smithers: #68 category synonym matching, #74 composite child preference (6cad8d0)
+- **Deploy method:** Used `web/deploy.ps1` — clean run, no issues
+- **Verification:** Pushed to GitHub Pages, CDN propagation 1–3 minutes
+
+### 2026-03-23: Fixed Issue #72 — Search text trickle effect
+- **Problem:** Search results dumped all output lines at once as a block. Felt instantaneous rather than like real-time discovery.
+- **Root cause:** DOM batching (#3) collects all `appendOutput()` calls during command processing into a `DocumentFragment`, then flushes everything in one `requestAnimationFrame`. For search commands, this means 5–15 narrative lines appear simultaneously.
+- **Fix:** Added a search-specific trickle system to `web/bootstrapper.js`:
+  1. **Detection:** Regex-based command matching — `/^(search|find)\b/i` and `/^look\s+(for|in)\b/i`
+  2. **Scheduling:** After command processing, collected nodes are released one at a time via `setTimeout` with 350ms gaps
+  3. **Cancellation:** If the user enters a new command while trickle is active, all pending nodes are flushed immediately to avoid visual glitches
+  4. Non-search commands still use instant DOM batch flush (#3) — no regression
+- **Files changed:** `web/bootstrapper.js` (+68 lines)
+- **Regression tests:** Added `test/web/test-search-trickle.js` (22 tests) — validates search/find/look-for detection, negative cases (look, look at, go, take), word boundary enforcement, scheduling delays, cancel behavior
+- **Test suite:** 65/65 Lua tests PASS, 22/22 JS tests PASS
+- **Commit:** cc10a43 — pushed to main
+- ⚠️ This is a presentation-layer-only change. No engine code modified. The engine still outputs all search lines synchronously; the trickle effect is purely in the JS display layer.
