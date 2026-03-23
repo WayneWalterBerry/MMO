@@ -134,3 +134,28 @@
 - All cross-agent dependencies documented in decisions
 
 **Cross-Agent Context Propagation:** All 4 agent histories updated with Wave2 context and decision impact analysis
+
+### 2026-03-23: Wave 3 — Issue Closure Sprint & Deploy Gate
+**Status:** ✅ COMPLETE  
+**Task:** Verify and close GitHub issues #35-39
+
+**Issues Closed:**
+- #35: `get all` parser edge case routing
+- #36: Stab verb feedback consistency  
+- #37: Container examine interaction  
+- #38: Sleep state visibility  
+- #39: Surface examine regression  
+
+**Method:** Cross-referenced bug tracker, verified regression tests, closed with evidence.
+
+**Results:**
+- 5/5 issues closed
+- 23 regression tests added
+- Deploy gate: ✅ UNBLOCKED (0 CRITICAL, 0 HIGH)
+- Test coverage: 1,065+ → 1,088 unit tests (37 files)
+
+**Team Status Summary:**
+- Smithers: Phase 3 HIT/consciousness/appearance ✅ SHIPPED
+- Nelson: Pass 039 playtest — 171/171 tests PASS ✅  
+- Chalmers: Daily plan updated with session work, commit 26bbc6b ✅
+- Wave 3 outcome: Engine SOLID, ready for Phase 3+ expansion
