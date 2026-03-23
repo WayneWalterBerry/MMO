@@ -79,8 +79,20 @@ local function expand_object(object_id, registry, depth, include_nested_containe
     }
     
     -- Expand surfaces first (if object has surfaces)
+    -- Sort surface names for deterministic ordering: "top" before "inside"
+    -- (physically correct — you'd examine the top before opening drawers)
     if obj.surfaces then
-        for surface_name, surface_data in pairs(obj.surfaces) do
+        local surface_names = {}
+        for name, _ in pairs(obj.surfaces) do
+            surface_names[#surface_names + 1] = name
+        end
+        table.sort(surface_names, function(a, b)
+            if a == "top" then return true end
+            if b == "top" then return false end
+            return a < b
+        end)
+        for _, surface_name in ipairs(surface_names) do
+            local surface_data = obj.surfaces[surface_name]
             -- Skip if surface_data is just a list (treat as contents)
             if type(surface_data) == "table" and surface_data.contents then
                 entries[#entries + 1] = {

@@ -353,24 +353,26 @@ end
 -- @param surface_name string ("top", "inside", etc.)
 -- @param parent object that owns the surface
 -- @param items list of item name strings
+-- @param target string or nil — when set, appends "but no <target>" suffix
 -- @return string
-function narrator.surface_contents(ctx, surface_name, parent, items)
+function narrator.surface_contents(ctx, surface_name, parent, items, target)
     local sense = get_primary_sense(ctx, ctx.current_room)
     local agg = narrator.aggregate_items(items)
     local list = table.concat(agg, ", ")
     local parent_display = strip_article(parent.name or parent.id or "it")
+    local suffix = target and (", but no " .. target) or ""
 
     if surface_name == "top" then
         if sense == "touch" then
-            return "On top of the " .. parent_display .. ", you feel: " .. list .. "."
+            return "On top of the " .. parent_display .. ", you feel: " .. list .. suffix .. "."
         else
-            return "On top of the " .. parent_display .. ", you find: " .. list .. "."
+            return "On top of the " .. parent_display .. ", you find: " .. list .. suffix .. "."
         end
     else
         if sense == "touch" then
-            return "Inside, you feel: " .. list .. "."
+            return "Inside, you feel: " .. list .. suffix .. "."
         else
-            return "Inside, you find: " .. list .. "."
+            return "Inside, you find: " .. list .. suffix .. "."
         end
     end
 end
