@@ -108,3 +108,24 @@
   - All bug fixes from the 2026-03-23 session
 - **Deploy method:** Used `web/deploy.ps1` — clean run, no Copy-Item issues this time
 - **Verification:** Live site at `https://waynewalterberry.github.io/play/` returns HTTP 200 with correct cache-bust stamp
+
+### 2026-03-23: Deploy — Play-test Bug Fixes (#40 #42 #43 #44)
+- **Timestamp:** 2026-03-23T11:45Z
+- **Status:** ✅ COMPLETE — Deployed to GitHub Pages
+- **Pages commit:** `e1d5be4` (main branch, 5 files changed, +35 −6 lines)
+- **Source commit:** `491f9a8` — Smithers' 4 bug fixes from Wayne's iPhone play-test session
+- **Engine bundle:** 134.7 KB compressed, 92 meta files (79 objects, 7 rooms, 5 templates, 1 level)
+- **Cache-bust stamp:** `20260323114535` stamped into `bootstrapper.js` and `index.html`
+- **Files deployed:** `index.html`, `bootstrapper.js`, `engine.lua.gz`, 1 updated meta object (`d40b15e6-...`)
+- ⚠️ **Copy-Item silent failure recurred:** `Remove-Item` + `Copy-Item` still didn't overwrite `index.html` and `bootstrapper.js` with new cache-bust stamps. Had to use `[System.IO.File]::Copy()` as workaround. The deploy script should be updated to use .NET file copy instead of PowerShell cmdlets.
+- **What shipped (Smithers fixes):** Issues #40, #42, #43, #44 — play-test bug fixes from Wayne's iPhone session
+- **Verification:** Live site at `https://waynewalterberry.github.io/play/` — pushed to GitHub Pages, CDN propagation 1–3 minutes
+
+### 2026-03-23: Fixed Issue #45 — Status bar shows "7 matches" at game start
+- **Problem:** Status bar right side displayed "Matches: 7  Candle: o" immediately at game start. Player starts empty-handed — the "7 matches" came from the matchbox object sitting on the start room table, found via a registry fallback search.
+- **Root cause:** `src/engine/ui/status.lua` searched player hands → room surfaces → `ctx.registry:get("matchbox")` (fallback). The fallback always found the matchbox wherever it lived in the game world, counting its 7 match-object contents as if they were player inventory.
+- **Fix:** Removed the entire 60+ line matchbox/candle search block from `status.create_updater()`. Replaced with health status — right side now shows `Health: X/Y` only when the player has injuries (blank at full health). Left side unchanged: level, room name, time.
+- **Regression tests:** Added `test/ui/test-status-bar.lua` (11 tests) — verifies no inventory keywords appear, room/level/time shown, health hidden at full HP, health visible when injured, matchbox in registry doesn't leak into status bar. Added `test/ui/` to `test/run-tests.lua`.
+- **Test suite:** 50/50 PASS (all existing + new).
+- **Commit:** d73f034 — pushed to main.
+- ⚠️ This is an engine-layer fix (Smithers' territory), but it directly impacts the web status bar via `game-adapter.lua` which calls `status.create_updater()`. No web-layer changes needed — the adapter passes through whatever left/right strings the engine provides.

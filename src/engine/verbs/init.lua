@@ -698,7 +698,10 @@ do
         end
 
         -- Tier 5: Fuzzy noun resolution fallback (only when exact match fails)
-        if fuzzy then
+        -- BUG-146 (#46): Skip fuzzy when caller needs exact-only (e.g., search
+        -- scope detection). Fuzzy "match"→"mat" causes search to target the rug
+        -- instead of doing a room-wide search for "match".
+        if fuzzy and not ctx._exact_only then
             local fobj, floc, fparent, fsurface, prompt = fuzzy.resolve(ctx, keyword)
             if fobj then
                 ctx.last_object = fobj
@@ -2006,7 +2009,14 @@ function verbs.create()
         --   2. A target to find ("search matchbox")
         -- Prefer scope interpretation (search a specific object)
         
+        -- BUG-146 (#46): Use exact-only matching for scope detection.
+        -- Fuzzy matching can produce false positives (e.g., "match" → rug's
+        -- keyword "mat" via Levenshtein distance 2) that hijack the search
+        -- into treating the wrong object as scope instead of doing a targeted
+        -- room-wide search.
+        ctx._exact_only = true
         local obj, obj_loc, obj_parent = find_visible(ctx, stripped_noun)
+        ctx._exact_only = nil
         if obj then
             -- BUG-082: If obj is a part (drawer), use its parent for search
             if obj_loc == "part" and obj_parent then

@@ -213,6 +213,107 @@
 
 ---
 
+#### Object → Effects Pipeline Migration Audit — IN PROGRESS
+
+Wayne identified a gap: only poison bottle and bear trap were migrated to the pipeline. ALL injury-causing objects need to work. The knife stab (#50) proves backward compat isn't covering everything.
+
+- [ ] Bart: Audit ALL objects in `src/meta/objects/` — which ones have injury/effect behavior?
+  - List every object with `effect`, `on_consume`, `on_touch`, stab/hit/cut behavior
+  - Classify: ✅ Pipeline-routed | 🟡 Legacy but working | 🔴 Broken (like knife stab)
+- [ ] Smithers: Fix #52 (mirror showing only hand contents instead of full appearance)
+- [ ] Smithers: Fix #49/#50 (stab verb: infer weapon, actually create injury)
+- [ ] Nelson: Write stab regression tests BEFORE fix ships — lock down the contract:
+  - "stab yourself" with knife in hand → infers knife, creates stab wound injury
+  - "stab self with knife" → creates bleeding injury, injury appears in "injuries" output
+  - Stab wound ticks health per turn (bleeding)
+  - Multiple stabs = multiple injuries or severity increase
+  - Stab with no weapon in hand → helpful error message
+  - Stab with multiple weapons → disambiguation prompt
+- [ ] Flanders: Migrate any 🔴 objects to use Effects Pipeline
+- [ ] Nelson: Regression tests for each migrated object
+- [ ] Marge: Verify all migrations, gate each one
+- [ ] Gil: Fix #45 (status bar showing inventory/7 matches)
+
+---
+
+#### Wayne Play-Test Bugs (2026-03-23 afternoon) — FIXING
+
+**P0 Blockers:**
+- [ ] #46: "search for a match" STILL broken on live — 3rd recurrence (Smithers investigating root cause)
+
+**P1 Critical:**
+- [x] #40: Contradictory search narration — fixed in 491f9a8
+- [x] #42: "sleep to dawn" — fixed in 491f9a8
+- [x] #43/#44: Match search / nightstand container — fixed in 491f9a8
+- [ ] #45: Status bar shows "7 matches" at start (Gil fixing)
+- [ ] #50: Stab doesn't create injury — "wound doesn't take hold" (Smithers, after #46)
+- [ ] #52: Mirror shows only hand contents, not full appearance (Smithers, after #46)
+- [ ] #55: "hit head" says no effect — unconsciousness not triggering (Smithers, after #46)
+
+**P2 Polish:**
+- [ ] #41: "search the drawer" not distinct from nightstand
+- [ ] #47: Dark search uses "find/see" instead of "feel" narration
+- [ ] #48: Search results dump all at once — should stream with clock advance
+- [ ] #49: "stab yourself" should infer weapon from hand contents
+- [ ] #53: "get pot" outputs take message twice — duplicate response
+
+**P3 Features:**
+- [ ] #54: Chamber pot wearable as improvised helmet + unit tests
+
+**Process notes:**
+- Every fix MUST include regression test (Wayne directive)
+- Marge gates every fix before close
+- #50, #55 likely same root cause — injury system not connected in live game
+
+---
+
+#### Verb Coverage Expansion — ⚠️ WAYNE REVIEW REQUIRED BEFORE STARTING
+
+Frink's MUD gap analysis (`docs/research/mud-system-gap-analysis.md`) identified major verb/system gaps. Wayne needs to review and approve scope before the team starts work.
+
+**What Frink found (39/87 verbs covered, 6/12 systems):**
+
+🔴 **Critical gaps (block multiplayer):**
+- Communication: 0/11 verbs (say, whisper, emote, shout, tell)
+- Commerce: 0/5 verbs (buy, sell, trade, barter, appraise)
+- NPCs/Dialogue: 0 systems (no quest givers, no conversation)
+
+🟡 **High-priority gaps:**
+- Crafting: 3/8 verbs (no recipe system, no multi-step assembly)
+- Skills/XP: 0 systems (no character progression)
+- Quests: 0 systems (no objective tracking)
+- Combat: 3/9 verbs (basic hits only, no live combat)
+
+⏸️ **Can skip for now:**
+- Magic/spells, guild wars, leaderboards, class-specific verbs
+
+**Wayne's call:**
+- [ ] Wayne: Review `docs/research/mud-system-gap-analysis.md`
+- [ ] Wayne: Decide which verb categories to prioritize for next sprint
+- [ ] Wayne: Approve/reject multiplayer communication as next major feature
+- After Wayne reviews → CBG designs, Bart architects, Smithers implements
+
+---
+
+#### Real-World Object Puzzles (Sideshow Bob) — IN PROGRESS
+
+Wayne directive: Puzzles should use real-world objects in realistic ways AND take advantage of the Effects Pipeline event hooks. Also think about what NEW event hooks puzzles might need.
+
+- [ ] Bob: Design 8-12 real-world object puzzle concepts (`docs/puzzles/`)
+  - Puzzles that leverage existing event hooks (on_consume, on_touch, on_traverse)
+  - Puzzles that suggest NEW hooks the engine doesn't have yet
+  - Each puzzle: premise, objects needed, prerequisite chain, sensory hints, failure states
+  - Classification: 🔴 Theorized (Wayne approves before build)
+  - Focus: real-world logic — "use wine as wound disinfectant" not "use key on door"
+- [ ] Bob: Update `docs/puzzles/README.md` — fix any errors, add puzzle index
+- [ ] Bob: Flag which puzzles need new objects (hand off to Flanders)
+- [ ] Bob: Flag which puzzles suggest new engine event hooks (hand off to Bart)
+- [ ] CBG: Review puzzle designs for gameplay quality and pacing
+- [ ] Bart: Evaluate any new hook proposals from puzzle designs
+- [ ] Flanders: Build new objects needed for approved puzzles
+
+---
+
 #### Phase 3: Objects (Flanders)
 - [ ] Create injury-causing objects that trigger unconsciousness
   - Falling rock trap? Ceiling collapse?

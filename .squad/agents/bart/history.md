@@ -29,7 +29,16 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
-### Recent Work: Effects Pipeline Documentation (EP6) ✅ COMPLETE (2026-03-23)
+### Recent Work: Effects Pipeline Compatibility Audit (2026-03-24)
+- Full inventory audit of all 79 objects in `src/meta/objects/`
+- Identified 3 **BROKEN** objects with injury verbs but no pipeline routing
+- Confirmed 2 correctly migrated objects (poison-bottle, bear-trap)
+- Generated migration report → `.squad/decisions/inbox/bart-object-migration-audit.md`
+- Priority: knife (P1 critical), glass-shard (P1 critical), silver-dagger (P2 high)
+- Estimated migration effort: ~4.5 hours total
+- Status: Report ready for Wayne; unblocks #50 play-test
+
+### Effects Pipeline Documentation (EP6) ✅ COMPLETE (2026-03-23)
 - Updated Effects Pipeline architecture docs to v2.0
 - Updated Trap System architecture docs to v2.0
 - Documented new pipeline pattern for maintainers

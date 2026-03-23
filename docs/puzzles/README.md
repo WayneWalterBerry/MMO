@@ -45,8 +45,6 @@ These puzzles use **real-world objects in realistic ways**. They are 🔴 Theori
 | 022 | [Smoke Draft Reveal](022-smoke-draft-reveal.md) | ⭐⭐⭐⭐ | ❌ No | ✅ sealed-wall-section |
 | 023 | [Counterweight Gate](023-counterweight-gate.md) | ⭐⭐⭐ | ✅ Yes | ✅ pressure-platform, portcullis |
 | 024 | [Mirror Light Redirect](024-mirror-light-redirect.md) | ⭐⭐⭐⭐ | ❌ No | ✅ hand-mirror, light-beam |
-| 025 | [Defensive Bear Trap](025-defensive-bear-trap.md) | ⭐⭐⭐⭐ | ✅ Yes | ✅ bait-meat, NPC/creature |
-| 026 | [Poisoned Offering](026-poisoned-offering.md) | ⭐⭐⭐⭐⭐ | ✅ Yes | ✅ bread-loaf, NPC/creature |
 | 027 | [Glass Edge Escape](027-glass-edge-escape.md) | ⭐⭐⭐ | ✅ Yes | ❌ No |
 | 028 | [Wax Seal Secret](028-wax-seal-secret.md) | ⭐⭐⭐⭐ | ❌ No | ✅ wax-written-scroll, charcoal |
 | 029 | [Bandage Before Climb](029-bandage-before-climb.md) | ⭐⭐⭐ | ✅ Yes | ❌ No |
@@ -59,10 +57,6 @@ These puzzles use **real-world objects in realistic ways**. They are 🔴 Theori
 
 **🩹 Injury System Puzzles:** 020, 029, 031 (wine wash → capability gating → triage — builds on injury treatment mastery)
 
-**🪤 Trap Inversion:** 025 (bear trap flips from hazard to tool — uses Effects Pipeline)
-
-**☠️ Poison Chain:** 026 (extends Puzzle 002's poison knowledge into offensive use — ethical puzzle)
-
 **🔍 Environmental Physics:** 022, 024 (smoke reveals drafts, mirrors redirect light — observation-as-puzzle)
 
 **🏋️ Weight & Mechanics:** 023 (counterweight system — objects have physical properties)
@@ -73,12 +67,10 @@ These puzzles use **real-world objects in realistic ways**. They are 🔴 Theori
 
 ### Effects Pipeline Usage
 
-8 of 12 puzzles use the Effects Pipeline for injury effects:
+6 of 10 puzzles use the Effects Pipeline for injury effects:
 - **020** Wine Wound Wash — `add_status` for clean_wound bonus
 - **021** Improvised Torch — `inflict_injury` burn on misuse
 - **023** Counterweight Gate — `inflict_injury` crushing-wound when gate falls
-- **025** Defensive Bear Trap — `inflict_injury` crushing-wound on NPC via pipeline
-- **026** Poisoned Offering — `inflict_injury` poisoned-nightshade on NPC via pipeline
 - **027** Glass Edge Escape — `inflict_injury` minor-cut from glass handling
 - **029** Bandage Before Climb — `inflict_injury` bruise from fall on failed climb
 - **031** Triage Under Pressure — multiple simultaneous `inflict_injury` effects in atomic array
@@ -94,8 +86,6 @@ These puzzles require objects that don't yet exist in `src/meta/objects/`. Fland
 | portcullis | 023 | Heavy iron gate; states: closed → partial → open. Counterweight-driven |
 | hand-mirror | 024 | Portable mirror; `is_reflective: true`, `is_mirror: true` |
 | light-beam | 024 | Environmental element; directional light that can be reflected |
-| bait-meat | 025 | Consumable lure; `scent_radius: 2`, attracts hostile NPCs |
-| bread-loaf | 026 | Food item; serves as poison vehicle when combined with poison |
 | wax-written-scroll | 028 | Parchment with hidden wax writing; revealed by heat or soot |
 | charcoal | 028 | Marking material from burnt wood; used for soot-rubbing technique |
 | wooden-barricade | 030 | Flammable obstacle; `is_flammable: true`, `blocks_exit: true` |

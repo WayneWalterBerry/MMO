@@ -20,6 +20,23 @@
                   .replace(/"/g, '&quot;');
     }
 
+    // --- Session transcript buffer (#20) ---
+    // Groups all output lines between two > prompts as one response block.
+    var sessionTranscript = [];
+    var _currentCmd = null;
+    var _currentResponseLines = [];
+
+    function flushTranscriptEntry() {
+        if (_currentCmd !== null) {
+            sessionTranscript.push({
+                input: _currentCmd,
+                output: _currentResponseLines.join('\n')
+            });
+            while (sessionTranscript.length > 50) sessionTranscript.shift();
+        }
+        _currentResponseLines = [];
+    }
+
     function appendOutput(text, className) {
         var div = document.createElement('div');
         div.className = className || 'output-line';
@@ -32,6 +49,11 @@
         }
         outputEl.appendChild(div);
         outputEl.scrollTop = outputEl.scrollHeight;
+
+        // Record response line for transcript (#20)
+        if (_currentCmd !== null) {
+            _currentResponseLines.push(text != null ? String(text) : '');
+        }
     }
 
     function showStatus(message) {
@@ -43,7 +65,8 @@
     }
 
     // --- Build version (embedded at build time) ---
-    const BUILD_TIMESTAMP = "2026-03-22 12:42";
+    const BUILD_TIMESTAMP = "2026-03-23 11:21";
+    const CACHE_BUST = "20260323112127";
 
     // --- Size formatting ---
     function formatSize(bytes) {
@@ -73,8 +96,57 @@
     window._logStatus = showStatus;
     window._appendOutput = appendOutput;
 
+    // --- Status bar bridge (called from Lua game-adapter) ---
+    var statusBarLeft  = document.querySelector('#status-bar .status-left');
+    var statusBarRight = document.querySelector('#status-bar .status-right');
+    window._updateStatusBar = function (left, right) {
+        if (statusBarLeft)  statusBarLeft.textContent  = left  || '';
+        if (statusBarRight) statusBarRight.textContent = right || '';
+    };
+
     // JS bridge: open URL in new tab (used by "report bug" command)
+    // Fix #13: Trim transcript to last 3 command/response pairs so GitHub
+    // doesn't truncate the URL and show stale welcome text instead.
+    // Fix #20: Use JS-side sessionTranscript buffer (groups all output lines
+    // between > prompts) instead of relying solely on the Lua-generated text.
     window._openUrl = function (url) {
+        try {
+            // Flush any in-progress command before building the report
+            flushTranscriptEntry();
+            _currentCmd = null;
+
+            var urlObj = new URL(url);
+            if (urlObj.pathname.indexOf('/issues/new') !== -1) {
+                var body = urlObj.searchParams.get('body');
+                if (body && sessionTranscript.length > 0) {
+                    // Rebuild transcript from JS buffer (accurate multi-line responses)
+                    var blocks = sessionTranscript.slice(-3);
+                    var transcriptText = blocks.map(function (entry) {
+                        return '> ' + entry.input + '\n' + entry.output + '\n';
+                    }).join('\n');
+
+                    var match = body.match(/(### Session Transcript[^\n]*)\n\n```\n[\s\S]*?```([\s]*)$/);
+                    if (match) {
+                        var header = match[1].replace(/last \d+/, 'last ' + blocks.length);
+                        body = body.replace(match[0], header + '\n\n```\n' + transcriptText + '```' + match[2]);
+                        urlObj.searchParams.set('body', body);
+                        url = urlObj.toString();
+                    }
+                } else if (body) {
+                    // Fallback: trim Lua-generated transcript (original #13 logic)
+                    var match = body.match(/(### Session Transcript[^\n]*\n\n```\n)([\s\S]*?)(```[\s]*)$/);
+                    if (match) {
+                        var luaBlocks = match[2].split(/(?=^> )/m).filter(function (b) { return b.trim(); });
+                        var last3 = luaBlocks.slice(-3).join('');
+                        var count = Math.min(luaBlocks.length, 3);
+                        var header = match[1].replace(/last \d+/, 'last ' + count);
+                        body = body.replace(match[0], header + last3 + match[3]);
+                        urlObj.searchParams.set('body', body);
+                        url = urlObj.toString();
+                    }
+                }
+            }
+        } catch (e) { /* proceed with original URL */ }
         window.open(url, '_blank');
     };
 
@@ -89,6 +161,11 @@
             inputEl.value = '';
             history.push(text);
             historyIndex = history.length;
+
+            // Flush previous command/response pair into transcript (#20)
+            flushTranscriptEntry();
+            _currentCmd = text;
+
             var echoDiv = document.createElement('div');
             echoDiv.className = 'input-echo';
             var promptSpan = document.createElement('span');
@@ -129,6 +206,32 @@
     document.getElementById('terminal').addEventListener('click', function () {
         inputEl.focus();
     });
+
+    // --- Copy button: copies all output text to clipboard (#12) ---
+    var copyBtn = document.getElementById('copy-btn');
+    var copySvgClipboard = copyBtn ? copyBtn.innerHTML : '';
+    var copySvgCheck = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+    if (copyBtn) {
+        copyBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var text = outputEl.innerText || outputEl.textContent;
+            navigator.clipboard.writeText(text).then(function () {
+                copyBtn.innerHTML = copySvgCheck;
+                copyBtn.classList.add('copied');
+                setTimeout(function () {
+                    copyBtn.innerHTML = copySvgClipboard;
+                    copyBtn.classList.remove('copied');
+                }, 1500);
+            }).catch(function () {
+                copyBtn.innerHTML = copySvgCheck;
+                copyBtn.classList.add('copied');
+                setTimeout(function () {
+                    copyBtn.innerHTML = copySvgClipboard;
+                    copyBtn.classList.remove('copied');
+                }, 1500);
+            });
+        });
+    }
 
     // --- Decompression ---
     async function decompress(compressedBuffer) {
@@ -222,7 +325,7 @@
 
             // Step 1: Fetch compressed engine bundle
             showStatus('Loading Game Engine...');
-            var engineResponse = await fetchWithRetry('engine.lua.gz', 1);
+            var engineResponse = await fetchWithRetry('engine.lua.gz?v=' + CACHE_BUST, 1);
             var compressedData = await engineResponse.arrayBuffer();
             if (window._debugMode) {
                 showStatus('Loading Game Engine... (' + formatSize(compressedData.byteLength) + ' compressed)');
@@ -248,7 +351,7 @@
             if (window._debugMode) {
                 showStatus('Loading Game Adapter...');
             }
-            var adapterResponse = await fetchWithRetry('game-adapter.lua', 1);
+            var adapterResponse = await fetchWithRetry('game-adapter.lua?v=' + CACHE_BUST, 1);
             var adapterSource = await adapterResponse.text();
             if (window._debugMode) {
                 showStatus('Loading Game Adapter... (' + formatSize(adapterSource.length) + ')');

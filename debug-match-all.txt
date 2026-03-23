@@ -1,0 +1,26 @@
+C:\Users\wayneb\AppData\Local\Programs\Lua\bin\lua.exe: src/main.lua:40: module 'engine.registry' not found:
+	no field package.preload['engine.registry']
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin/engine\registry.lua'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin/engine\registry/init.lua'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin\lua\engine\registry.lua'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin\lua\engine\registry\init.lua'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin\engine\registry.lua'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin\engine\registry\init.lua'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin\..\share\lua\5.4\engine\registry.lua'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin\..\share\lua\5.4\engine\registry\init.lua'
+	no file '.\engine\registry.lua'
+	no file '.\engine\registry\init.lua'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin\engine\registry.dll'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin\..\lib\lua\5.4\engine\registry.dll'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin\loadall.dll'
+	no file '.\engine\registry.dll'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin\engine.dll'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin\..\lib\lua\5.4\engine.dll'
+	no file 'C:\Users\wayneb\AppData\Local\Programs\Lua\bin\loadall.dll'
+	no file '.\engine.dll'
+stack traceback:
+	[C]: in function 'require'
+	src/main.lua:40: in main chunk
+	[C]: in function 'dofile'
+	(command line):1: in main chunk
+	[C]: in ?

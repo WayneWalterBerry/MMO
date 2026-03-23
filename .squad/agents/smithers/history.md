@@ -109,3 +109,34 @@ Implemented unified Effects Pipeline as per Bart's D-EFFECTS-PIPELINE architectu
 **Test results:** 116/116 poison bottle tests pass. 1361/1362 full suite pass (1 pre-existing failure in search auto-open, unrelated). Zero regressions.
 
 **Key architectural insight:** The FSM `apply_state()` function copies all state-level properties to the top-level object on transition. This means `states.open.on_taste_effect` becomes `obj.on_taste_effect` after transitioning to "open". Verb handlers read top-level fields, which is correct — they don't need to dig into FSM state definitions.
+
+---
+
+## Play-test Bug Fixes (2026-03-23, Wayne iPhone session)
+
+**Status:** ✅ COMPLETE — Commit 491f9a8, pushed to main
+
+### #43/#44 (P0/P1): Matchbox unfindable in dark bedroom
+**Root cause:** Nightstand `categories` was `{"furniture", "wooden"}` — missing `"container"`. The search traverse code at line 330 checks `containers.is_container(parent)` before allowing peek into inaccessible surfaces. Without `"container"`, the nightstand's drawer (inside surface with `accessible = false`) was silently skipped.
+
+**Fix:** Added `"container"` to nightstand.lua categories. The nightstand IS a container — it has a drawer. This lets `containers.is_container()` return true, enabling search to peek into the drawer and find the matchbox via deeper-match logic.
+
+### #40 (P1): Contradictory "nothing there" + "Inside you find..."
+**Root cause:** The search queue includes both an object entry and surface entries for the nightstand. The object entry was processed as a regular non-container object → generated "nothing there" via `narrator.step_narrative()`. Then surface entries reported contents normally.
+
+**Fix:** Added early return in `traverse.step()` for objects with surfaces: suppress narration for undirected search (surfaces handle it), still check target match for targeted search. 20 lines added to traverse.lua.
+
+### #42 (P2): "sleep to dawn" not recognized
+**Root cause:** Verb handler only matched `noun:match("until%s+dawn")`. Natural English variants "to", "til", "till" weren't handled.
+
+**Fix:** Added 3 idiom transforms to `preprocess.lua` IDIOM_TABLE: `sleep to/til/till X → sleep until X`. These normalize before the verb handler runs.
+
+### Tests: 21 new regression tests
+- `test/search/test-search-playtest-bugs.lua` — 11 tests for #40/#43/#44
+- `test/parser/test-sleep-transforms.lua` — 10 tests for #42
+- Full suite: 48/48 files pass
+
+### Key Learnings
+1. **Surface-based furniture needs "container" category** — without it, inaccessible surfaces are invisible to search. Any furniture with a drawer/compartment needs this.
+2. **Object entries vs surface entries in search queue** — furniture with surfaces generates BOTH, creating duplicate/contradictory narration. The fix suppresses the object entry.
+3. **Parser idiom transforms are the cleanest way to handle natural language variants** — no verb handler changes needed for #42.

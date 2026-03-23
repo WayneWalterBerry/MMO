@@ -25,6 +25,39 @@
 
 ## Recent Updates
 
+### MUD System Gap Analysis (2026-03-27)
+**Status:** ✅ COMPLETE
+**Report:** `docs/research/mud-system-gap-analysis.md` (22KB, 6 matrices)
+**Requested by:** Wayne Berry (Effe)
+
+**Key Findings:**
+- Current coverage: 39/87 verbs (45%), 6/12 systems
+- Critical gaps: Communication (0/11 verbs), Commerce (0/5 verbs), NPCs (0/1 system)
+- We have solid single-player foundation (object manipulation, injuries, parser, sensory)
+- Intentional: Combat deferred to Phase 2+; verb count is lower by design (mobile-friendly)
+- Multiplayer blockers: No chat, no NPCs, no economy system
+- Priority roadmap:
+  - P0 (Pre-multiplayer): Communication, NPCs, Economy
+  - P1 (Phase 1.5): Crafting recipes, XP/Skills, Quests
+  - P2+ (Later): Combat, Guilds, Housing
+- Comparative: Classic MUDs have 200-400 verbs + 12-15 systems; we're targeting 80-100 verbs + 12-14 systems post-MVP
+
+**Deliverables:**
+- Section 1: Verb Coverage Matrix (12 categories, 87 verbs total)
+- Section 2: System Coverage Matrix (current vs. needed)
+- Section 3: Priority gaps ranked by impact
+- Section 4: Systems we can skip (magic, minigames, guild wars)
+- Section 5: Recommendations for CBG (Design) and Bart (Architecture)
+- Section 6: Comparative analysis vs. classic MUDs
+
+**Insights for Design/Architecture:**
+- Communication and economy are multiplayer prerequisites (blocking issues for Phase 1 multiplayer)
+- NPC dialogue system needs quest state tracking and merchant inventory persistence
+- Crafting framework (recipes + skill gates) unlocks progression mechanics
+- Current verb gap (45%) is acceptable; the system gap (50%) is the actual blocker
+
+---
+
 ### MUD Verb Research (2026-03-25)
 **Status:** ✅ COMPLETE
 **Report:** `resources/research/competitors/mud-clients/verbs.md` (27KB)

@@ -46,6 +46,32 @@
 
 ## Recent Updates
 
+### Nightstand Search Regression Tests (2026-07-25)
+
+**Status:** ✅ COMPLETE — 44 tests, 44 passed, 0 failed (100%)
+
+Permanent regression lock for the nightstand search bug that recurred 3 times across sessions. Written at Wayne's request after the bug kept coming back due to missing test coverage.
+
+| Category | Tests | Status |
+|----------|-------|--------|
+| Object placement (matchbox in drawer) | 4 | ✅ PASS |
+| "search for match" deeper-match logic | 3 | ✅ PASS |
+| Search works in darkness (touch-based) | 4 | ✅ PASS |
+| "search nightstand" finds drawer contents | 3 | ✅ PASS |
+| No contradictory "nothing there" narration | 3 | ✅ PASS |
+| Drawer resolves distinctly from nightstand | 3 | ✅ PASS |
+| Nightstand "container" category (root cause) | 5 | ✅ PASS |
+| Matchbox contains 7 fresh matches | 4 | ✅ PASS |
+| Deeper search through nested containers | 4 | ✅ PASS |
+| Touch-based discovery in darkness | 3 | ✅ PASS |
+| Sleep idiom regression (to/til/till dawn) | 3 | ✅ PASS |
+| End-to-end integration scenarios | 5 | ✅ PASS |
+
+**Test file:** `test/search/test-nightstand-regression.lua`
+**Commit:** 58605da
+**Bug refs:** #22, #33, #34, #40, #43, #44, BUG-125
+**Full suite:** 49 test files, all pass (no regressions)
+
 ### EP9/EP10: Bear Trap Play-Test & Unit Tests (2026-03-23)
 
 **Status:** ✅ COMPLETE — 168 tests, 168 passed, 0 failed (100%)

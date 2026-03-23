@@ -26,7 +26,7 @@ return {
     keywords = {"nightstand", "night stand", "bedside table", "side table", "small table"},
     size = 4,
     weight = 15,
-    categories = {"furniture", "wooden"},
+    categories = {"furniture", "wooden", "container"},
     room_position = "stands beside the bed",
     portable = false,
     on_smell = "Old pine wood and melted tallow.",

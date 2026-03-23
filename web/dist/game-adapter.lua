@@ -19,6 +19,7 @@ local document = window.document
 
 local output_el  = document:getElementById("output")
 local input_el   = document:getElementById("input")
+local status_el  = document:getElementById("status-bar")
 
 ---------------------------------------------------------------------------
 -- Debug mode flag (mirrors JS window._debugMode, set by ?debug URL param)
@@ -46,7 +47,7 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-22 12:42"
+local BUILD_TIMESTAMP = "2026-03-23 11:21"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -242,13 +243,15 @@ table.insert(package.searchers, 2, function(modname)
 end)
 
 -- Stub the terminal UI module (the browser IS our UI)
+-- status() is wired to update the DOM status bar; is_enabled() stays false
+-- so the engine loop doesn't try to use TUI-specific input()/output()
 package.loaded["engine.ui"] = {
     init       = function() return false end,
     is_enabled = function() return false end,
     output     = function(text) append_output(text) end,
     input      = function() return coroutine.yield("need_input") end,
     cleanup    = function() end,
-    status     = function() end,
+    status     = function(left, right) window:_updateStatusBar(left, right) end,
     handle_scroll = function() return false end,
     get_width  = function() return 78 end,
 }
@@ -517,7 +520,7 @@ local ok, err = pcall(function()
         parser          = parser_instance,
         game_start_time = os.time(),
         game_start_hour = presentation.GAME_START_HOUR,
-        ui              = nil,
+        ui              = nil,  -- set below after context creation
         visited_rooms   = { [start_room_id] = true },
         -- JS bridge: open URL in a new browser tab (for "report bug")
         open_url        = function(url)
@@ -596,7 +599,19 @@ local ok, err = pcall(function()
 
     -- Wire verb handlers
     context.verbs = verbs_mod.create()
-    context.update_status = function() end  -- no status bar in browser
+
+    -- Web status bar: minimal ui table so ui_status updater can call ctx.ui.status()
+    -- is_enabled returns false so the engine loop doesn't try to use ui.input()/output()
+    context.ui = {
+        is_enabled    = function() return false end,
+        status        = function(left, right) window:_updateStatusBar(left, right) end,
+        handle_scroll = function() return false end,
+        output        = function(text) append_output(text) end,
+        input         = function() return coroutine.yield("need_input") end,
+        cleanup       = function() end,
+        get_width     = function() return 78 end,
+    }
+    context.update_status = ui_status.create_updater()
 
     -------------------------------------------------------------------
     -- Welcome
@@ -626,6 +641,9 @@ local ok, err = pcall(function()
         append_error("Loop error: " .. tostring(co_err))
     end
 
+    -- Initial status bar update (shows starting room)
+    context.update_status(context)
+
     -------------------------------------------------------------------
     -- Expose command handler to JavaScript
     -------------------------------------------------------------------
@@ -650,6 +668,8 @@ local ok, err = pcall(function()
             if not co_ok then
                 append_error("Error: " .. tostring(co_err))
             end
+            -- Refresh status bar after each command
+            context.update_status(context)
         end
     end
 

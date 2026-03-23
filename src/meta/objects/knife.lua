@@ -1,3 +1,10 @@
+-- knife.lua — Small weapon/tool with effects pipeline
+-- Decision: D-EFFECTS-PIPELINE, D-INJURY001
+-- Verbs: stab, cut (self-infliction injury sources)
+--
+-- Effect routing (all paths via effects.process):
+--   stab self → on_stab → inflict_injury(bleeding, damage=5)
+--   cut self  → on_cut  → inflict_injury(minor-cut, damage=3)
 return {
     guid = "{b0c650c6-497a-440c-a83a-545ee8789284}",
     template = "small-item",
@@ -16,6 +23,10 @@ return {
     portable = true,
     material = "steel",
 
+    -- Effects pipeline flag (D-EFFECTS-PIPELINE) — all effect declarations
+    -- on this object are structured tables routed through effects.process().
+    effects_pipeline = true,
+
     -- Multi-capability tool: provides both cutting and injury capabilities.
     -- The engine resolves which capability to use by verb context:
     --   CUT <object> WITH knife  → cutting_edge
@@ -32,12 +43,30 @@ return {
         injury_type = "bleeding",
         description = "You stab the knife into your %s. It hurts more than you expected.",
         pain_description = "A blunt, throbbing pain. The blade is not as sharp as a dagger.",
+        -- Full pipeline chain for atomic processing (D-EFFECTS-PIPELINE)
+        pipeline_effects = {
+            { type = "inflict_injury", injury_type = "bleeding",
+              source = "knife", damage = 5,
+              message = "You stab the knife into your %s. It hurts more than you expected." },
+        },
     },
     on_cut = {
         damage = 3,
         injury_type = "minor-cut",
         description = "You nick your %s with the knife. A shallow cut — it stings.",
         pain_description = "A thin sting, like a paper cut but deeper.",
+        -- Full pipeline chain for atomic processing (D-EFFECTS-PIPELINE)
+        pipeline_effects = {
+            { type = "inflict_injury", injury_type = "minor-cut",
+              source = "knife", damage = 3,
+              message = "You nick your %s with the knife. A shallow cut — it stings." },
+        },
+    },
+
+    -- GOAP prerequisites (for planner) — warns hints per D-EFFECTS-PIPELINE §3.6
+    prerequisites = {
+        stab = { warns = { "injury", "bleeding" } },
+        cut = { warns = { "injury", "minor-cut" } },
     },
 
     location = nil,
