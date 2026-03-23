@@ -1,10 +1,104 @@
 # Puzzles
 
-Puzzle documentation has been reorganized into per-level subfolders.
+Puzzle documentation is organized in two locations:
 
-## Level 1 Puzzles
+1. **Level-specific puzzles** live in `docs/levels/NN/puzzles/` — these are assigned to a specific game level and may be 🟢 In Game or 🟡 Wanted.
+2. **Theorized puzzles** (🔴) live here in `docs/puzzles/` — these are designed concepts awaiting Wayne's approval, not yet assigned to a level.
 
-See [`docs/levels/01/puzzles/`](../levels/01/puzzles/) for all puzzle documentation for Level 1 (puzzles 001–014).
+---
+
+## Level 1 Puzzles (001–016)
+
+See [`docs/levels/01/puzzles/`](../levels/01/puzzles/) for all Level 1 puzzle documentation.
+
+| # | Puzzle | Status | Difficulty |
+|---|--------|--------|-----------|
+| 001 | [Light the Room](../levels/01/puzzles/001-light-the-room.md) | 🟢 In Game | ⭐⭐ |
+| 002 | [Poison Bottle](../levels/01/puzzles/002-poison-bottle.md) | 🟡 Wanted | ⭐⭐ |
+| 003 | [Write in Blood](../levels/01/puzzles/003-write-in-blood.md) | 🟡 Wanted | ⭐⭐⭐ |
+| 004 | [Inventory Management](../levels/01/puzzles/004-inventory-management.md) | 🟡 Wanted | ⭐ |
+| 005 | [Bedroom Escape](../levels/01/puzzles/005-bedroom-escape.md) | 🔴 Theorized | ⭐⭐⭐ |
+| 006 | [Iron Door Unlock](../levels/01/puzzles/006-iron-door-unlock.md) | 🟢 In Game | ⭐⭐ |
+| 007 | [Trap Door Discovery](../levels/01/puzzles/007-trap-door-discovery.md) | 🟢 In Game | ⭐⭐⭐ |
+| 008 | [Window Escape](../levels/01/puzzles/008-window-escape.md) | 🟢 In Game | ⭐⭐⭐⭐ |
+| 009 | [Crate Puzzle](../levels/01/puzzles/009-crate-puzzle.md) | 🔴 Theorized | ⭐⭐ |
+| 010 | [Light Upgrade](../levels/01/puzzles/010-light-upgrade.md) | 🔴 Theorized | ⭐⭐ |
+| 011 | [Ascent to Manor](../levels/01/puzzles/011-ascent-to-manor.md) | — | — |
+| 012 | [Altar Puzzle](../levels/01/puzzles/012-altar-puzzle.md) | — | — |
+| 013 | [Courtyard Entry](../levels/01/puzzles/013-courtyard-entry.md) | — | — |
+| 014 | [Sarcophagus Puzzle](../levels/01/puzzles/014-sarcophagus-puzzle.md) | — | — |
+| 015 | [Draft Extinguish](../levels/01/puzzles/puzzle-015-draft-extinguish.md) | — | — |
+| 016 | [Wine Drink](../levels/01/puzzles/puzzle-016-wine-drink.md) | — | — |
+
+---
+
+## Theorized Puzzles — Real-World Object Interactions (020–031)
+
+These puzzles use **real-world objects in realistic ways**. They are 🔴 Theorized — designed by Sideshow Bob, awaiting Wayne's approval. They are not assigned to a specific level yet.
+
+### Index
+
+| # | Puzzle | Difficulty | Effects Pipeline? | New Objects Needed? |
+|---|--------|-----------|-------------------|---------------------|
+| 020 | [Wine Wound Wash](020-wine-wound-wash.md) | ⭐⭐⭐ | ✅ Yes | ❌ No |
+| 021 | [Improvised Torch](021-improvised-torch.md) | ⭐⭐⭐ | ✅ Yes | ❌ No |
+| 022 | [Smoke Draft Reveal](022-smoke-draft-reveal.md) | ⭐⭐⭐⭐ | ❌ No | ✅ sealed-wall-section |
+| 023 | [Counterweight Gate](023-counterweight-gate.md) | ⭐⭐⭐ | ✅ Yes | ✅ pressure-platform, portcullis |
+| 024 | [Mirror Light Redirect](024-mirror-light-redirect.md) | ⭐⭐⭐⭐ | ❌ No | ✅ hand-mirror, light-beam |
+| 025 | [Defensive Bear Trap](025-defensive-bear-trap.md) | ⭐⭐⭐⭐ | ✅ Yes | ✅ bait-meat, NPC/creature |
+| 026 | [Poisoned Offering](026-poisoned-offering.md) | ⭐⭐⭐⭐⭐ | ✅ Yes | ✅ bread-loaf, NPC/creature |
+| 027 | [Glass Edge Escape](027-glass-edge-escape.md) | ⭐⭐⭐ | ✅ Yes | ❌ No |
+| 028 | [Wax Seal Secret](028-wax-seal-secret.md) | ⭐⭐⭐⭐ | ❌ No | ✅ wax-written-scroll, charcoal |
+| 029 | [Bandage Before Climb](029-bandage-before-climb.md) | ⭐⭐⭐ | ✅ Yes | ❌ No |
+| 030 | [Rag and Oil Molotov](030-rag-and-oil-molotov.md) | ⭐⭐⭐⭐ | ✅ Yes | ✅ wooden-barricade |
+| 031 | [Triage Under Pressure](031-triage-under-pressure.md) | ⭐⭐⭐⭐⭐ | ✅ Yes | ❌ No |
+
+### Summary by Category
+
+**🔥 Fire Mastery Progression:** 021 → 030 (torch → firebomb — builds on fire-crafting knowledge)
+
+**🩹 Injury System Puzzles:** 020, 029, 031 (wine wash → capability gating → triage — builds on injury treatment mastery)
+
+**🪤 Trap Inversion:** 025 (bear trap flips from hazard to tool — uses Effects Pipeline)
+
+**☠️ Poison Chain:** 026 (extends Puzzle 002's poison knowledge into offensive use — ethical puzzle)
+
+**🔍 Environmental Physics:** 022, 024 (smoke reveals drafts, mirrors redirect light — observation-as-puzzle)
+
+**🏋️ Weight & Mechanics:** 023 (counterweight system — objects have physical properties)
+
+**✂️ Improvised Tools:** 027 (breaking objects creates new tools — destruction-as-creation)
+
+**📜 Hidden Information:** 028 (invisible wax writing revealed by heat or soot — forensic investigation)
+
+### Effects Pipeline Usage
+
+8 of 12 puzzles use the Effects Pipeline for injury effects:
+- **020** Wine Wound Wash — `add_status` for clean_wound bonus
+- **021** Improvised Torch — `inflict_injury` burn on misuse
+- **023** Counterweight Gate — `inflict_injury` crushing-wound when gate falls
+- **025** Defensive Bear Trap — `inflict_injury` crushing-wound on NPC via pipeline
+- **026** Poisoned Offering — `inflict_injury` poisoned-nightshade on NPC via pipeline
+- **027** Glass Edge Escape — `inflict_injury` minor-cut from glass handling
+- **029** Bandage Before Climb — `inflict_injury` bruise from fall on failed climb
+- **031** Triage Under Pressure — multiple simultaneous `inflict_injury` effects in atomic array
+
+### New Objects Needed
+
+These puzzles require objects that don't yet exist in `src/meta/objects/`. Flanders to build:
+
+| Object | Needed By | Description |
+|--------|-----------|-------------|
+| sealed-wall-section | 022 | Room element with hidden draft; states: sealed → cracked → open |
+| pressure-platform | 023 | Stone platform with weight threshold; connected to portcullis via chain |
+| portcullis | 023 | Heavy iron gate; states: closed → partial → open. Counterweight-driven |
+| hand-mirror | 024 | Portable mirror; `is_reflective: true`, `is_mirror: true` |
+| light-beam | 024 | Environmental element; directional light that can be reflected |
+| bait-meat | 025 | Consumable lure; `scent_radius: 2`, attracts hostile NPCs |
+| bread-loaf | 026 | Food item; serves as poison vehicle when combined with poison |
+| wax-written-scroll | 028 | Parchment with hidden wax writing; revealed by heat or soot |
+| charcoal | 028 | Marking material from burnt wood; used for soot-rubbing technique |
+| wooden-barricade | 030 | Flammable obstacle; `is_flammable: true`, `blocks_exit: true` |
 
 ---
 
@@ -12,104 +106,26 @@ See [`docs/levels/01/puzzles/`](../levels/01/puzzles/) for all puzzle documentat
 
 **Files MUST use 3-digit zero-padded numbers:** `NNN-slug.md`
 
-Examples: `001-light-the-room.md`, `005-bedroom-escape.md`
+Examples: `001-light-the-room.md`, `020-wine-wound-wash.md`
 
 **DO NOT use 1 or 2 digit prefixes** (e.g., `1-`, `01-`). Always pad to 3 digits so files sort correctly up to 999 puzzles.
 
-## Format Convention
-
-**Why reorganize?** Organizing documentation by level (not by type) makes it easier to:
-- Keep all level-specific content together
-- Understand a level's complete design at a glance
-- Scale to future levels without creating a flat, unmanageable directory
-
-As new levels are developed, their puzzle documentation will live in:
-- `docs/levels/02/puzzles/`
-- `docs/levels/03/puzzles/`
-- ...and so on
+**Numbering ranges:**
+- 001–016: Level 1 puzzles (in `docs/levels/01/puzzles/`)
+- 020–031: Theorized real-world object puzzles (in `docs/puzzles/`)
+- 032+: Future theorized puzzles
 
 ---
 
-## Legacy: Original Content Below
+## Puzzle Classification
 
-### Naming Convention
+| Status | Meaning | Location |
+|--------|---------|----------|
+| 🟢 In Game | Implemented, tested, and playable | `docs/levels/NN/puzzles/` |
+| 🟡 Wanted | Designed and approved by Wayne; awaiting implementation | `docs/levels/NN/puzzles/` |
+| 🔴 Theorized | Conceptualized; awaiting Wayne's approval | `docs/puzzles/` (here) |
 
-Each puzzle is documented with this structure:
-
-```markdown
-# Puzzle NNN: {Name}
-
-## Overview
-Brief description of what the player encounters and must solve.
-
-## Room
-Where this puzzle takes place in the game world.
-
-## Required Objects
-List of all objects needed to solve the puzzle (or key objects involved).
-
-## Solution
-Step-by-step walkthrough of the primary solution path.
-
-## Alternative Solutions
-Other ways to solve the puzzle (if any).
-
-## What the Player Learns
-Game mechanics and systems this puzzle teaches.
-
-## Failure Consequences
-What happens if the player fails or does something wrong.
-
-## Status
-Implementation status: Implemented / Designed / Concept
-```
-
-## Puzzle Index
-
-### 005 — The Bedroom Escape
-**COMPREHENSIVE ROOM 1 DESIGN** — The complete bedroom environment, escape puzzle, and all related mechanics.
-
-**Core Mechanics:** Darkness, sensory exploration, tools, spatial discovery, inventory management, composites, crafting.  
-**Status:** Fully Designed  
-**See:** [005-bedroom-escape.md](005-bedroom-escape.md) — **PRIMARY REFERENCE FOR BEDROOM**
-
-This is the master document for Room 1. It encompasses all sub-puzzles (light, poison, writing, crafting, optional interactions) and serves as both design spec and QA testing reference.
-
----
-
-### 001 — Light the Room
-The core puzzle: find light source to escape darkness.
-
-**Core Mechanic:** Tool chains and light systems.  
-**Status:** Designed (detail subset of 01-bedroom-escape.md)  
-**See:** [001-light-the-room.md](001-light-the-room.md)
-
----
-
-### 002 — Poison Bottle
-Identifying a dangerous object in darkness using multiple senses.
-
-**Core Mechanic:** Sensory input and consequences.  
-**Status:** Designed  
-**See:** [002-poison-bottle.md](002-poison-bottle.md)
-
----
-
-### 003 — Write in Blood
-Using self-injury as a resource to accomplish a task.
-
-**Core Mechanic:** Tool chains with dark consequences.  
-**Status:** Designed  
-**See:** [003-write-in-blood.md](003-write-in-blood.md)
-
----
-
-### 004 — Inventory Management
-Understanding the physical constraints of having two hands.
-
-**Core Mechanic:** Inventory as a physical, strategic system.  
-**Status:** Designed  
-**See:** [004-inventory-management.md](004-inventory-management.md)
+See [`docs/design/puzzles/puzzle-classification-guide.md`](../design/puzzles/puzzle-classification-guide.md) for the full lifecycle.
 
 ---
 
@@ -122,13 +138,17 @@ All puzzles in this game follow these core principles:
 3. **Multiple paths to victory** — Most puzzles have alternative solutions. Exploration and creativity are rewarded.
 4. **Consequences matter** — Failure states exist. Wasting resources has real costs. Wrong actions have real penalties.
 5. **Teach through discovery** — Puzzles teach mechanics by requiring players to use them. The light puzzle teaches tools, darkness, and discovery.
+6. **Real-world logic** — Puzzles should feel like things a real person would do. Wine cleans wounds. Smoke follows drafts. Glass cuts rope. If it makes sense in reality, it should work in the game.
 
 ---
 
 ## See Also
 
-- **Design Directives:** `../design/design-directives.md`
-- **Tool Objects:** `../design/tool-objects.md`
-- **Game Design Foundations:** `../design/game-design-foundations.md`
-- **Architecture Decisions:** `.squad/decisions.md`
+- **Puzzle Classification Guide:** [`docs/design/puzzles/puzzle-classification-guide.md`](../design/puzzles/puzzle-classification-guide.md)
+- **Puzzle Rating System:** [`docs/design/puzzles/puzzle-rating-system.md`](../design/puzzles/puzzle-rating-system.md)
+- **Puzzle Design Patterns:** [`docs/design/puzzles/puzzle-design-patterns.md`](../design/puzzles/puzzle-design-patterns.md)
+- **Effects Pipeline:** [`docs/architecture/engine/effects-pipeline.md`](../architecture/engine/effects-pipeline.md)
+- **Event Hooks:** [`docs/architecture/engine/event-hooks.md`](../architecture/engine/event-hooks.md)
+- **Injury System:** [`docs/design/injuries/`](../design/injuries/)
+- **Object Designs:** [`docs/design/objects/`](../design/objects/)
 

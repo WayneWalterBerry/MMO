@@ -826,3 +826,37 @@ Created `docs/design/injuries/bandage-lifecycle.md` — comprehensive design cov
 - **The verb matters as much as the weapon.** A knife stabbed vs. a knife drawn produces fundamentally different wounds. This maps to real-world anatomy and to different injury types in our system.
 - **Weighted random is better than uniform random.** Arms/hands are natural self-targets. Torso/head are dangerous and should require deliberate targeting. The weight table encodes anatomical common sense.
 - **Glass shard `self_damage` is emergent teaching.** The player learns "wrap sharp things" through mechanical consequence, not tutorial text. Pure puzzle design.
+---
+
+## Real-World Object Puzzles (2026-07-28)
+
+### Task
+Wayne requested 8-12 puzzle concepts using real-world objects in realistic ways — "things you'd actually do in the real world."
+
+### Puzzles Created (12 total, all 🔴 Theorized)
+- **020** Wine Wound Wash — wine as antiseptic (⭐⭐⭐, Effects Pipeline)
+- **021** Improvised Torch — rag+oil+handle = torch (⭐⭐⭐, Effects Pipeline)
+- **022** Smoke Draft Reveal — smoke reveals hidden exits (⭐⭐⭐⭐)
+- **023** Counterweight Gate — weight on platform opens gate (⭐⭐⭐, Effects Pipeline)
+- **024** Mirror Light Redirect — glass shard bounces light (⭐⭐⭐⭐)
+- **025** Defensive Bear Trap — set trap to catch pursuer (⭐⭐⭐⭐, Effects Pipeline)
+- **026** Poisoned Offering — poison food for guardian (⭐⭐⭐⭐⭐, Effects Pipeline, ethical)
+- **027** Glass Edge Escape — break vase for cutting shard (⭐⭐⭐, Effects Pipeline)
+- **028** Wax Seal Secret — heat reveals invisible wax writing (⭐⭐⭐⭐)
+- **029** Bandage Before Climb — injury gates capability (⭐⭐⭐, Effects Pipeline)
+- **030** Rag and Oil Molotov — fire-bomb clears barricade (⭐⭐⭐⭐, Effects Pipeline)
+- **031** Triage Under Pressure — multi-injury prioritization (⭐⭐⭐⭐⭐, Effects Pipeline)
+
+### Files Created
+- `docs/puzzles/020-wine-wound-wash.md` through `docs/puzzles/031-triage-under-pressure.md` (12 puzzle docs)
+- `docs/puzzles/README.md` — fully rewritten with complete index of all puzzles (L1 + theorized)
+- `.squad/decisions/inbox/bob-new-objects-needed.md` — handoff to Flanders listing 10 new objects needed
+
+### Learnings
+- **5 puzzles need zero new objects** (020, 021, 027, 029, 031) — existing objects just need new transitions/states. This proves the object library is richer than it first appears.
+- **The Effects Pipeline enables injury puzzles at scale.** 8 of 12 puzzles route through the pipeline for injuries. The pipeline's `inflict_injury`, `add_status`, and `mutate` handlers cover every case. No hardcoded verb logic needed.
+- **Fire has a three-stage mastery arc:** candle (safe) → torch (useful) → fire-bomb (dangerous). Each puzzle builds on previous fire knowledge. Good progression design.
+- **Injury-as-gate is underexplored.** Puzzle 029 (Bandage Before Climb) introduces capability gating — injuries restrict verbs. This needs engine support (Bart) but unlocks a whole category of puzzles where treatment IS the puzzle.
+- **The glass-shard is the most versatile object in the game.** It's a cutting tool (027), a mirror (024), causes injury on contact (Effects Pipeline), and was originally just "a broken piece of mirror." Emergent utility from good object design.
+- **Ethical puzzles (026) need multiple solutions by definition.** You can't force a player to poison someone — there must always be a non-lethal path. The difficulty gap between lethal (easy) and non-lethal (hard) is the moral weight.
+- **The README was outdated.** It referenced legacy puzzle files (001-005) that had moved to level folders, had broken cross-references, and didn't mention the Effects Pipeline. Rewrote it completely.
