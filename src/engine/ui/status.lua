@@ -58,76 +58,22 @@ function status.create_updater()
             location_str = room_name
         end
 
-        -- Right side: match / candle status (best-effort from game state)
-        -- BUG-092: Find the actual matchbox wherever it lives — player hands
-        -- first (where contents get modified), then surfaces/room, then registry.
-        local match_count = "?"
-        local candle_icon = "o"
+        -- Right side: health status (if injured)
+        local right_str = ""
         local p = ctx.player
         if p then
-            local matchbox = nil
-            -- 1) Check player hands for matchbox
-            for i = 1, 2 do
-                local hand = p.hands and p.hands[i]
-                if hand then
-                    local obj = type(hand) == "table" and hand
-                        or ctx.registry:get(hand)
-                    if obj and obj.container and obj.contents then
-                        local kws = obj.keywords or {}
-                        for _, k in ipairs(kws) do
-                            if k == "matchbox" then matchbox = obj; break end
-                        end
-                    end
-                    if matchbox then break end
+            local inj_ok, injury_mod = pcall(require, "engine.injuries")
+            if inj_ok and injury_mod then
+                local health = injury_mod.compute_health(p)
+                local max_hp = p.max_health or 100
+                if health < max_hp then
+                    right_str = "Health: " .. health .. "/" .. max_hp .. " "
                 end
-            end
-            -- 2) Check visible containers in the room (surfaces, room contents)
-            if not matchbox and ctx.current_room then
-                local room = ctx.current_room
-                local reg = ctx.registry
-                for _, obj_id in ipairs(room.contents or {}) do
-                    local obj = reg:get(obj_id)
-                    if obj then
-                        if obj.surfaces then
-                            for _, zone in pairs(obj.surfaces) do
-                                for _, item_id in ipairs(zone.contents or {}) do
-                                    local item = reg:get(item_id)
-                                    if item and item.container and item.contents then
-                                        local kws = item.keywords or {}
-                                        for _, k in ipairs(kws) do
-                                            if k == "matchbox" then matchbox = item; break end
-                                        end
-                                    end
-                                    if matchbox then break end
-                                end
-                                if matchbox then break end
-                            end
-                        end
-                        if not matchbox and obj.container and obj.contents then
-                            local kws = obj.keywords or {}
-                            for _, k in ipairs(kws) do
-                                if k == "matchbox" then matchbox = obj; break end
-                            end
-                        end
-                    end
-                    if matchbox then break end
-                end
-            end
-            -- 3) Fall back to registry lookup
-            if not matchbox then
-                matchbox = ctx.registry:get("matchbox")
-            end
-            if matchbox and matchbox.contents then
-                match_count = tostring(#matchbox.contents)
-            end
-            if p.state.has_flame and p.state.has_flame > 0 then
-                candle_icon = "*"
             end
         end
 
         local left  = " " .. location_str .. "  " .. time_str
-        local right = "Matches: " .. match_count .. "  Candle: " .. candle_icon .. " "
-        ctx.ui.status(left, right)
+        ctx.ui.status(left, right_str)
     end
 end
 
