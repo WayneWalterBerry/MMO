@@ -73,3 +73,22 @@
 - **#25 (P0) — Deploy Copy-Item silent failure:** `Copy-Item -Force` silently fails to overwrite files on Windows. Fixed `web/deploy.ps1` to `Remove-Item` before `Copy-Item` for static assets (index.html, bootstrapper.js, game-adapter.lua). Updated `.squad/skills/web-publish/SKILL.md` deploy steps with the same pattern. The recurring workaround from two previous deploys is now permanent.
 - **#20 (P1) — Bug report transcript only captures 1 line:** Follow-up to #13. The Lua-side transcript recorded full output but the JS bridge had no independent buffer. Added a JS-side session transcript buffer to `web/bootstrapper.js` that groups all `appendOutput` calls between `>` prompts as one response block. `_openUrl` now uses this buffer (with accurate multi-line responses) instead of parsing the Lua-generated transcript text. Falls back to original #13 regex logic if JS buffer is empty.
 - Both issues left open for Marge to verify and close.
+
+### 2026-03-23: Wave2 — CI Safety Guardrail & Decision Documentation
+
+**Wave2 Spawn:** Scribe fixed CI workflow to prevent accidental deployments
+
+**Changes Made:**
+- **`.github/workflows/squad-main-guard.yml`** — Removed `main` from push trigger events. CI now only runs on pull_request and scheduled jobs. This prevents automated deployments from main branch pushes, requiring explicit PRs for deployment validation.
+
+**Commit:** 5e366ee — CI workflow fix
+
+**Cross-Agent Context:**
+- Marge verified CI changes don't impact QA workflows
+- Phase 3 deployments unaffected — deploy is still manual via web/deploy.ps1
+- Next deploys will use safe PR workflow
+
+**Impact Summary:**
+- Deployment pipeline now requires explicit PR review before CI runs
+- Reduced risk of accidental main-branch deployments
+- Ready for sustained release/merge cycle

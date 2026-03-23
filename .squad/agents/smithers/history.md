@@ -1350,3 +1350,50 @@ Implement three spatial relationship fixes from Bart's architecture doc and CBG'
 ### Issues
 - Commented on #22 and #34 that fixes are committed
 - Left both issues open for Marge to verify
+
+---
+
+### Session: Pass 038 — Natural Phrase Routing Bugs (#35-39)
+
+**Task:** Fix 5 parser phrase-routing bugs found in Nelson's Pass 038. Natural language phrases for health, injuries, inventory, and appearance weren't routing to correct subsystems.
+
+**Changes — `src/engine/parser/preprocess.lua`:**
+- **transform_questions():** Added health status patterns (#35/BUG-127): "status", "how am i", "am i hurt", "what's wrong with me", "check my wounds/injuries/health" → `health`
+- **transform_questions():** Added bleeding/severity patterns (#36/BUG-128): "where am i bleeding from", "how bad is it", "why don't i feel well" → `injuries`. These are placed BEFORE the generic "where am i" → "look" rule to prevent false matches.
+- **transform_questions():** Added hand-specific "what's in my hands" (#38/BUG-130) BEFORE generic "what's in X" → "examine X" container query to prevent misrouting.
+- **transform_questions():** Added "am i holding anything/something" → `inventory`
+- **transform_look_patterns():** Added self-referential patterns (#37/BUG-129): "look at myself/self/me", "examine myself/self/me", "check myself/self" → `appearance`. These are placed BEFORE generic "look at X" → "examine X".
+- **transform_look_patterns():** Added "look at my hands" → `inventory` (#38/BUG-130)
+
+**Changes — `src/engine/verbs/init.lua`:**
+- **handlers["wait"]:** New handler that prints "Time passes." Post-command injury tick and time advance happen automatically via the game loop. Alias: "pass".
+- **handlers["appearance"]:** New handler that calls `appearance.describe(ctx.player, ctx.registry)` for self-examination without a mirror.
+
+**Changes — `src/engine/loop/init.lua`:**
+- Added "appearance" to `no_noun_verbs` table to prevent context noun fallback.
+
+**Key Design Decisions:**
+1. Pattern ordering is critical — specific patterns (bleeding, hands) must come before generic patterns (where am I, what's in X) to avoid false substring matches.
+2. "wait" handler is intentionally minimal — the game loop already handles injury ticking and time advancement after every command.
+3. "appearance" handler allows self-examination without a mirror, unlike the mirror-gated path that checks `obj.is_mirror`.
+4. Updated existing test in test-transform-look-patterns.lua: "look at me" now correctly expects "appearance" instead of "examine me".
+
+**New Test File:** `test/parser/test-pass038-phrase-routing.lua` — 45 tests covering all 5 bugs plus regression checks.
+
+**Result:** All 45 test files pass (44 existing + 1 new), 0 regressions. Commit 351bfa3.
+
+### Issues
+- Commented on #35, #36, #37, #38, #39 that fixes are committed
+- Left all issues open for Marge to verify and close
+
+### 2026-03-23: Wave2 — Decision Documentation
+
+**Wave2 Spawn:** Scribe merged decision documents into decisions.md
+
+**Decisions Documented:**
+- **D-PHRASE001:** Specific phrase patterns must precede generic patterns in parser pipeline (most-specific-first)
+- **D-PHRASE002:** Appearance verb exists as standalone handler (no mirror required for self-inspection)
+
+**Key Insight:** These decisions are pure documentation of existing implementation. No code changes required in this wave. Future phrase additions must follow the pattern ordering established in Pass038.
+
+**Cross-Agent Status:** Marge verified all 5 Phase1 issues and closed them. Ready for Scribe merge phase.

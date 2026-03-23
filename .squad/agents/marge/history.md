@@ -109,3 +109,28 @@
 - Triage analysis — Effort breakdown, assignment map, dependency graph
 
 **Next:** Wayne can now prioritize sprints based on clear priority/effort/owner data. Smithers and Gil have clear assignments. Bart and CBG have decision/architecture items queued.
+
+### 2026-03-23: Wave2 — Issue Verification & Decision Merge
+
+**Wave2 Spawn:** Scribe processed Wave2 agent deliverables
+
+**Issues Verified & Closed:**
+- **#35 (Parser phrase routing)** — Smithers fix verified: phrase-routing bugs resolved, specific patterns now precede generic patterns
+- **#36-39 (Parser edge cases)** — All 4 related issues verified: bleeding queries, hand queries, and self-referential lookups now route correctly
+- **#20 (Bug report transcript)** — Gil fix verified: JS buffer captures multi-line responses correctly
+- **#21 (Deploy Copy-Item)** — Gil fix verified: deploy now uses Remove-Item + Copy-Item pattern, no more silent failures
+- **#22-25 (Related deploy issues)** — All related platform issues verified and closed
+
+**QA Sign-Off:**
+- Smithers Phase 1 fixes: 5/5 issues verified
+- Gil Phase 1 fixes: 5/5 issues verified
+- Flanders objects: 3 new objects + 1 new injury type design-verified (no live testing yet)
+- Total: 10 issues verified, 5 closed per scope
+
+**Decision Documentation Completed:**
+- 2 parser decisions merged (D-PHRASE001, D-PHRASE002)
+- 5 injury-system decisions merged (D-INJURY001-005)
+- 7 total decisions now canonical in decisions.md
+- All cross-agent dependencies documented in decisions
+
+**Cross-Agent Context Propagation:** All 4 agent histories updated with Wave2 context and decision impact analysis

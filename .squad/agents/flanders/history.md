@@ -613,3 +613,26 @@ Flagged materials NOT in `src/engine/materials/init.lua`:
 - **Updated `docs/objects/poison-bottle.md`** — Rewrote as full Object Reference doc reflecting new structured effects, label part, consumable metadata, taste effect, safety hierarchy, and Principle 8 compliance.
 - **Created `docs/objects/bear-trap.md`** — New Object Reference doc covering FSM states, contact→injury pipeline, safety hierarchy (observation safe, interaction risky), disarm mechanics, sensory descriptions, GOAP prerequisites, and Principle 8 compliance.
 - Key decisions: used structured effect tables throughout (not legacy strings) per Bart's effect pipeline proposal; crushing-wound is a new injury type (not reusing bleeding or bruised) because it's a hybrid needing both components; label is a non-detachable readable part (not just description text) for proper `read label` verb support; bear trap disarm guard uses function (not just `requires_tool`) because skill check needs player context.
+
+### 2026-03-23: Wave2 — Decision Documentation & Cross-Agent Propagation
+
+**Wave2 Spawn:** Scribe merged all decision documents into decisions.md
+
+**Decisions Documented:**
+- **D-INJURY001:** Structured effect tables over legacy strings (impacts Bart's effect processing pipeline)
+- **D-INJURY002:** Crushing wound as new injury type (distinct from bleeding/bruised — hybrid immediate+ongoing damage)
+- **D-INJURY003:** Label as non-detachable readable part (enables proper `read label` verb support via composite object system)
+- **D-INJURY004:** Bear trap disarm uses guard function (runtime context checks for skill validation, not just tool requirements)
+- **D-INJURY005:** Bear trap self-transitions for safe take (enables custom messages and property mutations in safe states)
+
+**Cross-Agent Context:**
+- Marge verified all object implementations and injured-system patterns
+- Smithers' parser handles complex multi-step interactions (disarm requires lockpicking + thin tool)
+- Bart will integrate structured effects into effect processing pipeline
+- All 5 injury-system decisions are now canonical and merge-ready
+
+**Impact Summary:**
+- 3 new objects + 1 new injury type now documented
+- Effect pipeline ready for Bart's integration phase
+- Injury targeting architecture documented in decisions
+- Ready for cross-team execution phase
