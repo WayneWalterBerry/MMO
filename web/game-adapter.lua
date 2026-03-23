@@ -47,7 +47,7 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-23 14:54"
+local BUILD_TIMESTAMP = "2026-03-23 15:11"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -362,6 +362,9 @@ local ok, err = pcall(function()
         rm = loader.resolve_template(rm, templates)
         if not rm then return nil end
 
+        -- Flatten deep-nested instance trees into flat list with .location set
+        rm.instances = loader.flatten_instances(rm.instances or {})
+
         -- Fetch all objects referenced by instances
         for _, inst in ipairs(rm.instances or {}) do
             if inst.type_id and not base_classes[normalize_guid(inst.type_id)] then
@@ -391,7 +394,11 @@ local ok, err = pcall(function()
             local loc = inst.location
             local obj = reg:get(inst.id)
 
-            if loc == "room" then
+            if not loc then
+                -- Graceful nil guard: treat objects with no location as room-level
+                rm.contents[#rm.contents + 1] = inst.id
+                if obj then obj.location = rm.id end
+            elseif loc == "room" then
                 rm.contents[#rm.contents + 1] = inst.id
                 if obj then obj.location = rm.id end
             else
@@ -407,8 +414,14 @@ local ok, err = pcall(function()
                 else
                     local parent = reg:get(loc)
                     if parent then
-                        parent.contents = parent.contents or {}
-                        parent.contents[#parent.contents + 1] = inst.id
+                        if parent.surfaces and parent.surfaces.inside then
+                            local zone = parent.surfaces.inside
+                            zone.contents = zone.contents or {}
+                            zone.contents[#zone.contents + 1] = inst.id
+                        else
+                            parent.contents = parent.contents or {}
+                            parent.contents[#parent.contents + 1] = inst.id
+                        end
                     end
                     if obj then obj.location = loc end
                 end
