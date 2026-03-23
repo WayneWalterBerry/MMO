@@ -129,3 +129,19 @@
 - **Test suite:** 50/50 PASS (all existing + new).
 - **Commit:** d73f034 — pushed to main.
 - ⚠️ This is an engine-layer fix (Smithers' territory), but it directly impacts the web status bar via `game-adapter.lua` which calls `status.create_updater()`. No web-layer changes needed — the adapter passes through whatever left/right strings the engine provides.
+
+### 2026-07-27: Fixed Issues #3 and #19 (verified #18)
+- **#3 (P2) — Screen flicker during progressive object discovery:**
+  - **Root cause:** Every `print()` call from Lua → `appendOutput()` in `bootstrapper.js` → individual `appendChild()` + `scrollTop = scrollHeight`, causing layout thrashing. During `feel` verb room scan, each discovered object gets its own `print()` call, triggering N+1 reflows.
+  - **Fix:** DOM batching in `bootstrapper.js`. Added `_beginBatch()` / `_endBatch()` around command processing. During a batch, `appendOutput()` collects elements into a `DocumentFragment` instead of appending directly. After command processing completes, `requestAnimationFrame` flushes the fragment to the DOM with a single `appendChild` and one `scrollTop` assignment. Pre-command output (boot messages, welcome text) still appends immediately.
+  - **Files changed:** `web/bootstrapper.js` (+30 lines)
+- **#18 (P1) — Safari/iPhone aggressive caching:**
+  - **Already fixed** in the 2026-07-27 session (see earlier history entry). Verified all three cache-busting layers still in place: (1) meta tags in `index.html`, (2) `CACHE_BUST` query strings on all fetched resources, (3) build auto-stamp in `build-engine.ps1`. No changes needed.
+- **#19 (P2) — Move welcome/intro text from main.lua into level data:**
+  - **Root cause:** Intro narrative ("You wake with a start...") was hardcoded in both `src/main.lua` (terminal) and `web/game-adapter.lua` (browser). Any text change required editing two files.
+  - **Fix:** Added `intro` table to `src/meta/levels/level-01.lua` with fields: `title`, `subtitle`, `narrative` (array of lines), `help`. Updated `main.lua` to load level-01.lua and read intro from it. Updated `game-adapter.lua` to read intro from the already-fetched level data. Both fall back to hardcoded defaults if level data or intro field is missing.
+  - **Files changed:** `src/meta/levels/level-01.lua` (+11 lines), `src/main.lua` (+20/-9 lines), `web/game-adapter.lua` (+14/-8 lines)
+  - **Tests:** Added `test/rooms/test-level-intro.lua` — 11 tests covering intro structure validation, backward compatibility, and integration (headless mode outputs narrative from level data).
+- **Test suite:** 60/60 PASSED (59 existing + 1 new).
+- **Commit:** c3b890c — pushed to main.
+- ⚠️ Issues #3 and #19 left open for Marge to verify and close. #18 already verified.
