@@ -344,16 +344,23 @@ test("storage-cellar wine-bottle type_id matches wine-bottle.lua GUID", function
         "BUG-061: wine-bottle type_id must match wine-bottle.lua GUID")
 end)
 
-test("storage-cellar wine-bottle location uses .inside suffix", function()
+test("storage-cellar wine-bottle is nested inside wine-rack contents", function()
     local cellar_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "world" .. SEP .. "storage-cellar.lua"
     local f = io.open(cellar_path, "r")
     h.assert_truthy(f, "storage-cellar.lua should exist")
     local content = f:read("*a")
     f:close()
 
+    -- Deep nesting: wine-bottle must NOT have a flat location field
     local location = content:match('id%s*=%s*"wine%-bottle".-location%s*=%s*"([^"]+)"')
-    h.assert_eq("wine-rack.inside", location,
-        "BUG-061: wine-bottle location must be wine-rack.inside")
+    h.assert_eq(nil, location,
+        "BUG-061: wine-bottle should use deep nesting, not flat location")
+
+    -- Verify wine-bottle appears inside wine-rack's contents block
+    local rack_block = content:match('id%s*=%s*"wine%-rack"(.-)%},%s*%}')
+    h.assert_truthy(rack_block, "wine-rack block should exist in storage-cellar")
+    h.assert_truthy(rack_block:find('contents'), "wine-rack should have contents table")
+    h.assert_truthy(rack_block:find('"wine%-bottle"'), "wine-bottle should be nested in wine-rack contents")
 end)
 
 test("wine-rack surfaces.inside.contents includes wine-bottle", function()
