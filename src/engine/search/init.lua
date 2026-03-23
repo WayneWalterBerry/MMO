@@ -24,6 +24,7 @@ local _state = {
     active = false,              -- Is a search currently running?
     target = nil,                -- What we're looking for (string or nil)
     scope = nil,                 -- Where we're searching (object ID or nil)
+    part_surface = nil,          -- Restrict to this surface only (#41: drawer vs nightstand)
     queue = {},                  -- Ordered list of search queue entries
     current_index = 1,           -- Current position in queue (1-indexed)
     current_step = 0,            -- Number of steps taken this search
@@ -39,6 +40,7 @@ local function reset_state()
     _state.active = false
     _state.target = nil
     _state.scope = nil
+    _state.part_surface = nil
     _state.queue = {}
     _state.current_index = 1
     _state.current_step = 0
@@ -75,8 +77,9 @@ end
 -- @param ctx game context
 -- @param target string or nil (nil = undirected sweep)
 -- @param scope object ID or nil (nil = full room)
-function search.search(ctx, target, scope)
-    if _G.TRACE then io.stderr:write("[TRACE] search.search: target=" .. tostring(target) .. " scope=" .. tostring(scope) .. "\n") end    -- If already searching, abort previous search
+-- @param part_surface string or nil (#41: restrict to this surface when searching a part)
+function search.search(ctx, target, scope, part_surface)
+    if _G.TRACE then io.stderr:write("[TRACE] search.search: target=" .. tostring(target) .. " scope=" .. tostring(scope) .. " part_surface=" .. tostring(part_surface) .. "\n") end    -- If already searching, abort previous search
     if _state.active then
         search.abort(ctx)
     end
@@ -85,6 +88,7 @@ function search.search(ctx, target, scope)
     _state.active = true
     _state.target = target
     _state.scope = scope
+    _state.part_surface = part_surface
     _state.room_id = ctx.current_room and ctx.current_room.id
     _state.current_index = 1
     _state.current_step = 0
@@ -109,7 +113,7 @@ function search.search(ctx, target, scope)
         return
     end
     
-    _state.queue = traverse.build_queue(room, scope, target, ctx.registry)
+    _state.queue = traverse.build_queue(room, scope, target, ctx.registry, part_surface)
     
     if #_state.queue == 0 then
         if scope then

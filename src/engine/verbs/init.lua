@@ -1996,8 +1996,12 @@ function verbs.create()
                 return
             end
             -- BUG-082: If scope resolves to a part, use its parent for search
+            -- #41: Pass part's surface mapping so search restricts to that surface
             if scope_loc == "part" and scope_parent then
+                local part_surface = scope_obj.surface
                 scope_obj = scope_parent
+                search_mod.search(ctx, target_part, scope_obj.id, part_surface)
+                return
             end
             search_mod.search(ctx, target_part, scope_obj.id)
             return
@@ -2019,8 +2023,12 @@ function verbs.create()
         ctx._exact_only = nil
         if obj then
             -- BUG-082: If obj is a part (drawer), use its parent for search
+            -- #41: Pass part's surface mapping so search restricts to that surface
             if obj_loc == "part" and obj_parent then
+                local part_surface = obj.surface
                 obj = obj_parent
+                search_mod.search(ctx, nil, obj.id, part_surface)
+                return
             end
             -- Found an object - treat as scope (BUG-079: scoped undirected search)
             search_mod.search(ctx, nil, obj.id)

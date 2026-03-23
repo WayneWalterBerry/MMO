@@ -235,4 +235,38 @@ function narrator.interruption(ctx, steps_taken)
     return "[Search interrupted]"
 end
 
+--- Generate narrative when a direct part search hits a closed/inaccessible surface (#41)
+-- @param ctx game context
+-- @param surface_name string (e.g., "inside")
+-- @param parent object that owns the part
+-- @return string
+function narrator.part_closed(ctx, surface_name, parent)
+    local name = parent and parent.name or "it"
+    local display = name:gsub("^[Aa]n? ", ""):gsub("^[Tt]he ", "")
+    return "The drawer is closed. You need to open it first."
+end
+
+--- Generate narrative for direct part search contents (#41)
+-- @param ctx game context
+-- @param surface_name string
+-- @param parent object
+-- @param items list of item name strings
+-- @return string
+function narrator.part_contents(ctx, surface_name, parent, items)
+    if #items == 0 then
+        return narrator.part_empty(ctx, surface_name, parent)
+    end
+    local list = table.concat(items, ", ")
+    return "You rummage through the drawer and find: " .. list .. "."
+end
+
+--- Generate narrative for empty direct part search (#41)
+-- @param ctx game context
+-- @param surface_name string
+-- @param parent object
+-- @return string
+function narrator.part_empty(ctx, surface_name, parent)
+    return "You rummage through the drawer. It is empty."
+end
+
 return narrator

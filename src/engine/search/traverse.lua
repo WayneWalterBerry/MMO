@@ -121,8 +121,9 @@ end
 -- @param scope object ID or nil
 -- @param target search target or nil
 -- @param registry registry instance
+-- @param part_surface string or nil (#41: restrict to this surface when searching a part)
 -- @return ordered list of queue entries
-function traverse.build_queue(room, scope, target, registry)
+function traverse.build_queue(room, scope, target, registry, part_surface)
     local queue = {}
     
     -- Get proximity-ordered object list
@@ -152,6 +153,10 @@ function traverse.build_queue(room, scope, target, registry)
                             -- Use the parent object but with nested containers enabled
                             search_list[#search_list + 1] = obj_id
                             include_nested_containers = true
+                            -- #41: Use the part's surface mapping if not already set
+                            if not part_surface and part.surface then
+                                part_surface = part.surface
+                            end
                             break
                         end
                     end
@@ -165,7 +170,17 @@ function traverse.build_queue(room, scope, target, registry)
     for _, obj_id in ipairs(search_list) do
         local entries = expand_object(obj_id, registry, 0, include_nested_containers)
         for _, entry in ipairs(entries) do
-            queue[#queue + 1] = entry
+            -- #41: When part_surface is set, only include that specific surface
+            -- and skip the parent object entry and other surfaces
+            if part_surface then
+                if entry.type == "surface" and entry.surface_name == part_surface then
+                    entry.direct_part_search = true
+                    queue[#queue + 1] = entry
+                end
+                -- Skip object entries and non-matching surfaces
+            else
+                queue[#queue + 1] = entry
+            end
         end
     end
     
@@ -317,6 +332,13 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
         
         -- If surface is not accessible, peek without changing state (#24)
         if surface_template.accessible == false then
+            -- #41: Direct part search (e.g., "search drawer") on closed surface
+            -- should tell the player to open it first instead of peeking
+            if entry.direct_part_search then
+                result.narrative = narrator.part_closed(ctx, entry.surface_name, parent)
+                return result
+            end
+
             -- Check if parent is locked (via FSM state or container flag)
             local is_locked = containers.is_locked(parent)
             if is_locked then
@@ -412,9 +434,24 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 end
             end
             if #items > 0 then
-                result.narrative = (result.narrative ~= "" and result.narrative .. "\n" or "")
-                    .. "Inside you find: " .. table.concat(items, ", ") .. "."
+                -- #41: Use part-specific narration for direct drawer searches
+                if entry.direct_part_search then
+                    result.narrative = narrator.part_contents(ctx, entry.surface_name, parent, items)
+                else
+                    result.narrative = (result.narrative ~= "" and result.narrative .. "\n" or "")
+                        .. "Inside you find: " .. table.concat(items, ", ") .. "."
+                end
+            else
+                if entry.direct_part_search then
+                    result.narrative = narrator.part_empty(ctx, entry.surface_name, parent)
+                end
             end
+            return result
+        end
+        
+        -- #41: Direct part search with no contents
+        if not target and not is_goal_search and #contents == 0 and entry.direct_part_search then
+            result.narrative = narrator.part_empty(ctx, entry.surface_name, parent)
             return result
         end
 
