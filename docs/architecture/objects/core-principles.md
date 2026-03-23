@@ -14,6 +14,7 @@ These eight principles form the bedrock of the MMO architecture. They define how
 ## Table of Contents
 
 0. [Objects Are Inanimate](#0-objects-are-inanimate)
+0.5. [Room .lua Files Use Deep Nesting](#05-room-lua-files-use-deep-nesting)
 1. [Code-Derived Mutable Objects](#1-code-derived-mutable-objects)
 2. [Base Objects → Object Instances](#2-base-objects--object-instances)
 3. [Objects Have FSM; Instances Know Their State](#3-objects-have-fsm-instances-know-their-state)
@@ -60,7 +61,152 @@ This is **not yet designed or architected**. Do not attempt to model living thin
 
 ---
 
-## 1. Code-Derived Mutable Objects
+## 0.5. Room .lua Files Use Deep Nesting
+
+**Room .lua files describe the physical space through deeply nested object instances.** Objects are placed inline using relationship keys that describe how they sit in the room.
+
+### The Nesting Pattern
+
+Each room file is a Lua table containing top-level objects with nested children. Nesting occurs via four relationship keys:
+
+| Key | Meaning | Relationship | Example |
+|-----|---------|--------------|---------|
+| `on_top` | Items sitting on a surface | Object rests on parent's surface | Candle on nightstand |
+| `contents` | Items inside a container | Object is inside parent's cavity | Matches in matchbox |
+| `nested` | Objects in a physical slot (not "inside") | Object occupies parent's slot without being inside | Drawer in nightstand slot |
+| `underneath` | Hidden items under parent | Object hidden until parent is moved/lifted | Brass key under rug |
+
+### The Architectural Decision: Why Deep Nesting?
+
+**The nesting IS the room's physical description.** By reading the Lua table's structure, you can visualize the room layout. This eliminates the need for separate room maps or spatial metadata — the code itself encodes topology.
+
+**Example Room Structure:**
+```lua
+return {
+    -- Nightstand: solid furniture with a drawer slot
+    {
+        id = "nightstand",
+        type_id = "{guid-nightstand}",
+        location = "room",
+        on_top = {
+            -- Candle holder sitting on nightstand surface
+            {
+                id = "candle-holder",
+                type_id = "{guid-holder}",
+                contents = {
+                    -- Candle inside the holder
+                    { id = "candle", type_id = "{guid-candle}" },
+                },
+            },
+            -- Poison bottle also on nightstand
+            { id = "poison-bottle", type_id = "{guid-poison}" },
+        },
+        nested = {
+            -- Drawer is in the nightstand's slot (not "inside" it)
+            {
+                id = "drawer",
+                type_id = "{guid-drawer}",
+                state = "closed",
+                contents = {
+                    -- Matchbox inside the drawer
+                    {
+                        id = "matchbox",
+                        type_id = "{guid-matchbox}",
+                        state = "closed",
+                        contents = {
+                            { id = "match-1", type_id = "{guid-match}" },
+                            { id = "match-2", type_id = "{guid-match}" },
+                            -- ... more matches
+                        },
+                    },
+                },
+            },
+        },
+    },
+
+    -- Rug: can have items hidden beneath it
+    {
+        id = "rug",
+        type_id = "{guid-rug}",
+        location = "room",
+        underneath = {
+            -- Brass key hidden under the rug
+            { id = "brass-key", type_id = "{guid-key}" },
+            -- Trap door hidden under the rug, not yet visible
+            { id = "trap-door", type_id = "{guid-trap}", hidden = true },
+        },
+    },
+}
+```
+
+### Key Rules
+
+1. **Containers require `contents` key:** Only objects with a `contents` key can hold items. "Put X inside Y" fails if Y has no `contents`.
+   - Nightstand has NO `contents` (it's solid furniture)
+   - Drawer HAS `contents` (it can hold things)
+   - "Put pillow inside drawer" → ✅ WORKS
+   - "Put pillow inside nightstand" → ❌ FAILS
+
+2. **`nested` is for physical slots:** Use `nested` when an object occupies a discrete slot in the parent, not thrown inside.
+   - Drawer is in the nightstand's slot (a specific designed cavity)
+   - Matches are in the matchbox's cavity (use `contents`)
+
+3. **Each instance has identity:** Every nested object has:
+   - `id` — a unique identifier within the room instance
+   - `type_id` — a GUID reference to its object template/definition
+   - Instance overrides (e.g., `state = "closed"`, `hidden = true`) live on the instance
+
+4. **`underneath` items are hidden:** Items in the `underneath` key are not visible until the parent object is moved or lifted. Setting `hidden = true` on an underneath item makes it extra hidden (e.g., a trap door under a rug that looks like floor).
+
+### Why This Pattern Matters
+
+- **Self-Documenting:** The nested structure IS the room layout. Developers read the `.lua` file and visualize the scene.
+- **Encapsulation:** Each container fully owns its contents; parent-child relationships are explicit.
+- **Solves Surface Ambiguity:** Using `on_top`, `contents`, and `nested` explicitly clarifies how objects relate — no guessing.
+- **Constraint Enforcement:** The engine can verify that only objects with `contents` receive PUT-INSIDE commands.
+- **Composable:** Furniture can be designed as templates and instantiated multiple times with nested variations.
+
+### Instance vs. Template
+
+**Template (drawer.lua):**
+```lua
+return {
+    id = "drawer",
+    name = "a wooden drawer",
+    is_container = true,
+    -- No contents in template; contents vary per instance
+}
+```
+
+**Room Instance (.../bedroom.lua):**
+```lua
+{
+    id = "drawer-1",
+    type_id = "{guid-drawer}",  -- References drawer.lua
+    state = "closed",
+    contents = {  -- Room instance defines what's IN this drawer
+        { id = "matchbox", type_id = "{guid-matchbox}" },
+    },
+}
+```
+
+The template defines the object's behavior; the room instance defines what it contains and its state.
+
+### Design Consequence
+
+When building a room, ask:
+- **Is this object on top of something?** Use `on_top`.
+- **Is this object inside a container?** Use `contents`.
+- **Is this object in a physical slot (drawer, cubby, pocket)?** Use `nested`.
+- **Is this object hidden under something?** Use `underneath`.
+
+Never mix relationships. Each parent has exactly one type of child relationship to its instances.
+
+**Source:** Wayne (2026-03-21) — Approved deep nesting as the standard for room .lua files.
+
+---
+
+
 
 This engine operates on a fundamental architectural principle: **all game objects are mutable Lua tables derived from immutable source code**. Understanding this principle is essential to understanding how the entire system works.
 

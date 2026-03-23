@@ -268,15 +268,114 @@ Use this matrix when designing new tools and deciding whether a skill should unl
 
 ---
 
+## Room Nesting Architecture
+
+### Deep Nesting in Room .lua Files (CORE DIRECTIVE)
+
+**Approved by Wayne (2026-03-21):** Room .lua files use deep nesting to describe physical space. Object instances nest their children inline using relationship keys that encode topology.
+
+#### The Four Relationship Keys
+
+| Key | Meaning | Example | Notes |
+|-----|---------|---------|-------|
+| `on_top` | Items sitting on a surface | Candle holder on nightstand | Parent has a surface |
+| `contents` | Items inside a container | Matches inside matchbox | Parent is hollow/has cavity |
+| `nested` | Objects in a physical slot (not "inside") | Drawer in nightstand slot | Parent has designed slots |
+| `underneath` | Items hidden under parent | Brass key under rug | Revealed when parent moves/lifted |
+
+#### Core Rules
+
+1. **Only objects with `contents` can be filled.** The engine rejects "PUT X INSIDE Y" if Y has no `contents` key.
+   - Nightstand: NO `contents` (solid furniture) → Can't put things inside
+   - Drawer: HAS `contents` (designed cavity) → Can put things inside
+
+2. **`nested` objects occupy a physical slot, not floating inside.** Use for design features: drawer sits in nightstand slot, phone in socket, sword in scabbard.
+
+3. **Each instance has full identity:**
+   - `id` — Unique name within room instance
+   - `type_id` — GUID reference to template (e.g., `{guid-candle}`)
+   - Instance overrides (e.g., `state = "closed"`, `hidden = true`) live on the instance
+
+4. **`underneath` items are hidden by default.** Set `hidden = true` for extra-hidden items (e.g., trap door under rug looks like floor).
+
+#### Example: Fully Nested Room
+
+```lua
+return {
+    -- Nightstand: solid furniture with on_top surface and nested drawer slot
+    {
+        id = "nightstand",
+        type_id = "{guid}",
+        location = "room",
+        on_top = {
+            {
+                id = "candle-holder",
+                type_id = "{guid}",
+                contents = {
+                    { id = "candle", type_id = "{guid}" },
+                },
+            },
+            { id = "poison-bottle", type_id = "{guid}" },
+        },
+        nested = {
+            {
+                id = "drawer",
+                type_id = "{guid}",
+                state = "closed",
+                contents = {
+                    {
+                        id = "matchbox",
+                        type_id = "{guid}",
+                        state = "closed",
+                        contents = {
+                            { id = "match-1", type_id = "{guid}" },
+                            -- ... more matches
+                        },
+                    },
+                },
+            },
+        },
+    },
+
+    -- Rug: has surface items and hidden items underneath
+    {
+        id = "rug",
+        type_id = "{guid}",
+        location = "room",
+        underneath = {
+            { id = "brass-key", type_id = "{guid}" },
+            { id = "trap-door", type_id = "{guid}", hidden = true },
+        },
+    },
+}
+```
+
+#### Why This Pattern
+
+- **Self-Documenting:** The Lua structure IS the room layout. No separate map files.
+- **Solves Surface Ambiguity:** `on_top`, `contents`, `nested`, `underneath` explicitly state relationships.
+- **Constraint Enforcement:** Engine verifies PUT-INSIDE only works on objects with `contents`.
+- **Scalable:** Composable; templates instantiate with varying nested content per room.
+
+**Architectural Alignment:**
+- Aligns with **Principle 0.5 (Room .lua Files Use Deep Nesting)** in core-principles.md
+- Supports **Code Rewrite Mutation (D-14):** Room state can be mutated by removing/adding nested items
+- Supports **Sensory System:** Nested objects are discovered via LOOK/FEEL, not queried from a separate database
+
+**Source:** Wayne (2026-03-21)
+
+---
+
 ## Key Architectural Alignments
 
 These directives align with core architectural decisions:
 
-- **D-14 (Code Rewrite Mutation):** Paper mutation with written words; mirror breaking; candle lighting
+- **D-14 (Code Rewrite Mutation):** Paper mutation with written words; mirror breaking; candle lighting; nested object mutations
 - **D-12 (Engine-Driven Mutation):** Player interacts naturally; engine handles code changes
 - **D-10 (Multiverse Per-Player):** Each player's universe has independent state
 - **Tool Convention:** Enables verb dispatch on multiple similar tools via capability matching
 - **Skills System:** Adds emergent tool combinations; increases replay value and puzzle diversity
+- **Deep Nesting:** Room topology is encoded in the .lua structure; no separate map database
 
 ---
 
