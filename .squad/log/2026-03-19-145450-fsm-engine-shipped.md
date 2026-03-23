@@ -151,7 +151,7 @@ FSM engine shipped: match 3-turn, nightstand container, 3 search bugs fixed
 - Backward compatibility: 32 non-FSM objects unaffected
 - Deprecated: match-lit.lua, nightstand-open.lua
 
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+Co-authored-by: Copilot <[email scrubbed]>
 ```
 
 ## Next Session Priorities

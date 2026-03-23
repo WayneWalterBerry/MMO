@@ -204,7 +204,7 @@ Commit: Phase 3 feature implementation — hit verb, unconsciousness FSM, appear
 - Add 36 new tests covering all Phase 3 features
 - Tests passing: 1,117+
 
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+Co-authored-by: Copilot <[email scrubbed]>
 ```
 
 ### Commit 2: Phase 3 Bug Fix & Test Consolidation
@@ -217,7 +217,7 @@ Commit: Phase 3 bug fix — sleep verb now ticks injuries
 - All regression tests passing (Phase 1–3 features)
 - Test suite: 1,117+ tests, 100% passing
 
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+Co-authored-by: Copilot <[email scrubbed]>
 ```
 
 ---

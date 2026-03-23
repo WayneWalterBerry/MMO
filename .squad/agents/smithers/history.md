@@ -1327,3 +1327,26 @@ Implement three spatial relationship fixes from Bart's architecture doc and CBG'
 ### Issues
 - Commented on #24, #26, #27 that fixes are committed
 - Left all three issues open for Marge/Nelson to verify
+
+---
+
+### Session: Fix #22 and #34 — Container Search Depth + Open Container Reporting
+
+**Task:** Fix two search bugs: #22 (search for "matches" finds matchbox but doesn't search inside it) and #34 (open containers don't report contents when target not found).
+
+**Changes — `src/engine/search/traverse.lua`:**
+- **`find_deeper_match(obj, target, registry)`**: New helper that peeks inside a matched container for a more specific child match. Called when a container's name matches the target (e.g., "matchbox" matches "match") to check if contents also match. Read-only per D-PEEK — never mutates state.
+- **Inaccessible surface path**: After `matches_target(child, target)` succeeds, calls `find_deeper_match` on the matched child. If a deeper match exists, returns the child object inside the container instead of the container itself.
+- **Closed container peek path**: Same deeper-match check applied. Also added fallback: if no contents match the target, checks if the container itself matches (handles empty matchbox edge case).
+- **New open container block (#34)**: Added handling for `entry.is_container and entry.is_open`. Open containers now check contents for target match, and report what's inside when target isn't found (using `narrator.container_contents_no_target`). Previously, open container objects fell through to the generic path which just said "nothing there".
+- **Generic object match**: Added deeper-match check for standalone container objects in the queue.
+
+**Test file:** `test/search/test-search-container-depth.lua` — 12 regression tests covering:
+- #22: deeper match found inside matchbox, matchbox still findable directly, empty matchbox fallback, non-container unaffected
+- #34: open wardrobe reports contents when target not found, finds target when inside, undirected search lists contents, empty container behavior
+
+**Result:** All 43 test files pass (42 existing + 1 new), 0 regressions. Commit 6490c68.
+
+### Issues
+- Commented on #22 and #34 that fixes are committed
+- Left both issues open for Marge to verify

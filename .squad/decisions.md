@@ -1492,3 +1492,111 @@ Search now "peeks" inside closed containers without changing their state. The ol
 **End of 2026-03-22T22:05Z Evening Bug Burndown Merge**  
 **Total Active Decisions:** 68  
 **Last Merge:** 2026-03-22T22:05Z (Scribe)
+
+---
+
+## ARCHITECTURE: ENGINE HOOKS & EFFECTS (Bart, CBG)
+
+### D-EFFECTS-PIPELINE: Unified Effect Processing Pipeline for Injuries
+
+**Author:** Bart (Architect)  
+**Date:** 2026-03-23  
+**Status:** PROPOSED  
+**Requested by:** Wayne "Effe" Berry  
+**Scope:** `src/engine/effects.lua` (new), `src/engine/verbs/init.lua` (refactor), object metadata format
+
+**Problem:** Objects cause injuries through three ad-hoc patterns: string `effect` fields, `on_{verb}_effect` fields, and structured `on_stab`/`on_cut` tables. Each requires inline interpretation by verb handlers. New injury mechanics require editing engine code, violating encapsulation.
+
+**Decision:** Create `src/engine/effects.lua` that:
+1. Accepts string effects (backward compatible) and structured effect tables
+2. Dispatches to registered effect handlers by `type` field
+3. Ships with `inflict_injury` built-in handler calling `injuries.inflict()`
+4. Replaces all inline verb-handler effect interpretation
+
+**Key Principles:**
+- Effects are per-object, not per-verb (objects declare behavior)
+- Effect processor is separate from hook framework (hooks = *when*, effects = *what*)
+- No new hooks needed for consumable injuries (FSM `effect` + `effects.process()`)
+- `on_enter_room` hook needed for spatial traps (pit, gas, rocks)
+- Fully backward compatible (zero breaking changes)
+
+**Consequences:**
+- ✅ New injury objects require zero engine changes (object metadata declares effects)
+- ✅ Effect types extensible (`fsm_transition`, `spawn_object`, `heal` as handlers)
+- ⚠️ Minor refactor needed in `verbs/init.lua`
+- ⚠️ Legacy string effects create implicit mapping to maintain
+
+**Implementation Priority:**
+- P0: `effects.lua` + `inflict_injury` handler + `normalize_effect()`
+- P1: Verb handler refactor to use `effects.process()`
+- P2: `on_enter_room` hook + `trap_effect` subtype
+
+**Full Analysis:** See `docs/architecture/engine/event-hooks.md`
+
+---
+
+### D-INJURY-HOOKS: Injury-Causing Object Hook Categories & Taxonomy
+
+**Author:** Comic Book Guy (Creative Director)  
+**Date:** 2026-03-23  
+**Status:** FINALIZED  
+**Scope:** Engine architecture, object design, injury system integration  
+**Audience:** Bart (engine), object implementation team, Smithers (injury system)
+
+**Problem:** Different injury-causing objects need different interaction patterns. Should poison bottle call same hook as bear trap? How does engine distinguish "swallow" vs. "touch"? Without clarity, object implementations become inconsistent.
+
+**Decision: Four Hook Categories**
+
+1. **Consumption Hooks** — Ingestion-based injuries (poison, spoiled food)
+   - `on_consume(verb, severity)`, `on_drink()`, `on_eat()`, `on_taste(severity)`
+   - Verbs: DRINK, SIP, GULP, TASTE, EAT, BITE, CHEW
+   - Safety: TASTE safe (warning), full consumption causes injury
+
+2. **Contact Hooks** — Touch-based injuries (traps, hot objects)
+   - `on_take(verb)`, `on_touch(verb)`, `on_interact(verb)` (fallback)
+   - Verbs: TAKE, GRAB, PICK UP, SEIZE, TOUCH, HANDLE, GRASP
+   - Safety: LOOK, SMELL safe; interaction risky
+
+3. **Proximity Hooks (Phase 2+)** — Room-level hazards (pit, gas, ceiling)
+   - `on_traverse(direction)`, `on_enter(room_id)`, `on_step(location)`
+   - Verbs: GO, MOVE, directional verbs (N, S, E, W, UP, DOWN)
+   - Safety: Can detect via SEARCH, LISTEN, SMELL before triggering
+
+4. **Duration Hooks** — Ongoing injury ticks (bleeding, poison DoT)
+   - `on_tick(turn_count)`, `on_worsening(severity_increase)`, `on_healing(amount)`
+   - Triggers: Every turn automatically; on injury worsening; on treatment
+   - Safety: Player monitors via `injuries` verb, finds treatment
+
+**Key Constraints:**
+- One hook per interaction pattern (consistency)
+- Hook names are verbs (`on_consume`, not `whenConsumed`)
+- Hooks pass context (`on_consume(verb, severity)` allows object customization)
+- Hooks are optional (object doesn't need all)
+
+**Hook Resolution Matrix:**
+- DRINK → `on_consume(verb="drink")` if defined
+- TAKE on trap → `on_take(verb="take")` if defined
+- GO NORTH → `on_traverse(direction="north")`
+- Every turn → `on_tick(turn_count)` for active injuries
+
+**Implementation Roadmap:**
+- **Phase 1 MVP:** `on_consume()`, `on_take()`, `on_tick()`
+- **Phase 2:** `on_traverse()`, `on_enter()` (proximity)
+- **Phase 3+:** `on_worsening()`, `on_healing()`, `on_recovery()` (advanced)
+
+**Testing Strategy:**
+- Consumption: sealed bottle (safe) → taste (warning) → drink (injury)
+- Contact: armed trap (safe observation) → take/touch (injury)
+- Proximity: hidden pit (unknown risk) → search first (avoids injury)
+- Duration: poison ticks per turn, antidote stops ticking
+
+**Cross-References:**
+- Poison Bottle Design: `docs/design/objects/poison-bottle.md` (710 lines)
+- Bear Trap Design: `docs/design/objects/bear-trap.md` (972 lines)
+- Engine Hooks: `docs/architecture/engine/event-hooks.md`
+
+---
+
+**End of 2026-03-23T15:22Z Morning Session Merge**  
+**Total Active Decisions:** 70  
+**Last Merge:** 2026-03-23T15:22Z (Scribe)

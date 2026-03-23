@@ -315,3 +315,72 @@ Comprehensive review of state machine patterns, mutation strategies, and game en
 ### Impact
 
 Research validated Bart's mutation analysis findings and informed the D-MUTATE-PROPOSAL for generic `mutate` field on FSM transitions. Also supports D-PRINCIPLE-GOVERNANCE: core principles as hard constraints.
+
+---
+
+## Injury-Causing Objects: Poison & Trap Mechanics in Classic IF (2026-03-26)
+
+**Status:** ✅ COMPLETE  
+**Report:** `docs/research/injury-objects-classic-if.md` (24KB, 8 sections, 40+ cited examples)
+
+**Research Commission:** Wayne "Effe" Berry requested deep-dive into how classic IF/MUD games handle poison (consumable→injury) and trap (contact→injury) mechanics, specifically for design of two objects for current project.
+
+### Research Scope
+- Poison pipelines in Zork, Infocom (Enchanter series), Curses!, Spider and Web, Anchorhead
+- Trap discovery patterns (visible vs hidden), disarm mechanics, trigger taxonomy
+- Engine event models: Inform6/7 before/after hooks, TADS pre/during/post, LPC MUD heartbeat/commands
+- Best practices from classic IF theory (Zarfian Cruelty Scale, fairness principles, no cheap death)
+- Nested object patterns (liquid-in-container representation problem)
+
+### Key Findings
+
+1. **Poison is a Puzzle, Not a Hazard** — Classic IF treated poison as delayed-consequence puzzle objects, not instant-death traps. Infocom philosophy: transparent danger (readable label/smell), findable antidote, multiple-turn onset, graceful failure states.
+
+2. **Three-Stage Pipeline** — Consume → Symptom (gradual damage/stat reduction) → Recovery/Death (cure findable in same location as poison, fairness principle). Zork III poison room exemplifies pattern: transparent liquid + antidote scroll present = solvable puzzle.
+
+3. **Graduated Damage Model** — No binary alive/dead. Poison causes injury states (uninjured → mild → moderate → severe → death), giving player agency and time to find cure. Traps similarly did non-lethal damage on first trigger, lethal only on repeated failures or at puzzle climax.
+
+4. **No Invisible Threats** — All poisonable/trap-triggerable objects revealed their nature through description, examination, or NPC warnings. "Cruelty Scale" philosophy: Infocom stayed Polite→Tough, never Cruel. Instant death without warning = player frustration = bad design.
+
+5. **Event Hook Pattern from Inform6** — The `before [Drinking]` and `after [Drinking]` two-phase system became canonical. Before can intercept/prevent action (return true); after fires if action succeeded. LPC MUDs used similar `add_action()` hooks; TADS extended with pre/during/post phases.
+
+6. **Liquid-in-Container Problem** — Representation challenge across all engines. Zork: liquid as container property (simple but limited). Inform6/7: liquid as nested object with inheritance (expressive but requires careful typing). TADS: sophisticated container content system. Modern recommendation: model liquid as container state property, not independent object, to avoid state explosion.
+
+7. **Disarm = Solve the Puzzle** — No generic "disable trap" skill. Specific tools for specific traps (rope for pit, key for lock trap, spell for magical trap). Disarming required prior puzzle-solving or item collection. Trap disarm check was boolean (had tool = success, else = fail), not DC-based.
+
+8. **Best Practices Codified** — Infocom's design philosophy (guardrails for this engine): No instant death, transparent danger, findable solutions, graceful failure, save-restore expected, trap as puzzle not difficulty spike.
+
+9. **Anti-Patterns to Avoid** — Instant death without warning (frustrating), no solution findable (forces walkthroughs), inconsistent mechanics, no recovery window, unforgiving permadeath in single-player context.
+
+10. **Event Taxonomy** — Classic engines provided `before_action()`, `after_action()`, `on_enter_room()`, `on_tick()`/`heart_beat()`. Modern engines add late-binding listeners, but core pattern unchanged since Inform6 (1993).
+
+### Recommendations for Our Engine
+
+1. **Implement `before/after` hook pair** for actions (before can intercept, after informational)
+2. **Injury as first-class concept** — not health points but `Injury(damage_type, amount, duration, cure_condition)` objects
+3. **Container liquid as state property** — `bottle.liquid = { type: "poison", toxicity: 25, volume: 100 }`
+4. **Three-stage damage model** — uninjured → injured-mild → injured-severe → death (4 states, not 2)
+5. **Fair warning principle** — all harmful objects discoverable via examine; no hidden instant-death mechanics
+6. **Multi-turn cure window** — poison damage occurs over several turns; player has time to locate cure item/spell
+
+### Impact & Audience
+
+**For CBG (Comic Book Guy, consumable design):**
+- Poison should be *discoverable* (readable label, smell, color) with *findable antidote*
+- Use graduated damage model (mild → moderate → severe → death), not binary
+- Three-stage pipeline: consume → symptom → recovery/death
+- Information asymmetry drives tension: careful players survive, hasty players learn by injury
+
+**For Bart (Architect):**
+- Event system needs `before/after` hook pair + `on_tick()` for poison progression
+- Injury as object type, not stat modification: scalable to poison, disease, curse, radiation
+- Container + liquid as state property avoids object nesting complexity
+- No instant-death mechanic; always provide intermediate state and recovery window
+
+### Deliverables
+
+- 8-section research report (introduction, poison mechanics, traps, engine patterns, best practices, nested objects, game references, recommendations)
+- 40+ specific examples from named games (Zork I–III, Enchanter/Sorcerer/Spellbreaker, Adventure/Colossal Cave, Spider and Web, Curses!, Anchorhead)
+- Inform6, Inform7, TADS, LPC code examples
+- Event taxonomy comparison across 4 engine families
+- Reference table of classic game poison/trap implementations
