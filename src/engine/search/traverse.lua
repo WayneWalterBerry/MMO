@@ -360,15 +360,54 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
             
             -- Undirected search: enumerate contents
             if not target and not is_goal_search then
+                -- #64: Look up part for opening narration
+                local part = nil
+                if parent.parts then
+                    for _, p in pairs(parent.parts) do
+                        if p.surface == entry.surface_name then
+                            part = p; break
+                        end
+                    end
+                end
+
                 if #contents > 0 then
                     local items = {}
+                    local nested_narration = {}
                     for _, child_id in ipairs(contents) do
                         local child = registry:get(child_id)
                         if child then
                             items[#items + 1] = child.name or child.id
+                            -- #64: If child is a container, narrate opening and enumerate
+                            if containers.is_container(child) then
+                                local child_contents = containers.get_contents(child, registry)
+                                if #child_contents > 0 then
+                                    local child_items = {}
+                                    for _, gc_id in ipairs(child_contents) do
+                                        local gc = registry:get(gc_id)
+                                        if gc then
+                                            child_items[#child_items + 1] = gc.name or gc.id
+                                        end
+                                    end
+                                    if #child_items > 0 then
+                                        nested_narration[#nested_narration + 1] = narrator.nested_container_opening(ctx, child)
+                                        nested_narration[#nested_narration + 1] = narrator.nested_container_contents(ctx, child, child_items)
+                                    end
+                                end
+                            end
                         end
                     end
-                    result.narrative = narrator.container_contents_no_target(ctx, parent, items, nil)
+                    -- #64: Build narration with opening + contents + nested
+                    local lines = {}
+                    if part then
+                        lines[#lines + 1] = narrator.container_opening(ctx, part.name or "a container")
+                        lines[#lines + 1] = narrator.container_part_contents(ctx, part, items)
+                    else
+                        lines[#lines + 1] = narrator.container_contents_no_target(ctx, parent, items, nil)
+                    end
+                    for _, line in ipairs(nested_narration) do
+                        lines[#lines + 1] = line
+                    end
+                    result.narrative = table.concat(lines, "\n")
                 else
                     result.narrative = narrator.container_contents_no_target(ctx, parent, {}, nil)
                 end
@@ -376,6 +415,19 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
             end
             
             -- Targeted search: check contents for match, report what's there if not found (#27)
+            -- #64: Look up part for opening narration in targeted path too
+            local tgt_part = nil
+            if parent.parts then
+                for _, p in pairs(parent.parts) do
+                    if p.surface == entry.surface_name then
+                        tgt_part = p; break
+                    end
+                end
+            end
+            local opening_text = tgt_part
+                and narrator.container_opening(ctx, tgt_part.name or "a container")
+                or narrator.container_peek(ctx, parent)
+
             for _, child_id in ipairs(contents) do
                 local child = registry:get(child_id)
                 if child then
@@ -386,11 +438,11 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                             if deeper then
                                 result.found = true
                                 result.item = deeper
-                                result.narrative = narrator.container_peek(ctx, parent) .. "\n" .. narrator.container_peek(ctx, child) .. "\n" .. narrator.found_target(ctx, deeper, child)
+                                result.narrative = opening_text .. "\n" .. narrator.nested_container_opening(ctx, child) .. "\n" .. narrator.found_target(ctx, deeper, child)
                             else
                                 result.found = true
                                 result.item = child
-                                result.narrative = narrator.container_peek(ctx, parent) .. "\n" .. narrator.found_target(ctx, child, parent)
+                                result.narrative = opening_text .. "\n" .. narrator.found_target(ctx, child, parent)
                             end
                             return result
                         end
@@ -398,7 +450,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                         if goals.matches_goal(child, goal_type, goal_value, registry) then
                             result.found = true
                             result.item = child
-                            result.narrative = narrator.container_peek(ctx, parent) .. "\n" .. narrator.found_target(ctx, child, parent)
+                            result.narrative = opening_text .. "\n" .. narrator.found_target(ctx, child, parent)
                             return result
                         end
                     end
@@ -427,10 +479,28 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
         -- BUG-079: Undirected scoped search should enumerate surface contents
         if not target and not is_goal_search and #contents > 0 then
             local items = {}
+            local nested_narration = {}
             for _, child_id in ipairs(contents) do
                 local child = registry:get(child_id)
                 if child then
                     items[#items + 1] = child.name or child.id
+                    -- #64: If child is a container, narrate opening and enumerate contents
+                    if containers.is_container(child) then
+                        local child_contents = containers.get_contents(child, registry)
+                        if #child_contents > 0 then
+                            local child_items = {}
+                            for _, gc_id in ipairs(child_contents) do
+                                local gc = registry:get(gc_id)
+                                if gc then
+                                    child_items[#child_items + 1] = gc.name or gc.id
+                                end
+                            end
+                            if #child_items > 0 then
+                                nested_narration[#nested_narration + 1] = narrator.nested_container_opening(ctx, child)
+                                nested_narration[#nested_narration + 1] = narrator.nested_container_contents(ctx, child, child_items)
+                            end
+                        end
+                    end
                 end
             end
             if #items > 0 then
@@ -438,15 +508,12 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 if entry.direct_part_search then
                     result.narrative = narrator.part_contents(ctx, entry.surface_name, parent, items)
                 else
-                    -- Bug #47: sensory-aware narration for surface contents
-                    local sense = "vision"
-                    if ctx.current_room and ctx.current_room.light_level
-                        and ctx.current_room.light_level <= 0 then
-                        sense = "touch"
-                    end
-                    local find_word = sense == "touch" and "Inside you feel: " or "Inside you find: "
-                    result.narrative = (result.narrative ~= "" and result.narrative .. "\n" or "")
-                        .. find_word .. table.concat(items, ", ") .. "."
+                    -- #63: Surface-aware narration (top vs inside)
+                    result.narrative = narrator.surface_contents(ctx, entry.surface_name, parent, items)
+                end
+                -- #64: Append nested container narration
+                for _, line in ipairs(nested_narration) do
+                    result.narrative = result.narrative .. "\n" .. line
                 end
             else
                 if entry.direct_part_search then

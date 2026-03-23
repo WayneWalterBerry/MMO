@@ -3,6 +3,8 @@
 -- Adapts to light level and generates atmospheric discovery text.
 --
 -- Ownership: Bart (Architect)
+-- Fixes: #63 (surface vs inside narration), #64 (opening narration),
+--         #65 (plural item aggregation)
 
 local narrator = {}
 
@@ -99,6 +101,37 @@ local function format_object_name(object)
     end
     
     return name
+end
+
+---------------------------------------------------------------------------
+-- Helpers for #63/#64/#65
+---------------------------------------------------------------------------
+
+--- Strip leading article from a name
+local function strip_article(name)
+    return name:gsub("^[Aa]n? ", ""):gsub("^[Tt]he ", "")
+end
+
+--- Simple English pluralisation (covers common game-object nouns)
+local function pluralize(name)
+    if name:match("ch$") or name:match("sh$") or name:match("x$") or name:match("ss$") then
+        return name .. "es"
+    elseif name:match("y$") and not name:match("[aeiou]y$") then
+        return name:sub(1, -2) .. "ies"
+    else
+        return name .. "s"
+    end
+end
+
+--- Look up the part that maps to a given surface name on the parent (#64)
+local function get_part_for_surface(parent, surface_name)
+    if not parent or not parent.parts then return nil end
+    for _, part in pairs(parent.parts) do
+        if part.surface == surface_name then
+            return part
+        end
+    end
+    return nil
 end
 
 ---------------------------------------------------------------------------
@@ -209,7 +242,9 @@ function narrator.container_contents_no_target(ctx, container, items, target)
             return "You check inside the " .. display .. ". It's empty."
         end
     else
-        local list = table.concat(items, ", ")
+        -- #65: aggregate duplicate items for natural narration
+        local agg = narrator.aggregate_items(items)
+        local list = table.concat(agg, ", ")
         if target then
             return "You check inside the " .. display .. ". Inside " .. see_word .. " " .. list .. ", but no " .. target .. "."
         else
@@ -275,6 +310,134 @@ end
 -- @return string
 function narrator.part_empty(ctx, surface_name, parent)
     return "You rummage through the drawer. It is empty."
+end
+
+---------------------------------------------------------------------------
+-- #63: Surface-aware content narration
+---------------------------------------------------------------------------
+
+--- Aggregate duplicate item names into counted descriptions (#65)
+-- "a wooden match" x7 → "several wooden matches"
+-- @param items list of item name strings
+-- @return list of aggregated name strings
+function narrator.aggregate_items(items)
+    local counts = {}
+    local order = {}
+    for _, name in ipairs(items) do
+        if not counts[name] then
+            counts[name] = 0
+            order[#order + 1] = name
+        end
+        counts[name] = counts[name] + 1
+    end
+    local result = {}
+    for _, name in ipairs(order) do
+        local count = counts[name]
+        if count == 1 then
+            result[#result + 1] = name
+        else
+            local base = strip_article(name)
+            local plural = pluralize(base)
+            if count == 2 then
+                result[#result + 1] = "a couple of " .. plural
+            else
+                result[#result + 1] = "several " .. plural
+            end
+        end
+    end
+    return result
+end
+
+--- Generate narration for surface contents, distinguishing "top" from "inside" (#63)
+-- @param ctx game context
+-- @param surface_name string ("top", "inside", etc.)
+-- @param parent object that owns the surface
+-- @param items list of item name strings
+-- @return string
+function narrator.surface_contents(ctx, surface_name, parent, items)
+    local sense = get_primary_sense(ctx, ctx.current_room)
+    local agg = narrator.aggregate_items(items)
+    local list = table.concat(agg, ", ")
+    local parent_display = strip_article(parent.name or parent.id or "it")
+
+    if surface_name == "top" then
+        if sense == "touch" then
+            return "On top of the " .. parent_display .. ", you feel: " .. list .. "."
+        else
+            return "On top of the " .. parent_display .. ", you find: " .. list .. "."
+        end
+    else
+        if sense == "touch" then
+            return "Inside, you feel: " .. list .. "."
+        else
+            return "Inside, you find: " .. list .. "."
+        end
+    end
+end
+
+---------------------------------------------------------------------------
+-- #64: Container discovery / opening narration
+---------------------------------------------------------------------------
+
+--- Generate narration for discovering and opening a container part during search (#64)
+-- @param ctx game context
+-- @param part_name string — display name of the part (e.g., "a small drawer")
+-- @return string
+function narrator.container_opening(ctx, part_name)
+    local sense = get_primary_sense(ctx, ctx.current_room)
+    local name = part_name or "a container"
+    if sense == "touch" then
+        return "You feel " .. name .. ". You pull it open."
+    else
+        return "You see " .. name .. ". You open it."
+    end
+end
+
+--- Generate narration for the contents found inside a container part (#64)
+-- @param ctx game context
+-- @param part object or part table with .name
+-- @param items list of item name strings
+-- @return string
+function narrator.container_part_contents(ctx, part, items)
+    local sense = get_primary_sense(ctx, ctx.current_room)
+    local agg = narrator.aggregate_items(items)
+    local list = table.concat(agg, ", ")
+    local display = strip_article(part.name or part.id or "it")
+    if sense == "touch" then
+        return "Inside the " .. display .. ", you feel: " .. list .. "."
+    else
+        return "Inside the " .. display .. ", you find: " .. list .. "."
+    end
+end
+
+--- Generate narration for opening a nested container found during search (#64)
+-- @param ctx game context
+-- @param container object
+-- @return string
+function narrator.nested_container_opening(ctx, container)
+    local sense = get_primary_sense(ctx, ctx.current_room)
+    local name = strip_article(container.name or container.id or "it")
+    if sense == "touch" then
+        return "You open the " .. name .. "."
+    else
+        return "You open the " .. name .. "."
+    end
+end
+
+--- Generate narration for nested container contents (#64, #65)
+-- @param ctx game context
+-- @param container object
+-- @param items list of item name strings
+-- @return string
+function narrator.nested_container_contents(ctx, container, items)
+    local sense = get_primary_sense(ctx, ctx.current_room)
+    local agg = narrator.aggregate_items(items)
+    local list = table.concat(agg, ", ")
+    if sense == "touch" then
+        return "Inside, you feel: " .. list .. "."
+    else
+        return "Inside, you find: " .. list .. "."
+    end
 end
 
 return narrator
