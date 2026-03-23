@@ -201,3 +201,41 @@ Search results dumped in a block. Player should see items appear one-by-one with
 
 ### Key Learning
 6. **Time advancement follows the sleep pattern**: `ctx.time_offset += hours`. The presentation layer reads this offset in `get_game_time(ctx)`. Any verb that "takes time" should increment `ctx.time_offset`.
+
+---
+
+## Systemic Parser/Resolver Overhaul — #66 #67 #69 #70 #71 (2026-07-26)
+
+**Status:** ✅ COMPLETE — Commit 009a935, pushed to main
+
+### #66 P0: "stab yourself" no injury created
+**Root cause:** `handle_self_infliction()` bypassed the effects pipeline entirely. It called `injury_mod.inflict()` directly, ignoring `weapon.effects_pipeline` and `profile.pipeline_effects`. The pipeline_effects data in knife.lua/silver-dagger.lua was dead code.
+**Fix:** Added effects pipeline routing — when `weapon.effects_pipeline == true` and `profile.pipeline_effects` exists, builds contextualized effect list and calls `effects.process()`. Legacy weapons without pipeline_effects still use direct path.
+
+### #67: "hit your head" not recognized
+**Root cause:** `parse_self_infliction()` only stripped "my" prefix, not "your". Preprocessor had no possessive stripping.
+**Fix:** (1) Added `strip_possessives` preprocessor stage at end of pipeline (after phrase routing to preserve "check my wounds" etc). (2) Added "your" to `parse_self_infliction()`.
+
+### #69/#70: Pronoun "it"/"that" not resolved + wear auto-pickup
+**Root cause:** Context window pronoun resolution was already working. The real issue was the wear verb only searching hands — no fallback to room.
+**Fix:** Wear handler now falls through to `find_visible()` for wearable items, auto-picks up from room (Infocom pattern).
+
+### #71: "pick up cloak" resolves to oak vanity
+**Root cause:** Two issues in fuzzy.lua: (1) Levenshtein("cloak","oak")=2 was within threshold because length ratio check was too lenient. (2) `score_object` checked matchable strings sequentially — name "a moth-eaten wool cloak" matched as "partial" (4) before keyword "cloak" could score as "exact" (10).
+**Fix:** (1) Added 75% length ratio requirement for typo tolerance. (2) Two-pass scoring: exact match first across all strings, then partial.
+
+### Tests: 26 new tests
+`test/integration/test-bugs-066-067-069-070-071.lua`:
+- 5 tests for #66 (pipeline routing, injury creation, body area, description, effects.process called)
+- 7 tests for #67 (possessive stripping, backward compat with health/inventory phrases)
+- 6 tests for #69/#70 (context_window resolve, wear auto-pickup, hands-full guard, non-wearable guard)
+- 5 tests for #71 (Levenshtein distance, length ratio, exact vs partial scoring, legitimate typo)
+- 3 integration tests (full parser→verb→effects→injury chain)
+
+**62/62 test files pass — zero regressions.**
+
+### Key Learnings
+7. **Effects pipeline must be wired at ALL call sites.** `handle_self_infliction()` predated `effects.lua` and was never updated. Any new verb handler that creates injuries must check `effects_pipeline` flag.
+8. **Preprocessor stage ordering matters.** Possessive stripping must run AFTER phrase routing stages that depend on "my" (e.g., "check my wounds" → health).
+9. **Fuzzy scoring needs two-pass: exact first, then partial.** Single-pass sequential matching over `matchable_strings` (name→id→keywords) can miss exact keyword matches when the name also contains the search term as a substring.
+10. **Levenshtein typo tolerance needs length ratio guard.** Without it, short words in multi-word keywords match long search terms (e.g., "oak" in "oak vanity" matches "cloak").
