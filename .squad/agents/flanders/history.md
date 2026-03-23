@@ -102,6 +102,38 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 - Injury targeting architecture documented in decisions
 - Ready for cross-team execution phase
 
+### 2026-03-24: Afternoon Wave — Objects Are Inanimate + Deep Nesting Complete
+
+**Afternoon Wave Decisions Merged:**
+- **D-INANIMATE:** Objects are inanimate; creatures are future work
+  - Removed rat object from meta/objects/
+  - Removed all rat references (storage-cellar, web dist)
+  - Added core principle documentation
+  - Clean, zero broken references — IMPLEMENTED ✅
+
+- **D-AUDIT-OBJECTS:** Effects Pipeline Compatibility Audit (Bart)
+  - 79 objects inventoried: 2 pipeline-routed, 3 broken, 74 passive
+  - Knife/glass-shard/silver-dagger missing `effects_pipeline = true`
+  - Migration priority: knife (P1), glass-shard (P1), silver-dagger (P2)
+  - ~4.5 hours total work to unblock #50
+
+- **D-NEW-OBJECTS-PUZZLES:** Objects needed for puzzles 020–031 (Bob)
+  - Priority 1: wax-written-scroll, charcoal, bread-loaf, bait-meat, hand-mirror (using existing patterns)
+  - Priority 2: wooden-barricade, pressure-platform, portcullis, sealed-wall-section, light-beam (need engine features)
+  - Ready to implement Priority 1 objects now
+
+- **D-WAYNE-REGRESSION-TESTS:** Every bug fix MUST include regression test
+  - Rationale: nightstand search broke 3+ times
+  - Enforcement: process bug if test missing
+  - Impact: Nelson's audit now has all fixes locked with tests
+
+**Deep Nesting Refactor Complete:**
+- 6 Level 1 rooms converted to deep-nested furniture
+- Pattern: furniture → drawers/slots → contents (3+ levels)
+- All `location=` fields removed
+- Play-test verified: sensory works at all depths
+- Establishes canonical architecture for Level 1 discovery chains
+
 ### 2026-07-26: EP5 — Poison Bottle Effects Pipeline Refactor
 
 **Task:** Refactor poison-bottle.lua to route through the unified Effects Pipeline (D-EFFECTS-PIPELINE).

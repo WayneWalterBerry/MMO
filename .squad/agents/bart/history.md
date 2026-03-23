@@ -33,10 +33,17 @@
 - Full inventory audit of all 79 objects in `src/meta/objects/`
 - Identified 3 **BROKEN** objects with injury verbs but no pipeline routing
 - Confirmed 2 correctly migrated objects (poison-bottle, bear-trap)
-- Generated migration report → `.squad/decisions/inbox/bart-object-migration-audit.md`
+- Generated migration report → now merged into D-AUDIT-OBJECTS decision
 - Priority: knife (P1 critical), glass-shard (P1 critical), silver-dagger (P2 high)
 - Estimated migration effort: ~4.5 hours total
-- Status: Report ready for Wayne; unblocks #50 play-test
+- Status: Report merged; unblocks #50 play-test
+
+### Wayne Contributions Tracker (2026-03-24)
+- Created 516-line tracking document for Wayne's Senior Engineer contributions
+- Documented design decisions, architectural insights, course corrections, quality gates
+- Fulfills Wayne Directive (2026-03-23T22-00-56Z)
+- Living document at `.squad/contributions/wayne-contributions-log.md`
+- Enables future team retrospectives and contribution analysis
 
 ### Effects Pipeline Documentation (EP6) ✅ COMPLETE (2026-03-23)
 - Updated Effects Pipeline architecture docs to v2.0

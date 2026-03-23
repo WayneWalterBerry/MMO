@@ -70,6 +70,24 @@ Pre-refactor regression tests for the bedroom north exit (heavy oak door) define
 
 ---
 
+### Afternoon Wave: Full Issue Audit (2026-03-24)
+
+**Status:** ✅ COMPLETED — 18 closed issues verified
+
+Systematic audit of 18 closed issues from early February sprints:
+- **16 verified stable** — play-test confirmed fixed, regression tests written
+- **2 latent #63 bugs discovered** (commit d849d69) — edge cases in nightstand search caught during audit
+- **#58 confirmed resolved** — via Flanders' decision: rat object removal (D-INANIMATE)
+
+**Key Learning (Wayne Directive 2026-03-23T18:49Z):**
+Every bug fix now MUST include a regression test locking the exact scenario. This audit established the pattern — all verified fixes have tests. When a bug comes back, file a process bug for missing/insufficient test.
+
+**Impact:** Closes loop on issue lifecycle. Prevents recurring regressions (nightstand search broke 3+ times before this).
+
+**Related:** Smithers' Phase 3 work (#68, #74) incorporated same regression test discipline — 24 new tests shipped with each feature.
+
+---
+
 ### Stab & Hit-Head Regression Tests (2026-07-25)
 
 **Status:** ✅ COMPLETE — 43 tests, 43 passed, 0 failed (100%)

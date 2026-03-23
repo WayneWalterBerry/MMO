@@ -1680,3 +1680,155 @@ Search now "peeks" inside closed containers without changing their state. The ol
 **Total Active Decisions:** 70  
 **Last Merge:** 2026-03-23T15:22Z (Scribe)
 
+---
+
+## NEW DECISIONS (2026-03-24T18:50Z Afternoon Wave)
+
+### D-AUDIT-OBJECTS: Effects Pipeline Compatibility Audit
+**Author:** Bart (Architect)  
+**Date:** 2026-03-24  
+**Status:** Completed (awaiting implementation)  
+**Scope:** All 79 objects in `src/meta/objects/`
+
+**Finding Summary:**
+- **✅ Pipeline-routed (2 objects):** poison-bottle, bear-trap
+- **🔴 Broken (3 objects):** knife, glass-shard, silver-dagger
+- **⚪ No effects (74 objects):** passive furniture, tools, decorations
+
+**Critical Issue:** Knife, glass-shard, and silver-dagger define `on_stab`, `on_cut`, `on_slash` with `damage` and `injury_type` fields, but **do NOT declare `effects_pipeline = true`**. This breaks injury creation when players interact with these weapons.
+
+**Migration Priority:**
+- **P1 CRITICAL (Week 1):** knife (player-facing, blocks #50), glass-shard (simpler, same severity) — ~2.5 hours total
+- **P2 HIGH (Week 1-2):** silver-dagger (3 verbs, lower priority) — ~2 hours
+
+**Pattern (from bear-trap, poison-bottle):**
+1. Add `effects_pipeline = true`
+2. Restructure verb handlers as pipeline effects
+3. Test: wound created via `inflict_injury()`
+
+**Implication:** Any future weapon-like object must follow this pattern.
+
+**Full Report:** `.squad/decisions/inbox/bart-object-migration-audit.md` (309 lines, now merged)
+
+---
+
+### D-NEW-OBJECTS-PUZZLES: Objects Needed for Real-World Puzzles 020–031
+**Author:** Sideshow Bob (Puzzle Master)  
+**Date:** 2026-03-24  
+**For:** Flanders (Object Designer)  
+**Status:** Prioritized, awaiting implementation
+
+**Priority 1 — Using Existing Patterns (5 objects):**
+1. **wax-written-scroll** — Hidden message (reveal via heat/soot)
+2. **charcoal** — Soot-rubbing tool
+3. **bread-loaf** — Food item, absorbs poison
+4. **bait-meat** — Raw meat, attracts NPCs via scent
+5. **hand-mirror** — Portable reflective surface
+
+**Priority 2 — Requires Engine Features (5 objects):**
+6. **wooden-barricade** — Flammable obstacle, burnable
+7. **pressure-platform** — Weight threshold container
+8. **portcullis** — Counterweight-driven gate
+9. **sealed-wall-section** — Hidden draft reveals passage
+10. **light-beam** — Environmental light source
+
+**Engine Work Needed (for Bart):**
+- Capability gating (injury → restricted verbs)
+- Weight threshold system
+- Fire-spread mechanics
+- Smoke visibility
+- Light-beam reflection
+- NPC behavior patterns
+- Thrown-object mechanics
+
+**Full Report:** `.squad/decisions/inbox/bob-new-objects-needed.md` (122 lines, now merged)
+
+---
+
+### D-WAYNE-REGRESSION-TESTS: Every Bug Fix Must Include Regression Test
+**Author:** Wayne "Effe" Berry (User Directive)  
+**Date:** 2026-03-23T18:49Z  
+**Status:** ENFORCED (team-wide policy)
+
+**Policy:** Every bug fix MUST include a regression test that locks down the exact scenario. No fix ships without a test.
+
+**Rationale:** Nightstand search has broken 3+ times because fixes weren't locked with tests.
+
+**Enforcement:** If a bug comes back, file a process bug alongside the code bug — indicates missing/insufficient regression test.
+
+**Impact:** Nelson's audit (6 closed issues verified) followed this pattern. All #63 latent bug fixes now have regression tests.
+
+---
+
+### D-INANIMATE: Objects Are Inanimate (Creatures Are Future)
+**Author:** Wayne "Effe" Berry + Flanders (Object Engineer)  
+**Date:** 2026-03-24  
+**Status:** IMPLEMENTED
+
+**Decision Statement:** Objects in the MMO engine are INANIMATE. Living creatures, animals, NPCs, and autonomous agents are NOT objects.
+
+**Rationale:** Object system optimized for passive, state-driven entities. Creatures require:
+- Autonomous behavior (goal pursuit, decision-making)
+- Spatial reasoning (pathfinding, obstacle avoidance)
+- Communication (dialogue, relationship memory)
+- Agency (creatures act on world; objects are acted upon)
+
+**Implementation:**
+- ✅ Removed `src/meta/objects/rat.lua` (atmospheric creature incorrectly modeled as object)
+- ✅ Removed rat references from `storage-cellar.lua`, web dist
+- ✅ Added documentation: `docs/architecture/objects/core-principles.md` (Principle 0)
+
+**Design Guidance:**
+- **Alive or autonomous?** → Defer to NPC/creature system (future)
+- **Passive and state-driven?** → Belongs in object system (now)
+
+**Examples:**
+- ✅ **Rat** → NOT an object; requires creature AI
+- ✅ **Rat trap** → IS an object; container/tool
+- ✅ **Guard with patrol** → NOT an object; requires dialogue + pathfinding
+- ✅ **Guard helmet (loot)** → IS an object; equipment
+
+**Status:** CLOSED (all action items completed, no broken references remain)
+
+---
+
+### D-WAYNE-COMMIT-CHECK: Check Commits Before Push (Quality Gate)
+**Author:** Wayne "Effe" Berry (User Directive)  
+**Date:** 2026-03-23T21:58Z  
+**Status:** ENFORCED (team-wide policy)
+
+**Policy:** All team members MUST check/review their commits before pushing them. No blind pushes.
+
+**Enforcement:** Agents run `git diff --cached` or equivalent to review staged changes before `git push`.
+
+**Implementation:** All orchestration logs include commit hash. Agents verify diff before pushing.
+
+---
+
+### D-WAYNE-CONTRIBUTIONS: Track Wayne Contributions Continuously
+**Author:** Wayne "Effe" Berry (User Directive)  
+**Date:** 2026-03-23T22:00Z  
+**Status:** ACTIVE (ongoing practice)
+
+**Policy:** A team member must continuously watch Wayne's prompts and maintain a working file documenting the value he adds as a Senior Engineer.
+
+**What to Track:**
+- Design decisions
+- Architectural insights
+- Course corrections
+- Quality gates
+- Domain expertise
+
+**Living Document:** `.squad/contributions/wayne-contributions-log.md` (516 lines)
+
+**Maintenance:** Bart (Architect) initially created; Scribe merges new entries per agent spawn
+
+**Impact:** Enables future retrospectives, recognizes engineering leadership, fulfills accountability directive
+
+---
+
+**End of 2026-03-24T18:50Z Afternoon Wave Merge**  
+**Total Active Decisions:** 76 (70 prior + 6 new)  
+**Last Merge:** 2026-03-24T18:50Z (Scribe)  
+**Inbox Status:** EMPTY (all 6 inbox files merged and deleted)
+

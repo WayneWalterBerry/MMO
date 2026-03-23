@@ -239,3 +239,30 @@ Search results dumped in a block. Player should see items appear one-by-one with
 8. **Preprocessor stage ordering matters.** Possessive stripping must run AFTER phrase routing stages that depend on "my" (e.g., "check my wounds" → health).
 9. **Fuzzy scoring needs two-pass: exact first, then partial.** Single-pass sequential matching over `matchable_strings` (name→id→keywords) can miss exact keyword matches when the name also contains the search term as a substring.
 10. **Levenshtein typo tolerance needs length ratio guard.** Without it, short words in multi-word keywords match long search terms (e.g., "oak" in "oak vanity" matches "cloak").
+
+---
+
+## Bug Fixes #68, #74 — Category Synonyms + Composite Child Preference (2026-07-26)
+
+**Status:** ✅ COMPLETE — Commit 6cad8d0, pushed to main
+
+### #68 P2: 'find clothing' doesn't match wool cloak
+**Root cause:** `matches_target()` only checked id, name, substring, and keywords. Category-level synonyms ('clothing' → 'wearable') were not resolved.
+**Fix:** (1) Added `CATEGORY_SYNONYMS` table mapping common search terms to category names. `matches_target()` now checks this table after keyword matching. (2) Added 'clothing'/'apparel' keywords to wool-cloak.lua as a direct fix.
+
+### #74 P2: 'find candle' finds candle holder but not the candle itself
+**Root cause:** `find_deeper_match()` only worked for `containers.is_container()` objects. The candle-holder is a composite object with `parts` and FSM-state `contents`, but no "container" category. So deeper match was never attempted.
+**Fix:** (1) Removed `is_container` guard from `find_deeper_match()`. (2) Added `matches_exact()` helper for strict matching (id/name/keyword only, no substring). (3) Three-pass deeper match: exact in contents → exact in parts → any in contents. When parent substring-matches target but child exact-matches, child wins.
+
+### Tests: 24 new regression tests
+`test/search/test-search-bugs-068-074.lua`:
+- 9 tests for #68 (category synonyms, keyword match, full search integration)
+- 11 tests for #74 (matches_exact, find_deeper_match, composite parts, full search integration)
+- 4 cross-cutting regressions (keyword, substring, ID, unknown synonym)
+
+**65/65 test files pass — zero regressions.**
+
+### Key Learnings
+11. **Category-level search needs a synonym table.** Players use natural language categories ("clothing", "weapons") but objects use internal categories ("wearable", "weapon"). A simple synonym table bridges this gap without changing the object model.
+12. **Composite objects need deeper-match too, not just containers.** `find_deeper_match()` was gated on `is_container()` but composite `parts` objects (candle-holder with parts.candle) need the same child-preference logic. The guard should check for any children (contents or parts), not just container status.
+13. **Exact match vs substring match matters for parent/child disambiguation.** When "candle" substring-matches "candle holder" but exact-matches the child candle object, the exact match should always win. The `matches_exact()` helper enables this three-pass priority.
