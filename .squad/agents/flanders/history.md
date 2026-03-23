@@ -85,3 +85,28 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 - Effect pipeline ready for Bart's integration phase
 - Injury targeting architecture documented in decisions
 - Ready for cross-team execution phase
+
+### 2026-07-26: EP5 — Poison Bottle Effects Pipeline Refactor
+
+**Task:** Refactor poison-bottle.lua to route through the unified Effects Pipeline (D-EFFECTS-PIPELINE).
+
+**What Changed:**
+- Added `effects_pipeline = true` flag — signals engine to use `effects.process()` for all effect declarations
+- Added `pipeline_effects` array on drink transition — full atomic pipeline chain (inflict_injury + mutate effects) alongside backward-compatible `effect` + `mutate` blocks
+- Marked `on_taste_effect` as `pipeline_routed = true` — confirms it's consumed by `effects.process()` in the taste verb handler
+- Added GOAP `warns` hints on drink and taste prerequisites per D-EFFECTS-PIPELINE §3.6
+- Updated file header to reference pipeline routing and decision IDs
+
+**Key Constraint:** 116 regression tests (Nelson) lock down the data structure. Tests access `drink_trans.effect.type` directly (single table format), so `effect` must remain a single structured table — cannot convert to array. `effects.normalize()` handles this correctly (wraps single table in array).
+
+**Pipeline Integration Points (engine side, already wired by Bart/Smithers):**
+- Drink verb handler: `effects.process(trans.effect, ctx)` at verbs/init.lua:4829
+- Taste verb handler: `effects.process(obj.on_taste_effect, ctx)` at verbs/init.lua:2148
+- FSM mutations: still via `apply_mutations(obj, trans.mutate)` — FSM engine handles these independently
+
+**Backward Compatibility Strategy:**
+- `effect` (single table) + `mutate` block preserved for current FSM engine
+- `pipeline_effects` (array) available for future atomic processing
+- `effects.normalize()` handles both formats transparently
+
+**Result:** 116/116 tests pass. Zero regressions. Committed and pushed.
