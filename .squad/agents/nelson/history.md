@@ -18,12 +18,11 @@
 
 **Agent Role:** Tester responsible for playtest validation, bug discovery, and regression verification.
 
-**Testing Summary (2026-03-19 to 2026-03-22):**
-- 11 playtests completed, 308+ tests run, 262+ passed
+**Testing Summary (2026-03-19 to 2026-03-23):**
+- 12 playtests completed, 346+ tests run, 284+ passed
 - Critical path: bedroom → cellar → storage-cellar → deep-cellar → hallway ✅ COMPLETE
-- 55 unique bugs discovered (8 CRITICAL/HIGH, 15 MEDIUM+MAJOR, 2 LOW, 30 MINOR/COSMETIC)
-- All Level 1 rooms load, connect, and render correctly — writing is exceptional
-- ALL CRITICAL ISSUES RESOLVED
+- 60 unique bugs discovered (8 CRITICAL/HIGH, 20 MEDIUM+MAJOR, 4 LOW, 28 MINOR/COSMETIC)
+- Phase 3 features (hit/unconsciousness/appearance/mirror): engine solid, parser gaps identified
 
 **Current Status:**
 - Engine core: ✅ SOLID
@@ -40,6 +39,14 @@
 - `history-archive-2026-03-20T22-40Z-nelson.md` — Full archive (2026-03-19 to 2026-03-20T22:40Z): all 7 playtests, 32 bugs, regression verification, pass-by-pass findings
 
 ## Recent Updates
+
+### Pass-038: Phase 3 Sanity Check (2026-03-23)
+
+**Status:** ✅ COMPLETE — 38 tests, 22 passed, 13 failed, 3 warn
+
+First play-test of Phase 3 features (hit verb, unconsciousness, sleep+injury, appearance/mirror). Core mechanics solid — 5 parser coverage bugs filed (BUG-127–131, Issues #35–#39). All bugs are in natural-language phrase routing, not engine logic.
+
+**Full Report:** test-pass/pass-038-sanity-check.md
 
 ### Phase 5 Step 0.5: Per-Stage Pipeline Unit Tests (2026-03-22)
 
@@ -690,4 +697,33 @@ Due to BUG-067 and BUG-068 hangs, could NOT complete:
 - Death system has two separate paths (injury-tick death vs verb-caused death) that can both fire during sleep — needs gating flag
 - `examine mirror` and `examine vanity` both trigger appearance; `look mirror` shows object description — inconsistent but defensible since examine focuses on the glass while look surveys the furniture
 - Multiple stabs to same body part stack injuries independently rather than increasing severity — design choice worth questioning
+
+### Pass-038: Phase 3 Sanity Check (2026-03-23)
+
+**Status:** ✅ COMPLETE — 38 tests, 22 passed, 13 failed, 3 warn (58%)
+
+**Phase 3 features tested:** hit verb, unconsciousness, sleep+injury, appearance/mirror, injury listing, inventory natural phrasing.
+
+**Core mechanics SOLID:**
+- Hit verb + all synonyms (punch/bash/strike/bonk/thump) + body targeting: all working
+- Unconsciousness: timer, command blocking, wake narration, concussion injury all correct
+- Mirror/appearance: dynamically reflects injuries, items, health — "look in mirror" with injury shows "A bruise on your left arm"
+- Injury stacking, health computation, injury listing via `health`/`injuries` all correct
+- Inventory via `inventory`/`i`/`what am I holding?`/`what am I carrying?`/`what do I have?` all work
+
+**5 bugs filed (BUG-127 through BUG-131, Issues #35-#39):**
+- BUG-127 (MEDIUM): "status"/"how am I"/"am I hurt?"/"what's wrong with me?" not recognized as health query
+- BUG-128 (MEDIUM): "Where am I bleeding from?" triggers room look; severity phrases unrecognized
+- BUG-129 (MEDIUM): "look at myself"/"examine self" don't route to appearance system
+- BUG-130 (LOW): "what's in my hands?"/"look at my hands" not recognized as inventory
+- BUG-131 (LOW): "wait" verb missing; "appearance" standalone not recognized
+
+**Learnings:**
+- All 5 bugs are parser coverage gaps, not engine bugs — the subsystems work when reached via recognized commands
+- "Where am I bleeding from?" is a tricky case: "where am I" substring match hijacks the sentence into a room look
+- Sleep doesn't auto-heal bruises even over 8 hours (10 bruises survived) — likely sleep ticks injuries only once, not per simulated hour
+- "hit arm" always resolves to "left arm" — no side randomization for the generic "arm" keyword
+- Sleep + bleed-out and unconscious + bleed-out could not be tested in headless because no weapon is accessible in the starting area, but unit tests (test-hit-unconscious.lua) cover both paths
+
+**Full Report:** test-pass/pass-038-sanity-check.md
 
