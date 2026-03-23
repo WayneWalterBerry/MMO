@@ -46,6 +46,30 @@
 
 ## Recent Updates
 
+### Bedroom Door Regression Tests (2026-07-25)
+
+**Status:** ✅ COMPLETE — 57 tests (50 passed, 0 failed, 7 skipped)
+
+Pre-refactor regression tests for the bedroom north exit (heavy oak door) defined as exit metadata in `src/meta/world/start-room.lua`. Written BEFORE Wayne's planned refactor into a proper interactable object.
+
+| Category | Tests | Status |
+|----------|-------|--------|
+| Door state (type, locked, key_id, breakable) | 12 | ✅ PASS |
+| Mutation structure (open/close/break) | 13 | ✅ PASS |
+| Verb interactions (open/unlock/go) | 8 | ⏭️ 7 SKIP (need full engine) |
+| Exit integrity (all 3 exits) | 10 | ✅ PASS |
+| Keyword matching | 3 | ✅ PASS |
+| Passage constraints | 4 | ✅ PASS |
+| Description/narrative | 5 | ✅ PASS |
+| Negative tests | 2 | ✅ PASS |
+
+**Key findings:** 7 verb handler tests skipped because `engine.verbs` requires full engine context to initialise. These tests are structured and ready — they will activate once handlers can be loaded in isolation or via integration test harness.
+
+**Test file:** `test/rooms/test-bedroom-door.lua`
+**Commit:** b2deaeb
+
+---
+
 ### Stab & Hit-Head Regression Tests (2026-07-25)
 
 **Status:** ✅ COMPLETE — 43 tests, 43 passed, 0 failed (100%)
