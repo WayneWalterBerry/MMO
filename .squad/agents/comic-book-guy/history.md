@@ -278,3 +278,71 @@ The game must distinguish these three cases for meaningful space and real discov
 - Object designers: declare covering relationships, write hints (1 sentence), write discovery (2-3 sentences)
 - Room designers: place hints deliberately, consider player expectations, test hint→verb progression
 - Testing: verify visibility gates, search exclusion, hint clarity, discovery satisfaction
+
+### 2026-07-26: EP7 — Bear Trap Design Doc Updated for Effects Pipeline Integration
+**Status:** ✅ DESIGN DOC UPDATED
+
+**Deliverable:** Updated `docs/design/objects/bear-trap.md` with 243 new lines detailing Effects Pipeline integration (section 8, ~1500 words).
+
+**Integration Pattern Established:**
+
+The bear trap design now demonstrates the complete **object declaration → pipeline dispatch** pattern:
+
+1. **What:** Objects declare effects in structured tables
+   ```lua
+   effect = {
+       { type = "inflict_injury", injury_type = "crushing-wound", damage = 15, ... },
+       { type = "narrate", message = "..." },
+       { type = "mutate", mutations = { is_armed = false, ... } }
+   }
+   ```
+
+2. **When:** Engine hooks trigger the table (FSM transitions, sensory verbs, room entry)
+   - `take` verb → finds transition → calls `effects.process()`
+   - `feel` verb → finds `on_feel_effect` field → calls `effects.process()`
+
+3. **How:** Pipeline routes to subsystems without verb handler knowledge
+   - Normalization: strings or tables → unified array format
+   - Before-effect interceptors: armor reduces damage, immunity cancels effect
+   - Dispatching: `inflict_injury` → `injuries.inflict()`, `narrate` → `print()`, `mutate` → object update
+   - After-effect interceptors: achievements, logging, side effects
+
+**Key Design Decisions Locked In:**
+
+1. **Preconditions prevent side effects:** Disarm skill check happens before FSM transition, so failure prevents all mutations + effects
+2. **Interceptors run after transition:** Armor reduction doesn't undo state change (trap is already triggered); it just reduces damage
+3. **Structured effects are extensible:** New effect types added to pipeline without touching object code
+4. **Migration is opt-in:** Legacy `effect = "poison"` strings still work via `normalize()` backward-compat layer
+5. **Pipeline is triple-dispatch:** Object declares WHAT (effect table), engine decides WHEN (hook), pipeline decides HOW (handler registry)
+
+**Why This Matters:**
+
+- **No verb handler edits for new objects:** New trap types just declare effects in metadata
+- **Consistent injury path:** All contact injuries flow through same pipeline (glass shard, hot object, thorns, etc.)
+- **Armor system works generically:** Before-effect interceptor reduces any `inflict_injury` damage, not trap-specific
+- **Skill gating is composable:** Precondition can check skill + location + object state; FSM transition respects all preconditions
+- **Mutation system stays coherent:** State changes (SET→TRIGGERED→DISARMED) and property updates (is_armed, is_sprung, categories) all via same mutation handler
+
+**Documentation Notes:**
+
+- Parallel to poison-bottle design (consumable→injury) but different trigger (contact vs. consumption)
+- Both demonstrate same pipeline: object metadata → effects table → engine dispatch → subsystem action
+- Difference: poison uses FSM transition effect, bear trap uses FSM transition + sensory verb effects
+- Future: hidden traps will use `on_traverse` hook, teaching room-level trigger pattern
+
+**Sections Added:**
+- 8.1 Overview (pipeline architecture, current vs. future)
+- 8.2 Architecture comparison (inline vs. pipeline dispatch)
+- 8.3 Effect declaration format (structured tables for FSM and sensory verbs)
+- 8.4 Effect types table (inflict_injury, narrate, mutate)
+- 8.5 Before-effect interceptors (armor reduction pattern)
+- 8.6 Disarm mechanics (precondition pattern)
+- 8.7 Hook references (how hooks integrate with pipeline)
+- 8.8 Migration notes (4 phases: object declaration → engine integration → interceptors → backward compat)
+- 8.9 Why it matters (extensibility benefits)
+
+**Renumbered Sections:**
+- 9. Design Patterns & Reusability (was 8)
+- 10. Testing & Validation Checklist (was 9)
+- 11. Future Extensions (was 10)
+- 12. Design Decisions & Rationale (was 11)
