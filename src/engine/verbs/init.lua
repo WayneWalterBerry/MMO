@@ -490,7 +490,17 @@ local function _fv_parts(kw, reg, room)
         if obj and obj.parts then
             for part_key, part in pairs(obj.parts) do
                 if matches_keyword(part, kw) then
-                    return part, "part", obj, part_key
+                    -- Return the live registry object matching this part's keywords
+                    local live = part.id and reg:get(part.id)
+                    if not live and obj.contents then
+                        for _, cid in ipairs(obj.contents) do
+                            local candidate = reg:get(cid)
+                            if candidate and matches_keyword(candidate, kw) then
+                                live = candidate; break
+                            end
+                        end
+                    end
+                    return live or part, "part", obj, part_key
                 end
             end
         end
@@ -503,7 +513,8 @@ local function _fv_parts(kw, reg, room)
                         if item and item.parts then
                             for part_key, part in pairs(item.parts) do
                                 if matches_keyword(part, kw) then
-                                    return part, "part", item, part_key
+                                    local live = part.id and reg:get(part.id)
+                                    return live or part, "part", item, part_key
                                 end
                             end
                         end

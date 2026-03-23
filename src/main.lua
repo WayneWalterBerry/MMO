@@ -239,6 +239,11 @@ end
 ---------------------------------------------------------------------------
 local reg = registry.new()
 
+-- Phase 0: Flatten deep-nested instance trees into flat lists with .location
+for _, rm in pairs(rooms) do
+    rm.instances = loader.flatten_instances(rm.instances or {})
+end
+
 -- Phase 1: Resolve all instances across all rooms
 for _, rm in pairs(rooms) do
     for _, inst in ipairs(rm.instances or {}) do
@@ -276,14 +281,36 @@ for _, rm in pairs(rooms) do
             else
                 local parent = reg:get(loc)
                 if parent then
-                    parent.contents = parent.contents or {}
-                    parent.contents[#parent.contents + 1] = inst.id
+                    -- If parent has an "inside" surface, route there
+                    if parent.surfaces and parent.surfaces.inside then
+                        local zone = parent.surfaces.inside
+                        zone.contents = zone.contents or {}
+                        zone.contents[#zone.contents + 1] = inst.id
+                    else
+                        parent.contents = parent.contents or {}
+                        parent.contents[#parent.contents + 1] = inst.id
+                    end
                 else
                     io.stderr:write("Warning: container '" .. loc .. "' not found for instance '" .. inst.id .. "'\n")
                 end
                 if obj then obj.location = loc end
             end
         end
+    end
+end
+
+-- DEBUG: dump drawer state (temporary)
+if debug_mode or headless then
+    local dr = reg:get("drawer")
+    if dr then
+        io.stderr:write("DEBUG drawer: container=" .. tostring(dr.container)
+            .. " contents=" .. tostring(dr.contents)
+            .. " #contents=" .. tostring(dr.contents and #dr.contents or "nil") .. "\n")
+    end
+    local ns = reg:get("nightstand")
+    if ns then
+        io.stderr:write("DEBUG nightstand: contents=" .. tostring(ns.contents)
+            .. " #contents=" .. tostring(ns.contents and #ns.contents or "nil") .. "\n")
     end
 end
 

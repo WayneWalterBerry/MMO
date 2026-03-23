@@ -266,3 +266,20 @@ Search results dumped in a block. Player should see items appear one-by-one with
 11. **Category-level search needs a synonym table.** Players use natural language categories ("clothing", "weapons") but objects use internal categories ("wearable", "weapon"). A simple synonym table bridges this gap without changing the object model.
 12. **Composite objects need deeper-match too, not just containers.** `find_deeper_match()` was gated on `is_container()` but composite `parts` objects (candle-holder with parts.candle) need the same child-preference logic. The guard should check for any children (contents or parts), not just container status.
 13. **Exact match vs substring match matters for parent/child disambiguation.** When "candle" substring-matches "candle holder" but exact-matches the child candle object, the exact match should always win. The `matches_exact()` helper enables this three-pass priority.
+
+---
+
+## P0 FIX #78: Game fails to load after deep nesting refactor (2026-07-26)
+
+**Status:** ✅ COMPLETE — Commit b867eb6, pushed to main
+
+### Root Cause
+Room files were refactored from flat `location = "room"` strings to deep nesting (`on_top`, `contents`, `nested`, `underneath`). The `src/engine/loader/init.lua` has `flatten_instances()` which walks the tree and assigns `.location` to each instance. `src/main.lua` was updated to call it (line 244), but `web/game-adapter.lua` was not. Result: `inst.location` was nil for all nested objects, causing `loc:match()` to crash at line 398.
+
+### Fix (3 changes to web/game-adapter.lua)
+1. **Call `loader.flatten_instances()`** after `resolve_template()` and before object-fetching loop — converts nested tree to flat array with `.location` set on every instance
+2. **Nil guard for `loc`** — if location is somehow missing, treat as room-level instead of crashing
+3. **Port "inside" surface routing** from `src/main.lua` — when parent has `surfaces.inside`, route there instead of bare `parent.contents`
+
+### Key Learning
+14. **Web adapter must mirror main.lua loading phases.** The adapter duplicates the room-loading pipeline (flatten → fetch objects → resolve → wire containment). When the pipeline changes in main.lua, the adapter MUST be updated in lockstep. The adapter's `load_room()` function should always follow the same phase ordering as `src/main.lua`'s Phase 0/1/2 sequence.

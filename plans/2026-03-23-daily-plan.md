@@ -236,6 +236,42 @@ Wayne identified a gap: only poison bottle and bear trap were migrated to the pi
 
 ---
 
+#### Object Nesting Syntax Audit + Architecture Docs (added 2026-03-23 2:15 PM PST)
+
+Wayne directive: All object templates must be audited for nesting compliance. The nightstand.lua still has `surfaces.inside` which violates Principle 0.5. Need deep architecture guidance and syntax documentation.
+
+- [ ] Flanders: Fix nightstand.lua — remove `surfaces.inside` from all states, remove `surface = "inside"` from parts.drawer
+- [ ] Flanders: Audit ALL 80 objects in src/meta/objects/ for nesting violations (surfaces.inside on non-containers, stale location references, etc.)
+- [ ] Flanders: Fix any objects that violate nesting rules
+- [ ] Bart: Write comprehensive deep nesting architecture doc with:
+  - Full syntax reference (on_top, contents, nested, underneath)
+  - When to use each key
+  - Object template rules (containers have contents, furniture does NOT have inside)
+  - Room instance nesting patterns
+  - Composite object patterns (nightstand + drawer)
+  - Anti-patterns (surface mapping, flat location strings)
+  - Examples for every pattern
+- [ ] Bart: Update core-principles.md Principle 0.5 with link to full arch doc
+- [ ] Nelson: Run full test suite after fixes
+
+---
+
+#### Nelson Put-Phrasing Test Pass (added 2026-03-23 2:12 PM PST)
+
+Wayne directive: Thoroughly test all spatial placement phrasing — put on, put in, put under, shut/close, synonym verbs (place, set, drop, hide, slide, stuff, toss). Test invalid placements too (put pillow inside nightstand should fail). File issues for every failure.
+
+- [ ] Nelson: Run full put-phrasing test pass in --headless mode
+- [ ] Nelson: Test put ON surfaces (nightstand, bed, vanity)
+- [ ] Nelson: Test put IN containers (drawer, wardrobe)
+- [ ] Nelson: Test put UNDER things (rug, pillow, bed)
+- [ ] Nelson: Test invalid placements (nightstand has no inside)
+- [ ] Nelson: Test drawer open/close sequences
+- [ ] Nelson: Test synonym verbs (place, set, drop, hide, slide, stuff, toss)
+- [ ] Nelson: Test edge cases (not holding, closed container, pronouns)
+- [ ] Nelson: File GitHub issues for all FAILs and MISSINGs
+
+---
+
 #### Wayne Play-Test Bugs (2026-03-23 afternoon) — FIXING
 
 **P0 Blockers:**

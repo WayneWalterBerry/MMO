@@ -166,4 +166,60 @@ function loader.resolve_instance(instance, base_classes, templates)
   return resolved, nil
 end
 
+-- Relationship key → surface name mapping for deep-nested instance trees.
+-- Room files use on_top/underneath/nested keys; the engine uses surface names.
+local RELATIONSHIP_SURFACES = {
+    on_top      = "top",
+    underneath  = "underneath",
+}
+
+-- flatten_instances(instances) -> flat list of instances with .location set
+-- Walks the deep-nested instance tree and produces a flat array where every
+-- instance has a .location field compatible with Phase 2 containment building.
+--   "room"              → room-level object
+--   "parent_id.surface" → placed on a parent's named surface
+--   "parent_id"         → simple containment (inside parent, no surface)
+function loader.flatten_instances(instances)
+    local flat = {}
+
+    local function walk(inst, location)
+        inst.location = location
+        flat[#flat + 1] = inst
+
+        -- Surface-mapped relationships (on_top → .top, underneath → .underneath)
+        for key, surface in pairs(RELATIONSHIP_SURFACES) do
+            if inst[key] then
+                for _, child in ipairs(inst[key]) do
+                    walk(child, inst.id .. "." .. surface)
+                end
+                inst[key] = nil
+            end
+        end
+
+        -- Nested parts (drawer in nightstand) — simple containment
+        if inst.nested then
+            for _, child in ipairs(inst.nested) do
+                walk(child, inst.id)
+            end
+            inst.nested = nil
+        end
+
+        -- Simple containment (contents = array of child instance tables)
+        if type(inst.contents) == "table" and inst.contents[1]
+           and type(inst.contents[1]) == "table" and inst.contents[1].id then
+            local children = inst.contents
+            inst.contents = nil
+            for _, child in ipairs(children) do
+                walk(child, inst.id)
+            end
+        end
+    end
+
+    for _, inst in ipairs(instances) do
+        walk(inst, "room")
+    end
+
+    return flat
+end
+
 return loader
