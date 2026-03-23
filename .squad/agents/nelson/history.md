@@ -40,6 +40,31 @@
 
 ## Recent Updates
 
+### EP9/EP10: Bear Trap Play-Test & Unit Tests (2026-03-23)
+
+**Status:** ✅ COMPLETE — 168 tests, 168 passed, 0 failed (100%)
+
+Play-tested and wrote comprehensive unit tests for the bear-trap Effects Pipeline refactor (commit f872ed3). No bugs found — refactor is clean.
+
+| Category | Tests | Status |
+|----------|-------|--------|
+| Object identity & metadata | 16 | ✅ PASS |
+| FSM transitions (set→triggered via take/touch, triggered→disarmed, safe takes) | 38 | ✅ PASS |
+| Disarm guards (skill check, no player, no skill) | 6 | ✅ PASS |
+| Contact injury effects (take + touch, armed state) | 12 | ✅ PASS |
+| On-feel effect (armed state, pipeline_routed) | 6 | ✅ PASS |
+| Effects Pipeline integration (pipeline_effects arrays, mutate steps) | 8 | ✅ PASS |
+| Backward compatibility (legacy effect + pipeline_effects coexistence) | 6 | ✅ PASS |
+| Sensory properties (set, triggered, disarmed — all senses) | 33 | ✅ PASS |
+| get_transitions per state | 3 | ✅ PASS |
+| GOAP prerequisites | 6 | ✅ PASS |
+| Crushing-wound injury contract (definition, states, healing, timed events) | 27 | ✅ PASS |
+| Injury engine integration (inflict, tick, accumulation, death) | 7 | ✅ PASS |
+
+**Test file:** `test/verbs/test-bear-trap.lua`
+**Test pass report:** `test-pass/pass-041-ep9-ep10-bear-trap.md`
+**Full suite:** 46 test files, all pass (no regressions)
+
 ### EP2: Poison Bottle Regression Tests (2026-07-25)
 
 **Status:** ✅ COMPLETE — 116 tests, 116 passed, 0 failed (100%)
