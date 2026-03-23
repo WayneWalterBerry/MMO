@@ -85,10 +85,38 @@ The web build is intentionally unlisted:
 
 ## Verification
 
-After deploying, open the URL and verify:
-1. The terminal UI loads (dark background, blinking "Loading..." text)
-2. The welcome message appears ("You wake with a start...")
-3. Basic commands work: `feel`, `help`, `look`
+After deploying, verify the files actually landed in the **public GitHub Pages repo**:
+
+### Step 1: Check the deployed repo (MANDATORY)
+```powershell
+# Verify files on GitHub — this is the LIVE site, not docs/play/ in MMO
+gh api repos/WayneWalterBerry/WayneWalterBerry.github.io/contents/play/bootstrapper.js --jq '.sha' 
+gh api repos/WayneWalterBerry/WayneWalterBerry.github.io/contents/play/game-adapter.lua --jq '.sha'
+gh api repos/WayneWalterBerry/WayneWalterBerry.github.io/contents/play/engine.lua.gz --jq '.sha'
+```
+Or browse: https://github.com/WayneWalterBerry/WayneWalterBerry.github.io/tree/main/play
+
+### Step 2: Verify the BUILD_TIMESTAMP matches
+The deployed `bootstrapper.js` must show today's timestamp, NOT a stale one.
+
+### Step 3: Verify via debug URL (FASTEST)
+Open https://waynewalterberry.github.io/play/?debug and check:
+- The **commit hash** displayed matches the commit you just pushed
+- The **BUILD_TIMESTAMP** matches the current deploy time
+- The game loads without errors
+
+### Step 4: Play-test the live URL
+1. Open https://waynewalterberry.github.io/play/
+2. The terminal UI loads (dark background, blinking "Loading..." text)
+3. The welcome message appears ("You wake with a start...")
+4. Basic commands work: `feel`, `help`, `look`
+
+### ⚠️ CRITICAL: Deploy Target
+- **CORRECT:** `C:\Users\wayneb\source\repos\WayneWalterBerry.github.io\play\`
+- **WRONG:** `docs/play/` in the MMO repo (this is a private repo — not served)
+- The MMO repo is **private**. GitHub Pages serves from `WayneWalterBerry.github.io`.
+- Always use `web/deploy.ps1` which handles the correct target automatically.
+- NEVER manually copy files to `docs/play/` — that doesn't deploy anything.
 
 ## Troubleshooting
 
