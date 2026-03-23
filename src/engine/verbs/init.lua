@@ -16,6 +16,7 @@ local presentation = require("engine.ui.presentation")
 local preprocess = require("engine.parser.preprocess")
 local traverse_effects = require("engine.traverse_effects")
 local effects = require("engine.effects")
+local materials = require("engine.materials")
 
 -- Tier 4: Context window for recent interaction memory
 local cw_ok, context_window = pcall(require, "engine.parser.context")
@@ -2776,7 +2777,85 @@ function verbs.create()
         ctx.current_room.contents[#ctx.current_room.contents + 1] = obj.id
         obj.location = ctx.current_room.id
 
-        print("You drop " .. (obj.name or obj.id) .. ".")
+        -- on_drop: material fragility check
+        local mat = obj.material and materials.get(obj.material)
+        local floor_mat_name = ctx.current_room.floor_material or "stone"
+        local floor_mat = materials.get(floor_mat_name)
+        local surface_hardness = floor_mat and floor_mat.hardness or 7
+        if mat and mat.fragility >= 0.5 and surface_hardness >= 5 then
+            -- Object shatters on impact
+            local shatter_mut = obj.mutations and obj.mutations.shatter
+            if shatter_mut and shatter_mut.narration then
+                print(shatter_mut.narration)
+            else
+                print("The " .. (obj.name or obj.id):gsub("^a%s+", ""):gsub("^an%s+", "")
+                    .. " shatters on the " .. floor_mat_name .. " floor"
+                    .. ", sending fragments skittering across the room.")
+            end
+
+            -- Fire FSM shatter/break transition if available
+            if obj.states then
+                local shatter_target = nil
+                for _, t in ipairs(obj.transitions or {}) do
+                    if (t.verb == "shatter" or t.verb == "break")
+                       and (not t.from or t.from == obj._state) then
+                        shatter_target = t.to
+                        break
+                    end
+                end
+                if shatter_target then
+                    fsm_mod.transition(ctx.registry, obj.id, shatter_target, ctx, "break")
+                end
+            end
+
+            -- Spawn debris from mutations.shatter.spawns
+            if shatter_mut and shatter_mut.spawns then
+                for _, shard_id in ipairs(shatter_mut.spawns) do
+                    local shard_def = ctx.registry:get(shard_id)
+                    if shard_def then
+                        -- Shard already registered; place a copy in room
+                        local shard_copy = {}
+                        for k, v in pairs(shard_def) do shard_copy[k] = v end
+                        shard_copy._instance_id = next_instance_id()
+                        shard_copy.location = ctx.current_room.id
+                        ctx.registry:register(shard_id .. "-" .. shard_copy._instance_id, shard_copy)
+                        ctx.current_room.contents[#ctx.current_room.contents + 1] =
+                            shard_id .. "-" .. shard_copy._instance_id
+                    else
+                        -- Attempt to load definition from disk
+                        local SEP = package.config:sub(1, 1)
+                        local shard_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP
+                            .. "objects" .. SEP .. shard_id .. ".lua"
+                        local load_ok, shard_data = pcall(dofile, shard_path)
+                        if load_ok and shard_data then
+                            shard_data._instance_id = next_instance_id()
+                            shard_data.location = ctx.current_room.id
+                            local inst_id = shard_id .. "-" .. shard_data._instance_id
+                            shard_data.id = inst_id
+                            ctx.registry:register(inst_id, shard_data)
+                            ctx.current_room.contents[#ctx.current_room.contents + 1] = inst_id
+                        end
+                    end
+                end
+            end
+
+            -- Remove original object from room
+            for i = #ctx.current_room.contents, 1, -1 do
+                if ctx.current_room.contents[i] == obj.id then
+                    table.remove(ctx.current_room.contents, i)
+                    break
+                end
+            end
+            obj.location = nil
+        else
+            -- Object survives the drop
+            if mat and mat.hardness and mat.hardness >= 5 then
+                print("The " .. (obj.name or obj.id):gsub("^a%s+", ""):gsub("^an%s+", "")
+                    .. " hits the floor with a resonant clang.")
+            else
+                print("You drop " .. (obj.name or obj.id) .. ".")
+            end
+        end
     end
 
     ---------------------------------------------------------------------------

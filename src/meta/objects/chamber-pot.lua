@@ -56,5 +56,11 @@ return {
         return self.description .. "\n\nIt is, thankfully, empty."
     end,
 
-    mutations = {},
+    mutations = {
+        shatter = {
+            becomes = nil,
+            spawns = {"ceramic-shard", "ceramic-shard"},
+            narration = "The ceramic chamber pot shatters on the stone floor, sending fragments skittering across the room.",
+        },
+    },
 }

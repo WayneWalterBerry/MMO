@@ -42,6 +42,7 @@ This document analyzes how `.lua` object files hook into the engine to cause inj
 | `on_taste_effect` | Verb handler → **`effects.process()`** | ✅ Routes structured effect through pipeline | **Migrated** |
 | `on_feel_effect` | Verb handler → **`effects.process()`** | ✅ Routes structured effect through pipeline | **Migrated** |
 | `effect` (on transition) | Verb handler → **`effects.process()`** | ✅ Routes structured effect through pipeline | **Migrated** |
+| `on_drop` (fragility) | `verbs/init.lua` drop handler | ✅ Material fragility check: shatters if fragility ≥ 0.5 AND surface hardness ≥ 5. Fires FSM break transition, spawns debris from `mutations.shatter.spawns`, removes original. Issue #56. | **Implemented** |
 
 ### 2.3 How Objects Cause Injuries
 

@@ -70,6 +70,13 @@ Wayne's vision: mundane real-world objects should have creative emergent uses. A
 
 ## Changelog
 
+### 2026-07-27 — Shatter on drop (Issue #56)
+- Added `mutations.shatter` with `spawns = {"ceramic-shard", "ceramic-shard"}` and narration
+- When dropped on a hard surface (stone hardness ≥ 5), the pot shatters via the on_drop fragility system
+- Spawns 2 ceramic shards as debris; original pot is removed from room
+- Controlled by material properties: ceramic fragility (0.7) ≥ threshold (0.5) + floor hardness ≥ 5
+- Soft floors (e.g., wood hardness 4) prevent shattering
+
 ### 2026-07-27 — Wearable as improvised helmet (Issue #54)
 - Added `wear_slot = "head"`, `is_helmet = true`, `reduces_unconsciousness = 1` (top-level engine detection)
 - Added `appearance.worn_description` for mirror/appearance narration
