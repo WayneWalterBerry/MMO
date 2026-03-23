@@ -794,9 +794,235 @@ INJURY-CAUSING HOOK CATEGORIES
 
 ---
 
-## 8. Design Patterns & Reusability
+## 8. Effects Pipeline Integration
 
-### 8.1 Trap Patterns
+### 8.1 Overview
+
+The bear trap integrates with the unified **Effects Pipeline** (`src/engine/effects.lua`), which standardizes how objects declare and trigger effects (injuries, narration, mutations, status changes). Instead of verb handlers containing inline logic to interpret object behavior, effects are **declared as structured Lua tables in object metadata**, and the pipeline routes them to the appropriate subsystem.
+
+This section describes:
+1. How the bear trap's contact injuries route through the pipeline
+2. The structured effect table format used for bear trap transitions
+3. How interceptors (like armor reduction) integrate with the pipeline
+4. The migration path from current implementation to pipeline-based implementation
+
+**Key principle:** Objects declare **what** happens (effect tables). The engine decides **when** it happens (hook integration). The pipeline decides **how** it happens (dispatch to subsystems). No verb handler knows the object's business.
+
+### 8.2 Current State vs. Pipeline Architecture
+
+**Before (current implementation — direct verb handler calls):**
+```
+Player attempts: take bear-trap (armed)
+  → take verb handler:
+      1. Checks: is object a trap? is_armed == true?
+      2. If armed → inline call: injuries.inflict(player, "crushing-wound", ...)
+      3. Directly mutates object state
+      4. Prints result
+```
+
+**After (pipeline-based — object-declared effects):**
+```
+Player attempts: take bear-trap (armed)
+  → take verb handler:
+      1. Executes FSM transition: set → triggered
+      2. Finds transition.effect field
+      3. Calls: effects.process(trans.effect, ctx)
+         └─ Pipeline normalizes effect
+         └─ Runs before_effect interceptors (armor, immunity, etc.)
+         └─ Dispatches to inflict_injury handler
+         └─ Runs after_effect interceptors (achievements, etc.)
+      4. Applies mutations (name, keywords, categories)
+      5. Prints transition message
+```
+
+**Key difference:** The injury is declared in object metadata, not hardcoded in the engine. New traps can be created without touching verb handler code.
+
+### 8.3 Bear Trap Effect Declaration
+
+The bear trap declares its effects using the structured table format. Contact with the trap (via `take` or `feel`) triggers effects:
+
+#### Structured Effect Table (FSM Transition)
+
+```lua
+-- Bear trap transitions from SET → TRIGGERED when player takes it
+transitions = {
+    {
+        from = "set",
+        to = "triggered",
+        verb = "take",
+        message = "You reach for the trap. The moment your fingers touch the mechanism, the jaws snap SHUT with a violent CRACK!",
+        effect = {
+            -- Multiple effects fire in sequence
+            { type = "inflict_injury", 
+              injury_type = "crushing-wound", 
+              source = "bear-trap", 
+              location = "hand",
+              damage = 15,
+              message = "Pain shoots through your hand as the iron jaws clamp down. The crushing force is blinding." },
+            { type = "narrate", 
+              message = "Blood drips from between the teeth. Your hand is trapped." },
+            { type = "mutate", 
+              target = "self",
+              mutations = { is_armed = false, is_sprung = true } }
+        },
+        -- Optional: only execute transition if precondition passes
+        precondition = function(player, obj) 
+            return obj.is_armed == true 
+        end,
+    }
+}
+
+-- Bear trap fires on FEEL (sensory verb) if armed
+states = {
+    set = {
+        on_feel = "The metal is cold and unyielding. You sense the tension in the mechanism. This thing is waiting to snap.",
+        on_feel_effect = {
+            type = "inflict_injury",
+            injury_type = "crushing-wound",
+            source = "bear-trap",
+            location = "hand",
+            damage = 8,
+            message = "SNAP! The jaws clamp shut on your hand!",
+        }
+    }
+}
+```
+
+### 8.4 Effect Types Used by Bear Trap
+
+| Effect Type | Purpose | Parameters | Example |
+|-------------|---------|------------|---------|
+| `inflict_injury` | Apply injury via pipeline | `injury_type`, `source`, `location`, `damage`, `message` | Crushing wound from trap jaws |
+| `narrate` | Print narration to player | `message`, `style` (optional) | "Blood drips from between the teeth." |
+| `mutate` | Update object properties | `target`, `mutations` | Change `is_armed`, `is_sprung`, categories |
+
+### 8.5 Before-Effect Interceptors: Armor Reduction
+
+The pipeline supports **before-effect interceptors** that fire after the FSM transition but before the injury is inflicted. This is where armor (helmets, gauntlets, etc.) reduces damage:
+
+```lua
+-- In player or armor subsystem
+effects.add_interceptor("before", function(effect, ctx)
+    -- Only modify inflict_injury effects
+    if effect.type ~= "inflict_injury" then return end
+    
+    local player = ctx.player
+    local armor = player.armor or {}
+    
+    -- Hand protection check: reduce damage if wearing gloves/gauntlets
+    if effect.location == "hand" then
+        if armor.hands then
+            local reduction = armor.hands.damage_reduction or 0.2  -- 20% reduction
+            effect.damage = math.max(1, math.floor(effect.damage * (1 - reduction)))
+            effect.message = effect.message .. "\n(Your " .. armor.hands.name .. " absorbed some of the impact.)"
+        end
+    end
+end)
+```
+
+**Key property:** The interceptor fires **after** the FSM transition (trap is already `triggered`, cannot undo), but **before** the injury is applied. This allows:
+- Armor to reduce but not negate damage
+- Resistance/immunity to cancel effects
+- Status conditions to modify damage (weakness: +25%, resistance: -50%)
+
+### 8.6 Disarm Mechanic & Pipeline Interaction
+
+The disarm process follows a similar pattern: FSM transition triggers effects, effects process through pipeline, mutations apply:
+
+```lua
+-- Disarm transition: triggered → disarmed
+transitions = {
+    {
+        from = "triggered",
+        to = "disarmed", 
+        verb = "disarm",
+        message = "You carefully manipulate the release pin...",
+        effect = {
+            { type = "narrate", 
+              message = "The springs give. The jaws go slack. The trap is disarmed." },
+            { type = "mutate",
+              target = "self",
+              mutations = { 
+                  is_armed = false, 
+                  is_sprung = false,
+                  is_disarmed = true,
+                  is_dangerous = false,
+                  categories = { "trap", "trophy" }
+              }}
+        },
+        -- Precondition: player must have lockpicking skill + correct tool
+        precondition = function(player, obj, tool)
+            return player:has_skill("lockpicking") and 
+                   (tool.id == "lockpick" or tool.id == "needle" or tool.id == "dagger")
+        end,
+    }
+}
+```
+
+**Critical distinction:** The disarm precondition is checked **before** the transition executes. If precondition fails, the transition never fires, the state never changes, and no effects process. This is different from before-effect interceptors, which fire after the transition.
+
+### 8.7 Event Hook References in Pipeline
+
+The bear trap uses these engine hooks, which are now standardized through the pipeline:
+
+| Hook | Current Role | Pipeline Role |
+|------|--------------|--------------|
+| `on_take` (verb) | Sensory callback, string effect | FSM transition hook — effect field routes through pipeline |
+| `on_touch` (verb) | Sensory callback | Sensory verb → on_touch_effect field routes through pipeline |
+| `on_feel` (verb) | Sensory callback | Sensory verb → on_feel_effect field routes through pipeline |
+| FSM transition | State change trigger | Transition carries `effect` field → effects.process() |
+| `on_disarm` (skill) | Skill trigger (future) | FSM transition with precondition check |
+
+None of these hooks change. What changes is the **implementation**: instead of verb handlers hardcoding behavior, they call `effects.process()` on the effect declaration.
+
+### 8.8 Migration Notes: From Current to Pipeline
+
+**Phase 1: Object Declaration (Already Complete)**
+- Bear trap already has structured effect tables in metadata
+- Example in `src/meta/objects/bear-trap.lua`
+- Objects declare: `effect = { type = "inflict_injury", injury_type = "crushing-wound", ... }`
+
+**Phase 2: Engine Integration (In Progress — Bart)**
+1. Create `src/engine/effects.lua` with:
+   - `effects.register(type, handler)` — register effect handlers
+   - `effects.process(effect, ctx)` — dispatch effects through pipeline
+   - `effects.add_interceptor(phase, fn)` — register before/after hooks
+   - `effects.normalize(raw)` — backward-compat for legacy string effects
+
+2. Register handlers:
+   - `inflict_injury` → calls `injuries.inflict(player, ...)`
+   - `narrate` → prints message
+   - `mutate` → updates object properties
+
+3. Refactor verb handlers:
+   - Drink: `effects.process(trans.effect, ctx)` instead of inline `if trans.effect == "poison" then`
+   - Take: `effects.process(trans.effect, ctx)` instead of inline trap logic
+   - Feel: `effects.process(state.on_feel_effect, ctx)` instead of inline sensory logic
+
+**Phase 3: Interceptor System (In Progress — Armor Integration)**
+- Register armor before-effect interceptor
+- Armor reduces `inflict_injury` damage by percentage
+- Helmet reduces unconsciousness duration by percentage
+
+**Phase 4: Backward Compatibility (Opt-in)**
+- Legacy `effect = "poison"` strings still work via `normalize()`
+- Mapping: `"poison"` → `{ type = "inflict_injury", injury_type = "poisoned-nightshade", ... }`
+- Existing old-format objects continue functioning until migrated
+
+### 8.9 Why This Matters for Bear Trap Design
+
+1. **No engine edits needed** — New traps can be created by declaring effects in object metadata
+2. **Consistent injury path** — All contact injuries route through same pipeline
+3. **Armor integration** — Before-effect interceptors let armor reduce damage; not hardcoded per-trap
+4. **Skill gating** — Disarm precondition checks skill; failure prevents FSM transition + effects
+5. **Mutation consistency** — All state changes flow through mutation system; object properties stay coherent
+6. **Extensibility** — New effect types (stun, bleed amplification, paralysis) can be added to pipeline without verb handler changes
+
+---
+
+## 9. Design Patterns & Reusability
+
+### 9.1 Trap Patterns
 
 This bear trap design establishes three reusable patterns:
 
@@ -815,7 +1041,7 @@ This bear trap design establishes three reusable patterns:
 - Hook: `on_tick` while in room → ongoing damage
 - Future: Noxious gas cellar
 
-### 8.2 Injury Pattern Reuse
+### 9.2 Injury Pattern Reuse
 
 The crushing injury from the bear trap parallels:
 
@@ -826,7 +1052,7 @@ The crushing injury from the bear trap parallels:
 
 All follow the same **injury system architecture**: initial damage + optional over-time + treatment options.
 
-### 8.3 FSM State Reuse
+### 9.3 FSM State Reuse
 
 The bear trap's FSM (`set → triggered → disarmed`) mirrors:
 
@@ -838,16 +1064,16 @@ The mutation pattern (name update, categories shift, danger level changes) is co
 
 ---
 
-## 9. Testing & Validation Checklist
+## 10. Testing & Validation Checklist
 
-### Safe Path Testing
+### 10.1 Safe Path Testing
 - [ ] Player can examine armed trap from distance (safe, no injury)
 - [ ] Player can read trap description without triggering
 - [ ] Player can FEEL trap without injury (if armed but not touched)
 - [ ] Player can SMELL trap without injury
 - [ ] Examine shows correct state description (armed vs. triggered)
 
-### Trigger Testing
+### 10.2 Trigger Testing
 - [ ] Player TAKEs armed trap → injury inflicted
 - [ ] Player TOUCHEs armed trap → injury inflicted
 - [ ] Trap transitions to TRIGGERED state
@@ -855,13 +1081,13 @@ The mutation pattern (name update, categories shift, danger level changes) is co
 - [ ] Injury begins ticking (if applicable)
 - [ ] Player can use "injuries" verb to diagnose
 
-### Triggered State Testing
+### 10.3 Triggered State Testing
 - [ ] Sprung trap shows updated description ("snapped", "blood")
 - [ ] Player can now TAKE sprung trap (dangerous phase over)
 - [ ] Trap is no longer marked as armed
 - [ ] Trap shows evidence of firing (blood, clamped jaws)
 
-### Disarming Testing
+### 10.4 Disarming Testing
 - [ ] Player without lockpicking skill cannot disarm
 - [ ] Player with lockpicking skill + correct tool can disarm
 - [ ] Disarming requires appropriate tool (thin object)
@@ -869,7 +1095,7 @@ The mutation pattern (name update, categories shift, danger level changes) is co
 - [ ] Disarmed trap is safe to carry and handle
 - [ ] Disarmed trap shows updated description ("safe", "inert")
 
-### Injury Testing
+### 10.5 Injury Testing
 - [ ] Crushing injury has correct initial damage (-15)
 - [ ] Crushing injury ticks correctly (-2/turn if still bleeding)
 - [ ] Injury stops ticking after 12 turns (standard duration)
@@ -877,7 +1103,7 @@ The mutation pattern (name update, categories shift, danger level changes) is co
 - [ ] Symptom text updates each turn
 - [ ] Death message appears if untreated long enough
 
-### Edge Cases
+### 10.6 Edge Cases
 - [ ] Multiple traps in room (each fires independently)
 - [ ] Trap respawns / resets (if future magic mechanic)
 - [ ] NPC triggers trap (if applicable)
@@ -887,9 +1113,9 @@ The mutation pattern (name update, categories shift, danger level changes) is co
 
 ---
 
-## 10. Future Extensions
+## 11. Future Extensions
 
-### 10.1 Trap Variants
+### 11.1 Trap Variants
 
 Different traps could exist in later levels:
 
@@ -900,7 +1126,7 @@ Different traps could exist in later levels:
 - **Level 3:** Pressure plate (automatic trigger, no escape)
 - **Level 4:** Magical trap (resets itself, on_auto_reset hook)
 
-### 10.2 Trap Combinations
+### 11.2 Trap Combinations
 
 Traps could work together for puzzle complexity:
 
@@ -909,7 +1135,7 @@ Traps could work together for puzzle complexity:
 - **Conditional traps:** Trap only triggers if condition met (weight > 20 lbs)
 - **Alarmed traps:** Trap triggers NPC patrol or alarm
 
-### 10.3 NPC-Aware Traps
+### 11.3 NPC-Aware Traps
 
 In multiplayer or AI scenarios:
 
@@ -918,7 +1144,7 @@ In multiplayer or AI scenarios:
 - NPCs disarm traps (if they have skill)
 - NPCs trigger traps as alarm for player
 
-### 10.4 Environmental Trap Rooms
+### 11.4 Environmental Trap Rooms
 
 Room-level hazards using the same injury system:
 
@@ -929,7 +1155,7 @@ Room-level hazards using the same injury system:
 
 ---
 
-## 11. Design Decisions & Rationale
+## 12. Design Decisions & Rationale
 
 ### Decision 1: Why Contact Trigger Instead of Room-Level?
 
