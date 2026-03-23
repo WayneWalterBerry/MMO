@@ -17,7 +17,7 @@
 | 🔨 Flanders | Object Engineer | 🎨 Design | .squad/agents/flanders/charter.md | Active |
 | 🧩 Sideshow Bob | Puzzle Designer | 🎨 Design | .squad/agents/sideshow-bob/charter.md | Active |
 | 🏗️ Moe | World Builder | 🎨 Design | .squad/agents/moe/charter.md | Active |
-| 🧪 Lisa | Object Tester | 🎨 Design | .squad/agents/lisa/charter.md | Active |
+| 🧪 Lisa | Object Tester | 🧪 Test | .squad/agents/lisa/charter.md | Active |
 | 🏗️ Bart | Architecture Lead | ⚙️ Engineering | .squad/agents/bart/charter.md | Active |
 | ⚛️ Smithers | Parser/UI Engineer | ⚙️ Engineering | .squad/agents/smithers/charter.md | Active |
 | ⚙️ Gil | Web Engineer | ⚙️ Engineering | .squad/agents/gil/charter.md | Active |
@@ -33,9 +33,9 @@
 
 | Department | Lead | Members | Focus |
 |------------|------|---------|-------|
-| 🎨 Design | Comic Book Guy | CBG, Flanders, Sideshow Bob, Moe, Lisa | Game content: objects, puzzles, rooms, levels + object testing |
+| 🎨 Design | Comic Book Guy | CBG, Flanders, Sideshow Bob, Moe | Game content: objects, puzzles, rooms, levels + object testing |
 | ⚙️ Engineering | Bart | Bart, Smithers, Gil, Frink | Engine code, architecture, UI/parser, web builds & deploys, research |
-| 🧪 Test | Marge | Marge, Nelson | QA engineering, system testing, test automation |
+| 🧪 Test | Marge | Marge, Nelson, Lisa | QA engineering, system testing, test automation |
 | 📝 Docs | Brockman | Brockman | Documentation, newspapers |
 | 📋 Operations | Chalmers | Chalmers, Scribe, Ralph | Planning, session logging, work monitoring |
 
