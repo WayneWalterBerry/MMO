@@ -13,6 +13,23 @@ local containers = require("engine.search.containers")
 local narrator = require("engine.search.narrator")
 local goals = require("engine.search.goals")
 
+---------------------------------------------------------------------------
+-- Clock advancement: each search step costs game time (#48)
+---------------------------------------------------------------------------
+-- Minutes of game time consumed per search step (1 step ≈ checking one
+-- object / surface).  Expressed in fractional hours because ctx.time_offset
+-- is stored in hours, matching the sleep verb convention.
+search.MINUTES_PER_STEP = 1                          -- 1 game-minute per step
+local HOURS_PER_STEP    = search.MINUTES_PER_STEP / 60
+
+-- Optional hook called after each tick: on_tick(ctx, step_number, entry)
+-- Register a callback via search.set_on_tick(fn) for future clock systems.
+local _on_tick = nil
+
+function search.set_on_tick(fn)
+    _on_tick = fn
+end
+
 -- Tier 4: Context window integration for search discoveries
 local cw_ok, context_window = pcall(require, "engine.parser.context")
 if not cw_ok then context_window = nil end
@@ -188,7 +205,7 @@ function search.tick(ctx)
     local entry = _state.queue[_state.current_index]
     local result = traverse.step(ctx, entry, _state.target, _state.is_goal_search, _state.goal_type, _state.goal_value)
     
-    -- Output narrative
+    -- Output narrative (one line per tick — streaming effect, #48)
     if result.narrative and result.narrative ~= "" then
         print(result.narrative)
     end
@@ -205,6 +222,14 @@ function search.tick(ctx)
     -- Increment counters
     _state.current_index = _state.current_index + 1
     _state.current_step = _state.current_step + 1
+    
+    -- #48: Advance game clock — searching takes time
+    ctx.time_offset = (ctx.time_offset or 0) + HOURS_PER_STEP
+    
+    -- #48: Invoke optional tick hook for future clock integration
+    if _on_tick then
+        _on_tick(ctx, _state.current_step, entry)
+    end
     
     -- Check if target found
     if result.found and _state.target then
