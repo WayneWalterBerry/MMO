@@ -50,6 +50,34 @@
 
 ## Recent Updates
 
+### Session: EP6 — Update Architecture Docs to Match Implementation (2026-07-27)
+**Status:** ✅ COMPLETE  
+**Requested by:** Wayne "Effe" Berry
+
+**Task:** Update `effects-pipeline.md` and `event-hooks.md` to reflect what was actually built in `src/engine/effects.lua` and the poison bottle refactor. Eliminate aspirational content; docs must match shipped code.
+
+**Deliverables:**
+- `docs/architecture/engine/effects-pipeline.md` → Version 2.0 (Implementation Record)
+- `docs/architecture/engine/event-hooks.md` → Version 2.0 (Updated for Implementation)
+
+**Key Changes (effects-pipeline.md):**
+- Documented actual public API: `process`, `normalize`, `register`, `unregister`, `has_handler`, `add_interceptor`, `clear_interceptors`
+- Documented all 5 shipped handlers: `inflict_injury` (pcall-safe), `narrate`, `add_status`, `remove_status`, `mutate` (with target resolution)
+- Added `effects_pipeline = true` flag documentation
+- Added `pipeline_effects` array and `pipeline_routed` flag patterns
+- Real poison bottle code replaces hypothetical examples
+- Migration phases marked as completed
+- New Appendix B: full poison bottle migration walkthrough
+
+**Key Changes (event-hooks.md):**
+- Hook taxonomy updated: `trans.effect`, `on_taste_effect`, `on_feel_effect` now show "Routes through effects.process()" 
+- Gap analysis: 2 of 6 gaps marked RESOLVED (unified processor + effect standardization)
+- Poison bottle shown as completed migration reference with actual shipped code
+- New Section 9.3: step-by-step migration guide for adopting the pipeline
+- Cross-references updated to include `effects.lua` and `poison-bottle.lua`
+
+**Commit:** `f3205d7` — pushed to main
+
 ### Session: Effects Pipeline Architecture Document (2026-07-26)
 **Status:** ✅ COMPLETE  
 **Requested by:** Wayne "Effe" Berry
