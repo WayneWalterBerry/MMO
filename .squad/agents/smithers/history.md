@@ -54,3 +54,58 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 **Key Insight:** These decisions are pure documentation of existing implementation. No code changes required in this wave. Future phrase additions must follow the pattern ordering established in Pass038.
 
 **Cross-Agent Status:** Marge verified all 5 Phase1 issues and closed them. Ready for Scribe merge phase.
+
+---
+
+## EFFECTS PIPELINE IMPLEMENTATION (EP3, 2026-03-23T17:05Z)
+
+**Status:** ✅ COMPLETE
+
+Implemented unified Effects Pipeline as per Bart's D-EFFECTS-PIPELINE architecture:
+
+**Deliverable:** `src/engine/effects.lua` (232 lines) — Effect processor with:
+- Handler dispatch and registration mechanism
+- Before/after interceptor framework
+- Effect normalization (single effects + legacy strings both normalize to arrays)
+- Day-one handlers: `inflict_injury`, `narrate`, `add_status`, `remove_status`, `mutate`
+
+**Integration:** Modified `src/engine/verbs/init.lua` (52 lines removed, 52 lines added)
+- Wired drink/taste verb handlers into pipeline
+- Fixed taste verb injury routing (legacy `os.exit(0)` dead code path)
+- Maintained backward compatibility with existing FSM behavior
+
+**Key Design Decisions:**
+1. **Handler context** (`ctx`) constructed at call site, not implicitly from globals (stateless per D-APP-STATELESS)
+2. **Normalization** returns arrays always — single effects and legacy strings both normalize to `[ {...} ]`
+3. **Death check** stays in verb handler after `effects.process()` returns (handler sets `ctx.game_over = true`, verb handler does authoritative check)
+4. **Legacy code path:** FSM `apply_state()` copies structured tables from state definitions. Poison bottle already uses structured format, so `obj.on_taste_effect == "poison"` was always false. Pipeline now correctly processes the structured table.
+
+**Test Results:**
+- 116/116 poison bottle regression tests passing ✓
+- 1361/1362 full suite pass (1 pre-existing unrelated failure) ✓
+- Zero regressions introduced ✓
+
+**Verified by:** Nelson (EP4 independent verification) + Marge (EP4 gate approval)
+
+**Ready for EP5:** Flanders can proceed with poison-bottle.lua refactoring with high confidence
+
+### 2026-07-26: EP3 — Unified Effect Processing Pipeline
+
+**Task:** Implement `src/engine/effects.lua` per Bart's architecture doc (D-EFFECTS-PIPELINE).
+
+**What was built:**
+- `effects.process(raw, ctx)` — main dispatcher. Normalizes input, runs before interceptors, dispatches to handler by type, runs after interceptors.
+- `effects.normalize(raw)` — converts legacy string effects (e.g. `"poison"`) and single tables to normalized arrays. Critical for backward compat.
+- `effects.register(type, handler_fn)` — plugin pattern. New effect types register without modifying pipeline.
+- Before/after interceptor pattern (`add_interceptor`, `clear_interceptors`) — empty day-one, infrastructure ready.
+- 5 built-in handlers: `inflict_injury`, `narrate`, `add_status`, `remove_status`, `mutate`.
+
+**Verb handler changes (surgical):**
+- **Drink handler** (~line 4840): Replaced 20-line inline `"poison"` check + `injuries.inflict()` with `effects.process(trans.effect, ctx)`. Now handles any structured effect table, not just hardcoded poison string.
+- **Taste handler** (~line 2146): Replaced 15-line inline death sequence (including `os.exit(0)`) with `effects.process(obj.on_taste_effect, ctx)`. Taste now routes through injury system properly.
+
+**Critical finding:** The taste handler's `os.exit(0)` path was actually unreachable for poison-bottle because `apply_state()` copies the structured table `{ type = "inflict_injury", ... }` to `obj.on_taste_effect`, so `obj.on_taste_effect == "poison"` was always false. The structured format from Flanders was silently making the old code a no-op. The pipeline now properly processes the structured table.
+
+**Test results:** 116/116 poison bottle tests pass. 1361/1362 full suite pass (1 pre-existing failure in search auto-open, unrelated). Zero regressions.
+
+**Key architectural insight:** The FSM `apply_state()` function copies all state-level properties to the top-level object on transition. This means `states.open.on_taste_effect` becomes `obj.on_taste_effect` after transitioning to "open". Verb handlers read top-level fields, which is correct — they don't need to dig into FSM state definitions.

@@ -652,6 +652,42 @@ Due to BUG-067 and BUG-068 hangs, could NOT complete:
 - Consciousness state tracking (new rooms, new injury types)
 - Appearance system (mirror + wearables interact cleanly)
 
+---
+
+## EFFECTS PIPELINE REGRESSION TESTING (EP2 & EP4, 2026-03-23T17:05Z)
+
+**Status:** ✅ COMPLETE
+
+Authored 116 comprehensive poison bottle regression tests as safety net for Effects Pipeline refactoring:
+
+**Test Categories (116 total):**
+1. Identity & Metadata (11 tests) — GUID, ID, material, portability, consumable metadata
+2. FSM State Transitions (32 tests) — sealed→open→empty states with all verb aliases and transitions
+3. Consumption → Injury Flow (19 tests) — nightshade injury contract, ticking damage, restrictions
+4. Sensory Properties (22 tests) — per-state descriptions, on_smell/on_taste/on_feel/on_listen/on_look functions
+5. Fair Warning Chain (10 tests) — escalation: READ safe → SMELL safe → TASTE warns → DRINK kills
+6. Nested Parts (22 tests) — cork detachment and label readability across states
+
+**Coverage Gaps (Acceptable, not regression baseline):**
+- Drinking when unconscious/disabled (GOAP action system concern, not bottle contract)
+- Pouring poison on other objects (game mechanic design, not bottle contract)
+- Multiple sips accumulation (action system, not bottle contract)
+- Bottle breaking/shattering (material/fragile object rules, not bottle-specific)
+- Poison bottle as thrown weapon (combat system, not bottle contract)
+- Long-term storage/decay (world simulation, not bottle contract)
+- Partial consumption/sharing (system-level, not bottle contract)
+- Antidote-poison interaction (injury system, tested separately)
+
+**Verification Results:**
+- EP2 (Baseline): 116/116 passing on current code
+- EP4 (Post-Implementation): 116/116 passing after Smithers' effects.lua (Smithers independently verified)
+- Zero regressions introduced
+- Confidence level: HIGH (95%)
+
+**Gates Passed:**
+- EP2b (Marge): ✅ APPROVED — EP3 cleared to proceed (1361/1362 full suite pass pre-pipeline)
+- EP4 (Nelson+Marge): ✅ APPROVED — EP5 cleared to proceed (1361/1362 full suite pass post-pipeline, 1 pre-existing failure unrelated)
+
 **Bug Status:** 0 CRITICAL, 0 HIGH (Phase 3 regressions prevented)
 
 **Outcome:** Engine SOLID, ready for Phase 3+ expansion. Foundation validated.
@@ -816,3 +852,19 @@ Regression retest of Smithers' commit 351bfa3 (30+ natural phrase transforms for
 
 **Full Report:** test-pass/pass-039-regression.md
 
+
+---
+
+### PASS-040 — EP4 Effects Pipeline Verification (2025-07-17)
+
+**Task:** Independently verify all poison bottle tests pass after Smithers' effects pipeline implementation (commit a7b40b1).
+
+**Results:**
+- `src/engine/effects.lua` — loads cleanly, exports verified: `process`, `normalize`, `register` + 4 bonus helpers
+- Built-in handlers: `inflict_injury`, `narrate`, `add_status`, `remove_status`, `mutate`
+- Poison bottle tests: **116/116 PASS** (Smithers' count independently confirmed)
+- Full suite: **1361 pass / 1 fail across 45 test files**
+- The 1 failure is pre-existing (search auto-open containers in `search/test-search-traverse.lua`), unrelated to effects pipeline
+- **No regressions from EP4 — EP5 is unblocked**
+
+**Full Report:** test-pass/pass-040-ep4-verification.md

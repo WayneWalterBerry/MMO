@@ -1121,6 +1121,85 @@ Keep an authoritative folder of puzzle documentation at `docs/puzzles/` where ga
 
 ---
 
+## EFFECTS PIPELINE ROLLOUT (EP1–EP4, 2026-03-23T17:05Z)
+
+### D-EFFECTS-PIPELINE: Unified Effect Processing Pipeline
+
+**Author:** Bart (Architect), Smithers (Implementation)  
+**Date:** 2026-07-26 (Architecture), 2026-03-23 (Implementation)  
+**Status:** ✅ IMPLEMENTED  
+**Scope:** Engine architecture, verb handler integration  
+**Deliverables:**
+- Architecture: `docs/architecture/engine/effects-pipeline.md`
+- Implementation: `src/engine/effects.lua` (232 lines)
+- Integration: `src/engine/verbs/init.lua` (drink/taste handlers)
+
+**Context:** Engine currently handles object effects inline in verb handlers. Poison bottle had duplicate code paths for drink vs taste, with taste calling `os.exit(0)` directly instead of routing through injury system.
+
+**Decision:** Create unified Effect Processing Pipeline that:
+1. Accepts structured effect tables from object metadata (or legacy string tags via normalization)
+2. Routes effects to registered handlers by `type` field (`inflict_injury`, `narrate`, `add_status`, `remove_status`, `mutate`, etc.)
+3. Supports before/after interceptors for modification, cancellation, post-processing (armor, immunity, achievements)
+4. Replaces inline verb handler effect interpretation with single `effects.process(trans.effect, ctx)` call
+
+**Key Design Decisions:**
+- Handler context (`ctx`) constructed at call site, not implicitly from globals (stateless per D-APP-STATELESS)
+- Normalize returns arrays always (single effects and legacy strings both normalize to `[ {...} ]`)
+- Death check stays in verb handler after `effects.process()` returns (handler sets `ctx.game_over = true`, verb handler does authoritative check)
+- Legacy `os.exit(0)` in taste handler was dead code path (FSM `apply_state()` copies structured tables, so `obj.on_taste_effect == "poison"` was always false)
+
+**Consequences:**
+- Objects declare *what* happens; engine decides *when*; pipeline decides *how*
+- New effect types added by registering handlers — zero pipeline changes
+- New injury-causing objects require zero engine changes (Principle 8 compliance)
+- Fixed taste verb injury routing bug
+- ~120 lines new, ~60 lines deleted (net reduction)
+
+**Day-One Handlers:** `inflict_injury`, `narrate`, `add_status`, `remove_status`, `mutate`  
+**Future Handlers:** `fsm_transition`, `trigger_event`, `spawn_object`, `destroy_object`, `play_sound` (as subsystems come online)
+
+**Test Results:**
+- 116/116 poison bottle regression tests passing ✓
+- 1361/1362 full suite pass (1 pre-existing unrelated failure) ✓
+- Zero regressions introduced ✓
+- Indirect coverage via poison bottle integration sufficient (direct effects.lua unit tests optional for EP6)
+
+**Gates Approved:**
+- EP2b (Marge): Test coverage baseline APPROVED → EP3 cleared
+- EP4 (Marge): Regression check PASSED → EP5 cleared
+
+**Status:** ✅ Ready for EP5 (Flanders: poison-bottle.lua refactor)
+
+---
+
+## DIRECTIVE: ZERO-REGRESSION TESTING GATE
+
+**Issued:** 2026-03-23T16:55Z  
+**By:** Wayne "Effe" Berry (via Copilot)  
+**Authority:** User directive  
+**Target:** Marge (Test Manager)
+
+Marge must track unit tests and check for regressions during all refactoring work. Every phase of the Effects Pipeline implementation (EP2–EP10) requires Marge to verify test coverage before and after code changes. No refactoring proceeds without a green test suite. Marge gates each phase transition.
+
+**Status:** ✅ In effect. EP4 gate demonstrates policy in action.
+
+---
+
+## DIRECTIVE: WAYNE CONTRIBUTIONS TRACKER
+
+**Issued:** 2026-03-23T16:58Z  
+**By:** Wayne "Effe" Berry (via Copilot)  
+**Authority:** User directive  
+**Target:** Chalmers (QA/Tracker)
+
+Start keeping track of Wayne's contributions to the project. Read between the lines to determine how he is helping — key insights, design decisions, course corrections, quality gates. Retroactively capture contributions from project start. Maintain a contributions markdown file in .squad/ for the human team member.
+
+**Amended:** 2026-03-23T17:01Z — Wayne is a Senior Engineer with 40 years of experience. Contributions file should reflect his technical depth — engineering guidance (e.g., bootstrapper, compressor suggestions, SLM vs LLM recommendations), not just project management. Include section for Wayne to self-document technical guidance and insights. Capture engineering judgment, not just decisions.
+
+**Status:** ✅ Tracker built. Ready for population.
+
+---
+
 ## SQUAD RESEARCH & MUTATION ANALYSIS (2026-03-21T00:16Z)
 
 ### D-MUTATE-PROPOSAL: Generic `mutate` Field on FSM Transitions

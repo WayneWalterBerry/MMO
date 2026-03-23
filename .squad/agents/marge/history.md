@@ -127,6 +127,34 @@
 - Flanders objects: 3 new objects + 1 new injury type design-verified (no live testing yet)
 - Total: 10 issues verified, 5 closed per scope
 
+---
+
+## EFFECTS PIPELINE TEST GATING (EP2b & EP4, 2026-03-23T17:05Z)
+
+**Status:** ✅ COMPLETE
+
+Performed two critical quality gates for Effects Pipeline implementation:
+
+**EP2b Gate (Baseline Coverage Review):**
+- Reviewed Nelson's 116 poison bottle regression tests
+- Verified all 116 tests passing on pre-pipeline code
+- Assessed coverage across 6 categories: identity, FSM transitions, injury flow, sensory properties, warning escalation, nested parts
+- Documented 8 acceptable coverage gaps (not blocking — gaps are system-level, not bottle-specific)
+- **Verdict:** ✅ **APPROVED** — EP3 (Effects Pipeline Implementation) CLEARED to proceed
+- **Confidence:** HIGH (95%) — if refactor breaks any of these 116 tests, we have a problem
+
+**EP4 Gate (Regression Verification Post-Implementation):**
+- Ran full test suite post-Smithers effects.lua implementation
+- Result: 1361/1362 passing (1 pre-existing unrelated failure verified against pre-pipeline commit)
+- Poison bottle regression tests: 116/116 passing ✓
+- New regressions introduced: NONE ✓
+- Pipeline integration verified indirectly via poison bottle tests
+- **Verdict:** ✅ **APPROVED FOR EP5** — Flanders cleared to refactor poison-bottle.lua
+- **Blockers:** None
+- **Optional follow-up:** Smithers may add effects.lua direct unit tests in EP6 (lower priority, indirect coverage sufficient)
+
+**Key Policy Enacted:** User directive (2026-03-23T16:55Z) — Marge must gate every phase of Effects Pipeline work (EP2–EP10). No refactoring proceeds without green test suite.
+
 **Decision Documentation Completed:**
 - 2 parser decisions merged (D-PHRASE001, D-PHRASE002)
 - 5 injury-system decisions merged (D-INJURY001-005)

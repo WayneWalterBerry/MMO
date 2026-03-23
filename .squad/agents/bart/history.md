@@ -702,6 +702,32 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 - Injury types are specific, not generic. poisoned-nightshade not poisoned. Enables injury-specific healing.
 - player.lua is THE single source of truth. Engine reads/mutates only this file.
 
+---
+
+## EFFECTS PIPELINE ARCHITECTURE (EP1, 2026-03-23T17:05Z)
+
+**Status:** ✅ COMPLETE
+
+Authored unified Effects Pipeline architecture document (`docs/architecture/engine/effects-pipeline.md`) as part of multi-phase Effects Pipeline rollout:
+
+- **Problem:** Engine handles object effects inline in verb handlers. Poison bottle had duplicate code paths (drink vs taste). Taste verb called `os.exit(0)` directly instead of routing through injury system. Every new injury-causing object required editing engine code.
+  
+- **Solution:** D-EFFECTS-PIPELINE — Unified Effect Processing Pipeline that:
+  1. Accepts structured effect tables from object metadata
+  2. Routes effects to registered handlers by `type` field
+  3. Supports before/after interceptors for modification, cancellation, post-processing
+  4. Replaces inline verb handler effect interpretation with single `effects.process()` call
+  
+- **Key Design:** Objects declare *what* happens; engine decides *when*; pipeline decides *how*. New effect types are added by registering handlers (zero pipeline changes). Principle 8 compliance — new injury-causing objects require zero engine changes.
+
+- **Implementation Priority:**
+  - P0: Create effects.lua with inflict_injury + narrate handlers
+  - P1: Refactor drink, taste, feel verb handlers
+  - P2: Register add_status handler; wire interceptor use cases
+  - P3: Converge traverse_effects.lua into unified pipeline
+
+**Approved by Marge (Test Manager):** Gate EP2b passed — 116/116 poison bottle regression tests on baseline code. Ready for EP3 implementation.
+
 **Decisions:**
 - D-HEALTH001 revised: Health is derived, not stored
 - D-HEALTH002 revised: No generic "heal N HP"
