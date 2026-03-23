@@ -32,6 +32,10 @@ local function get_zone(container_obj, surface_name)
   end
 
   -- Root-level container fields
+  -- #79: check accessible on root-level containers (e.g. closed drawer)
+  if container_obj.accessible == false then
+    return nil, (container_obj.name or container_obj.id) .. " is not accessible"
+  end
   return {
     capacity = container_obj.capacity or 0,
     max_item_size = container_obj.max_item_size,
