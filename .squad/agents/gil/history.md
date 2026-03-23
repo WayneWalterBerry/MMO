@@ -145,3 +145,25 @@
 - **Test suite:** 60/60 PASSED (59 existing + 1 new).
 - **Commit:** c3b890c — pushed to main.
 - ⚠️ Issues #3 and #19 left open for Marge to verify and close. #18 already verified.
+
+### 2026-03-23: Full Clean Rebuild + Deploy — Pipeline Integrity Audit
+- **Timestamp:** 2026-03-23T14:17Z
+- **Status:** ✅ COMPLETE — Clean rebuild deployed, all fixes verified
+- **Pages commit:** `54115fb` (main branch, 5 files changed)
+- **Engine bundle:** 139.2 KB compressed (903.2 KB raw), 28 engine files + 1 asset file
+- **Meta files:** 93 total (80 objects, 7 rooms, 5 templates, 1 level)
+- **Cache-bust stamp:** `20260323141706` stamped into `bootstrapper.js` and `index.html`
+- **Total files deployed:** 98
+- **Pipeline investigation findings:**
+  - ✅ `build-engine.ps1` correctly bundles ALL 28 `src/engine/*.lua` files (recursive) into `engine.lua.gz` via `package.preload` entries
+  - ✅ `build-meta.ps1` correctly copies all objects (by GUID), rooms, levels, templates
+  - ✅ `deploy.ps1` uses Remove-Item + Copy-Item pattern (fix for #25 silent overwrite bug)
+  - ✅ No stale files — dist/ was deleted and rebuilt from scratch
+  - ✅ File counts match: dist/ = 98, play/ = 98
+  - ✅ No source files modified after the previous build (no gap detected)
+  - ⚠️ The previous build (14:03) was actually already in sync with Pages — the "gap" Wayne experienced may have been CDN propagation delay or browser cache
+- **Fix spot-checks (all PRESENT in deployed engine.lua.gz):**
+  - ✅ #63: `narrator.lua` — "On top of the" surface narration (2 matches)
+  - ✅ #66: `verbs/init.lua` — effects.process self-infliction handler (1 match)
+  - ✅ #71: `parser/fuzzy.lua` — 0.75 length ratio threshold (2 matches)
+- **Conclusion:** No systemic deploy gap found. The pipeline (`build-engine.ps1` → `build-meta.ps1` → `deploy.ps1`) correctly propagates ALL src/ changes to the live site. The perceived gap was likely CDN cache (1-3 min propagation) or mobile Safari aggressive caching (mitigated by cache-bust stamps).
