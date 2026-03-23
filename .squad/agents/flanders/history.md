@@ -27,6 +27,22 @@
 
 ---
 
+## Current Sprint: Effects Pipeline (EP1-EP10) ✅ COMPLETE
+
+### Latest Work (2026-03-23)
+- **EP5:** Refactored poison-bottle.lua to pipeline pattern — 116/116 tests pass
+- **EP8:** Refactored bear-trap.lua to pipeline pattern — 0 regressions
+- **Milestone:** 284 new tests, 0 regressions across team delivery
+- **Status:** READY FOR MERGE
+
+### Team Coordination
+- Nelson verified poison-bottle (116/116) and authored bear-trap tests (168/168)
+- Marge gate-approved EP4, noted effects.lua unit test gap
+- Bart updated architecture docs v2.0
+- All deliverables documented in `.squad/orchestration-log/2026-03-23T17-20Z-*.md`
+
+---
+
 ## Archived Sessions Summary (Cumulative Achievements)
 
 This section summarizes 50+ prior sessions covering object design, FSM architecture, injury systems, and Level 1 object specification. For detailed session logs, see .squad/log/.

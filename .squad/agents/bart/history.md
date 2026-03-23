@@ -29,6 +29,13 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
+### Recent Work: Effects Pipeline Documentation (EP6) ✅ COMPLETE (2026-03-23)
+- Updated Effects Pipeline architecture docs to v2.0
+- Updated Trap System architecture docs to v2.0
+- Documented new pipeline pattern for maintainers
+- Cross-referenced refactored effects (poison-bottle, bear-trap)
+- Status: Ready for merge with EP1-EP10 deliverables
+
 **Design Philosophy:** No special-case objects. Everything expressible through .lua metadata (FSM, timers, prerequisites). Engine stays generic; objects own their behavior.
 
 **Decisions Authored:** 45+ (D-14 through D-CLOCK001, including architecture, engines, objects, spatial, UI, GOAP)

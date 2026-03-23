@@ -24,6 +24,12 @@
 - 60 unique bugs discovered (8 CRITICAL/HIGH, 20 MEDIUM+MAJOR, 4 LOW, 28 MINOR/COSMETIC)
 - Phase 3 features (hit/unconsciousness/appearance/mirror): engine solid, parser gaps identified
 
+### Effects Pipeline (EP1-EP10) ✅ COMPLETE (2026-03-23)
+- **EP4:** Independently verified poison-bottle.lua refactor — 116/116 pass
+- **EP9-EP10:** Authored 168 comprehensive bear-trap tests — 168/168 pass
+- **Status:** Flanders' pipeline refactors validated, full coverage established
+- **Impact:** 284 new tests, 0 regressions across pipeline milestone
+
 **Current Status:**
 - Engine core: ✅ SOLID
 - Parser: ✅ EXCELLENT (Tier 2 embedding, "move" synonym, "feel around", sleep without "for")
