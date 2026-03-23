@@ -117,6 +117,77 @@
 
 ## Learnings
 
+### 2026-07-25: Injury-Causing Objects — Hook Taxonomy & Design Patterns
+**Status:** ✅ 2 DESIGN DOCS WRITTEN
+
+**Deliverables:** 
+1. `docs/design/objects/poison-bottle.md` — 26.6 KB, comprehensive consumption-based injury design
+2. `docs/design/objects/bear-trap.md` — 32.3 KB, comprehensive contact-based injury design
+
+**Core Analysis: Engine Hook Categories**
+
+The two designs establish a clear taxonomy of **injury-causing hook categories** that structure how different objects cause different injuries through different interaction patterns:
+
+1. **Consumption Hooks** (`on_consume`, `on_drink`, `on_eat`, `on_taste`)
+   - Triggered when player ingests/consumes an object
+   - Example: Poison bottle → poisoned injury
+   - Safety model: Can investigate (read label, smell) before consuming
+   
+2. **Contact Hooks** (`on_take`, `on_touch`, `on_interact`)
+   - Triggered when player physically touches/grasps an object
+   - Example: Bear trap → crushing injury
+   - Safety model: Observation is safe, interaction is risky
+   
+3. **Proximity Hooks** (`on_traverse`, `on_enter`, `on_step`) — FUTURE
+   - Triggered when player enters room or traverses area
+   - Example: Floor trap, gas room → injury on entry
+   - Safety model: Can't avoid without prior knowledge
+   
+4. **Duration Hooks** (`on_tick`, `on_worsening`, `on_healing`)
+   - Triggered each turn while injury active
+   - Example: Poison/bleeding → ongoing damage per turn
+   - Safety model: Injury progresses unless treated
+
+**Poison Bottle Design Insights:**
+
+- **Nested parts architecture:** Bottle ≠ liquid ≠ cork ≠ label. Cork is detachable; label is readable without opening. Creates agency before consequence.
+- **Consumption pipeline:** DRINK → `on_consume` hook → passes to injury system → "poisoned-nightshade" injury → ticks -2 health/turn
+- **Fair warning design:** Label readable before drinking. SMELL warns after opening. TASTE warns with pain but not death. Only DRINK causes lethal injury.
+- **Severity levels:** Sip (low) vs. gulp (medium) vs. drink-all (high) map to different damage scales and durations.
+- **Specificity matters:** Nightshade ≠ mild poison ≠ viper venom. Different onset times, different durations, different required cures. Treatment matching is the puzzle.
+
+**Bear Trap Design Insights:**
+
+- **State machine:** SET (armed) → TRIGGERED (snapped) → DISARMED (safe). Each state has distinct description, danger level, and affordances.
+- **Contact vs. proximity:** This design uses object-level `on_take` / `on_touch` (player chooses to interact). Room-level `on_traverse` (automatic trigger) is future work.
+- **Crushing injury:** Distinct from cutting/bleeding. Combines initial blunt damage (-15) with bleeding component (-2/turn). Teaches mechanical authenticity.
+- **Skill integration:** Disarming requires lockpicking skill + correct tool. Gives the skill narrative use beyond lockpicking.
+- **Discovery hierarchy:** Visible trap teaches "observe before touching." Hidden trap (future) teaches "some dangers are concealed."
+
+**Design Decisions Locked In:**
+
+1. **Hook categories map to player interaction patterns:** Consumption (swallow), contact (touch), proximity (traverse), duration (wait). Each has different safety model.
+2. **Nested parts create agency:** Poison bottle's cork + label enable investigation before consequence. This is pedagogically superior to flat consumables.
+3. **Specificity creates puzzle difficulty:** Generic antidote ≠ nightshade antidote. Teaches treatment matching, not just "find cure."
+4. **Visible hazards teach first:** Bear trap is visible (not hidden). Player learns through observation before discovering hidden traps (Level 2).
+5. **Fair warning principle:** Every injury must be avoidable through investigation. No gotchas, no trap randomization. Consequence comes from *ignoring* warnings.
+6. **FSM mutations update categories:** When trap transitions SET → TRIGGERED, categories change ("dangerous" → "evidence"). Engine queries can filter by category.
+
+**Pattern Library Established:**
+
+- Consumables: poison, potion, food (on_consume + severity mapping)
+- Contact hazards: trap, hot object, sharp edge (on_take / on_touch)
+- Room hazards: gas, pit, pressure-plate (on_traverse + on_enter — future)
+- Ongoing effects: bleeding, poison DoT, burning (on_tick)
+- Reversible detachment: cork, drawer, blade (can be reattached with new mechanic)
+- Skill-triggered actions: disarm trap requires lockpicking (on_disarm requires skill check)
+
+**Key Design Principle Affirmed:**
+
+*Interaction pattern determines injury type determines solution.* Poison is solved by antidotes (treatment matching). Bear trap is solved by disarming (skill + tool matching). Burning is solved by cooling (environmental resource matching). The game teaches through this pattern repetition: "Understand what hurt you. Find what solves it."
+
+**Decision filed:** `.squad/decisions/inbox/cbg-injury-hooks-taxonomy.md`
+
 ### 2026-03-23: Unconsciousness, Mirrors, and Player Appearance Subsystem
 **Status:** ✅ 5 DESIGN DOCS WRITTEN
 
