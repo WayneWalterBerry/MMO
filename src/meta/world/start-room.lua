@@ -22,6 +22,7 @@ return {
         { id = "window",        type = "Window",             type_id = "4ecd1058-5cbe-4601-a98e-c994631f7d6b", location = "room" },
         { id = "curtains",      type = "Curtains",           type_id = "cc981807-a74e-4ecc-8d52-903cc4fc5bd6", location = "room" },
         { id = "chamber-pot",   type = "Chamber Pot",        type_id = "9a9ff109-93a0-4dcf-9d6e-0f0f4b83f4ba", location = "room" },
+        { id = "bedroom-door", type = "Bedroom Door",      type_id = "e4a7f3b2-91d6-4c8e-b5a0-3f2d1e8c6a49", location = "room" },
 
         -- Bed surfaces
         { id = "pillow",        type = "Pillow",             type_id = "f973058d-5410-4c02-b643-b7cab713aaf4", location = "bed.top" },
