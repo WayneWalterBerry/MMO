@@ -1,5 +1,7 @@
--- poison-bottle.lua — Composite FSM-managed consumable
+-- poison-bottle.lua — Composite FSM-managed consumable with injury pipeline
 -- States: sealed → open → empty (terminal)
+-- Parts: cork (detachable), label (readable, non-detachable)
+-- Consumption pipeline: drink → inflict_injury → poisoned-nightshade
 -- The cork is a PART that becomes an independent object when removed.
 return {
     guid = "{a1043287-aeeb-4eb7-91c4-d0fcd11f86e3}",
@@ -10,8 +12,14 @@ return {
     keywords = {"bottle", "glass bottle", "poison", "vial", "potion", "flask", "small bottle", "poison bottle", "poison-bottle"},
     size = 1,
     weight = 0.4,
-    categories = {"small-item", "container", "dangerous", "glass", "fragile"},
+    categories = {"small-item", "container", "dangerous", "glass", "fragile", "consumable", "liquid", "poison"},
     portable = true,
+
+    -- Consumable metadata (drives consumption pipeline)
+    is_consumable = true,
+    consumable_type = "liquid",
+    poison_type = "nightshade",
+    poison_severity = "lethal",
 
     -- Initial state (sealed)
     name = "a small glass bottle",
@@ -47,9 +55,15 @@ return {
             description = "A small glass bottle, its cork removed. The murky green liquid inside swirls lazily, releasing thin wisps of sickly vapor. The skull and crossbones label grins up at you.",
             room_presence = "An uncorked glass bottle sits here, wisps of green vapor curling from its mouth.",
             on_feel = "Smooth glass, cold to the touch. The mouth of the bottle is open. Your fingers tingle where the vapor touches them.",
-            on_smell = "Acrid, chemical, and unmistakably poisonous. Your eyes water.",
+            on_smell = "Acrid fumes rise from the uncorked bottle. Chemical, and unmistakably poisonous. Your eyes water.",
             on_taste = "BITTER! Searing fire courses down your throat. Your vision blurs...",
-            on_taste_effect = "poison",
+            on_taste_effect = {
+                type = "inflict_injury",
+                injury_type = "poisoned-nightshade",
+                source = "poison-bottle",
+                damage = 5,
+                message = "The taste alone is enough. Burning sweetness sears your tongue and throat.",
+            },
             on_listen = "A faint hissing from the liquid, as if it were breathing.",
 
             on_look = function(self)
@@ -76,6 +90,7 @@ return {
         {
             from = "sealed", to = "open", verb = "open",
             aliases = {"uncork", "unstop"},
+            requires_free_hands = true,
             message = "You pry the cork free with a soft pop. A wisp of sickly green vapor curls from the bottle's mouth.",
             mutate = {
                 weight = function(w) return w - 0.05 end,
@@ -87,6 +102,7 @@ return {
             from = "sealed", to = "open", verb = "detach_part",
             trigger = "detach_part",
             part_id = "cork",
+            requires_free_hands = true,
             message = "You twist and pull the cork free with a soft pop. A wisp of sickly green vapor curls from the bottle's mouth.",
             mutate = {
                 weight = function(w) return w - 0.05 end,
@@ -95,11 +111,18 @@ return {
         },
         {
             from = "open", to = "empty", verb = "drink",
-            aliases = {"quaff", "sip", "gulp"},
-            message = "You raise the bottle to your lips. The liquid burns like liquid fire. Your vision swims, your knees buckle, and the world goes dark...",
-            effect = "poison",
+            aliases = {"quaff", "sip", "gulp", "consume"},
+            message = "You raise the bottle to your lips. The liquid burns like liquid fire. Your vision swims, your knees buckle, and the world tilts sideways...",
+            effect = {
+                type = "inflict_injury",
+                injury_type = "poisoned-nightshade",
+                source = "poison-bottle",
+                damage = 10,
+                message = "A bitter, almost sweet taste burns down your throat. Your heart begins to race.",
+            },
             mutate = {
                 weight = 0.1,
+                is_consumable = false,
                 categories = { remove = "dangerous" },
                 keywords = { add = "empty" },
             },
@@ -110,10 +133,19 @@ return {
             message = "You tip the bottle. The green liquid pours out, hissing where it touches the stone floor. A thin vapor rises, and then it is gone.",
             mutate = {
                 weight = 0.1,
+                is_consumable = false,
                 categories = { remove = "dangerous" },
                 keywords = { add = "empty" },
             },
         },
+    },
+
+    -- GOAP prerequisites (for planner)
+    prerequisites = {
+        drink = { requires_state = "open" },
+        pour = { requires_state = "open" },
+        open = { requires_state = "sealed", requires_free_hands = true },
+        uncork = { requires_state = "sealed", requires_free_hands = true },
     },
 
     -- === COMPOSITE PARTS ===
@@ -156,6 +188,19 @@ return {
                     location = parent.location,
                 }
             end,
+        },
+
+        label = {
+            id = "poison-label",
+            detachable = false,
+            readable = true,
+            keywords = {"label", "writing", "text", "warning", "warning text", "skull", "crossbones"},
+            name = "a label",
+            description = "A small paper label pasted to the bottle. A skull and crossbones is printed above cramped text.",
+            readable_text = "POISON -- Belladonna extract. Lethal if ingested. No known antidote in common supply. Handle with extreme care. If consumed, seek the nightshade-specific antidote immediately.",
+            on_feel = "Thin paper, slightly damp from condensation. The edges curl.",
+            on_smell = "Paper and old glue.",
+            read_verbs = {"read", "examine"},
         },
     },
 }
