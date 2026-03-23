@@ -183,6 +183,21 @@ for _, fname in ipairs(room_files) do
 end
 
 ---------------------------------------------------------------------------
+-- Load level data (intro text, completion criteria, etc.)
+---------------------------------------------------------------------------
+local level = nil
+local level_dir = meta_root .. SEP .. "levels"
+local level_source = read_file(level_dir .. SEP .. "level-01.lua")
+if level_source then
+    local lv, lv_err = loader.load_source(level_source)
+    if lv then
+        level = lv
+    else
+        io.stderr:write("Warning: failed to load level-01: " .. tostring(lv_err) .. "\n")
+    end
+end
+
+---------------------------------------------------------------------------
 -- Handle --list-rooms
 ---------------------------------------------------------------------------
 if list_rooms then
@@ -433,20 +448,30 @@ context.verbs = verbs_mod.create()
 context.update_status = ui_status.create_updater()
 
 ---------------------------------------------------------------------------
--- Welcome
+-- Welcome (reads intro text from level data)
 ---------------------------------------------------------------------------
+local intro = level and level.intro
 if not headless then
+    local title = (intro and intro.title) or "THE BEDROOM \xe2\x80\x94 A Text Adventure"
+    local subtitle = (intro and intro.subtitle) or "V1 Playtest"
     print("================================================================")
-    print("  THE BEDROOM -- A Text Adventure")
-    print("  V1 Playtest")
+    print("  " .. title)
+    print("  " .. subtitle)
     print("================================================================")
     print("")
 end
-print("You wake with a start. The darkness is absolute.")
-print("You can feel rough linen beneath your fingers.")
+if intro and intro.narrative then
+    for _, line in ipairs(intro.narrative) do
+        print(line)
+    end
+else
+    print("You wake with a start. The darkness is absolute.")
+    print("You can feel rough linen beneath your fingers.")
+end
 print("")
 if not headless then
-    print("Type 'help' for commands. Try 'feel' to explore the darkness.")
+    local help = (intro and intro.help) or "Type 'help' for commands. Try 'feel' to explore the darkness."
+    print(help)
     print("")
 end
 if headless then
