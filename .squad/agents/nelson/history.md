@@ -48,6 +48,43 @@
 
 ## Recent Updates
 
+### Phase M4: Mirror/Appearance Quality Review (2026-07-25)
+
+**Status:** ✅ COMPLETE — 8 scenarios tested, 6 bugs filed, 26 regression tests written
+
+Full QA pass on the mirror/appearance system using `--headless` mode. Tested all player states: fresh, injured, bleeding, wearing items, holding items, multiple injuries, low health, unconscious.
+
+| Test | Scenario | Mirror Output Grade | Issues |
+|------|----------|-------------------|--------|
+| T1 | Fresh player (empty hands) | ACCEPTABLE — "You appear healthy and alert." is functional but minimal | — |
+| T2 | Single injury (stab self) | ACCEPTABLE — Shows gash+location but missing severity adjective | #93 |
+| T3 | Bleeding player (bloody state) | ACCEPTABLE — Shows blood + injury but "and" chain awkward | #95 |
+| T4 | Worn items (cloak + pot) | ROBOTIC — Cloak invisible, pot shows double period | #90, #91 |
+| T5 | Holding items (knife + matchbox) | NATURAL — "your left hand grips a small matchbox" reads well | — |
+| T6 | Multiple injuries (2 stabs) | ACCEPTABLE — Different locations shown; same-location collapsed | #92 |
+| T7 | Low health (4 stabs) | NATURAL — "you look pale and unsteady" is good prose | — |
+| T8 | Unconscious | NATURAL — "You can't examine yourself — you're unconscious." clear | — |
+
+**Bugs filed (label: bug):**
+- **#90** — Worn cloak invisible in mirror — appearance.lua only checks obj.wear_slot, not obj.wear.slot
+- **#91** — Double period in mirror output when worn_description ends with period
+- **#92** — Duplicate injuries at same body location silently collapsed
+- **#93** — Injury severity never set — mirror shows bare nouns without adjectives
+- **#94** — Mirror mixes grammatical structures in hands layer (held items + injuries joined awkwardly)
+- **#95** — Overall health "and" joining produces awkward double-and phrasing
+
+**Regression tests:** `test/verbs/test-mirror-appearance-m4.lua` — 26 tests (22 pass, 4 expected-fail tracking #90/#91/#92/#95)
+
+**Additional findings:**
+- "examine reflection", "examine self", "examine my reflection", "look at myself" all correctly route to appearance system ✅
+- "look in mirror" route works ✅
+- Health tiers (76-100%, 51-75%, 26-50%, 0-25%) all render correctly ✅
+- Treated injuries show "wrapped in a bandage" ✅
+- Sentence capitalization after periods works ✅
+- Deathly pale tier (0-25%) may be unreachable in normal gameplay due to bleeding tick damage
+
+---
+
 ### Put Verb Phrasing Test Pass (2026-07-25)
 
 **Status:** ✅ COMPLETE — 36 tests (15 passed, 5 failed, 13 missing, 3 blocked)
