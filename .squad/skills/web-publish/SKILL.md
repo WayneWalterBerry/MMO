@@ -99,13 +99,11 @@ Or browse: https://github.com/WayneWalterBerry/WayneWalterBerry.github.io/tree/m
 ### Step 2: Verify the BUILD_TIMESTAMP matches
 The deployed `bootstrapper.js` must show today's timestamp, NOT a stale one.
 
-### Step 3: Verify via debug URL (FASTEST)
-Open https://waynewalterberry.github.io/play/?debug and check:
-- The **commit hash** displayed matches the commit you just pushed
-- The **BUILD_TIMESTAMP** matches the current deploy time
-- The game loads without errors
-
-### Step 4: Play-test the live URL
+### Step 3: Verify via debug URL (MANDATORY — replaces play-testing)
+Open https://waynewalterberry.github.io/play/?debug — the commit hash and BUILD_TIMESTAMP appear immediately in the output window. No input required.
+- Confirm the **commit hash** matches the commit you just pushed
+- Confirm the **BUILD_TIMESTAMP** matches the current deploy time
+- If both match, deployment is verified. Done.
 1. Open https://waynewalterberry.github.io/play/
 2. The terminal UI loads (dark background, blinking "Loading..." text)
 3. The welcome message appears ("You wake with a start...")
