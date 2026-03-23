@@ -238,6 +238,33 @@ local function matches_exact(object, target)
 end
 
 ---------------------------------------------------------------------------
+-- Direct-match helper (#84): matches the object itself (no child recursion)
+-- Used for surface-parent objects where child matches are handled by
+-- surface queue entries, not the parent object entry.
+---------------------------------------------------------------------------
+local function matches_direct(object, target)
+    if not object or not target then return false end
+    if object.hidden then return false end
+    target = target:lower()
+    target = target:gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+    if object.id and object.id:lower() == target then return true end
+    if object.name and object.name:lower() == target then return true end
+    if object.name and object.name:lower():find(target, 1, true) then return true end
+    if object.keywords then
+        for _, kw in ipairs(object.keywords) do
+            if kw:lower() == target or kw:lower():find(target, 1, true) then return true end
+        end
+    end
+    local cat_target = CATEGORY_SYNONYMS[target]
+    if cat_target and object.categories then
+        for _, cat in ipairs(object.categories) do
+            if cat:lower() == cat_target then return true end
+        end
+    end
+    return false
+end
+
+---------------------------------------------------------------------------
 -- Process one step of traversal
 ---------------------------------------------------------------------------
 
@@ -314,7 +341,8 @@ local function matches_target(object, target, registry, depth, visited)
     end
     
     -- If object is container, check contents recursively (fuzzy)
-    if containers.is_container(object) and containers.is_open(object) then
+    -- #84: Recurse into closed containers too — search peeks inside them
+    if containers.is_container(object) then
         local contents = containers.get_contents(object, registry)
         for _, child_id in ipairs(contents) do
             local child = registry:get(child_id)
@@ -362,10 +390,12 @@ local function find_deeper_match(obj, target, registry)
         end
     end
 
-    -- Pass 3: any match in contents (original #22 behavior)
+    -- Pass 3: any match in contents — recurse for deeper/exact match (#84)
     for _, child_id in ipairs(contents) do
         local child = registry:get(child_id)
         if child and matches_target(child, target, registry, 0) then
+            local deeper = find_deeper_match(child, target, registry)
+            if deeper then return deeper end
             return child
         end
     end
@@ -673,9 +703,11 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
     -- in the queue. Skip the object entry to avoid contradictory narration
     -- (e.g., "nothing there" followed by surface entry reporting contents).
     -- For targeted searches, still check if the object itself matches the target.
+    -- #84: Use matches_direct (no child recursion) — children are handled by
+    -- the surface entries that follow in the queue.
     if obj.surfaces then
         if target and not is_goal_search then
-            if matches_target(obj, target, registry, 0) then
+            if matches_direct(obj, target) then
                 result.found = true
                 result.item = obj
                 result.narrative = narrator.found_target(ctx, obj, nil)
@@ -882,9 +914,10 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
     return result
 end
 
---- Expose internals for testing (#68, #74)
+--- Expose internals for testing (#68, #74, #84)
 traverse._matches_target = matches_target
 traverse._matches_exact  = matches_exact
+traverse._matches_direct = matches_direct
 traverse._find_deeper_match = find_deeper_match
 
 return traverse
