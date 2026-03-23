@@ -47,7 +47,7 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-23 12:22"
+local BUILD_TIMESTAMP = "2026-03-23 14:54"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -614,17 +614,27 @@ local ok, err = pcall(function()
     context.update_status = ui_status.create_updater()
 
     -------------------------------------------------------------------
-    -- Welcome
+    -- Welcome (reads intro text from level data)
     -------------------------------------------------------------------
+    local intro = level and level.intro
+    local title = (intro and intro.title) or "THE BEDROOM \xe2\x80\x94 A Text Adventure"
+    local subtitle = (intro and intro.subtitle) or "V1 Web Playtest"
     print("================================================================")
-    print("  THE BEDROOM \xe2\x80\x94 A Text Adventure")
-    print("  V1 Web Playtest")
+    print("  " .. title)
+    print("  " .. subtitle)
     print("================================================================")
     print("")
-    print("You wake with a start. The darkness is absolute.")
-    print("You can feel rough linen beneath your fingers.")
+    if intro and intro.narrative then
+        for _, line in ipairs(intro.narrative) do
+            print(line)
+        end
+    else
+        print("You wake with a start. The darkness is absolute.")
+        print("You can feel rough linen beneath your fingers.")
+    end
     print("")
-    print("Type 'help' for commands. Try 'feel' to explore the darkness.")
+    local help = (intro and intro.help) or "Type 'help' for commands. Try 'feel' to explore the darkness."
+    print(help)
     print("")
 
     -------------------------------------------------------------------

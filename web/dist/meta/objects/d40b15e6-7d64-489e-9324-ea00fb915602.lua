@@ -173,6 +173,7 @@ return {
             id = "nightstand-drawer",
             detachable = true,
             reversible = true,
+            surface = "inside",  -- maps this part to the parent's "inside" surface
             keywords = {"drawer", "small drawer", "nightstand drawer"},
             name = "a small drawer",
             description = "A shallow wooden drawer, about 12 inches wide and 6 inches deep.",

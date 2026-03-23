@@ -16,6 +16,17 @@ return {
               .. "spatial manipulation, resource management — to escape the bedroom, "
               .. "navigate the cellars beneath, and emerge into the manor proper.",
 
+    -- Welcome text shown at game start (read by main.lua and game-adapter.lua)
+    intro = {
+        title = "THE BEDROOM — A Text Adventure",
+        subtitle = "V1 Playtest",
+        narrative = {
+            "You wake with a start. The darkness is absolute.",
+            "You can feel rough linen beneath your fingers.",
+        },
+        help = "Type 'help' for commands. Try 'feel' to explore the darkness.",
+    },
+
     -- All rooms that belong to this level.
     -- Order follows the critical-path narrative arc.
     rooms = {

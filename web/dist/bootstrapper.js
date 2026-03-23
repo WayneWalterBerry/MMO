@@ -37,6 +37,33 @@
         _currentResponseLines = [];
     }
 
+    // --- DOM batching (#3): buffer DOM mutations during command processing ---
+    var _outputBatching = false;
+    var _outputFragment = null;
+    var _rafScheduled = false;
+
+    function _flushOutput() {
+        if (_outputFragment && _outputFragment.childNodes.length > 0) {
+            outputEl.appendChild(_outputFragment);
+        }
+        _outputFragment = null;
+        _outputBatching = false;
+        outputEl.scrollTop = outputEl.scrollHeight;
+        _rafScheduled = false;
+    }
+
+    function _beginBatch() {
+        _outputBatching = true;
+        _outputFragment = document.createDocumentFragment();
+    }
+
+    function _endBatch() {
+        if (!_rafScheduled && _outputFragment) {
+            _rafScheduled = true;
+            requestAnimationFrame(_flushOutput);
+        }
+    }
+
     function appendOutput(text, className) {
         var div = document.createElement('div');
         div.className = className || 'output-line';
@@ -47,8 +74,13 @@
             safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
             div.innerHTML = safe;
         }
-        outputEl.appendChild(div);
-        outputEl.scrollTop = outputEl.scrollHeight;
+
+        if (_outputBatching && _outputFragment) {
+            _outputFragment.appendChild(div);
+        } else {
+            outputEl.appendChild(div);
+            outputEl.scrollTop = outputEl.scrollHeight;
+        }
 
         // Record response line for transcript (#20)
         if (_currentCmd !== null) {
@@ -65,8 +97,8 @@
     }
 
     // --- Build version (embedded at build time) ---
-    const BUILD_TIMESTAMP = "2026-03-23 12:22";
-    const CACHE_BUST = "20260323122231";
+    const BUILD_TIMESTAMP = "2026-03-23 14:53";
+    const CACHE_BUST = "20260323145359";
 
     // --- Size formatting ---
     function formatSize(bytes) {
@@ -176,12 +208,14 @@
             outputEl.appendChild(echoDiv);
             outputEl.scrollTop = outputEl.scrollHeight;
             if (window._gameProcessCommand) {
+                _beginBatch();
                 try {
                     window._gameProcessCommand(text);
                 } catch (err) {
                     appendOutput('[Error: ' + err.message + ']', 'error-line');
                     console.error(err);
                 }
+                _endBatch();
             } else {
                 appendOutput('[Game engine still loading...]', 'error-line');
             }
