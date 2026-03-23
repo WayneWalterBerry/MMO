@@ -13,6 +13,7 @@ These eight principles form the bedrock of the MMO architecture. They define how
 
 ## Table of Contents
 
+0. [Objects Are Inanimate](#0-objects-are-inanimate)
 1. [Code-Derived Mutable Objects](#1-code-derived-mutable-objects)
 2. [Base Objects → Object Instances](#2-base-objects--object-instances)
 3. [Objects Have FSM; Instances Know Their State](#3-objects-have-fsm-instances-know-their-state)
@@ -21,6 +22,41 @@ These eight principles form the bedrock of the MMO architecture. They define how
 6. [Objects Exist in Sensory Space; State Determines Perception](#6-objects-exist-in-sensory-space-state-determines-perception)
 7. [Objects Exist in Spatial Relationships](#7-objects-exist-in-spatial-relationships)
 8. [The Engine Executes Metadata; Objects Declare Behavior](#8-the-engine-executes-metadata-objects-declare-behavior)
+
+---
+
+## 0. Objects Are Inanimate
+
+**The object system is designed exclusively for physical, inanimate things.** Furniture, tools, weapons, containers, consumables, and other environmental objects are the domain of the object system. **Living creatures — rats, guards, NPCs, animals — are NOT objects.**
+
+### Why This Distinction Matters
+
+Living creatures have fundamentally different requirements than inanimate objects:
+
+- **Behavior Trees & AI:** Creatures need sophisticated decision-making, goal-driven behavior, and reactive intelligence. Objects are passive — they respond to external actions but do not independently pursue goals.
+- **Pathfinding & Movement:** Creatures navigate space, avoid obstacles, and plan routes. Objects exist at a spatial location; they don't move on their own.
+- **Dialogue & Communication:** Creatures interact with players through speech, memory of past encounters, and dynamic responses. Objects provide sensory information only.
+- **Persistent Agency:** Creatures maintain internal state (hunger, fear, memory, goals). Objects reflect the state of the world (broken, lit, open, consumed).
+
+### Design Consequence
+
+When designing a game feature, ask: **"Is this alive?"** If yes, it's a future NPC/creature system. If no, it belongs in the object system.
+
+**Examples:**
+- ✅ A rat that scurries away → **Not an object.** This requires creature AI, pathing, and behavior trees. Defer to NPC system.
+- ✅ A rat trap (the device) → **Is an object.** It's a container/tool that sits in space and has states (armed, sprung, empty).
+- ✅ A candle → **Is an object.** It has states (lit, unlit, spent) and responds to player actions.
+- ✅ A guard → **Not an object.** This requires dialogue, patrol routes, combat AI, and memory. Defer to NPC system.
+
+### Future: NPC System
+
+NPCs, creatures, and living things will eventually have their own architecture:
+- **State Machines for AI:** Desire-driven state machines, goal hierarchies, or behavior trees
+- **Pathfinding & Spatial Reasoning:** A* pathfinding, obstacle avoidance, territory mapping
+- **Dialogue System:** Conversation trees, relationship tracking, dynamic responses
+- **Creature Types:** Specific AI profiles for rats, guards, merchants, enemies, etc.
+
+This is **not yet designed or architected**. Do not attempt to model living things using the object system as a workaround.
 
 ---
 

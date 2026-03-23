@@ -155,6 +155,34 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 
 **Result:** 45/45 test files pass, 0 failures. Zero regressions. Committed f872ed3 and pushed.
 
+### 2026-07-26: EP-WEAPONS — Knife, Glass-Shard, Silver-Dagger Pipeline Migration
+
+**Task:** Migrate 3 weapon objects to effects pipeline (#50, #55). Bart's audit found they had injury verbs but lacked `effects_pipeline = true`, causing stab/cut/hit to fail silently.
+
+**Objects Migrated:**
+
+1. **knife.lua** — Added `effects_pipeline = true`, `pipeline_effects` on `on_stab` (bleeding, 5dmg) and `on_cut` (minor-cut, 3dmg). Added GOAP warns hints. Added file header with effect routing map.
+
+2. **glass-shard.lua** — Added `effects_pipeline = true`, `pipeline_effects` on `on_cut` (minor-cut, 3dmg). Upgraded `on_feel_effect` from bare string `"cut"` to structured pipeline table (`inflict_injury`, minor-cut, 1dmg, pipeline_routed=true). Added GOAP warns hints.
+
+3. **silver-dagger.lua** — Added `effects_pipeline = true`, `pipeline_effects` on `on_stab` (bleeding, 8dmg), `on_cut` (minor-cut, 4dmg), `on_slash` (bleeding, 6dmg). Added GOAP warns hints. Added file header with effect routing map.
+
+**Injury Types Verified:** All referenced types (`bleeding`, `minor-cut`) exist in `src/meta/injuries/`. No new injury types needed.
+
+**Backward Compatibility:** All legacy fields (`damage`, `injury_type`, `description`, `pain_description`, `self_damage`) preserved on every verb block. `effects.normalize()` handles both old single-table format and new pipeline_effects arrays.
+
+**Regression Tests:** 74 new tests in `test/injuries/test-weapon-pipeline.lua`:
+- Data structure validation (pipeline flag, pipeline_effects arrays, source fields)
+- Backward compat checks (legacy fields preserved)
+- GOAP prerequisites present
+- Functional: stab self with knife → bleeding injury
+- Functional: cut self with glass shard → minor-cut injury
+- Functional: stab/slash self with silver dagger → bleeding
+- Functional: injuries appear in `injuries` list output
+- Injury type definitions loadable from disk
+
+**Result:** 51/51 test files pass (74 new tests, 0 regressions). Committed in 7d1733b and pushed.
+
 ### 2026-07-27: Chamber Pot — Wearable as Improvised Helmet (Issue #54)
 
 **Task:** Make the ceramic chamber pot wearable on the head as an improvised helmet with minimal protection.

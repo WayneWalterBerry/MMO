@@ -2336,6 +2336,19 @@ function verbs.create()
             return
         end
 
+        -- Bug #53: Guard against duplicate take — if already in player's hands, skip
+        if obj.location == "player" then
+            for i = 1, 2 do
+                if ctx.player.hands[i] then
+                    local hid = _hid(ctx.player.hands[i])
+                    if hid == obj.id then
+                        print("You already have that.")
+                        return
+                    end
+                end
+            end
+        end
+
         -- BUG-091: Prefer non-spent items from containers over terminal items on floor.
         -- Checks hand-held containers first, then visible containers in the room.
         if where == "room" and obj._state and obj.states then
@@ -3757,7 +3770,8 @@ function verbs.create()
         local cleaned = target_part:lower():gsub("^my%s+", "")
 
         -- Check if targeting self or a body part
-        if cleaned == "self" or cleaned == "myself" or cleaned == "me" or cleaned == "" then
+        if cleaned == "self" or cleaned == "myself" or cleaned == "me"
+            or cleaned == "yourself" or cleaned == "you" or cleaned == "" then
             return true, nil, tool_word
         end
 

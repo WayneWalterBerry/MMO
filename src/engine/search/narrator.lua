@@ -175,6 +175,7 @@ function narrator.found_target(ctx, item, container)
 end
 
 --- Generate narrative for peeking inside a container without opening (#24)
+-- Bug #47: sensory-aware — uses touch language in darkness
 -- @param ctx game context
 -- @param container container being peeked into
 -- @return string
@@ -182,10 +183,15 @@ function narrator.container_peek(ctx, container)
     local name = container.name or container.id or "it"
     -- Strip leading article for "the" prefix
     local display = name:gsub("^[Aa]n? ", ""):gsub("^[Tt]he ", "")
+    local sense = get_primary_sense(ctx, ctx.current_room)
+    if sense == "touch" then
+        return "You feel around inside the " .. display .. "."
+    end
     return "You check inside the " .. display .. "."
 end
 
 --- Generate narrative for container contents when target not found (#27)
+-- Bug #47: sensory-aware — uses feel/touch language in darkness
 -- @param ctx game context
 -- @param container container that was checked
 -- @param items list of item name strings found inside
@@ -194,6 +200,8 @@ end
 function narrator.container_contents_no_target(ctx, container, items, target)
     local name = container.name or container.id or "it"
     local display = name:gsub("^[Aa]n? ", ""):gsub("^[Tt]he ", "")
+    local sense = get_primary_sense(ctx, ctx.current_room)
+    local see_word = sense == "touch" and "you feel" or "you see"
     if #items == 0 then
         if target then
             return "You check inside the " .. display .. ". It's empty. No " .. target .. " here."
@@ -203,9 +211,9 @@ function narrator.container_contents_no_target(ctx, container, items, target)
     else
         local list = table.concat(items, ", ")
         if target then
-            return "You check inside the " .. display .. ". Inside you see " .. list .. ", but no " .. target .. "."
+            return "You check inside the " .. display .. ". Inside " .. see_word .. " " .. list .. ", but no " .. target .. "."
         else
-            return "You check inside the " .. display .. ". Inside you see " .. list .. "."
+            return "You check inside the " .. display .. ". Inside " .. see_word .. " " .. list .. "."
         end
     end
 end

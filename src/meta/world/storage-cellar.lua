@@ -29,7 +29,6 @@ return {
         { id = "oil-lantern",   type = "Oil Lantern",    type_id = "2e4aj8h9-b5c6-4f67-1289-3465ab234567", location = "room" },
         { id = "rope-coil",     type = "Rope Coil",      type_id = "0c28h6f7-93a4-4d45-f067-124389012345", location = "room" },
         { id = "crowbar",       type = "Crowbar",        type_id = "3f5bk9i0-c6d7-4078-2390-4576bc345678", location = "room" },
-        { id = "rat",           type = "Rat",            type_id = "4067cl0j-d7e8-4189-340a-5687cd456789", location = "room" },
         { id = "oil-flask",     type = "Oil Flask",      type_id = "ae5df831-7c42-4b19-8e60-f9a3c7d21b54", location = "room" },
 
         -- Inside large crate (hidden until crate broken open)

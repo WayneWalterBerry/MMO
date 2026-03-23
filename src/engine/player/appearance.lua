@@ -247,6 +247,8 @@ local function render_overall(player)
         parts[#parts + 1] = "you look pale and unsteady"
     elseif pct <= 0.75 then
         parts[#parts + 1] = "you look a bit worn but standing"
+    else
+        parts[#parts + 1] = "you appear healthy and alert"
     end
 
     -- Global blood state

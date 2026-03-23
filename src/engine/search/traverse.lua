@@ -438,8 +438,15 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 if entry.direct_part_search then
                     result.narrative = narrator.part_contents(ctx, entry.surface_name, parent, items)
                 else
+                    -- Bug #47: sensory-aware narration for surface contents
+                    local sense = "vision"
+                    if ctx.current_room and ctx.current_room.light_level
+                        and ctx.current_room.light_level <= 0 then
+                        sense = "touch"
+                    end
+                    local find_word = sense == "touch" and "Inside you feel: " or "Inside you find: "
                     result.narrative = (result.narrative ~= "" and result.narrative .. "\n" or "")
-                        .. "Inside you find: " .. table.concat(items, ", ") .. "."
+                        .. find_word .. table.concat(items, ", ") .. "."
                 end
             else
                 if entry.direct_part_search then
