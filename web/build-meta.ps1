@@ -4,10 +4,13 @@
     for JIT loading.
 
 .DESCRIPTION
+    Auto-discovers ALL subdirectories under src/meta/.
     - Objects: renamed by their GUID field -> meta/objects/{guid}.lua
     - Rooms (world/): copied as-is -> meta/rooms/{filename}
-    - Levels: copied as-is -> meta/levels/{filename}
-    - Templates: copied as-is -> meta/templates/{filename}
+    - All other dirs: copied as-is -> meta/{dirname}/{filename}
+
+    Adding new meta categories (injuries, materials, etc.) requires zero
+    build script changes.
 
 .EXAMPLE
     powershell web/build-meta.ps1
@@ -40,29 +43,33 @@ if (Test-Path $MetaOut) {
     Remove-Item -Recurse -Force $MetaOut
 }
 
+# Auto-discover ALL subdirectories under src/meta (no hardcoded list)
+$srcDirs = Get-ChildItem -Path $MetaRoot -Directory | Select-Object -ExpandProperty Name
+
+# Map source dir names to output dir names (world/ -> rooms/)
+$dirMap = @{ "world" = "rooms" }
+
 # Create output directories
-$dirs = @("objects", "rooms", "levels", "templates")
-foreach ($d in $dirs) {
+$outputDirs = $srcDirs | ForEach-Object { if ($dirMap[$_]) { $dirMap[$_] } else { $_ } } | Sort-Object -Unique
+foreach ($d in $outputDirs) {
     New-Item -ItemType Directory -Path (Join-Path $MetaOut $d) -Force | Out-Null
 }
 
-$objectCount = 0
-$roomCount = 0
-$levelCount = 0
-$templateCount = 0
+$counts = @{}
 $warnings = @()
 
-# --- Objects: rename by GUID ---
+# --- Objects: special handling — rename by GUID ---
 $objectDir = Join-Path $MetaRoot "objects"
 if (Test-Path $objectDir) {
     $objectFiles = Get-ChildItem -Path $objectDir -File -Filter "*.lua" | Sort-Object Name
+    $counts["objects"] = 0
     foreach ($file in $objectFiles) {
         $content = Get-Content $file.FullName -Raw
         if ($content -match 'guid\s*=\s*"\{?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\}?"') {
             $guid = $Matches[1]
             $dest = Join-Path $MetaOut "objects\$guid.lua"
             Copy-Item $file.FullName $dest
-            $objectCount++
+            $counts["objects"]++
         } else {
             $warnings += "No GUID found in $($file.Name) -- skipping"
             Write-Warning "No GUID found in $($file.Name) -- skipping"
@@ -70,46 +77,30 @@ if (Test-Path $objectDir) {
     }
 }
 
-# --- Rooms: world/ -> rooms/ ---
-$roomDir = Join-Path $MetaRoot "world"
-if (Test-Path $roomDir) {
-    $roomFiles = Get-ChildItem -Path $roomDir -File -Filter "*.lua" | Sort-Object Name
-    foreach ($file in $roomFiles) {
-        $dest = Join-Path $MetaOut "rooms\$($file.Name)"
+# --- All other directories: copy as-is (world/ -> rooms/, rest keep name) ---
+$specialDirs = @("objects")
+foreach ($srcName in $srcDirs) {
+    if ($specialDirs -contains $srcName) { continue }
+    $srcPath = Join-Path $MetaRoot $srcName
+    $outName = if ($dirMap[$srcName]) { $dirMap[$srcName] } else { $srcName }
+    $outPath = Join-Path $MetaOut $outName
+    $counts[$outName] = 0
+    $files = Get-ChildItem -Path $srcPath -File -Filter "*.lua" | Sort-Object Name
+    foreach ($file in $files) {
+        $dest = Join-Path $outPath $file.Name
         Copy-Item $file.FullName $dest
-        $roomCount++
+        $counts[$outName]++
     }
 }
 
-# --- Levels ---
-$levelDir = Join-Path $MetaRoot "levels"
-if (Test-Path $levelDir) {
-    $levelFiles = Get-ChildItem -Path $levelDir -File -Filter "*.lua" | Sort-Object Name
-    foreach ($file in $levelFiles) {
-        $dest = Join-Path $MetaOut "levels\$($file.Name)"
-        Copy-Item $file.FullName $dest
-        $levelCount++
-    }
+$total = ($counts.Values | Measure-Object -Sum).Sum
+
+foreach ($key in ($counts.Keys | Sort-Object)) {
+    $label = $key.PadRight(12)
+    $suffix = if ($key -eq "objects") { "(renamed by GUID)" } else { "" }
+    Write-Host "  ${label} $($counts[$key]) files -> meta/$key/ $suffix"
 }
-
-# --- Templates ---
-$templateDir = Join-Path $MetaRoot "templates"
-if (Test-Path $templateDir) {
-    $templateFiles = Get-ChildItem -Path $templateDir -File -Filter "*.lua" | Sort-Object Name
-    foreach ($file in $templateFiles) {
-        $dest = Join-Path $MetaOut "templates\$($file.Name)"
-        Copy-Item $file.FullName $dest
-        $templateCount++
-    }
-}
-
-$total = $objectCount + $roomCount + $levelCount + $templateCount
-
-Write-Host "  Objects:   $objectCount files -> meta/objects/ (renamed by GUID)"
-Write-Host "  Rooms:     $roomCount files -> meta/rooms/"
-Write-Host "  Levels:    $levelCount files -> meta/levels/"
-Write-Host "  Templates: $templateCount files -> meta/templates/"
-Write-Host "  Total:     $total files"
+Write-Host "  Total:       $total files"
 
 if ($warnings.Count -gt 0) {
     Write-Host ""
@@ -127,5 +118,7 @@ $adapterContent = $adapterContent -replace 'local BUILD_TIMESTAMP = ".*?"', "loc
 [System.IO.File]::WriteAllText($adapterPath, $adapterContent, $utf8NoBom)
 Write-Host "  Stamped game-adapter.lua: BUILD_TIMESTAMP = `"$timestamp`""
 
-Write-Host "Meta built ($timestamp) -> $objectCount objects, $roomCount rooms"
+$objectCount = if ($counts["objects"]) { $counts["objects"] } else { 0 }
+$roomCount = if ($counts["rooms"]) { $counts["rooms"] } else { 0 }
+Write-Host "Meta built ($timestamp) -> $objectCount objects, $roomCount rooms, $total total"
 Write-Host "Done."
