@@ -702,6 +702,105 @@ local function transform_compound_actions(text)
         return "put " .. use_tool .. " on " .. use_target
     end
 
+    -- #83: Placement verb aliases → put
+    -- "set X in/on/under Y" → "put X in/on/under Y" (but NOT "set fire to" or "set clock")
+    local set_item, set_prep, set_target = text:match("^set%s+(.+)%s+(in)%s+(.+)$")
+    if not set_item then
+        set_item, set_prep, set_target = text:match("^set%s+(.+)%s+(on)%s+(.+)$")
+    end
+    if not set_item then
+        set_item, set_prep, set_target = text:match("^set%s+(.+)%s+(under)%s+(.+)$")
+    end
+    if not set_item then
+        set_item, set_prep, set_target = text:match("^set%s+(.+)%s+(inside)%s+(.+)$")
+    end
+    if not set_item then
+        set_item, set_prep, set_target = text:match("^set%s+(.+)%s+(underneath)%s+(.+)$")
+    end
+    if not set_item then
+        set_item, set_prep, set_target = text:match("^set%s+(.+)%s+(beneath)%s+(.+)$")
+    end
+    if set_item then
+        return "put " .. set_item .. " " .. set_prep .. " " .. set_target
+    end
+
+    -- "drop X on/in Y" → "put X on/in Y" (bare "drop X" stays as drop)
+    local drop_item, drop_prep, drop_target = text:match("^drop%s+(.+)%s+(on)%s+(.+)$")
+    if not drop_item then
+        drop_item, drop_prep, drop_target = text:match("^drop%s+(.+)%s+(in)%s+(.+)$")
+    end
+    if not drop_item then
+        drop_item, drop_prep, drop_target = text:match("^drop%s+(.+)%s+(under)%s+(.+)$")
+    end
+    if not drop_item then
+        drop_item, drop_prep, drop_target = text:match("^drop%s+(.+)%s+(inside)%s+(.+)$")
+    end
+    if drop_item then
+        return "put " .. drop_item .. " " .. drop_prep .. " " .. drop_target
+    end
+
+    -- "hide X under/in/inside Y" → "put X under/in/inside Y"
+    local hide_item, hide_prep, hide_target = text:match("^hide%s+(.+)%s+(under)%s+(.+)$")
+    if not hide_item then
+        hide_item, hide_prep, hide_target = text:match("^hide%s+(.+)%s+(underneath)%s+(.+)$")
+    end
+    if not hide_item then
+        hide_item, hide_prep, hide_target = text:match("^hide%s+(.+)%s+(beneath)%s+(.+)$")
+    end
+    if not hide_item then
+        hide_item, hide_prep, hide_target = text:match("^hide%s+(.+)%s+(in)%s+(.+)$")
+    end
+    if not hide_item then
+        hide_item, hide_prep, hide_target = text:match("^hide%s+(.+)%s+(inside)%s+(.+)$")
+    end
+    if hide_item then
+        return "put " .. hide_item .. " " .. hide_prep .. " " .. hide_target
+    end
+
+    -- "stuff X in/inside/into Y" → "put X in Y"
+    local stuff_item, stuff_target = text:match("^stuff%s+(.+)%s+in%s+(.+)$")
+    if not stuff_item then
+        stuff_item, stuff_target = text:match("^stuff%s+(.+)%s+inside%s+(.+)$")
+    end
+    if not stuff_item then
+        stuff_item, stuff_target = text:match("^stuff%s+(.+)%s+into%s+(.+)$")
+    end
+    if stuff_item then
+        return "put " .. stuff_item .. " in " .. stuff_target
+    end
+
+    -- "toss X on/onto/in/into Y" → "put X on/in Y"
+    local toss_item, toss_target = text:match("^toss%s+(.+)%s+on%s+(.+)$")
+    if toss_item then
+        return "put " .. toss_item .. " on " .. toss_target
+    end
+    toss_item, toss_target = text:match("^toss%s+(.+)%s+onto%s+(.+)$")
+    if toss_item then
+        return "put " .. toss_item .. " on " .. toss_target
+    end
+    toss_item, toss_target = text:match("^toss%s+(.+)%s+in%s+(.+)$")
+    if toss_item then
+        return "put " .. toss_item .. " in " .. toss_target
+    end
+    toss_item, toss_target = text:match("^toss%s+(.+)%s+into%s+(.+)$")
+    if toss_item then
+        return "put " .. toss_item .. " in " .. toss_target
+    end
+
+    -- "slide X under/into Y" → "put X under/in Y"
+    local slide_item, slide_target = text:match("^slide%s+(.+)%s+under%s+(.+)$")
+    if slide_item then
+        return "put " .. slide_item .. " under " .. slide_target
+    end
+    slide_item, slide_target = text:match("^slide%s+(.+)%s+underneath%s+(.+)$")
+    if slide_item then
+        return "put " .. slide_item .. " under " .. slide_target
+    end
+    slide_item, slide_target = text:match("^slide%s+(.+)%s+into%s+(.+)$")
+    if slide_item then
+        return "put " .. slide_item .. " in " .. slide_target
+    end
+
     -- "push X back" → "put X in X"
     local push_back_target = text:match("^push%s+(.+)%s+back")
     if push_back_target then

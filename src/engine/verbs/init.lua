@@ -4346,7 +4346,7 @@ function verbs.create()
             return
         end
 
-        -- Parse "X in Y" or "X on Y"
+        -- #82: Parse "X in/on/under/underneath/beneath/inside Y"
         local item_word, prep, target_word
         item_word, target_word = noun:match("^(.+)%s+in%s+(.+)$")
         if item_word then
@@ -4355,6 +4355,30 @@ function verbs.create()
             item_word, target_word = noun:match("^(.+)%s+on%s+(.+)$")
             if item_word then
                 prep = "on"
+            end
+        end
+        if not item_word then
+            item_word, target_word = noun:match("^(.+)%s+underneath%s+(.+)$")
+            if item_word then
+                prep = "under"
+            end
+        end
+        if not item_word then
+            item_word, target_word = noun:match("^(.+)%s+beneath%s+(.+)$")
+            if item_word then
+                prep = "under"
+            end
+        end
+        if not item_word then
+            item_word, target_word = noun:match("^(.+)%s+under%s+(.+)$")
+            if item_word then
+                prep = "under"
+            end
+        end
+        if not item_word then
+            item_word, target_word = noun:match("^(.+)%s+inside%s+(.+)$")
+            if item_word then
+                prep = "in"
             end
         end
 
@@ -4378,10 +4402,21 @@ function verbs.create()
             end
         end
 
+        -- #81: Resolve pronouns ("it", "that", etc.) via context window
+        local resolved_item_word = item_word
+        if context_window then
+            local item_kw = item_word:lower()
+                :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+            local cw_item = context_window.resolve(item_kw)
+            if cw_item then
+                resolved_item_word = cw_item.id
+            end
+        end
+
         -- Find item -- must be in hands
         local item = nil
         local item_hand = nil
-        local kw = item_word:lower()
+        local kw = resolved_item_word:lower()
             :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
         for i = 1, 2 do
             local hand = ctx.player.hands[i]
@@ -4453,17 +4488,41 @@ function verbs.create()
                 surface_name = "top"
             elseif prep == "in" and target.surfaces.inside then
                 surface_name = "inside"
+            elseif prep == "under" and target.surfaces.underneath then
+                surface_name = "underneath"
             elseif prep == "on" then
                 for sname, _ in pairs(target.surfaces) do
                     surface_name = sname
                     break
                 end
             elseif prep == "in" then
+                -- #80: no inside surface -> reject (solid furniture has no inside)
+                print("You can't put anything inside " .. (target.name or target.id) .. ".")
+                return
+            elseif prep == "under" then
                 for sname, _ in pairs(target.surfaces) do
                     surface_name = sname
                     break
                 end
             end
+        end
+
+        -- For "under" without surfaces, use target.underneath as a flat container
+        if prep == "under" and not surface_name and not target.surfaces then
+            target.underneath = target.underneath or {}
+            ctx.player.hands[item_hand] = nil
+            if item.hands_required and item.hands_required >= 2 then
+                for i = 1, 2 do
+                    if _hid(ctx.player.hands[i]) == item.id then
+                        ctx.player.hands[i] = nil
+                    end
+                end
+            end
+            target.underneath[#target.underneath + 1] = item.id
+            item.location = target.id
+            print("You put " .. (item.name or item.id) ..
+                " " .. prep .. " " .. (target.name or target.id) .. ".")
+            return
         end
 
         -- Validate with containment engine
