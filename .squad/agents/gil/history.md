@@ -11,6 +11,16 @@
 
 ## Learnings
 
+### 2026-03-24: Issue #129 — Web CSS Verification
+- **Timestamp:** 2026-03-24T11:38Z
+- **Status:** ✅ VERIFIED — All CSS correct, no fixes needed
+- **Bold titles:** `appendOutput()` converts `**text**` → `<strong>` via regex. `.output-line strong` applies `font-weight: bold` + bright white `#e0e0e0`. Working correctly.
+- **Cyan input echo:** `.input-echo` uses `--echo: #00e0e0` (cyan). Echo div created in keydown handler with prompt span (`.input-prompt`, gray bold). Working correctly.
+- **Terminal UI:** Dark bg `#0c0c1d`, light text `#c8c8d0`, `line-height: 1.5`, monospace font stack (`Courier New, Consolas, Liberation Mono`), `max-width: 82ch`, `pre-wrap` + `word-wrap: break-word`, `overflow-y: auto` with auto-scroll on every append.
+- **Mobile:** Viewport meta tag present, 15px font, `env(safe-area-inset-bottom)` for iPhone notch.
+- **Builds:** Both `build-engine.ps1` (153 KB, 41+1 files) and `build-meta.ps1` (103 meta files) pass clean (exit 0).
+- **Conclusion:** The bold/cyan CSS deployed in the March 24 batch is production-ready. No issues found.
+
 ### 2026-03-24: Deploy — Issue #158 — March 24 feature batch
 - **Timestamp:** 2026-03-24T10:49Z
 - **Status:** ✅ COMPLETE — Deployed to GitHub Pages

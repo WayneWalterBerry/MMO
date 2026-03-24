@@ -951,6 +951,19 @@ Verified Smithers' fixes for search traversal (#85), wear auto-pickup (#86), and
 
 ## Learnings
 
+### Issue #128: BUG-061 Wine Bottle Puzzle Retest (2026-07-24)
+
+**Status:** ✅ PASS — bug confirmed fixed, regression tests expanded
+**Test file:** `test/verbs/test-wine-fsm.lua` — 34 tests (23 existing + 11 new), all pass
+**Issue:** #128
+
+- BUG-061 root cause was type_id mismatch between wine-bottle.lua GUID and storage-cellar.lua instance
+- Fix verified: type_id now matches, wine-bottle properly nested in wine-rack contents
+- Full headless playtest: navigate to storage-cellar → take wine bottle → open → drink → terminal state all work
+- Added 11 regression tests: sensory per-state changes, pour-from-sealed blocked, drink aliases (quaff/sip/swig), throw alias, full puzzle chain
+- Test fixture `fresh_wine_bottle()` needed sensory fields (on_feel, on_taste) added to match actual object definition
+- Full suite: 107/107 test files pass, zero regressions
+
 ### Pass 019: BUG-063 Fix Verification (2026-03-21)
 
 **Status:** PARTIAL — Found critical blocker
@@ -1523,3 +1536,20 @@ Wrote `test/objects/test-material-audit.lua` — structural CI gate that prevent
 **Pattern:** Followed `test-object-templates.lua` structural test pattern (file discovery → load → field validation → registry cross-check). Already picked up by `test/run-tests.lua` via the `test/objects/` directory scan.
 
 **Note:** Pre-existing failure in `injuries/test-weapon-pipeline.lua` ("dagger stab damage is 8") — unrelated to this change.
+
+
+### Issue #113: Tutorial Coverage Gaps — EXTINGUISH, EAT, BURN (2026-07-22)
+
+**Status:** COMPLETE — 12/12 tests pass, 106/106 full suite pass, 0 regressions
+
+**What was done:**
+- Added one-shot hint system (`show_hint()` in helpers.lua) tracked on `player.state.hints_shown`
+- EXTINGUISH hint triggers after successful `light` verb — teaches `extinguish` / `blow out`
+- BURN hint triggers after successful `light` verb — teaches `burn [item]` on flammable objects
+- EAT hint triggers after eating edible objects AND when tasting edible objects — teaches `eat [item]`
+- Enhanced no-noun messages for all three verbs with tutorial guidance
+- 12 new tests in `test/verbs/test-tutorial-hints.lua`
+
+**Files changed:** `src/engine/verbs/helpers.lua`, `src/engine/verbs/fire.lua`, `src/engine/verbs/survival.lua`, `src/engine/verbs/sensory.lua`
+
+**Key learning:** The project has no dedicated tutorial system — tutorial coverage is achieved through contextual hints embedded in verb handlers and object interactions. One-shot hints tracked on `player.state` is a clean, non-invasive pattern. Room contents arrays hold string IDs, not object tables (caught by failing test).

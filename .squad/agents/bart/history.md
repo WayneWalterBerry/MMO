@@ -29,7 +29,19 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
-### Recent Work: #125 BUG-050 Fix + #103 Open/Close Hooks (2026-03-28)
+### Recent Work: #101 Engine Hooks: on_enter_room, on_exit_room, on_pickup, on_drop (2026-03-29)
+
+**#101 — 4 Engine Hooks Implemented (TDD):**
+- Added `on_pickup(obj, ctx)` hook in `acquisition.lua` — fires after successful take across all 4 take paths (room, bag, two-hand, single-hand)
+- Added `on_drop(obj, ctx)` hook in `acquisition.lua` — fires after drop action in both single-item and "drop all" paths, before event_output
+- Added `on_enter_room(room, ctx)` hook in `movement.lua` — fires after player enters target room, before arrival text. Covers both normal movement and "go back" path.
+- Added `on_exit_room(room, ctx)` hook in `movement.lua` — fires before player leaves current room, after traverse effects. Covers both normal and "go back" paths.
+- All 4 hooks follow established pattern: type-check for function, call with `(obj/room, ctx)`, then check `event_output` one-shot
+- Updated `docs/architecture/engine/event-hooks.md` to v3.2
+- TDD: 16 tests in `test/verbs/test-engine-hooks-101.lua`
+- Zero regressions across full 105-file test suite
+
+### Prior Work: #125 BUG-050 Fix + #103 Open/Close Hooks (2026-03-28)
 
 **#125 BUG-050 — Duplicate Instance Display (TDD):**
 - Root cause: objects already described in `room.description` also rendered their `room_presence` text in the presences section — double display (torches ×2, portraits ×3, sarcophagi ×5)
@@ -107,6 +119,13 @@
 - `history-archive-2026-03-20T22-40Z-bart.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): engine foundation, verb system, parser pipeline, SLEEP, wearables, FSM engine, composite objects, spatial system, multi-room engine, GOAP Tier 3, terminal UI, timed events, 32+ bug fixes across 7 passes
 
 ## Learnings
+
+### Hook Pattern is Fully Stabilized (2026-03-29)
+- The `on_X(obj, ctx)` + `event_output["on_X"]` pattern is now proven across 6 hook types: wear, remove_worn, open, close, pickup, drop — plus 2 room hooks (enter_room, exit_room)
+- Room hooks use same signature `(room, ctx)` instead of `(obj, ctx)` but identical dispatch mechanics
+- "Go back" movement path must also fire exit/enter hooks — easy to miss since it bypasses the main handle_movement flow
+- All 4 take paths in acquisition.lua needed on_pickup insertion (get-from-container, bag extraction, two-hand, single-hand) — grep for "event_output" finds them all
+- The "drop all" loop needs per-item on_drop callbacks, not just the single-item path
 
 ### Lark Grammar: Lua Object Parsing is Tractable (2026-07-28)
 - Python + Lark (Earley parser) successfully parses ALL 83 object .lua files with a ~30-line grammar

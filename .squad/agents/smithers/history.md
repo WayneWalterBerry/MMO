@@ -47,6 +47,22 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+### 2026-03-28: Issue #109 — "apply X to Y" parser pattern
+
+**What shipped:** Parser now handles "apply X to Y", "rub X on/to/into Y", and "use X on Y" for treatment/application scenarios. "put X on Y" delegates to apply when the target isn't a room object and the player has injuries.
+
+**Four layers of change:**
+1. **Preprocess** (`transform_compound_actions`): "rub X on/to/into Y" → "apply X to Y"; "use X on Y" default fallback changed from "put X on Y" to "apply X to Y" (specific tool dispatches for needle/key/match still take priority). Added applying/rubbing gerund mappings.
+2. **Game loop**: Extract "to Y" target from noun for apply/treat verbs, stored as `context.apply_target` (same pattern as `context.pour_target` from #108 and `context.tool_noun` from #110).
+3. **Verb handler** (`meta.lua`): Apply handler checks `context.apply_target` first before falling back to inline "X to Y" noun parsing.
+4. **Put handler** (`crafting.lua`): When "put X on Y" can't find target as a room object AND player has injuries, delegates to apply handler via `ctx.apply_target`. This catches "put salve on wound" without breaking normal placement.
+
+**Key learning:** The "use X on Y" default fallback was "put X on Y" (placement), but semantically "use" implies application, not placement. Changing the default to "apply" is more natural — specific tool patterns (needle→sew, key→unlock, match→light) still fire first. For "put X on Y", a blanket preprocess conversion would break container placement, so the delegation happens in the verb layer when placement fails + injuries exist.
+
+**Files changed:** `src/engine/parser/preprocess.lua`, `src/engine/loop/init.lua`, `src/engine/verbs/meta.lua`, `src/engine/verbs/crafting.lua`, `test/parser/pipeline/test-apply-patterns.lua`, `test/parser/pipeline/test-transform-compound-actions.lua`
+
+**Tests:** 25 new tests, 0 regressions. Updated 1 existing test (use rock fallback now expects apply instead of put).
+
 ### 2026-03-28: Issue #108 — "pour X into Y" parser pattern
 
 **What shipped:** Parser now handles "pour X into Y", "pour X in Y", and "fill Y with X" (reverse syntax). Verb handler updated to support targeted pouring with `context.pour_target`.

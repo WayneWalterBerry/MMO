@@ -2552,3 +2552,44 @@ Built `scripts/meta-check/check.py` as a Python CLI validator based on Bart's pr
 **Total Active Decisions:** 90 (88 prior + 2 new from inbox)
 **Last Merge:** 2026-03-24T17:20:00Z (Scribe)
 **Inbox Status:** 2 files merged, ready for deletion
+
+---
+
+## D-ENGINE-HOOKS-101 — Room & Item Callback Hooks
+
+**Author:** Bart (Architect)  
+**Date:** 2026-03-29  
+**Issue:** #101  
+**Status:** Implemented  
+
+### Decision
+
+Implemented 4 engine hooks following the established on_X(obj, ctx) + vent_output pattern:
+
+| Hook | File | Fires When |
+|------|------|-----------|
+| on_enter_room(room, ctx) | movement.lua | After player enters a room (both normal movement and "go back") |
+| on_exit_room(room, ctx) | movement.lua | Before player leaves a room (after traverse effects) |
+| on_pickup(obj, ctx) | cquisition.lua | After successful take/get (all 4 take paths) |
+| on_drop(obj, ctx) | cquisition.lua | After drop action (single-item and "drop all" paths) |
+
+### Architecture Notes
+
+- Room hooks use (room, ctx) signature — consistent with the existing on_enter text-generation function pattern, but on_enter_room is a distinct callback hook (not a replacement)
+- on_exit_room fires after 	raverse_effects.process() but before the actual room change — the room reference is still valid
+- on_enter_room fires after the room change but before arrival text / auto-look — hooks can modify room state before display
+- Hook order during movement: on_traverse → on_exit_room → (room swap) → on_enter_room → arrival text
+
+### Affected Team Members
+
+- **Moe** (rooms): Can now declare on_enter_room / on_exit_room callbacks on room definitions for spatial traps, atmosphere triggers
+- **Flanders** (objects): Can now declare on_pickup / on_drop callbacks on objects for cursed items, puzzle triggers
+- **Sideshow Bob** (puzzles): Can use room entry hooks for spatial trap designs (pit trap, gas cloud)
+- **Nelson** (QA): 16 new tests in 	est/verbs/test-engine-hooks-101.lua
+
+---
+
+**End of 2026-03-24T18-45-00Z Decision Inbox Merge**
+**Total Active Decisions:** 91 (90 prior + 1 new from inbox)
+**Last Merge:** 2026-03-24T18:45:00Z (Scribe)
+**Inbox Status:** 1 file merged, ready for deletion

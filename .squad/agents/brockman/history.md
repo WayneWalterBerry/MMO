@@ -295,3 +295,30 @@
 - **Armor interceptor is high-value documentation:** Material-derived protection values, degradation model, and fit multipliers are complex mechanics that warrant detailed section treatment. Breaking it into subsections (calculation, location coverage, degradation, narration) improves readability.
 - **One-shot pattern (event_output) is a good teaching example:** The pattern of "print text, then nil the field" is elegant and worth documenting as a DATA pattern alternative to callbacks. Content authors can use this for first-time flavor text without writing Lua functions.
 - **Precision in file paths matters:** When documentation lists implementation locations, keep them current as code reorganizes. The effect.pipeline.md example of armor shows how important it is to reference actual, working code paths.
+
+### Session: Bedroom Objects Design Docs — Matchbox Documentation (2026-07-24T10:15Z)
+**Status:** ✅ COMPLETED
+**Outcome:** Created comprehensive design documentation for matchbox object (only bedroom object lacking docs)**Files Created:**
+1. `docs/objects/matchbox.md`
+   - Description and material (cardboard)
+   - Location & puzzle role (primary fire source, limited supply)
+   - Containment structure (holds 7 matches in closed/open states)
+   - FSM states: closed (inaccessible) ↔ open (accessible)
+   - Sensory descriptions (all 4 senses for both states)
+   - Transitions (closed→open via `open`, open→closed via `close`)
+   - Container capacity and weight properties
+   - Special properties: `has_striker=true` for compound interactions
+   - Keywords and aliases (matchbox, match box, tinderbox, lucifers, etc.)
+   - Integration with Match system (7-tick total burn economy)
+   - Puzzle dependencies (nightstand → matchbox → matches → fire interactions)**Status Check:**
+- ✅ Nightstand: doc exists (`nightstand.md`)
+- ✅ Matchbox: NEW doc created (`matchbox.md`)
+- ✅ Wardrobe: doc exists (`wardrobe.md`)
+- ✅ Bed: doc exists (`bed.md`)
+- ✅ Rug: doc exists (`rug.md`)
+- ✅ Trap Door: doc exists (`trap-door.md`)**Key Learnings:**
+- Matchbox is a critical puzzle junction: container + striker tool + limited consumable resource
+- Container accessibility pattern: `accessible=false` (closed) prevents contents access; mutation to `matchbox-open` sets `accessible=true`
+- Fire economy: 7 matches × 3-tick burn time = 21 total ticks. Scarcity drives player decision-making
+- Compound verbs require `has_striker=true` metadata on matchbox (not just conceptual)
+- All bedroom objects now fully documented with design directives, sensory properties, and puzzle roles
