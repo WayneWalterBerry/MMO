@@ -41,11 +41,12 @@ end
 
 ---------------------------------------------------------------------------
 -- Typo tolerance thresholds (per D-BUG018: no fuzzy on short words)
--- Short words (≤4): exact only. Medium (5-7): distance ≤2. Long (8+): distance ≤2.
--- Per task spec: "1-2 character difference for short words, 2-3 for longer words"
+-- ≤3 chars: exact only. 4 chars: distance ≤1. 5-7: distance ≤2. 8+: distance ≤2.
+-- Tier 5 enhancement: allow single typo for 4-char words (e.g., "dor" → "door")
 ---------------------------------------------------------------------------
 function fuzzy.max_typo_distance(word_len)
-    if word_len <= 4 then return 0 end
+    if word_len <= 3 then return 0 end
+    if word_len == 4 then return 1 end
     if word_len <= 7 then return 2 end
     return 2
 end
@@ -362,7 +363,8 @@ function fuzzy.score_object(obj, parsed)
             end
         end
         if best_dist <= max_dist then
-            return 3 - best_dist + 1, "typo"
+            -- Tier 5: Score relative to max_dist so all accepted typos meet MIN_CONFIDENCE
+            return max_dist - best_dist + 3, "typo"
         end
     end
 
@@ -502,6 +504,40 @@ function fuzzy.correct_typo(keyword, visible)
 
     if best_word then return best_word end
     return nil
+end
+
+---------------------------------------------------------------------------
+-- Tier 5 Enhancement: Confidence scoring
+---------------------------------------------------------------------------
+local MAX_SCORE = 10
+
+--- Normalize a raw match score to 0.0–1.0 confidence.
+function fuzzy.confidence(raw_score)
+    if not raw_score or raw_score <= 0 then return 0.0 end
+    return math.min(raw_score / MAX_SCORE, 1.0)
+end
+
+-- Minimum confidence to accept a fuzzy match (below = reject)
+fuzzy.MIN_CONFIDENCE = 0.3
+
+-- Minimum confidence to auto-accept without disambiguation
+fuzzy.AUTO_ACCEPT = 0.7
+
+---------------------------------------------------------------------------
+-- Tier 5 Enhancement: Context-integrated scoring
+-- Adds recency bonus from context_window as a tiebreaker.
+---------------------------------------------------------------------------
+function fuzzy.score_with_context(obj, parsed, context_window)
+    local base_score, reason = fuzzy.score_object(obj, parsed)
+    if base_score == 0 then return 0, nil end
+
+    local recency = 0
+    if context_window and context_window.recency_score and obj and obj.id then
+        recency = context_window.recency_score(obj.id)
+    end
+
+    -- Recency adds up to 0.5 bonus (tiebreaker, never overrides a better match)
+    return base_score + (recency * 0.1), reason
 end
 
 return fuzzy

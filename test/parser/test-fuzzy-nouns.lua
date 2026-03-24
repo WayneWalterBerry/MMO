@@ -52,10 +52,13 @@ end)
 
 helpers.suite("Typo Tolerance Thresholds")
 
-test("short words (≤4 chars) → distance 0 (exact only)", function()
+test("short words (≤3 chars) → distance 0 (exact only)", function()
     assert_eq(0, fuzzy.max_typo_distance(1))
     assert_eq(0, fuzzy.max_typo_distance(3))
-    assert_eq(0, fuzzy.max_typo_distance(4))
+end)
+
+test("4-char words → distance 1 (Tier 5: single typo allowed)", function()
+    assert_eq(1, fuzzy.max_typo_distance(4))
 end)
 
 test("medium words (5-7 chars) → distance 2", function()
