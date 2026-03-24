@@ -1,6 +1,6 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-24T16:18:09Z  
+**Last Updated:** 2026-03-24T17:20:00Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
 **New Decisions:** D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION, D-BRASS-BOWL-KEYWORD-REMOVAL, D-EMBEDDED-PRESENCES, D-OPEN-CLOSE-HOOKS, D-P1-PARSER-CLUSTER
@@ -2352,4 +2352,48 @@ Three-phase pipeline:
 **End of 2026-03-24T16-40-00Z Decision Inbox Merge**
 **Total Active Decisions:** 88 (86 prior + 2 new from inbox)
 **Last Merge:** 2026-03-24T16:40:00Z (Scribe)
+**Inbox Status:** 2 files merged, ready for deletion
+
+---
+
+## VERBS & META-CHECK DECISIONS (2026-03-24)
+
+### D-VERBS-REFACTOR-2026-03-24
+**Author:** Bart (Architect)  
+**Date:** 2026-03-24  
+**Status:** Implemented  
+
+Split `src/engine/verbs/init.lua` (5,884 lines) into helper + 10 verb modules using a `register(handlers)` pattern, with a registry-only `init.lua`.
+
+- Added `src/engine/verbs/helpers.lua` as the shared utility module (core helpers + optional parser modules).
+- Added verb modules: `sensory`, `acquisition`, `containers`, `destruction`, `fire`, `combat`, `crafting`, `equipment`, `survival`, `movement`, `meta`.
+- Moved self-infliction parsing helpers (`parse_self_infliction`, `handle_self_infliction`) into helpers for reuse by strike → hit routing.
+
+**Impact:** Verb behavior unchanged; module boundaries now explicit and easier to edit. `engine.verbs` remains the public entry point (registry only).
+
+**Tests:** `lua test/run-tests.lua` — all tests passing.
+
+---
+
+### D-META-CHECK-BUILD-2026-03-24
+**Author:** Smithers (UI/Parser)  
+**Date:** 2026-03-24  
+**Status:** Implemented  
+
+Built `scripts/meta-check/check.py` as a Python CLI validator based on Bart's proven Lark grammar to enforce core object integrity and cross-file consistency.
+
+- Parses meta `.lua` files with Lark grammar from `lua_grammar.py`
+- Enforces required fields: `guid`, `template`, `id`, `name`, `keywords`, `on_feel`
+- Type checks, GUID format validation, material registry cross-validation
+- Validates FSM `initial_state` references and transition state pairs
+- Runs cross-file GUID uniqueness and keyword collision checks
+- JSON and text output modes with severity filtering and defined exit codes
+
+**Consequences:** Fast, deterministic validation gate for meta content. Conservative FSM handling avoids false positives on non-literal state tables.
+
+---
+
+**End of 2026-03-24T17:20:00Z Decision Inbox Merge**
+**Total Active Decisions:** 90 (88 prior + 2 new from inbox)
+**Last Merge:** 2026-03-24T17:20:00Z (Scribe)
 **Inbox Status:** 2 files merged, ready for deletion

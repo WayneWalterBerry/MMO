@@ -47,6 +47,11 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+### 2026-03-27: Meta-Check CLI build
+
+**What shipped:** Created `scripts/meta-check/check.py` using Bart’s Lark grammar. Implemented required-field/type checks, GUID/material validation, FSM state consistency, and cross-file GUID/keyword collision detection with text/JSON output.
+
+**Key learning:** Keep FSM validation conservative when state tables are non-literal (ident refs) to avoid false positives while still enforcing core object integrity.
 
 ### 2026-03-26: P1 Parser Bug Cluster — TDD fix for #137-145, #156
 
