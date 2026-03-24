@@ -1,267 +1,99 @@
 # Daily Plan — 2026-03-25
 
 **Owner:** Wayne "Effe" Berry
-**Focus:** 🔴 P0 — Custom Meta Compiler (Lisa's validation tool)
+**Focus:** 🔴 P0 — Engine Refactoring + Meta Compiler (Completed Early — Remaining Work Below)
 **Created:** 2026-03-24
+**Status:** Most of this plan was executed early during the March 24 session. See March 24 daily plan for full "March 25 Work Shipped Early" section.
 
 ---
 
-## 🔴 P0-A: Engine Code Review — BEFORE EVERYTHING
+## ⚠️ Plan Status: 95% COMPLETE (Shipped During March 24 Session)
 
-> **Wayne's directive:** "Before everything, we need to think about the engine .lua files. In several subfolders they are getting very large. Should they be broken down? Are there logical divides? Would this help or hurt the LLM when writing them? Do we have test opportunities for individual files? Become a highly capable senior engineer and code review. This is common on long-running projects to review for refactors."
+The following work was scheduled for March 25 but completed during the March 24 evening session:
+- ✅ **P0-A:** Engine Code Review (Bart + Nelson review, refactoring sequencing decided)
+- ✅ **P0-B:** Meta-Check V1 (research + design + implementation, 19 rules, zero false positives)
+- ✅ **P0-C:** Meta-Check V2 (expanded to 160 rules, full meta-type coverage, PASS WITH NOTES)
+- ✅ **#160:** event-hooks.md documentation
+- ✅ **#161:** effects-pipeline.md v3.0 documentation
+- ✅ **#158:** Deploy to live site
+- ✅ **#163:** Material audit CI gate
+- ✅ **Playtest bug cluster:** 7 issues filed and fixed same evening (#167–173)
 
-### Current State (file sizes, March 24)
-
-| File | Lines | Status |
-|------|-------|--------|
-| `verbs/init.lua` | **5,817** | 🔴 Critical — 31+ verb handlers in one file |
-| `parser/preprocess.lua` | 1,036 | 🟡 Large but pipeline is modular |
-| `search/traverse.lua` | 871 | 🟡 Getting chunky |
-| `parser/goal_planner.lua` | 848 | 🟡 Self-contained |
-| `loop/init.lua` | 585 | 🟢 Reasonable |
-| Everything else | <500 | 🟢 Fine |
-
-### Review Questions
-
-1. **`verbs/init.lua` (5,817 lines):** Should each verb be its own file? (e.g., `verbs/look.lua`, `verbs/take.lua`, `verbs/search.lua`). What are the shared utilities between verbs? Would splitting help LLMs work on one verb without loading 5K lines of context?
-
-2. **Logical divides:** Within each large file, are there natural seams? (e.g., verbs could split by category: movement, combat, inventory, sensory, interaction)
-
-3. **LLM impact:** Smaller files = less context needed per edit = fewer LLM mistakes. But too many tiny files = more cross-file coordination. What's the sweet spot?
-
-4. **Test opportunities:** Which functions inside large files have no unit tests? Splitting creates natural test boundaries.
-
-5. **Dependency analysis:** If we split verbs/init.lua, what's the shared state? Do verbs share helper functions? Is there a verb registry pattern that would make splitting clean?
-
-### Deliverables
-
-- [x] **Bart:** Senior code review of ALL engine files >500 lines. For each: recommend split/keep, identify logical seams, estimate LOC per split file, flag shared utilities that would become a `verbs/helpers.lua`. Produce `docs/architecture/engine/refactoring-review.md`. ✅ Produced review, split verbs/init.lua (5,884 lines) → 12 modules.
-- [x] **Nelson:** BEFORE any refactoring begins — audit test coverage for every function that would move. Write missing tests to cover existing behavior. The test suite is the safety net; refactoring without it is forbidden. ✅ 172 pre-refactor tests, 2,670 assertions post-refactor, 0 regressions.
-- [x] **Chalmers:** Review Bart's proposal and decide: do we refactor now (before meta-compiler) or after? Sequencing matters — refactoring changes file paths the meta-compiler would validate. ✅ Decided: refactor FIRST, meta-compiler second.
-
-### ⚠️ Wayne's Directive: TDD-First Refactoring
-
-**Sequence is non-negotiable:**
-1. Bart reviews and proposes splits
-2. Nelson writes tests covering ALL existing behavior in the code being split
-3. Nelson verifies tests pass on CURRENT code (green baseline)
-4. THEN and only then: execute the refactor
-5. Nelson re-runs tests — must stay green
-6. Any red = refactor broke something, revert and fix
+**Result:** 40+ issues closed, 3,342 tests passing, engine refactored, meta-check shipped.
 
 ---
 
-## 🔴 P0-B: Custom Meta Compiler ("meta-check") — Ship Today
+## 🔴 Remaining Work (3 Items — Tomorrow's Fresh Planning)
 
-### Step -1: Research Before Docs — Fill the Gaps
+### #106 — Prime Directive Tiers 1-5 (Parser Architecture & Implementation)
 
-Frink's research (76 KB, 5 docs in `resources/research/meta-compiler/`) covers compiler techniques, language choice, and Lua subset analysis. But before writing authoritative design docs, we need answers to:
+**Owner:** Smithers (Parser)  
+**Category:** Parser Expansion  
+**Status:** Blocked, awaiting design clarity
 
-1. **Actual bug catalog** — Frink: scan git history for every LLM-introduced .lua bug. Classify by type (missing field, wrong type, invalid reference, structural, semantic). This determines which rules matter most and what meta-check catches first.
+**Description:** Implement Tiers 1-5 of the Prime Directive parser pipeline (Tier 1 = exact alias lookup, Tier 2 = embedding-based matching, Tier 3 = GOAP planning, Tier 4 = context window, Tier 5 = fuzzy resolution).
 
-2. **Lark grammar prototype** — Bart: write a minimal Lark grammar that can parse 5 real object files. Prove the Lua subset is parseable. If Lark chokes on something, we need to know before documenting the architecture.
-
-3. **Lisa's wishlist** — Lisa: what checks does she actually want? She's the user. Her acceptance criteria ARE the rules catalog. Don't guess — ask the tester.
-
-4. **Cross-reference inventory** — Frink: how many cross-references exist today? Count: material references, template references, GUID links, exit targets, keyword overlaps. This scopes the reference-checking module.
-
-5. **Existing validation** — Bart: what validation does the engine already do at load time? If `loader/init.lua` already checks some fields, meta-check shouldn't duplicate — it should catch what the loader DOESN'T.
-
-**Sequence:** Research (30 min) → Docs (1 hr) → Build (2-3 hr) → Lisa validates (30 min)
-
-> **Wayne's directive:** Before writing a single line of code, create `docs/meta-check/` with design docs. The docs define what we're building, then the code follows.
-
-**Deliverables (Brockman + Bart):**
-
-Create `docs/meta-check/` with:
-
-1. **`overview.md`** — What meta-check is, why it exists, the problem it solves. Goals: catch LLM-authored .lua bugs at CI time, not runtime. Both a compiler (semantic analysis) and a linter (style enforcement). Lisa's primary quality gate tool.
-
-2. **`architecture.md`** — The pipeline: lexer → parser → AST → semantic analysis → lint rules → error reporter. How each stage works. What the Lua subset looks like. How schemas per template type drive validation.
-
-3. **`usage.md`** — How Lisa (and CI) runs it:
-   - `python scripts/meta-check/check.py src/meta/objects/candle.lua` — single file
-   - `python scripts/meta-check/check.py src/meta/objects/` — directory scan
-   - `python scripts/meta-check/check.py src/meta/` — full meta validation
-   - Exit codes: 0 = pass, 1 = errors, 2 = warnings only
-   - Output format: file, line, severity, rule, message, suggestion
-
-4. **`rules.md`** — Complete catalog of validation rules organized by category:
-   - **Structural:** required fields per template, field types, GUID format
-   - **References:** material exists in registry, template exists, exit targets exist
-   - **FSM:** states referenced in transitions exist, initial_state is valid
-   - **Nesting:** on_top/contents/nested/underneath only in rooms, depth limits
-   - **Lint:** naming conventions, field ordering, on_feel required, sensory completeness
-   - **Cross-file:** GUID uniqueness across all objects, keyword uniqueness
-
-5. **`schemas.md`** — Schema definitions per template type (small-item, container, furniture, room, sheet). What fields are required, optional, their types and valid values. This is the contract meta-check enforces.
-
-> **Wayne's directive:** This is P0. Must ship before the project grows. It's a tool Lisa uses to validate .lua object/room structure. Without it, every new object is a potential runtime bug that only surfaces during play-testing.
-
-## Research + Build: Meta Object Validation & Compile-Time Safety
-
-### The Problem
-
-Lua is a script language with no compile-time type checking. Every object, room, and level in `src/meta/` is a `.lua` file — valid Lua, but potentially an invalid *object*. An LLM (or human) can write a file that:
-- Parses as Lua but is missing required fields (`on_feel`, `material`, `guid`)
-- Has a `material` value that doesn't exist in the registry
-- Declares FSM `transitions` referencing states that don't exist
-- Uses `on_top` nesting in an object file instead of a room file
-- Has type mismatches (`weight = "heavy"` instead of `weight = 3`)
-
-Today this is caught only at **runtime** — when a player triggers the broken code path. At 74 objects this is manageable. At 500 objects across 50 rooms, it's a ticking bomb.
-
-### Wayne's Framing
-
-> "We could write configuration-style tests that cheaply parse the text to determine correctness, or a better option might be to write a compiler specifically for the objects, rooms, and other meta objects that has a parser, tokenizer, etc. to verify the object is a correct object — not just correct Lua but a correct room/object. Think deeply about this problem space. The easiest answer might not be the best answer. Consider we might have 100s of objects and 100s of rooms. Also think about the best language — it might not be Lua."
-
-### Direction: Custom Meta Compiler (Wayne's Decision)
-
-Wayne has narrowed this to ONE approach: **a custom meta compiler** that uses compiler-style techniques (lexer → parser → semantic analysis) to validate .lua meta files. This is NOT:
-- ❌ Config-style tests (too shallow)
-- ❌ A different language for objects (engine still consumes .lua)
-- ❌ A linter or regex-based checker (not rigorous enough)
-- ❌ Compilation to native code (not the point)
-
-**What it IS:** A front-end compiler that reads `.lua` object/room/level files and validates them against what the game engine expects. It produces validation results (errors, warnings), not machine code. The engine still `require()`s the `.lua` at runtime — the compiler runs before that, in CI or pre-commit.
-
-**The compiler may be written in a different language than Lua** — choose the best language for building parsers/tokenizers (Python, TypeScript, Rust, Go, etc.).
-
-### Research Questions (Frink + Bart)
-
-1. **What are the categories of meta bugs we've actually seen?** Audit git history — what errors have LLMs introduced in `.lua` meta files? Classify by type (missing field, wrong type, invalid reference, structural error, semantic error).
-
-2. **Compiler architecture:** What does the pipeline look like?
-   - **Lexer:** Tokenize `.lua` table literals (we only need to parse the subset of Lua that objects use — `return { ... }` table constructors)
-   - **Parser:** Build an AST of the object definition (fields, nested tables, values)
-   - **Semantic analysis:** Validate against schemas per template type:
-     - Object: required fields (id, name, keywords, material, on_feel), valid material references, GUID format
-     - Room: required fields, valid deep nesting syntax (on_top, contents, nested, underneath), exit targets exist
-     - FSM: declared states match transitions, no orphan states
-     - Cross-references: material exists in registry, template exists, GUIDs unique
-   - **Output:** Error list with file, line, field, expected vs actual
-
-3. **Language choice for the compiler:** Evaluate:
-   - **Python** — rich parsing ecosystem (lark, pyparsing, PLY), fast to build, already in scripts/
-   - **TypeScript/Node** — could share tooling with web build, good AST libraries
-   - **Rust** — fast, excellent parser combinator libraries (nom, pest), overkill?
-   - **Go** — simple, fast, good for CLI tools
-   - **Lua itself** — dogfooding, but limited parsing libraries
-   - Criteria: ease of building a Lua-subset parser, CI integration, team familiarity
-
-4. **What subset of Lua do we actually need to parse?** Objects are `return { key = value, ... }` — nested table literals, strings, numbers, booleans, nil. No function calls, no control flow, no metatables in the data layer. How small is this subset?
-
-5. **Scale analysis:** At 100 objects, 100 rooms, 20 levels — how many cross-references? What's the validation time budget? (Should be <5 seconds for full repo scan.)
-
-### Deliverables
-
-- [x] **Frink:** Research report — how do other game engines validate data-as-code? Dwarf Fortress RAW validators, Factorio prototype checking, modding community tools. Focus on compiler-style approaches. ✅ 38 bugs cataloged, 103 GUIDs verified, system GREEN.
-- [x] **Bart:** Architecture proposal — design the compiler pipeline (lexer → parser → semantic analysis → output). Recommend implementation language. Define the schema format for each template type. Estimate LOC and build time. ✅ Lark grammar proven on 83/83 objects.
-- [x] **Chalmers:** ~~Scope and prioritize~~ → **DECIDED: P0.** Wayne says ship it tomorrow. Plan the build phases (research AM → prototype PM → Lisa validates end of day). ✅ Shipped.
-- [x] **Lisa:** Define acceptance criteria — what does "valid object" mean? List every check she wants the compiler to perform. This is HER tool. ✅ 144 acceptance checks across 15 categories.
-- [x] **Smithers or Bart:** Build the compiler after Bart's architecture proposal. Target: CLI tool that Lisa runs on any .lua file and gets pass/fail with error messages. ✅ Smithers built `scripts/meta-check/check.py` — Python+Lark, 19/144 rules, 0 false positives.
+**Prerequisite:** Define formal Tier specs, success criteria, and dependency sequencing.
 
 ---
 
-## 🔴 P0-C: Meta-Check V2 — Full Meta Type Coverage
+### #126 — Room 3 Design & Implementation
 
-Meta-check v1 **shipped today** (March 25) and validates objects and rooms. But it skips 3 critical meta types entirely. This P0-C expands coverage.
+**Owner:** Moe (World Design)  
+**Category:** World Expansion  
+**Status:** Blocked, awaiting design review
 
-### What V1 Covers (Shipped Today) ✅
+**Description:** Design and implement Room 3 (next area in Level 1). Define topology, fixtures, objects, exits. Add tests and narrative hooks.
 
-- **Objects** (83 files in `src/meta/objects/`):
-  - Required fields: `guid`, `id`, `name`, `on_feel`, `template`
-  - GUID uniqueness and format validation
-  - Material references (exists in registry)
-  - FSM consistency (states/transitions/initial_state)
-  - Template references
-  - Cross-file checks (keyword collisions)
-  - Sensory completeness (`on_feel`, `on_smell`, `on_listen`, `on_taste` coverage)
-
-- **Rooms** (7 files in `src/meta/world/`):
-  - GUID, id, name, description, exits structure
-  - Instance references (template lookup)
-  - Exit target validation (target room exists)
-  - Nesting hierarchy validation (`on_top`, `contents`, `nested`, `underneath`)
-
-### What V1 Skips (The Gap) ⚠️
-
-Meta-check **detects** these types but has **no validation rules**:
-
-- **Levels** (`src/meta/levels/`) — defined but not validated
-  - Example: `src/meta/levels/level-01.lua` contains level metadata (progression, objectives)
-  - Needs: required fields, transitions, object/room references
-
-- **Injuries** (`src/meta/injuries/`) — defined but not validated
-  - Example: `src/meta/injuries/bleeding.lua` defines damage types, effects, recovery
-  - Needs: required fields, effect/state consistency, material interactions
-
-- **Templates** (`src/meta/templates/`) — base definitions exist but unchecked
-  - Example: `src/meta/templates/small-item.lua` defines schema for all small items
-  - Needs: field inheritance chains, required vs optional field declarations, type contracts
-
-### Deliverables
-
-1. **Lisa** (Test/QA):
-   - Define acceptance criteria for level, injury, and template validation
-   - List every field that must exist, allowed values, cross-reference rules
-   - Document what constitutes "valid level/injury/template"
-   - **Target:** Complete before Smithers builds
-
-2. **Smithers** (Parser/Tools):
-   - Implement validation rules for all 3 types in `scripts/meta-check/check.py`
-   - Add schema definitions for level, injury, template to `docs/meta-check/schemas.md`
-   - Update `docs/meta-check/rules.md` with new rule categories
-   - Ensure exit codes remain: 0=pass, 1=errors, 2=warnings
-   - **Target:** Full coverage; zero false positives on existing 5 levels, 7 injuries, 5 templates
-
-3. **Lisa** (Validation):
-   - Run expanded tool against all meta files in repository
-   - Document any false positives or ambiguous edge cases
-   - Approve rules before merge to CI gate
-   - **Target:** Green pass on entire `src/meta/` tree
-
-4. **Bonus:** Implement more of Lisa's 144 acceptance criteria
-   - V1 covers 19/144 = 13% ✓
-   - V2 should expand coverage significantly with level/injury/template validation
-
-### Dependencies
-
-- **Depends on:** P0-B shipped (done ✓)
-- **Lisa's criteria must come before Smithers builds**
-- **Blockers:** None (v1 shipped successfully)
-- **Merge gate:** All rules defined + Lisa approves before merge to main
+**Prerequisite:** Room 2 completion + Wayne approval of Room 3 layout.
 
 ---
 
-## Carry-Over from 2026-03-24
+### #162 — Design: Injury-Causing Objects for Unconsciousness
 
-### What SHIPPED Today (March 24) ✅
+**Owner:** Comic Book Guy (Game Design)  
+**Category:** Design  
+**Status:** Hold, awaiting Wayne clarification
 
-- ✅ **Armor System** — Material-derived protection mechanics (all 7 phases: A1-A7)
-- ✅ **Equipment Event Hooks** — `on_wear` and `on_remove_worn` handlers for gear state transitions
-- ✅ **Event_Output One-Shot System** — Flavor text framework for singular narrative moments
-- ✅ **P1 Parser Bug Cluster** — 7 critical issues fixed (#137–145, #156)
-- ✅ **Hit Synonym Cluster** — Resolves ambiguity on melee verb surface area (#141, #142, #143, #146, #157)
-- ✅ **Decorative Prepositional Suffix Stripping** — Cleans player input (e.g., "examine at the pot" → "pot") (#154)
-- ✅ **Search Drawer Accessible to Get** — Containment rules loosened for small objects (#149)
-- ✅ **Ceramic Pot Degradation** — Multi-phase breakage FSM now works correctly (#155)
-- ✅ **Tear Cloak to Hands** — Fabric destruction now deposits torn pieces in player hands (#134)
-- ✅ **Brass Bowl Keyword Collision Fix** — Resolved semantic ambiguity with spittoon
-- ✅ **BUG-050 Duplicate Display + on_open/on_close Hooks** — Event hooks fire correctly; no duplicate text (#125, #103)
-- ✅ **On_Drop Fragility Tests** — Nelson's suite verifies breakage on impact (Pass 040)
-- ✅ **Event_Output + Helmet Swap Tests** — Equipment event system validated
+**Description:** Determine which objects should trigger `unconscious` injury on player contact/use/wear. Scope: poison gas canister? Sleeping dust? Blunt melee? Electricity? Links to self-infliction puzzle design (D-13).
 
-### What Did NOT Ship Today — Carry-Over (6 Items)
+**Prerequisite:** Wayne clarification: which injury types trigger unconsciousness? Scope of self-infliction mechanics?
 
-| Issue | Title | Owner | Category | Why Deferred |
-|-------|-------|-------|----------|--------------|
-| **#158** | Deploy March 24 Work to Live | Gil | Deployment | Not yet automated; manual gate pending approval |
-| **#159** | Evening Newspaper (Edition 2) | Flanders | Content | Wayne directive D-NO-NEWSPAPER-PENDING — hold until P0s done |
-| **#160** | Update Docs: event-hooks.md | Brockman | Documentation | Deferred pending on_wear/on_remove_worn final APIs |
-| **#161** | Update Docs: effects-pipeline.md (v3.0 armor) | Brockman | Documentation | Deferred pending armor design doc completion |
-| **#162** | Design: Injury-Causing Objects for Unconsciousness | Comic Book Guy | Design | Puzzle dependency; deferred until P0s ship |
-| **#163** | Test: Material Audit CI Test | Nelson | CI/QA | Depends on meta-compiler rules (P0-B); write after compiler ships |
+**Note:** This is a **design** task; implementation will follow after specs are locked.
+
+---
+
+## Session Statistics (March 24–25 Combined)
+
+| Metric | Value |
+|--------|-------|
+| **Issues Closed** | 40+ |
+| **Tests Added (Pre-Refactor Baseline)** | 172 |
+| **Total Assertions (Post-Refactor)** | 2,670 |
+| **Test Pass Rate** | 100% (3,342 tests) |
+| **Objects Validated by Meta-Check** | 83 |
+| **Rooms Validated by Meta-Check** | 7 |
+| **Levels Validated by Meta-Check** | 5 |
+| **Injuries Validated by Meta-Check** | 7 |
+| **Templates Validated by Meta-Check** | 5 |
+| **Meta-Check V1 Rules Implemented** | 19/144 |
+| **Meta-Check V2 Rules Implemented** | 159/160 |
+| **Bug Fixes (Playtest Cluster)** | 7 (#167–173) |
+
+### Key Outcomes
+
+✅ **Engine Code Review Complete** — All files >500 lines reviewed; erbs/init.lua split into 12 focused modules  
+✅ **Meta-Check V1 Shipped** — 19 validation rules, zero false positives on 90+ meta files  
+✅ **Meta-Check V2 Shipped** — Full meta-type coverage (objects, rooms, levels, injuries, templates)  
+✅ **Documentation Updated** — event-hooks.md and effects-pipeline.md v3.0 complete  
+✅ **Deployment Complete** — March 24 features live on web server  
+✅ **Playtest Bugs Fixed** — 7 issues identified and resolved same evening  
+
+---
+
+## Carry-Over Notes
+
+All major P0 work and carry-over documentation shipped during the March 24 session. See the March 24 daily plan for "March 25 Work Shipped Early" section for complete details.
 
 ---
 

@@ -1,0 +1,100 @@
+{
+  "agents": {
+    "frink": {
+      "persistent_name": "Frink",
+      "universe": "The Simpsons",
+      "role": "Researcher",
+      "created_at": "2026-03-18T22:17:37Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "brockman": {
+      "persistent_name": "Brockman",
+      "universe": "The Simpsons",
+      "role": "Documentation",
+      "created_at": "2026-03-18T22:17:37Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "chalmers": {
+      "persistent_name": "Chalmers",
+      "universe": "The Simpsons",
+      "role": "Project Manager",
+      "created_at": "2026-03-18T22:17:37Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "comic-book-guy": {
+      "persistent_name": "Comic Book Guy",
+      "universe": "The Simpsons",
+      "role": "Game Designer",
+      "created_at": "2026-03-19T00:00:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "bart": {
+      "persistent_name": "Bart",
+      "universe": "The Simpsons",
+      "role": "Architect",
+      "created_at": "2026-03-18T23:10:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "nelson": {
+      "persistent_name": "Nelson",
+      "universe": "The Simpsons",
+      "role": "Tester",
+      "created_at": "2026-03-19T23:49:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "flanders": {
+      "persistent_name": "Flanders",
+      "universe": "The Simpsons",
+      "role": "Object Designer / Builder",
+      "created_at": "2026-03-21T00:14:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "sideshow-bob": {
+      "persistent_name": "Sideshow Bob",
+      "universe": "The Simpsons",
+      "role": "Puzzle Master",
+      "created_at": "2026-03-21T12:22:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "lisa": {
+      "persistent_name": "Lisa",
+      "universe": "The Simpsons",
+      "role": "Object Tester",
+      "created_at": "2026-03-21T12:28:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "moe": {
+      "persistent_name": "Moe",
+      "universe": "The Simpsons",
+      "role": "World Builder",
+      "created_at": "2026-03-21T13:04:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "smithers": {
+      "persistent_name": "Smithers",
+      "universe": "The Simpsons",
+      "role": "UI Engineer",
+      "created_at": "2026-03-21T13:41:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "gil": {
+      "persistent_name": "Gil",
+      "universe": "The Simpsons",
+      "role": "Web Engineer",
+      "created_at": "2026-03-22T19:46:00Z",
+      "legacy_named": false,
+      "status": "active"
+    }
+  }
+}

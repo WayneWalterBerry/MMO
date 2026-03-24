@@ -1,0 +1,892 @@
+# Sideshow Bob — History
+
+## Core Context
+
+**Project:** MMO text adventure engine in pure Lua (REPL-based, `lua src/main.lua`)
+**Owner:** Wayne Berry
+**Role:** Puzzle Master — designs multi-step puzzles using real-world object interactions, conceptualizes new objects needed for puzzles, writes puzzle design docs in `docs/puzzles/`
+**Documentation Rule:** Every puzzle MUST be documented in `docs/puzzles/` — one .md per puzzle. Bob owns these docs.
+
+### Key Relationships
+- **Flanders** (Object Designer) — I hand off object specs for implementation; he builds the .lua files
+- **Frink** (Researcher) — I request puzzle research from other games/books/real life; he wrote the DF comparison and mutation research
+- **CBG** (Game Designer) — aligns puzzles with overall game design, pacing, and Wayne's directives
+- **Bart** (Architect) — engine capabilities and constraints; wrote containment, room exits, dynamic descriptions docs
+- **Nelson** (Tester) — tests puzzles for solvability and edge cases
+- **Brockman** (Documentation) — can delegate doc writing to him, but puzzle docs are my responsibility
+
+### Run Command
+`lua src/main.lua` from repo root
+
+---
+
+## Puzzle Architecture Knowledge
+
+### The 8 Core Principles (My Constitution)
+1. **Code-Derived Mutable Objects** — All objects are mutable Lua tables derived from immutable .lua source. Two mutation strategies: direct table mutation (FSM state swap) and code re-parsing (`becomes` mutation). All state is ephemeral (in-memory only, lost on restart).
+2. **Base Objects → Object Instances** — Immutable base objects (templates in `src/meta/objects/`) with GUIDs → mutable runtime instances. Template → Base Class → Instance resolution chain.
+3. **Objects Have FSM; Instances Know Their State** — Every object is a finite state machine. `_state` field tracks current state. States define ALL properties for that state (description, sensory, capabilities, transitions). No hidden flags — the entire object IS its current state.
+4. **Composite Objects Encapsulate Inner Objects** — One .lua file defines parent + detachable inner objects (poison-bottle + cork, candle-holder + candle, nightstand + drawer). Inner objects become independent on detachment.
+5. **Multiple Instances Per Base Object** — Matchbox has 7 match instances, all from same base. Each has independent state, timers, location.
+6. **Objects Exist in Sensory Space** — Multi-sensory: LOOK, FEEL, SMELL, LISTEN, TASTE. State determines ALL sensory output. Darkness blocks vision but not touch/smell/sound. Critical for puzzle clues.
+7. **Objects Exist in Spatial Relationships** — `resting_on`, `covering`, `surfaces`. Rug covers trap-door. Bed rests on rug. Moving objects reveals hidden things. Spatial relationships are metadata, not code.
+8. **Engine Executes Metadata; Objects Declare Behavior** — ZERO object-specific code in engine. The `mutate` field on FSM transitions can change ANY property. No `if obj.id == "candle"` anywhere.
+
+### GOAP Backward-Chaining (goal_planner.lua)
+- **File:** `src/engine/parser/goal_planner.lua`
+- **Purpose:** Tier 3 parser — when a verb+object has unmet tool/capability requirements, GOAP builds a plan of preparatory steps and executes them automatically
+- **Max Depth:** 5 steps of backward chaining
+- **Verb Synonyms:** `burn` → `light` (canonical mapping)
+- **How it works:**
+  1. Player types "light candle"
+  2. Planner checks: candle needs `fire_source` tool (from FSM transition `requires_tool`)
+  3. Player doesn't have fire_source → plan_for_tool("fire_source")
+  4. Finds match candidates via `find_all(ctx, "match")`
+  5. For each match: builds steps to acquire and ignite it
+  6. Steps may include: drop spent matches → open nightstand → open matchbox → take match from matchbox → strike match on matchbox
+  7. Executes steps via Tier 1 dispatch, then original "light candle" runs
+- **Spent Detection:** Drops spent matches from hands before seeking fresh ones
+- **Nested Container Search:** Finds matches inside matchbox inside nightstand drawer (3 levels deep)
+- **Striker Requirement:** Match needs `has_striker` property on a reachable object (matchbox provides this)
+- **Key Insight for Puzzle Design:** GOAP auto-resolves convenience chains. The REAL puzzle is what GOAP cannot resolve — the "aha!" moment the player must discover manually.
+
+### FSM Engine (engine/fsm/init.lua)
+- **States:** Defined inline on objects via `states` table. Each state has properties that overlay the object.
+- **Transitions:** Array of `{from, to, verb, trigger, guard, requires_tool, requires_property, mutate, message, aliases}`
+- **apply_mutations():** Supports direct values, computed functions (`function(cur) return cur - 0.05 end`), and list operations (`{add = "stub", remove = "tall"}`)
+- **apply_state():** Removes old state keys, applies new state keys, preserves containment (surfaces, contents, location)
+- **Timed Events:** `timed_events` on states define auto-transitions after delays. `tick_timers()` decrements all active timers each game tick (360 game seconds per command). Fires `timer_expired` auto-transitions.
+- **Timer Pause/Resume:** Timers pause when player leaves room, resume on return.
+- **Candle Pattern:** `remaining_burn` tracks partial consumption. Light → pause → relight resumes from remaining time.
+
+### Game Loop (engine/loop/init.lua)
+- **Command Processing:** `preprocess_natural_language()` → `parse()` → compound command splitting on "and" → GOAP planning → verb dispatch → FSM tick → timer tick → game_over check
+- **Compound Commands:** "get match and light candle" — if last part has GOAP plan, it handles everything end-to-end
+- **Time:** Each command tick = 360 game seconds. Game starts at 2 AM. Day/night cycle affects light.
+- **Tier 2 Fallback:** Embedding-based phrase matching for unrecognized verbs (optional module)
+
+### Verb Handlers (engine/verbs/init.lua)
+- **~2000+ lines** of verb handlers. Key verbs for puzzles:
+  - `look/examine`: Light-gated. Tri-state light: "lit", "dim", "dark". Dim = enough to see (filtered daylight through closed curtains)
+  - `feel`: Works in darkness. Returns `on_feel` from object's current state. Critical puzzle mechanic for dark rooms.
+  - `take/get`: Checks portability, weight, hand capacity (2 hands, objects declare `hands_required`)
+  - `open/close`: FSM transitions on containers, exits
+  - `light/ignite/burn`: Strips "with X" prep phrase, GOAP auto-finds fire source
+  - `strike`: Match + striker interaction
+  - `move/push/pull`: Spatial object movement. Reveals covered objects, dumps underneath items
+  - `unlock`: Requires matching key_id on exit
+  - `read`: Grants skills from skill-granting objects
+  - `write`: Dynamic mutation — player text captured into object properties
+  - `sew`: Requires skill + needle + thread + cloth
+  - `wear/remove`: Body slot system (9 slots)
+  - `drink/eat`: Consumable effects (poison = death)
+  - `sleep`: In-bed detection, time skip
+- **Light System:** Tri-state: "lit" (artificial light or open curtains + daytime), "dim" (closed curtains + daytime), "dark" (nighttime, no candle). Artificial light from `casts_light = true` objects anywhere in room/surfaces/hands.
+- **Vision Blocking:** Worn items with `blocks_vision = true` override all light (sack on head)
+- **Pronoun Resolution:** "it", "one", "that" → resolves to last interacted object. Enables compound commands.
+
+### Containment System (5-Layer Validation)
+1. **Container Identity** — Is target a container? (`container` table must exist)
+2. **Physical Size** — Does item fit? (size tiers 1-6; `max_item_size` on container)
+3. **Capacity** — Is there room? (size-tier units)
+4. **Category Accept/Reject** — Whitelist/blacklist categories
+5. **Weight Capacity** — Structural weight limit
+- **Multi-Surface:** Objects have `surfaces` table — `top`, `inside`, `underneath`, `behind` with independent constraints
+- **Surface Visibility:** `top` visible on examine, `inside` requires open, `underneath`/`behind` require explicit investigation
+
+### Instance Model
+- **Templates** → **Base Classes** → **Instances** resolution chain
+- Room is uber-container. `instances` array in room file defines all objects with `type_id` (GUID), `location` (containment path like "nightstand.top"), optional `overrides`
+- At load: deep-merge base class + overrides → register in engine registry
+- Location formats: `"room"` (floor-level), `"parent.surface"` (on surface), `"parent"` (inside container)
+
+---
+
+## Existing Puzzle Analysis
+
+### The Bedroom → Cellar Puzzle Chain
+
+**Room 1: The Bedroom** (`src/meta/world/start-room.lua`)
+- 23 object instances across furniture, tools, containers, spatial elements
+- 3 exits: north (oak door to hallway, open), window (to courtyard, closed+locked), down (trap-door to cellar, hidden)
+
+**Room 2: The Cellar** (`src/meta/world/cellar.lua`)
+- 2 objects: barrel, torch-bracket
+- 2 exits: up (stairs to bedroom), north (iron-bound door to deep-cellar, LOCKED, requires brass-key)
+- Very dark room — needs light source
+
+### The Full Puzzle Chain
+
+**Phase 1: Darkness (Sensory Exploration)**
+1. Player wakes in dark room at 2 AM
+2. LOOK fails — "too dark to see"
+3. Must use FEEL to explore: feel nightstand, feel bed, feel around
+4. Sensory clues guide discovery: candle wax on nightstand top, scratchy matchbox in drawer
+
+**Phase 2: Light (Fire Chain)**
+5. Open nightstand drawer → access matchbox (nightstand.inside, initially closed)
+6. Open matchbox → access matches (matchbox accessible=false until opened)
+7. Take match from matchbox → match in hand
+8. Strike match on matchbox → match lights (requires `has_striker` property on matchbox)
+9. Light candle (in candle-holder on nightstand.top) → persistent light source
+10. **GOAP auto-resolves:** If player types "light candle", GOAP chains steps 5-9 automatically
+
+**Phase 3: Exploration (Visual Discovery)**
+11. LOOK now works → see room contents, exits
+12. Examine bed → find knife underneath
+13. Open wardrobe → find wool-cloak, sack (containing needle, thread, sewing-manual)
+14. Open vanity drawer → find pencil
+15. Notice rug on floor, paper+pen on vanity
+
+**Phase 4: Spatial Puzzle (Key Discovery)**
+16. Move/roll up rug → reveals trap-door (hidden→revealed FSM transition) AND brass-key (under rug)
+17. Take brass-key
+18. Open trap-door → reveals "down" exit to cellar
+
+**Phase 5: Descent & Locked Door**
+19. Go down to cellar (need light — bring candle-holder with lit candle)
+20. Cellar is dark without player's light source
+21. Find iron-bound door to north — LOCKED
+22. Use brass-key to unlock → access deep-cellar (not yet implemented)
+
+### What Makes It Work
+- **Darkness as gate:** Forces sensory exploration before visual. Teaches FEEL/SMELL/LISTEN mechanics.
+- **GOAP convenience:** Auto-resolves tedious multi-step tool chains (match→fire→candle) so player focuses on discovery
+- **Spatial layering:** Objects hidden under/inside other objects create discovery depth (key under rug, pin in pillow, knife under bed)
+- **Consumable pressure:** Matches are finite (7), burn briefly (30 sec). Candle has 7200 sec but is consumable. Creates urgency.
+- **Multi-path hints:** Sensory properties on every object provide clues (feel wax on nightstand → candle is there, smell tallow, etc.)
+
+### Weaknesses / Gaps
+- **Deep-cellar not implemented** — puzzle chain currently ends at locked door
+- **Hallway and courtyard not implemented** — north door and window lead to unbuilt rooms
+- **Limited puzzle branching** — mostly linear discovery path; few alternative solutions
+- **Trap-door discovery** — player must guess to "move rug"; no strong sensory hint pointing to it
+- **No explicit failure consequence** (except poison) — player can't really get stuck or lose, which reduces tension
+- **Crafting chain (sewing)** has no current puzzle purpose — terrible-jacket doesn't unlock anything
+
+### What GOAP Auto-Resolves vs. What The Player Figures Out
+| GOAP Handles (Convenience) | Player Discovers (The Puzzle) |
+|---|---|
+| Open matchbox to get match | That they need light at all |
+| Strike match on matchbox | Where the nightstand is (in darkness) |
+| Drop spent match, get fresh one | That the rug can be moved |
+| Open nightstand drawer first | That the brass-key is under the rug |
+| Take match from matchbox | That the trap-door exists |
+| | That the iron door needs the brass-key |
+| | That you need to bring light to the cellar |
+
+---
+
+## Object Inventory (Puzzle Pieces Available)
+
+### Critical Puzzle Objects
+| Object | Role | Key Properties |
+|---|---|---|
+| **brass-key** | Lock opener | Under rug; unlocks cellar north door |
+| **candle** | Primary light | 4-state FSM (unlit→lit→extinguished→spent); 7200s burn; relightable; `casts_light`, `provides_tool: fire_source` when lit |
+| **match** (×7) | Ignition source | 3-state FSM (unlit→lit→spent); 30s burn; requires striker; single-use |
+| **matchbox** | Fire enabler | Container + `has_striker: true`; open/closed states; holds matches |
+| **candle-holder** | Portable light | Composite: detachable candle part; enables carrying lit candle |
+| **trap-door** | Hidden exit | 3-state FSM (hidden→revealed→open); `reveals_exit: "down"` |
+| **rug** | Spatial gate | Covers trap-door; `covering: {"trap-door"}`; has brass-key underneath |
+| **poison-bottle** | Death hazard | 3-state FSM (sealed→open→empty); composite with cork; drink = game over |
+
+### Tool Objects
+| Object | Capability | Used For |
+|---|---|---|
+| **knife** | cutting_edge, injury_source | Cutting things, self-harm |
+| **needle** | sewing_tool | Sewing (infinite uses) |
+| **thread** | sewing_material | Sewing (infinite uses) |
+| **pin** | injury_source, lockpick (skill-gated) | Self-harm, lockpicking if skilled |
+| **pen** | writing_instrument | Writing on paper |
+| **pencil** | writing_instrument | Writing on paper (erasable future) |
+| **glass-shard** | sharp, on_feel_effect: "cut" | Spawned from breaking vanity mirror |
+
+### Containers & Furniture
+| Object | Surfaces/Contents | Notes |
+|---|---|---|
+| **bed** | top (pillow, sheets, blanket), underneath (knife) | Movable, rests on rug |
+| **nightstand** | top (candle-holder), inside (matchbox) | 4-state FSM, detachable drawer |
+| **vanity** | top (paper, pen), inside (pencil), mirror_shelf | 4-state FSM, breakable mirror → glass-shard |
+| **wardrobe** | inside (wool-cloak, sack) | Open/closed states |
+| **sack** | contents (needle, thread, sewing-manual) | Portable container, wearable (back or head) |
+| **pillow** | inside (pin, hidden) | Must search/tear to find pin |
+| **barrel** (cellar) | sealed | Flavor prop currently |
+| **chamber-pot** | container (cap: 2) | Wearable on head (blocks vision) |
+
+### Wearables
+| Object | Slot | Special |
+|---|---|---|
+| **wool-cloak** | back | Warmth provider |
+| **terrible-jacket** | torso | Crafted from sewing |
+| **chamber-pot** | head | Blocks vision, makeshift armor |
+| **sack** | back OR head | Back = container access; head = blocks vision |
+
+### Craftable Resources
+| Object | Obtained From | Used For |
+|---|---|---|
+| **cloth** | Tear blanket/curtains/wool-cloak/sack | Sew into terrible-jacket, make bandage/rag |
+| **bandage** | Craft from cloth | Medical supply |
+| **rag** | Craft from cloth | Wiping |
+
+### Skill Objects
+| Object | Skill Granted | Implication |
+|---|---|---|
+| **sewing-manual** | sewing | Permanent; burnable (destroyable before reading = skill lost forever) |
+
+### Environmental Objects
+| Object | Effect | Notes |
+|---|---|---|
+| **curtains** | filters_daylight (closed) / allows_daylight (open) | Light control |
+| **window** | Environmental sounds/air | Open/closed states |
+| **wall-clock** | 24-hour cycle, chimes | `target_hour` + `on_correct_time` = time-based puzzles |
+| **torch-bracket** (cellar) | Empty fixture | Future: insert torch |
+
+---
+
+## Puzzle Design Principles (My Guidelines)
+
+### What Makes a Good Text Adventure Puzzle
+1. **Fair Cluing:** Every puzzle must have discoverable clues in sensory descriptions. Player should never need to read the designer's mind.
+2. **Multiple Discovery Paths:** Even if there's one solution, there should be multiple ways to discover the need for it (feel the lock, see the lock, read a note about the lock).
+3. **Object Realism:** Puzzle interactions should mimic real life. If you'd try it in reality, it should work (or fail realistically) in-game.
+4. **Satisfying Chains:** The best puzzles chain 3-5 objects together where each step makes logical sense: find striker → light match → light candle → see room.
+5. **Time Pressure Adds Spice:** Consumable resources (matches burn out, candle runs down) create natural tension without unfair timers.
+
+### GOAP-Resolvable vs. Player-Discovered (The Critical Distinction)
+- **GOAP handles tedium:** Opening containers, taking items, using known tools — mechanical prerequisites that would bore the player.
+- **The player solves the puzzle:** Discovering WHAT to do (move the rug), WHERE things are (key is under rug), and HOW objects relate (brass-key fits the cellar door).
+- **Design rule:** GOAP should never auto-solve the "aha!" moment. If GOAP can plan the entire solution, it's not a puzzle — it's a chore the engine should handle.
+- **The sweet spot:** Player discovers the goal ("I need to light the candle") → GOAP handles the mechanics ("open matchbox, take match, strike it, apply flame") → Player enjoys the result.
+
+### Using Sensory Properties as Clues
+- **Darkness forces touch/smell/sound:** In dark rooms, on_feel, on_smell, on_listen are the primary clue channels.
+- **State-specific clues:** A locked door feels different from an unlocked one. A sealed bottle smells different from an open one.
+- **Ambient clues:** Clock chimes (on_listen), candle wax smell (on_smell), cold draft (on_feel) all point toward objects and solutions.
+- **Environmental gating:** Some clues only appear in certain states (lit room reveals visual clues; dark room reveals audio/tactile clues different from when lit).
+
+### Multi-Solution Design
+- Objects with multiple capabilities enable multiple paths: knife cuts AND injures; pin picks locks AND sews.
+- Destructible objects create irreversible branches: break mirror for glass-shard tool, but lose the mirror.
+- Skill-gated alternatives: pin + lockpicking skill = alternative to finding the key.
+- Environmental alternatives: open curtains (daylight) vs. light candle (artificial light) for illumination.
+
+### Failure States
+- **Interesting, not frustrating:** Poison bottle = clear death with dramatic text. Not a hidden "gotcha."
+- **Consumable depletion:** Running out of matches before lighting candle = stuck (but 7 matches is generous).
+- **Permanent loss:** Burning sewing manual before reading = sewing skill gone forever. Player chose this.
+- **Spatial consequences:** Some actions can't be undone (broken mirror, spent matches). Design around this.
+- **Never silently unwinnable:** If the game becomes unwinnable, the player should be able to tell (no matches, no key found, etc.)
+
+---
+
+## Learnings
+
+### Key File Paths
+- **Objects:** `src/meta/objects/*.lua` (37 files)
+- **Rooms:** `src/meta/world/start-room.lua`, `src/meta/world/cellar.lua`
+- **Templates:** `src/meta/templates/*.lua`
+- **Engine core:** `src/engine/fsm/init.lua`, `src/engine/verbs/init.lua`, `src/engine/loop/init.lua`
+- **GOAP planner:** `src/engine/parser/goal_planner.lua`
+- **Design docs:** `docs/design/`, `docs/objects/`, `docs/architecture/`
+- **Puzzle docs:** `docs/puzzles/` (my domain)
+- **Research:** `resources/research/`
+
+### Patterns I Must Follow
+- Objects declare behavior via metadata, not code. New puzzle mechanics = new object .lua files, not engine changes.
+- FSM states define everything: properties, sensory output, available transitions, timed events.
+- `mutate` field on transitions can change ANY property: direct values, computed functions, list ops.
+- Containment is 5-layer validated. Surfaces have independent constraints.
+- Room descriptions are 3-part composed: permanent architecture + object `room_presence` + exit list. Never reference movable objects in room `description`.
+- Exit objects are inline in rooms with their own constraints (size, weight, lock state).
+
+### Wayne's Preferences
+- Dwarf Fortress property-bag architecture is the GOAT reference model
+- No LLM at runtime (D-19) — all validation deterministic, offline, sub-millisecond
+- Objects should feel real: if you'd try it in life, it should work in-game
+- Players shouldn't see everything at once — discovery through examination, layer by layer
+- Spatial relationships matter — objects relate to each other, not just to the room
+- The engine is generic — zero special-case code. All complexity is in object metadata.
+- Sensory experience is paramount — multi-sensory, state-driven perception
+
+### Rooms Currently Defined
+- `start-room` (The Bedroom) — 23 instances, 3 exits
+- `cellar` (The Cellar) — 2 instances, 2 exits
+- **Not yet built:** hallway, courtyard, deep-cellar
+
+### Research Highlights (Frink's Work)
+- **Dwarf Fortress:** Continuous numeric properties with threshold-triggered transitions. Material properties drive ALL behavior. Cascading effects. Template inheritance. Our engine already shares core DNA but uses discrete FSM states instead of continuous values.
+- **Dynamic Mutation:** ECS-style archetype changes, reactive property observation (observer pattern), Harel statecharts with data context. The `mutate` field is our mechanism for universal property mutation. Future: Lua metatables for observable property cascades.
+
+### Open Puzzle Opportunities
+1. **Time-based puzzles:** Wall-clock's `target_hour` + `on_correct_time` callback = "set clock to midnight to open passage"
+2. **Craft-gated puzzles:** Sewing skill + materials = create items that solve later puzzles
+3. **Destruction puzzles:** Break mirror for glass-shard tool; tear curtains for cloth
+4. **Wearable puzzles:** Sack on head blocks vision (useful? harmful?); chamber-pot as armor
+5. **Writing puzzles:** Paper + pen = write messages; could be used to communicate with NPCs
+6. **Environmental puzzles:** Curtain state affects daylight; window state affects sound/air
+7. **Composite object puzzles:** Detach/reattach parts (nightstand drawer, candle from holder, cork from bottle)
+8. **Multi-room light management:** Candle burns down over time; must conserve light across rooms
+9. **Skill-gated alternative paths:** Lockpicking (pin) vs. key-finding for locked doors
+10. **Environmental exit effects:** Exit traversal can trigger object interactions (wind extinguishes candles in stairways). New `on_traverse` pattern — generic, reusable for water crossings, narrow passages, hot rooms, etc.
+11. **Mini-puzzles fill tutorial gaps efficiently:** CBG's coverage analysis identifies verb gaps; 1-2 step mini-puzzles address them without adding rooms, objects, or critical-path complexity. These are the lowest-cost, highest-value additions to a level.
+12. **Verb contrast pairs teach discrimination:** Poison (TASTE=death) + wine (DRINK=safe) together teach more than either alone. Lesson pairs create nuanced understanding — "investigate before acting" rather than "never act."
+13. **Existing objects are underutilized:** Wine bottles were flavor props for Puzzle 010; adding one FSM transition makes them tutorial vehicles. Always check existing objects before designing new ones.
+14. **Puzzle docs location:** Level-specific puzzles now live in `docs/levels/01/puzzles/` (was `docs/puzzles/`).
+
+---
+
+## Session: Puzzle Rating & Classification System (2026-03-20)
+
+### Work Completed
+1. **Researched puzzle difficulty rating systems:**
+   - Zarfian Cruelty Scale (IF games): Merciful → Polite → Tough → Nasty → Cruel
+   - Escape room industry: Star scales (1-5), tiered levels, success rates
+   - Modern design (The Witness, Baba Is You): Implicit progression via rule teaching, "aha moments"
+
+2. **Designed 1-5 star difficulty scale:**
+   - ⭐ Level 1: Trivial (tutorial, 1-2 steps, impossible to fail)
+   - ⭐⭐ Level 2: Introductory (3-5 steps, single tool chain, soft failure)
+   - ⭐⭐⭐ Level 3: Intermediate (6-10 steps, multi-room chains, planning required)
+   - ⭐⭐⭐⭐ Level 4: Advanced (8-15 steps, lateral thinking, consequences)
+   - ⭐⭐⭐⭐⭐ Level 5: Expert (12-25+ steps, multiple solutions, deep consequence chains)
+   - Key insight: Difficulty ≠ Cruelty. A Level 4 puzzle can be Merciful or Cruel depending on feedback.
+
+3. **Created puzzle classification guide:**
+   - Lifecycle: 🔴 Theorized → 🟡 Wanted → 🟢 In Game
+   - Wayne approves Theorized→Wanted; Flanders builds; Nelson tests
+   - Standardized template for all puzzle docs (required fields, GOAP analysis, failure modes)
+   - Numbered format: `{SEQUENCE}-{SLUG}` (e.g., 001-light-the-room)
+
+4. **Documented 9 core puzzle patterns:**
+   - Lock-and-Key (simple, nested, compound, magical, conditional)
+   - Environmental/Spatial (uncover, stairs, state change, pressure-sensitive, multi-point)
+   - Combination/Synthesis (binary, ternary, order-dependent, tool application, chemical chains)
+   - Sequence/Ordering (linear, parallel+sync, discovered, ritual, undoable-with-cost)
+   - Discovery/Hidden Objects (sensory, conditional visibility, spatial deduction, nested containers, secret passages)
+   - Transformation/State Mutation (simple state, irreversible consumption, time decay, conditional unlock, cascading, reversal)
+   - Lateral Thinking (multi-use, reverse problem, engine mechanic exploit, impossible-as-solution, system chaining)
+   - Deduction/Logic (riddles, constraint satisfaction, pattern recognition, ciphers, sudoku)
+   - Moral/Choice (sacrifice-vs-rescue, utilitarian-vs-deontological, path splitting, truth-vs-lie)
+
+5. **Applied rating system to Puzzle 001 (Light the Room):**
+   - Rating: ⭐⭐ Level 2 (Introductory, Polite cruelty)
+   - Analysis: 9 discrete steps but GOAP collapses 5-7; single chain; contextual clues; soft failure (wait for dawn)
+   - Patterns used: Compound Lock, Combination, State Mutation, Sensory Discovery
+   - Justification: Opening tutorial teaches core systems without overwhelming complexity
+
+### Key Insights for Puzzle Design
+1. **GOAP affects perceived difficulty:** Auto-resolution can collapse multi-step chains, making Level 3 feel like Level 2. But GOAP never auto-solves the "aha!" moment — only the mechanical prerequisites.
+2. **Cruelty ≠ Difficulty:** A puzzle can be intellectually hard but merciful (always recoverable), or easy but cruel (one wrong move and stuck for hours). Both dimensions matter.
+3. **Sensory hints are clue channels:** In darkness, on_feel/on_smell/on_listen convey clues that on_look cannot. State-specific descriptions guide discovery.
+4. **Consumable resources create natural urgency:** Matches burning out, candle wax depleting, crafted items breaking — these create time pressure without artificial timers.
+5. **Multi-solution design rewards creativity:** knife can cut OR injure; pin can pick locks OR sew. Same object, multiple uses, multiple valid paths.
+
+### Decisions Made (for .squad/decisions/)
+- Established that all puzzles must have both difficulty AND cruelty rating
+- Standardized puzzle status field (🔴/🟡/🟢) with approval chain: Wayne → Flanders → Nelson
+- GOAP compatibility is now a documented puzzle property (required field in template)
+- Puzzle patterns are reference library for designers; no pattern is "forbidden," but pattern selection guides level selection
+
+### Files Created
+- `docs/design/puzzles/puzzle-rating-system.md` (11.5 KB, 5-star scale + worked example)
+- `docs/design/puzzles/puzzle-classification-guide.md` (11.9 KB, template + lifecycle)
+- `docs/design/puzzles/puzzle-design-patterns.md` (23.3 KB, 9 patterns + combinations + best practices)
+
+### Files Modified
+- `docs/puzzles/001-light-the-room.md` — Added difficulty rating section, cruelty analysis, pattern classification
+
+### Commit
+- `2faac42`: "Design puzzle difficulty rating system and classification guide"
+
+---
+
+## Session: Level 1 New Puzzle Design (2026-07-22)
+
+### Work Completed
+
+Designed 6 new puzzles (009–014) for Level 1 based on CBG's master design at `docs/levels/level-01-intro.md`. All puzzles grounded in Frink's 47KB research document (`resources/research/puzzles/puzzle-design-research.md`).
+
+#### Puzzles Created
+
+| ID | Name | Room | Difficulty | Cruelty | Pattern | Critical Path? |
+|----|------|------|------------|---------|---------|----------------|
+| 009 | Crate Puzzle | Storage Cellar | ⭐⭐ | Polite | Discovery (Nested Containers) + Lock-and-Key (Tool-Gated) | YES |
+| 010 | Light Upgrade | Storage Cellar | ⭐⭐ | Merciful | Combination/Synthesis + Transformation | NO (optional) |
+| 011 | Ascent to Manor | Deep Cellar → Hallway | ⭐⭐ | Merciful | Environmental/Spatial (Navigation) | YES |
+| 012 | Altar Puzzle | Deep Cellar | ⭐⭐⭐ | Polite | Environmental Interaction + Deduction + Sequence | NO (optional, unlocks crypt) |
+| 013 | Courtyard Entry | Courtyard | ⭐⭐⭐⭐ | Tough | Lateral Thinking + Environmental/Spatial | NO (alternate path) |
+| 014 | Sarcophagus Puzzle | Crypt | ⭐⭐⭐ | Polite | Discovery + Deduction (Pattern Recognition) | NO (optional, lore reward) |
+
+#### Key Design Decisions
+
+1. **GOAP-compatible where appropriate:** Puzzles 009 and 011 (critical path) have GOAP-resolvable mechanical steps, but discovery moments remain human-only. Puzzle 012 is explicitly GOAP-incompatible (knowledge gate via ritual interpretation). This follows Frink's core finding: GOAP makes inventory puzzles obsolete → design for understanding.
+
+2. **Multi-sensory clues throughout:** Every puzzle has a full sensory hints table. Key innovations:
+   - Puzzle 010: SMELL is the primary discovery channel (oil bottle vs wine bottles)
+   - Puzzle 012: SMELL is a feedback channel (incense confirms progress)
+   - Puzzle 014: FEEL reveals the empty sarcophagus mystery (scratch marks inside)
+
+3. **Progressive complexity (Witness model):** Puzzles build on previously taught concepts:
+   - 001 taught fire chain → 010 teaches fuel combination
+   - 007 taught spatial discovery → 009 teaches nested container discovery
+   - 006 taught lock-and-key → 012 teaches symbolic/ritual interaction (non-physical "key")
+
+4. **No softlocks:** Every critical-path puzzle (009, 011) is Zarfian Merciful or Polite. Optional puzzles (012, 014) are Polite. Only the alternate-path puzzle (013) reaches Tough — appropriate for players who chose the high-risk window escape.
+
+5. **Level boundary flags:** Identified objects that could cross into Level 2:
+   - **Must cross:** Tome (lore), burial goods (economy)
+   - **May need destruction:** Crowbar, rope (could trivialize L2 puzzles), oil lantern (light advantage)
+   - **Self-consuming:** Iron key (purpose fulfilled in L1), silver key (same)
+   - **Flag for CBG:** All crypt objects are optional finds — L2 must NOT require them
+
+6. **Narrative seeds for Level 2:** 
+   - Empty sarcophagus E (who opened it? what was taken?)
+   - Tome's warning ("what sleeps below must never wake")
+   - The Keepers of the Vigil (religious order that built the manor)
+
+#### New Objects Specified for Flanders
+
+~30 new objects across puzzles 009–014, including:
+- **Storage Cellar:** large-crate, small-crate, grain-sack, iron-key, crowbar, straw-packing, wine-rack, wine-bottle (×3), oil-bottle, oil-lantern, rope-coil
+- **Deep Cellar:** stone-altar, offering-bowl, incense-burner, tattered-scroll, silver-key, stone-panel, unlit-sconce (×2)
+- **Hallway:** stone-stairway (exit), oak-door-top (exit)
+- **Courtyard:** stone-well, well-bucket, ivy, cobblestone-loose, wooden-door-courtyard, ground-floor-window (×2), rain-barrel, first-floor-shutters
+- **Crypt:** sarcophagus (×5 instances), tome, silver-dagger, burial-jewelry, burial-coins, candle-stub (×4), wall-inscription
+
+#### Technical Notes for Bart
+
+1. **Puzzle 012 ritual mechanism:** Requires Boolean-AND compound trigger (incense smoldering + flame in offering bowl). Recommend room-level event listener over individual object guards — keeps logic in room metadata per Principle 8.
+2. **Sarcophagus instances:** 5 instances from 1 base class with per-instance overrides (effigy, inscription, contents). Follows Principle 5 exactly.
+3. **PUSH/LIFT/SLIDE verbs for heavy lids:** May need verb handler additions if not already present. Check `engine/verbs/init.lua` for heavy-object manipulation.
+
+### Files Created
+- `docs/puzzles/009-crate-puzzle.md` (13.6 KB)
+- `docs/puzzles/010-light-upgrade.md` (12.1 KB)
+- `docs/puzzles/011-ascent-to-manor.md` (11.4 KB)
+- `docs/puzzles/012-altar-puzzle.md` (17.0 KB)
+- `docs/puzzles/013-courtyard-entry.md` (15.3 KB)
+- `docs/puzzles/014-sarcophagus-puzzle.md` (17.4 KB)
+
+### Research Citations Used
+- Frink §1.3 [7][8] — Emily Short's narrative reward and through-line principles
+- Frink §2.1 [11] — The Witness scaffolding / progressive complexity
+- Frink §2.3 [15][16] — Obra Dinn observation-based deduction
+- Frink §2.4 [17] — Outer Wilds knowledge-gate model
+- Frink §2.6 [19][20] — Riven integrated environmental puzzle design
+- Frink §3.1-3.3 [21][22][23][24] — Escape room flow structures, chaining, physical objects
+- Frink §3.5 [25] — Neuroscience of "aha!" moments
+- Frink §4.1-4.2 [26][27] — Real-world problem solving, material consistency
+- Frink §5.1-5.3 [28][29][32] — Gate taxonomies, hint design, cognitive science
+- Frink §6.2-6.4 — GOAP paradigm shift, material-physics puzzles, sensory system
+
+### Key Insights for Future Puzzle Design
+
+1. **GOAP makes Boolean-AND puzzles our sweet spot.** GOAP plans linear chains but cannot resolve parallel condition satisfaction (incense AND flame). Design more puzzles with simultaneous conditions.
+
+2. **SMELL is underutilized.** Only Puzzle 010 (oil discovery) and 012 (incense feedback) use SMELL as primary channel. Future levels should feature smell-gated puzzles (tracking by scent, poison identification, etc.).
+
+3. **Empty containers are powerful mystery hooks.** The empty sarcophagus (014-E) generates more narrative tension than any treasure. Future levels should plant "evidence of prior action" — emptied chests, disturbed dust, moved furniture.
+
+4. **Ritual/symbolic puzzles bypass GOAP beautifully.** The altar puzzle (012) proves that "perform a ritual based on written instructions" is a pure knowledge gate that GOAP cannot shortcut. This pattern is infinitely extensible (recipes, spells, ceremonies, codes).
+
+5. **Light-as-resource creates organic difficulty modifiers.** Players who found the lantern (010) can sacrifice the candle for the altar ritual (012) without penalty. Players who didn't must make a strategic choice. This cross-puzzle synergy emerged naturally from resource design.
+
+6. **Level boundary design needs early attention.** Several objects (crowbar, rope, tome, silver dagger) could break Level 2 if carried forward. Recommend: CBG creates a formal "Level 1→2 inventory audit" before Level 2 puzzle design begins.
+
+---
+
+## Session: Tutorial Gap Mini-Puzzles (2026-07-22)
+
+### Work Completed
+
+Designed 2 mini-puzzles (015–016) to fill tutorial coverage gaps identified by CBG's analysis.
+
+#### Puzzles Created
+
+| ID | Name | Room | Difficulty | Cruelty | Pattern | Critical Path? |
+|----|------|------|------------|---------|---------|----------------|
+| 015 | Draft Extinguish | Deep Cellar → Hallway (stairway) | ⭐ | Merciful | Environmental/Spatial (State Change) + Transformation | NO |
+| 016 | Wine Drink | Storage Cellar | ⭐ | Merciful | Discovery + Sensory Rewards | NO |
+
+#### Key Design Decisions
+
+1. **Environmental triggers over forced tutorials:** Puzzle 015 uses a stairway draft to extinguish the candle — the player EXPERIENCES the extinguish/relight cycle rather than being told about it. This follows The Witness principle (Frink §2.1): show results, don't explain rules.
+
+2. **Verb contrast pairs:** Puzzle 016 (wine = DRINK = safe) directly contrasts Puzzle 002 (poison = TASTE = death). Together they teach discrimination, not fear. Players learn to investigate before consuming, not to avoid all liquids.
+
+3. **Minimal new work:** Puzzle 015 requires zero new objects (candle FSM already supports extinguish/relight), only a new `on_traverse` exit-effect pattern. Puzzle 016 requires one FSM transition added to wine-bottle.lua. Both are tiny additions to existing content.
+
+4. **Lantern reward validation:** Puzzle 015 retroactively rewards Puzzle 010 (oil lantern) — the lantern's `wind_resistant = true` means it survives the draft while the candle doesn't. The optional upgrade proves its value.
+
+5. **New engine pattern identified:** `on_traverse` exit effects — generic mechanism for environmental interactions during room transitions. First use is wind/extinguish; future uses include water crossings, narrow passages, temperature shocks. Flagged for Bart.
+
+#### Handoffs
+
+- **Flanders:** Add `drink` verb transition to wine-bottle.lua (open→empty); add `on_taste` sensory; add DRINK rejection to oil-bottle.lua
+- **Moe:** Add `on_traverse` wind effect to stairway exit in deep-cellar room metadata
+- **Bart:** Design/implement `on_traverse` exit-effect pattern (new engine concept)
+- **Nelson:** Test both puzzles per enumerated test cases in puzzle docs
+
+### Files Created
+- `docs/levels/01/puzzles/puzzle-015-draft-extinguish.md` (16.0 KB)
+- `docs/levels/01/puzzles/puzzle-016-wine-drink.md` (16.0 KB)
+- `.squad/decisions/inbox/bob-mini-puzzles.md` (3.6 KB)
+
+### Research Citations Used
+- Frink §2.1 [11] — The Witness scaffolding / progressive complexity
+- Frink §2.4 [17] — Outer Wilds knowledge-gate model
+- Frink §4.1 [26] — Real-world physics in puzzle design
+
+---
+
+## Session: Player Health & Injury System Design (2026-07-23)
+
+### Work Completed
+
+Designed the complete Player Health & Injury gameplay system across 4 design documents. This covers health scale, narrative voice, damage model, death design, injury catalog with FSMs, healing items, and puzzle integration patterns.
+
+#### Documents Created
+
+| Document | Size | Content |
+|----------|------|---------|
+| `docs/design/player/README.md` | 6.3 KB | System overview, design principles, connections to existing systems, implementation priority |
+| `docs/design/player/health-system.md` | 21.0 KB | 100-point HP scale, 5 health tiers, narrative voice per tier, damage model, death design, Level 1 scenarios, status command, engine integration notes |
+| `docs/design/player/injury-catalog.md` | 21.7 KB | 6 Level 1 injuries (minor cut, deep cut, bruise, bleeding, mild poison, burn) + 4 future injuries (infection, broken bone, hypothermia, exhaustion), FSM patterns, stacking rules, 5 puzzle design patterns |
+| `docs/design/player/healing-items.md` | 22.8 KB | Wound dressings (bandage, cobweb), restoratives (potion, food, water, wine), medicines (antidote, salve, poultice), rest mechanics, metadata patterns, design guidelines, Level 1 healing inventory |
+
+#### Key Design Decisions
+
+1. **Health is narrative, not numeric.** Players experience health through prose — pain descriptions, sensory degradation, fragmentary text at near-death. No HUD, no health bar. A `status` command returns narrative assessment, not numbers.
+
+2. **Injuries are independent FSMs.** Each injury has its own state machine (active → treated → healed), independent timers, and specific treatment requirements. This follows Principle 3 (Objects Have FSM; Instances Know Their State) applied to player conditions.
+
+3. **Treatment and healing are separate.** Stopping bleeding (bandage) is not the same as restoring lost HP (potion/rest). The player may need both. This creates a two-step recovery loop that adds strategic depth.
+
+4. **Existing mechanics are the foundation.** The `bleed_ticks` system, `player.state.bloody`, `injury_source` capability, and poison death are all prototypes of the health system. The design formalizes and extends them rather than replacing them.
+
+5. **Level 1 healing is primitive.** No potions, no medicine. Just cloth bandages (torn from blanket/cloak/curtains), wine, water, and rest. This teaches fundamentals before introducing powerful items.
+
+6. **Injuries create puzzle opportunities.** Five documented patterns: Ticking Clock (bleed out timer), Capability Gate (broken arm blocks climbing), Risky Shortcut (jump = fast but costly), Prepared Adventurer (foreshadow + prepare), Medical Puzzle (diagnose + treat).
+
+7. **Instant death preserved for extreme hazards.** Poison bottle and long falls remain instant-kill. These are player-initiated or clearly telegraphed. Survivable injuries use the HP system.
+
+8. **Healing items use existing object metadata patterns.** A bandage declares `healing.stops_bleeding = true`; the engine reads it. No special-casing. Same pattern as `provides_tool`, `casts_light`, etc.
+
+### Learnings
+
+- **The blanket/cloak/curtains are already healing resources.** They can be torn for cloth strips → bandages. This creates resource tension: cloth for sewing vs. cloth for medical supplies vs. cloth for rope. Existing objects, new purpose.
+- **Blood writing is the first health mechanic.** The prick → bleed → write chain already costs HP (conceptually). Formalizing this into the health system means blood writing becomes a strategic choice with real cost.
+- **GOAP should NOT auto-heal.** GOAP can help find/prepare healing items but should never auto-apply treatment. The player must choose when and how to heal — this is the puzzle.
+- **Wine (Puzzle 016) is the first restorative.** The existing DRINK interaction for wine bottles becomes a 5 HP heal + warmth effect. Tutorial gap fix becomes healing system foundation.
+- **Injury cascading (cut → infection if untreated) creates multi-stage puzzles.** This is the "degenerative" pattern that makes health a long-term concern, not just an immediate reaction to damage.
+
+---
+
+### Session: Player Design Docs Revision (Directive 2026-03-21T19:17Z)
+**Date:** 2026-07-24  
+**Requested by:** Wayne Berry  
+**Directive:** copilot-directive-2026-03-21T19-17Z.md
+
+#### What Changed
+Revised all four docs in `docs/design/player/` to incorporate Wayne's directives on derived health, injury-specific healing, and the `injuries` verb.
+
+**README.md** — Rewrote core design principles. Health is derived from injuries, not stored. Added injury-specific healing as core puzzle principle. Added nested inventory (containers) as principle. Removed HP-centric implementation phases. Removed "health visibility" open question (answered: narrative only, always).
+
+**health-system.md** — Major overhaul:
+- Removed the "100 HP scale" with numeric tiers (Tier 5=100, Tier 4=75-99, etc.)
+- Replaced with injury-severity narrative levels (Uninjured → Scratched → Hurt → Badly Wounded → Dying)
+- Added Section 2: the `injuries` verb — full design with example output at every severity level, embedded discovery clues, comparison with other health verbs
+- Narrative voice now tied to specific injuries, not HP ranges
+- Damage model now produces INJURIES (not "X HP" numbers). Table shows injury created, not damage dealt.
+- Added poison specificity: viper venom, nightshade poisoning as distinct from generic
+- Death sequence now includes treatment hints ("a bandage might have saved you")
+- Scenarios rewritten: no HP numbers shown to player. Added Scenario 5 (viper bite — the core matching puzzle) and Scenario 6 (nested container emergency)
+- Removed Section 8 "Engine Integration Notes" (Bart's domain, not design)
+- Removed Section 6.2 "Optional Numeric Mode" (contradicts derived health principle)
+
+**injury-catalog.md** — Added "Cured By" to every injury:
+- Each injury entry now has `Cured By` field listing SPECIFIC treatment and `Wrong Treatments` listing what fails
+- Added new injuries: Viper Venom Poisoning (cured ONLY by viper antivenom), Nightshade Poisoning (cured ONLY by nightshade antidote)
+- Added "Discovery Clues" for each injury — how the player figures out the treatment from `injuries` verb output
+- Injury stacking example now uses `injuries` verb output format
+- Added Pattern 5 (Diagnosis Puzzle) and Pattern 6 (Nested Container Emergency) to puzzle design patterns
+- Implementation priority table now includes "Specific Cure" column
+
+**healing-items.md** — Rewrote around injury-specific matching:
+- Eliminated "Restoratives" category (healing potion, food, water, wine as HP restorers). No item "restores HP."
+- Every item now has `Treats` field (exactly which injuries) and `Does NOT Treat` field (what it can't cure)
+- Added "What Happens If Used on Wrong Injury" scenarios showing wasted items
+- Added viper antivenom, nightshade antidote as specific poison cures
+- Added Section 8: The Treatment Matching Table — master reference showing correct cure for every injury
+- Replaced "Healing Spectrum" (common→rare, weak→powerful in HP terms) with "Treatment Specificity Scale" (broad→targeted→precise)
+- Anti-patterns updated: "healing potion that restores 30 HP" and "antidote that cures all poisons" are now explicitly forbidden
+- Level 1 healing inventory reformulated: no potions/antidotes, just cloth + water + rest
+
+#### Key Design Decisions Made
+1. **`injuries` verb replaces `status` command** — the primary way players read their health is a body-assessment verb that mirrors `inventory`
+2. **Discovery clues embedded in injury descriptions** — the `injuries` output subtly hints at treatment without naming items
+3. **Wrong-treatment feedback teaches** — using wrong item gives a failure message that hints WHY it failed
+4. **Death hints include treatment** — cause-of-death text tells the player what SPECIFIC cure might have saved them
+5. **Viper venom + nightshade = the matching puzzle exemplars** — two specific poisons that generic antidote cannot cure, demonstrating the core mechanic
+6. **Nested container pressure** — the right cure exists but is behind container layers, adding urgency
+
+---
+
+## Session: Level 1 Injury Design Docs (2026-07-25)
+
+### Work Completed
+
+Designed the first 5 Level 1 injury types as individual design documents in `docs/design/injuries/`. Each doc follows the template from the injuries README and is consistent with the injury catalog (`docs/design/player/injury-catalog.md`).
+
+#### Injury Docs Created
+
+| File | Injury | Category | Severity | Treatment | Key Puzzle Use |
+|------|--------|----------|----------|-----------|----------------|
+| `minor-cut.md` | Minor Cut | One-Time | Low | Cloth bandage (optional — self-heals in 5 turns) | "Prepare your tools" — wrap glass before handling |
+| `bleeding.md` | Bleeding | Over-Time (DoT) | Medium | Cloth bandage (stops drain); heals naturally over 10 turns | Ticking clock — every command matters |
+| `poisoned-nightshade.md` | Nightshade Poisoning | Over-Time (rapid, lethal) | High | Nightshade antidote ("Contra Belladonna") ONLY | Treatment-matching exemplar; "don't drink random things" |
+| `burn.md` | Burn | One-Time | Low-Medium | Cold water or cool damp cloth | "Use the tool, not the source" — grab the holder, not the flame |
+| `bruised.md` | Bruised | One-Time | Low | Rest (no item needed) | Risky Shortcut pattern — window jump costs bruised legs |
+
+#### Key Design Decisions
+
+1. **Each injury has a unique treatment.** No "cure-all" items. Minor cut → bandage (optional). Bleeding → bandage (required). Nightshade → specific antidote. Burn → cold water. Bruise → rest. This forces treatment discrimination.
+
+2. **Wrong-treatment feedback teaches the correct treatment.** Every doc includes a "Wrong Treatments" section where trying the wrong item gives a hint toward the right one. Example: dry cloth on burn → "if the cloth were WET and COOL, this might help."
+
+3. **FSM states are consistent across all injuries.** Pattern: `active → treated → healed` (with variants for severity). All injuries use the standard FSM from the injury catalog.
+
+4. **Nightshade antidote is a NEW OBJECT.** Specified in the poisoned-nightshade doc with full object properties for Flanders. Design decision required from Wayne/CBG: place antidote in Level 1 (making poison bottle survivable) or defer to Level 2+ (keeping instant death).
+
+5. **Severity calibration across the set.** Injuries form a severity gradient:
+   - Bruise (trivial, self-heals, no treatment needed)
+   - Minor Cut (minor, self-heals, bandage optional)
+   - Burn (moderate, needs water, intuitive treatment)
+   - Bleeding (serious, needs bandage, time pressure)
+   - Nightshade (lethal, needs specific antidote, maximum urgency)
+   This gradient teaches players to read symptoms and prioritize treatment.
+
+6. **Body-location-specific effects for bruises.** Legs bruised → can't climb. Head → degraded examine. Torso → can't carry heavy. Arms → can't lift/push. Each body part gates different capabilities.
+
+7. **Bleeding extends existing `bleed_ticks` prototype.** The bleeding doc formalizes the prototype mechanic into a full FSM with two-phase recovery (bandage → rest → healed).
+
+---
+
+## Learnings
+
+### 2026-03-24: Audit docs/puzzles/ — All Puzzles Are Single-Player
+
+**Task:** Wayne requested audit of `docs/puzzles/` to remove non-single-player puzzles (multiplayer, trading, cooperation, competitive elements).
+
+**Audit Results:**
+- **Puzzles Reviewed:** 11 total (020, 021, 022, 023, 024, 027, 028, 029, 030, 031, plus README)
+- **Multiplayer Puzzles Found:** 0
+- **Status:** All puzzles are pure single-player mechanics with real-world object interactions
+- **Action Taken:** No deletions required. All puzzles kept.
+
+**Puzzle Breakdown — All Single-Player:**
+
+1. **020 Wine Wound Wash** — Personal injury treatment, real-world antiseptic knowledge
+2. **021 Improvised Torch** — Solo crafting progression (fire mastery)
+3. **022 Smoke Draft Reveal** — Environmental observation, hidden passage discovery
+4. **023 Counterweight Gate** — Mechanical puzzle with weight system
+5. **024 Mirror Light Redirect** — Environmental physics, light redirection
+6. **027 Glass Edge Escape** — Solo escape, improvised tools from breakage
+7. **028 Wax Seal Secret** — Information discovery, forensic investigation
+8. **029 Bandage Before Climb** — Injury gating capabilities, solo progression
+9. **030 Rag and Oil Molotov** — Advanced fire crafting, destruction-as-puzzle-solution
+10. **031 Triage Under Pressure** — Injury prioritization, medical decision-making
+11. **README.md** — Index and design philosophy documentation
+
+**Conclusion:** The puzzle set is coherent, focused, and correctly scoped for single-player. No changes needed. The design philosophy already emphasizes real-world logic and individual agency — no room for trading, cooperation, or competitive elements.
+
+#### Handoffs
+
+- **Flanders:** 5 injury templates needed in `src/meta/injuries/`. Plus nightshade antidote object (`nightshade-antidote.lua`). Full specs in each doc's "Implementation Notes" section.
+- **Bart:** Injury infliction triggers need engine support — objects with `on_take_effect: "burn"` or `on_feel_effect: "cut"` must create actual injury instances.
+- **CBG:** Decision needed on nightshade antidote placement in Level 1 (see poisoned-nightshade.md §2).
+- **Nelson:** Test each injury's FSM (infliction → symptoms → treatment → healing), wrong-treatment responses, and death sequences.
+
+#### New Object Specified
+
+- **Nightshade Antidote** (`nightshade-antidote`) — Small glass vial, "Contra Belladonna" label, dark green liquid. Consumable, single-use. Full spec in `poisoned-nightshade.md` §11.
+
+### Files Created
+- `docs/design/injuries/minor-cut.md` (8.1 KB)
+- `docs/design/injuries/bleeding.md` (13.2 KB)
+- `docs/design/injuries/poisoned-nightshade.md` (17.7 KB)
+- `docs/design/injuries/burn.md` (13.8 KB)
+- `docs/design/injuries/bruised.md` (13.5 KB)
+
+### Files Modified
+- `docs/design/injuries/README.md` — Updated Examples section to list all 5 Level 1 injury docs with summaries
+
+### Learnings
+- **Treatment matching is the central puzzle.** The injury system's value isn't in the damage — it's in the cure. Each injury teaches a different treatment principle.
+- **Wrong treatments are teaching moments.** The feedback from failed treatment attempts is as important as the correct treatment itself.
+- **Severity gradient creates calibration.** Starting with bruises (trivial) and ending with nightshade (lethal) lets the player build understanding progressively.
+- **Existing Level 1 objects are the treatment sources.** Blanket/curtains → cloth → bandage. Rain barrel → water → burn treatment. Bed → rest → bruise recovery. No new items needed except the nightshade antidote.
+
+---
+
+## Session: Injury Treatment Targeting & Item Lifecycles (2026-07-25)
+
+### Directive
+Wayne directive 2026-03-21T20:05Z — Injuries accumulate, treatment is targeted to specific injury instances, treatment items have consumable vs reusable lifecycles.
+
+### Work Completed
+
+Updated the full injury and healing design doc suite to incorporate Wayne's directives on accumulation, targeted treatment, and treatment item lifecycles.
+
+#### Key Design Additions
+
+1. **Injury Accumulation (explicit).** Multiple injuries stack their damage. Two stab wounds = double drain per turn. Added accumulation math example to health-system.md §1.3 and accumulation scenarios to bleeding.md §9.1. Updated stacking notes in all 5 injury docs.
+
+2. **Targeted Treatment.** Players apply cures to SPECIFIC injury instances: "apply bandage to left arm stab wound." Created new doc 	reatment-targeting.md covering parser resolution rules, context resolution (bare verb when single injury), disambiguation flow, and full interaction examples. Updated all injury docs with targeting examples.
+
+3. **Bandage = Reusable.** Bandages are persistent object instances that attach to an injury, accelerate healing, and can be removed when the wound heals and reapplied elsewhere. One bandage per wound at a time. Lifecycle: clean → applied → removable → reusable. Updated healing-items.md §3.1 and §12, bleeding.md §6.
+
+4. **Salve/Antidote = Consumable.** Salves and antidotes are consumed on use — instance destroyed (or use count decremented until empty). Added lifecycle FSM diagrams to healing-items.md §12. Updated burn.md and poisoned-nightshade.md with consumable notes.
+
+5. **Bandage Accelerates Healing.** Bandaged wounds heal faster than unbandaged ones. Minor cut: 5 turns → 2 turns with bandage. This gives a mechanical incentive to bandage even minor wounds when time matters.
+
+### Files Created
+- docs/design/injuries/treatment-targeting.md — Full treatment targeting design: parser resolution, context resolution, disambiguation, interaction flows, edge cases
+
+### Files Modified
+- docs/design/player/healing-items.md — Added targeted treatment to core rules, changed bandage from consumable to reusable, added §12 (Treatment Item Lifecycles) with bandage/salve FSM diagrams, updated puzzle integrations (triage, bandage recovery)
+- docs/design/player/health-system.md — Added §1.3 (Injury Accumulation) with drain math example and multi-injury narrative
+- docs/design/injuries/bleeding.md — Added §6.2 (Targeted Treatment), §9.1 (Accumulation), updated bandage interaction to reusable lifecycle
+- docs/design/injuries/minor-cut.md — Added bandage interaction details, targeted treatment examples, updated stacking notes
+- docs/design/injuries/burn.md — Added targeted treatment examples, salve consumable lifecycle note, updated stacking notes
+- docs/design/injuries/poisoned-nightshade.md — Added consumable lifecycle note, targeted treatment text, updated stacking notes
+- docs/design/injuries/bruised.md — Updated stacking notes with accumulation cross-reference
+- docs/design/injuries/README.md — Added treatment-targeting.md to doc listing
+
+### Handoffs
+- **Bart:** Treatment targeting parser needs engine support — resolve "apply X to Y" where Y is an injury instance. Same disambiguation pattern as objects. Bandage attachment tracking (which injury has which bandage).
+- **Flanders:** Bandage FSM needs states: clean → applied → removable → reusable. Salve/antidote need consumable terminal states. Bandage needs ttached_to field linking to injury instance.
+- **Nelson:** Test targeting disambiguation (single injury auto-resolve, multiple injury prompt, wrong treatment on target). Test bandage reuse loop (apply → heal → remove → reapply).
+
+### Learnings
+- **Reusable bandages create a resource management loop.** The player doesn't just "use" a bandage — they manage its lifecycle across multiple wounds. This is a new puzzle dimension.
+- **Targeted treatment adds diagnosis gameplay.** Forcing the player to name the wound makes injuries verb output directly actionable — it's not just flavor, it's the targeting vocabulary.
+- **Consumable vs reusable creates asymmetric risk.** Wasting a salve on the wrong burn is permanent loss. Trying a bandage on the wrong wound just fails — you get it back. This rewards experimentation with bandages but punishes careless salve use.
+
+---
+
+## Session: Bandage Lifecycle Design (2026-07-26)
+
+### Directive
+Wayne requested a full bandage lifecycle design doc — bandages as reusable treatment items with FSM states, crafting, triage puzzles, and contrast with consumable salve.
+
+### Work Completed
+Created `docs/design/injuries/bandage-lifecycle.md` — comprehensive design covering the bandage as a persistent, reusable treatment object.
+
+#### Key Design Contributions
+1. **Four-state bandage FSM:** Clean → Applied → Removable → Soiled → Clean (wash cycle). Each state has full description, sensory output, and mechanical behavior.
+2. **Linked FSM architecture:** Bandage and injury cross-reference each other (`attached_to` / `treated_by`). Injury healing auto-triggers bandage state change via event-driven transition.
+3. **Premature removal mechanic:** Player can strip a bandage from an unhealed wound — wound re-opens, bleeding resumes. Enables emergency triage decisions.
+4. **Infection risk from soiled bandages:** Dirty bandages work but risk infection. Washing in water source cleans them. Level 2+ mechanic — Level 1 keeps it simple.
+5. **The triage puzzle:** Signature puzzle — limited bandages vs. multiple bleeding wounds. Player must assess severity via `injuries` verb and prioritize. Math shows optimal strategy: bandage highest-drain wound first.
+6. **Crafting sources with trade-offs:** Blanket/cloak/curtains all produce bandages but sacrifice warmth/protection/light-control. Every bandage costs something.
+7. **Full parser pattern catalog:** Apply, remove, wash, inspect — with disambiguation, auto-resolution, and error messages.
+8. **Bandage vs. salve contrast table:** Reusable (forgiving, management-focused) vs. consumable (punishing, timing-focused). Deliberately asymmetric.
+9. **Object metadata sketch:** Lua-shaped template for Flanders with states, transitions, guards, and runtime fields.
+
+### Files Created
+- `docs/design/injuries/bandage-lifecycle.md` — Full bandage lifecycle design
+
+### Files Created (Decisions)
+- `.squad/decisions/inbox/bob-bandage-design.md` — Decision summary with handoffs
+
+### Handoffs
+- **Flanders:** Build bandage object — 4-state FSM, `attached_to` field, event-driven `injury_healed` transition, `portable = false` when applied.
+- **Bart:** Engine support for linked FSMs (injury healed → bandage state change), premature removal guard, `portable` override in applied state.
+- **Nelson:** Test full lifecycle loop, premature removal, triage scenarios, multi-bandage disambiguation.
+- **CBG:** Review triage balance — drain-rate math and gameplay tension.
+
+### Learnings
+- **The soiled state creates a genuine decision.** Skip washing = save time but risk infection. Wash first = safe but costs a turn. Neither choice is obviously right — depends on context.
+- **Premature removal is the hidden depth.** Most players will use the basic loop (apply → heal → remove). Advanced players will strip bandages from healing wounds to save new bleeds — a risk/reward calculation that emerges from the FSM naturally.
+- **Linked FSMs are a new architectural pattern.** Two objects tracking each other's state via cross-references. This is different from containment (parent/child) — it's a peer relationship. Bart needs to support event propagation between linked objects.
+- **The triage puzzle is math disguised as narrative.** Drain rates, healing timers, and health totals create an optimization problem — but the player experiences it as urgent medical decisions. The `injuries` verb provides just enough info to solve it without making it feel like spreadsheet gaming.
+
+---
+
+### Session: Self-Infliction Mechanic Design (2026-07-25)
+
+**Task:** Design the "stab self" mechanic — self-infliction as a test harness for the injury system and a gameplay mechanic.
+
+**Directive:** Wayne requested a complete design for deliberate self-injury (stab, cut, slash) with body targeting, weapon-encoded damage, and puzzle uses (blood offerings, desperate escapes).
+
+### Key Decisions
+1. **Three verbs, not one:** `stab`, `cut`, `slash` — each reads a different weapon profile (`on_stab`, `on_cut`, `on_slash`). Same weapon produces different injuries depending on the verb.
+2. **Body targeting with 9 areas:** left/right arm, left/right hand, left/right leg, torso, stomach, head. Random selection weighted toward arms/hands. Head excluded from random — must be explicit.
+3. **Weapon encodes ALL damage:** `on_stab = { damage = 8, injury_type = "bleeding", description = "..." }`. Engine reads metadata, never hardcodes. Follows Principle 8.
+4. **`%s` body area substitution** in weapon descriptions — weapon text stays on the weapon, engine substitutes the targeted area.
+5. **Body area damage modifiers** (engine-side): hand/arm/leg = x1.0, torso/stomach = x1.5, head = x2.0.
+6. **Glass shard `self_damage` flag** — cutting with a shard also cuts the holding hand. Reinforces "wrap it first" lesson.
+7. **Narrative three-beat structure:** Resolve → Action → Consequence. Never casual, never glorified. Escalating narrative for repeated self-injury.
+8. **Head targeting requires confirmation prompt** (lethality warning, not moral judgment).
+9. **Combat precursor:** Same `on_stab`/`on_cut`/`on_slash` profiles will be reused for future combat. Self-infliction validates the entire injury pipeline.
+
+### Files Created
+- `docs/design/player/self-infliction.md` — Full self-infliction design doc (12 sections)
+
+### Files Created (Decisions)
+- `.squad/decisions/inbox/bob-stab-self.md` — Decision summary with handoffs
+
+### Handoffs
+- **Bart:** New verb handlers (stab/cut/slash) with self-target detection, instrument resolution, body area resolution, damage profile reading, body modifier math, injury instantiation, confirmation gates.
+- **Flanders:** Add `on_stab`/`on_cut`/`on_slash` damage profiles to silver-dagger, kitchen-knife, glass-shard, pin. Add `self_damage` flag to glass shard.
+- **Nelson:** Test all parser patterns (stab self, cut my arm, slash left arm with knife), disambiguation flows, weapon validation, accumulation from repeated self-injury, body modifier math.
+- **CBG:** Review blood-offering puzzle integration and narrative tone guidelines.
+
+### Open Questions (for Wayne)
+1. Bare "arm"/"hand"/"leg" — auto-select non-dominant side, or always disambiguate?
+2. Head self-injury — confirmation prompt or narrative warning only?
+3. `slash` verb — include now or defer to combat?
+4. Bare-hand self-injury (punch self → bruise)?
+5. Cap on self-injuries per turn?
+
+### Learnings
+- **Self-infliction is combat-minus-opponent.** By designing it first, we validate the weapon→injury→treatment pipeline before adding hit/miss and AI targeting. Smart sequencing from Wayne.
+- **The verb matters as much as the weapon.** A knife stabbed vs. a knife drawn produces fundamentally different wounds. This maps to real-world anatomy and to different injury types in our system.
+- **Weighted random is better than uniform random.** Arms/hands are natural self-targets. Torso/head are dangerous and should require deliberate targeting. The weight table encodes anatomical common sense.
+- **Glass shard `self_damage` is emergent teaching.** The player learns "wrap sharp things" through mechanical consequence, not tutorial text. Pure puzzle design.
+---
+
+## Real-World Object Puzzles (2026-07-28)
+
+### Task
+Wayne requested 8-12 puzzle concepts using real-world objects in realistic ways — "things you'd actually do in the real world."
+
+### Puzzles Created (12 total, all 🔴 Theorized)
+- **020** Wine Wound Wash — wine as antiseptic (⭐⭐⭐, Effects Pipeline)
+- **021** Improvised Torch — rag+oil+handle = torch (⭐⭐⭐, Effects Pipeline)
+- **022** Smoke Draft Reveal — smoke reveals hidden exits (⭐⭐⭐⭐)
+- **023** Counterweight Gate — weight on platform opens gate (⭐⭐⭐, Effects Pipeline)
+- **024** Mirror Light Redirect — glass shard bounces light (⭐⭐⭐⭐)
+- **025** Defensive Bear Trap — set trap to catch pursuer (⭐⭐⭐⭐, Effects Pipeline)
+- **026** Poisoned Offering — poison food for guardian (⭐⭐⭐⭐⭐, Effects Pipeline, ethical)
+- **027** Glass Edge Escape — break vase for cutting shard (⭐⭐⭐, Effects Pipeline)
+- **028** Wax Seal Secret — heat reveals invisible wax writing (⭐⭐⭐⭐)
+- **029** Bandage Before Climb — injury gates capability (⭐⭐⭐, Effects Pipeline)
+- **030** Rag and Oil Molotov — fire-bomb clears barricade (⭐⭐⭐⭐, Effects Pipeline)
+- **031** Triage Under Pressure — multi-injury prioritization (⭐⭐⭐⭐⭐, Effects Pipeline)
+
+### Files Created
+- `docs/puzzles/020-wine-wound-wash.md` through `docs/puzzles/031-triage-under-pressure.md` (12 puzzle docs)
+- `docs/puzzles/README.md` — fully rewritten with complete index of all puzzles (L1 + theorized)
+- `.squad/decisions/inbox/bob-new-objects-needed.md` — handoff to Flanders listing 10 new objects needed
+
+### Learnings
+- **5 puzzles need zero new objects** (020, 021, 027, 029, 031) — existing objects just need new transitions/states. This proves the object library is richer than it first appears.
+- **The Effects Pipeline enables injury puzzles at scale.** 8 of 12 puzzles route through the pipeline for injuries. The pipeline's `inflict_injury`, `add_status`, and `mutate` handlers cover every case. No hardcoded verb logic needed.
+- **Fire has a three-stage mastery arc:** candle (safe) → torch (useful) → fire-bomb (dangerous). Each puzzle builds on previous fire knowledge. Good progression design.
+- **Injury-as-gate is underexplored.** Puzzle 029 (Bandage Before Climb) introduces capability gating — injuries restrict verbs. This needs engine support (Bart) but unlocks a whole category of puzzles where treatment IS the puzzle.
+- **The glass-shard is the most versatile object in the game.** It's a cutting tool (027), a mirror (024), causes injury on contact (Effects Pipeline), and was originally just "a broken piece of mirror." Emergent utility from good object design.
+- **Ethical puzzles (026) need multiple solutions by definition.** You can't force a player to poison someone — there must always be a non-lethal path. The difficulty gap between lethal (easy) and non-lethal (hard) is the moral weight.
+- **The README was outdated.** It referenced legacy puzzle files (001-005) that had moved to level folders, had broken cross-references, and didn't mention the Effects Pipeline. Rewrote it completely.
