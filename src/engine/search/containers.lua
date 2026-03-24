@@ -96,6 +96,7 @@ function containers.open(ctx, object)
     -- Open it
     object.is_open = true
     object.open = true
+    object.accessible = true
     
     -- Apply FSM transition if available
     local fsm_ok, fsm_mod = pcall(require, "engine.fsm")
