@@ -1700,3 +1700,11 @@ Player said "light" but error says "burn".
   Key pattern: test the CONTRACT (what behavior should exist) not the implementation details.
   Test files: test-idioms.lua (21), test-questions.lua (16), test-error-messages.lua (+12),
   test-context-window.lua (+10), test-fuzzy-resolution.lua (14). Zero regressions in existing suite.
+
+- **Verification of Prime Directive Tiers 1-5 (#106) (2026-03-24):** Smithers
+  implemented all 5 tiers. Full verification pass: 129 test files, 0 suite failures. All 5 tier test
+  files pass clean — test-idioms (21/21), test-questions (16/16), test-error-messages (19/19),
+  test-context-window (53/53), test-fuzzy-resolution (18/18) — 127 tier-specific tests total.
+  Headless smoke tests confirm live pipeline: 'take a look' resolves via idiom tier, 'where am I?'
+  resolves via question tier, 'examine candel' resolves via fuzzy tier in darkness. Pre-existing
+  failures in search (#24) and burn unrelated to parser tiers. Commented on #106. Verdict: PASS.

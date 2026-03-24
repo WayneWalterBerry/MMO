@@ -693,3 +693,20 @@ Research validated Bart's mutation analysis findings and informed the D-MUTATE-P
 - Suitable for architectural decision-making and implementation guidance
 
 ---
+
+## Learnings
+
+### Embedding Vector Research (2026-03-29)
+**Issue:** #176
+**Status:** ✅ COMPLETE
+**Output:** `resources/research/embedding-vector-research.md`
+
+**Key Findings:**
+- Current Jaccard matcher (Tier 2) scores 68% accuracy on 60-input test suite — significantly better than any cosine approach we can actually implement in pure Lua
+- Bag-of-word-vectors approach scores only 45% — word averaging destroys verb/noun discrimination
+- Hybrid (Jaccard pre-filter + cosine re-rank) scores 48% — re-ranking with noisier signal degrades results
+- GTE-tiny vectors ARE high quality (synonyms cluster at 0.97-0.99) — but we can't produce comparable query vectors at runtime without a transformer model
+- Full cosine scan in Lua: 44.7ms (4.5x over 10ms budget); top-50 filtered: 0.47ms
+- Jaccard full scan: 8.1ms (borderline, will need optimization as index grows)
+- Runtime encoding is the CRITICAL blocker: GTE-tiny can't run in Lua or Fengari; ONNX Runtime Web adds 17-70MB + JS deps
+- **Recommendation: Keep Jaccard**, strip vectors from index (15.3MB → ~200KB), add more phrase variants, fix state-variant tiebreaker bias
