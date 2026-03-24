@@ -1553,3 +1553,39 @@ Wrote `test/objects/test-material-audit.lua` — structural CI gate that prevent
 **Files changed:** `src/engine/verbs/helpers.lua`, `src/engine/verbs/fire.lua`, `src/engine/verbs/survival.lua`, `src/engine/verbs/sensory.lua`
 
 **Key learning:** The project has no dedicated tutorial system — tutorial coverage is achieved through contextual hints embedded in verb handlers and object interactions. One-shot hints tracked on `player.state` is a clean, non-invasive pattern. Room contents arrays hold string IDs, not object tables (caught by failing test).
+
+### Issue #123: Material Data Migration — QA Verification (2026-07-24)
+
+**Status:** ✅ VERIFIED — registry data is complete and correct, migration not yet performed
+**Issue:** #123
+**New test file:** `test/objects/test-material-properties.lua` — 11 tests, all pass
+
+- Material registry holds 23 materials in `src/engine/materials/init.lua`, each with complete 11-property bag
+- Core properties: density, melting_point, ignition_point, hardness, flexibility, absorbency, opacity, flammability, conductivity, fragility, value
+- Iron and steel have bonus `rust_susceptibility` property — acceptable extension
+- 83/83 objects declare a valid material field referencing the registry
+- Templates (container, small-item) use `material = "generic"` as default — not in registry but safe since all instantiated objects override
+- The monolithic→per-file migration (`src/meta/materials/`) has NOT been performed yet — data is ready for it
+- Existing `test-material-audit.lua` (6 tests) covers object→registry linkage; new `test-material-properties.lua` (11 tests) covers property completeness, value ranges, API behavior
+- Full suite: 109 test files, all passing, zero regressions
+
+**Key learning:** The material registry is well-structured — every material has a consistent schema with no missing properties. The `generic` material in templates is a design choice (template defaults get overridden), not a bug. When validating data migrations, check both the source data completeness AND whether the migration itself has been executed.
+
+### Issue #127: Level 1→2 Inventory Audit (2026-03-24)
+
+**Status:** ✅ COMPLETE — Full audit of all Level 1 objects
+**Issue:** #127
+**Report:** `test-pass/2026-03-24-level1-inventory-audit.md`
+
+- 56 unique object types across 7 rooms + 3 conditional spawns
+- 46 portable objects (43 base + 3 spawned/crafted), 25 non-portable
+- Maximum carry to Level 2: ~11 items (2 hands + 4 in sack + 5 worn)
+- Most likely loadout: knife + oil-lantern in hands, wool-cloak worn on back
+- 9 consumable types destroyed during normal play (matches, candle, candle-stubs, oil-flask, wine-bottle, poison-bottle, paper, chamber-pot, vase)
+- Crypt items (tome, silver-dagger, bronze-ring, burial-necklace, burial-coins) are optional — most players skip crypt entirely
+- 3 keys available (brass, iron, silver) — players may or may not carry them forward after use
+- Trap door exit (size ≤ 3) is the tightest bottleneck on critical path — blocks size 4+ objects
+- Deep-cellar→hallway wind effect extinguishes candles but spares lanterns — lantern is the reliable Level 2 light source
+- `restricted_objects` in level-01.lua is currently empty — no diegetic removal mechanisms yet
+- Brass spittoon (BUG-147) not yet placed in any room — excluded from in-game carry analysis
+- **Key learning:** The 2-hand inventory + worn slots + sack container creates a meaningful strategic layer. Players can theoretically carry 11 items but practically carry 3-5. Level 2 puzzle designers should expect knife + light source as near-certainties, wool-cloak as likely, and everything else as optional.

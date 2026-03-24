@@ -78,6 +78,21 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 **Tests:** 17 new tests. 105 test files passing, 0 regressions. Commit 28622af.
 
+### 2026-07-14: Issue #111 — PUSH/LIFT/SLIDE verb coverage
+
+**What shipped:** Full spatial movement verb coverage for furniture and heavy objects. PUSH, LIFT, SLIDE, MOVE verbs now support puzzle chains (push bed → reveals rug, lift rug → reveals trap door). Added aliases heave, drag, nudge, and preprocess transforms for compound phrases.
+
+**Three layers of change:**
+1. **Verb handlers** (`acquisition.lua`): SLIDE gets own handler (was aliased to MOVE) so it passes `"slide"` as verb for distinct narrative. LIFT strips trailing `"up"` ("lift rug up" works). New aliases: `heave→lift`, `drag→move`, `nudge→push`.
+2. **Helper** (`helpers.lua`): `move_spatial_object` now checks `{verb}_message` (e.g. `slide_message`, `lift_message`) before `move_message` fallback. Added `on_move(self, ctx, verb)` callback support for objects declaring custom spatial movement behavior.
+3. **Preprocess** (`preprocess.lua`): Gerund mappings: `lifting`, `sliding`, `shoving`, `heaving`, `dragging`, `nudging`. Compound transforms: `heave X up` → `lift X`, `drag X across/along` → `move X`, `shove/nudge X aside/away/over` → `push X`.
+
+**Key learning:** The existing `move_spatial_object` helper was already well-structured for the covering/underneath reveal pattern. The main gaps were: (a) `slide` was aliased to `move` which lost the verb name in the fallback message, (b) the message lookup was hardcoded to only check `push_message`, now generalized to `{verb}_message`, and (c) no `on_move` callback for custom object behavior. The verb-specific message key pattern (`push_message`, `slide_message`, `lift_message`) keeps objects declarative per Principle 8.
+
+**Files changed:** `src/engine/verbs/acquisition.lua`, `src/engine/verbs/helpers.lua`, `src/engine/parser/preprocess.lua`, `test/verbs/test-spatial-verbs.lua`
+
+**Tests:** 46 new tests. 112 test files passing, 0 regressions.
+
 ### 2026-03-29: Issue #102 — Engine hooks: on_use, on_eat, on_drink
 
 **What shipped:** Three new engine event hooks for Phase 2. Two hooks (`on_wear`, `on_remove_worn`) were already implemented in Phase A6 (equipment.lua), confirmed still working.
@@ -729,3 +744,20 @@ Wayne requested Phase F1 carry-over bug fixes (#47, #49, #52, #53) using TDD. Up
 22. Implementation was pre-existing: on_drop handler already fully implemented. This session was test-authoring only.
 
 **Full test suite:** 1 pre-existing failure (objects/test-bedroom-door-object.lua) - same as prior sessions, unrelated.
+
+### 2026-07-22: Issue #112 — Wash verb for soiled bandages
+
+**What shipped:** WASH verb handler with clean/rinse/scrub aliases. Requires nearby water source (rain-barrel, well-bucket). Supports FSM-driven soiled→clean transitions on bandages and any object declaring a `wash` transition with `requires_tool = "water_source"`.
+
+**Five layers of change:**
+1. **Preprocess** (`transform_compound_actions`): clean/rinse/scrub → wash synonym conversion; "wash X with Y" → "wash X in Y" canonical form; handles both bare synonyms and prepositional variants in one pass to avoid double-return issues.
+2. **Gerund map**: Added washing→wash, cleaning→clean, rinsing→rinse, scrubbing→scrub.
+3. **Game loop** (`loop/init.lua`): Extract "in Y" target for wash verb → `context.wash_target` (follows pour_target/apply_target pattern).
+4. **Verb handler** (`survival.lua`): WASH handler following the fire/light tool-check pattern — finds FSM transition, checks `requires_tool`, resolves water source via `find_tool_in_inventory` then `find_visible_tool`, rejects empty water sources. Also handles "wash hands" (clears bloody/dirty player state). Explicit target via `ctx.wash_target` validates the target is actually a water source.
+5. **Water source objects**: Added `provides_tool = "water_source"` to rain-barrel.lua and well-bucket.lua so `find_visible_tool` can discover them.
+
+**Key learning:** Synonym replacement + preposition normalization must happen in one pass. Initially had synonym replacement returning first (e.g., "scrub X with Y" → "wash X with Y"), then the "with→in" normalization never ran because `transform_compound_actions` already returned. Fix: unified handler checks "in Y" and "with Y" patterns before falling through to bare synonym replacement.
+
+**Files changed:** `src/engine/parser/preprocess.lua`, `src/engine/loop/init.lua`, `src/engine/verbs/survival.lua`, `src/meta/objects/rain-barrel.lua`, `src/meta/objects/well-bucket.lua`, `test/parser/pipeline/test-wash-patterns.lua`, `test/verbs/test-wash-verb.lua`
+
+**Tests:** 22 preprocess + 12 verb handler = 34 new tests, 0 regressions. Full suite: 115 files passing.

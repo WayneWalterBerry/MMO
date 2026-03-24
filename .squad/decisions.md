@@ -1,10 +1,82 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-24T17:50:00Z  
+**Last Updated:** 2026-03-24T19:30:00Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
-**Latest Merge (2026-03-24T17:50:00Z):** D-CONTAINER-SENSORY-GATING  
-**Previous Decisions:** D-ENGINE-REFACTORING-REVIEW, D-META-CHECK-V1-APPROVAL, D-WAYNE-CODE-REVIEW-DIRECTIVE, D-WAYNE-METACOMPILER-COMPILER-LINTER, D-WAYNE-TDD-REFACTORING-DIRECTIVE, D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION, D-BRASS-BOWL-KEYWORD-REMOVAL, D-EMBEDDED-PRESENCES, D-OPEN-CLOSE-HOOKS, D-P1-PARSER-CLUSTER
+**Latest Merge (2026-03-24T19:30:00Z):** D-PLAYER-CANONICAL-STATE, D-OBJECT-INSTANCING-FACTORY  
+**Previous Decisions:** D-ENGINE-REFACTORING-REVIEW, D-META-CHECK-V1-APPROVAL, D-WAYNE-CODE-REVIEW-DIRECTIVE, D-WAYNE-METACOMPILER-COMPILER-LINTER, D-WAYNE-TDD-REFACTORING-DIRECTIVE, D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION, D-BRASS-BOWL-KEYWORD-REMOVAL, D-EMBEDDED-PRESENCES, D-OPEN-CLOSE-HOOKS, D-P1-PARSER-CLUSTER, D-CONTAINER-SENSORY-GATING
+
+---
+
+## OBJECT INSTANTIATION & PLAYER STATE (Burndown Wave 6 — 2026-03-24T19:30:00Z)
+
+### D-OBJECT-INSTANCING-FACTORY
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-24 (Implemented in #105)  
+**Status:** Implemented  
+**Issue:** #105
+
+Created `src/engine/factory/init.lua` — a formal instancing factory implementing Core Principle 5 (Multiple Instances Per Base Object).
+
+**API:**
+```lua
+local factory = require("src.engine.factory")
+
+-- Create N instances from one base object
+local matches = factory.create_instances(match_base, 6, {
+    location = "matchbox",
+    per_instance_overrides = {
+        [3] = { _state = "lit" },
+        [4] = { _state = "spent" },
+    },
+})
+
+-- Create a single instance
+local candle = factory.create_one(candle_base, { location = "nightstand.top" })
+
+-- Generate a GUID standalone
+local guid = factory.generate_guid()
+```
+
+**Key Decisions:**
+1. **Self-contained module** — factory has its own `deep_copy`/`deep_merge` rather than importing from loader. Keeps the module dependency-free and testable in isolation.
+2. **`instance_guid` field** (not `guid`) — base objects own `guid`; instances get `instance_guid` to avoid confusion. `guid` is cleared on instances.
+3. **`type_id` traceability** — every instance records `base.guid` as `type_id`, matching the existing room instance pattern.
+4. **Pure Lua GUID generator** — `factory.generate_guid()` produces UUID v4 strings using `math.random`. Sufficient for single-process runtime; not cryptographic.
+5. **Sequential id naming** — instances get `{prefix}-1`, `{prefix}-2`, etc. by default, matching the existing `match-1` through `match-7` pattern in room files.
+
+**Impact on Other Agents:**
+- **Moe (rooms):** Room files can continue using the existing `instances` array pattern. The factory formalizes the same pattern for programmatic use (e.g., spawning items at runtime).
+- **Flanders (objects):** No changes needed to object definitions. The factory works with any base object table.
+- **Nelson (tests):** 24 new tests in `test/engine/test-factory.lua`. Factory can be used in test setup for creating test fixtures.
+
+**Verification:** 24 tests passing, zero regressions.
+
+---
+
+### D-PLAYER-CANONICAL-STATE
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-24 (Implemented in #104)  
+**Status:** Implemented  
+**Issue:** #104
+
+All player state MUST live on `ctx.player`. No player-related data on `ctx` root level.
+
+**What Changed:**
+- `visited_rooms` moved from `ctx.visited_rooms` → `ctx.player.visited_rooms`
+- All engine code and tests updated to use `ctx.player.visited_rooms`
+- Created canonical `src/engine/player.lua` module
+
+**Rule Going Forward:**
+When adding new player state (e.g., quest flags, reputation, discovered secrets), put it on `ctx.player` or a sub-table like `ctx.player.state`. Never on `ctx` directly.
+
+**Who Should Know:**
+- **Moe** — room definitions don't change, but movement verb now reads `ctx.player.visited_rooms`
+- **Smithers** — parser/verb code should access player state via `ctx.player`
+- **Nelson** — test mock contexts must put `visited_rooms` on `ctx.player`, not `ctx`
+- **Gil** — web adapter updated; `web/dist/` will need rebuild
+
+**Verification:** 8 tests passing, 113 files green.
 
 ---
 
