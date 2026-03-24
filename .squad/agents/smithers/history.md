@@ -47,6 +47,29 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+### 2026-03-23: Bugs #96, #97, #98, #99 — Search/Container Interaction Cluster
+
+**Root cause:** Search traversal "peeked" into closed containers read-only (#24 design), so containers were never physically opened. Items discovered inside remained inaccessible to take/get because `find_visible()` checks `surface.accessible`.
+
+**#96: "Inside" without container name**
+- `narrator.surface_contents()` used bare "Inside, you feel:" for non-top surfaces.
+- Fix: Resolve the part display name via `resolve_part_display()` and say "Inside the drawer, you feel:".
+- Also fixed `nested_container_contents()` and removed "Inside" from `FOUND_TEMPLATES`.
+
+**#97: Search should narrate opening closed containers**
+- Replaced the read-only "peek" in `traverse.step()` with actual `containers.open()` calls.
+- Surface `accessible` flag set to `true` when search enters.
+- Opening narrated as a distinct line before contents narration.
+
+**#98/#99: Take fails after find discovers item**
+- Direct consequence of #97 fix: once containers are physically opened, `_fv_surfaces()` in verbs/init.lua sees `accessible ~= false` and items become reachable.
+
+**Design decision:** Supersedes #24 (read-only search). Search now mutates container state. This is Wayne's preferred behavior from #97 discussion.
+
+**Tests:** 11 new regression tests in `test/search/test-search-bugs-096-099.lua`. Updated 2 tests in `test-search-narration-bugs.lua` from "must stay closed" to "must be open". All 75 test files pass.
+
+**Deployed:** Commit 7044275 pushed to main, web build deployed to GitHub Pages.
+
 ### 2026-03-23: Bugs #88 and #89 — Parser/Resolver Fixes
 
 **#88: "feel inside drawer" resolved to nightstand parent**

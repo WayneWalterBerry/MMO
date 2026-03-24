@@ -255,3 +255,25 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 **Design Doc Updated:** `docs/objects/chamber-pot.md` — full wearable specification, armor stats, appearance/mirror description, Wayne's design intent (real-world object creativity).
 
 **Result:** 50/50 test files pass, 0 failures. Zero regressions. Committed 011094d and pushed.
+
+### 2026-07-27: Chest — Two-Handed Oak Container (Issue from CBG Design Doc)
+
+**Task:** Implement `chest.lua` from CBG's complete design doc at `docs/objects/chest.md`.
+
+**What Was Built in chest.lua:**
+- GUID `{6cf2ab69-60e5-4c14-9b3a-c559b6037cf4}` (Windows-generated)
+- Material: `oak` (from material registry, Principle 9 satisfied)
+- `size = 5`, `weight = 20`, `portable = true`, `hands_required = 2`
+- FSM: `closed` (default) ↔ `open` — two transitions with narration from CBG's design
+- Container: `capacity = 8`, `max_item_size = 3`, `weight_capacity = 30`
+- Sensory gating: `accessible = false` (closed) / `accessible = true` (open)
+- Per-state sensory properties: `on_look` (function with contents listing), `on_feel` (function with contents detection in open state), `on_smell`, `on_listen`
+- `mutate` on transitions: `keywords = { add = "open" }` / `keywords = { remove = "open" }`
+- Categories: container, furniture, wooden
+- Keywords: chest, trunk, storage, wooden chest, heavy chest, treasure chest
+
+**Pattern:** Follows drawer.lua exactly — same FSM + container + sensory gating architecture. Key differences: larger capacity (8 vs 2), heavier (20 vs 2), standalone (no `reattach_to`), richer narration per CBG's design.
+
+**Design Doc Updated:** `docs/objects/chest.md` — status changed from "Design complete; implementation pending" to "🟢 In Game — src/meta/objects/chest.lua". Added implementation credit.
+
+**Result:** 74/74 test files pass, 0 regressions. Committed 57c38b4 and pushed.

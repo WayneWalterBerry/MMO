@@ -1,9 +1,9 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-24T00:09:13Z  
+**Last Updated:** 2026-03-24T23:20Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
-**New Decisions:** D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN
+**New Decisions:** D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS
 
 ---
 
@@ -1932,8 +1932,35 @@ Search now "peeks" inside closed containers without changing their state. The ol
 
 ---
 
-**End of 2026-03-24T18:50Z Afternoon Wave Merge**  
-**Total Active Decisions:** 76 (70 prior + 6 new)  
-**Last Merge:** 2026-03-24T18:50Z (Scribe)  
-**Inbox Status:** EMPTY (all 6 inbox files merged and deleted)
+---
+
+## SEARCH & CONTAINERS (Smithers)
+
+### D-SEARCH-OPENS: Search Opens Containers (supersedes #24)
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-23  
+**Status:** Implemented  
+**Commit:** 7044275  
+**Issues:** #96, #97, #98, #99
+
+Search/find now **physically opens** closed containers it enters, rather than peeking read-only. This supersedes the #24 design decision ("read-only search") because:
+
+1. Players expect `find X` → `take X` to work as a natural flow
+2. Wayne explicitly requested narrated opening in #97
+3. The "peek" behavior caused 4 bugs (#96-#99) where items were discovered but unreachable
+
+**Implementation Details:**
+- `traverse.step()` calls `containers.open()` when entering closed unlocked containers
+- Surface `.accessible` is set to `true` after search opens a container
+- Container `.is_open` / `.open` flags are set to `true`
+- Opening is narrated as a distinct line: "You feel a small drawer. You pull it open."
+- Locked containers are still skipped (no change)
+- Direct part search (e.g., "search drawer") on a closed surface still tells the player to open it manually (no change to #41)
+
+---
+
+**End of 2026-03-24T23:20Z Spawn Completion Merge**  
+**Total Active Decisions:** 77 (76 prior + 1 new)  
+**Last Merge:** 2026-03-24T23:20Z (Scribe)  
+**Inbox Status:** EMPTY (all inbox files merged and deleted)
 
