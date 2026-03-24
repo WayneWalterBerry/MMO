@@ -46,6 +46,17 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 - `history-archive-2026-03-20T22-40Z-smithers.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): UI architecture, parser pipeline implementation, web performance optimization, 880+ tests
 
 ## Learnings
+
+
+### 2026-07-19: Issue #167 — Meta-check V2 (full meta type coverage)
+
+**What shipped:** Extended `scripts/meta-check/check.py` with ~160 new validation rules covering all 4 remaining meta types: templates (27 rules), injuries (69 rules), materials (24 rules), and levels (41 rules), plus 11 cross-reference checks. Fixed MAT-02 false positives by reading material names from `src/meta/materials/*.lua` filenames instead of parsing the engine registry file.
+
+**Key learning:** The Lua parser already handled nil values correctly, which meant material fields like `melting_point = nil` were properly distinguished from missing. Template/level GUIDs use bare format while injury/object GUIDs use braced format — established convention. The ~160 rule IDs match Lisa's V2 acceptance criteria exactly.
+
+**Files changed:** `scripts/meta-check/check.py`, `docs/meta-check/rules.md`, `docs/meta-check/schemas.md`
+
+**Tests:** 130 files scanned, 0 errors, 0 regressions.
 
 ### 2026-07-18: Issue #168 — Compound commands only execute first part
 
