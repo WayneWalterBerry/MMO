@@ -1233,3 +1233,19 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - `on_equip_tick` designed but NOT implemented — needs game loop integration (future work)
 
 **Test Results:** Zero regressions. 1 pre-existing failure (bedroom-door instance location) unrelated to changes.
+
+## Learnings
+
+### Session: Verbs Refactor Split (2026-03-27)
+**Status:** ✅ COMPLETE
+**Requested by:** Wayne "Effe" Berry
+
+**Deliverables:**
+- Split `src/engine/verbs/init.lua` into helpers + 10 verb modules with registry-only init.
+- Shared verb helpers moved to `helpers.lua`, including self-infliction parsing for strike.
+
+**Key Notes:**
+- `parse_self_infliction` moved to helpers to keep strike→hit routing intact.
+- Added `location = "room"` on the bedroom-door instance to satisfy object placement tests.
+
+**Test Results:** `lua test/run-tests.lua` (all passing)
