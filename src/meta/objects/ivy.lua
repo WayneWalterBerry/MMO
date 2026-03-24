@@ -5,6 +5,7 @@ return {
     template = "furniture",
 
     id = "ivy",
+    material = "plant",
     keywords = {"ivy", "vines", "vine", "climbing ivy", "creeper", "plant", "growth"},
     size = 6,
     categories = {"environmental", "plant"},
