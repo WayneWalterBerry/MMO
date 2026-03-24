@@ -3334,10 +3334,32 @@ function verbs.create()
             return
         end
 
+        -- Remember which hand held the object before mutation destroys it (#134)
+        local held_hand = which_hand(ctx, obj.id)
+
         local obj_name = obj.name or obj.id
         if perform_mutation(ctx, obj, mut_data) then
             print(mut_data.message
                 or ("You tear " .. obj_name .. " apart."))
+
+            -- Move spawned items from room to player's hands (#134)
+            if mut_data.spawns and held_hand then
+                local room = ctx.current_room
+                for _, spawn_id in ipairs(mut_data.spawns) do
+                    -- Find the spawned item in room contents (may have suffixed ID)
+                    for i = #room.contents, 1, -1 do
+                        local room_id = room.contents[i]
+                        if room_id == spawn_id or room_id:sub(1, #spawn_id) == spawn_id then
+                            local slot = first_empty_hand(ctx)
+                            if slot then
+                                ctx.player.hands[slot] = room_id
+                                table.remove(room.contents, i)
+                            end
+                            break
+                        end
+                    end
+                end
+            end
         end
     end
 
@@ -4074,6 +4096,11 @@ function verbs.create()
                     print("You punch your helmeted head. It clangs metallically. Your ears ring, but the helmet took most of the impact.")
                 else
                     print("You slam your fist against your helmeted head. The impact rattles you even through the protection. Stars flash across your vision...")
+                end
+                -- Degrade worn head armor from the impact (#155)
+                local armor_ok2, armor_mod = pcall(require, "engine.armor")
+                if armor_ok2 and armor_mod.degrade_covering_armor then
+                    armor_mod.degrade_covering_armor(ctx.player, "head", 5, "blunt")
                 end
             else
                 print("You slam your fist hard against the side of your head. Stars explode across your vision. The world tilts and fades...")

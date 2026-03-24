@@ -690,7 +690,33 @@ end
 
 --- Stage: transform_compound_actions
 --- Normalize compound verb phrases (pry open, use X on Y, put/take, etc.)
+-- #142, #143, #146, #157: Hit/drop synonym verb sets
+local HIT_SYNONYMS = { smack=true, bang=true, slap=true, whack=true }
+
 local function transform_compound_actions(text)
+    -- #142, #157: Simple hit synonyms (smack, bang, slap, whack) → hit
+    local first_word = text:match("^(%S+)")
+    if first_word and HIT_SYNONYMS[first_word] then
+        return "hit" .. text:sub(#first_word + 1)
+    end
+
+    -- #143: headbutt always targets head
+    if text:match("^headbutt") then
+        return "hit head"
+    end
+
+    -- #146: bonk defaults to head when self-target or bare
+    if text == "bonk" then return "hit head" end
+    local bonk_noun = text:match("^bonk%s+(.+)$")
+    if bonk_noun then
+        local cleaned = bonk_noun:gsub("^my%s+", ""):gsub("^your%s+", "")
+        if cleaned == "myself" or cleaned == "self" or cleaned == "me"
+            or cleaned == "yourself" then
+            return "hit head"
+        end
+        return "hit " .. bonk_noun
+    end
+
     -- BUG-049: "pry open X" → "open X"
     local pry_target = text:match("^pry%s+open%s+(.+)")
     if pry_target then
@@ -828,22 +854,24 @@ local function transform_compound_actions(text)
         return "put " .. stuff_item .. " in " .. stuff_target
     end
 
-    -- "toss X on/onto/in/into Y" → "put X on/in Y"
-    local toss_item, toss_target = text:match("^toss%s+(.+)%s+on%s+(.+)$")
-    if toss_item then
-        return "put " .. toss_item .. " on " .. toss_target
-    end
-    toss_item, toss_target = text:match("^toss%s+(.+)%s+onto%s+(.+)$")
-    if toss_item then
-        return "put " .. toss_item .. " on " .. toss_target
-    end
-    toss_item, toss_target = text:match("^toss%s+(.+)%s+in%s+(.+)$")
-    if toss_item then
-        return "put " .. toss_item .. " in " .. toss_target
-    end
-    toss_item, toss_target = text:match("^toss%s+(.+)%s+into%s+(.+)$")
-    if toss_item then
-        return "put " .. toss_item .. " in " .. toss_target
+    -- #141: "toss/throw X on/onto/in/into Y" → "put X on/in Y" (placement)
+    -- Bare "toss/throw X" (no preposition) → "drop X"
+    for _, toss_verb in ipairs({"toss", "throw"}) do
+        local toss_rest = text:match("^" .. toss_verb .. "%s+(.+)$")
+        if toss_rest then
+            -- Check for placement prepositions first
+            local t_item, t_target
+            t_item, t_target = toss_rest:match("^(.+)%s+onto%s+(.+)$")
+            if t_item then return "put " .. t_item .. " on " .. t_target end
+            t_item, t_target = toss_rest:match("^(.+)%s+into%s+(.+)$")
+            if t_item then return "put " .. t_item .. " in " .. t_target end
+            t_item, t_target = toss_rest:match("^(.+)%s+on%s+(.+)$")
+            if t_item then return "put " .. t_item .. " on " .. t_target end
+            t_item, t_target = toss_rest:match("^(.+)%s+in%s+(.+)$")
+            if t_item then return "put " .. t_item .. " in " .. t_target end
+            -- No preposition → drop
+            return "drop " .. toss_rest
+        end
     end
 
     -- "slide X under/into Y" → "put X under/in Y"
