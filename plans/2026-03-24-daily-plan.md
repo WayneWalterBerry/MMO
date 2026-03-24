@@ -10,31 +10,31 @@
 
 ### Still Open Issues (need fix + regression tests)
 - [x] #47: Dark search uses "find/see" instead of "feel" narration (carry-over from Mar 23, FIXED in commit 5738359)
-- [ ] #48: Search results dump all at once — should stream with clock advance (carry-over to Mar 25)
-- [ ] #49: "stab yourself" should infer weapon from hand contents (carry-over to Mar 25)
+- [x] #48: Search results dump all at once — should stream with clock advance (carry-over to Mar 25) (CLOSED)
+- [x] #49: "stab yourself" should infer weapon from hand contents (FIXED in commit 467c9a8, 21 regression tests) ✅ SHIPPED
 - [x] #52: Mirror shows only hand contents, not full appearance (carry-over from Mar 23, FIXED in commit 5738359)
-- [ ] #53: "get pot" outputs take message twice — duplicate response (carry-over to Mar 25)
+- [x] #53: "get pot" outputs take message twice — duplicate response (FIXED in commit 467c9a8, 21 regression tests) ✅ SHIPPED
 - [x] #56: on_drop engine event + material fragility system (ceramic pot shatters on drop) ✅ SHIPPED
-- [ ] #3: Screen flicker (Bart, queued) (carry-over to Mar 25)
+- [x] #3: Screen flicker (Bart, queued) (carry-over to Mar 25) (CLOSED)
 - [x] #41: "search the drawer" not distinct from nightstand (carry-over from Mar 23, FIXED in commit afef5dc)
 
 ### Evening Play-Test Bugs (2026-03-23, filed by Wayne)
-- [ ] #85: Nested search doesn't traverse `nested` key — matchbox unfindable on live (carry-over to Mar 25)
-- [ ] #86: "wear X" after "find X" says "aren't holding that" — container auto-pickup missing (carry-over to Mar 25)
-- [ ] #87: "get X" from container fails — same root cause as #86 (carry-over to Mar 25)
+- [x] #85: Nested search doesn't traverse `nested` key — matchbox unfindable on live (carry-over to Mar 25) (CLOSED)
+- [x] #86: "wear X" after "find X" says "aren't holding that" — container auto-pickup missing (carry-over to Mar 25) (CLOSED)
+- [x] #87: "get X" from container fails — same root cause as #86 (carry-over to Mar 25) (CLOSED)
 - [x] #88: "feel inside drawer" resolves to nightstand parent — drawer→parent resolution bug (FIXED in commit afef5dc)
 - [x] #89: "what's inside?" shows room description instead of container contents (FIXED in commit afef5dc)
 
 ### Mirror Quality Review Bugs (Phase M4, filed by Nelson)
-- [ ] #90: Worn cloak invisible in mirror — appearance checks `wear_slot` not `wear.slot`
-- [ ] #91: Double period in mirror output `"...your head.. You appear..."`
-- [ ] #92: Duplicate same-location injuries silently collapsed
-- [ ] #93: Injury severity never set — adjective system is dead code
-- [ ] #94: Hands layer mixes grammar structures awkwardly
-- [ ] #95: Overall health double-and: `"healthy and alert and dried blood..."`
+- [x] #90: Worn cloak invisible in mirror — appearance checks `wear_slot` not `wear.slot` (CLOSED)
+- [x] #91: Double period in mirror output `"...your head.. You appear..."` (CLOSED)
+- [x] #92: Duplicate same-location injuries silently collapsed (CLOSED)
+- [x] #93: Injury severity never set — adjective system is dead code (CLOSED)
+- [x] #94: Hands layer mixes grammar structures awkwardly (CLOSED)
+- [x] #95: Overall health double-and: `"healthy and alert and dried blood..."` (CLOSED)
 
 ### Design Carry-Over
-- [ ] Chest object — Design doc + chest.lua (two-handed carry, open/close FSM, container, based on drawer pattern)
+- [x] Chest object — Design doc + chest.lua (two-handed carry, open/close FSM, container, based on drawer pattern) (CLOSED — delivered)
 
 ### Verify Fixed (need Marge to close)
 - [x] #46: Match search P0 — Smithers found root cause (fuzzy resolver hijack), fix deployed (carry-over from Mar 23, SHIPPED)
@@ -194,7 +194,7 @@ wear = {
 **Wayne's design:** Objects can declare per-event output text that fires once, then self-removes via mutation. The engine doesn't track "has this been shown" — the object does. First-time flavor text lives on the object instance; after it fires, the engine mutates the field to `nil`.
 
 **Architecture:**
-- [ ] Bart: Design the `event_output` table pattern in event-hooks architecture doc
+- [x] Bart: Design the `event_output` table pattern in event-hooks architecture doc ✅ SHIPPED (commit c40e07b)
   - Objects declare an `event_output` table keyed by event name:
     ```lua
     event_output = {
@@ -373,9 +373,9 @@ The brass spittoon is a comedic counterpart to the ceramic chamber pot. Both are
 
 ### Phase F1: Remaining P1/P2 Bugs ✅→ Smithers
 - [x] #47: Dark search narration — "feel" instead of "find/see" ✅ SHIPPED (commit 5738359)
-- [ ] #49: Stab weapon inference from hand contents (carry-over to Mar 25)
+- [x] #49: Stab weapon inference from hand contents ✅ SHIPPED (commit 467c9a8, 21 regression tests)
 - [x] #52: Mirror full appearance (not just hands) ✅ SHIPPED (commit 5738359)
-- [ ] #53: Duplicate "get pot" output (carry-over to Mar 25)
+- [x] #53: Duplicate "get pot" output ✅ SHIPPED (commit 467c9a8, 21 regression tests)
 
 ### Phase F2: Regression Tests ✅→ Nelson
 - [x] Tests for fixes (#47, #52) ✅ SHIPPED
@@ -392,7 +392,7 @@ The brass spittoon is a comedic counterpart to the ceramic chamber pot. Both are
 - [ ] Gil: Deploy after all armor system work ships (carry-over to Mar 25 — #158)
 
 ### Phase G2: Evening Newspaper ✅→ Brockman
-- [ ] Brockman: March 24 evening edition — armor system, material-derived protection, brass spittoon (carry-over to Mar 25 — #159, on hold per D-NO-NEWSPAPER-PENDING)
+- [x] Brockman: March 24 evening edition — armor system, material-derived protection, brass spittoon (carry-over to Mar 25 — #159, on hold per D-NO-NEWSPAPER-PENDING) (CLOSED)
 
 ---
 
