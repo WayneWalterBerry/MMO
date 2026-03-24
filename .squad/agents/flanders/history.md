@@ -29,7 +29,27 @@
 
 ## Current Sprint: Effects Pipeline (EP1-EP10) ✅ COMPLETE
 
-### Latest Work (2026-07-27)
+### Latest Work (2026-07-28)
+
+### Fix #153: Brass Bowl Keyword Collision — FIXED ✅
+
+**Task:** "brass bowl" keyword matched both brass-spittoon and candle-holder. Fuzzy parser's material matching scored both brass objects when player typed "brass bowl."
+
+**Root Cause:** brass-spittoon.lua had `"brass bowl"` as an explicit keyword. Combined with fuzzy Tier 5 material matching (`material = "brass"` on candle-holder), both objects surfaced as candidates.
+
+**What Changed:**
+- **brass-spittoon.lua:** Removed `"brass bowl"` from keywords array. Spittoon still reachable via "spittoon", "brass spittoon", "cuspidor", "spit bowl", "helmet", "improvised helmet".
+- **test-brass-spittoon.lua:** Updated test #13 to assert "brass bowl" is NOT present (was asserting it existed).
+
+**TDD:** 11 tests in `test/objects/test-keyword-disambiguation.lua` — verifies unique resolution of "spittoon", "candle holder", "brass spittoon", "brass holder", "cuspidor", "candlestick", and confirms zero keyword overlap between the two objects.
+
+### Fix #124: Object Template Declarations — VERIFIED ✅ (already fixed)
+
+**Task:** 12 objects reportedly missing `template` field.
+
+**Finding:** All 83 objects in `src/meta/objects/` already declare valid templates (small-item: 37, furniture: 28, sheet: 10, container: 8). Issue was previously resolved.
+
+**TDD:** 8 tests in `test/objects/test-object-templates.lua` — scans all 83 object files, validates template field exists, is a string, uses a recognized type (small-item/container/furniture/sheet), and checks id/keywords/name/guid presence. Guards against regression.
 
 ### Fix #155: Ceramic Pot Degradation — FIXED ✅
 
