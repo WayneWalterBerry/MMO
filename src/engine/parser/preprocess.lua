@@ -192,7 +192,7 @@ local GERUND_MAP = {
     pulling = "pull", pushing = "push", finding = "find",
     getting = "get", giving = "give", hiding = "hide",
     picking = "pick", drinking = "drink", eating = "eat",
-    using = "use",
+    using = "use", pouring = "pour", filling = "fill",
 }
 local function strip_gerunds(text)
     local first, rest = text:match("^(%S+)%s+(.+)$")
@@ -743,10 +743,37 @@ local function transform_compound_actions(text)
         return "hit " .. bonk_noun
     end
 
-    -- BUG-049: "pry open X" → "open X"
+    -- #108: "pour X into Y" / "pour X in Y" → canonical "pour X into Y"
+    local pour_item, pour_target = text:match("^pour%s+(.+)%s+into%s+(.+)$")
+    if not pour_item then
+        pour_item, pour_target = text:match("^pour%s+(.+)%s+in%s+(.+)$")
+    end
+    if pour_item then
+        return "pour " .. pour_item .. " into " .. pour_target
+    end
+
+    -- #108: "fill Y with X" → "pour X into Y" (reverse syntax)
+    local fill_target, fill_source = text:match("^fill%s+(.+)%s+with%s+(.+)$")
+    if fill_target and fill_source then
+        return "pour " .. fill_source .. " into " .. fill_target
+    end
+
+    -- BUG-049: "pry open X" / "pry open X with Y" → "open X" / "open X with Y"
     local pry_target = text:match("^pry%s+open%s+(.+)")
     if pry_target then
         return "open " .. pry_target
+    end
+
+    -- BUG-049: "pry X with Y" → "open X with Y" (tool-assisted pry)
+    local pry_noun, pry_tool = text:match("^pry%s+(.+)%s+with%s+(.+)$")
+    if pry_noun and pry_tool then
+        return "open " .. pry_noun .. " with " .. pry_tool
+    end
+
+    -- "force open X" → "open X"
+    local force_target = text:match("^force%s+open%s+(.+)")
+    if force_target then
+        return "open " .. force_target
     end
 
     -- "use crowbar/bar on X" → "open X"

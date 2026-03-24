@@ -403,6 +403,26 @@ function loop.run(context)
         if clean_noun and clean_noun ~= "" then noun = clean_noun end
       end
 
+      -- BUG-049: extract "with Y" tool for open/pry and stash on context
+      context.tool_noun = nil
+      if verb == "open" or verb == "pry" then
+        local obj_noun, tool = noun:match("^(.-)%s+with%s+(.+)$")
+        if obj_noun and obj_noun ~= "" and tool and tool ~= "" then
+          noun = obj_noun
+          context.tool_noun = tool
+        end
+      end
+
+      -- #108: extract "into Y" target for pour and stash on context
+      context.pour_target = nil
+      if verb == "pour" or verb == "spill" or verb == "dump" then
+        local source, target = noun:match("^(.-)%s+into%s+(.+)$")
+        if source and source ~= "" and target and target ~= "" then
+          noun = source
+          context.pour_target = target
+        end
+      end
+
       -- Tier 3: goal-oriented prerequisite planning
       if goal_planner then
         if _G.TRACE then io.stderr:write("[TRACE] GOAP plan: verb=" .. verb .. " noun=" .. noun .. "\n") end

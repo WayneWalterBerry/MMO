@@ -190,7 +190,46 @@ function M.register(handlers)
             return
         end
 
-        -- FSM path: check for "pour" transition
+        -- #108: "pour X into Y" — transfer liquid to target container
+        local pour_target_noun = ctx.pour_target
+        if pour_target_noun then
+            local target_obj = find_in_inventory(ctx, pour_target_noun)
+            if not target_obj then target_obj = find_visible(ctx, pour_target_noun) end
+            if not target_obj then
+                print("You don't see any " .. pour_target_noun .. " to pour into.")
+                return
+            end
+
+            -- Check source has a "pour" FSM transition with target support
+            if obj.states then
+                local transitions = fsm_mod.get_transitions(obj)
+                local target_trans
+                for _, t in ipairs(transitions) do
+                    if t.verb == "pour" then target_trans = t; break end
+                    if t.aliases then
+                        for _, alias in ipairs(t.aliases) do
+                            if alias == "pour" then target_trans = t; break end
+                        end
+                        if target_trans then break end
+                    end
+                end
+                if target_trans then
+                    local trans = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {}, "pour")
+                    if trans then
+                        print(trans.message or ("You pour " .. (obj.name or obj.id) .. " into " .. (target_obj.name or target_obj.id) .. "."))
+                    else
+                        print("You can't pour " .. (obj.name or "that") .. ".")
+                    end
+                    return
+                end
+            end
+
+            -- Generic liquid transfer message
+            print("You pour " .. (obj.name or obj.id) .. " into " .. (target_obj.name or target_obj.id) .. ".")
+            return
+        end
+
+        -- FSM path: check for "pour" transition (bare pour, no target)
         if obj.states then
             local transitions = fsm_mod.get_transitions(obj)
             local target_trans
@@ -219,6 +258,7 @@ function M.register(handlers)
 
     handlers["spill"] = handlers["pour"]
     handlers["dump"] = handlers["pour"]
+    handlers["fill"] = handlers["pour"]
     -- SLEEP / REST / NAP — clock-advance mechanic
     ---------------------------------------------------------------------------
     local function do_sleep(ctx, noun)
