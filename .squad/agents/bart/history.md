@@ -29,7 +29,18 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
-### Recent Work: #101 Engine Hooks: on_enter_room, on_exit_room, on_pickup, on_drop (2026-03-29)
+### Recent Work: #104 Engine Pass 3: player.lua as canonical state (2026-03-30)
+
+**#104 — visited_rooms migrated to player model:**
+- Moved `visited_rooms` from `ctx` root to `ctx.player.visited_rooms` — player model is now the single canonical source for all player state
+- Updated `src/main.lua`, `src/engine/verbs/movement.lua`, `web/game-adapter.lua` (3 engine files)
+- Updated 4 test files (hooks, movement, spatial, context-window) — 13 mock context sites total
+- Added `test/verbs/test-player-canonical-state.lua` — 8 tests validating canonical state model
+- Wrote architecture doc: `docs/architecture/player/player-pass-3.md`
+- Zero regressions across 113 test files
+- Decision filed: all new player state must go on `ctx.player`, never on `ctx` root
+
+### Prior Work: #101 Engine Hooks: on_enter_room, on_exit_room, on_pickup, on_drop (2026-03-29)
 
 **#101 — 4 Engine Hooks Implemented (TDD):**
 - Added `on_pickup(obj, ctx)` hook in `acquisition.lua` — fires after successful take across all 4 take paths (room, bag, two-hand, single-hand)
@@ -1268,3 +1279,37 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - Added `location = "room"` on the bedroom-door instance to satisfy object placement tests.
 
 **Test Results:** `lua test/run-tests.lua` (all passing)
+
+## Learnings
+
+### Session: Object Instancing Factory — Issue #105 (2026-07-22)
+**Status:** ✅ COMPLETE
+**Requested by:** Wayne "Effe" Berry
+
+**Deliverables:**
+- New module: `src/engine/factory/init.lua` — Core Principle 5 instancing factory
+- `factory.create_instances(base, count, options)` creates N independent deep-copied instances from one base definition
+- `factory.create_one(base, overrides)` convenience wrapper for single instances
+- Pure Lua UUID v4 generator (`factory.generate_guid()`) — zero external dependencies
+- Each instance gets `instance_guid` (runtime identity), `type_id` (traceability to base), sequential `id`
+- Supports global overrides, per-instance overrides, location defaults
+- 24 tests in `test/objects/test-instancing-factory.lua`
+
+**Key Notes:**
+- Factory is self-contained (local `deep_copy` + `deep_merge`) — no coupling to loader internals
+- Base object is never mutated — all instances are fully independent deep copies
+- `guid` field cleared on instances (belongs to base); `instance_guid` is the runtime identifier
+- Pattern formalizes what room files already do implicitly with the `instances` array + `type_id` references
+- GUID generator uses `math.random` seeded with `os.time() + os.clock()` — sufficient for single-process game runtime
+
+**Test Results:** 111 test files, 0 regressions
+
+## Learnings
+
+### Session: Player Canonical State — Issue #104 (2026-07-22)
+**Status:** ✅ COMPLETE
+
+- Player state was 95% canonical already — only `visited_rooms` was orphaned on `ctx` root
+- Clean migration: move field to `ctx.player`, update 3 engine sites + 13 test mock sites
+- `ctx.current_room` is a convenience reference (room object), NOT player state — the canonical location is `ctx.player.location` (room ID string). Decided to leave `ctx.current_room` as-is since it's an engine convenience, not player data.
+- Test mock contexts are the biggest blast radius for state migrations — always grep tests for the old pattern

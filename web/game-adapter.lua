@@ -47,7 +47,7 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-23 21:15"
+local BUILD_TIMESTAMP = "2026-03-24 11:38"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -509,6 +509,7 @@ local ok, err = pcall(function()
         skills   = {},
         location = start_room_id,
         state    = { bloody = false, poisoned = false, has_flame = 0 },
+        visited_rooms = { [start_room_id] = true },  -- canonical visited-rooms tracking (#104)
     }
 
     -------------------------------------------------------------------
@@ -534,7 +535,7 @@ local ok, err = pcall(function()
         game_start_time = os.time(),
         game_start_hour = presentation.GAME_START_HOUR,
         ui              = nil,  -- set below after context creation
-        visited_rooms   = { [start_room_id] = true },
+
         -- JS bridge: open URL in a new browser tab (for "report bug")
         open_url        = function(url)
             window:_openUrl(url)

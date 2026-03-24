@@ -107,10 +107,26 @@ function M.register(handlers)
             if context_window and ctx.current_room then
                 context_window.set_previous_room(ctx.current_room.id)
             end
+            -- on_exit_room hook: fire before leaving current room
+            if ctx.current_room.on_exit_room and type(ctx.current_room.on_exit_room) == "function" then
+                ctx.current_room.on_exit_room(ctx.current_room, ctx)
+            end
+            if ctx.current_room.event_output and ctx.current_room.event_output["on_exit_room"] then
+                print(ctx.current_room.event_output["on_exit_room"])
+                ctx.current_room.event_output["on_exit_room"] = nil
+            end
             ctx.player.location = prev_id
             ctx.current_room = prev_room
-            ctx.visited_rooms = ctx.visited_rooms or {}
-            ctx.visited_rooms[prev_id] = true
+            ctx.player.visited_rooms = ctx.player.visited_rooms or {}
+            ctx.player.visited_rooms[prev_id] = true
+            -- on_enter_room hook: fire after entering new room
+            if prev_room.on_enter_room and type(prev_room.on_enter_room) == "function" then
+                prev_room.on_enter_room(prev_room, ctx)
+            end
+            if prev_room.event_output and prev_room.event_output["on_enter_room"] then
+                print(prev_room.event_output["on_enter_room"])
+                prev_room.event_output["on_enter_room"] = nil
+            end
             print("")
             print("You retrace your steps.")
             print("**" .. (prev_room.name or "Unnamed room") .. "**")
@@ -170,6 +186,17 @@ function M.register(handlers)
         -- Fire on_traverse exit effects BEFORE moving the player
         traverse_effects.process(exit, ctx)
 
+        -- on_exit_room hook: fire callback if current room declares one
+        local old_room = ctx.current_room
+        if old_room.on_exit_room and type(old_room.on_exit_room) == "function" then
+            old_room.on_exit_room(old_room, ctx)
+        end
+        -- event_output: one-shot flavor text for on_exit_room
+        if old_room.event_output and old_room.event_output["on_exit_room"] then
+            print(old_room.event_output["on_exit_room"])
+            old_room.event_output["on_exit_room"] = nil
+        end
+
         -- Tier 4: record current room before moving (for "go back")
         if context_window and ctx.current_room then
             context_window.set_previous_room(ctx.current_room.id)
@@ -180,9 +207,19 @@ function M.register(handlers)
         ctx.current_room = target_room
 
         -- Track visited rooms for short-description-on-revisit
-        ctx.visited_rooms = ctx.visited_rooms or {}
-        local first_visit = not ctx.visited_rooms[target_id]
-        ctx.visited_rooms[target_id] = true
+        ctx.player.visited_rooms = ctx.player.visited_rooms or {}
+        local first_visit = not ctx.player.visited_rooms[target_id]
+        ctx.player.visited_rooms[target_id] = true
+
+        -- on_enter_room hook: fire callback if target room declares one
+        if target_room.on_enter_room and type(target_room.on_enter_room) == "function" then
+            target_room.on_enter_room(target_room, ctx)
+        end
+        -- event_output: one-shot flavor text for on_enter_room
+        if target_room.event_output and target_room.event_output["on_enter_room"] then
+            print(target_room.event_output["on_enter_room"])
+            target_room.event_output["on_enter_room"] = nil
+        end
 
         -- Print arrival
         print("")

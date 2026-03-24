@@ -320,6 +320,7 @@ local player = {
         poisoned = false,
         has_flame = 0,       -- ticks remaining for a struck match (0 = no flame)
     },
+    visited_rooms = { [start_room_id] = true },  -- canonical visited-rooms tracking (#104)
 }
 
 ---------------------------------------------------------------------------
@@ -347,7 +348,6 @@ local context = {
     game_start_hour = presentation.GAME_START_HOUR,
     ui             = ui_active and ui or nil,
     headless       = headless,
-    visited_rooms  = { [start_room_id] = true },
 }
 
 ---------------------------------------------------------------------------

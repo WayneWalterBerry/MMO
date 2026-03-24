@@ -528,12 +528,11 @@ test("'go back' after room transition returns to previous room", function()
     local ctx = {
         registry = registry, current_room = room_a,
         rooms = { room_a = room_a, room_b = room_b },
-        player = { hands = {}, worn = {}, skills = {}, location = "room_a" },
+        player = { hands = {}, worn = {}, skills = {}, location = "room_a", visited_rooms = { room_a = true } },
         verbs = {}, known_objects = {},
         last_object = nil, last_object_loc = nil,
         last_object_parent = nil, last_object_surface = nil,
         game_start_time = os.time(), time_offset = 4,
-        visited_rooms = { room_a = true },
     }
 
     local ok, err = load_verbs(ctx)
