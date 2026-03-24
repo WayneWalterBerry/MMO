@@ -27,6 +27,11 @@ return {
         wear_quality = "makeshift",
     },
 
+    -- One-shot flavor text (event_output system — fires once, engine nils it out)
+    event_output = {
+        on_wear = "It fits... barely. The sleeves are too short and it smells of mildew.",
+    },
+
     on_look = function(self)
         return self.description
     end,
