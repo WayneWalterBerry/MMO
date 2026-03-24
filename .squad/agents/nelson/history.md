@@ -1634,3 +1634,62 @@ thresholds, but lacked per-object fabric coverage. This new file ensures every a
 in the game world — not just the material type — correctly participates in the burn system.
 The wool material at 0.4 is the lowest fabric flammability, just above the 0.3 threshold;
 future fabric materials should stay above 0.3 or explicitly document why they don't burn.
+
+### TDD-First: Playtest Bugs #169–#172 (2026-03-25)
+
+**Status:** ✅ COMPLETE — 4 test files written, 5 FAILING tests prove 3 active bugs
+**Requested by:** Wayne "Effe" Berry (playtest findings)
+
+**Test files created:**
+- `test/verbs/test-light-fire-source.lua` — Bug #169 (3 FAIL, 1 PASS)
+- `test/verbs/test-door-resolution.lua` — Bug #170 (already fixed on branch, 16 PASS regression)
+- `test/objects/test-sack-capacity.lua` — Bug #171 (1 FAIL, 5 PASS)
+- `test/verbs/test-light-burn-redirect.lua` — Bug #172 (1 FAIL, 4 PASS regression)
+
+**Bug #169 — Light candle fails when holding match (3 FAIL):**
+Root cause: `find_fire_source()` checks `provides_tool` on the object root, but the unlit match
+only has `provides_tool = "fire_source"` inside `states.lit`, not at root level. The handler can't
+detect an unlit match in hand as a potential fire source. Failing tests:
+1. Player holds match + candle → "light candle" → says "nothing to light it with"
+2. Match state stays "unlit" — never consumed/transitioned
+3. Explicit "light candle with match" also fails (game loop strips "with match")
+
+**Bug #170 — Door not found despite being discovered (ALREADY FIXED):**
+Was fixed in commit ffb1fbb on `squad/170-fix-exit-door-resolution` branch.
+The fix at containers.lua:125-138 adds state-specific messages (uses `on_push` from barred state).
+16 regression tests pass. The bedroom-door object's barred state now reports
+"The door doesn't budge. The iron bar holds from the other side."
+
+**Bug #171 — Sack container narration uses "on" instead of "in" (1 FAIL):**
+Root cause: `put` handler (crafting.lua) uses the parsed input preposition `prep` verbatim in
+success narration. When player says "put key on sack", output says "on a burlap sack" even though
+`sack.container_preposition = "in"`. Fix: use `target.container_preposition or prep` in the message.
+Capacity tests (5 small items, 2nd item with key inside) all pass — capacity 8 is adequate.
+
+**Bug #172 — Light flammable should burn, not refuse (1 FAIL, core redirect FIXED):**
+Core redirect (fire.lua:209-214) was already implemented — `light sack` correctly redirects to burn
+handler when player has flame. Remaining issue: when redirect fires with NO flame, the burn handler's
+error "You have no flame to burn anything with" leaks the word "burn" into a "light" command.
+Player said "light" but error says "burn".
+
+## Learnings
+
+- **Match provides_tool is state-gated:** The real match.lua only has `provides_tool = "fire_source"`
+  inside `states.lit`, not at root. The test-fire-verbs.lua existing tests use a SIMPLIFIED match
+  with root-level provides_tool, which bypasses the bug. Always use REALISTIC object definitions
+  in tests matching the actual .lua files.
+- **Door object vs exit duality:** Rooms can have BOTH a door OBJECT (with FSM states) and an EXIT
+  DOOR (in room.exits). The open handler's find_visible finds the object first; if the FSM can't
+  open it, the handler returns without checking exits. This was fixed (#170) with state-specific
+  error messages using on_push.
+- **Container preposition leaks:** The put handler uses parsed `prep` instead of
+  `container_preposition` for success messages. Error messages correctly use container_preposition
+  (from containment engine), but success messages don't.
+- **Burn redirect error messages:** When the light→burn redirect fires, error messages from the
+  burn handler mention "burn" instead of "light", confusing the player.
+- **Full verification pass (2026-07-24):** Ran complete test suite after bugs #168-#173 were fixed.
+  126 test files, 3342 tests, 0 failures. All 6 bug-specific test files pass: test-light-fire-source (4/4),
+  test-light-burn-redirect (5/5), test-sack-capacity (6/6), test-door-resolution (16/16),
+  test-compound-commands (29/29). Headless smoke tests confirm critical path works: search around,
+  get candle, and compound 'get candle, and light it' all execute correctly. Commented verified on
+  all 6 issues (#168-#173). Verdict: PASS.

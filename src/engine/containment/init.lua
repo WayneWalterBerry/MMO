@@ -106,7 +106,8 @@ function containment.can_contain(item, container_obj, surface_name, registry)
   local used_size = contents_size(zone, registry)
   local capacity = zone.capacity or 0
   if capacity > 0 and (used_size + item_size) > capacity then
-    return false, "There is not enough room on " .. (container_obj.name or "that") .. "."
+    local prep = container_obj.container_preposition or "on"
+    return false, "There is not enough room " .. prep .. " " .. (container_obj.name or "that") .. "."
   end
 
   -- Layer 3b: Weight capacity

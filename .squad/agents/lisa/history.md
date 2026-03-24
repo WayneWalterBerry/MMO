@@ -436,6 +436,21 @@ This is the core advantage over Dwarf Fortress: our metadata is structured, mach
 - Cross-file checks (GUID uniqueness, type_id resolution, bidirectional exits) are the most complex to implement but catch the most dangerous bugs
 - The .lua metadata IS the oracle — meta-check codifies what I've been verifying manually into machine-checkable rules
 
+### meta-check V2 Acceptance Criteria (2026-03-24)
+- Authored `docs/meta-check/acceptance-criteria-v2.md` — ~160 new rules across 5 categories
+- V2 covers the 4 meta types V1 skipped: **templates** (27 rules), **injuries** (67 rules), **materials** (24 rules), **levels extended** (31 rules), **cross-references** (11 rules)
+- Combined V1 + V2 = ~304 total validation rules
+- Examined all 7 injury files: bleeding, bruised, burn, concussion, crushing-wound, minor-cut, poisoned-nightshade
+- Examined all 23 material files: every one has 11 required properties + optional `rust_susceptibility` on iron/steel
+- Examined all 5 template files: container, furniture, room, sheet, small-item — documented their contracts
+- Key insight: injury `id` MUST match filename — engine loads via `require("meta.injuries." .. injury_type)` where the type IS the filename
+- Key insight: engine strips `name` from materials after loading — `materials.get("glass").name` returns nil at runtime
+- Key insight: burn has two competing auto-transitions from `active` — this is intentional (source-specific timer overrides), not a bug
+- Key insight: `healing_interactions` keys are object IDs, not injury IDs — easy confusion point
+- Key insight: materials migrated from engine to meta — `src/engine/materials/init.lua` now dynamically loads from `src/meta/materials/`
+- `_timer_delay` is a valid mutate key on injury transitions (overrides timed event delay on target state)
+- Empty `healing_interactions = {}` is valid (bruised, concussion self-heal with time/rest)
+
 ---
 
 ## Archives

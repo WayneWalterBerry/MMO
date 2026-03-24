@@ -15,7 +15,8 @@ return {
     material = "fabric",
 
     container = true,
-    capacity = 4,
+    container_preposition = "in",
+    capacity = 8,
     max_item_size = 2,
     weight_capacity = 10,
     contents = {"needle", "thread"},

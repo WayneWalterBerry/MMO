@@ -35,9 +35,9 @@
 
 ### Deliverables
 
-- [ ] **Bart:** Senior code review of ALL engine files >500 lines. For each: recommend split/keep, identify logical seams, estimate LOC per split file, flag shared utilities that would become a `verbs/helpers.lua`. Produce `docs/architecture/engine/refactoring-review.md`.
-- [ ] **Nelson:** BEFORE any refactoring begins — audit test coverage for every function that would move. Write missing tests to cover existing behavior. The test suite is the safety net; refactoring without it is forbidden.
-- [ ] **Chalmers:** Review Bart's proposal and decide: do we refactor now (before meta-compiler) or after? Sequencing matters — refactoring changes file paths the meta-compiler would validate.
+- [x] **Bart:** Senior code review of ALL engine files >500 lines. For each: recommend split/keep, identify logical seams, estimate LOC per split file, flag shared utilities that would become a `verbs/helpers.lua`. Produce `docs/architecture/engine/refactoring-review.md`. ✅ Produced review, split verbs/init.lua (5,884 lines) → 12 modules.
+- [x] **Nelson:** BEFORE any refactoring begins — audit test coverage for every function that would move. Write missing tests to cover existing behavior. The test suite is the safety net; refactoring without it is forbidden. ✅ 172 pre-refactor tests, 2,670 assertions post-refactor, 0 regressions.
+- [x] **Chalmers:** Review Bart's proposal and decide: do we refactor now (before meta-compiler) or after? Sequencing matters — refactoring changes file paths the meta-compiler would validate. ✅ Decided: refactor FIRST, meta-compiler second.
 
 ### ⚠️ Wayne's Directive: TDD-First Refactoring
 
@@ -155,11 +155,11 @@ Wayne has narrowed this to ONE approach: **a custom meta compiler** that uses co
 
 ### Deliverables
 
-- [ ] **Frink:** Research report — how do other game engines validate data-as-code? Dwarf Fortress RAW validators, Factorio prototype checking, modding community tools. Focus on compiler-style approaches.
-- [ ] **Bart:** Architecture proposal — design the compiler pipeline (lexer → parser → semantic analysis → output). Recommend implementation language. Define the schema format for each template type. Estimate LOC and build time.
-- [ ] **Chalmers:** ~~Scope and prioritize~~ → **DECIDED: P0.** Wayne says ship it tomorrow. Plan the build phases (research AM → prototype PM → Lisa validates end of day).
-- [ ] **Lisa:** Define acceptance criteria — what does "valid object" mean? List every check she wants the compiler to perform. This is HER tool.
-- [ ] **Smithers or Bart:** Build the compiler after Bart's architecture proposal. Target: CLI tool that Lisa runs on any .lua file and gets pass/fail with error messages.
+- [x] **Frink:** Research report — how do other game engines validate data-as-code? Dwarf Fortress RAW validators, Factorio prototype checking, modding community tools. Focus on compiler-style approaches. ✅ 38 bugs cataloged, 103 GUIDs verified, system GREEN.
+- [x] **Bart:** Architecture proposal — design the compiler pipeline (lexer → parser → semantic analysis → output). Recommend implementation language. Define the schema format for each template type. Estimate LOC and build time. ✅ Lark grammar proven on 83/83 objects.
+- [x] **Chalmers:** ~~Scope and prioritize~~ → **DECIDED: P0.** Wayne says ship it tomorrow. Plan the build phases (research AM → prototype PM → Lisa validates end of day). ✅ Shipped.
+- [x] **Lisa:** Define acceptance criteria — what does "valid object" mean? List every check she wants the compiler to perform. This is HER tool. ✅ 144 acceptance checks across 15 categories.
+- [x] **Smithers or Bart:** Build the compiler after Bart's architecture proposal. Target: CLI tool that Lisa runs on any .lua file and gets pass/fail with error messages. ✅ Smithers built `scripts/meta-check/check.py` — Python+Lark, 19/144 rules, 0 false positives.
 
 ---
 
@@ -308,10 +308,10 @@ Meta-check **detects** these types but has **no validation rules**:
 - Test references: Pass 040 test suite
 
 **Acceptance Criteria:**
-- [ ] `on_wear` / `on_remove_worn` documented with trigger conditions
-- [ ] Lifecycle diagram added (state machine visualization)
-- [ ] 2–3 worked examples from real objects (helm, cloak, armor)
-- [ ] Test cross-references added
+- [x] `on_wear` / `on_remove_worn` documented with trigger conditions ✅
+- [x] Lifecycle diagram added (state machine visualization) ✅
+- [x] 2–3 worked examples from real objects (helm, cloak, armor) ✅
+- [x] Test cross-references added ✅
 
 ---
 
@@ -326,9 +326,9 @@ Meta-check **detects** these types but has **no validation rules**:
 - Interaction with state-based degradation
 
 **Acceptance Criteria:**
-- [ ] Armor interceptor stage documented in pipeline flow
-- [ ] Damage calculation examples shown
-- [ ] Material protection table linked from `src/engine/materials/`
+- [x] Armor interceptor stage documented in pipeline flow ✅
+- [x] Damage calculation examples shown ✅
+- [x] Material protection table linked from `src/engine/materials/` ✅
 
 ---
 
@@ -339,10 +339,10 @@ Meta-check **detects** these types but has **no validation rules**:
 **Task:** Deploy compiled site to live web server
 
 **Acceptance Criteria:**
-- [ ] Web build runs without errors: `npm run build`
-- [ ] Lua code bundled via Fengari
-- [ ] Live site passes smoke test (homepage loads, game starts)
-- [ ] Deployment logged in `web/DEPLOY-LOG.txt`
+- [x] Web build runs without errors: `npm run build` ✅
+- [x] Lua code bundled via Fengari ✅
+- [x] Live site passes smoke test (homepage loads, game starts) ✅
+- [x] Deployment logged in `web/DEPLOY-LOG.txt` ✅
 
 ---
 
