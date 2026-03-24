@@ -335,6 +335,25 @@
 | Text/Display | BUG-001,020,023 | Text wrapping, capitalization, Unicode encoding |
 | Verb Parsing Edge Cases | BUG-034 | "put out" treated as PUT instead of phrasal extinguish |
 
+### 2026-03-25: meta-check Tool Validation (P0-B Step 2)
+
+**What I tested:** Smithers' `scripts/meta-check/check.py` v1.0 against all 103 meta files (83 objects, 7 rooms, 13 others). Validated against my 144 acceptance criteria in `docs/meta-check/acceptance-criteria.md`.
+
+**Results:**
+- 0 errors on valid production files (no false positives)
+- 137 warnings (136 keyword overlap XF-03 + 1 missing description S-11)
+- 3 false-negative tests all caught correctly (missing on_feel, bad GUID, bad FSM refs)
+- JSON output valid and parseable
+- 19 of 144 checks implemented (13% coverage)
+
+**Key findings:**
+- The tool is solid for what it covers — zero false positives, zero crashes on all 103 files
+- 4 severity discrepancies vs. spec (S-11 and MAT-01 too lenient, XF-03 and S-09 too strict)
+- Empty string values not treated as missing (SN-03 gap)
+- 125 checks still missing — biggest gaps: template-specific validation, room exit/instance checks, mutation validation, composite parts, effects pipeline, level definitions, lint rules
+
+**Verdict:** PASS WITH NOTES. Strong V1 foundation. Report at `test-pass/2026-03-25-meta-check-validation.md`.
+
 ### Objects Most Likely to Break
 
 1. **Nightstand** (5 bugs) — composite detach/reattach + surfaces + state leakage

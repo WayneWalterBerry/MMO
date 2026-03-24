@@ -1122,6 +1122,34 @@ Due to BUG-067 and BUG-068 hangs, could NOT complete:
 - ⚠️ 'search for nightstand' — context-dependent (works after finding)
 - ❌ BUG-073: 'search the room' interprets "the room" as object name (should → 'search around')
 
+## 2026-03-25: P0-A Step 5 — Verb Refactor Verification
+
+**Focus**: Verify Bart's split of `verbs/init.lua` (5,884 → 36 lines) into 12 modules.
+
+**Module Structure Confirmed (13 files):**
+- `init.lua` (36-line thin registry) — requires and registers all modules
+- `helpers.lua`, `sensory.lua`, `acquisition.lua`, `containers.lua`, `destruction.lua`
+- `fire.lua`, `combat.lua`, `crafting.lua`, `equipment.lua`, `survival.lua`
+- `movement.lua`, `meta.lua`
+
+**Full Test Suite Results:**
+- **100/100 test files ran** — exit code 0
+- **2,670 total assertions** across all files
+- **2,666 passed / 4 failed**
+- Final banner: `RESULT: All 100 test file(s) PASSED`
+
+**4 Failures — PRE-EXISTING (not caused by refactor):**
+- All 4 in `test/search/test-search-spatial.lua`, section "3. SEARCH DOESN'T CHANGE CONTAINER STATE (#24)"
+- Tests: wardrobe/nightstand/chest stay closed after search → all expect `false`, get `true`
+- **Verified pre-existing**: Ran same test against commit `3d0b7a9` (pre-refactor) — identical 4 failures
+- These are Issue #24 bugs in the search system, unrelated to verb handlers
+
+**Smoke Tests:**
+- `echo "look" | lua src/main.lua --headless` → ✅ Room description renders correctly
+- `echo "feel nightstand" | lua src/main.lua --headless` → ✅ Tactile response + surface contents
+
+**Verdict: REFACTOR VERIFIED ✅** — Zero regressions introduced by the verb module split.
+
 ---
 
 ## 2026-03-23: Wave 3 — Pass 039 Validation Sprint

@@ -1,9 +1,10 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-24T17:20:00Z  
+**Last Updated:** 2026-03-24T17:35:00Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
-**New Decisions:** D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION, D-BRASS-BOWL-KEYWORD-REMOVAL, D-EMBEDDED-PRESENCES, D-OPEN-CLOSE-HOOKS, D-P1-PARSER-CLUSTER
+**Latest Merge (2026-03-24T17:35:00Z):** D-ENGINE-REFACTORING-REVIEW, D-META-CHECK-V1-APPROVAL, D-WAYNE-CODE-REVIEW-DIRECTIVE, D-WAYNE-METACOMPILER-COMPILER-LINTER, D-WAYNE-TDD-REFACTORING-DIRECTIVE  
+**Previous Decisions:** D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION, D-BRASS-BOWL-KEYWORD-REMOVAL, D-EMBEDDED-PRESENCES, D-OPEN-CLOSE-HOOKS, D-P1-PARSER-CLUSTER
 
 ---
 
@@ -666,6 +667,129 @@ This is NOT about adding an LLM to the parser — it's about building smarter NL
 10. **Failure Is a Signal, Not Silence** — Say why, what unblocks, who acts next.
 
 **Operating Principle:** "If a human has to remind the squad twice, the system is misconfigured."
+
+---
+
+### D-WAYNE-CODE-REVIEW-DIRECTIVE (2026-03-24T07-28-58Z)
+**Author:** Wayne Berry (via Copilot)  
+**Status:** Proposed (awaiting approval on sequencing)  
+
+**Directive:** Execute a senior engineering code review of engine .lua files, especially those >500 lines. Evaluate whether files should be split into separate modules. Consider:
+- Logical divides between responsibilities
+- Impact on LLM context windows when editing individual files
+- Test coverage opportunities for extracted functions
+- Refactoring timing relative to meta-check tool development
+
+**Related Decision:** D-ENGINE-REFACTORING-REVIEW (Bart's analysis, below)
+
+---
+
+### D-WAYNE-METACOMPILER-COMPILER-LINTER (2026-03-24T08-52-50Z)
+**Author:** Wayne Berry (via Copilot)  
+**Status:** Approved  
+
+**Directive:** meta-check must be BOTH a semantic analyzer (compiler front-end: parse, tokenize, validate structure/references/FSM) AND a linter (style conventions, naming patterns, field ordering, documentation requirements). Not just "is this valid Lua" — also "does it follow our conventions?"
+
+**Rationale:** LLMs writing objects need correctness checks AND style enforcement. Lisa uses it as a quality gate.
+
+**Implementation Notes (resolved):**
+- **Name:** meta-check ✅
+- **Language:** Python + Lark ✅
+- **Location:** scripts/meta-check/ ✅
+- **Refactor vs meta-check:** Can run in parallel (independent) ✅
+- **Deploy first:** Yes — before Phase 2 work ✅
+
+---
+
+### D-WAYNE-TDD-REFACTORING-DIRECTIVE (2026-03-24T07-34-02Z)
+**Author:** Wayne Berry (via Copilot)  
+**Status:** Approved  
+
+**Directive:** TDD-First mandate — before refactoring ANY engine code (splitting files, moving functions), must follow TDD:
+1. Write tests for existing behavior FIRST
+2. Verify tests pass (green baseline)
+3. Refactor code
+4. Re-run tests to confirm no breakage
+
+**Rationale:** Refactoring without tests introduces silent regressions. Tests are the safety net.
+
+**Application:** P0-A refactoring (`verbs/init.lua` split into 12 modules) followed this pattern. Nelson verified 2,666 assertions pass post-refactoring.
+
+---
+
+### D-ENGINE-REFACTORING-REVIEW
+**Author:** Bart (Architect)  
+**Date:** 2026-03-24  
+**Status:** Completed  
+**Affects:** All engine files >500 lines, especially `src/engine/verbs/init.lua`
+
+**Summary:** Senior code review of all engine files >500 lines. Analysis in `docs/architecture/engine/refactoring-review.md`.
+
+**Key Decisions:**
+
+1. **`verbs/init.lua` (5,884 lines): SPLIT into 12 files** — 1 registry (`init.lua` ~80 lines), 1 shared helpers module (`helpers.lua` ~650 lines), 10 verb category modules (sensory, acquisition, containers, destruction, fire, combat, crafting, equipment, survival, movement, meta). Each verb module exports a `register(handlers)` function. LLM context reduction: 74-84% per edit. ✅ **SHIPPED**
+
+2. **`preprocess.lua` (1,059 lines): SPLIT into 3 files (P2)** — core, transforms, patterns. Low urgency — file is well-organized and independently tested.
+
+3. **`traverse.lua` (871 lines): KEEP as-is** — high internal cohesion, single FSM, no split value.
+
+4. **`goal_planner.lua` (848 lines): SPLIT into 2 files (P3)** — queries vs planner. Low urgency unless file grows further.
+
+5. **`loop/init.lua` (585 lines): KEEP as-is** — safety barrier ordering is critical, size reflects genuine complexity.
+
+6. **Sequencing: Refactor BEFORE meta-compiler (original plan)** — BUT reversed based on feedback: **meta-check ships independently**, refactoring verified via TDD afterward. No timing impact — both P0 items complete in parallel.
+
+7. **Utility deduplication prerequisite:** `strip_articles()`, `kw_match()`/`matches_keyword()`, and hand accessors are duplicated across 3+ files. Centralize before any split (30-minute task, zero behavioral risk).
+
+**Blockers Resolved:**
+- ✅ Nelson completed pre-refactoring TDD tests for all 12 modules (2,670 assertions)
+- ✅ Refactoring completed with zero regressions
+- ✅ Utility deduplication completed
+
+**Estimated effort (completed):** 18-22 hours total — Bart + Nelson. ✅ SHIPPED
+
+---
+
+### D-WAYNE-META-CHECK-SCOPE-EXPANSION (2026-03-24T17-40-46Z)
+**Author:** Wayne Berry (via Copilot)  
+**Status:** New — Captured for March 25 plan  
+
+**Directive:** meta-check must expand beyond objects + rooms to cover ALL meta types:
+- Levels (level-01.lua, level-02.lua, etc.)
+- Injuries (types and configurations)
+- Templates (templates/ base definitions)
+
+**Rationale:** User request to broaden validation scope for complete object system coverage.
+
+**Impact:** Expands meta-check roadmap. Will be included in V2+ expansion (rules 20-144+).
+
+---
+
+### D-META-CHECK-V1-APPROVAL
+**Author:** Lisa (Object Testing Specialist)  
+**Date:** 2026-03-25  
+**Status:** Approved for use  
+**Affects:** Smithers (parser/tools), Nelson (QA), Flanders (object design)
+
+**Decision:** meta-check V1 is APPROVED for use — it correctly validates 19 checks with zero false positives. Covers only 13% of acceptance criteria (19/144), but sufficient for current object set.
+
+**Validation Results:**
+- 103 object files tested
+- 0 errors, 0 false positives
+- 3/3 planted defects caught (100%)
+- 19 rules implemented correctly
+
+**Action Items for Smithers:**
+1. Fix severity discrepancies: S-11 → ERROR, MAT-01 → ERROR, XF-03 → INFO
+2. Add empty-string detection: `on_feel = ""` flagged as missing
+3. Priority checks to expand next: Template-specific (SI/CT/FU/SH), FSM completeness (FSM-02/03/05-08), room instance/exit checks (RI/EX)
+
+**Impact:**
+- ✅ Nelson can start using meta-check in CI for 19 implemented checks
+- ⏳ Flanders should be aware template-specific validation is NOT yet enforced
+- ⏳ Tool will not catch missing size/weight on small-items, missing capacity on containers, or broken room references until those checks ship (meta-check V2, ~3-5 hours)
+
+**Confidence:** MODERATE — V1 correct but incomplete. Full 144-rule coverage queued for Phase 2.
 
 ---
 
