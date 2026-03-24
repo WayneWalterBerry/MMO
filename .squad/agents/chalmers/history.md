@@ -233,3 +233,47 @@ Frink completed PWA + Wasmoon prototype research. Key impact on parser plan:
 - Full list in `temp/plan-audit-2026-03-24.md`
 
 **Assessment:** March 24 was highly productive — armor system, on_drop, brass spittoon, event_output, 25+ bug fixes all shipped. The gaps are docs, deploy, newspaper, and a CI test. No critical feature work left on the floor.
+
+---
+
+### 2026-03-25: Daily Plan Update & Carry-Over Integration
+**Status:** ✅ COMPLETE  
+**Task:** Flesh out March 25 daily plan with carry-over from March 24, process rules, P0 review, P1/P2 prioritization
+
+**Approach:**
+1. Catalogued shipped work from March 24: 12 major features, 14+ bug fixes → 63 closed issues
+2. Identified carry-over gaps: 6 items deferred (deploy, newspaper, 2 docs, 1 design, 1 CI test)
+3. Structured plan with three priority tiers:
+   - **P0:** Two urgent items (engine code review + meta-compiler) — must ship today
+   - **P1:** Four carry-over fixes (deploy, docs, newspaper hold status)
+   - **P2:** Design work + backlog triage (21 open issues, low-urgency)
+4. Embedded Wayne's TDD-First directives + refactoring safety sequence (D-REFACTOR)
+5. Built dependencies graph showing blockers and sequencing
+6. Listed 4 open questions for Wayne (sequencing, tool decisions, deploy timing, newspaper hold)
+
+**Key Planning Insights Documented:**
+- **P0-A complexity:** verbs/init.lua is 5,817 lines; refactoring sequence matters (before or after meta-compiler?)
+- **P0-B research-first:** 5 research questions must be answered before design docs (bug catalog, Lark grammar test, Lisa's wishlist, cross-ref inventory, existing validation audit)
+- **TDD safety sequence:** Refactoring WITHOUT test coverage violates Wayne's directive D-REFACTOR; test baseline must come first
+- **Deploy blocker:** March 24 code isn't live; #158 needs approval + manual gate (Gil responsible)
+- **Meta-check as quality gate:** Once shipped, can become CI blocker for all new objects/rooms (enforces schema compliance)
+
+**Carry-Over Summary:**
+- Shipped 12 major features + 1,088 tests pass
+- 6 incomplete items now tracked with GitHub issues
+- 3 docs updates queued for P1 (event-hooks, effects-pipeline, newspaper hold clarification)
+- Backlog triage: 21 open issues waiting for P0 completion before prioritization
+
+**Risks Identified:**
+1. **High:** Refactoring without test baseline (new code could break) → Mitigated by D-REFACTOR sequencing
+2. **Medium:** P0-B design doc delays → Mitigated by pre-research questions (research 30 min, docs 1 hr, build 2–3 hr)
+3. **Medium:** Deploy gate manual vs. automated → Affects rollback ease if issues surface
+
+**Next Steps for Team:**
+1. Wayne confirms 4 open questions (sequencing, tool details, deploy timing, newspaper hold)
+2. Bart begins P0-A code review immediately
+3. Frink begins P0-B research (bug catalog, Lark prototype) in parallel
+4. Nelson prepares test coverage audit for functions Bart will recommend splitting
+5. Brockman blocks on P0-B design doc approval before writing docs
+
+**Confidence:** HIGH (85%) — Process rules clear, carry-over catalogued, research questions specific, dependencies explicit.
