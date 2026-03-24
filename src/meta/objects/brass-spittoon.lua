@@ -8,7 +8,7 @@ return {
     id = "brass-spittoon",
     material = "brass",
     name = "a brass spittoon",
-    keywords = {"spittoon", "brass spittoon", "brass bowl", "cuspidor", "spit bowl",
+    keywords = {"spittoon", "brass spittoon", "cuspidor", "spit bowl",
                 "helmet", "improvised helmet"},
     room_presence = "A dull brass spittoon sits on the floor, doing its best to be ignored.",
     description = "A wide-mouthed brass spittoon, the kind once found in every saloon and gentleman's club. The rim is rolled outward for stability, the bowl deep enough to serve its unsavoury purpose. Years of tarnish have dulled the brass to a mottled brown-gold, but the metal is solid and heavy — built to survive being kicked, dropped, and worse.",
