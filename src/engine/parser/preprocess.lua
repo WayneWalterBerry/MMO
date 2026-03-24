@@ -73,6 +73,7 @@ local BODY_PARTS = {
     arm = true, arms = true, leg = true, legs = true,
     hand = true, hands = true, foot = true, feet = true,
     shoulder = true, shoulders = true, waist = true, torso = true,
+    stomach = true, belly = true, gut = true, chest = true, side = true,
 }
 
 ---------------------------------------------------------------------------
@@ -272,6 +273,10 @@ local function strip_decorative_prepositions(text)
     -- "as a/an WORD" (manner descriptor: "as a hat", "as a mask")
     text = text:gsub("%s+as%s+an?%s+%S+$", "")
 
+    -- #145: "in the BODYPART" (e.g., "in the face", "in the gut")
+    local in_prefix, in_part = text:match("^(.+)%s+in%s+the%s+(%S+)$")
+    if in_prefix and BODY_PARTS[in_part] then return in_prefix end
+
     -- "in the mirror/reflection" (reflective surface)
     text = text:gsub("%s+in%s+the%s+mirror$", "")
     text = text:gsub("%s+in%s+mirror$", "")
@@ -312,6 +317,11 @@ end
 local IDIOM_TABLE = {
     { pattern = "^set%s+fire%s+to%s+(.+)$",        replacement = "light %1" },
     { pattern = "^put%s+down%s+(.+)$",              replacement = "drop %1" },
+    -- #138: "put X down" → "drop X" (word order variant)
+    { pattern = "^put%s+(.+)%s+down$",              replacement = "drop %1" },
+    -- #140: "set X down" / "set down X" → "drop X"
+    { pattern = "^set%s+down%s+(.+)$",              replacement = "drop %1" },
+    { pattern = "^set%s+(.+)%s+down$",              replacement = "drop %1" },
     { pattern = "^blow%s+out%s+(.+)$",              replacement = "extinguish %1" },
     { pattern = "^have%s+a%s+look%s+at%s+(.+)$",    replacement = "examine %1" },
     { pattern = "^take%s+a%s+look%s+at%s+(.+)$",    replacement = "examine %1" },
@@ -698,6 +708,22 @@ local function transform_compound_actions(text)
     local first_word = text:match("^(%S+)")
     if first_word and HIT_SYNONYMS[first_word] then
         return "hit" .. text:sub(#first_word + 1)
+    end
+
+    -- #144: "hurt X" → "hit X" (abstract pain phrases)
+    local hurt_target = text:match("^hurt%s+(.+)$")
+    if hurt_target then
+        return "hit " .. hurt_target
+    end
+
+    -- #144: "beat X up" / "beat up X" → "hit X"
+    local beat_up_target = text:match("^beat%s+(.+)%s+up$")
+    if beat_up_target then
+        return "hit " .. beat_up_target
+    end
+    local beat_up_target2 = text:match("^beat%s+up%s+(.+)$")
+    if beat_up_target2 then
+        return "hit " .. beat_up_target2
     end
 
     -- #143: headbutt always targets head

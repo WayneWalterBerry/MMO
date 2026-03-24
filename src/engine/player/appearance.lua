@@ -13,6 +13,8 @@ local appearance = {}
 
 --- Combine phrases into natural English with Oxford comma.
 --- Deduplicates identical phrases (Issue #31: duplicate bruise text).
+--- #156: Strips trailing periods from each phrase before joining to prevent
+--- comma splices like "your head., a deep bruise".
 local function compose_natural(phrases)
     -- Deduplicate identical phrases (Issue #31: duplicate bruise text)
     local seen = {}
@@ -24,6 +26,11 @@ local function compose_natural(phrases)
         end
     end
     phrases = unique
+
+    -- #156: Strip trailing periods from each phrase before joining
+    for i, p in ipairs(phrases) do
+        phrases[i] = p:gsub("[%.]+$", "")
+    end
 
     if #phrases == 0 then return nil end
     if #phrases == 1 then return phrases[1] end

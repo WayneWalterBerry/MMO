@@ -2817,11 +2817,34 @@ function verbs.create()
     handlers["drop"] = function(ctx, noun)
         if noun == "" then print("Drop what?") return end
 
+        -- #139: "drop all" / "drop everything" — bulk drop all held items
+        local kw_raw = noun:lower()
+            :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+        if kw_raw == "all" or kw_raw == "everything" then
+            local dropped_any = false
+            for i = 1, 2 do
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local held_obj = _hobj(hand, ctx.registry)
+                    if held_obj then
+                        ctx.player.hands[i] = nil
+                        ctx.current_room.contents[#ctx.current_room.contents + 1] = held_obj.id
+                        held_obj.location = ctx.current_room.id
+                        print("You drop " .. (held_obj.name or held_obj.id) .. ".")
+                        dropped_any = true
+                    end
+                end
+            end
+            if not dropped_any then
+                print("You aren't holding anything.")
+            end
+            return
+        end
+
         -- Only drop items directly in hands (not bag contents or worn)
         local obj = nil
         local hand_slot = nil
-        local kw = noun:lower()
-            :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+        local kw = kw_raw
         for i = 1, 2 do
             local hand = ctx.player.hands[i]
             if hand then
@@ -2835,12 +2858,27 @@ function verbs.create()
         end
 
         if not obj then
-            -- Check if it's in a bag -- give a helpful message
-            local bag_item = find_in_inventory(ctx, noun)
-            if bag_item then
-                print("You'll need to get that out of the bag first, or drop the bag itself.")
+            -- #137: Check if it's a worn item — give appropriate message
+            local kw_check = noun:lower()
+                :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+            local is_worn = false
+            for _, worn_id in ipairs(ctx.player.worn or {}) do
+                local worn_obj = ctx.registry and ctx.registry:get(worn_id)
+                if worn_obj and matches_keyword(worn_obj, kw_check) then
+                    is_worn = true
+                    break
+                end
+            end
+            if is_worn then
+                print("You're wearing that. You'll need to remove it first.")
             else
-                print("You aren't holding that.")
+                -- Check if it's in a bag -- give a helpful message
+                local bag_item = find_in_inventory(ctx, noun)
+                if bag_item then
+                    print("You'll need to get that out of the bag first, or drop the bag itself.")
+                else
+                    print("You aren't holding that.")
+                end
             end
             return
         end
