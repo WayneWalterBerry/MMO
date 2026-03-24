@@ -29,7 +29,19 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
-### Recent Work: Manifest Completion (2026-03-24)
+### Recent Work: #149 Drawer Accessibility Fix (2026-03-28)
+
+**#149 TDD Bug Fix — Search Drawer Items Not Accessible to Get:**
+- Root cause: `_fv_surfaces` in `verbs/init.lua` never searched root-level contents of objects with surfaces
+- Nightstand has `.surfaces.top` but drawer lives in `.contents` (not any surface zone)
+- `_fv_surfaces` had two branches: (1) search surface zones, (2) search non-surface containers — neither reached `nightstand.contents`
+- Fix: Added recursive `_search_accessible_chain` inside `_fv_surfaces` that traverses root contents of surface-objects, following `accessible ~= false` through nested containers (depth-limited to 3)
+- TDD: 9 tests in `test/search/test-drawer-accessibility.lua` — 3 were red before fix
+- Wardrobe→sack regression test passes (surface-based path unchanged)
+- Zero regressions across full test suite
+- Commit: 222a4f3
+
+### Prior Work: Manifest Completion (2026-03-24)
 
 **#78 P0 Game Crash Fix:**
 - Diagnosed crash in `flatten_instances()` during multi-room loading
@@ -75,6 +87,14 @@
 - `history-archive-2026-03-20T22-40Z-bart.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): engine foundation, verb system, parser pipeline, SLEEP, wearables, FSM engine, composite objects, spatial system, multi-room engine, GOAP Tier 3, terminal UI, timed events, 32+ bug fixes across 7 passes
 
 ## Learnings
+
+### find_visible Must Mirror Container Nesting Depth (2026-03-28)
+- The search system (`traverse.lua`) correctly opens all containers recursively during search
+- But `_fv_surfaces` in `verbs/init.lua` only searched surface zone contents — NOT root-level contents of objects with surfaces
+- Objects like nightstand have BOTH surfaces (`.top`) AND root contents (drawer in `.contents`)
+- The root contents path was invisible to `get`/`take` because `_fv_surfaces` had `not obj.surfaces` guard on the non-surface container branch
+- Fix: recursive `_search_accessible_chain` traverses root contents following `accessible` flag, matching search system's depth (3 levels)
+- Lesson: any function that resolves visible/reachable objects must mirror the containment model depth
 
 ### Material Consistency Principle (2026-03-27)
 - The material registry `src/engine/materials/init.lua` already exists as a complete property-bag system, making Material Consistency a natural fit as a core principle
