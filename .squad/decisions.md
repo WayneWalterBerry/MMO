@@ -1,10 +1,41 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-24T17:35:00Z  
+**Last Updated:** 2026-03-24T17:50:00Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
-**Latest Merge (2026-03-24T17:35:00Z):** D-ENGINE-REFACTORING-REVIEW, D-META-CHECK-V1-APPROVAL, D-WAYNE-CODE-REVIEW-DIRECTIVE, D-WAYNE-METACOMPILER-COMPILER-LINTER, D-WAYNE-TDD-REFACTORING-DIRECTIVE  
-**Previous Decisions:** D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION, D-BRASS-BOWL-KEYWORD-REMOVAL, D-EMBEDDED-PRESENCES, D-OPEN-CLOSE-HOOKS, D-P1-PARSER-CLUSTER
+**Latest Merge (2026-03-24T17:50:00Z):** D-CONTAINER-SENSORY-GATING  
+**Previous Decisions:** D-ENGINE-REFACTORING-REVIEW, D-META-CHECK-V1-APPROVAL, D-WAYNE-CODE-REVIEW-DIRECTIVE, D-WAYNE-METACOMPILER-COMPILER-LINTER, D-WAYNE-TDD-REFACTORING-DIRECTIVE, D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION, D-BRASS-BOWL-KEYWORD-REMOVAL, D-EMBEDDED-PRESENCES, D-OPEN-CLOSE-HOOKS, D-P1-PARSER-CLUSTER
+
+---
+
+## SENSORY & CONTAINER INTERACTION (2026-03-24)
+
+### D-CONTAINER-SENSORY-GATING
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-24  
+**Status:** Implemented  
+**Issue:** #100
+
+Container contents are now gated by FSM open/closed state for sensory verbs:
+
+| Sense | Closed Container | Open Container |
+|-------|-----------------|----------------|
+| LOOK inside | Blocked — "is closed" | Shows contents |
+| FEEL inside | Blocked — "is closed" | Feel contents |
+| SEARCH | Blocked — "is closed" | Searches normally |
+| SMELL | Passes through | Works |
+| LISTEN | Passes through | Works |
+
+**Transparent exception:** Closed transparent containers still allow LOOK (visual), but block FEEL (tactile).
+
+**Key Constraint:** Gating uses ONLY `_state` (FSM state field). Objects with `open = false` but no FSM are NOT gated. This prevents false blocking on containers like the matchbox that use `is_open = false` as a search-system marker without intending sensory blocking.
+
+**Affected Team Members:**
+- **Flanders** (Object definitions): New containers that should block sensory access MUST have FSM states with "closed"/"open" in the state names. Objects without `_state` are treated as sensory-accessible.
+- **Bart** (Engine): The `container_contents_accessible()` helper in `helpers.lua` is the single source of truth for this check.
+- **Nelson** (QA): 18 new tests in `test/verbs/test-container-sensory-gating.lua`.
+
+**Verification:** 18 tests passing, 103 files green.
 
 ---
 

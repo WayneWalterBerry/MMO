@@ -1493,3 +1493,20 @@ All 6 mirror bugs are now FIXED. The 4 previously expected-fail tests in `test-m
 
 **Status:** Phase D3+F2+F3 SHIPPED. All carry-over bugs verified passing.
 
+### Material Audit CI Test (#163) (2026-07-16)
+
+**Status:** ✅ COMPLETE — 6/6 tests pass
+
+Wrote `test/objects/test-material-audit.lua` — structural CI gate that prevents material regressions.
+
+**What it checks:**
+- Every `.lua` file in `src/meta/objects/` loads successfully
+- Every object declares a `material` field (string type)
+- Every material value exists in `src/engine/materials/init.lua` registry
+- Registry sanity (10+ materials present)
+
+**Results:** 83/83 objects scanned, 23 materials in registry, all valid.
+
+**Pattern:** Followed `test-object-templates.lua` structural test pattern (file discovery → load → field validation → registry cross-check). Already picked up by `test/run-tests.lua` via the `test/objects/` directory scan.
+
+**Note:** Pre-existing failure in `injuries/test-weapon-pipeline.lua` ("dagger stab damage is 8") — unrelated to this change.

@@ -47,6 +47,14 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+### 2026-03-27: Issue #100 — Container sensory gating
+
+**What shipped:** Implemented FSM-based sensory gating for containers. Look/feel/search are now blocked when a container's `_state` doesn't contain "open". Smell and listen pass through (smells leak, sounds travel). Transparent containers still allow visual access when closed. 18 new tests, zero regressions across 103 test files.
+
+**Key learning:** Only gate on FSM `_state`, NOT on `open`/`is_open` flags. Some objects (matchbox) use `is_open = false` as a search-system marker without intending to block sensory access. The `container_contents_accessible()` helper correctly checks only `_state` — enhancing it to also check `open`/`is_open` caused false gating on matchbox and similar non-FSM containers.
+
+**Files changed:** `src/engine/verbs/sensory.lua`, `test/verbs/test-container-sensory-gating.lua`
+
 ### 2026-03-27: Meta-Check CLI build
 
 **What shipped:** Created `scripts/meta-check/check.py` using Bart’s Lark grammar. Implemented required-field/type checks, GUID/material validation, FSM state consistency, and cross-file GUID/keyword collision detection with text/JSON output.

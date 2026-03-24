@@ -252,3 +252,45 @@
 
 ### Decision Updated
 - **D-WAYNE-DIRECTIVE-DESIGN-DOCS:** Design docs should NOT document bug fixes; capture design principles instead
+
+### Session: Documentation Update — Issues #160 & #161 (2026-03-28T14:00Z)
+**Status:** ✅ COMPLETED
+**Outcome:** Two documentation issues fixed with comprehensive armor interceptor and equipment hook documentation
+
+**Files Updated:**
+1. `docs/architecture/engine/effects-pipeline.md`
+   - Updated version from 2.0 to 3.0
+   - Added Section 4.3: Armor Interceptor — Material-Derived Protection (SHIPPED)
+   - Documented core protection formula: `actual_damage = max(1, incoming - protection)`
+   - Documented protection calculation including: hardness (1.0×), flexibility (1.0×), density (0.5×)
+   - Documented fit multipliers: makeshift 0.5×, fitted 1.0× (default), masterwork 1.2×
+   - Documented degradation state multipliers: intact 1.0×, cracked 0.7×, shattered 0.0×
+   - Documented location coverage via explicit `covers` array or `wear.slot` matching
+   - Documented degradation transition formula: `break_chance = fragility × (damage / 20) × impact_factor`
+   - Documented impact factors: piercing 0.5×, slashing 1.0×, blunt 1.5×
+   - Referenced actual implementation at `src/engine/armor.lua`
+   - Renamed section 4.4 to 4.5 (Interceptor Ordering)
+
+2. `docs/architecture/engine/event-hooks.md`
+   - Updated Section 2.2 table (Currently Active Hooks) to fix implementation location references:
+     - `on_drop`: corrected to `acquisition.lua` (was `verbs/init.lua`)
+     - `on_wear`: corrected to `equipment.lua` (was `verbs/init.lua`)
+     - `on_remove_worn`: corrected to `equipment.lua` (was `verbs/init.lua`)
+     - `on_open`: corrected to `containers.lua` (was `verbs/init.lua`)
+     - `on_close`: corrected to `containers.lua` (was `verbs/init.lua`)
+   - Updated Section 11.3 Implementation Location: removed stale line number references, emphasized file organization
+   - Updated Section 12.5 Dispatch Points table: added `on_open` and `on_close`, corrected file references to match refactored verb handlers
+
+**GitHub Issues Closed (via comment, not automated):**
+- Issue #160: "Update event-hooks.md — add on_drop hook + equipment category" → DOCUMENTED
+- Issue #161: "Update effects-pipeline.md to v3.0 — document armor interceptor" → DOCUMENTED
+
+**Testing:**
+- All 101 tests pass (0 regressions)
+- Documentation changes verified to not break any gameplay systems
+
+**Key Insights:**
+- **Refactored verb system:** When verbs are split from `verbs/init.lua` into dedicated files (`equipment.lua`, `acquisition.lua`, `containers.lua`), documentation must be updated to reflect the new file structure. References like "line 5011" become outdated immediately.
+- **Armor interceptor is high-value documentation:** Material-derived protection values, degradation model, and fit multipliers are complex mechanics that warrant detailed section treatment. Breaking it into subsections (calculation, location coverage, degradation, narration) improves readability.
+- **One-shot pattern (event_output) is a good teaching example:** The pattern of "print text, then nil the field" is elegant and worth documenting as a DATA pattern alternative to callbacks. Content authors can use this for first-time flavor text without writing Lua functions.
+- **Precision in file paths matters:** When documentation lists implementation locations, keep them current as code reorganizes. The effect.pipeline.md example of armor shows how important it is to reference actual, working code paths.

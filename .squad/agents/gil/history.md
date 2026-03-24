@@ -11,6 +11,28 @@
 
 ## Learnings
 
+### 2026-03-24: Deploy — Issue #158 — March 24 feature batch
+- **Timestamp:** 2026-03-24T10:49Z
+- **Status:** ✅ COMPLETE — Deployed to GitHub Pages
+- **Pages commit:** `fdd7cad` (main branch, 16 files changed, +6906 −5237 lines)
+- **Engine bundle:** 152.3 KB compressed (975.4 KB raw), 41 engine files + 1 asset file
+- **Meta files:** 103 total (83 objects (+0 new vs last known 83), 7 rooms, 5 templates, 1 level, 7 injuries)
+- **Cache-bust stamp:** `20260324104941` stamped into `bootstrapper.js` and `index.html`
+- **Total files deployed:** 108
+- **Tests:** 101/101 passed before build
+- **What shipped:**
+  - Armor system (material-derived protection)
+  - Equipment event hooks (on_wear, on_remove_worn)
+  - Event_output one-shot flavor text
+  - P1 parser bug cluster fixes (7 issues)
+  - Hit synonym cluster fixes
+  - Verb refactor (verbs/init.lua split into 12 modules)
+  - Object fixes (ceramic pot degradation, cloak tear, keyword collision)
+- **Deploy method:** Used `web/deploy.ps1` — clean run, LF/CRLF warnings but no errors
+- **Verification:** All 3 key files confirmed on GitHub API (bootstrapper.js, engine.lua.gz, game-adapter.lua). Live site loads at https://waynewalterberry.github.io/play/
+- ⚠️ Engine bundle grew from 140 KB → 152.3 KB (+12.3 KB) — verb refactor split into 12 modules added file overhead. Worth watching if it keeps growing.
+- ⚠️ Engine file count jumped from 28 → 41 (+13) due to the verb refactor splitting verbs/init.lua into 12 separate module files. This is expected.
+
 ### 2026-03-22: Onboarding
 - Joined the team. Previous deploys were handled by Smithers — taking over that responsibility.
 - The web build has two steps: `web/build-engine.ps1` (engine bundle) and `web/build-meta.ps1` (meta files by GUID).
