@@ -203,3 +203,33 @@ Frink completed PWA + Wasmoon prototype research. Key impact on parser plan:
 **Next Wave Targets Identified:**
 - Phase 3+ expansion: NPC systems, dialogue routing, extended map
 - Foundation assessment: ✅ Engine SOLID, Parser EXCELLENT, Objects VALIDATED
+
+### 2026-03-24: End-of-Day Plan Audit
+**Status:** ✅ COMPLETE  
+**Task:** Audit daily plans (Mar 22–24), identify incomplete items, file missing issues, compile open questions for Mar 25
+
+**Method:**
+- Read all `[ ]` items across 3 daily plans (~65 unchecked boxes)
+- Cross-referenced against: 128 closed issues, 29 open issues, 130+ git commits, filesystem deliverables
+
+**Findings:**
+- ~59 unchecked items were **done but checkboxes stale** (code committed, issues closed, files exist)
+- **6 genuinely incomplete items** had no tracking — all now have GitHub Issues
+- 5 items explicitly deferred by Wayne (puzzles, verb expansion, combat, self-infliction questions)
+
+**Issues Filed:**
+- #158: Deploy — March 24 work not on live site
+- #159: Newspaper — March 24 evening edition missing
+- #160: Docs — event-hooks.md needs on_drop + equipment category
+- #161: Docs — effects-pipeline.md needs armor interceptor (v3.0)
+- #162: Design — Injury-causing objects for unconsciousness triggers
+- #163: Test — Material audit CI test (every object needs valid material)
+
+**Open Questions for Mar 25 (13 total):**
+- P0-A sequencing: refactor verbs/init.lua before or after meta-compiler?
+- P0-B decisions: Python+Lark confirmed? Tool naming? Where does compiler live?
+- Deploy timing: ship Mar 24 before starting refactoring?
+- Backlog prioritization: 29 open issues, which carry into tomorrow?
+- Full list in `temp/plan-audit-2026-03-24.md`
+
+**Assessment:** March 24 was highly productive — armor system, on_drop, brass spittoon, event_output, 25+ bug fixes all shipped. The gaps are docs, deploy, newspaper, and a CI test. No critical feature work left on the floor.
