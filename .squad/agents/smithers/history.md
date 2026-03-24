@@ -540,3 +540,28 @@ Wayne requested Phase F1 carry-over bug fixes (#47, #49, #52, #53) using TDD. Up
 
 **Status:** Phase A4 SHIPPED. Carry-over bugs #47, #49, #52, #53 verified passing (Phase F1 SHIPPED).
 
+
+### 2026-03-24T13:29:17Z: Phase E - on_drop Event + Material Fragility Tests (#56)
+
+**Status:** COMPLETE - test/verbs/test-on-drop.lua created, 21/21 tests pass.
+
+**Context:** Phase E implementation (on_drop handler + fragility system) was already shipped in verbs/init.lua (lines 2831-2915). Bart's architecture doc (event-hooks.md) already recorded on_drop as Implemented. Existing test/verbs/test-drop-fragility.lua had 29 passing tests.
+
+**Deliverables:**
+- test/verbs/test-on-drop.lua created - 21 tests covering all Phase E acceptance criteria
+- Zero regressions in full test suite (1 pre-existing bedroom-door failure, unrelated)
+
+**Test Coverage (all 6 acceptance criteria):**
+1. Ceramic pot on stone floor - shatters, removed from room, 2 ceramic shards spawned + registered, hand cleared (5 tests)
+2. Brass key on stone floor - no shatter, clang narration, remains in room (3 tests)
+3. Glass wine-bottle on stone - shatters, removed from room (2 tests)
+4. Wooden stool - does not shatter, remains in room (1 test)
+5. Soft surfaces prevent shattering - fabric (carpet), wool (bed), cotton, wood floor all prevent shattering (4 tests)
+6. Fragility threshold boundary - bone 0.4 safe, ceramic on silver hardness-5 shatters, ceramic on wood hardness-4 safe, glass on stone shatters, default floor is stone (5 tests)
+7. event_output flavor text - one-shot on_drop text prints (1 test)
+
+**Key Findings:**
+21. Soft surface coverage gap: existing test-drop-fragility.lua only tested wood floor (hardness 4). New test adds fabric, wool, cotton floor materials for bed/carpet scenarios.
+22. Implementation was pre-existing: on_drop handler already fully implemented. This session was test-authoring only.
+
+**Full test suite:** 1 pre-existing failure (objects/test-bedroom-door-object.lua) - same as prior sessions, unrelated.
