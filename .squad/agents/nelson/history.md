@@ -48,6 +48,24 @@
 
 ## Recent Updates
 
+### Phase A5: Armor Interceptor Verification (2026-03-25)
+
+**Status:** ✅ PHASE A5 GATE PASSED
+
+**Standalone armor tests:** 30/30 PASS (`lua test/armor/test-armor-interceptor.lua`)
+- Baseline (no armor), basic protection, location targeting, material degradation
+- Layer stacking, fit quality, edge cases (minimum damage floor, unknown materials)
+- Armor module loads correctly
+
+**CI registration:** Added `test/armor/` to `test/run-tests.lua` test_dirs list.
+Commit: `e91f21e` — `test: register test/armor/ in run-tests.lua for CI coverage`
+
+**Full suite:** All test files pass except 1 pre-existing failure:
+- `objects/test-bedroom-door-object.lua` test #72: instance location nil vs expected "room"
+- Verified pre-existing (fails identically on main without my change) — NOT a regression
+
+**Verdict:** Smithers' armor interceptor is solid. Zero regressions introduced.
+
 ### Phase D3 + F2 + F3: Spittoon Tests & Bug Verification (2026-03-24)
 
 **Status:** ✅ ALL THREE TASKS COMPLETE
