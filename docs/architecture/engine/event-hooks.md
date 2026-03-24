@@ -1,7 +1,7 @@
 # Engine Event Hooks — Injury Pipeline Architecture
 
-**Version:** 2.0 (Updated for Implementation)  
-**Date:** 2026-07-22 (original) · Updated 2026-07-27  
+**Version:** 3.0 (Equipment Hooks + Event Output)  
+**Date:** 2026-07-22 (original) · Updated 2026-07-27 · Updated 2026-03-24  
 **Author:** Bart (Architect)  
 **Status:** Architecture Analysis + Implementation Record  
 **Requested by:** Wayne "Effe" Berry
@@ -43,6 +43,10 @@ This document analyzes how `.lua` object files hook into the engine to cause inj
 | `on_feel_effect` | Verb handler → **`effects.process()`** | ✅ Routes structured effect through pipeline | **Migrated** |
 | `effect` (on transition) | Verb handler → **`effects.process()`** | ✅ Routes structured effect through pipeline | **Migrated** |
 | `on_drop` (fragility) | `verbs/init.lua` drop handler | ✅ Material fragility check: shatters if fragility ≥ 0.5 AND surface hardness ≥ 5. Fires FSM break transition, spawns debris from `mutations.shatter.spawns`, removes original. Issue #56. | **Implemented** |
+| `on_wear` | `verbs/init.lua` wear handler | ✅ Fires when item is equipped (put on). Receives `(obj, ctx)`. Use cases: pot smell narration, cursed items, armor stat application. | **Implemented** |
+| `on_remove_worn` | `verbs/init.lua` remove handler | ✅ Fires when worn item is taken off. Receives `(obj, ctx)`. Use cases: curse resistance, stat removal, cleanup. | **Implemented** |
+| `on_equip_tick` | Game loop (future) | ❌ Designed, not implemented. Fires each turn while item is worn. Use cases: rust, warmth, curse effects. | **Planned** |
+| `event_output` | All event dispatch points | ✅ One-shot flavor text system. Objects declare `event_output = { on_wear = "text" }`. Engine prints text after event, then nils the key. DATA pattern, no callbacks. | **Implemented** |
 
 ### 2.3 How Objects Cause Injuries
 
@@ -472,6 +476,8 @@ effects.register("mutate", function(effect, ctx) ... end)
 | **Acquisition Trap** | FSM transition on `take` | Player picks up trapped object | Bear trap, cursed item | `trans.effect → effects.process() → injuries.inflict()` | ✅ **Shipped** |
 | **Duration/Tick** | `injuries.tick()` | Each game turn while injury active | Poison ticking, bleeding progression | `injuries.tick() → damage accumulation → state transitions` | Existing |
 | **Environmental** | `on_timer` hook (room-level) | Turn counter reaches threshold | Room on fire, flooding, freezing | `hook handler → effects.process() → injuries.inflict()` | Planned |
+| **Equipment** | `on_wear` / `on_remove_worn` callbacks | Player equips/unequips item | Armor stat application, pot smell, cursed items | `obj.on_wear(obj, ctx)` — object callback, per-object pattern | ✅ **Shipped** |
+| **Equipment Tick** | `on_equip_tick` callback | Each game turn while item worn | Rust, warmth drain, curse effects | `obj.on_equip_tick(obj, ctx)` — per-turn while worn | Planned |
 
 ### 6.2 Injury-Causing Hook Summary
 
@@ -483,6 +489,9 @@ effects.register("mutate", function(effect, ctx) ... end)
 | `on_traverse` | ✅ Implemented (independent) | Tripwire, collapsing passage | Future: route through pipeline |
 | `on_pickup` | ❌ Designed, not implemented | Cursed items, weight effects | **LOW** — cursed items are a future feature |
 | `on_timer` | ❌ Designed, not implemented | Room-level environmental damage | **LOW** — injury tick handles per-object duration |
+| `on_wear` | ✅ **Implemented** | Armor registration, smell narration, cursed items | **DONE** |
+| `on_remove_worn` | ✅ **Implemented** | Armor de-registration, stat removal, curse resistance | **DONE** |
+| `on_equip_tick` | ❌ Designed, not implemented | Per-turn worn effects (rust, warmth, curse) | **MEDIUM** — needed for duration-based equipment effects |
 
 ---
 
@@ -498,6 +507,8 @@ effects.register("mutate", function(effect, ctx) ... end)
 | **No `trap_effect` subtype** | 🟡 Medium | ❌ Still open | Add `trap_effect` handler to `on_traverse` |
 | **Sensory effect fields inconsistent** | 🟡 Was Medium | ✅ **RESOLVED** | Convention established: `on_{sense}_effect` for all 5 senses |
 | **Hook framework not centralized** | 🟡 Medium | ❌ Still open | Migration per `about.md` Section 7 |
+| **No equipment event hooks** | 🟡 Was Medium | ✅ **RESOLVED** | `on_wear` and `on_remove_worn` implemented in verb handlers. `on_equip_tick` designed, not yet implemented. |
+| **No instance-level flavor text** | 🟡 Was Medium | ✅ **RESOLVED** | `event_output` DATA pattern implemented at all event dispatch points. One-shot, self-removing. |
 
 ### 7.2 Is the Event System Extensible Enough?
 
@@ -810,6 +821,149 @@ This document does NOT change:
 - **Injury system** — `injuries.inflict()`, `tick()`, `try_heal()` APIs unchanged.
 - **Verb system** — Verbs still dispatch to FSM transitions. They now delegate effect processing to `effects.process()`.
 - **Object metadata format** — Backward compatible. Existing string effects still work via `effects.normalize()`.
+
+---
+
+## 11. Equipment Event Hooks (v3.0)
+
+### 11.1 Overview
+
+Wearing is now an **engine event**, not just a verb handler moving items between arrays. Three equipment hooks are defined:
+
+| Hook | When It Fires | Status | Use Cases |
+|------|--------------|--------|-----------|
+| `on_wear` | Item is put on (equipped to worn list) | ✅ **Implemented** | Armor stat registration, pot smell narration, cursed item effects |
+| `on_remove_worn` | Item is taken off (moved from worn to hand) | ✅ **Implemented** | Armor de-registration, curse resistance checks, stat cleanup |
+| `on_equip_tick` | Each game turn while item is worn | ❌ **Planned** | Rust accumulation, warmth drain, curse damage per turn |
+
+### 11.2 Hook Contract
+
+```lua
+-- on_wear: fires AFTER item is in player.worn, AFTER flavor print
+-- Signature: obj.on_wear(obj, ctx)
+-- ctx contains: player, registry, current_room
+-- Return value: ignored (side-effects only)
+
+-- on_remove_worn: fires AFTER item is moved back to player.hands, AFTER flavor print
+-- Signature: obj.on_remove_worn(obj, ctx)
+-- Return value: ignored (side-effects only)
+
+-- on_equip_tick (FUTURE): fires once per game loop tick for each worn item
+-- Signature: obj.on_equip_tick(obj, ctx)
+-- Designed but not yet implemented in the game loop
+```
+
+### 11.3 Implementation Location
+
+Both `on_wear` and `on_remove_worn` are dispatched inline in `src/engine/verbs/init.lua`:
+
+- **Wear handler** (~line 5011): After the item is moved to `player.worn` and the flavor message is printed, the engine checks `obj.on_wear`. If it's a function, it calls `obj.on_wear(obj, ctx)`.
+- **Remove handler** (~line 5131): After the item is moved back to `player.hands` and the flavor message is printed, the engine checks `obj.on_remove_worn`. If it's a function, it calls `obj.on_remove_worn(obj, ctx)`.
+
+### 11.4 Object Declaration Pattern
+
+```lua
+-- In object .lua file (e.g., chamber-pot.lua)
+return {
+    id = "chamber-pot",
+    name = "a chamber pot",
+    wear = { slot = "head", layer = "outer" },
+
+    on_wear = function(obj, ctx)
+        -- Register armor stats, trigger smell narration, etc.
+    end,
+
+    on_remove_worn = function(obj, ctx)
+        -- De-register armor stats, cleanup
+    end,
+}
+```
+
+### 11.5 Relationship to Effects Pipeline
+
+Equipment hooks are **callback-based** (CODE pattern), not effect-pipeline based (DATA pattern). This is correct because:
+
+- Equipment events often need complex logic (stat registration, conditional checks)
+- The effect pipeline is for **one-shot effects** (injury infliction, state changes)
+- Equipment hooks fire on equip/unequip — these are lifecycle events, not damage events
+- Future: `on_equip_tick` may route through the effect pipeline for duration-based effects like rust or curse damage
+
+---
+
+## 12. Event Output System — Instance-Level Flavor Text (v3.0)
+
+### 12.1 Design
+
+Objects declare per-event output text that fires **once**, then **self-removes via mutation**. The engine doesn't track "has this been shown" — the object does. First-time flavor text lives on the object instance; after it fires, the engine mutates the field to `nil`.
+
+This is a **DATA pattern**, not a CODE pattern — no callbacks, just strings on the object.
+
+### 12.2 Object Declaration
+
+```lua
+-- In room .lua file (instance-level data, NOT object template)
+-- e.g., start-room.lua defines object instances with flavor text:
+{
+    id = "wool-cloak",
+    template = "wool-cloak",
+    location = "wardrobe-inside",
+    event_output = {
+        on_wear = "I need to get better outfits. I look like a peasant.",
+        on_take = "It's heavier than it looks.",
+    },
+}
+```
+
+### 12.3 Engine Behavior
+
+When any engine event fires (`on_wear`, `on_take`, `on_drop`, `on_consume`, etc.):
+
+1. Engine checks `obj.event_output` — if nil or not a table, skip (zero cost)
+2. Engine checks `obj.event_output[event_name]` — if nil, skip
+3. If string exists → `print(text)` → `obj.event_output[event_name] = nil` (one-shot)
+
+```lua
+-- ~5 lines, added after each event dispatch point:
+if obj.event_output and obj.event_output[event_name] then
+    print(obj.event_output[event_name])
+    obj.event_output[event_name] = nil
+end
+```
+
+### 12.4 Key Properties
+
+| Property | Behavior |
+|----------|----------|
+| **One-shot** | Text fires once, then `nil`-ed out. Wear the cloak again → no text. |
+| **Per-instance** | Flavor text lives on the ROOM .lua (object instance), NOT the object template. Same template (wool-cloak) can have different flavor text in different rooms. |
+| **Per-event independent** | Multiple events on same object fire independently. `on_wear` and `on_take` each fire once, each self-remove independently. |
+| **Persists across saves** | The mutation is a `.lua` state change on the object instance. Once consumed, it stays consumed. |
+| **No-code for designers** | Content authors add flavor text without writing any Lua functions. Just add strings to a table. |
+| **Zero cost when absent** | Objects without `event_output` incur only a nil check — no allocation, no function call. |
+
+### 12.5 Dispatch Points
+
+`event_output` is checked at every event dispatch point in `src/engine/verbs/init.lua`:
+
+| Event Name | Verb Handler | Location |
+|-----------|-------------|----------|
+| `on_take` | take (all success paths) | After "You take..." print |
+| `on_drop` | drop | After drop success print |
+| `on_wear` | wear | After wear flavor print |
+| `on_remove_worn` | remove | After remove print |
+| `on_eat` | eat | After "You eat..." print |
+| `on_drink` | drink | After drink transition message |
+
+### 12.6 Interaction with Callbacks
+
+`event_output` fires **after** the event callback (if any). Order:
+
+1. Engine performs the action (move item, change state)
+2. Engine prints the standard action message ("You put on X.")
+3. Engine fires the callback (`obj.on_wear(obj, ctx)`) — if present
+4. Engine checks `obj.event_output[event_name]` — if string, print and nil
+
+This ensures flavor text appears last, after any mechanical output from the callback.
 
 ---
 

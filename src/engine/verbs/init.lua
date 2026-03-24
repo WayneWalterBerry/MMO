@@ -2345,6 +2345,11 @@ function verbs.create()
             if not item.instance_id then item.instance_id = next_instance_id() end
             ctx.player.hands[slot] = item
             print("You take " .. (item and item.name or found_id) .. " from " .. (bag.name or "the container") .. ".")
+            -- event_output: one-shot flavor text for on_take
+            if item.event_output and item.event_output["on_take"] then
+                print(item.event_output["on_take"])
+                item.event_output["on_take"] = nil
+            end
             return
         end
 
@@ -2489,6 +2494,11 @@ function verbs.create()
             ctx.player.hands[slot] = obj
             obj.location = "player"
             print("You take " .. (obj.name or obj.id) .. " from " .. (parent.name or "the container") .. ".")
+            -- event_output: one-shot flavor text for on_take
+            if obj.event_output and obj.event_output["on_take"] then
+                print(obj.event_output["on_take"])
+                obj.event_output["on_take"] = nil
+            end
             return
         end
 
@@ -2511,6 +2521,11 @@ function verbs.create()
             ctx.player.hands[2] = obj
             obj.location = "player"
             print("You take " .. (obj.name or obj.id) .. " with both hands.")
+            -- event_output: one-shot flavor text for on_take
+            if obj.event_output and obj.event_output["on_take"] then
+                print(obj.event_output["on_take"])
+                obj.event_output["on_take"] = nil
+            end
             return
         end
 
@@ -2526,6 +2541,11 @@ function verbs.create()
         obj.location = "player"
 
         print("You take " .. (obj.name or obj.id) .. ".")
+        -- event_output: one-shot flavor text for on_take
+        if obj.event_output and obj.event_output["on_take"] then
+            print(obj.event_output["on_take"])
+            obj.event_output["on_take"] = nil
+        end
     end
 
     handlers["get"] = function(ctx, noun)
@@ -2886,6 +2906,12 @@ function verbs.create()
             else
                 print("You drop " .. (obj.name or obj.id) .. ".")
             end
+        end
+
+        -- event_output: one-shot flavor text for on_drop
+        if obj.event_output and obj.event_output["on_drop"] then
+            print(obj.event_output["on_drop"])
+            obj.event_output["on_drop"] = nil
         end
     end
 
@@ -5009,6 +5035,17 @@ function verbs.create()
         else
             print("You put on " .. (obj.name or obj.id) .. ".")
         end
+
+        -- on_wear hook: fire callback if object declares one
+        if obj.on_wear and type(obj.on_wear) == "function" then
+            obj.on_wear(obj, ctx)
+        end
+
+        -- event_output: one-shot flavor text for on_wear
+        if obj.event_output and obj.event_output["on_wear"] then
+            print(obj.event_output["on_wear"])
+            obj.event_output["on_wear"] = nil
+        end
     end
 
     handlers["don"] = handlers["wear"]
@@ -5128,6 +5165,17 @@ function verbs.create()
         else
             print("You remove " .. (obj.name or obj.id) .. ".")
         end
+
+        -- on_remove_worn hook: fire callback if object declares one
+        if obj.on_remove_worn and type(obj.on_remove_worn) == "function" then
+            obj.on_remove_worn(obj, ctx)
+        end
+
+        -- event_output: one-shot flavor text for on_remove_worn
+        if obj.event_output and obj.event_output["on_remove_worn"] then
+            print(obj.event_output["on_remove_worn"])
+            obj.event_output["on_remove_worn"] = nil
+        end
     end
 
     handlers["doff"] = handlers["remove"]
@@ -5154,6 +5202,11 @@ function verbs.create()
             print("You eat " .. (obj.name or "it") .. ".")
             if obj.on_eat_message then
                 print(obj.on_eat_message)
+            end
+            -- event_output: one-shot flavor text for on_eat
+            if obj.event_output and obj.event_output["on_eat"] then
+                print(obj.event_output["on_eat"])
+                obj.event_output["on_eat"] = nil
             end
             remove_from_location(ctx, obj)
             ctx.registry:remove(obj.id)
@@ -5220,8 +5273,12 @@ function verbs.create()
                             end
                         end
                     end
+                    -- event_output: one-shot flavor text for on_drink
+                    if obj.event_output and obj.event_output["on_drink"] then
+                        print(obj.event_output["on_drink"])
+                        obj.event_output["on_drink"] = nil
+                    end
                 else
-                    print("You can't drink from " .. (obj.name or "that") .. ".")
                 end
                 return
             end

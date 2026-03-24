@@ -1126,3 +1126,40 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 
 **Status:** Phase A4 SHIPPED.
 
+
+---
+
+### Session: Equipment Event Hooks + Event Output System (2026-03-24)
+**Status:** ✅ COMPLETE
+**Requested by:** Wayne "Effe" Berry (autonomous work)
+
+**Task:** Phase A6 + A6b from daily plan — Equipment event hooks architecture and implementation, plus the event_output one-shot flavor text system.
+
+**Deliverables:**
+
+1. **`docs/architecture/engine/event-hooks.md`** — Updated to v3.0:
+   - Added equipment category to Active Hooks table (`on_wear`, `on_remove_worn`, `on_equip_tick`)
+   - Added Equipment row to Event Taxonomy (Section 6.1)
+   - Added 3 hooks to Hook Summary table (Section 6.2)
+   - Added 2 resolved gaps to Gap Analysis (Section 7.1)
+   - New Section 11: Equipment Event Hooks — contract, implementation location, object declaration pattern, relationship to effects pipeline
+   - New Section 12: Event Output System — design, declaration, engine behavior, dispatch points, interaction with callbacks
+
+2. **`src/engine/verbs/init.lua`** — Implementation:
+   - **`on_wear` hook:** After wear flavor print, checks `obj.on_wear` function and fires it with `(obj, ctx)`
+   - **`on_remove_worn` hook:** After remove flavor print, checks `obj.on_remove_worn` function and fires it with `(obj, ctx)`
+   - **`event_output` at 8 dispatch points:**
+     - `on_take`: 4 success paths (from container, from parent, two-handed, single-handed)
+     - `on_drop`: 1 dispatch point (after drop, both shatter and survive paths)
+     - `on_wear`: 1 dispatch point (after wear)
+     - `on_remove_worn`: 1 dispatch point (after remove)
+     - `on_eat`: 1 dispatch point (after eat, before item removal)
+     - `on_drink`: 1 dispatch point (after drink FSM transition)
+
+**Key Architectural Decisions:**
+- Equipment hooks are CODE pattern (callbacks), not DATA pattern — correct because equip/unequip are lifecycle events needing complex logic
+- `event_output` is DATA pattern (strings on tables) — correct because flavor text needs no logic, just print-and-nil
+- `event_output` fires AFTER callbacks — flavor text appears last, after any mechanical output
+- `on_equip_tick` designed but NOT implemented — needs game loop integration (future work)
+
+**Test Results:** Zero regressions. 1 pre-existing failure (bedroom-door instance location) unrelated to changes.
