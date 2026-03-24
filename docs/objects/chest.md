@@ -8,7 +8,7 @@ A substantial oak or pine chest with iron bands and a heavy wooden lid. The exte
 
 **Type:** Container (portable, two-handed)  
 **Material:** `oak` (primary) or `pine` (alternative)  
-**Status:** Design complete; implementation pending
+**Status:** 🟢 In Game — `src/meta/objects/chest.lua`
 
 ### Sensory Details
 
@@ -45,6 +45,13 @@ closed ↔ open
 
 - **closed** (default) — Lid locked/latched shut. Contents hidden, inaccessible. Latch mechanism active.
 - **open** — Lid propped open on hinges. Inside surface fully accessible.
+
+## Transitions
+
+| From | To | Verb | Message | Mutate |
+|------|-----|------|---------|--------|
+| closed | open | open | The iron latch yields with a satisfying *click*. The heavy lid groans open on stiff hinges, releasing a breath of stale, sealed air. | `keywords = { add = "open" }` |
+| open | closed | close | You lower the heavy lid. It settles with a deep wooden *thud* and the latch catches with a click. | `keywords = { remove = "open" }` |
 
 ## Surfaces
 
@@ -160,6 +167,133 @@ You carefully lift the chest with both hands, taking both hand slots.
 You go north to the Bedroom.
 ```
 
+## Edge Cases
+
+### One-Handed Carry Attempt
+The player tries to pick up the chest while holding something in one hand:
+- **Response:** "The chest is far too heavy to lift with one hand. You'd need both hands free."
+- **If both hands occupied:** "Both your hands are full. You'd need to put everything down first."
+- The chest *never* becomes one-handed. Even empty, its size and bulk demand two hands.
+
+### Examining Contents While Closed
+Player uses `look inside chest`, `feel inside chest`, or `search chest` while closed:
+- **Look inside:** "The lid is shut tight. You can't see inside."
+- **Feel inside:** "The lid is latched closed. You can't reach inside."
+- **Search:** Per D-PEEK decision, search can *peek* at contents without opening (engine reads `contents` directly). The player doesn't learn the chest opened — search is observational, not mutational.
+- **Smell:** Faint storage mustiness seeps through the wood — smell is NOT fully gated. You can smell *something* even through closed wood, but you can't identify individual items by smell alone.
+
+### Put Item in Closed Chest
+`put key in chest` while chest is closed:
+- **Response:** "The chest is closed. You'd need to open it first."
+- The engine checks `accessible` before allowing container placement.
+
+### Get Item from Closed Chest
+`get key from chest` while chest is closed:
+- **Response:** "The chest is closed. You can't reach what's inside."
+
+### Open Chest While Carrying It
+Player is carrying the chest (both hands occupied) and tries to open it:
+- **Response:** "You'd need to put the chest down first — you can't open it while carrying it."
+- This is a two-step sequence: drop chest → open chest.
+
+### Carrying a Full Chest
+The chest's total weight = base weight (20) + contents weight. If contents push total weight beyond a reasonable carry threshold:
+- The engine should track combined weight but NOT prevent carrying (the `hands_required = 2` is the constraint, not weight-based failure).
+- **Future consideration:** A stamina or encumbrance system could slow movement with heavy loads.
+
+### Dropping a Chest
+When dropped (or put down), the chest stays in its current open/closed state. Contents remain inside. The chest lands on the floor surface of the current room.
+
+### Closing the Lid on Contents
+If an item is too large to fit and visually "sticks out," the chest can still close (no physics simulation of protruding objects). The `capacity` and `max_item_size` checks happen at insertion time, not at close time.
+
+### Nesting Containers
+Per Principle 0.5 (deep nesting), a chest CAN contain other containers (e.g., a leather pouch inside a chest). The engine supports nested containment up to 3 levels. A chest inside another chest is blocked by `max_item_size = 3` vs chest `size = 5`.
+
+## Comedy & Flavor Opportunities
+
+### The Dramatic Lift
+When the player first picks up the chest, the description should convey genuine physical effort:
+- "You grip the iron handles and heave. The chest comes up reluctantly, like it's been napping and resents the disturbance."
+- Subsequent pickups can be shorter: "You hoist the chest again, your arms already remembering the weight."
+
+### The Empty Chest Disappointment
+Opening an empty chest should deflate expectations:
+- "The lid swings open to reveal... absolutely nothing. The chest's interior stares back at you with the hollow indifference of a broken promise."
+- Contrast with opening a chest that HAS contents: "The lid swings open, and the interior gleams with possibility."
+
+### The One-Hand Attempt
+The error message for trying to carry one-handed should be gently mocking:
+- "You grip one handle and pull. The chest doesn't so much as twitch. It's not *that* kind of chest."
+
+### The Unnecessary Close
+If the player closes an already-closed chest:
+- "It's already closed. The latch clicks smugly, as if to confirm."
+
+### Acoustic Properties
+Tapping or knocking on the chest in different states:
+- **Empty, closed:** A hollow *bonk* resonates. "Sounds empty. Or very well-packed."
+- **Full, closed:** A dull *thud*. "Something's in there."
+- **Open:** The knock just sounds like hitting wood. "Less dramatic without the acoustics."
+
+### The Smell of History
+The chest's interior smell should tell a story of what it's been used for:
+- "Cedar and old leather — this chest has stored something valuable. Or at least something someone *thought* was valuable."
+
+## Implementation Notes for Flanders
+
+### Key Properties for chest.lua
+
+```
+guid = "{GENERATE-NEW-GUID}"    -- Flanders: assign unique GUID at creation
+template = "furniture"
+id = "chest"
+name = "a wooden chest"
+material = "oak"                 -- resolves via materials.get("oak")
+size = 5
+weight = 20
+portable = true
+hands_required = 2
+container = true
+openable = true
+accessible = false               -- changes per state (false=closed, true=open)
+capacity = 8
+max_item_size = 3
+initial_state = "closed"
+_state = "closed"
+```
+
+### State-Specific Accessible Flag
+- `closed` state: `accessible = false` — blocks all container verbs
+- `open` state: `accessible = true` — enables look-inside, feel-inside, put-in, get-from
+
+### Pattern Reference: drawer.lua
+The chest follows the exact same FSM + container pattern as `drawer.lua`:
+- Two states (closed/open) with per-state `description`, `on_feel`, `on_look`, `accessible`
+- Transitions with `mutate` for keyword add/remove
+- `on_look` function in open state lists contents via registry
+- `on_feel` function in open state reports presence/absence of contents
+
+### Differences from Drawer
+| Property | Drawer | Chest |
+|----------|--------|-------|
+| size | 3 | 5 |
+| weight | 2 | 20 |
+| capacity | 2 | 8 |
+| max_item_size | 1 | 3 |
+| reattach_to | "nightstand" | nil (standalone) |
+| transition message | "slides out with a soft wooden scrape" | "latch yields with a click, lid groans open" |
+| secondary material | none | iron (decorative bands, latch, handles) |
+
+### Iron Hardware Note
+The chest has iron bands, hinges, handles, and latch as decorative elements. The primary `material` field is `"oak"`. Iron hardware is described in sensory text but does not need a separate material entry — it's flavor, not a burnable/meltable component (unless a future fire system needs to distinguish).
+
+### Categories and Keywords
+```
+categories = {"container", "furniture", "wooden"}
+keywords = {"chest", "trunk", "storage", "wooden chest", "heavy chest", "treasure chest"}
+```
+
 ## See Also
 
 - **[Chest Mechanics Design](../design/chest-mechanics.md)** — Two-handed carry system, hand slots, interaction constraints
@@ -169,6 +303,8 @@ You go north to the Bedroom.
 
 ---
 
-**Last Updated:** 2026-03-25  
-**Status:** Design complete, ready for implementation  
-**Implementation Order:** After Container template fully tested; coordinate with hand-slot system (REQ-057)
+**Last Updated:** 2026-07-25  
+**Status:** 🟢 In Game — implemented as `src/meta/objects/chest.lua`  
+**Implementation Order:** After Container template fully tested; coordinate with hand-slot system (REQ-057)  
+**Enhanced by:** Comic Book Guy — added Edge Cases, Comedy & Flavor, Implementation Notes for Flanders  
+**Implemented by:** Flanders — 2026-07-27
