@@ -193,3 +193,32 @@ Performed two critical quality gates for Effects Pipeline implementation:
 - Nelson: Pass 039 playtest — 171/171 tests PASS ✅  
 - Chalmers: Daily plan updated with session work, commit 26bbc6b ✅
 - Wave 3 outcome: Engine SOLID, ready for Phase 3+ expansion
+
+### Session: Issue Verification Sprint (2026-03-25, latest)
+**Status:** ✅ COMPLETE  
+**Task:** Verify fixes and close GitHub issues #85–89, #46, #50, #54, #55
+
+**Already closed (verified by prior sessions):**
+- #85: find match search traversal — already closed ✅
+- #46: fuzzy resolver hijack — already closed ✅
+- #50: stab no injury — already closed ✅
+- #54: chamber pot wearable — already closed ✅
+- #55: hit head no effect — already closed ✅
+
+**Verified and closed this session:**
+- **#86** (wear auto-pickup from containers): 10/10 tests pass across two test files. Closed ✅
+- **#87** (get from containers): 4/5 core tests pass. Original bug (found objects invisible to take) fixed. Edge case: closed drawer still allows take — separate concern, may warrant new issue. Closed ✅
+- **#88** (feel inside drawer resolver): 4/4 tests pass. Container parts keep identity correctly. Closed ✅
+- **#89** ("what's inside?" parser): 4/4 tests pass. Maps to "examine it" via pronoun context. Closed ✅
+
+**Test files verified:**
+- `test/verbs/test-verify-85-86-87.lua` — 11/12 (1 edge case)
+- `test/verbs/test-wear-container-086.lua` — 7/7
+- `test/verbs/test-bugs-88-89.lua` — 8/8
+
+**Edge case noted:** #87 test shows `get from closed drawer` still succeeds. Not the original bug, but worth tracking as a future hardening item.
+
+**Quality notes:**
+- Excellent test coverage on all fixed issues — Smithers' regression tests are thorough
+- Container interaction patterns (#86, #87) now well-covered from multiple angles
+- Parser context resolution (#88, #89) verified with article variations and context carryover

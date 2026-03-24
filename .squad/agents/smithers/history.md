@@ -47,6 +47,22 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+### 2026-03-23: Bugs #88 and #89 — Parser/Resolver Fixes
+
+**#88: "feel inside drawer" resolved to nightstand parent**
+- Root cause: BUG-058 redirect in feel handler unconditionally replaced part objects with their parent (`if loc_type == "part" and parent_obj then cobj = parent_obj`). The drawer is a composite part of the nightstand but is also a first-class container.
+- Fix: Added `not cobj.container` guard — parts that are themselves containers keep their identity instead of redirecting to parent. One-line change in `src/engine/verbs/init.lua` line 1777.
+- Key insight: The BUG-058 redirect was correct for non-container parts (e.g., nightstand legs), but wrong for container parts (drawer). Container parts need direct access to their own contents.
+
+**#89: "what's inside?" showed room description instead of container contents**
+- Root cause: `preprocess.lua` mapped bare "what's inside" to `"look"`, which shows the room. There was no pronoun/context resolution.
+- Fix: Changed transform to `"examine it"` — the pronoun "it" resolves via the context window to the last-referenced object (e.g., the wardrobe just opened).
+- Updated corresponding test expectations in `test-transform-questions.lua`.
+
+**Tests:** 8 new regression tests in `test/verbs/test-bugs-88-89.lua`. Zero regressions in full suite (2 pre-existing failures unrelated: weapon-pipeline, mirror-appearance).
+
+**Deployed:** Commit afef5dc pushed to main, web build deployed to GitHub Pages.
+
 ### 2026-03-23: Wave2 — Decision Documentation
 
 **Wave2 Spawn:** Scribe merged decision documents into decisions.md
@@ -369,3 +385,24 @@ After the deep nesting refactor, `nested` objects (like the drawer in the nights
 - **Squad Directives:** TDD for bug fixes enforced (test-first before fix), new hires must have department assignment.
 
 **Orchestration Complete:** All 3 spawns (Smithers, CBG, Nelson) logged and consolidated into decisions.md. Inbox merged. Cross-agent context propagated. Ready for git commit.
+
+### 2026-03-23: F1 Carry-Over Bug Batch + BUG-116
+
+**Status:** ✅ COMPLETE — Commit 5738359, pushed to main, deployed to web.
+
+**Bugs Fixed:**
+- **#47:** narrator.part_contents/part_empty now sensory-aware — 'feel' in dark, 'find' in light. Also resolves part display names from parent.parts via surface mapping instead of hardcoding 'drawer'.
+- **#52 (#90-#95):** Mirror appearance: get_wear_slot() resolves both wear_slot and wear.slot; trailing period stripping; deterministic severity adjective cycling (index param); semicolons in overall section.
+- **BUG-116:** Root-content container 'get from' path now checks bag.accessible == false before allowing extraction. Matches surface-based gate.
+
+**Already Fixed (verified with new tests):**
+- **#49:** Stab weapon inference from hands works correctly — 5 regression tests confirm.
+- **#53:** Take handler outputs exactly once — 4 regression tests confirm.
+
+**Test Results:** 73/73 test files pass. 28 new/updated regression tests. Zero regressions.
+
+**Key Learnings:**
+6. **wear.slot vs wear_slot**: The wear verb stores slot in obj.wear.slot (nested) but appearance.lua only checked obj.wear_slot (top-level). Always check both patterns with a helper.
+7. **compose_natural dedup vs multiple injuries:** Dedup collapses identical injury phrases. Fix: deterministic adjective cycling via index + default severity to 'moderate' when nil.
+8. **resolve_part_display must match surface→part:** Lua pairs() iteration is non-deterministic. Use part.surface field to match surface_name → part key, not random first-match.
+9. **Accessible check parity:** Surface containers gate with zone.accessible ~= false. Root-content containers must do the same check on bag.accessible.

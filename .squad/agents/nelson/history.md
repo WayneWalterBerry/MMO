@@ -654,6 +654,28 @@ Created 7 test files in `test/parser/pipeline/` covering all pipeline stages:
 - **deep_copy utility handles Lua functions correctly** — functions are copied by reference (not duplicated), which is correct since closures capture their environment.
 - **Injury engine test definitions differ from actual definitions.** test-injury-engine.lua uses `initial_damage = 15` for its test nightshade definition, but the actual `src/meta/injuries/poisoned-nightshade.lua` uses `initial_damage = 10`. My tests lock down the ACTUAL values.
 - **Test count:** Full suite now has 45 test files (was 44). The poison bottle test adds 116 individual assertions.
+
+### Verification: Issues #85, #86, #87 (2026-07-25)
+
+**Status:** ✅ FIXES VERIFIED — 11/12 pass, 1 new bug found (BUG-116)
+
+Verified Smithers' fixes for search traversal (#85), wear auto-pickup (#86), and get-from-container (#87).
+
+| Issue | Fix | Tests | Result |
+|-------|-----|-------|--------|
+| #85 | expand_object queues root container contents | 3 | ✅ ALL PASS |
+| #86 | wear auto-pickup from open container | 3 | ✅ ALL PASS |
+| #87 | get X from Y container extraction | 5 | ✅ 4 PASS, 1 FAIL |
+| Regression | basic take from floor | 1 | ✅ PASS |
+
+**New bug filed:** BUG-116 — `get X from Y` ignores container `accessible` flag. When a drawer is closed (`accessible = false`), `get matchbox from drawer` still succeeds. The `get X from Y` code path at verbs/init.lua:2296 checks `bag.container and bag.contents` but never checks `bag.accessible`. Surface-based containers DO gate on `zone.accessible ~= false` (line 2301), but root-content containers don't.
+
+**Regression suite:** 73 test files, 71 pass, 2 fail. Failures are:
+- `test-mirror-appearance-m4.lua` — 4 expected-fail tests (pre-existing #90/#91/#92/#95)
+- `test-verify-85-86-87.lua` — 1 new fail (BUG-116)
+
+**Test file:** `test/verbs/test-verify-85-86-87.lua` — 12 tests
+
 ## Learnings
 
 ### Pass 019: BUG-063 Fix Verification (2026-03-21)
@@ -1112,3 +1134,38 @@ Regression retest of Smithers' commit 351bfa3 (30+ natural phrase transforms for
 - **New TDD Policy:** Test-first directive for all bug fixes (tests must fail before fix)
 
 **Orchestration Complete:** All 3 spawns consolidated into decisions.md. Inbox merged. Cross-agent history updated. Ready for git commit.
+
+### F1 Verification Pass (2026-07-25)
+
+**Status:** ✅ COMPLETE — 20 new verification tests, all pass. 6 mirror bugs now resolved.
+
+**Part 1: F1 Bug Fix Verification (Smithers commit 5738359)**
+
+| Bug | Summary | Verified | Tests |
+|-----|---------|----------|-------|
+| #47 | Dark search narration uses "feel"/"grope" not "find"/"see" | ✅ PASS | V47-1 through V47-5 |
+| #49 | "stab yourself" auto-infers weapon from hands | ✅ PASS | V49-1 through V49-4 |
+| #52 | Mirror shows worn items, held items, injuries, health | ✅ PASS | V52-1 through V52-5 |
+| #53 | "get pot" outputs take message exactly once | ✅ PASS | V53-1 through V53-3 |
+| BUG-116 | "get X from Y" blocked when container closed | ✅ PASS | V116-1 through V116-3 |
+
+**Part 2: Mirror Bugs #90-95 — Status After Smithers' #52 Fix**
+
+All 6 mirror bugs are now FIXED. The 4 previously expected-fail tests in `test-mirror-appearance-m4.lua` now pass:
+
+| Bug | Summary | Status | How Fixed |
+|-----|---------|--------|-----------|
+| #90 | Worn cloak invisible (wear.slot not checked) | ✅ FIXED | `get_wear_slot()` now checks both `obj.wear_slot` and `obj.wear.slot` |
+| #91 | Double period in mirror output | ✅ FIXED | `describe()` strips trailing periods before joining with ". " |
+| #92 | Duplicate injuries at same location collapsed | ✅ FIXED | `compose_natural()` deduplicates identical phrases; distinct injuries (different index → different adjective) survive |
+| #93 | Injury severity adjectives dead code | ✅ FIXED | `render_injury_phrase()` uses `pick_severity_adjective()` with severity field, "moderate" → "deep"/"nasty" |
+| #94 | Hands layer grammar mixes structures | ✅ FIXED | `render_hands()` uses consistent "your X hand grips Y" + injury phrases through `compose_natural()` |
+| #95 | Overall health double-and chain | ✅ FIXED | `render_overall()` uses semicolons between phrases when they contain "and" |
+
+**Regression Suite:** 74/74 test files pass (0 failures).
+
+**Test file:** `test/verbs/test-verify-f1-bugs.lua` — 20 tests
+
+- Smithers' #52 fix was comprehensive — addressed wear.slot resolution, double-periods, injury deduplication, severity adjectives, hands grammar, and overall health composition in one commit
+- The semicolon fix for #95 is elegant — avoids awkward "healthy and alert and dried blood" by using "; " as separator when phrases already contain "and"
+- Mirror appearance system is now production-quality — all 26 M4 tests pass, all 6 filed bugs resolved
