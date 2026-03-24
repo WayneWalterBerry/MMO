@@ -494,26 +494,28 @@ test("Targeted search for match still finds it", function()
            "Must still find match. Got: " .. output)
 end)
 
-test("Nightstand state not mutated after search", function()
+test("Nightstand state opens after search (#97)", function()
     local ctx = make_dark_bedroom()
     local nightstand = ctx.registry:get("nightstand")
     eq(false, nightstand.is_open, "Nightstand starts closed")
 
     full_search(ctx, nil, "nightstand")
 
-    eq(false, nightstand.is_open,
-       "Nightstand must still be closed after search (#24)")
+    -- #97: Search now opens containers it enters (supersedes #24 read-only)
+    eq(true, nightstand.is_open,
+       "Nightstand must be open after search entered its drawer (#97)")
 end)
 
-test("Matchbox state not mutated after search", function()
+test("Matchbox state opens after search (#97)", function()
     local ctx = make_dark_bedroom()
     local matchbox = ctx.registry:get("matchbox")
     eq(false, matchbox.is_open, "Matchbox starts closed")
 
     full_search(ctx, nil, "nightstand")
 
-    eq(false, matchbox.is_open,
-       "Matchbox must still be closed after search (#24)")
+    -- #97: Search now opens containers it enters (supersedes #24 read-only)
+    eq(true, matchbox.is_open,
+       "Matchbox must be open after search entered it (#97)")
 end)
 
 test("Lit room uses visual narration", function()

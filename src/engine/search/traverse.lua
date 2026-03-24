@@ -474,7 +474,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
             return result
         end
         
-        -- If surface is not accessible, peek without changing state (#24)
+        -- If surface is not accessible, check gating conditions
         if surface_template.accessible == false then
             -- #41: Direct part search (e.g., "search drawer") on closed surface
             -- should tell the player to open it first instead of peeking
@@ -490,135 +490,48 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 return result
             end
 
-            -- Only peek inside container surfaces (drawers, wardrobes, etc.)
+            -- Only open container surfaces (drawers, wardrobes, etc.)
             -- Non-container inaccessible surfaces (e.g., rug's "underneath")
             -- are truly hidden and can't be searched until made accessible (#26)
             if not containers.is_container(parent) then
                 result.narrative = ""
                 return result
             end
-            
-            -- Peek at contents without opening (#24: read-only search)
-            local actual_surface = parent.surfaces and parent.surfaces[entry.surface_name]
-            local contents = actual_surface and actual_surface.contents or {}
-            
-            -- Undirected search: enumerate contents
-            if not target and not is_goal_search then
-                -- #64: Look up part for opening narration
-                local part = nil
-                if parent.parts then
-                    for _, p in pairs(parent.parts) do
-                        if p.surface == entry.surface_name then
-                            part = p; break
-                        end
-                    end
-                end
 
-                if #contents > 0 then
-                    local items = {}
-                    local nested_narration = {}
-                    for _, child_id in ipairs(contents) do
-                        local child = registry:get(child_id)
-                        if child then
-                            items[#items + 1] = child.name or child.id
-                            -- #64: If child is a container, narrate opening and enumerate
-                            if containers.is_container(child) then
-                                local child_contents = containers.get_contents(child, registry)
-                                if #child_contents > 0 then
-                                    local child_items = {}
-                                    for _, gc_id in ipairs(child_contents) do
-                                        local gc = registry:get(gc_id)
-                                        if gc then
-                                            child_items[#child_items + 1] = gc.name or gc.id
-                                        end
-                                    end
-                                    if #child_items > 0 then
-                                        nested_narration[#nested_narration + 1] = narrator.nested_container_opening(ctx, child)
-                                        nested_narration[#nested_narration + 1] = narrator.nested_container_contents(ctx, child, child_items)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    -- #64: Build narration with opening + contents + nested
-                    local lines = {}
-                    if part then
-                        lines[#lines + 1] = narrator.container_opening(ctx, part.name or "a container")
-                        lines[#lines + 1] = narrator.container_part_contents(ctx, part, items)
-                    else
-                        lines[#lines + 1] = narrator.container_contents_no_target(ctx, parent, items, nil)
-                    end
-                    for _, line in ipairs(nested_narration) do
-                        lines[#lines + 1] = line
-                    end
-                    result.narrative = table.concat(lines, "\n")
-                else
-                    result.narrative = narrator.container_contents_no_target(ctx, parent, {}, nil)
-                end
-                return result
+            -- #97/#98/#99: Actually open the container so items become
+            -- accessible to subsequent take/get commands.
+            surface_template.accessible = true
+            local actual_surface_mut = parent.surfaces and parent.surfaces[entry.surface_name]
+            if actual_surface_mut then
+                actual_surface_mut.accessible = true
             end
-            
-            -- Targeted search: check contents for match, report what's there if not found (#27)
-            -- #64: Look up part for opening narration in targeted path too
-            local tgt_part = nil
+            containers.open(ctx, parent)
+
+            -- #97: Build opening narration line
+            local open_part = nil
             if parent.parts then
                 for _, p in pairs(parent.parts) do
                     if p.surface == entry.surface_name then
-                        tgt_part = p; break
+                        open_part = p; break
                     end
                 end
             end
-            local opening_text = tgt_part
-                and narrator.container_opening(ctx, tgt_part.name or "a container")
-                or narrator.container_peek(ctx, parent)
+            local opening_line = open_part
+                and narrator.container_opening(ctx, open_part.name or "a container")
+                or narrator.container_opening(ctx, parent.name or "a container")
 
-            for _, child_id in ipairs(contents) do
-                local child = registry:get(child_id)
-                if child then
-                    if target and not is_goal_search then
-                        if matches_target(child, target, registry, 0) then
-                            -- #22: If matched child is a container, peek inside for a more specific match
-                            local deeper = find_deeper_match(child, target, registry)
-                            if deeper then
-                                result.found = true
-                                result.item = deeper
-                                result.narrative = opening_text .. "\n" .. narrator.nested_container_opening(ctx, child) .. "\n" .. narrator.found_target(ctx, deeper, child)
-                            else
-                                result.found = true
-                                result.item = child
-                                result.narrative = opening_text .. "\n" .. narrator.found_target(ctx, child, parent)
-                            end
-                            return result
-                        end
-                    elseif is_goal_search and goal_type and goal_value then
-                        if goals.matches_goal(child, goal_type, goal_value, registry) then
-                            result.found = true
-                            result.item = child
-                            result.narrative = opening_text .. "\n" .. narrator.found_target(ctx, child, parent)
-                            return result
-                        end
-                    end
-                end
-            end
-            
-            -- Target not found inside — report what IS there (#27)
-            if target then
-                local items = {}
-                for _, child_id in ipairs(contents) do
-                    local child = registry:get(child_id)
-                    if child then
-                        items[#items + 1] = child.name or child.id
-                    end
-                end
-                result.narrative = narrator.container_contents_no_target(ctx, parent, items, target)
-            end
-            return result
+            -- Fall through to accessible-surface search below, prepending
+            -- the opening narration to whatever the normal path produces.
+            -- We mark this so the accessible path can prepend the opening line.
+            entry._opening_narration = opening_line
         end
         
         -- Now surface is accessible - check its contents
         -- ALWAYS use parent.surfaces for contents (not state template)
         local actual_surface = parent.surfaces and parent.surfaces[entry.surface_name]
         local contents = actual_surface and actual_surface.contents or {}
+        -- #97: Capture opening narration prefix if container was just opened
+        local open_prefix = entry._opening_narration
 
         -- BUG-079: Undirected scoped search should enumerate surface contents
         if not target and not is_goal_search and #contents > 0 then
@@ -630,6 +543,10 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                     items[#items + 1] = child.name or child.id
                     -- #64: If child is a container, narrate opening and enumerate contents
                     if containers.is_container(child) then
+                        -- #97: Also open nested containers during search
+                        if containers.can_auto_open(child) then
+                            containers.open(ctx, child)
+                        end
                         local child_contents = containers.get_contents(child, registry)
                         if #child_contents > 0 then
                             local child_items = {}
@@ -664,12 +581,19 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                     result.narrative = narrator.part_empty(ctx, entry.surface_name, parent)
                 end
             end
+            -- #97: Prepend opening narration if container was just opened
+            if open_prefix then
+                result.narrative = open_prefix .. "\n" .. result.narrative
+            end
             return result
         end
         
         -- #41: Direct part search with no contents
         if not target and not is_goal_search and #contents == 0 and entry.direct_part_search then
             result.narrative = narrator.part_empty(ctx, entry.surface_name, parent)
+            if open_prefix then
+                result.narrative = open_prefix .. "\n" .. result.narrative
+            end
             return result
         end
 
@@ -679,16 +603,42 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 -- Check if child matches target
                 if target and not is_goal_search then
                     if matches_target(child, target, registry, 0) then
-                        result.found = true
-                        result.item = child
-                        result.narrative = result.narrative .. "\n" .. narrator.found_target(ctx, child, parent)
+                        -- #22: deeper match check
+                        local deeper = find_deeper_match(child, target, registry)
+                        if deeper then
+                            -- #97: Also open nested containers during search
+                            if containers.is_container(child) and containers.can_auto_open(child) then
+                                containers.open(ctx, child)
+                            end
+                            result.found = true
+                            result.item = deeper
+                            local narr = narrator.found_target(ctx, deeper, child)
+                            if open_prefix then
+                                narr = open_prefix .. "\n" .. narrator.nested_container_opening(ctx, child) .. "\n" .. narr
+                            else
+                                narr = narrator.nested_container_opening(ctx, child) .. "\n" .. narr
+                            end
+                            result.narrative = narr
+                        else
+                            result.found = true
+                            result.item = child
+                            local narr = narrator.found_target(ctx, child, parent)
+                            if open_prefix then
+                                narr = open_prefix .. "\n" .. narr
+                            end
+                            result.narrative = narr
+                        end
                         return result
                     end
                 elseif is_goal_search and goal_type and goal_value then
                     if goals.matches_goal(child, goal_type, goal_value, registry) then
                         result.found = true
                         result.item = child
-                        result.narrative = result.narrative .. "\n" .. narrator.found_target(ctx, child, parent)
+                        local narr = narrator.found_target(ctx, child, parent)
+                        if open_prefix then
+                            narr = open_prefix .. "\n" .. narr
+                        end
+                        result.narrative = narr
                         return result
                     end
                 end
@@ -714,6 +664,13 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                     result.narrative = narrator.container_contents_no_target(ctx, parent, items, target)
                 end
             end
+        end
+
+        -- #97: Prepend opening narration if container was just opened
+        if open_prefix and result.narrative ~= "" then
+            result.narrative = open_prefix .. "\n" .. result.narrative
+        elseif open_prefix then
+            result.narrative = open_prefix
         end
 
         -- Surface checked, no match found
@@ -754,14 +711,17 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
         return result
     end
 
-    -- If it's a container and it's closed, peek without opening (#24)
+    -- #97/#98/#99: Container is closed — open it, narrate opening, then search
     if entry.is_container and not entry.is_open then
         if entry.is_locked then
             -- Locked - skip with note
             result.narrative = narrator.container_locked(ctx, obj)
             return result
         else
-            -- Peek at contents without changing state (#24: read-only search)
+            -- #97: Actually open the container so items become accessible
+            containers.open(ctx, obj)
+            local opening_line = narrator.nested_container_opening(ctx, obj)
+
             local contents = containers.get_contents(obj, registry)
 
             -- BUG-079: Undirected scoped search should enumerate container contents
@@ -774,9 +734,9 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                             items[#items + 1] = child.name or child.id
                         end
                     end
-                    result.narrative = narrator.container_contents_no_target(ctx, obj, items, nil)
+                    result.narrative = opening_line .. "\n" .. narrator.container_contents_no_target(ctx, obj, items, nil)
                 else
-                    result.narrative = narrator.container_contents_no_target(ctx, obj, {}, nil)
+                    result.narrative = opening_line .. "\n" .. narrator.container_contents_no_target(ctx, obj, {}, nil)
                 end
                 return result
             end
@@ -790,13 +750,17 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                             -- #22: If matched child is a container, peek inside for a more specific match
                             local deeper = find_deeper_match(child, target, registry)
                             if deeper then
+                                -- #97: Also open nested containers
+                                if containers.is_container(child) and containers.can_auto_open(child) then
+                                    containers.open(ctx, child)
+                                end
                                 result.found = true
                                 result.item = deeper
-                                result.narrative = narrator.container_peek(ctx, obj) .. "\n" .. narrator.container_peek(ctx, child) .. "\n" .. narrator.found_target(ctx, deeper, child)
+                                result.narrative = opening_line .. "\n" .. narrator.nested_container_opening(ctx, child) .. "\n" .. narrator.found_target(ctx, deeper, child)
                             else
                                 result.found = true
                                 result.item = child
-                                result.narrative = narrator.container_peek(ctx, obj) .. "\n" .. narrator.found_target(ctx, child, obj)
+                                result.narrative = opening_line .. "\n" .. narrator.found_target(ctx, child, obj)
                             end
                             return result
                         end
@@ -804,7 +768,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                         if goals.matches_goal(child, goal_type, goal_value, registry) then
                             result.found = true
                             result.item = child
-                            result.narrative = narrator.container_peek(ctx, obj) .. "\n" .. narrator.found_target(ctx, child, obj)
+                            result.narrative = opening_line .. "\n" .. narrator.found_target(ctx, child, obj)
                             return result
                         end
                     end
@@ -816,7 +780,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 if matches_target(obj, target, registry, 0) then
                     result.found = true
                     result.item = obj
-                    result.narrative = narrator.container_peek(ctx, obj) .. "\n" .. narrator.found_target(ctx, obj, nil)
+                    result.narrative = opening_line .. "\n" .. narrator.found_target(ctx, obj, nil)
                     return result
                 end
             end
@@ -830,7 +794,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                         items[#items + 1] = child.name or child.id
                     end
                 end
-                result.narrative = narrator.container_contents_no_target(ctx, obj, items, target)
+                result.narrative = opening_line .. "\n" .. narrator.container_contents_no_target(ctx, obj, items, target)
             end
             return result
         end

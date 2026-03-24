@@ -67,9 +67,8 @@ local CONTAINER_LOCKED_TEMPLATES = {
 
 local FOUND_TEMPLATES = {
     touch = {
-        "Inside, you feel: {item}.",
-        "Your fingers find: {item}.",
         "You feel: {item}.",
+        "Your fingers find: {item}.",
     },
     vision = {
         "You spot: {item}.",
@@ -373,7 +372,7 @@ function narrator.aggregate_items(items)
     return result
 end
 
---- Generate narration for surface contents, distinguishing "top" from "inside" (#63)
+--- Generate narration for surface contents, distinguishing "top" from "inside" (#63, #96)
 -- @param ctx game context
 -- @param surface_name string ("top", "inside", etc.)
 -- @param parent object that owns the surface
@@ -387,6 +386,15 @@ function narrator.surface_contents(ctx, surface_name, parent, items, target)
     local parent_display = strip_article(parent.name or parent.id or "it")
     local suffix = target and (", but no " .. target) or ""
 
+    -- #96: Resolve part name for "inside" surfaces (e.g., "drawer" instead of "nightstand")
+    local container_display = parent_display
+    if surface_name ~= "top" then
+        local part_name = resolve_part_display(surface_name, parent)
+        if part_name and part_name ~= surface_name then
+            container_display = part_name
+        end
+    end
+
     if surface_name == "top" then
         if sense == "touch" then
             return "On top of the " .. parent_display .. ", you feel: " .. list .. suffix .. "."
@@ -394,10 +402,11 @@ function narrator.surface_contents(ctx, surface_name, parent, items, target)
             return "On top of the " .. parent_display .. ", you find: " .. list .. suffix .. "."
         end
     else
+        -- #96: Always include container name in "inside" narration
         if sense == "touch" then
-            return "Inside, you feel: " .. list .. suffix .. "."
+            return "Inside the " .. container_display .. ", you feel: " .. list .. suffix .. "."
         else
-            return "Inside, you find: " .. list .. suffix .. "."
+            return "Inside the " .. container_display .. ", you find: " .. list .. suffix .. "."
         end
     end
 end
@@ -451,7 +460,7 @@ function narrator.nested_container_opening(ctx, container)
     end
 end
 
---- Generate narration for nested container contents (#64, #65)
+--- Generate narration for nested container contents (#64, #65, #96)
 -- @param ctx game context
 -- @param container object
 -- @param items list of item name strings
@@ -460,10 +469,12 @@ function narrator.nested_container_contents(ctx, container, items)
     local sense = get_primary_sense(ctx, ctx.current_room)
     local agg = narrator.aggregate_items(items)
     local list = table.concat(agg, ", ")
+    -- #96: Include container name
+    local display = strip_article(container.name or container.id or "it")
     if sense == "touch" then
-        return "Inside, you feel: " .. list .. "."
+        return "Inside the " .. display .. ", you feel: " .. list .. "."
     else
-        return "Inside, you find: " .. list .. "."
+        return "Inside the " .. display .. ", you find: " .. list .. "."
     end
 end
 
