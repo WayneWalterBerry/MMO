@@ -1358,3 +1358,17 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - `wind_resistant = true` integrates with existing `traverse_effects.lua` infrastructure. The lantern is the first object to use this property — it protects the flame from wind gusts during room traversal.
 - Every non-broken state has a break→broken transition. Breaking while lit includes a flavor beat about the flame leaping free before dying.
 - The `provides_capability()` helper cleanly handles both string and table forms of `provides_tool` — used it for tool validation in the pour handler enhancement.
+
+### Session: Residual Test Failures — Issues #169, #171, #172 (2025-07-19)
+**Status:** ✅ COMPLETE
+**Requested by:** Wayne "Effe" Berry
+
+**Deliverables:**
+- `src/engine/verbs/fire.lua` — `find_fire_source()` now detects unlit objects whose FSM states provide a capability, auto-ignites them before use. Added `has_capable_state()` and `auto_ignite()` helpers. Excludes target object from fire source search to prevent self-lighting.
+- `src/engine/verbs/fire.lua` — burn handler no-flame error uses `ctx.current_verb` instead of hardcoded "burn"
+- `src/engine/verbs/crafting.lua` — put handler uses `target.container_preposition` for narration instead of raw parsed preposition
+
+**Key Notes:**
+- `auto_ignite()` directly applies state properties (same approach as FSM's `apply_state`), bypassing FSM guards like `requires_property`. This is intentional — auto-striking a match during fire-source detection is an implicit convenience action, not a player-initiated verb.
+- `exclude_obj` parameter on `find_fire_source()` prevents the candle (target) from being detected as its own fire source — its lit state also provides `fire_source`.
+- The `container_preposition` override only affects the narration text, not the surface-routing logic. Parsing still uses the player's input preposition for determining which surface to place items on.
