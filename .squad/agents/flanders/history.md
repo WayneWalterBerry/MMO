@@ -458,3 +458,51 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 
 **Result:** Zero regressions. Full suite clean (1 pre-existing bedroom-door failure only).
 
+### Issues #114 + #115: Salve and Nightshade Antidote Objects — CREATED ✅
+
+**Task:** Create two new consumable objects for the medical/poison system.
+
+**salve.lua (Issue #114):**
+- Ceramic pot of herbal ointment. FSM: sealed → open → empty.
+- `apply` verb transition (open → empty) with `heal_injury` effect and `requires_target_injury`.
+- Material: ceramic (matches oil-flask pattern for clay vessels).
+- Cures: bleeding, minor-cut, bruise. `healing_boost = 3`.
+- Full sensory properties per state. Apothecary stamp flavor text.
+
+**nightshade-antidote.lua (Issue #115):**
+- Glass vial of amber cure liquid. FSM: sealed → open → empty + broken.
+- `drink` verb transition (open → empty) with `cure_injury` effect targeting `poisoned-nightshade`.
+- `effects_pipeline = true` with `pipeline_effects` chain (matches poison-bottle pattern).
+- Material: glass. Includes `mutations.shatter` with glass-shard spawn.
+- `antidote_for = "nightshade"` metadata for engine lookup.
+- Pour transition as safe disposal path (no cure effect).
+
+**Pattern Notes:**
+- Salve follows bandage.lua's `requires_target_injury` pattern for wound-targeting.
+- Antidote follows poison-bottle.lua's effects pipeline and glass fragility patterns.
+- Both use the sealed → open → empty FSM progression standard for consumables.
+
+**Result:** 117 test files pass, zero regressions.
+
+### 2026-07-28: Issues #116 + #117 — Candle Holder & Wall Clock Updates
+
+**Task:** Update candle-holder.lua (issue #116) and wall-clock.lua (issue #117) per Wayne's request.
+
+**#116 — candle-holder.lua:**
+- Object already existed as a well-formed composite (candle as detachable part, brass material, FSM with_candle/empty states).
+- **Added** `"candelabra"` to keywords array — was the only missing keyword from the issue spec.
+- No structural changes needed — the composite pattern (parts, factory, detach/reattach transitions) was already complete.
+
+**#117 — wall-clock.lua:**
+- Object already existed with 24-state cyclic FSM (hour_1 through hour_24 with programmatic generation).
+- **Added** `stopped` state — broken clock with motionless pendulum, cracked glass, silent on_listen.
+- **Added** break transitions from every hour state to `stopped` (verbs: break, smash, hit, strike) with keyword/category mutation.
+- **Added** `on_listen` and `on_feel` to each programmatic hour state — previously only existed at top level, not per-state.
+- Updated file header comment to document the stopped state.
+
+**Pattern Notes:**
+- Wall clock is the only object using `for` loops to generate states/transitions programmatically. The break transitions (24 of them) justified extending this pattern rather than hand-writing each one.
+- Stopped state is terminal — no repair transition. Puzzle designers can add repair if needed later.
+
+**Result:** 118/118 test files pass. Zero regressions. Both Lua files parse clean.
+

@@ -1,4 +1,0 @@
-### 2026-03-24T06-39-04Z: User directive — Meta Compiler Direction
-**By:** Wayne (via Copilot)
-**What:** Tomorrow's meta validation research should focus ONLY on a Custom Meta Compiler approach. Not config-style tests, not a different language for object definitions. The compiler uses compiler-like ideas (parser, tokenizer, validator) to validate the "language" of an object — NOT compile to native. The engine still consumes .lua files at runtime. The compiler validates what the game engine expects: correct fields, correct types, correct references, correct structure for objects/rooms/levels. This compiler itself may be written in a different language than Lua. Think of it as a front-end compiler (lexer → parser → semantic analysis) that produces validation results, not machine code.
-**Why:** Wayne narrowed the option space — Options A, C, D from the plan are off the table. Only Option B (Custom Meta Compiler) is being considered.

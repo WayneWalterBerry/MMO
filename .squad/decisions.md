@@ -1,9 +1,9 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-24T19:50:00Z  
+**Last Updated:** 2026-03-24T19:55:00Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
-**Latest Merge (2026-03-24T19:50:00Z):** D-BURNABILITY-MATERIAL-DERIVED  
+**Latest Merge (2026-03-24T19:55:00Z):** D-FIRE-PROPAGATION-ARCHITECTURE, D-WASH-VERB-FSM, D-MATCH-TERMINAL-STATE, D-PUSH-LIFT-SLIDE-VERBS, D-ENGINE-HOOKS-USE-EAT-DRINK, D-SALVE-ANTIDOTE-OBJECTS  
 **Previous Decisions:** D-PLAYER-CANONICAL-STATE, D-OBJECT-INSTANCING-FACTORY, D-ENGINE-REFACTORING-REVIEW, D-META-CHECK-V1-APPROVAL, D-WAYNE-CODE-REVIEW-DIRECTIVE, D-WAYNE-METACOMPILER-COMPILER-LINTER, D-WAYNE-TDD-REFACTORING-DIRECTIVE, D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION, D-BRASS-BOWL-KEYWORD-REMOVAL, D-EMBEDDED-PRESENCES, D-OPEN-CLOSE-HOOKS, D-P1-PARSER-CLUSTER, D-CONTAINER-SENSORY-GATING
 
 ---
@@ -2703,7 +2703,192 @@ The old `obj.flammable` and `categories = {"flammable"}` paths are removed. Only
 
 ---
 
-**End of 2026-03-24T19:50:00Z Decision Inbox Merge**
-**Total Active Decisions:** 92 (91 prior + 1 new from inbox)
-**Last Merge:** 2026-03-24T19:50:00Z (Scribe)
-**Inbox Status:** 1 file archived, ready for deletion
+---
+
+## FIRE & BURN SYSTEM (Burndown Wave 8 — 2026-03-24T19:55:00Z)
+
+### D-FIRE-PROPAGATION-ARCHITECTURE
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-24 (Implemented in #121)  
+**Status:** Implemented  
+**Issue:** #121
+
+Fire propagation is implemented as a standalone tick-based module (`src/engine/fire_propagation/init.lua`) that runs once per game tick in the post-command phase of the game loop.
+
+**Key Choices:**
+
+**Proximity Model (3 tiers)**
+- **SAME_SURFACE (0.8):** Items on the same furniture surface. Highest spread chance — they're effectively touching.
+- **SAME_PARENT (0.5):** Items on different surfaces of same furniture. Medium spread — heat rises/radiates.
+- **SAME_ROOM (0.2):** Items loose in room or on different furniture. Low spread — radiant heat only.
+
+**Spread Formula**
+`chance = proximity_factor × target_flammability × source_intensity`
+
+All values derived from the material system. No per-object fire configuration needed.
+
+**Rate Limiting**
+MAX_IGNITIONS_PER_TICK = 2. Fire cascades over multiple turns. Players always have at least one turn to react.
+
+**Generic Destruction Countdown**
+Non-FSM objects get `_burn_ticks_remaining = 1` when ignited. They burn for one tick before destruction. FSM objects use declared burn transitions.
+
+**"Burning" vs "Lit"**
+Lit candles do NOT propagate fire. Only objects in "burning" FSM state or with `is_burning = true` spread fire. Prevents candles from being fire hazards.
+
+**Impact:**
+- **Flanders:** Objects with custom burn behavior use FSM transitions or mutations
+- **Moe:** Room designers aware of fire propagation chains on same surface
+- **Nelson:** 23 tests with deterministic RNG (`ctx.fire_rng`)
+- **Sideshow Bob:** Fire chains enable puzzle design (escape scenarios, timed mechanics)
+
+**Verification:** 23 tests passing, 118 files green.
+
+---
+
+## VERB SYSTEM EXPANSION (Burndown Wave 8 — 2026-03-24T19:55:00Z)
+
+### D-WASH-VERB-FSM
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-24 (Implemented in #112)  
+**Status:** Implemented  
+**Issue:** #112
+
+Wash verb implemented with FSM state transition (soiled → clean) and water source validation.
+
+**Key Choices:**
+1. **Water source requirement** — Objects checked in inventory/room for water_source tool
+2. **FSM enforcement** — Transition only if obj.states.soiled exists
+3. **Alias coverage** — wash, rinse, clean, scrub (4 aliases)
+4. **Terminal state** — already_clean check prevents redundant washes
+
+**Impact:**
+- **Flanders:** Objects needing clean states add FSM: `{ from = "soiled", to = "clean" }`
+- **Moe:** Rooms can place water sources for puzzle prerequisites
+- **Sideshow Bob:** Washing enables puzzle logic (cleanliness requirements)
+
+**Verification:** 34 tests passing, 118 files green.
+
+---
+
+### D-MATCH-TERMINAL-STATE
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-24 (Implemented in #119)  
+**Status:** Implemented  
+**Issue:** #119
+
+Terminal state protection prevents relighting spent matches. FSM guard in light verb.
+
+**Key Choices:**
+1. **Terminal flag** — Match FSM includes `terminal = true` on spent state
+2. **Verb guard** — Light verb rejects FSM transitions from terminal states
+3. **Error message** — "The match is spent. It won't light again."
+
+**Impact:**
+- **Flanders:** Objects declaring terminal states are immutable after transition
+- **Sideshow Bob:** Terminal states enable one-time-use puzzle mechanics
+
+**Verification:** 5 tests passing, 118 files green.
+
+---
+
+### D-PUSH-LIFT-SLIDE-VERBS
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-24 (Implemented in #111)  
+**Status:** Implemented  
+**Issue:** #111
+
+Movement verbs implemented with containment validation and full alias support.
+
+**Verbs:**
+- **PUSH** — Move object away (cardinal directions)
+- **LIFT** — Pick up and hold (weight/capacity checks)
+- **SLIDE** — Move horizontally without lifting (heavy furniture)
+- **DROP** — Release from hand to floor
+
+**Aliases:**
+- push/shove, lift/pick/grab, slide/drag/shift, drop/release/discard (12+ total)
+
+**Key Choices:**
+1. **Containment validation** — Weight checks before lift, capacity checks before place
+2. **Spatial bounds** — Can't push off room edge
+3. **Hand slot limits** — Max 2 items in hands
+4. **Parser integration** — Full noun + direction resolution
+
+**Impact:**
+- **Moe:** Room designers place heavy objects knowing push/slide vs lift constraints
+- **Sideshow Bob:** Movement constraints enable spatial puzzles
+
+**Verification:** 46 tests passing, 118 files green.
+
+---
+
+### D-ENGINE-HOOKS-USE-EAT-DRINK
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-24 (Implemented in #102)  
+**Status:** Implemented  
+**Issue:** #102
+
+Engine hooks (use/eat/drink) dispatch to object-defined callbacks, enabling custom behaviors.
+
+**Verbs:**
+- **USE** — Generic object interaction, dispatch to `obj.on_use(context)`
+- **EAT** — Food consumption, dispatch to `obj.on_eat(context)`, validates edibility
+- **DRINK** — Liquid consumption, dispatch to `obj.on_drink(context)`, validates drinkability
+
+**Key Choices:**
+1. **Callback dispatch** — Objects define handlers; engine runs them
+2. **Effect pipeline integration** — Callbacks can mutate state, trigger FSM, remove from inventory
+3. **Graceful fallback** — Objects without callbacks receive generic message
+4. **Context availability** — All callbacks receive full game context
+
+**Impact:**
+- **Flanders:** Objects can define custom behaviors via callbacks
+- **Moe:** Room objects (furniture) can have use behaviors
+- **Sideshow Bob:** Custom interactions enable puzzle design
+
+**Verification:** 20 tests passing, 118 files green.
+
+---
+
+## OBJECT DESIGN (Burndown Wave 8 — 2026-03-24T19:55:00Z)
+
+### D-SALVE-ANTIDOTE-OBJECTS
+**Author:** Flanders (Object Designer)  
+**Date:** 2026-03-24 (Implemented in #114 + #115)  
+**Status:** Implemented  
+**Issues:** #114, #115
+
+Salve and antidote objects created with FSM states and healing effects.
+
+**Salve Object (`src/meta/objects/salve.lua`)**
+- Template: small-item
+- Material: beeswax (flammability 0.2)
+- FSM: unused → applied → drained
+- Healing: restores 30 health on apply
+- Sensory descriptions per state
+
+**Antidote Object (`src/meta/objects/antidote.lua`)**
+- Template: small-item
+- Material: glass (container)
+- FSM: sealed → consumed → empty
+- Healing: removes poison condition on drink
+- Sensory descriptions per state
+
+**Key Choices:**
+1. **FSM-driven states** — Use app/drink verbs to transition
+2. **Effects integration** — Healing callbacks in effects pipeline
+3. **Terminal semantics** — "drained" and "empty" are exhausted, not mutations
+
+**Impact:**
+- **Nelson:** New healing objects for test scenarios
+- **Sideshow Bob:** Healing items enable puzzle design (recovery prerequisites)
+
+**Verification:** 117 files green (salve/antidote pass as part of effects system).
+
+---
+
+**End of 2026-03-24T19:55:00Z Decision Inbox Merge**
+**Total Active Decisions:** 98 (92 prior + 6 new from Wave 8 inbox)
+**Last Merge:** 2026-03-24T19:55:00Z (Scribe)
+**Inbox Status:** All Wave 8 inbox files processed and archived
