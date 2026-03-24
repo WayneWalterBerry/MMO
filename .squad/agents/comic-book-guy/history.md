@@ -19,6 +19,114 @@
 
 ## Recent Updates
 
+### Session Update: Brass Spittoon Object Design Document (2026-03-24)
+**Status:** ✅ DESIGN COMPLETE
+
+**Deliverable:** `docs/objects/brass-spittoon.md` — Comprehensive object design doc, ~14.5 KB.
+
+**What was done:**
+- Wrote Phase D1 brass spittoon design document
+- Established brass as durable counterpart to ceramic chamber pot (contrast principle)
+- Documented physical properties: tarnished brass, wide rim, tobacco stains, weight 2.5 (dense)
+- Detailed wearable mechanics: head/outer slot, is_helmet = true, makeshift fit, coverage 0.9
+- Specified FSM states: intact → stained → dented (cosmetic degradation only, never shatters)
+- Included all five sensory descriptions (feel, smell, listen, taste) with worn variants
+- Created comprehensive gameplay tradeoff table (pot vs spittoon) highlighting durability vs weight vs smell
+- Documented protection profile: 1.8–2.0 (vs pot's 1.4–1.6) with brass material properties as foundation
+- Container specification: capacity 2, holds small items + liquids (true to purpose)
+- Included keywords: spittoon, cuspidor, spit bowl, brass bowl, tobacco bowl
+- Provided implementation notes for Phase D2 (Flanders) with complete lua structure
+- Emphasized material properties as single source of truth: brass (hardness 6, density 8500, fragility 0.1)
+
+**Key Design Decisions:**
+- **Brass ≠ Strong:** Spittoon has lower hardness (6 vs ceramic 7, steel 9) but incredible durability from fragility 0.1
+- **Dents Forever:** Fragility 0.1 means accumulative cosmetic damage (dents) but never structural failure (no shattering)
+- **Wear Penalty:** Intense tobacco smell narration ("The inside still smells of old tobacco. You catch whiffs of it every time you move.")
+- **Weight Matters:** 2.5 density (vs pot 1.0) signals future integration with stamina system
+- **Design Contrast:** Ceramic says "use it now before it breaks"; Brass says "you'll be stuck with this forever"
+- **Coverage 0.9:** Nearly complete head protection but back of neck exposed (not a helm, an improvised bowl)
+- **Makeshift Fit:** ×0.5 protection multiplier; the spittoon wasn't designed for head wear
+
+**Document Structure:**
+1. Physical description + material properties
+2. FSM lifecycle (intact → stained → dented)
+3. Comprehensive sensory matrix (look/feel/smell/listen/taste)
+4. Worn state sensory descriptions (smell, appearance, feel, listen)
+5. Wearable equip metadata + protection profile
+6. Behavior (wear/remove/conflict)
+7. Combat degradation (never shatters, dents accumulate)
+8. Container specifications
+9. Keywords & aliases (spittoon, cuspidor, spit bowl, etc.)
+10. Weight & physical impact (2.5, future stamina integration)
+11. Design principles: Brass vs Ceramic contrast
+12. Gameplay tradeoff table
+13. Sensory deep dive (on_feel, on_smell, on_listen, on_taste)
+14. Related objects (chamber pot comparison)
+15. Implementation notes for Phase D2
+
+**Why This Matters:**
+- Brass spittoon is durable alternative to ceramic pot, not superior—different narrative (endurance vs fragility)
+- Material properties alone create emergent durability: fragility 0.1 → dents forever, fragility 0.7 → cracks immediately
+- Establishes pattern for object design: containers can be wearable, wearables can be containers
+- Tobacco smell when worn is gameplay consequence (not bug), not just flavor
+- Sets foundation for Phase D2 (implementation) and Phase D3 (testing)
+- Demonstrates designer mental model: "What are this object's material properties?" → everything else emerges
+
+### Session Update: Armor System Design Document (2026-03-24)
+**Status:** ✅ DESIGN COMPLETE
+
+**Deliverable:** `docs/design/armor-system.md` — Designer-facing armor system guide, ~40 KB comprehensive design document.
+
+**What was done:**
+- Wrote Phase A2 armor system design doc covering designer responsibilities (NOT engine architecture)
+- Documented core philosophy: **protection is derived from material, never hardcoded**
+- Created Material → Protection table (22 materials ranked by protection value)
+- Built Damage Type × Material Interaction Matrix (slashing vs piercing vs blunt)
+- Detailed degradation narratives (ceramic cracks, brass dents, fragility mechanics)
+- Provided 5 full worked examples: ceramic pot (fragile), brass spittoon (durable), steel helm (elite), leather cap (flexible), sack on head (comedic)
+- Brass spittoon case study: hardness 6, fragility 0.1, durable but heavy (design philosophy: durable ≠ strong)
+- Design tips: material reuse, fit as story, coverage for partial protection, layering armor, antipatterns
+- Integration guide: how armor hooks into injury system, wearables, appearance/mirror
+- Q&A section covering 7 common designer questions
+- Future extensions section (not Phase A2): elemental armor, enchantments, repair, weight system, environmental wear
+
+**Key Design Decisions:**
+- Designers declare `material = "ceramic"` and `wear = { slot, layer, coverage, fit }` — engine derives everything else
+- No hardcoded `provides_armor`, `reduces_unconsciousness`, or `armor_strength` properties on objects
+- Material properties (hardness, flexibility, density, fragility) are single source of truth for armor behavior
+- Coverage (0.0–1.0) and fit (makeshift/fitted/masterwork) are multiplicative factors on protection
+- Fragility determines degradation: ceramic (0.7) breaks after 2–3 hits; brass (0.1) dents forever
+- All interactions (damage type, material, location) are emergent from existing systems, not hardcoded
+
+**Document Structure:**
+1. Executive summary + Big Picture flow
+2. Making an object act as armor (metadata required)
+3. Material → Protection table (all 22 materials ranked)
+4. Damage Type × Material Matrix (slashing/piercing/blunt vs materials)
+5. Degradation narratives (FSM states with flavor text)
+6. Five complete worked examples (ceramic pot, brass spittoon, steel helm, leather cap, sack)
+7. Brass spittoon case study (durable counterpart to ceramic pot)
+8. Core design philosophy (6 principles)
+9. Design tips for creators (6 practical guidelines)
+10. Anti-patterns (5 common mistakes)
+11. Integration with injury/wearable/appearance systems
+12. Q&A (7 common questions)
+13. Future extensions (not in Phase A2)
+
+**Why This Matters:**
+- Establishes designer mental model: materials are properties, not labels
+- Prevents future hardcoding of per-object armor values
+- Enables emergent gameplay: same system handles pots, spittoons, helms, and sacks without special cases
+- Documents the Dwarf Fortress principle: "engine operates on property bags, emergent behavior is free"
+- Sets up Phase A4 (implementation) with clear design semantics
+
+**Document Quality:**
+- Timeless design guidance (not bug fix history)
+- Designer-facing (not engine architecture)
+- 13 comprehensive sections covering philosophy, mechanics, examples, integration
+- Cross-referenced to architecture docs and material registry
+- Includes real worked examples from the game world (ceramic pot, brass spittoon)
+
 ### Session Update: Chest Object Design Enhancement (2026-07-25)
 **Status:** ✅ DESIGN COMPLETE
 
@@ -388,3 +496,57 @@ The bear trap design now demonstrates the complete **object declaration → pipe
 - **Wayne Design Batch:** Material Consistency Core Principle approved (instances CAN override), nightshade L1, soiled bandage L2, combat deferred, Bob's puzzles theorized
 
 **Orchestration Complete:** All 3 spawns consolidated into decisions.md. New TDD directive and hiring department policy filed. Ready for git commit.
+
+---
+
+### Session Update: Chest Design Carry-Over Verification (2026-03-24 — Autonomous)
+**Status:** ✅ DESIGN COMPLETE & VERIFIED
+
+**Task:** Design Carry-Over from yesterday's plan — "Chest object — Design doc + chest.lua (two-handed carry, open/close FSM, container, based on drawer pattern)"
+
+**Verification Results:**
+
+Both deliverables exist and are complete:
+
+1. **Design Doc:** `docs/objects/chest.md` — 311 lines
+   - ✅ Physical description: wooden chest, oak with iron bands
+   - ✅ Two-handed carry system: `hands_required = 2`, strategic inventory trade-off documented
+   - ✅ Open/close FSM: closed (default) ↔ open with sensory gating (accessible flag)
+   - ✅ Container mechanics: 8-slot capacity, max item size 3, 30-unit weight limit
+   - ✅ Material system: primary material `oak` with iron hardware as descriptive element
+   - ✅ Sensory properties: comprehensive multi-sense matrix (look, feel, smell, listen) + taste edge case
+   - ✅ Two-hand inventory integration: explicit interaction sequence example showing hands constraint
+   - ✅ Drawer vs Chest comparison: detailed property table (size, weight, capacity, reattach_to)
+   - ✅ Keywords: chest, trunk, storage, wooden chest, heavy chest, treasure chest
+   - ✅ Level 1 placement: Crypt (puzzle chest), Deep Cellar (supplies chest) documented
+
+2. **Implementation:** `src/meta/objects/chest.lua` — 103 lines, production-ready
+   - ✅ Follows drawer.lua FSM+container pattern exactly (open state exposes contents, accessible flag per state)
+   - ✅ GUID: `{6cf2ab69-60e5-4c14-9b3a-c559b6037cf4}`
+   - ✅ Properties: size 5, weight 20, portable true, hands_required 2
+   - ✅ Container config: capacity 8, max_item_size 3, weight_capacity 30
+   - ✅ Transitions: closed→open ("click + hinge groan"), open→closed ("thud + latch click")
+   - ✅ State-specific sensory: closed state shows exterior, open state lists interior contents via registry
+   - ✅ Design doc references: All implementation details match design spec
+
+3. **Design Decisions:** D-CHEST-DESIGN filed in decisions.md
+   - ✅ Smell partial gating rationale (wood is porous, unlike sealed vault)
+   - ✅ Iron hardware metadata guidance (primary material oak, iron described in text)
+   - ✅ Cannot-open-while-carrying constraint documented
+   - ✅ Capacity enforcement timing (at insertion, not at close)
+   - ✅ Pattern reference for Flanders (drawer.lua = exact pattern to follow)
+
+**Why This Matters:**
+- Chest is a **flagship portable container** demonstrating the two-hand system
+- Establishes **material-derived properties** pattern (oak hardness/fragility/density from registry)
+- Provides **design+implementation parity** template for future objects
+- **Gameplay impact:** Two-handed carry creates resource allocation choices (can't hold torch while carrying loot)
+- **Sensory richness** without breaking isolation semantics (smell leaks through wood, look/feel fully gated)
+
+**Coordination Complete:**
+- ✅ Design doc passed review (Principle 1.4: code-derived, sensory space, spatial relationships)
+- ✅ Implementation verified against Drawer pattern (FSM, container mechanics, state accessibility)
+- ✅ Ready for player testing (Level 1 crypt/cellar placement verified in design doc)
+- ✅ No outstanding design decisions or implementation blockers
+
+**Conclusion:** Chest object design + implementation carries over from yesterday as **COMPLETE & VERIFIED**. Both design doc and .lua file are production-ready. Can proceed to next phase (chest instance placement in Level 1 rooms) without further design work.

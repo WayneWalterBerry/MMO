@@ -48,6 +48,24 @@
 
 ## Recent Updates
 
+### P0 Fix Verification — Issues #132, #133, #135 (2026-07-25)
+
+**Status:** ✅ ALL VERIFIED AND CLOSED
+
+Verified Smithers' and Bart's P0 fixes for three issues. Full test suite + targeted test runs, zero regressions.
+
+| Issue | Fix | Test File | Result |
+|-------|-----|-----------|--------|
+| **#133** — hit head max_health nil + second hit kills | max_health defensive init, damage ceiling | `test/injuries/test-hit-head.lua` | **14/14 PASS** |
+| **#135** — compound find/get loses context | containers.open sets accessible, state persists | `test/search/test-compound-search-get.lua` | **14/14 PASS** |
+| **#132** — `find match and get it` fails | compound 'and' split + pronoun resolution | `test/search/test-compound-search-get.lua` | **14/14 PASS** |
+
+**Full suite:** 78/78 test files PASS, zero regressions.
+
+**Actions taken:**
+- Commented verification results on all three issues
+- Closed #132, #133, #135 as completed
+
 ### Phase A3: Armor Interceptor TDD Tests (2026-03-24)
 
 **Status:** ✅ COMPLETE — 30 tests written, 14 pass, 16 fail (expected TDD red phase)
@@ -1199,3 +1217,23 @@ All 6 mirror bugs are now FIXED. The 4 previously expected-fail tests in `test-m
 - Smithers' #52 fix was comprehensive — addressed wear.slot resolution, double-periods, injury deduplication, severity adjectives, hands grammar, and overall health composition in one commit
 - The semicolon fix for #95 is elegant — avoids awkward "healthy and alert and dried blood" by using "; " as separator when phrases already contain "and"
 - Mirror appearance system is now production-quality — all 26 M4 tests pass, all 6 filed bugs resolved
+
+---
+
+## CROSS-AGENT UPDATES (2026-03-24T12:41:24Z Spawn Orchestration)
+
+### Phase A3: Armor Interceptor TDD Tests (30 tests)
+- **Status:** DELIVERED
+- **File:** `test/armor/interceptor/`
+- **Test Results:** 14 pass, 16 fail (by design, awaiting implementation)
+- **Purpose:** Serve as implementation specification for Bart (Phase A1)
+- **Dependency:** Bart implementing armor system to make these tests pass
+
+### Decision Updates
+- **D-PLANT-MATERIAL:** Added `plant` material to registry (ivy.lua, future botanical objects)
+- **D-SELF-INFLICT-CEILING:** Self-inflicted injuries can never kill (except external damage can)
+- **D-SEARCH-ACCESSIBLE:** Search container open must set `accessible = true`
+
+### Cross-Team Notes
+- Material audit validation test should include plant material verification
+- No engine changes needed for plant material — registry is self-extending

@@ -1088,3 +1088,26 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - Per-object effect ownership (objects declare effects, engine processes them) is correct and should remain the pattern. Per-verb effect handling was rejected.
 
 **Decisions Made:** bart-engine-hooks (Effect Processing Pipeline for injuries)
+
+---
+
+## CROSS-AGENT UPDATES (2026-03-24T12:41:24Z Spawn Orchestration)
+
+### Phase A1: Armor System Architecture (684 lines)
+- **Status:** DELIVERED
+- **File:** `docs/architecture/engine/armor-system.md`
+- **Scope:** Complete armor slot system, damage negation calculations, durability tracking, FSM transitions, material integration, wearable verb integration, inventory management
+- **Dependency:** Nelson (A3) writing TDD tests as specification
+
+### Phase D1: Brass Spittoon Design Doc
+- **Status:** DELIVERED
+- **File:** `docs/objects/brass-spittoon.md`
+- **Scope:** Aesthetic design, mechanics, flavor text, integration patterns
+- **CBG Carry-over:** Chest design doc verified complete (`docs/objects/chest.md`)
+
+### Search Container Fixes (P0 #135 + #132)
+- **Decision:** D-SEARCH-ACCESSIBLE merged into decisions.md
+- **Fix:** Search now sets `object.accessible = true` when opening containers
+- **File:** `src/engine/search/containers.lua` (1-line fix)
+- **Tests:** 14 new tests, all passing, zero regressions
+- **Commit:** Referenced in orchestration log

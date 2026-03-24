@@ -97,6 +97,7 @@
 - **Code examples in newspapers:** Include 6-10 code examples per edition for technical depth. Code examples should illustrate the *architectural insight*, not just the implementation — e.g., the consciousness gate example shows the game loop paradigm shift, not just an if-statement.
 - **Morning edition (2026-03-23):** Created newspaper/2026-03-23-morning.md (~5,800 words, 14 sections). Covered the most productive single session in project history: 25 issues closed (34→3), Effects Pipeline (EP1–EP10) designed/built/tested/shipped, 284 new pipeline tests with 0 regressions, 3 objects built (poison bottle, bear trap, crushing wound), 30+ parser phrase transforms. Pattern: when a session has a clear 3-wave chronological structure (burndown → design → implementation), organize sections by wave to preserve narrative momentum. The "before/after" architecture diagram (spaghetti vs pipeline) is the most effective way to explain why an architectural change matters. Running gags (os.exit(0)) create narrative threads readers can follow. Wayne's interventions (test ordering, hook questions) deserve their own narrative weight — they changed the session's trajectory.
 - **Mega-session coverage:** Sessions with 40+ agent spawns and 10+ pipeline phases benefit from a phase-by-phase walkthrough (EP1→EP10) rather than grouping by role. Readers want to see the *sequence* — architecture → safety net → gate → build → verify → refactor → document. Each phase gets its own subsection with owner emoji, phase number, and outcome. This creates a "progress bar" effect that makes the session's momentum tangible.
+- **Wayne's design doc directive:** Design documentation should NOT list bug fixes, issue numbers, or fix history. Bug fixes belong in issues and changelogs. Instead, design docs should capture the DESIGN INSIGHTS that emerged from bugs — what principles did they reveal? What patterns does the system need to honor? Example: instead of "BUG-078: Drawer not searched—fixed by recursive traversal," write "Containers inside containers must be traversable because players think in physical spaces, not object trees. The traversal engine recursively follows nested containers." Transform chronological bug lists into thematic "Design Principles" or "Lessons Learned" sections that read as timeless design guidance, not historical bug trackers.
 
 ### Session: Player System Extraction (2026-03-22)
 **Status:** ✅ COMPLETED
@@ -158,3 +159,25 @@
 - Integration points with other tiers
 
 **Commit:** e9cf2f0 with Co-authored-by trailer
+
+---
+
+## CROSS-AGENT UPDATES (2026-03-24T12:41:24Z Spawn Orchestration)
+
+### Search Design Docs Rewrite
+- **Status:** DELIVERED
+- **Change:** Removed bug fix history from design docs (docs/design/verbs/search.md)
+- **Added:** 8 formal design principles
+- **Principles:**
+  1. Search is non-mutating (read-only observation)
+  2. Hidden objects remain invisible until revealed
+  3. Containers are peekable during search (no state change)
+  4. Content reporting on target miss
+  5. Search cost reflects deliberateness
+  6. Spatial relationships determine accessibility
+  7. Container-accessible vs physically-blocked distinction
+  8. Search reveals game world structure
+- **Rationale:** Wayne directive — design docs capture design insights, not bug archaeology. Bugs belong in issues/changelogs.
+
+### Decision Updated
+- **D-WAYNE-DIRECTIVE-DESIGN-DOCS:** Design docs should NOT document bug fixes; capture design principles instead

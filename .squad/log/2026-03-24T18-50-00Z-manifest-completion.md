@@ -118,7 +118,7 @@ Decisions merged: 6 from inbox → decisions.md
 Regression tests: 0 failures, all tests passing
 Team histories: Updated with cross-agent context
 
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+Co-authored-by: Copilot <[email scrubbed]>
 ```
 
 ---

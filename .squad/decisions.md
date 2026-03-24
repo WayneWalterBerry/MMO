@@ -1960,8 +1960,97 @@ Search/find now **physically opens** closed containers it enters, rather than pe
 
 ---
 
-**End of 2026-03-24T23:20Z Spawn Completion Merge**  
-**Total Active Decisions:** 77 (76 prior + 1 new)  
-**Last Merge:** 2026-03-24T23:20Z (Scribe)  
-**Inbox Status:** EMPTY (all inbox files merged and deleted)
+### D-SEARCH-ACCESSIBLE: Search Container Open Must Set Accessible Flag
+
+**Author:** Bart (Architect)  
+**Date:** 2026-07-28  
+**Status:** Implemented  
+**Issues:** #135, #132  
+
+When the search traversal system opens a closed container (e.g., matchbox) via `containers.open()`, it must set `object.accessible = true` in addition to `is_open` and `open`. The `find_visible` function in `engine/verbs/init.lua` checks `obj.accessible ~= false` before searching container contents. Without this, items discovered by search inside closed containers remain invisible to all subsequent verb handlers (`get`, `take`, `examine`, etc.).
+
+**Scope:** `src/engine/search/containers.lua` — the `containers.open()` function is the single authoritative place where search opens containers. One-line fix ensures all callers benefit.
+
+**Invariant:** After `containers.open(ctx, obj)` succeeds, `obj.accessible` must be `true`. This matches the real game's mutation pattern where the closed matchbox (`accessible = false`) mutates to matchbox-open (`accessible = true`) via the verb system.
+
+---
+
+### D-PLANT-MATERIAL: New "plant" Material in Registry
+
+**Author:** Flanders  
+**Date:** 2026-07-27  
+**Status:** Implemented  
+**Scope:** `src/engine/materials/init.lua`
+
+Added `plant` material to the materials registry to support ivy.lua and future botanical objects (vines, moss, hedges, etc.).
+
+**Properties**
+| Property | Value | Rationale |
+|----------|-------|-----------|
+| density | 500 | Living wood/stem, lighter than timber |
+| melting_point | nil | Organic, doesn't melt |
+| ignition_point | 280 | Green plant matter, harder to ignite than dry paper |
+| hardness | 2 | Soft, flexible stems |
+| flexibility | 0.8 | Vines bend easily |
+| absorbency | 0.5 | Plant tissue absorbs water |
+| opacity | 0.7 | Dense foliage blocks some light |
+| flammability | 0.5 | Green = moderate; dry would be higher |
+| conductivity | 0.0 | Non-conductive |
+| fragility | 0.3 | Stems snap under stress but aren't brittle |
+| value | 1 | Common, no economic value |
+
+**Impact**
+- ivy.lua now has `material = "plant"` (was the only object missing material in the audit)
+- Future botanical objects (moss, hedge, vines) can reference this material
+- No engine changes needed — materials.get("plant") works automatically
+
+**Cross-Agent Notes**
+- **Nelson:** Material audit validation test (Phase B2) should include plant material
+- **Bart:** No engine changes needed — registry is self-extending
+
+---
+
+### D-SELF-INFLICT-CEILING: Self-Infliction Damage Can Never Kill
+
+**Author:** Smithers (UI/Parser Engineer)  
+**Date:** 2026-03-25  
+**Status:** Implemented  
+**Issue:** #133  
+
+Self-inflicted injuries (source contains "self-inflicted") are capped so they can never reduce health to 0. Two enforcement layers:
+
+1. `injuries.inflict()` caps initial damage at infliction time when source is self-inflicted — health stays ≥ 1.
+2. `injuries.tick()` death check skips `died = true` if ALL active injuries are self-inflicted.
+
+External injuries can still kill even when combined with self-inflicted damage. This means a player who weakened themselves via self-infliction and then takes a fatal external hit will die normally.
+
+**Design rationale:** "hit head" is self-harm for unconsciousness gameplay, not suicide. Players should be able to bonk themselves repeatedly without dying.
+
+---
+
+### D-SEARCH-SLOW-REVEAL-TIMING: Search Slow-Reveal Timing × 3
+
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-07-17  
+**Status:** Implemented  
+
+Wayne directed that the search slow-reveal (user-facing trickle delay in the browser) should be 3× slower. Search is a command of convenience but shouldn't be *too* convenient — the real-time delay makes searching feel deliberate and weighty.
+
+**Decision:** Multiplied `TRICKLE_DELAY_MS` by 3: **350 ms → 1050 ms** per line.
+
+**Files Changed**
+- `web/bootstrapper.js` (source)
+- `web/dist/bootstrapper.js` (deployed bundle)
+
+**Impact**
+- Each search result line now takes ~1 second to appear instead of ~0.35 seconds.
+- A 5-line search now takes ~5 seconds of user time instead of ~1.75 seconds.
+- This is presentation-layer only (JS); no Lua engine changes. All 76 test files pass.
+
+---
+
+**End of 2026-03-24T12:41:24Z Spawn Orchestration Merge**  
+**Total Active Decisions:** 81 (77 prior + 4 new from inbox)  
+**Last Merge:** 2026-03-24T12:41:24Z (Scribe)  
+**Inbox Status:** EMPTY (all 11 inbox files processed)
 

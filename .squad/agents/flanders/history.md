@@ -314,3 +314,15 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 **Design Doc Updated:** `docs/objects/chest.md` — status changed from "Design complete; implementation pending" to "🟢 In Game — src/meta/objects/chest.lua". Added implementation credit.
 
 **Result:** 74/74 test files pass, 0 regressions. Committed 57c38b4 and pushed.
+
+---
+
+## CROSS-AGENT UPDATES (2026-03-24T12:41:24Z Spawn Orchestration)
+
+### D-PLANT-MATERIAL Decision Logged
+- **Status:** Implemented
+- **Material:** `plant` added to registry
+- **Properties:** 500 density, 280 ignition_point, 0.8 flexibility, 0.5 flammability, etc.
+- **Use Case:** ivy.lua now has `material = "plant"` (previously missing in audit)
+- **Future:** Botanical objects (moss, hedges, vines) can reference without engine changes
+- **Cross-Team:** Nelson's material audit validation test should include plant material check

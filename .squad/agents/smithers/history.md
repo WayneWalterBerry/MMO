@@ -46,6 +46,24 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 - `history-archive-2026-03-20T22-40Z-smithers.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): UI architecture, parser pipeline implementation, web performance optimization, 880+ tests
 
 ## Learnings
+
+### 2026-03-25: Bug #133 — `hit head` crash + repeated hits kill player
+
+**Bug 1: `max_health nil error` on consciousness wake-up**
+- `src/engine/loop/init.lua` lines 120/122 used `player.max_health` directly in arithmetic.
+- If `max_health` was nil (edge case), arithmetic on nil crashes Lua.
+- Fix: Changed to `(player.max_health or 100)` defensive fallback.
+
+**Bug 2: Repeated self-inflicted head hits accumulate lethal damage**
+- Each `hit head` inflicts a concussion with 5 damage. After 20 cycles (100 damage), `compute_health` returns 0 → `tick()` reports death.
+- Design intent: self-inflicted head hits should ONLY cause unconsciousness, never death.
+- Fix (two layers):
+  1. `injuries.inflict()`: When source contains "self-inflicted", cap initial damage so health stays ≥ 1.
+  2. `injuries.tick()` Phase 3: Safety net — if all injuries are self-inflicted, skip death flag.
+
+**Tests:** 14 new tests in `test/injuries/test-hit-head.lua` — max_health nil safety, hit→unconscious→wake cycle, second hit re-knocks (not kills), 20-cycle stress test, damage ceiling verification.
+
+**Result:** All 78 test files pass, zero regressions. Commit 75fd800.
 
 ### 2026-03-23: Bugs #96, #97, #98, #99 — Search/Container Interaction Cluster
 
@@ -429,3 +447,44 @@ After the deep nesting refactor, `nested` objects (like the drawer in the nights
 7. **compose_natural dedup vs multiple injuries:** Dedup collapses identical injury phrases. Fix: deterministic adjective cycling via index + default severity to 'moderate' when nil.
 8. **resolve_part_display must match surface→part:** Lua pairs() iteration is non-deterministic. Use part.surface field to match surface_name → part key, not random first-match.
 9. **Accessible check parity:** Surface containers gate with zone.accessible ~= false. Root-content containers must do the same check on bag.accessible.
+
+### 2026-07-17: Search Slow-Reveal Timing × 3
+
+**Change:** `TRICKLE_DELAY_MS` in `web/bootstrapper.js` (and `web/dist/bootstrapper.js`) controls the real-time (user-time) delay between revealing each line of search output in the browser UI. Wayne wanted search to feel more deliberate — 3× slower.
+
+- **Old value:** 350 ms per line
+- **New value:** 1050 ms per line (350 × 3)
+- **Files changed:** `web/bootstrapper.js` line 48, `web/dist/bootstrapper.js` line 48
+- **Tests:** All 76 test files pass (tests are Lua-side; the trickle is JS-side presentation only).
+
+---
+
+### 2026-03-24: Phase F1 Re-Verification (Wayne Request)
+
+**Status:** ✅ NO NEW WORK NEEDED — All four bugs already fixed.
+
+Wayne requested Phase F1 carry-over bug fixes (#47, #49, #52, #53) using TDD. Upon review, all four were already completed in my 2026-03-23 session (commit 5738359):
+
+- **#47 (Dark search narration):** narrator sensory-aware — 'feel' in dark, 'find/see' in light. 5 verification tests pass.
+- **#49 (Stab weapon inference):** Already working at time of verification — 5 regression tests confirm inference from hand contents.
+- **#52 (Mirror full appearance):** get_wear_slot() resolves both wear_slot and wear.slot; worn items, injuries, health all shown. 5 verification tests pass.
+- **#53 (Duplicate take output):** Take handler outputs exactly once. 4 regression tests (get/take/grab/already-held) confirm.
+
+**Test Suite:** 78/78 test files pass. Zero regressions. Both `test/verbs/test-bug-regressions-47-53.lua` (28 tests) and `test/verbs/test-verify-f1-bugs.lua` (20 tests) pass cleanly.
+
+**Action:** No code changes. Verification only. Bugs remain open for Marge (QA) to formally close per squad protocol.
+
+---
+
+## CROSS-AGENT UPDATES (2026-03-24T12:41:24Z Spawn Orchestration)
+
+### P0 Fixes Complete (Commit referenced in logs)
+- **TDD Hit Head Fix (#133):** 14 tests, 3 code fixes, zero regressions
+- **Search Container Fix (P0 #135+#132):** D-SEARCH-ACCESSIBLE decision merged
+- **Decisions:** D-SELF-INFLICT-CEILING (self-harm can't kill), search timing 3× slower (1050ms)
+- **Search Timing:** TRICKLE_DELAY_MS multiplied by 3 in web/bootstrapper.js
+
+### Team Context
+- TDD directive enforced team-wide — all bug fixes must have tests first
+- Search is now 3× slower deliberately to make it feel deliberate (Wayne directive)
+- Self-infliction verbs safely bounded — can't reduce health below 1
