@@ -113,12 +113,12 @@ test("'what's around me' → 'look'", function()
     eq("look", transform_questions("what's around me"))
 end)
 
-test("'what's inside' (bare, no noun) → 'look'", function()
-    eq("look", transform_questions("what's inside"))
+test("'what's inside' (bare, no noun) → 'examine it' (#89)", function()
+    eq("examine it", transform_questions("what's inside"))
 end)
 
-test("'what is inside' (bare, no noun) → 'look'", function()
-    eq("look", transform_questions("what is inside"))
+test("'what is inside' (bare, no noun) → 'examine it' (#89)", function()
+    eq("examine it", transform_questions("what is inside"))
 end)
 
 -------------------------------------------------------------------------------

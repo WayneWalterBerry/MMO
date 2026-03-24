@@ -1773,8 +1773,9 @@ function verbs.create()
             end
             -- BUG-058: If we found a part, redirect to the parent for surface access
             -- BUG-096: Preserve the target name for gating messages
+            -- #88: Don't redirect when the part itself is a container (e.g., drawer)
             local target_name = cobj.name or "that"
-            if loc_type == "part" and parent_obj then
+            if loc_type == "part" and parent_obj and not cobj.container then
                 cobj = parent_obj
             end
             local found_anything = false

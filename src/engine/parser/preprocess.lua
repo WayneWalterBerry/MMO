@@ -429,10 +429,10 @@ local function transform_questions(text)
         return "examine " .. container_noun
     end
 
-    -- Bare "what's inside" (no noun) → "look"
+    -- Bare "what's inside" (no noun) → examine last-referenced container (#89)
     if text:match("^what'?s%s+inside$")
         or text:match("^what%s+is%s+inside$") then
-        return "look"
+        return "examine it"
     end
 
     -- Question patterns → help
