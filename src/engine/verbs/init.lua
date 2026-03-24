@@ -469,6 +469,35 @@ local function _fv_surfaces(kw, reg, room)
                     end
                 end
             end
+            -- #149: Also search root-level contents of surface-objects.
+            -- Handles nightstand.contents → drawer → matchbox → match chain.
+            -- The drawer lives in nightstand.contents (not in any surface),
+            -- so it was invisible to find_visible before this fix.
+            if obj.contents then
+                local function _search_accessible_chain(ids, depth)
+                    if depth > 3 then return nil end
+                    for _, cid in ipairs(ids) do
+                        local c = reg:get(cid)
+                        if c and c.accessible ~= false then
+                            if matches_keyword(c, kw) then
+                                return c, "container", obj, nil
+                            end
+                            if c.contents then
+                                for _, inner_id in ipairs(c.contents) do
+                                    local inner = reg:get(inner_id)
+                                    if inner and matches_keyword(inner, kw) then
+                                        return inner, "container", c, nil
+                                    end
+                                end
+                                local f, l, p, s = _search_accessible_chain(c.contents, depth + 1)
+                                if f then return f, l, p, s end
+                            end
+                        end
+                    end
+                end
+                local f, l, p, s = _search_accessible_chain(obj.contents, 0)
+                if f then return f, l, p, s end
+            end
         end
         -- Also search non-surface container contents (if accessible)
         if obj and not obj.surfaces and obj.container and obj.contents
@@ -4080,6 +4109,13 @@ function verbs.create()
     handlers["bash"]   = handlers["hit"]
     handlers["bonk"]   = handlers["hit"]
     handlers["thump"]  = handlers["hit"]
+    handlers["smack"]  = handlers["hit"]
+    handlers["bang"]   = handlers["hit"]
+    handlers["slap"]   = handlers["hit"]
+    handlers["whack"]  = handlers["hit"]
+    handlers["headbutt"] = handlers["hit"]
+    handlers["toss"]   = handlers["drop"]
+    handlers["throw"]  = handlers["drop"]
 
     ---------------------------------------------------------------------------
     -- CUT {target} WITH {tool}  /  CUT SELF WITH {tool}
