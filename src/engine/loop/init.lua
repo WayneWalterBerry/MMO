@@ -423,6 +423,26 @@ function loop.run(context)
         end
       end
 
+      -- #112: extract "in Y" target for wash and stash on context
+      context.wash_target = nil
+      if verb == "wash" then
+        local item, target = noun:match("^(.-)%s+in%s+(.+)$")
+        if item and item ~= "" and target and target ~= "" then
+          noun = item
+          context.wash_target = target
+        end
+      end
+
+      -- #109: extract "to Y" target for apply/treat and stash on context
+      context.apply_target = nil
+      if verb == "apply" or verb == "treat" then
+        local source, target = noun:match("^(.-)%s+to%s+(.+)$")
+        if source and source ~= "" and target and target ~= "" then
+          noun = source
+          context.apply_target = target
+        end
+      end
+
       -- Tier 3: goal-oriented prerequisite planning
       if goal_planner then
         if _G.TRACE then io.stderr:write("[TRACE] GOAP plan: verb=" .. verb .. " noun=" .. noun .. "\n") end
@@ -619,6 +639,15 @@ function loop.run(context)
     -- Post-command tick (flame countdown, candle burn, etc.)
     if context.on_tick then
       context.on_tick(context)
+    end
+
+    -- Fire propagation tick (#121): spread fire from burning to nearby flammable objects
+    local fp_ok, fire_propagation = pcall(require, "engine.fire_propagation")
+    if fp_ok and fire_propagation then
+      local fire_msgs = fire_propagation.tick(context)
+      for _, msg in ipairs(fire_msgs) do
+        print(msg)
+      end
     end
 
     -- Injury tick: advance injury FSMs, accumulate damage, check death

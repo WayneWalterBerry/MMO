@@ -1324,3 +1324,21 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - Three-tier resolution (FSM → mutation → generic destruction) gives object authors flexibility without requiring any engine changes — Principle 8 in action.
 - `perform_mutation` requires full engine context (`ctx.object_sources`, `ctx.mutation`, `ctx.loader`, `ctx.templates`). Test mocks for mutation paths need these fields or they'll crash on `object_sources` nil index.
 - Only one object (`paper.lua`) used the old `categories = {"flammable"}` approach. It has `material = "paper"` so the new system covers it automatically — no object file changes needed.
+
+### Session: Fire Propagation System — Issue #121 (2026-03-24)
+**Status:** ✅ COMPLETE
+**Requested by:** Wayne "Effe" Berry
+
+**Deliverables:**
+- New module: `src/engine/fire_propagation/init.lua` — tick-based fire spread engine
+- Game loop integration: post-command fire propagation tick in `src/engine/loop/init.lua`
+- 23 tests in `test/verbs/test-fire-propagation.lua`
+
+**Key Notes:**
+- Three-tier proximity model (SAME_SURFACE 0.8, SAME_PARENT 0.5, SAME_ROOM 0.2) mirrors physical reality: items touching on a shelf spread fire faster than items across the room.
+- Spread chance formula: proximity × target_flammability × source_intensity. All values derived from materials — zero per-object configuration needed (Principle 8 + Principle 9).
+- MAX_IGNITIONS_PER_TICK = 2 prevents runaway chain reactions. A room full of paper won't all ignite in one tick — fire cascades over multiple turns, giving the player time to react.
+- Generic destruction uses a 1-tick countdown (_burn_ticks_remaining) so players have one turn to extinguish before the object is destroyed. FSM objects use their declared burn transitions instead.
+- Deterministic RNG injection (`ctx.fire_rng`) makes propagation fully testable without mocking math.random globally.
+- `is_burning` detection supports three patterns: explicit flag, FSM state name "burning", and `state.is_burning = true` property — covers all object authoring styles.
+- Lit candles are NOT burning (they cast light but don't propagate fire). Only objects in "burning" state or with `is_burning` flag spread fire.
