@@ -46,7 +46,22 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 - `history-archive-2026-03-20T22-40Z-smithers.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): UI architecture, parser pipeline implementation, web performance optimization, 880+ tests
 
 ## Learnings
-
+
+
+### 2026-03-25: Issue #154 --- Prepositional suffixes corrupt item resolution
+
+**Root Cause:** Trailing prepositional phrases (on my head, in the mirror, from head, as a hat, on the floor) survived the preprocessing pipeline and polluted the noun string passed to item resolution. The pipeline had no stage to strip decorative prepositions.
+
+**Fix (two parts):**
+1. **New pipeline stage: strip_decorative_prepositions** (position 4, after strip_noun_modifiers, before expand_idioms). Strips trailing decorative prepositions while skipping compound-target verbs (put/place/set). Handles: as a/an WORD, in the mirror/reflection, on the floor/ground, on/from BODYPART.
+2. **transform_compound_actions addition:** put X on BODYPART -> wear X routing, using BODY_PARTS lookup table shared with the stripping stage.
+
+**Key Design Decision:** Stage runs EARLY (before look patterns, idioms, questions) so look at myself in the mirror strips to look at myself which then triggers the self-referential appearance transform. Skips put commands to preserve compound targets like put match in the matchbox.
+
+**Tests:** 27 new tests in test/parser/test-prepositional-stripping.lua --- body-part suffixes, from-suffix, mirror stripping, floor stripping, put-to-wear routing, compound preservation, regression guards.
+
+**Result:** All 27 new tests pass, zero regressions. Commit a928970.
+
 ### 2026-03-25: Bug #133 — `hit head` crash + repeated hits kill player
 
 **Bug 1: `max_health nil error` on consciousness wake-up**
