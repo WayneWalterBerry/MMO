@@ -122,7 +122,20 @@ function M.register(handlers)
                     elseif obj._state and obj._state:match("without_drawer") then
                         print("The drawer is gone. There's nothing to open.")
                     else
-                        print("You can't open " .. (obj.name or "that") .. ".")
+                        -- #170: State-specific message — explain WHY the object can't be opened.
+                        -- Check state's on_push (physical action for "open"), then state name.
+                        local state_info = obj.states and obj._state and obj.states[obj._state]
+                        if state_info and state_info.on_push then
+                            print(state_info.on_push)
+                        elseif obj._state and obj._state ~= "closed" then
+                            local article_name = obj.name or "that"
+                            -- Capitalize: "a heavy oak door" → "A heavy oak door"
+                            local cap_name = article_name:sub(1,1):upper() .. article_name:sub(2)
+                            print(cap_name .. " is " .. obj._state
+                                .. ". It won't budge.")
+                        else
+                            print("You can't open " .. (obj.name or "that") .. ".")
+                        end
                     end
                 end
                 return
@@ -361,6 +374,81 @@ function M.register(handlers)
         local obj = find_visible(ctx, target_word)
         if obj then
             print("You can't unlock " .. (obj.name or "that") .. ".")
+        else
+            err_not_found(ctx)
+        end
+    end
+
+    ---------------------------------------------------------------------------
+    -- LOCK — lock an exit door with the correct key (#170)
+    ---------------------------------------------------------------------------
+    handlers["lock"] = function(ctx, noun)
+        if noun == "" then print("Lock what?") return end
+
+        -- Parse "lock X with Y"
+        local target_word, key_word = noun:match("^(.+)%s+with%s+(.+)$")
+        if not target_word then target_word = noun end
+
+        -- Search exits for a matching door
+        local room = ctx.current_room
+        for dir, exit in pairs(room.exits or {}) do
+            if type(exit) == "table" and exit_matches(exit, dir, target_word) then
+                if exit.locked then
+                    print("It is already locked.")
+                    return
+                end
+                if not exit.key_id then
+                    print((exit.name or "That") .. " has no lock.")
+                    return
+                end
+
+                -- Close the door first if open
+                if exit.open then
+                    if exit.mutations and exit.mutations.close then
+                        local mut = exit.mutations.close
+                        if mut.becomes_exit then
+                            for k, v in pairs(mut.becomes_exit) do
+                                exit[k] = v
+                            end
+                        end
+                        print(mut.message or "You close it first.")
+                    else
+                        exit.open = false
+                    end
+                end
+
+                -- Find the key
+                local key_obj
+                if key_word then
+                    key_obj = find_in_inventory(ctx, key_word)
+                elseif ctx.tool_noun then
+                    key_obj = find_in_inventory(ctx, ctx.tool_noun)
+                else
+                    key_obj = find_in_inventory(ctx, "key")
+                end
+                if not key_obj then
+                    print("You don't have a key for that.")
+                    return
+                end
+                if key_obj.id ~= exit.key_id then
+                    print("That key doesn't fit this lock.")
+                    return
+                end
+
+                -- Lock
+                exit.locked = true
+                local door_name = exit.name or "The door"
+                local nice_name = door_name:sub(1,1):upper() .. door_name:sub(2)
+                print("You turn " .. (key_obj.name or "the key")
+                    .. " in the lock. *click* " .. nice_name .. " is locked.")
+                return
+            end
+        end
+
+        -- Check objects (future: lockable chests)
+        local obj = find_visible(ctx, target_word)
+        if obj then
+            print("You can't lock " .. (obj.name or "that") .. ".")
         else
             err_not_found(ctx)
         end
