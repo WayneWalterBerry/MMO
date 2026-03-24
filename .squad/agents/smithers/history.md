@@ -46,6 +46,35 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 - `history-archive-2026-03-20T22-40Z-smithers.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): UI architecture, parser pipeline implementation, web performance optimization, 880+ tests
 
 ## Learnings
+
+### 2026-07-18: Issue #170 — Exit door resolution + lock handler
+
+**What shipped:** Three fixes for door interaction: (1) FSM failure messages now explain WHY a door can't be opened (e.g., "A heavy oak door is barred. It won't budge.") instead of generic "You can't open that." Uses on_push from current FSM state if available. (2) Added `lock` handler — mirrors unlock, searches exits by keyword, auto-closes open doors, validates key_id. (3) 16 TDD tests covering door object intercepts, exit-only open/close/lock/unlock with key, exit keyword resolution.
+
+**The fix (two layers):**
+1. **Open handler FSM failure** (`containers.lua`): When no "open" transition from current state, checks state's `on_push` field first (Principle 8 — objects declare behavior). Falls back to "{Name} is {state}. It won't budge." Generic message only when state is "closed" or no state info.
+2. **Lock handler** (`containers.lua`): New `handlers["lock"]` mirrors `unlock` — iterates exits with `exit_matches`, validates key, auto-closes open doors before locking.
+
+**Key learning:** Exit-only doors (no coexisting instance object) already worked — open/close/unlock handlers all have exit fallback loops that fire when `find_visible` returns nil. The bug was specifically about rooms where a door FSM OBJECT coexists with an exit definition. The FSM path intercepts, fails (no transition), and returns before the exit loop runs. The fix improves the error message quality rather than changing the control flow, because the FSM and exit represent the same physical door and should stay synchronized.
+
+**Files changed:** `src/engine/verbs/containers.lua`, `test/verbs/test-door-resolution.lua` (new, 16 tests)
+
+**Tests:** 16 new tests, 0 regressions. Pre-existing failure in injuries/test-weapon-pipeline.lua (dagger damage 12 vs expected 8) is unrelated.
+
+### 2026-07-18: Issues #169 + #172 — Fire.lua light handler broken
+
+**What shipped:** Two related fixes in the light handler. (1) "light candle" now finds fire_source tools in the player's hands automatically, and "light candle with match" preserves the explicit tool noun. (2) "light sack" on a flammable non-light-source now redirects to the burn handler instead of refusing.
+
+**The fix (three layers):**
+1. **Game loop** (`loop/init.lua`): Extended tool_noun extraction to cover light/ignite/burn verbs. Previously "with X" was stripped but discarded; now saved as `context.tool_noun` (same pattern as open/pry from #49).
+2. **Light handler** (`fire.lua`): Added `find_fire_source()` helper that checks: (a) explicit `ctx.tool_noun`, (b) direct hand scan for `provides_tool` or `has_striker`, (c) fallback to `find_tool_in_inventory` + `find_visible_tool`. Follows the same hand-scanning pattern as `handle_self_infliction()` for stab weapons. Applied to both FSM and mutation requires_tool paths.
+3. **Light handler fallback** (`fire.lua`): Before printing "You can't light that", checks material flammability ≥ 0.3 and redirects to `handlers["burn"]`. No recursion risk — burn handler already redirects TO light for objects with light FSM states, and the light handler only redirects TO burn when no light states exist.
+
+**Key learning:** The "with X" prepositional parsing was inconsistent — open/pry saved tool_noun, but light/ignite/burn only stripped it. The hand-scanning pattern from self-infliction (#49) is the right model for any "find tool the player is holding" scenario. BURN_THRESHOLD moved to top of M.register so both light and burn handlers share it.
+
+**Files changed:** `src/engine/verbs/fire.lua`, `src/engine/loop/init.lua`
+
+**Tests:** 121 existing test files, 0 regressions.
 
 ### 2026-07-17: Issue #119 — Match no-relight on extinguish
 
