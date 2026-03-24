@@ -33,6 +33,7 @@ local test_dirs = {
     repo_root .. SEP .. "test" .. SEP .. "rooms",
     repo_root .. SEP .. "test" .. SEP .. "objects",
     repo_root .. SEP .. "test" .. SEP .. "armor",
+    repo_root .. SEP .. "test" .. SEP .. "wearables",
 }
 
 local is_windows = SEP == "\\"

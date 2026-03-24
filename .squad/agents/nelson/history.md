@@ -48,6 +48,34 @@
 
 ## Recent Updates
 
+### Phase A6b: Event Output Tests + Phase C1: Helmet Swap Tests (2026-03-25)
+
+**Status:** ✅ BOTH TASKS COMPLETE
+
+**Task 1 — Event Output Tests:** 12/12 PASS (`lua test/verbs/test-event-output.lua`)
+- Wrote `test/verbs/test-event-output.lua` covering the event_output one-shot flavor text system
+- on_wear fires once then nil'd (wool cloak "peasant" text)
+- on_take fires once then nil'd
+- Objects without event_output → no error
+- Multiple events on same object fire independently (on_take, on_wear, on_drop, on_remove_worn)
+- Empty event_output table → no error
+
+**Task 2 — Helmet Swap Tests:** 18/18 PASS (`lua test/wearables/test-helmet-swap.lua`)
+- Wrote `test/wearables/test-helmet-swap.lua` covering helmet conflict/swap cycle
+- Wear ceramic pot → on head, hand freed, makeshift armor message
+- Slot conflict: second helmet rejected with "already wearing" message (both directions)
+- Remove pot → head free, pot returns to hand
+- Wear spittoon after pot removed → works correctly
+- Full 5-step swap cycle: pot on → pot off → spittoon on → spittoon off → pot on
+- Material differences verified: ceramic hardness=7 > brass=6, brass density=8500 > ceramic=2300
+- Brass fragility (0.1) confirmed much lower than ceramic (0.7)
+- Brass spittoon survives heavy hits (no shatter)
+- Ceramic pot cracks on strong hit, shatters on second hit
+
+**CI registration:** Added `test/wearables/` to `test/run-tests.lua` test_dirs list.
+
+**Full suite:** All test files pass except pre-existing failure in `test-search-find.lua` (4 internal failures, exits OK). NOT a regression — same as prior runs.
+
 ### Phase A5: Armor Interceptor Verification (2026-03-25)
 
 **Status:** ✅ PHASE A5 GATE PASSED
