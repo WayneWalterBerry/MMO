@@ -48,6 +48,36 @@
 
 ## Recent Updates
 
+### Phase A3: Armor Interceptor TDD Tests (2026-03-24)
+
+**Status:** ✅ COMPLETE — 30 tests written, 14 pass, 16 fail (expected TDD red phase)
+
+Wrote `test/armor/test-armor-interceptor.lua` — the contract specification for the armor system. Tests exercise the effects pipeline with mock worn items and assert damage reduction, location targeting, material degradation, layer stacking, and fit quality multipliers.
+
+**Results breakdown:**
+| Suite | Tests | Pass | Fail | Notes |
+|-------|-------|------|------|-------|
+| Baseline (no armor) | 3 | 3 | 0 | Test infrastructure validated |
+| Basic protection | 3 | 1 | 2 | Fails: armor doesn't reduce damage yet |
+| Material differences | 3 | 0 | 3 | Fails: iron vs leather vs wool all equal |
+| Location targeting | 5 | 2 | 3 | Pass: mismatched locations correctly ignored |
+| Material degradation | 4 | 2 | 2 | Pass: shattered=0, iron resists. Fail: cracking |
+| Layer stacking | 3 | 1 | 2 | Pass: mismatched layers don't stack |
+| Fit quality | 3 | 0 | 3 | Fails: makeshift/fitted/masterwork all equal |
+| Edge cases | 5 | 5 | 0 | All boundary conditions pass today |
+
+**Key design decisions encoded in tests:**
+- `engine.armor` module must exist and expose `armor.register(effects)` to install the before-interceptor
+- Armor items live in `ctx.player.worn[]` with fields: `material`, `covers`, `fit`, `_state`, `layer`
+- Protection derived from material registry props (`hardness`, `flexibility`, `density`)
+- Minimum damage floor = 1 (armor never fully negates)
+- Degradation states: `intact` → `cracked` → `shattered` (via `fragility` × impact)
+- Fit multipliers: `makeshift` < `fitted` < `masterwork`
+- Items with nil/unknown material provide zero protection
+- Non-injury effects (add_status, etc.) bypass armor entirely
+
+**Handoff:** Ready for Phase A3b (Marge gate) then Phase A4 (Smithers implementation).
+
 ### Phase M4: Mirror/Appearance Quality Review (2026-07-25)
 
 **Status:** ✅ COMPLETE — 8 scenarios tested, 6 bugs filed, 26 regression tests written
