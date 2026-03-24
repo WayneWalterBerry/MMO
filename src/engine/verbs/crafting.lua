@@ -542,8 +542,9 @@ function M.register(handlers)
             target.contents = target.contents or {}
             target.contents[#target.contents + 1] = item.id
             item.location = target.id
+            local narration_prep = target.container_preposition or prep
             print("You put " .. (item.name or item.id) ..
-                " " .. prep .. " " .. (target.name or target.id) .. ".")
+                " " .. narration_prep .. " " .. (target.name or target.id) .. ".")
             return
         end
 

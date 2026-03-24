@@ -65,6 +65,103 @@ local vision_blocked_by_worn = H.vision_blocked_by_worn
 local M = {}
 
 function M.register(handlers)
+    -- Burnability threshold (shared by light and burn handlers)
+    local BURN_THRESHOLD = 0.3
+
+    -- #169: Check if any state of an object provides a given tool capability.
+    -- Returns the state name that provides it, or nil.
+    local function has_capable_state(obj, capability)
+        if not obj or not obj.states then return nil end
+        for state_name, state in pairs(obj.states) do
+            local pt = state.provides_tool
+            if pt then
+                if type(pt) == "string" and pt == capability then return state_name end
+                if type(pt) == "table" then
+                    for _, cap in ipairs(pt) do
+                        if cap == capability then return state_name end
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
+    -- #169: Auto-ignite an object to a target state (force transition for fire-making).
+    -- Used when a match is auto-struck to serve as a fire source.
+    local function auto_ignite(ctx, obj, target_state_name)
+        local old_state = obj._state
+        if old_state and obj.states[old_state] then
+            for k in pairs(obj.states[old_state]) do
+                if k ~= "on_tick" and k ~= "terminal" then
+                    obj[k] = nil
+                end
+            end
+        end
+        local new_state = obj.states[target_state_name]
+        if new_state then
+            for k, v in pairs(new_state) do
+                if k ~= "on_tick" and k ~= "terminal" then
+                    obj[k] = v
+                end
+            end
+        end
+        obj._state = target_state_name
+    end
+
+    -- #169: find fire source — explicit tool_noun, then hand scan, then inventory.
+    -- Also detects objects whose states provide the capability (e.g., unlit match)
+    -- and auto-ignites them before returning.
+    -- exclude_obj: the object being lit (don't use it as its own fire source)
+    local function find_fire_source(ctx, required_tool, exclude_obj)
+        -- 1. Explicit tool_noun ("light candle with match")
+        if ctx.tool_noun then
+            local tool_obj = find_in_inventory(ctx, ctx.tool_noun)
+            if tool_obj and tool_obj ~= exclude_obj then
+                if provides_capability(tool_obj, required_tool) or tool_obj.has_striker then
+                    return tool_obj
+                end
+                local cap_state = has_capable_state(tool_obj, required_tool)
+                if cap_state and tool_obj._state ~= cap_state then
+                    auto_ignite(ctx, tool_obj, cap_state)
+                    return tool_obj
+                end
+            end
+        end
+
+        -- 2. Scan hands for fire_source or has_striker (same pattern as stab weapon inference)
+        for i = 1, 2 do
+            local hand = ctx.player.hands[i]
+            if hand then
+                local obj = _hobj(hand, ctx.registry)
+                if obj and obj ~= exclude_obj and (provides_capability(obj, required_tool) or obj.has_striker) then
+                    return obj
+                end
+            end
+        end
+
+        -- 3. Scan hands for objects with a state that provides capability (auto-ignite)
+        for i = 1, 2 do
+            local hand = ctx.player.hands[i]
+            if hand then
+                local obj = _hobj(hand, ctx.registry)
+                if obj and obj ~= exclude_obj then
+                    local cap_state = has_capable_state(obj, required_tool)
+                    if cap_state and obj._state ~= cap_state then
+                        auto_ignite(ctx, obj, cap_state)
+                        return obj
+                    end
+                end
+            end
+        end
+
+        -- 4. Fall back to full inventory + visible search
+        local tool = find_tool_in_inventory(ctx, required_tool)
+        if not tool then
+            tool = find_visible_tool(ctx, required_tool)
+        end
+        return tool
+    end
+
     ---------------------------------------------------------------------------
     -- LIGHT
     ---------------------------------------------------------------------------
@@ -144,11 +241,8 @@ function M.register(handlers)
                             return
                         end
 
-                        -- Find fire_source tool in inventory or room
-                        local tool = find_tool_in_inventory(ctx, found_trans.requires_tool)
-                        if not tool then
-                            tool = find_visible_tool(ctx, found_trans.requires_tool)
-                        end
+                        -- #169: Find fire_source tool (explicit tool, hand scan, inventory)
+                        local tool = find_fire_source(ctx, found_trans.requires_tool, obj)
                         if not tool then
                             print(found_trans.fail_message or "You have nothing to light it with.")
                             return
@@ -177,6 +271,13 @@ function M.register(handlers)
                     return
                 end
             end
+            -- #172: flammable objects without light states → redirect to burn
+            local mat = obj.material and materials.get(obj.material)
+            local flammability = mat and mat.flammability or 0
+            if flammability >= BURN_THRESHOLD then
+                handlers["burn"](ctx, noun)
+                return
+            end
             print("You can't light " .. (obj.name or "that") .. ".")
             return
         end
@@ -198,8 +299,8 @@ function M.register(handlers)
                 return
             end
 
-            -- Fall through to tool search
-            local tool = find_tool_in_inventory(ctx, mut_data.requires_tool)
+            -- #169: Find fire_source tool (explicit tool, hand scan, inventory)
+            local tool = find_fire_source(ctx, mut_data.requires_tool, obj)
             if not tool then
                 print(mut_data.fail_message or "You have nothing to light it with.")
                 return
@@ -454,8 +555,6 @@ function M.register(handlers)
     -- Threshold: flammability >= 0.3 → burnable.
     -- Objects with burn FSM states use those transitions; others get destroyed.
     ---------------------------------------------------------------------------
-    local BURN_THRESHOLD = 0.3
-
     handlers["burn"] = function(ctx, noun)
         if noun == "" then
             print("Burn what? Try 'burn [item]' on something flammable while you have a flame.")
@@ -486,7 +585,8 @@ function M.register(handlers)
         local has_fire = (ctx.player.state.has_flame and ctx.player.state.has_flame > 0)
             or find_tool_in_inventory(ctx, "fire_source") ~= nil
         if not has_fire then
-            print("You have no flame to burn anything with.")
+            local verb_word = ctx.current_verb or "burn"
+            print("You have no flame to " .. verb_word .. " anything with.")
             return
         end
 
