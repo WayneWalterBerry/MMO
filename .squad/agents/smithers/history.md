@@ -48,6 +48,27 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 ## Learnings
 
 
+### 2026-03-26: P1 Parser Bug Cluster — TDD fix for #137-145, #156
+
+**Problem:** 7 bugs from Nelson playtests, mostly small parser additions:
+
+**Fixes:**
+1. **#138 "put X down"** + **#140 "set X down"**: Added idiom table entries for word-order variants. `put X down` → `drop X`, `set X down` / `set down X` → `drop X`. Regressions guarded: put on, put X on Y, set fire to, set clock all preserved.
+
+2. **#145 "punch myself in the face"**: Added "in the BODYPART" pattern to `strip_decorative_prepositions`. Extended `BODY_PARTS` lookup with stomach/belly/gut/chest/side to match `BODY_AREA_ALIASES` in verbs.
+
+3. **#144 "hurt myself" / "beat myself up"**: Added compound transforms in `transform_compound_actions`: hurt X → hit X, beat X up → hit X, beat up X → hit X.
+
+4. **#139 "drop all"/"drop everything"**: Added bulk drop handler at top of drop function — iterates player.hands, drops each, prints per-item confirmation.
+
+5. **#137 "drop pot" while worn**: Drop handler now checks `player.worn` before `find_in_inventory` so worn items get "You're wearing that. You'll need to remove it first." instead of the bag error.
+
+6. **#156 Mirror comma splice**: `compose_natural()` in appearance.lua now strips trailing periods from each phrase before joining with Oxford comma. Prevents "your head., a deep bruise" pattern.
+
+**Tests:** 34 new tests in `test/parser/test-p1-parser-fixes.lua`. Zero regressions (4 pre-existing failures in test-search-find.lua confirmed unrelated).
+
+**Result:** Commit 25f5372.
+
 ### 2026-03-25: Issue #154 --- Prepositional suffixes corrupt item resolution
 
 **Root Cause:** Trailing prepositional phrases (on my head, in the mirror, from head, as a hat, on the floor) survived the preprocessing pipeline and polluted the noun string passed to item resolution. The pipeline had no stage to strip decorative prepositions.
@@ -79,6 +100,33 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 **Tests:** 14 new tests in `test/injuries/test-hit-head.lua` — max_health nil safety, hit→unconscious→wake cycle, second hit re-knocks (not kills), 20-cycle stress test, damage ceiling verification.
 
 **Result:** All 78 test files pass, zero regressions. Commit 75fd800.
+
+### 2026-03-26: Hit synonym cluster — TDD fix for #141, #142, #143, #146, #157
+
+**Problem:** Nelson playtests flagged multiple unrecognized hit/drop synonyms:
+- #142: smack, bang, slap not recognized as hit
+- #157: slap, whack not recognized as hit
+- #143: headbutt not recognized
+- #141: toss/throw not recognized as drop (were falling through)
+- #146: bonk hit arm instead of head (random body area default)
+
+**Fix (two layers):**
+1. **Preprocess pipeline** (`transform_compound_actions`):
+   - smack/bang/slap/whack → simple verb swap to `hit` + preserve noun
+   - headbutt → always `hit head` (head is implicit in the word)
+   - bonk self/myself/bare → `hit head` (default to head, not random)
+   - bonk + explicit body part preserved (`bonk arm` → `hit arm`)
+   - Bare `toss X` / `throw X` → `drop X`
+   - `throw/toss X on/in/onto/into Y` → `put X on/in Y` (placement preserved)
+   - Consolidated toss+throw handling replaces old toss-only block
+
+2. **Verb handler aliases** (`verbs/init.lua`):
+   - smack, bang, slap, whack, headbutt → `handlers["hit"]`
+   - toss, throw → `handlers["drop"]`
+
+**TDD approach:** Wrote 27 failing tests first (`test/parser/test-hit-synonyms.lua`), then implemented. All 27 green. Zero regressions across full suite.
+
+**Result:** Commit f48b0a3.
 
 ### 2026-03-23: Bugs #96, #97, #98, #99 — Search/Container Interaction Cluster
 
