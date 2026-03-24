@@ -316,6 +316,29 @@ function M.register(handlers)
                     return
                 end
             end
+            -- Issue #100: Gate "look in/inside" for simple containers
+            if (prep == "in" or prep == "inside")
+                and (check_obj.container or check_obj.is_container) then
+                if not container_contents_accessible(check_obj, "visual") then
+                    local cname = (check_obj.name or "that"):gsub("^a ", "the "):gsub("^an ", "the ")
+                    print(cname:sub(1,1):upper() .. cname:sub(2) .. " is closed.")
+                    return
+                end
+                if check_obj.contents and #check_obj.contents > 0 then
+                    local items = {}
+                    for _, id in ipairs(check_obj.contents) do
+                        local item = ctx.registry:get(id)
+                        items[#items + 1] = item and item.name or id
+                    end
+                    print("Inside you see:")
+                    for _, item_name in ipairs(items) do
+                        print("  " .. item_name)
+                    end
+                else
+                    print("There is nothing inside " .. (check_obj.name or "that") .. ".")
+                end
+                return
+            end
             -- No matching surface -- fall through to general examine
             if obj.on_look then
                 print(obj.on_look(obj, ctx.registry))
@@ -679,7 +702,14 @@ function M.register(handlers)
                     found_anything = true
                 end
                 if not found_anything then
-                    print("You can't feel inside " .. (cobj.name or "that") .. ".")
+                    -- Issue #100: Explicit "closed" message for closed containers
+                    if (cobj.container or cobj.is_container)
+                        and not container_contents_accessible(cobj, "tactile") then
+                        local cname = (cobj.name or "that"):gsub("^a ", "the "):gsub("^an ", "the ")
+                        print(cname:sub(1,1):upper() .. cname:sub(2) .. " is closed.")
+                    else
+                        print("You can't feel inside " .. (cobj.name or "that") .. ".")
+                    end
                 end
                 return
             end
@@ -726,6 +756,10 @@ function M.register(handlers)
                     else
                         print("You feel around inside " .. (cobj.name or "that") .. " but find nothing.")
                     end
+                elseif (cobj.container or cobj.is_container)
+                    and not container_contents_accessible(cobj, "tactile") then
+                    local cname = (cobj.name or "that"):gsub("^a ", "the "):gsub("^an ", "the ")
+                    print(cname:sub(1,1):upper() .. cname:sub(2) .. " is closed.")
                 else
                     print("You can't feel inside " .. (cobj.name or "that") .. ".")
                 end
@@ -862,6 +896,14 @@ function M.register(handlers)
                 search_mod.search(ctx, target_part, scope_obj.id, part_surface)
                 return
             end
+            -- Issue #100: Gate search on closed simple containers
+            if not scope_obj.surfaces
+                and (scope_obj.container or scope_obj.is_container)
+                and not container_contents_accessible(scope_obj, "tactile") then
+                local cname = (scope_obj.name or "that"):gsub("^a ", "the "):gsub("^an ", "the ")
+                print(cname:sub(1,1):upper() .. cname:sub(2) .. " is closed.")
+                return
+            end
             search_mod.search(ctx, target_part, scope_obj.id)
             return
         end
@@ -887,6 +929,14 @@ function M.register(handlers)
                 local part_surface = obj.surface
                 obj = obj_parent
                 search_mod.search(ctx, nil, obj.id, part_surface)
+                return
+            end
+            -- Issue #100: Gate search on closed simple containers
+            if not obj.surfaces
+                and (obj.container or obj.is_container)
+                and not container_contents_accessible(obj, "tactile") then
+                local cname = (obj.name or "that"):gsub("^a ", "the "):gsub("^an ", "the ")
+                print(cname:sub(1,1):upper() .. cname:sub(2) .. " is closed.")
                 return
             end
             -- Found an object - treat as scope (BUG-079: scoped undirected search)
