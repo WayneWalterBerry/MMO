@@ -65,6 +65,17 @@ local function singularize_word(word)
 end
 
 ---------------------------------------------------------------------------
+-- #154: Body part lookup for prepositional suffix stripping.
+-- Used by strip_decorative_prepositions and transform_compound_actions.
+---------------------------------------------------------------------------
+local BODY_PARTS = {
+    head = true, face = true, neck = true,
+    arm = true, arms = true, leg = true, legs = true,
+    hand = true, hands = true, foot = true, feet = true,
+    shoulder = true, shoulders = true, waist = true, torso = true,
+}
+
+---------------------------------------------------------------------------
 -- Pipeline Stage Functions
 -- Each takes a string, returns a string (primary contract).
 -- Convention: stages may return (text, true) as second value to signal
@@ -241,6 +252,54 @@ local function strip_noun_modifiers(text)
     -- Collapse any doubled spaces left behind
     text = text:gsub("%s%s+", " ")
     text = text:match("^%s*(.-)%s*$")
+    return text
+end
+
+--- Stage: strip_decorative_prepositions (#154)
+--- Strip trailing prepositional phrases that describe location/manner rather
+--- than functional targets: "on my head", "from head", "in the mirror",
+--- "as a hat", "on the floor". Skips "put"/"place"/"set" (compound targets
+--- handled by transform_compound_actions).
+local function strip_decorative_prepositions(text)
+    local verb = text:match("^(%S+)")
+    if not verb then return text end
+
+    -- Compound-target verbs handle their own prepositions
+    if verb == "put" or verb == "place" or verb == "set" then
+        return text
+    end
+
+    -- "as a/an WORD" (manner descriptor: "as a hat", "as a mask")
+    text = text:gsub("%s+as%s+an?%s+%S+$", "")
+
+    -- "in the mirror/reflection" (reflective surface)
+    text = text:gsub("%s+in%s+the%s+mirror$", "")
+    text = text:gsub("%s+in%s+mirror$", "")
+    text = text:gsub("%s+in%s+the%s+reflection$", "")
+    text = text:gsub("%s+in%s+reflection$", "")
+
+    -- "on the floor/ground" (drop location)
+    text = text:gsub("%s+on%s+the%s+floor$", "")
+    text = text:gsub("%s+on%s+floor$", "")
+    text = text:gsub("%s+on%s+the%s+ground$", "")
+    text = text:gsub("%s+on%s+ground$", "")
+
+    -- "on my BODYPART" (possessive body placement)
+    local prefix, part = text:match("^(.+)%s+on%s+my%s+(%S+)$")
+    if prefix and BODY_PARTS[part] then return prefix end
+
+    -- "on BODYPART" (bare body placement, requires verb+noun before)
+    prefix, part = text:match("^(%S+%s+%S.-)%s+on%s+(%S+)$")
+    if prefix and BODY_PARTS[part] then return prefix end
+
+    -- "from my BODYPART" (possessive source)
+    prefix, part = text:match("^(.+)%s+from%s+my%s+(%S+)$")
+    if prefix and BODY_PARTS[part] then return prefix end
+
+    -- "from BODYPART" (bare source, requires verb+noun before)
+    prefix, part = text:match("^(%S+%s+%S.-)%s+from%s+(%S+)$")
+    if prefix and BODY_PARTS[part] then return prefix end
+
     return text
 end
 
@@ -820,6 +879,16 @@ local function transform_compound_actions(text)
         return "extinguish " .. extinguish_target
     end
 
+    -- #154: "put X on (my) body_part" → "wear X" (body placement = wearing)
+    local put_wear_item, put_wear_part
+    put_wear_item, put_wear_part = text:match("^put%s+(.+)%s+on%s+my%s+(%S+)$")
+    if not put_wear_item then
+        put_wear_item, put_wear_part = text:match("^put%s+(.+)%s+on%s+(%S+)$")
+    end
+    if put_wear_item and put_wear_part and BODY_PARTS[put_wear_part] then
+        return "wear " .. put_wear_item
+    end
+
     -- "put on X", "dress in X" → "wear X"
     local wear_target = text:match("^put%s+on%s+(.+)")
         or text:match("^dress%s+in%s+(.+)")
@@ -916,6 +985,7 @@ preprocess.pipeline = {
     normalize,                -- Trim, lowercase, strip question marks
     strip_filler,             -- Iterative: preambles + politeness + adverbs
     strip_noun_modifiers,     -- Issue #14: whole/entire/every/all-of-the
+    strip_decorative_prepositions, -- #154: "on my head", "in the mirror", "as a hat"
     expand_idioms,            -- Tier 3: common English phrases → canonical commands
     transform_questions,      -- Question patterns → imperative commands
     transform_look_patterns,  -- look at/for/around, check → canonical verbs
@@ -935,6 +1005,7 @@ preprocess.stages = {
     strip_filler = strip_filler,
     strip_possessives = strip_possessives,
     strip_noun_modifiers = strip_noun_modifiers,
+    strip_decorative_prepositions = strip_decorative_prepositions,
     expand_idioms = expand_idioms,
     transform_questions = transform_questions,
     transform_look_patterns = transform_look_patterns,
