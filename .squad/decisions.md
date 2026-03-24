@@ -1,9 +1,9 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-22T22:05Z  
+**Last Updated:** 2026-03-24T00:09:13Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
-**New Decisions:** D-HIT001, D-HIT002, D-HIT003, D-CONSC-GATE, D-APP-STATELESS, D-SLEEP-INJURY, D-SPATIAL-HIDE, D-SPATIAL-ARCH, D-PEEK
+**New Decisions:** D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN
 
 ---
 
@@ -1309,6 +1309,100 @@ Quantifier modifiers ("whole", "entire", "every", "all of the") are stripped in 
 **Affects:** verbs/init.lua, candle.lua
 
 The `light` handler checks `obj.states[obj._state].casts_light` to detect already-lit objects. This is property-based (works for any FSM object with casts_light) rather than string-matching state names. Follows the Prime Directive: describes the world state ("A tallow candle burns with a steady flame...") instead of telling the player what they can't do.
+
+---
+
+## USER DIRECTIVES — BATCH 2026-03-24
+
+### D-TESTFIRST: Test-First Directive for Bug Fixes
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-23T23:33:32Z  
+**Status:** ACTIVE DIRECTIVE  
+
+**Rule:** The Nelson (test team) MUST write unit tests that reproduce the bug FIRST and verify the tests FAIL before any dev fixes the issue. Tests prove the bug exists, then the fix makes them pass. No more fix-first, test-after.
+
+**Rationale:** User request — TDD for bug fixes. Tests that never failed never proved anything. Wayne has flagged this pattern multiple times: fixes ship without tests that actually catch the bug.
+
+**Applies to:** All bug fixes going forward (dev agents must wait for test team verification before shipping)
+
+---
+
+### D-HIRING-DEPT: All New Hires Must Have Department Assignment
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-23T23:47:51Z  
+**Status:** ACTIVE DIRECTIVE  
+
+**Rule:** All new hires must be assigned to a department (Design, Engineering, Test, Docs, or Operations). No unaffiliated team members.
+
+**Rationale:** User request — organizational structure must be maintained as the team grows.
+
+**Departments:** Design (CBG, Lisa), Engineering (Smithers, Flanders, Frink, Bart), Test (Nelson), Docs (Brockman), Operations (Gil, Marge, Moe, Sideshow Bob)
+
+---
+
+### D-WAYNE-BATCH-2026-03-24: Design Decisions Batch (Wayne)
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-24T00:05Z  
+**Status:** ACTIVE DECISIONS  
+
+**Decisions:**
+
+1. **Nightshade antidote placement:** Level 1. Teaches players treatments exist early.
+
+2. **Soiled bandage infection:** Deferred to Level 2. Keep Level 1 simpler.
+
+3. **Combat/armor design:** Not ready — defer all combat-related decisions (armor negation, damage floors, etc.)
+
+4. **Bob's 12 puzzles:** Stay 🔴 Theorized. Wayne wants to review quality before approving. Will ask when ready.
+
+5. **Material Consistency Core Principle:** YES — adopt as formal Core Principle. Every object MUST have a material from the registry. Engine derives physical behavior from material properties. **However, object instances CAN override material properties when needed.** The material is the default, the instance override is the exception.
+
+6. **Verb expansion:** Deferred.
+
+7. **Non-SP puzzles:** To be removed from Level 1.
+
+**Rationale:** User decisions — resolving pending design questions from prior sessions.
+
+---
+
+### D-CHEST-DESIGN: Chest Object Design Conventions
+**Author:** Comic Book Guy (Creative Director)  
+**Date:** 2026-03-24T00:09:13Z  
+**Status:** DESIGN COMPLETE  
+**Affects:** `docs/objects/chest.md`, future `src/meta/objects/chest.lua`
+
+**Decisions Made:**
+
+1. **Smell Partially Penetrates Closed Containers**
+   Smell is NOT fully gated by the closed state. A closed wooden chest still emits faint "storage mustiness" and "old wood" odors. Players can smell *something* but cannot identify individual items by smell alone through a closed container. This differs from look/feel which are fully blocked.
+   
+   **Rationale:** Wood is porous. A sealed metal vault would block smell completely, but a wooden chest with natural gaps wouldn't. This adds sensory richness without breaking containment semantics.
+
+2. **Iron Hardware Is Decorative Metadata**
+   The chest's iron bands, hinges, handles, and latch are described in sensory text but use `material = "oak"` as the primary material. Iron hardware does NOT need a separate material entry unless a future fire/destruction system requires distinguishing which parts burn vs. which survive.
+   
+   **Rationale:** Keeps the material system simple. The existing material registry has both `oak` and `iron` — if a future system needs to track composite materials, the sensory text already documents what's iron.
+
+3. **Cannot Open Chest While Carrying**
+   A player carrying a chest (both hands occupied) must drop it before opening. This is a two-step interaction: `drop chest` → `open chest`. The engine should check `hands_required` against current hand state before allowing open/close transitions on portable containers.
+   
+   **Rationale:** You can't unlatch and lift a heavy lid while your arms are wrapped around the chest. This is both realistic and creates interesting gameplay pacing.
+
+4. **Capacity Checks at Insertion, Not Close**
+   The `capacity` and `max_item_size` constraints are enforced when placing items INTO the chest, not when closing the lid. There is no "lid won't close because something's sticking out" mechanic. If it fit going in, it fits when closed.
+   
+   **Rationale:** Avoids complex physics simulation. The container model is abstract slots, not spatial geometry.
+
+**Team Impact:**
+- **Flanders:** chest.lua implementation should follow drawer.lua pattern exactly (FSM + container + accessible flag per state + mutate keywords). See Implementation Notes in `docs/objects/chest.md`.
+- **All agents:** Smell-through-wood convention may apply to other wooden containers (wardrobe, drawer). Consider whether existing designs need smell-gating updates for consistency.
+
+---
+
+**End of 2026-03-24 Inbox Merge**  
+**Total Active Decisions:** 60 (56 prior + 4 new merged)  
+**Inbox Status:** ✅ EMPTY  
+**Last Merge:** 2026-03-24T00:09:13Z (Scribe)
 
 ---
 

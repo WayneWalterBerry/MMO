@@ -19,6 +19,25 @@
 
 ## Recent Updates
 
+### Session Update: Chest Object Design Enhancement (2026-07-25)
+**Status:** ✅ DESIGN COMPLETE
+
+**Deliverable:** `docs/objects/chest.md` — enhanced existing design doc with ~150 lines of new content.
+
+**What was done:**
+- Enhanced existing chest.md (which had core design from prior session) with four new sections
+- Added **Transitions** table with mutate fields (keywords ±open), matching the 2026-07-20 pattern used in wardrobe.md and nightstand.md
+- Added **Edge Cases** section: 9 scenarios (one-hand carry, closed-container verbs, open-while-carrying, nesting, dropping, D-PEEK search behavior, smell-through-wood partial gating)
+- Added **Comedy & Flavor Opportunities** section: 6 comedy beats (dramatic lift, empty disappointment, one-hand mockery, unnecessary close, acoustic properties, smell of history)
+- Added **Implementation Notes for Flanders** section: property table, state-accessible flag mapping, drawer.lua pattern reference, drawer-vs-chest comparison table, iron hardware guidance, keywords/categories
+
+**Key Design Decisions:**
+- Smell is NOT fully gated by closed state — faint mustiness seeps through wood (unlike look/feel which are blocked)
+- Iron hardware is decorative metadata, not a separate material entry (primary material = oak)
+- Cannot open chest while carrying it (must drop first — two-step sequence)
+- Capacity/size checks at insertion time, not close time (no protruding-object physics)
+- Chest follows drawer.lua FSM+container pattern exactly, just scaled up
+
 ### Session Update: Injury ↔ Puzzle Integration Analysis (2026-07-25)
 **Status:** ✅ DESIGN COMPLETE
 
@@ -346,3 +365,26 @@ The bear trap design now demonstrates the complete **object declaration → pipe
 - 10. Testing & Validation Checklist (was 9)
 - 11. Future Extensions (was 10)
 - 12. Design Decisions & Rationale (was 11)
+---
+
+## MANIFEST COMPLETION — 2026-03-24T00:09:13Z
+
+**Status:** ✅ SPAWN COMPLETE
+
+**Manifest Item:** Chest design — Enhanced docs/objects/chest.md with transitions, edge cases, comedy, implementation notes
+
+**Deliverables:**
+- ✅ docs/objects/chest.md enhanced (~150 lines added)
+- ✅ Four major sections: Transitions, Edge Cases, Comedy & Flavor, Implementation Notes
+- ✅ Design decisions locked: smell partial gating, iron hardware metadata, carry constraints, insertion-time capacity checks
+- ✅ Implementation-ready for Flanders (drawer.lua pattern reference)
+- ✅ Orchestration log: .squad/orchestration-log/2026-03-24T00-09-13Z-cbg-chest.md
+
+**Design Decisions Filed:** D-CHEST-DESIGN (merged into decisions.md)
+
+**Team Context:**
+- **Smithers (#85/#86 fix):** Search traversal (expand root) + wear auto-pickup from containers deployed (commit a4b0c50, 15 tests)
+- **Nelson (M4 mirror review):** 8 scenarios tested, 26 tests written, 6 issues filed (#90-95)
+- **Wayne Design Batch:** Material Consistency Core Principle approved (instances CAN override), nightshade L1, soiled bandage L2, combat deferred, Bob's puzzles theorized
+
+**Orchestration Complete:** All 3 spawns consolidated into decisions.md. New TDD directive and hiring department policy filed. Ready for git commit.

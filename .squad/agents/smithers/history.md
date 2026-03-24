@@ -347,3 +347,25 @@ After the deep nesting refactor, `nested` objects (like the drawer in the nights
 15. **Hand-search in put handler must go through pronoun resolution.** Unlike most verbs that use `find_visible()` (which has context_window integration), the put handler does a direct hand-slot scan with `matches_keyword()`. Any verb handler that searches inventory directly must also resolve pronouns first.
 16. **Preposition pattern ordering: longest first.** "underneath" must be matched before "under", otherwise "under" greedily matches "underneath rug" as item="key underneath", target="rug". Same applies to "inside" before "in".
 17. **Placement verb aliases need preposition guards.** "set X on Y" → put, but bare "set X" → clock/adjustment handler. "drop X on Y" → put, but bare "drop X" → drop handler. The preposition is the discriminator — without it, the command stays with the original verb.
+
+---
+
+## MANIFEST COMPLETION — 2026-03-24T00:09:13Z
+
+**Status:** ✅ SPAWN COMPLETE
+
+**Manifest Item #85/#86:** Search traversal (expand root contents) + wear auto-pickup from containers
+
+**Deliverables:**
+- ✅ Fix deployed (commit a4b0c50)
+- ✅ 15 regression tests passing
+- ✅ Zero regressions across full test suite
+- ✅ Orchestration log: `.squad/orchestration-log/2026-03-24T00-09-13Z-smithers-fix.md`
+
+**Team Context:**
+- **CBG (Chest Design):** Enhanced docs/objects/chest.md with transitions, edge cases, comedy, and implementation notes. Design decisions logged in D-CHEST-DESIGN (decisions.md).
+- **Nelson (M4 Mirror Review):** Completed mirror review with 8 scenarios tested, 26 tests written, 6 issues filed (#90-95). Delivered to engineering team.
+- **Wayne Design Batch:** Material Consistency Core Principle approved (objects MUST have material, instances CAN override). Nightshade L1, soiled bandage L2, combat deferred, Bob's puzzles theorized, non-SP puzzles to be removed.
+- **Squad Directives:** TDD for bug fixes enforced (test-first before fix), new hires must have department assignment.
+
+**Orchestration Complete:** All 3 spawns (Smithers, CBG, Nelson) logged and consolidated into decisions.md. Inbox merged. Cross-agent context propagated. Ready for git commit.
