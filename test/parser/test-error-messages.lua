@@ -136,6 +136,178 @@ test("examine without noun suggests 'look'", function()
 end)
 
 -------------------------------------------------------------------------------
+-- Tier 2 Enhancement: Structured Error Context System (Prime Directive #106)
+-- TDD RED PHASE: Tests the NEW engine.errors module.
+-- All tests below FAIL until errors.lua is implemented by Smithers.
+-------------------------------------------------------------------------------
+
+-- Protected require: errors.lua does not exist yet
+local ok_errors, errors = pcall(require, "engine.errors")
+if not ok_errors then
+    print("NOTE: engine.errors not yet implemented — new Tier 2 tests will fail")
+    errors = nil
+end
+
+h.suite("Tier 2: Error Context System — Category constants")
+
+test("errors.CATEGORY table exists with expected fields", function()
+    truthy(errors, "engine.errors module not yet implemented")
+    truthy(errors.CATEGORY, "errors.CATEGORY table missing")
+    eq("not_found",    errors.CATEGORY.NOT_FOUND)
+    eq("wrong_target", errors.CATEGORY.WRONG_TARGET)
+    eq("missing_tool", errors.CATEGORY.MISSING_TOOL)
+    eq("impossible",   errors.CATEGORY.IMPOSSIBLE)
+    eq("dark",         errors.CATEGORY.DARK)
+    eq("no_verb",      errors.CATEGORY.NO_VERB)
+    eq("ambiguous",    errors.CATEGORY.AMBIGUOUS)
+end)
+
+h.suite("Tier 2: Error Context System — NOT_FOUND errors")
+
+test("NOT_FOUND error includes the noun the player typed", function()
+    truthy(errors, "engine.errors module not yet implemented")
+    local ctx = errors.context(errors.CATEGORY.NOT_FOUND, { noun = "unicorn" })
+    local msg = errors.format(ctx)
+    truthy(msg:find("unicorn"), "error should reference the noun")
+end)
+
+test("NOT_FOUND with close_match suggests 'did you mean'", function()
+    truthy(errors, "engine.errors module not yet implemented")
+    local ctx = errors.context(errors.CATEGORY.NOT_FOUND, {
+        noun = "candel", close_match = "candle"
+    })
+    local msg = errors.format(ctx)
+    truthy(msg:find("candle"), "error should suggest the close match")
+end)
+
+h.suite("Tier 2: Error Context System — WRONG_TARGET errors")
+
+test("WRONG_TARGET error explains why in-world, not generic", function()
+    truthy(errors, "engine.errors module not yet implemented")
+    local obj = { id = "nightstand", name = "oak nightstand" }
+    local ctx = errors.context(errors.CATEGORY.WRONG_TARGET, {
+        verb = "eat", noun = "nightstand", object = obj
+    })
+    local msg = errors.format(ctx)
+    truthy(msg:find("nightstand"), "error should mention the object")
+    truthy(not msg:find("You can't do that"),
+           "error must NOT use generic 'You can't do that'")
+end)
+
+h.suite("Tier 2: Error Context System — MISSING_TOOL errors")
+
+test("MISSING_TOOL error hints at what's needed", function()
+    truthy(errors, "engine.errors module not yet implemented")
+    local obj = { id = "candle", name = "tallow candle" }
+    local ctx = errors.context(errors.CATEGORY.MISSING_TOOL, {
+        verb = "light", noun = "candle", object = obj,
+        reason = "a fire source"
+    })
+    local msg = errors.format(ctx)
+    truthy(msg:find("fire source") or msg:find("light"),
+           "error should hint at the missing tool")
+end)
+
+h.suite("Tier 2: Error Context System — IMPOSSIBLE errors")
+
+test("IMPOSSIBLE error is narrator-voiced, references material", function()
+    truthy(errors, "engine.errors module not yet implemented")
+    local obj = { id = "nightstand", name = "oak nightstand" }
+    local ctx = errors.context(errors.CATEGORY.IMPOSSIBLE, {
+        verb = "eat", noun = "nightstand", object = obj,
+        reason = "is not something you could eat."
+    })
+    local msg = errors.format(ctx)
+    truthy(msg:find("nightstand"), "error should name the object")
+    truthy(#msg < 200, "error should be brief (under 200 chars)")
+end)
+
+h.suite("Tier 2: Error Context System — DARK errors")
+
+test("DARK error suggests 'feel' or light source", function()
+    truthy(errors, "engine.errors module not yet implemented")
+    local ctx = errors.context(errors.CATEGORY.DARK, {
+        verb = "look", noun = "around"
+    })
+    local msg = errors.format(ctx)
+    truthy(msg:find("dark"), "error should mention darkness")
+    truthy(msg:find("feel") or msg:find("light"),
+           "error should suggest feel or light source")
+end)
+
+h.suite("Tier 2: Error Context System — NO_VERB errors")
+
+test("NO_VERB with close match suggests correction", function()
+    truthy(errors, "engine.errors module not yet implemented")
+    local ctx = errors.context(errors.CATEGORY.NO_VERB, {
+        verb = "loook", close_match = "look"
+    })
+    local msg = errors.format(ctx)
+    truthy(msg:find("look"), "error should suggest the closest verb")
+end)
+
+h.suite("Tier 2: Error Context System — AMBIGUOUS errors")
+
+test("AMBIGUOUS error lists options with 'Which do you mean'", function()
+    truthy(errors, "engine.errors module not yet implemented")
+    local ctx = errors.context(errors.CATEGORY.AMBIGUOUS, {
+        noun = "bottle",
+        suggestions = {"glass bottle", "wine bottle"}
+    })
+    local msg = errors.format(ctx)
+    truthy(msg:find("Which do you mean"), "should ask for disambiguation")
+    truthy(msg:find("glass bottle"), "should list first option")
+    truthy(msg:find("wine bottle"), "should list second option")
+end)
+
+h.suite("Tier 2: Error Context System — Quality checks")
+
+test("no error message contains bare 'You can't do that'", function()
+    truthy(errors, "engine.errors module not yet implemented")
+    local categories = {
+        errors.CATEGORY.NOT_FOUND,
+        errors.CATEGORY.WRONG_TARGET,
+        errors.CATEGORY.MISSING_TOOL,
+        errors.CATEGORY.IMPOSSIBLE,
+        errors.CATEGORY.DARK,
+        errors.CATEGORY.NO_VERB,
+    }
+    for _, cat in ipairs(categories) do
+        local ctx = errors.context(cat, { verb = "test", noun = "test" })
+        local msg = errors.format(ctx)
+        truthy(not msg:find("You can't do that"),
+               cat .. " error must not contain generic 'You can't do that'")
+    end
+end)
+
+test("no error message contains 'I don't understand that'", function()
+    truthy(errors, "engine.errors module not yet implemented")
+    local ctx = errors.context(errors.CATEGORY.NO_VERB, { verb = "frobulate" })
+    local msg = errors.format(ctx)
+    truthy(not msg:find("I don't understand that"),
+           "error must not use generic 'I don't understand that'")
+end)
+
+test("error messages are brief — under 200 characters", function()
+    truthy(errors, "engine.errors module not yet implemented")
+    local categories = {
+        errors.CATEGORY.NOT_FOUND,
+        errors.CATEGORY.WRONG_TARGET,
+        errors.CATEGORY.MISSING_TOOL,
+        errors.CATEGORY.IMPOSSIBLE,
+    }
+    for _, cat in ipairs(categories) do
+        local ctx = errors.context(cat, {
+            verb = "examine", noun = "candle",
+            object = { name = "tallow candle" }
+        })
+        local msg = errors.format(ctx)
+        truthy(#msg <= 200,
+               cat .. " error too long: " .. #msg .. " chars")
+    end
+end)
+
+-------------------------------------------------------------------------------
 -- Summary
 -------------------------------------------------------------------------------
 local failures = h.summary()

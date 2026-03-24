@@ -1693,3 +1693,10 @@ Player said "light" but error says "burn".
   test-compound-commands (29/29). Headless smoke tests confirm critical path works: search around,
   get candle, and compound 'get candle, and light it' all execute correctly. Commented verified on
   all 6 issues (#168-#173). Verdict: PASS.
+- **TDD Red Phase for Prime Directive Tiers 1-5 (#106):** Wrote 73 failing tests across 5 tiers.
+  Used pcall-protected requires for non-existent modules (idioms.lua, questions.lua, errors.lua)
+  so each test fails with a meaningful message rather than a blanket module-not-found crash.
+  For existing modules (context.lua, fuzzy.lua), tested new API functions that don't exist yet.
+  Key pattern: test the CONTRACT (what behavior should exist) not the implementation details.
+  Test files: test-idioms.lua (21), test-questions.lua (16), test-error-messages.lua (+12),
+  test-context-window.lua (+10), test-fuzzy-resolution.lua (14). Zero regressions in existing suite.

@@ -558,6 +558,140 @@ test("'go back' after room transition returns to previous room", function()
 end)
 
 -------------------------------------------------------------------------------
+-- Tier 4 Enhancement: Context Window Expansion (Prime Directive #106)
+-- TDD RED PHASE: Tests NEW APIs on context.lua.
+-- All tests below FAIL until the enhancements are implemented by Smithers.
+--
+-- New APIs being tested:
+--   context_window.resolve_repeat(text) → table|nil
+--   context_window.set_last_command(verb, noun, raw)
+--   context_window.get_last_direction() → string|nil
+--   context_window.set_last_direction(dir)
+--   context_window.recency_score(obj_id) → number
+--   context_window.resolve("the other one") → stack[2]
+-------------------------------------------------------------------------------
+
+h.suite("Tier 4 Expansion — Command repeat: 'do it again'")
+
+test("set_last_command stores command", function()
+    fresh()
+    h.assert_truthy(type(context_window.set_last_command) == "function",
+        "context_window.set_last_command() not yet implemented")
+    context_window.set_last_command("examine", "candle", "examine the candle")
+end)
+
+test("resolve_repeat('again') returns last command", function()
+    fresh()
+    h.assert_truthy(type(context_window.resolve_repeat) == "function",
+        "context_window.resolve_repeat() not yet implemented")
+    context_window.set_last_command("examine", "candle", "examine the candle")
+    local cmd = context_window.resolve_repeat("again")
+    h.assert_truthy(cmd, "'again' should return last command")
+    eq("examine", cmd.verb, "verb should be 'examine'")
+    eq("candle", cmd.noun, "noun should be 'candle'")
+end)
+
+test("resolve_repeat('do it again') returns last command", function()
+    fresh()
+    h.assert_truthy(context_window.resolve_repeat,
+        "context_window.resolve_repeat() not yet implemented")
+    context_window.set_last_command("take", "match", "take the match")
+    local cmd = context_window.resolve_repeat("do it again")
+    h.assert_truthy(cmd, "'do it again' should return last command")
+    eq("take", cmd.verb)
+end)
+
+test("resolve_repeat('repeat') returns last command", function()
+    fresh()
+    h.assert_truthy(context_window.resolve_repeat,
+        "context_window.resolve_repeat() not yet implemented")
+    context_window.set_last_command("open", "drawer", "open drawer")
+    local cmd = context_window.resolve_repeat("repeat")
+    h.assert_truthy(cmd, "'repeat' should return last command")
+    eq("open", cmd.verb)
+end)
+
+test("resolve_repeat with no prior command returns nil", function()
+    fresh()
+    h.assert_truthy(context_window.resolve_repeat,
+        "context_window.resolve_repeat() not yet implemented")
+    local cmd = context_window.resolve_repeat("again")
+    eq(nil, cmd, "'again' with no history should return nil")
+end)
+
+h.suite("Tier 4 Expansion — 'The other one' disambiguation")
+
+test("'the other one' resolves to stack[2] (second most recent)", function()
+    fresh()
+    context_window.push({ id = "candle", name = "tallow candle" })
+    context_window.push({ id = "mirror", name = "silver mirror" })
+    -- Stack: [mirror, candle]. "the other one" should return candle.
+    local obj = context_window.resolve("the other one")
+    h.assert_truthy(obj, "'the other one' should resolve to second item in stack")
+    eq("candle", obj.id, "should resolve to the PREVIOUS object, not the most recent")
+end)
+
+test("'the other one' returns nil with only one item in stack", function()
+    fresh()
+    context_window.push({ id = "candle", name = "tallow candle" })
+    local obj = context_window.resolve("the other one")
+    eq(nil, obj, "'the other one' should return nil with only one context item")
+end)
+
+h.suite("Tier 4 Expansion — Direction history")
+
+test("set_last_direction stores direction", function()
+    fresh()
+    h.assert_truthy(type(context_window.set_last_direction) == "function",
+        "context_window.set_last_direction() not yet implemented")
+    context_window.set_last_direction("north")
+end)
+
+test("get_last_direction returns stored direction", function()
+    fresh()
+    h.assert_truthy(context_window.set_last_direction,
+        "context_window.set_last_direction() not yet implemented")
+    h.assert_truthy(context_window.get_last_direction,
+        "context_window.get_last_direction() not yet implemented")
+    context_window.set_last_direction("north")
+    eq("north", context_window.get_last_direction())
+end)
+
+h.suite("Tier 4 Expansion — Recency scoring")
+
+test("recency_score for recently pushed object > 0", function()
+    fresh()
+    h.assert_truthy(type(context_window.recency_score) == "function",
+        "context_window.recency_score() not yet implemented")
+    context_window.push({ id = "candle", name = "tallow candle" })
+    local score = context_window.recency_score("candle")
+    h.assert_truthy(score > 0, "recently pushed object should have positive recency")
+end)
+
+test("recency_score for unknown object = 0", function()
+    fresh()
+    h.assert_truthy(context_window.recency_score,
+        "context_window.recency_score() not yet implemented")
+    context_window.push({ id = "candle", name = "tallow candle" })
+    local score = context_window.recency_score("elephant")
+    eq(0, score, "unknown object should have zero recency")
+end)
+
+h.suite("Tier 4 Expansion — Context persists across 5+ interactions")
+
+test("context stack persists across 5+ push operations", function()
+    fresh()
+    for i = 1, 6 do
+        context_window.push({ id = "obj" .. i, name = "Object " .. i })
+    end
+    local stack = context_window.get_stack()
+    h.assert_truthy(#stack >= 5, "stack should retain at least 5 entries")
+    -- Most recent should be accessible
+    local top = context_window.peek()
+    eq("obj6", top.id, "most recent object should be on top")
+end)
+
+-------------------------------------------------------------------------------
 -- Summary
 -------------------------------------------------------------------------------
 local failures = h.summary()
