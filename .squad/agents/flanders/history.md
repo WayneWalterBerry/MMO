@@ -29,7 +29,44 @@
 
 ## Current Sprint: Effects Pipeline (EP1-EP10) ✅ COMPLETE
 
-### Latest Work (2026-03-24)
+### Latest Work (2026-07-27)
+
+### Phase D2: Brass Spittoon Object — IMPLEMENTED ✅
+
+**Task:** Create `src/meta/objects/brass-spittoon.lua` per daily plan Phase D2.
+
+**What Was Built:**
+- GUID `{b763fdf9-f7d2-4eac-8952-7c03771c5013}` (Windows-generated)
+- Material: `brass` (from registry — hardness 6, fragility 0.1, density 8500)
+- Container: capacity 2, holds small items
+- Wearable helmet: head slot, outer layer, coverage 0.7, fit makeshift, armor 2
+- `is_helmet = true`, `reduces_unconsciousness = 1`
+- FSM: clean → stained → dented (cosmetic degradation only, brass never shatters)
+- Transitions: use/spit (clean→stained), dent/kick/hit/strike (→dented)
+- Full sensory: on_feel, on_smell, on_listen, on_taste, on_smell_worn
+- Mirror/appearance: worn_description for reflection
+- Keywords: spittoon, brass spittoon, brass bowl, cuspidor, spit bowl, helmet, improvised helmet
+- Weight: 4 (appropriate for brass density)
+- Design doc already existed (CBG authored `docs/objects/brass-spittoon.md`), staged with commit
+
+**Pattern:** Follows chamber-pot.lua for wearable helmet architecture. Key differences: brass material (dents, doesn't shatter), higher armor (2 vs 1), heavier weight (4 vs 3), FSM degradation states instead of shatter mutation.
+
+### Phase B1: Object-Material Audit — COMPLETE ✅
+
+**Task:** Audit all objects for material fields, fix missing ones, validate against registry.
+
+**Results:**
+- **82 objects checked** in `src/meta/objects/`
+- **81 had valid material fields** — all references exist in `src/engine/materials/init.lua`
+- **1 missing: ivy.lua** — added `material = "plant"`
+- **New material added:** `plant` to materials registry (density 500, hardness 2, fragility 0.3, flammability 0.5, flexibility 0.8)
+- **rat.lua:** Already removed per D-INANIMATE decision — no action needed
+- **0 mismatches found** — all material names correctly reference existing registry entries
+- **0 misspellings found** — all material strings valid
+
+**Test Results:** 78/78 test files pass, 0 regressions.
+
+### Previous Work (2026-03-24)
 
 ### Manifest Completion Tasks
 - **#79-#80:** Accessibility audit (closed drawer) and put routing verification
