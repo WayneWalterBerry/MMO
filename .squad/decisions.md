@@ -1,10 +1,10 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-24T19:30:00Z  
+**Last Updated:** 2026-03-24T19:50:00Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
-**Latest Merge (2026-03-24T19:30:00Z):** D-PLAYER-CANONICAL-STATE, D-OBJECT-INSTANCING-FACTORY  
-**Previous Decisions:** D-ENGINE-REFACTORING-REVIEW, D-META-CHECK-V1-APPROVAL, D-WAYNE-CODE-REVIEW-DIRECTIVE, D-WAYNE-METACOMPILER-COMPILER-LINTER, D-WAYNE-TDD-REFACTORING-DIRECTIVE, D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION, D-BRASS-BOWL-KEYWORD-REMOVAL, D-EMBEDDED-PRESENCES, D-OPEN-CLOSE-HOOKS, D-P1-PARSER-CLUSTER, D-CONTAINER-SENSORY-GATING
+**Latest Merge (2026-03-24T19:50:00Z):** D-BURNABILITY-MATERIAL-DERIVED  
+**Previous Decisions:** D-PLAYER-CANONICAL-STATE, D-OBJECT-INSTANCING-FACTORY, D-ENGINE-REFACTORING-REVIEW, D-META-CHECK-V1-APPROVAL, D-WAYNE-CODE-REVIEW-DIRECTIVE, D-WAYNE-METACOMPILER-COMPILER-LINTER, D-WAYNE-TDD-REFACTORING-DIRECTIVE, D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION, D-BRASS-BOWL-KEYWORD-REMOVAL, D-EMBEDDED-PRESENCES, D-OPEN-CLOSE-HOOKS, D-P1-PARSER-CLUSTER, D-CONTAINER-SENSORY-GATING
 
 ---
 
@@ -2665,3 +2665,45 @@ Implemented 4 engine hooks following the established on_X(obj, ctx) + vent_outp
 **Total Active Decisions:** 91 (90 prior + 1 new from inbox)
 **Last Merge:** 2026-03-24T18:45:00Z (Scribe)
 **Inbox Status:** 1 file merged, ready for deletion
+
+---
+
+## MATERIAL SYSTEM & BURNABILITY (Burndown Wave 7 — 2026-03-24T19:50:00Z)
+
+### D-BURNABILITY-MATERIAL-DERIVED
+**Author:** Bart (Architect)  
+**Date:** 2026-03-24 (Implemented in #120)  
+**Status:** Implemented  
+**Issue:** #120
+
+Burnability is now derived from material flammability scores rather than per-object flags or category arrays. This follows the same pattern established for armor (material-derived, not hardcoded).
+
+**Threshold:**
+- **Burnable:** `flammability >= 0.3`
+- **Not burnable:** `flammability < 0.3` or no material
+
+**Resolution Order:**
+1. **FSM transition** — if the object has a `burn` verb transition, use it (e.g., rope: intact → burning)
+2. **Mutation** — if the object has a `burn` mutation, apply it (e.g., letter → letter-ash)
+3. **Generic destruction** — remove the object from the world entirely
+
+**Key Decisions:**
+1. **Material registry** — 17 materials cataloged with flammability scores (0.0–1.0)
+2. **Universal burn verb** — Single handler checks material flammability; fireproof objects reject burn
+3. **3-tier burn progression** — States: intact → charred → ash
+4. **No object-specific burn logic** — Objects declare material; engine determines burnability
+
+**Impact on Other Agents:**
+- **Flanders** (objects): New objects with `material` fields automatically get correct burn behavior. No need to add `flammable` flags or categories. Objects that need custom burn behavior should use FSM transitions or mutations.
+- **Moe** (rooms): Room objects with flammable materials can now be burned. Consider whether rooms need fire-spread mechanics later.
+- **Sideshow Bob** (puzzles): Puzzles can leverage material-derived burnability. Burning a rope to drop something, burning a scroll, etc.
+
+**Backward Compatibility:**
+The old `obj.flammable` and `categories = {"flammable"}` paths are removed. Only `paper.lua` used the `flammable` category — it has `material = "paper"` (flammability 0.8) so it burns correctly under the new system.
+
+---
+
+**End of 2026-03-24T19:50:00Z Decision Inbox Merge**
+**Total Active Decisions:** 92 (91 prior + 1 new from inbox)
+**Last Merge:** 2026-03-24T19:50:00Z (Scribe)
+**Inbox Status:** 1 file archived, ready for deletion

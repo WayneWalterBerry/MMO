@@ -1313,3 +1313,14 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - Clean migration: move field to `ctx.player`, update 3 engine sites + 13 test mock sites
 - `ctx.current_room` is a convenience reference (room object), NOT player state — the canonical location is `ctx.player.location` (room ID string). Decided to leave `ctx.current_room` as-is since it's an engine convenience, not player data.
 - Test mock contexts are the biggest blast radius for state migrations — always grep tests for the old pattern
+
+## Learnings
+
+### Session: Burnability from Material Flammability — Issue #120 (2025-07-18)
+**Status:** ✅ COMPLETE
+
+- Material-derived properties continue to be the right pattern. Armor was derived from material hardness; now burnability is derived from material flammability. This eliminates per-object `flammable` flags entirely.
+- The threshold of 0.3 puts leather at the boundary (barely burnable) and bone below it (not burnable). This feels physically correct.
+- Three-tier resolution (FSM → mutation → generic destruction) gives object authors flexibility without requiring any engine changes — Principle 8 in action.
+- `perform_mutation` requires full engine context (`ctx.object_sources`, `ctx.mutation`, `ctx.loader`, `ctx.templates`). Test mocks for mutation paths need these fields or they'll crash on `object_sources` nil index.
+- Only one object (`paper.lua`) used the old `categories = {"flammable"}` approach. It has `material = "paper"` so the new system covers it automatically — no object file changes needed.

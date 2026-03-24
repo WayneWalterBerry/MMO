@@ -47,6 +47,19 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+### 2026-07-17: Issue #119 — Match no-relight on extinguish
+
+**What shipped:** Spent matches can no longer be relit. The `light` handler in `fire.lua` now checks for terminal FSM states before attempting transitions. A spent match yields: "The match is spent. You can't relight it." The `strike` handler already had this check.
+
+**The fix (one layer):**
+1. **Light handler** (`fire.lua`): Added terminal-state guard between the "already lit" check and the FSM transition search. If `obj.states[obj._state].terminal` is true, prints spent message and returns early. This is generic — any FSM object with a terminal state gets caught, not just matches.
+
+**Key learning:** The match FSM was already correct (`unlit → lit → spent` with `terminal = true` on spent). The `strike` handler already caught spent matches. Only the `light` handler was missing the terminal check — it fell through to a generic "You can't light that" message instead of explaining WHY. The `fsm.get_transitions()` function filters by current state, so no transitions were found from "spent", but the error message lacked context.
+
+**Files changed:** `src/engine/verbs/fire.lua`, `test/verbs/test-match-no-relight.lua` (new)
+
+**Tests:** 5 new tests covering full lifecycle (strike → lit, extinguish → spent, light spent → error, strike spent → error, full lifecycle chain). 15 existing fire tests unchanged. 0 regressions.
+
 ### 2026-03-28: Issue #109 — "apply X to Y" parser pattern
 
 **What shipped:** Parser now handles "apply X to Y", "rub X on/to/into Y", and "use X on Y" for treatment/application scenarios. "put X on Y" delegates to apply when the target isn't a room object and the player has injuries.
