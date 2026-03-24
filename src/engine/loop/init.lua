@@ -225,27 +225,14 @@ function loop.run(context)
       end
     end, "", 500000)
 
-    -- Expand each part further with the existing " and " compound split
+    -- Issue #168: Verb-aware "and" compound splitting.
+    -- Uses preprocess.split_compound to only split "X and Y" when Y starts
+    -- with a recognized verb. Prevents breaking "get candle and matchbox".
     local sub_commands = {}
     for _, part in ipairs(command_parts) do
-      local remaining = part
-      local safety_limit = 0
-      while true do
-        safety_limit = safety_limit + 1
-        if safety_limit > 100 then
-          print("Error: Command too complex (infinite loop protection). Try simpler commands.")
-          break
-        end
-        local before, after = remaining:match("^(.-)%s+and%s+(.+)$")
-        if before and after then
-          local b = before:match("^%s*(.-)%s*$")
-          if b ~= "" then sub_commands[#sub_commands + 1] = b end
-          remaining = after
-        else
-          local r = remaining:match("^%s*(.-)%s*$")
-          if r ~= "" then sub_commands[#sub_commands + 1] = r end
-          break
-        end
+      local compounds = preprocess.split_compound(part)
+      for _, c in ipairs(compounds) do
+        sub_commands[#sub_commands + 1] = c
       end
     end
 
@@ -397,15 +384,10 @@ function loop.run(context)
         end
       end
 
-      -- Prepositional parsing: strip "with Y" for verbs that auto-find tools
-      if verb == "light" or verb == "ignite" or verb == "burn" then
-        local clean_noun = noun:match("^(.-)%s+with%s+.+$")
-        if clean_noun and clean_noun ~= "" then noun = clean_noun end
-      end
-
-      -- BUG-049: extract "with Y" tool for open/pry and stash on context
+      -- BUG-049, #169: extract "with Y" tool for verbs that use tools
       context.tool_noun = nil
-      if verb == "open" or verb == "pry" then
+      if verb == "open" or verb == "pry"
+          or verb == "light" or verb == "ignite" or verb == "burn" then
         local obj_noun, tool = noun:match("^(.-)%s+with%s+(.+)$")
         if obj_noun and obj_noun ~= "" and tool and tool ~= "" then
           noun = obj_noun

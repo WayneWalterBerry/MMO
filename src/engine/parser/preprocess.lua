@@ -1197,17 +1197,22 @@ end
 
 
 --- split_commands(input) -> list of command strings
---- Splits a raw input line on commas, semicolons, or the word "then" to support
---- multi-command input (e.g. "move bed, move rug, open trapdoor").
+--- Splits a raw input line on commas, semicolons, "then", "and then", and
+--- ", and" to support multi-command input (Issue #168).
 --- Trims whitespace from each segment and drops empty segments.
+--- Strips leading "and " from segments left over after comma-and splitting.
 --- Does NOT split on separators inside double-quoted text.
 function preprocess.split_commands(input)
     if not input then return {} end
     local trimmed = input:match("^%s*(.-)%s*$")
     if trimmed == "" then return {} end
 
+    local lower = trimmed:lower()
+
     -- Fast path: no separators at all → single command
-    if not trimmed:find("[,;]") and not trimmed:lower():find("%f[%a]then%f[%A]") then
+    if not trimmed:find("[,;]")
+        and not lower:find("%f[%a]then%f[%A]")
+        and not lower:find("%f[%a]and then%f[%A]") then
         return { trimmed }
     end
 
@@ -1215,7 +1220,6 @@ function preprocess.split_commands(input)
     local segments = {}
     local current = {}
     local in_quote = false
-    local lower = trimmed:lower()
     local i = 1
     local len = #trimmed
 
@@ -1228,12 +1232,12 @@ function preprocess.split_commands(input)
             current[#current + 1] = ch
             i = i + 1
 
-        -- Comma or semicolon separator (outside quotes)
-        elseif not in_quote and (ch == ',' or ch == ';') then
+        -- " and then " compound separator (outside quotes, must check before "then")
+        elseif not in_quote and lower:sub(i, i + 9) == " and then " then
             local seg = table.concat(current):match("^%s*(.-)%s*$")
             if seg ~= "" then segments[#segments + 1] = seg end
             current = {}
-            i = i + 1
+            i = i + 10  -- skip " and then "
 
         -- " then " word separator (outside quotes)
         elseif not in_quote and lower:sub(i, i + 5) == " then " then
@@ -1241,6 +1245,13 @@ function preprocess.split_commands(input)
             if seg ~= "" then segments[#segments + 1] = seg end
             current = {}
             i = i + 6  -- skip " then "
+
+        -- Comma or semicolon separator (outside quotes)
+        elseif not in_quote and (ch == ',' or ch == ';') then
+            local seg = table.concat(current):match("^%s*(.-)%s*$")
+            if seg ~= "" then segments[#segments + 1] = seg end
+            current = {}
+            i = i + 1
 
         else
             current[#current + 1] = ch
@@ -1252,9 +1263,134 @@ function preprocess.split_commands(input)
     local seg = table.concat(current):match("^%s*(.-)%s*$")
     if seg ~= "" then segments[#segments + 1] = seg end
 
+    -- Strip leading "and " from segments (left over after comma-and splitting)
+    for si = 1, #segments do
+        local s = segments[si]
+        local stripped = s:match("^[Aa][Nn][Dd]%s+(.+)$")
+        if stripped then
+            segments[si] = stripped:match("^%s*(.-)%s*$")
+        end
+    end
+
+    -- Drop any segments that became empty after stripping
+    local cleaned = {}
+    for _, s in ipairs(segments) do
+        if s ~= "" then cleaned[#cleaned + 1] = s end
+    end
+
     -- If splitting produced nothing useful, return original as single command
-    if #segments == 0 then return { trimmed } end
-    return segments
+    if #cleaned == 0 then return { trimmed } end
+    return cleaned
+end
+
+---------------------------------------------------------------------------
+-- Issue #168: Verb-aware "and" splitting for compound commands.
+-- Only splits "X and Y" when Y starts with a recognized verb.
+-- "get candle and matchbox" → stays as one command (matchbox isn't a verb)
+-- "take key and unlock door" → splits (unlock IS a verb)
+---------------------------------------------------------------------------
+local KNOWN_VERBS = {
+    -- sensory
+    look = true, examine = true, x = true, inspect = true, check = true,
+    feel = true, touch = true, grope = true, smell = true, sniff = true,
+    taste = true, lick = true, listen = true, hear = true, read = true,
+    search = true, find = true,
+    -- acquisition
+    take = true, get = true, pick = true, grab = true, drop = true,
+    pull = true, yank = true, tug = true, extract = true,
+    push = true, shove = true, nudge = true,
+    move = true, shift = true, drag = true, slide = true,
+    lift = true, heave = true, uncork = true, unstop = true, unseal = true,
+    -- containers
+    open = true, close = true, shut = true, pry = true,
+    unlock = true, lock = true,
+    -- equipment
+    wear = true, don = true, remove = true, doff = true,
+    -- crafting
+    write = true, inscribe = true, sew = true, stitch = true, mend = true,
+    put = true, place = true,
+    -- combat
+    stab = true, jab = true, pierce = true, stick = true,
+    hit = true, punch = true, bash = true, bonk = true, thump = true,
+    smack = true, bang = true, slap = true, whack = true, headbutt = true,
+    toss = true, throw = true, cut = true, slice = true, nick = true,
+    slash = true, carve = true, prick = true,
+    -- destruction
+    ["break"] = true, smash = true, shatter = true, tear = true, rip = true,
+    -- fire
+    light = true, ignite = true, relight = true,
+    extinguish = true, snuff = true, strike = true, burn = true,
+    -- survival
+    eat = true, consume = true, devour = true,
+    drink = true, quaff = true, sip = true,
+    pour = true, spill = true, dump = true, fill = true,
+    wash = true, clean = true, rinse = true, scrub = true,
+    sleep = true, rest = true, nap = true,
+    -- movement
+    go = true, walk = true, run = true, head = true, travel = true,
+    enter = true, climb = true, ascend = true, descend = true,
+    back = true, ["return"] = true,
+    north = true, south = true, east = true, west = true,
+    up = true, down = true, n = true, s = true, e = true, w = true,
+    -- meta
+    inventory = true, i = true, time = true, set = true, adjust = true,
+    help = true, wait = true, pass = true, use = true, utilize = true,
+    apply = true, treat = true, appearance = true, quit = true,
+}
+
+--- split_compound(input) -> list of command strings
+--- Verb-aware splitting on " and " — only splits when the word after "and"
+--- is a recognized verb. Prevents breaking multi-object commands like
+--- "get candle and matchbox" while splitting "take key and unlock door".
+function preprocess.split_compound(input)
+    if not input then return {} end
+    local trimmed = input:match("^%s*(.-)%s*$")
+    if trimmed == "" then return {} end
+
+    local lower = trimmed:lower()
+    if not lower:find("%s+and%s+") then
+        return { trimmed }
+    end
+
+    local results = {}
+    local remaining = trimmed
+    local safety = 0
+
+    while true do
+        safety = safety + 1
+        if safety > 50 then break end
+
+        local lower_rem = remaining:lower()
+        local best_pos = nil
+
+        -- Find all " and " positions; pick the first one where the next word is a verb
+        local search_start = 1
+        while true do
+            local and_start, and_end = lower_rem:find("%s+and%s+", search_start)
+            if not and_start then break end
+
+            local after = remaining:sub(and_end + 1)
+            local next_word = after:match("^(%S+)")
+            if next_word and KNOWN_VERBS[next_word:lower()] then
+                best_pos = { start = and_start, finish = and_end }
+                break
+            end
+            search_start = and_end + 1
+        end
+
+        if not best_pos then
+            local r = remaining:match("^%s*(.-)%s*$")
+            if r ~= "" then results[#results + 1] = r end
+            break
+        end
+
+        local before = remaining:sub(1, best_pos.start - 1):match("^%s*(.-)%s*$")
+        if before ~= "" then results[#results + 1] = before end
+        remaining = remaining:sub(best_pos.finish + 1)
+    end
+
+    if #results == 0 then return { trimmed } end
+    return results
 end
 
 --- singularize(noun) -> table of singular form candidates
