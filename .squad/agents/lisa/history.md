@@ -451,6 +451,18 @@ This is the core advantage over Dwarf Fortress: our metadata is structured, mach
 - `_timer_delay` is a valid mutate key on injury transitions (overrides timed event delay on target state)
 - Empty `healing_interactions = {}` is valid (bruised, concussion self-heal with time/rest)
 
+### meta-check V2 Validation Results (2026-03-24)
+- **Verdict: PASS WITH NOTES** — posted on #167
+- Ran meta-check against all 130 `.lua` files: 0 errors, 152 warnings, 8 info on valid data
+- 0 false positives — the tool correctly ignores valid files
+- Per-type scans all work: objects, rooms, templates, injuries, materials, levels
+- 159/160 V2 rule IDs implemented; 11 IDs consolidated under equivalent checks (XF-01, MAT-02, etc.)
+- **1 missing rule:** XR-07 (template default value type validation) — WARNING only, non-blocking
+- **Edge case found:** `_as_string()` returns `""` for empty strings, so "non-empty string" checks (LV-12, LV-15, INJ-18) don't catch `title = ""`. Low severity — no real files use empty strings.
+- Spot-checked 20+ rules via intentional file breakage — all caught correctly
+- Cross-reference checks (XR-01 through XR-10) only fire in full-directory scan mode (expected — they need all files loaded)
+- Healing items not yet created (healing-poultice, cold-water, damp-cloth, antidote-nightshade) correctly flagged as XR-01 warnings
+
 ---
 
 ## Archives
