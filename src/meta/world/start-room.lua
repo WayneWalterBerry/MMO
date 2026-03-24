@@ -72,7 +72,7 @@ return {
         -- === Wardrobe ===
         { id = "wardrobe", type = "Wardrobe", type_id = "9c4701d1-4cc4-49e7-9c4a-041e1e37caf1",
             contents = {
-                { id = "wool-cloak", type = "Wool Cloak", type_id = "ecdccb0f-134d-436f-9f1c-d53911ac1445" },
+                { id = "trousers", type = "Moth-Eaten Trousers", type_id = "3c75a0cc-0b60-458b-a533-7ec1c48da76a" },
                 { id = "sack", type = "Sack", type_id = "4720ace5-baed-4133-b5db-977257f5b680",
                     contents = {
                         { id = "needle", type = "Needle", type_id = "07b9daaf-ee36-408e-8c66-d794bc175ed1" },

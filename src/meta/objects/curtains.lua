@@ -7,11 +7,24 @@ return {
     id = "curtains",
     material = "velvet",
     keywords = {"curtains", "drapes", "curtain", "velvet", "window covering"},
-    size = 4,
-    weight = 4,
-    categories = {"fabric", "soft", "window covering"},
+    size = 3,
+    weight = 3,
+    categories = {"fabric", "soft", "window covering", "wearable"},
     room_position = "hang across the window in the far wall",
-    portable = false,
+    portable = true,
+
+    wear = {
+        slot = "back",
+        layer = "outer",
+        fit = "makeshift",
+        wear_quality = "makeshift",
+        provides_warmth = true,
+        mirror_appearance = "wearing curtains as a makeshift cloak",
+    },
+
+    event_output = {
+        on_wear = "You drape the heavy velvet curtains over your shoulders like a cape. You look ridiculous, but at least you're warm.",
+    },
 
     -- Initial state (closed)
     name = "heavy velvet curtains",
@@ -19,6 +32,8 @@ return {
     room_presence = "Heavy velvet curtains of faded burgundy hang across the far wall, pooling on the floor in dusty folds.",
     on_feel = "Heavy fabric, hanging in thick folds. Velvet -- once fine, now dusty. The weave is dense enough to block all light.",
     on_smell = "Dusty. The accumulated neglect of years, trapped in velvet.",
+    on_listen = "A faint rustling when disturbed, like dry leaves shifting.",
+    on_taste = "Dust and velvet fibers. Regret.",
     filters_daylight = true,
 
     location = nil,
