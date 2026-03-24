@@ -31,6 +31,66 @@
 
 ### Latest Work (2026-07-27)
 
+### Fix #155: Ceramic Pot Degradation — FIXED ✅
+
+**Task:** Ceramic pot (fragility 0.7) never cracked after 8+ self-hits while worn as armor. Nelson-1 playtest.
+
+**Root Cause:** `covers_location()` in `armor.lua` only checked `item.covers` — but NO wearable objects define a `covers` array. They all use `wear.slot` or `wear_slot`. The armor interceptor never matched any worn items, so `check_degradation()` never ran.
+
+**What Changed:**
+- **armor.lua:** `covers_location()` now falls back to `wear.slot` / `wear_slot` when `covers` is absent
+- **armor.lua:** Exported `armor.degrade_covering_armor(player, location, damage, impact_type)` API
+- **verbs/init.lua:** Hit verb now calls `armor.degrade_covering_armor()` after inflicting head injury
+
+**TDD:** 11 tests in `test/armor/test-ceramic-degradation.lua` — covers FSM transitions, protection reduction, and API contract.
+
+**Side Effect:** This fix also resolved 3 pre-existing failures in `test/search/test-drawer-accessibility.lua` (1 test file failure eliminated from baseline).
+
+### Fix #134: Tear Cloak To-Hands — FIXED ✅
+
+**Task:** `tear cloak` destroyed the cloak but produced no cloth in hands — hands empty.
+
+**Root Cause:** `spawn_objects()` places items in `room.contents`, not player's hands. The tear verb didn't move spawned items after mutation.
+
+**What Changed:**
+- **verbs/init.lua:** Tear verb now tracks which hand held the object, and after mutation moves spawned items from room to player's hands (fills both hands if 2 spawns)
+- **wool-cloak.lua:** Added narration message to tear mutation
+
+**TDD:** 7 tests in `test/objects/test-tear-cloak.lua` — covers cloth production, hand placement, cloak destruction, narration, and rip alias.
+
+**Result:** Full suite: 1 pre-existing failure only (bedroom-door). Zero regressions. Committed c448469.
+
+### Phase A7: Chamber Pot Material-Derived Armor — IMPLEMENTED ✅
+
+**Task:** Migrate chamber-pot from hardcoded armor to material-derived protection (Phase A7 from daily plan).
+
+**What Changed in chamber-pot.lua:**
+- **REMOVED** `provides_armor = 1` from wear table — armor now engine-calculated from `material = "ceramic"`
+- **REMOVED** `reduces_unconsciousness = 1` from top-level — engine derives from material + helmet tag
+- **KEPT** `is_helmet = true` as semantic tag (engine hint, not protection source)
+- **ADDED** `coverage = 0.8` and `fit = "makeshift"` to wear table — modifiers for armor interceptor
+- **ADDED** FSM degradation: `intact` → `cracked` → `shattered` (3 states, 2 transitions via hit/kick/strike/smash)
+- **ADDED** `event_output = { on_wear = "This is going to smell worse than I thought." }` — one-shot flavor text
+
+**FSM Design:** Follows brass-spittoon pattern. Ceramic is fragile (fragility 0.7), so it progresses to shatter instead of denting. Shattered state spawns ceramic-shard ×2 via mutate on transition (mirrors existing `mutations.shatter` for on_drop).
+
+**Design Doc Updated:** `docs/objects/chamber-pot.md` — full Phase A7 changelog, removed old hardcoded armor table, added material-derived armor section.
+
+### event_output Flavor Text — 3 Objects ✅
+
+**Task:** Add one-shot `event_output.on_wear` flavor text to 3 wearable objects (Bart's event_output system).
+
+**Objects Updated:**
+1. **wool-cloak.lua** — `"I need to get better outfits. I look like a peasant."`
+2. **chamber-pot.lua** — `"This is going to smell worse than I thought."`
+3. **terrible-jacket.lua** — `"It fits... barely. The sleeves are too short and it smells of mildew."`
+
+**Pattern:** `event_output = { on_wear = "..." }` — engine reads at verbs/init.lua:5044, prints once, nils out. Pure metadata, no engine changes needed.
+
+**Result:** 74/74 test files pass (1 pre-existing bedroom-door failure, unrelated). Zero regressions. Committed e6711d8.
+
+**Decision Filed:** `D-A7-MATERIAL-DERIVED-ARMOR` in inbox — flags impact on Nelson (test assertions), Bart (interceptor must handle ceramic), CBG (brass-spittoon candidate for same migration).
+
 ### Phase D2: Brass Spittoon Object — IMPLEMENTED ✅
 
 **Task:** Create `src/meta/objects/brass-spittoon.lua` per daily plan Phase D2.
@@ -343,4 +403,38 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 - The 1 fixed audit (ivy→plant) ensures armor system sees consistent material data
 
 **Status:** Phase D2+B1 SHIPPED.
+
+### Fix #136: Glass Bottle Shatters But Spawns Zero Glass Shards — FIXED ✅
+
+**Task:** Nelson-3 playtest found wine bottle shatters to "broken" state but spawns no glass shards. Ceramic chamber pot correctly spawns 2 ceramic shards — material fragility contract was broken for glass.
+
+**Root Cause:** `wine-bottle.lua` had two break transitions (sealed→broken, open→broken) with no `mutate.spawns` field. The `mutations` table was empty `{}`. Chamber pot correctly had `spawns = {"ceramic-shard", "ceramic-shard"}` in both its FSM transition and `mutations.shatter`.
+
+**What Changed in wine-bottle.lua:**
+- **ADDED** `mutate = { becomes = nil, spawns = {"glass-shard", "glass-shard"} }` to sealed→broken transition
+- **ADDED** `mutate = { becomes = nil, spawns = {"glass-shard", "glass-shard"} }` to open→broken transition
+- **ADDED** `mutations.shatter` block with `spawns = {"glass-shard", "glass-shard"}` and narration (mirrors chamber-pot pattern)
+- **Updated** break transition messages to mention shards
+
+**glass-shard.lua:** Already existed (effects pipeline object with on_cut injury). No changes needed.
+
+**Test:** Created `test/objects/test-glass-shards.lua` — 39 tests covering:
+- Glass shard object structure, injury capability, effects pipeline
+- Wine bottle break transitions spawn glass-shard objects (both sealed→broken and open→broken)
+- mutations.shatter exists with correct spawns
+- Material parity: glass shard pattern matches ceramic shard pattern
+
+**Result:** 39/39 pass. Full suite: 1 pre-existing bedroom-door failure only. Zero regressions.
+
+### Fix #152: Place Brass Spittoon in a Room — FIXED ✅
+
+**Task:** Nelson-5 found brass-spittoon.lua exists but isn't placed in any room.
+
+**What Changed in storage-cellar.lua:**
+- **ADDED** brass spittoon instance to room `instances` table: `{ id = "brass-spittoon", type = "Brass Spittoon", type_id = "{b763fdf9-f7d2-4eac-8952-7c03771c5013}" }`
+- Placed at room level (floor), among other room-level objects (grain sack, oil lantern, rope, crowbar, oil flask)
+- Thematically appropriate: storage cellar is a utilitarian work space where a spittoon would be used
+- Discoverable but not obvious — among clutter on the floor, not prominently on a surface
+
+**Result:** Zero regressions. Full suite clean (1 pre-existing bedroom-door failure only).
 
