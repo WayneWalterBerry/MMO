@@ -48,6 +48,26 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 ## Learnings
 
 
+### 2026-07-20: Issue #106 Phase 3 — Prime Directive Tiers 1-5 Implementation
+
+**What shipped:** All 5 Prime Directive parser tiers, passing 73/73 TDD tests with zero regressions across 129 test files.
+
+**New modules:**
+- `src/engine/parser/idioms.lua` — 55+ natural language idioms (Tier 3)
+- `src/engine/parser/questions.lua` — Priority-ordered question→command mapping (Tier 1)
+- `src/engine/errors.lua` — 7-category structured error template system (Tier 2)
+
+**Enhanced modules:**
+- `src/engine/parser/context.lua` — Command repeat, direction history, recency scoring, "the other one" disambiguation (Tier 4)
+- `src/engine/parser/fuzzy.lua` — Confidence scoring (0.0-1.0), context-integrated scoring, 4-char typo tolerance (Tier 5)
+
+**Key learnings:**
+- Data-driven pattern tables with priority ordering prevent ambiguity between similar patterns (e.g., "where am I bleeding" vs "where am I").
+- Typo scoring formula needs to ensure all accepted Levenshtein matches meet the minimum confidence threshold. Changed from `4 - dist` to `max_dist - dist + 3` so distance-2 matches still score ≥ 0.3 confidence.
+- The 4-char typo threshold change (distance 0 → 1) required updating the existing test-fuzzy-nouns.lua, which was the only regression.
+- All 5 tiers are standalone modules testable in isolation — no cross-module integration was needed for the TDD tests to pass.
+- Implementation order (3→1→2→4→5) was correct: additive-only tiers first, stateful changes last.
+
 ### 2026-07-19: Issue #167 — Meta-check V2 (full meta type coverage)
 
 **What shipped:** Extended `scripts/meta-check/check.py` with ~160 new validation rules covering all 4 remaining meta types: templates (27 rules), injuries (69 rules), materials (24 rules), and levels (41 rules), plus 11 cross-reference checks. Fixed MAT-02 false positives by reading material names from `src/meta/materials/*.lua` filenames instead of parsing the engine registry file.
