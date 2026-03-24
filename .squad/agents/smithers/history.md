@@ -880,3 +880,13 @@ Wayne requested Phase F1 carry-over bug fixes (#47, #49, #52, #53) using TDD. Up
 **Files changed:** `src/engine/materials/init.lua` (rewritten), 23 new files in `src/meta/materials/`
 
 **Tests:** All 121 test files pass. Material audit (#163): 86/86 objects validated. Material properties (#123): 23 materials × 11 properties validated. meta-check clean. 0 regressions.
+
+### 2026-03-24: Issue #174 - SLM Embedding Index Overhaul
+
+**What shipped:** Stripped 384-dim GTE-tiny vectors from the embedding index (15.3 MB -> 362 KB, 97.7% reduction). Full index archived to `resources/archive/embedding-index-full.json` for future ONNX use. Added 242 new phrase variants (gimme/hold/lift->get, peer at->look, inspect->examine, check out->look, use->ignite) to both `training-pairs.csv` and the slim index. Fixed state-variant tiebreaker in Jaccard matcher so tied scores prefer base-state nouns over suffixed variants (e.g., `examine match` -> `wooden match` not `lit match`). Updated `build_embedding_index.py` with `--slim`/`--no-slim` flags (slim default).
+
+**Staleness audit:** 57/87 objects missing from index (Level 2+ content not yet indexed). 2 orphan nouns (vanity-mirror-broken, vanity-open-mirror-broken). 90/129 engine verbs not in index - all handled by Tier 1 exact dispatch.
+
+**Files changed:** `src/assets/parser/embedding-index.json` (slim), `src/engine/parser/embedding_matcher.lua` (tiebreaker), `data/parser/training-pairs.csv` (+242 rows), `scripts/build_embedding_index.py` (slim flag), `resources/archive/embedding-index-full.json` (new).
+
+**Tests:** All 129 test files pass. Zero regressions.
