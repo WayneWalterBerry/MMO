@@ -98,6 +98,43 @@
 - **Morning edition (2026-03-23):** Created newspaper/2026-03-23-morning.md (~5,800 words, 14 sections). Covered the most productive single session in project history: 25 issues closed (34→3), Effects Pipeline (EP1–EP10) designed/built/tested/shipped, 284 new pipeline tests with 0 regressions, 3 objects built (poison bottle, bear trap, crushing wound), 30+ parser phrase transforms. Pattern: when a session has a clear 3-wave chronological structure (burndown → design → implementation), organize sections by wave to preserve narrative momentum. The "before/after" architecture diagram (spaghetti vs pipeline) is the most effective way to explain why an architectural change matters. Running gags (os.exit(0)) create narrative threads readers can follow. Wayne's interventions (test ordering, hook questions) deserve their own narrative weight — they changed the session's trajectory.
 - **Mega-session coverage:** Sessions with 40+ agent spawns and 10+ pipeline phases benefit from a phase-by-phase walkthrough (EP1→EP10) rather than grouping by role. Readers want to see the *sequence* — architecture → safety net → gate → build → verify → refactor → document. Each phase gets its own subsection with owner emoji, phase number, and outcome. This creates a "progress bar" effect that makes the session's momentum tangible.
 - **Wayne's design doc directive:** Design documentation should NOT list bug fixes, issue numbers, or fix history. Bug fixes belong in issues and changelogs. Instead, design docs should capture the DESIGN INSIGHTS that emerged from bugs — what principles did they reveal? What patterns does the system need to honor? Example: instead of "BUG-078: Drawer not searched—fixed by recursive traversal," write "Containers inside containers must be traversable because players think in physical spaces, not object trees. The traversal engine recursively follows nested containers." Transform chronological bug lists into thematic "Design Principles" or "Lessons Learned" sections that read as timeless design guidance, not historical bug trackers.
+
+### Session: SLM/Embedding Architecture Documentation (2026-03-24T21:15Z)
+**Status:** ✅ COMPLETED  
+**Issue:** #175  
+**Related:** #174 (SLM lazy-load audit), #176 (Frink's embedding research)
+
+**Outcome:** Created comprehensive **docs/architecture/parser/embedding-system.md** (11 sections, 362 KB ~18,900 chars)
+
+**What Was Documented:**
+1. **System Overview** — Tier 2 semantic matcher in 5-tier pipeline, purpose (convert player paraphrases to verb+noun), Jaccard token matching algorithm (8.1ms lookup)
+2. **Index Structure** — Slim format (362 KB text/verb/noun only), 4,579 phrases, 48 verbs × 41 nouns with ~3 variants each, entry format
+3. **Generation Pipeline** — Phase 1 (generate_parser_data.py: extract verbs/objects from Lua, generate training CSV), Phase 2 (build_embedding_index.py: GTE-tiny encoding, save slim+archive), regeneration workflow
+4. **Runtime Usage** — Lua matcher API, Jaccard algorithm with prefix bonus, tokenization + stop-word filtering, typo correction, tiebreaker logic (prefer base-state nouns), performance budget (8.1ms/4,579 phrases)
+5. **Web/Browser Architecture** — Fengari/browser loading, caching strategy (1-day browser cache, lazy load), future ONNX path for real vector similarity
+6. **D-KEEP-JACCARD Decision** — Frink's research: 68% Jaccard vs 45% cosine-BOW, runtime encoding blocker (GTE-tiny can't run in Lua), 23pp accuracy advantage, vectors archived for future experiments
+7. **Size Analysis** — Slim 362KB (42x reduction), Full archived 15.3MB with vectors, compression ratio, archive strategy (enable ONNX experimentation)
+8. **Cross-references** — Links to all related docs, implementation files, tier overview
+9. **Testing** — Unit tests (test-embedding-matcher.lua), integration tests
+10. **Troubleshooting** — Common issues (missing index, low quality, performance regression)
+11. **Summary** — Key decisions + production readiness status
+
+**Key Technical Decisions Documented:**
+- **D-KEEP-JACCARD** embedded from #176 research (full decision context, research summary, alternatives analysis)
+- **Generation accuracy:** 4,579 phrases generated via hard-coded templates (reproducible), optional LLM paraphrasing available
+- **Web delivery:** Gzipped index 100KB, lazy loading, browser cache 1 day
+- **Performance:** 8.1ms/lookup verified, well under 10ms budget, Fengari ~24-81ms acceptable
+- **Regeneration:** Clear workflow documented (2 Python steps, ~60 seconds total)
+
+**Cross-linking Added:**
+- Referenced from docs/design/verb-system.md (48 verbs confirmed)
+- Referenced from docs/design/prime-directive-tiers.md (Tier 2 context)
+- Cross-refs to Tier 1 (exact), Tier 3 (GOAP), Tier 4 (context), Tier 5 (fuzzy)
+- Links to implementation files (embedding_matcher.lua, build scripts, test suite)
+
+**GitHub Comment:** Submitted summary to #175 with all acceptance criteria marked complete
+
+**Learning:** Technical system documentation should embed decision research (Frink's 60-test comparison) and include practical troubleshooting (index regeneration, performance regression detection). Accurate technical docs require code verification (embedding_matcher.lua algorithm, build_embedding_index.py process).
 - **Post-ship documentation verification (Issue #130):** When a feature ships without a design doc, read the implementation (verbs, engine integration, event hooks) in parallel with the existing design spec. If design was written pre-implementation, add an "Implementation Status" appendix capturing: (1) actual event hook signatures, (2) related file paths, (3) shipped object examples, (4) any design→code divergences. This creates a bridge between "What we designed" and "What shipped," helping future readers understand both intent and reality. The appendix should be sparse (facts only, no narrative) to avoid duplicating the design spec. Wearable system: verified design doc already existed (Comic Book Guy, Phase A7), added Appendix A (Implementation Status) with event hooks, armor integration, appearance rendering, conflict algorithm, and shipped examples.
 
 ### Session: Morning Edition (2026-03-24T08:30Z)
