@@ -1,7 +1,7 @@
 # Engine Event Hooks — Injury Pipeline Architecture
 
-**Version:** 3.1 (Equipment Hooks + Open/Close Hooks + Event Output)  
-**Date:** 2026-07-22 (original) · Updated 2026-07-27 · Updated 2026-03-24 · Updated 2026-03-28  
+**Version:** 3.2 (Equipment Hooks + Open/Close Hooks + Room/Pickup/Drop Hooks + Event Output)  
+**Date:** 2026-07-22 (original) · Updated 2026-07-27 · Updated 2026-03-24 · Updated 2026-03-28 · Updated 2026-03-29  
 **Author:** Bart (Architect)  
 **Status:** Architecture Analysis + Implementation Record  
 **Requested by:** Wayne "Effe" Berry
@@ -42,13 +42,20 @@ This document analyzes how `.lua` object files hook into the engine to cause inj
 | `on_taste_effect` | Verb handler → **`effects.process()`** | ✅ Routes structured effect through pipeline | **Migrated** |
 | `on_feel_effect` | Verb handler → **`effects.process()`** | ✅ Routes structured effect through pipeline | **Migrated** |
 | `effect` (on transition) | Verb handler → **`effects.process()`** | ✅ Routes structured effect through pipeline | **Migrated** |
-| `on_drop` (fragility) | `verbs/init.lua` drop handler | ✅ Material fragility check: shatters if fragility ≥ 0.5 AND surface hardness ≥ 5. Fires FSM break transition, spawns debris from `mutations.shatter.spawns`, removes original. Issue #56. | **Implemented** |
-| `on_wear` | `verbs/init.lua` wear handler | ✅ Fires when item is equipped (put on). Receives `(obj, ctx)`. Use cases: pot smell narration, cursed items, armor stat application. | **Implemented** |
-| `on_remove_worn` | `verbs/init.lua` remove handler | ✅ Fires when worn item is taken off. Receives `(obj, ctx)`. Use cases: curse resistance, stat removal, cleanup. | **Implemented** |
-| `on_open` | `verbs/init.lua` open handler | ✅ Fires after successful FSM open transition. Receives `(obj, ctx)`. Use cases: trap triggers, puzzle state, secret compartments. | **Implemented** |
-| `on_close` | `verbs/init.lua` close handler | ✅ Fires after successful FSM close transition. Receives `(obj, ctx)`. Use cases: latch sounds, containment sealing, puzzle resets. | **Implemented** |
+| `on_drop` (fragility) | `acquisition.lua` drop handler | ✅ Material fragility check: shatters if fragility ≥ 0.5 AND surface hardness ≥ 5. Fires FSM break transition, spawns debris from `mutations.shatter.spawns`, removes original. Issue #56. | **Implemented** |
+| `on_wear` | `equipment.lua` wear handler | ✅ Fires when item is equipped (put on). Receives `(obj, ctx)`. Use cases: pot smell narration, cursed items, armor stat application. | **Implemented** |
+| `on_remove_worn` | `equipment.lua` remove handler | ✅ Fires when worn item is taken off. Receives `(obj, ctx)`. Use cases: curse resistance, stat removal, cleanup. | **Implemented** |
+| `on_open` | `containers.lua` open handler | ✅ Fires after successful FSM open transition. Receives `(obj, ctx)`. Use cases: trap triggers, puzzle state, secret compartments. | **Implemented** |
+| `on_close` | `containers.lua` close handler | ✅ Fires after successful FSM close transition. Receives `(obj, ctx)`. Use cases: latch sounds, containment sealing, puzzle resets. | **Implemented** |
+| `on_enter_room` | `movement.lua` movement handler | ✅ Fires after player enters a room. Receives `(room, ctx)`. Use cases: spatial traps, atmosphere triggers, puzzle state. Issue #101. | **Implemented** |
+| `on_exit_room` | `movement.lua` movement handler | ✅ Fires before player leaves a room. Receives `(room, ctx)`. Use cases: room seal effects, departure narration. Issue #101. | **Implemented** |
+| `on_pickup` | `acquisition.lua` take handler | ✅ Fires after successful take/get. Receives `(obj, ctx)`. Use cases: cursed items, weight effects, puzzle triggers. Issue #101. | **Implemented** |
+| `on_drop` (callback) | `acquisition.lua` drop handler | ✅ Fires after drop action (before fragility check output). Receives `(obj, ctx)`. Use cases: item placement puzzles, trap arming. Issue #101. | **Implemented** |
+| `on_eat` | `survival.lua` eat handler | ✅ Fires after successful eat action. Receives `(obj, ctx)`. Use cases: poison effects, satiety tracking, consumable puzzles. Issue #102. | **Implemented** |
+| `on_drink` | `survival.lua` drink handler | ✅ Fires after successful FSM drink transition. Receives `(obj, ctx)`. Use cases: potion effects, thirst tracking, liquid puzzles. Issue #102. | **Implemented** |
+| `on_use` | `meta.lua` use handler | ✅ Fires on generic "use X" command. Receives `(obj, ctx)`. Supports FSM "use" transitions, callback, and event_output. Issue #102. | **Implemented** |
 | `on_equip_tick` | Game loop (future) | ❌ Designed, not implemented. Fires each turn while item is worn. Use cases: rust, warmth, curse effects. | **Planned** |
-| `event_output` | All event dispatch points | ✅ One-shot flavor text system. Objects declare `event_output = { on_wear = "text", on_open = "text", on_close = "text" }`. Engine prints text after event, then nils the key. DATA pattern, no callbacks. | **Implemented** |
+| `event_output` | All event dispatch points | ✅ One-shot flavor text system. Objects declare `event_output = { on_wear = "text", on_open = "text", on_close = "text", on_eat = "text", on_drink = "text", on_use = "text" }`. Engine prints text after event, then nils the key. DATA pattern, no callbacks. | **Implemented** |
 
 ### 2.3 How Objects Cause Injuries
 
@@ -487,9 +494,9 @@ effects.register("mutate", function(effect, ctx) ... end)
 |-----------|--------|-----------|----------|
 | FSM `trans.effect` | ✅ **Routes through `effects.process()`** | Poison bottle, bear trap on take | **DONE** |
 | `on_{verb}_effect` | ✅ **Routes through `effects.process()`** | Glass shard, poison bottle taste | **DONE** |
-| `on_enter_room` | ❌ Designed, not implemented | Pit trap, gas cloud, room hazards | **MEDIUM** — needed for spatial traps |
+| `on_enter_room` | ✅ **Implemented** | Pit trap, gas cloud, room hazards | **DONE** — Issue #101 |
 | `on_traverse` | ✅ Implemented (independent) | Tripwire, collapsing passage | Future: route through pipeline |
-| `on_pickup` | ❌ Designed, not implemented | Cursed items, weight effects | **LOW** — cursed items are a future feature |
+| `on_pickup` | ✅ **Implemented** | Cursed items, weight effects | **DONE** — Issue #101 |
 | `on_timer` | ❌ Designed, not implemented | Room-level environmental damage | **LOW** — injury tick handles per-object duration |
 | `on_wear` | ✅ **Implemented** | Armor registration, smell narration, cursed items | **DONE** |
 | `on_remove_worn` | ✅ **Implemented** | Armor de-registration, stat removal, curse resistance | **DONE** |
@@ -505,7 +512,7 @@ effects.register("mutate", function(effect, ctx) ... end)
 |-----|----------|--------|------------|
 | **No unified effect processor** | 🔴 Was High | ✅ **RESOLVED** | `src/engine/effects.lua` shipped (232 lines, 5 handlers) |
 | **Effect strings not standardized** | 🔴 Was High | ✅ **RESOLVED** | `effects.normalize()` handles legacy strings; new objects use structured tables |
-| **`on_enter_room` hook missing** | 🟡 Medium | ❌ Still open | Implement `on_enter_room` in hook framework |
+| **`on_enter_room` hook missing** | 🟡 Was Medium | ✅ **RESOLVED** | `on_enter_room` implemented in `movement.lua`. Issue #101. |
 | **No `trap_effect` subtype** | 🟡 Medium | ❌ Still open | Add `trap_effect` handler to `on_traverse` |
 | **Sensory effect fields inconsistent** | 🟡 Was Medium | ✅ **RESOLVED** | Convention established: `on_{sense}_effect` for all 5 senses |
 | **Hook framework not centralized** | 🟡 Medium | ❌ Still open | Migration per `about.md` Section 7 |
@@ -524,7 +531,7 @@ effects.register("mutate", function(effect, ctx) ... end)
 
 **What still needs to happen:**
 
-1. **Implement `on_enter_room` hook** for spatial traps (follows `traverse_effects.lua` pattern)
+1. ✅ **Implemented `on_enter_room` and `on_exit_room` hooks** for spatial traps and room events (Issue #101)
 2. **Add `trap_effect` subtype** to `on_traverse` for traversal traps
 3. **Migrate remaining objects** to structured effect tables (at Flanders's pace; legacy format still works)
 
@@ -857,10 +864,12 @@ Wearing is now an **engine event**, not just a verb handler moving items between
 
 ### 11.3 Implementation Location
 
-Both `on_wear` and `on_remove_worn` are dispatched inline in `src/engine/verbs/init.lua`:
+Both `on_wear` and `on_remove_worn` are dispatched in `src/engine/verbs/equipment.lua`:
 
-- **Wear handler** (~line 5011): After the item is moved to `player.worn` and the flavor message is printed, the engine checks `obj.on_wear`. If it's a function, it calls `obj.on_wear(obj, ctx)`.
-- **Remove handler** (~line 5131): After the item is moved back to `player.hands` and the flavor message is printed, the engine checks `obj.on_remove_worn`. If it's a function, it calls `obj.on_remove_worn(obj, ctx)`.
+- **Wear handler:** After the item is moved to `player.worn` and the flavor message is printed, the engine checks `obj.on_wear`. If it's a function, it calls `obj.on_wear(obj, ctx)`.
+- **Remove handler:** After the item is moved back to `player.hands` and the flavor message is printed, the engine checks `obj.on_remove_worn`. If it's a function, it calls `obj.on_remove_worn(obj, ctx)`.
+
+**Event output dispatch** (same file): After each hook fires, the engine checks `obj.event_output` for one-shot flavor text and prints/nils it out.
 
 ### 11.4 Object Declaration Pattern
 
@@ -945,16 +954,21 @@ end
 
 ### 12.5 Dispatch Points
 
-`event_output` is checked at every event dispatch point in `src/engine/verbs/init.lua`:
+`event_output` is checked at every event dispatch point across `src/engine/verbs/*.lua`:
 
-| Event Name | Verb Handler | Location |
-|-----------|-------------|----------|
-| `on_take` | take (all success paths) | After "You take..." print |
-| `on_drop` | drop | After drop success print |
-| `on_wear` | wear | After wear flavor print |
-| `on_remove_worn` | remove | After remove print |
-| `on_eat` | eat | After "You eat..." print |
-| `on_drink` | drink | After drink transition message |
+| Event Name | Verb Handler File | Location |
+|-----------|---------|----------|
+| `on_take` | acquisition.lua | After "You take..." print (multiple take paths) |
+| `on_drop` | acquisition.lua | After drop success print |
+| `on_wear` | equipment.lua | After wear flavor print |
+| `on_remove_worn` | equipment.lua | After remove print |
+| `on_eat` | survival.lua | After "You eat..." print |
+| `on_drink` | survival.lua | After drink transition message |
+| `on_use` | meta.lua | After "use" action (FSM or callback path) |
+| `on_open` | containers.lua | After FSM open transition success |
+| `on_close` | containers.lua | After FSM close transition success |
+| `on_enter_room` | movement.lua | After player enters room (before arrival text) |
+| `on_exit_room` | movement.lua | Before player leaves room (after traverse effects) |
 
 ### 12.6 Interaction with Callbacks
 

@@ -402,12 +402,15 @@ function M.register(handlers)
         end
 
         -- Parse "apply X to Y" or just "apply X"
+        -- #109: prefer context.apply_target (extracted by game loop)
         local item_kw = noun
-        local target_kw = nil
-        local to_match = noun:match("^(.-)%s+to%s+(.+)$")
-        if to_match then
-            item_kw = noun:match("^(.-)%s+to%s+")
-            target_kw = noun:match("%s+to%s+(.+)$")
+        local target_kw = ctx.apply_target or nil
+        if not target_kw then
+            local to_match = noun:match("^(.-)%s+to%s+(.+)$")
+            if to_match then
+                item_kw = noun:match("^(.-)%s+to%s+")
+                target_kw = noun:match("%s+to%s+(.+)$")
+            end
         end
 
         -- Strip articles
@@ -492,6 +495,77 @@ function M.register(handlers)
         end
     end
     handlers["treat"] = handlers["apply"]
+
+    ---------------------------------------------------------------------------
+    -- USE -- generic "use X" handler (#102)
+    ---------------------------------------------------------------------------
+    handlers["use"] = function(ctx, noun)
+        if noun == "" then
+            print("Use what? Try 'use [item]'.")
+            return
+        end
+
+        local obj = find_in_inventory(ctx, noun)
+        if not obj then
+            obj = find_visible(ctx, noun)
+        end
+        if not obj then
+            err_not_found(ctx)
+            return
+        end
+
+        -- FSM path: check for a "use" transition
+        if obj.states then
+            local transitions = fsm_mod.get_transitions(obj)
+            local target_trans
+            for _, t in ipairs(transitions) do
+                if t.verb == "use" then target_trans = t; break end
+                if t.aliases then
+                    for _, alias in ipairs(t.aliases) do
+                        if alias == "use" then target_trans = t; break end
+                    end
+                    if target_trans then break end
+                end
+            end
+            if target_trans then
+                local trans = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {}, "use")
+                if trans then
+                    print(trans.message or ("You use " .. (obj.name or obj.id) .. "."))
+                    -- on_use hook: fire callback if object declares one
+                    if obj.on_use and type(obj.on_use) == "function" then
+                        obj.on_use(obj, ctx)
+                    end
+                    -- event_output: one-shot flavor text for on_use
+                    if obj.event_output and obj.event_output["on_use"] then
+                        print(obj.event_output["on_use"])
+                        obj.event_output["on_use"] = nil
+                    end
+                end
+                return
+            end
+        end
+
+        -- Non-FSM path: fire callback if object declares one
+        if obj.on_use and type(obj.on_use) == "function" then
+            obj.on_use(obj, ctx)
+            -- event_output: one-shot flavor text for on_use
+            if obj.event_output and obj.event_output["on_use"] then
+                print(obj.event_output["on_use"])
+                obj.event_output["on_use"] = nil
+            end
+            return
+        end
+
+        -- event_output only (DATA pattern, no callback)
+        if obj.event_output and obj.event_output["on_use"] then
+            print(obj.event_output["on_use"])
+            obj.event_output["on_use"] = nil
+            return
+        end
+
+        print("You don't know how to use " .. (obj.name or "that") .. ".")
+    end
+    handlers["utilize"] = handlers["use"]
 
     -- #39: "wait" — pass a turn without acting (BUG-131)
     -- Post-command injury tick and time advance happen automatically in the loop.

@@ -59,6 +59,7 @@ local time_of_day_desc = H.time_of_day_desc
 local get_light_level = H.get_light_level
 local has_some_light = H.has_some_light
 local vision_blocked_by_worn = H.vision_blocked_by_worn
+local show_hint = H.show_hint
 
 local M = {}
 
@@ -68,7 +69,7 @@ function M.register(handlers)
     ---------------------------------------------------------------------------
     handlers["eat"] = function(ctx, noun)
         if noun == "" then
-            print("Eat what?")
+            print("Eat what? Try 'eat [item]' if you find something edible.")
             return
         end
 
@@ -86,11 +87,16 @@ function M.register(handlers)
             if obj.on_eat_message then
                 print(obj.on_eat_message)
             end
+            -- on_eat hook: fire callback if object declares one
+            if obj.on_eat and type(obj.on_eat) == "function" then
+                obj.on_eat(obj, ctx)
+            end
             -- event_output: one-shot flavor text for on_eat
             if obj.event_output and obj.event_output["on_eat"] then
                 print(obj.event_output["on_eat"])
                 obj.event_output["on_eat"] = nil
             end
+            show_hint(ctx, "eat", "Careful what you eat — not everything is safe to consume.")
             remove_from_location(ctx, obj)
             ctx.registry:remove(obj.id)
         else
@@ -155,6 +161,10 @@ function M.register(handlers)
                                 ctx.game_over = true
                             end
                         end
+                    end
+                    -- on_drink hook: fire callback if object declares one
+                    if obj.on_drink and type(obj.on_drink) == "function" then
+                        obj.on_drink(obj, ctx)
                     end
                     -- event_output: one-shot flavor text for on_drink
                     if obj.event_output and obj.event_output["on_drink"] then
