@@ -1291,17 +1291,29 @@ function verbs.create()
             -- Room description (permanent features)
             parts[#parts + 1] = room.description or ""
 
-            -- Object presences (deduplicated — identical room_presence strings shown once)
+            -- Object presences (deduplicated by ID + text)
+            -- BUG-050: Skip objects listed in room.embedded_presences — their
+            -- presence is already woven into the room description text.
+            local embedded = {}
+            if room.embedded_presences then
+                for _, eid in ipairs(room.embedded_presences) do
+                    embedded[eid] = true
+                end
+            end
             local presences = {}
             local seen_presences = {}
+            local seen_ids = {}
             for _, obj_id in ipairs(room.contents or {}) do
-                local obj = ctx.registry:get(obj_id)
-                if obj and not obj.hidden then
-                    local text = obj.room_presence
-                        or ("There is " .. (obj.name or obj.id) .. " here.")
-                    if not seen_presences[text] then
-                        seen_presences[text] = true
-                        presences[#presences + 1] = text
+                if not seen_ids[obj_id] and not embedded[obj_id] then
+                    seen_ids[obj_id] = true
+                    local obj = ctx.registry:get(obj_id)
+                    if obj and not obj.hidden then
+                        local text = obj.room_presence
+                            or ("There is " .. (obj.name or obj.id) .. " here.")
+                        if not seen_presences[text] then
+                            seen_presences[text] = true
+                            presences[#presences + 1] = text
+                        end
                     end
                 end
             end
@@ -3023,6 +3035,15 @@ function verbs.create()
                                 room.exits[obj.reveals_exit].open = true
                             end
                         end
+                        -- on_open hook: fire callback if object declares one
+                        if obj.on_open and type(obj.on_open) == "function" then
+                            obj.on_open(obj, ctx)
+                        end
+                        -- event_output: one-shot flavor text for on_open
+                        if obj.event_output and obj.event_output["on_open"] then
+                            print(obj.event_output["on_open"])
+                            obj.event_output["on_open"] = nil
+                        end
                     else
                         print("You can't open " .. (obj.name or "that") .. ".")
                     end
@@ -3127,6 +3148,15 @@ function verbs.create()
                     if trans then
                         print(trans.message or ("You close " .. (obj.name or obj.id) .. "."))
                         if trans.spawns then spawn_objects(ctx, trans.spawns) end
+                        -- on_close hook: fire callback if object declares one
+                        if obj.on_close and type(obj.on_close) == "function" then
+                            obj.on_close(obj, ctx)
+                        end
+                        -- event_output: one-shot flavor text for on_close
+                        if obj.event_output and obj.event_output["on_close"] then
+                            print(obj.event_output["on_close"])
+                            obj.event_output["on_close"] = nil
+                        end
                     else
                         print("You can't close " .. (obj.name or "that") .. ".")
                     end

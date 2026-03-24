@@ -1,7 +1,7 @@
 # Engine Event Hooks — Injury Pipeline Architecture
 
-**Version:** 3.0 (Equipment Hooks + Event Output)  
-**Date:** 2026-07-22 (original) · Updated 2026-07-27 · Updated 2026-03-24  
+**Version:** 3.1 (Equipment Hooks + Open/Close Hooks + Event Output)  
+**Date:** 2026-07-22 (original) · Updated 2026-07-27 · Updated 2026-03-24 · Updated 2026-03-28  
 **Author:** Bart (Architect)  
 **Status:** Architecture Analysis + Implementation Record  
 **Requested by:** Wayne "Effe" Berry
@@ -45,8 +45,10 @@ This document analyzes how `.lua` object files hook into the engine to cause inj
 | `on_drop` (fragility) | `verbs/init.lua` drop handler | ✅ Material fragility check: shatters if fragility ≥ 0.5 AND surface hardness ≥ 5. Fires FSM break transition, spawns debris from `mutations.shatter.spawns`, removes original. Issue #56. | **Implemented** |
 | `on_wear` | `verbs/init.lua` wear handler | ✅ Fires when item is equipped (put on). Receives `(obj, ctx)`. Use cases: pot smell narration, cursed items, armor stat application. | **Implemented** |
 | `on_remove_worn` | `verbs/init.lua` remove handler | ✅ Fires when worn item is taken off. Receives `(obj, ctx)`. Use cases: curse resistance, stat removal, cleanup. | **Implemented** |
+| `on_open` | `verbs/init.lua` open handler | ✅ Fires after successful FSM open transition. Receives `(obj, ctx)`. Use cases: trap triggers, puzzle state, secret compartments. | **Implemented** |
+| `on_close` | `verbs/init.lua` close handler | ✅ Fires after successful FSM close transition. Receives `(obj, ctx)`. Use cases: latch sounds, containment sealing, puzzle resets. | **Implemented** |
 | `on_equip_tick` | Game loop (future) | ❌ Designed, not implemented. Fires each turn while item is worn. Use cases: rust, warmth, curse effects. | **Planned** |
-| `event_output` | All event dispatch points | ✅ One-shot flavor text system. Objects declare `event_output = { on_wear = "text" }`. Engine prints text after event, then nils the key. DATA pattern, no callbacks. | **Implemented** |
+| `event_output` | All event dispatch points | ✅ One-shot flavor text system. Objects declare `event_output = { on_wear = "text", on_open = "text", on_close = "text" }`. Engine prints text after event, then nils the key. DATA pattern, no callbacks. | **Implemented** |
 
 ### 2.3 How Objects Cause Injuries
 

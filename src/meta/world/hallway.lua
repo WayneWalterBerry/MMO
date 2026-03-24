@@ -19,6 +19,12 @@ return {
     moisture = 0.15,
     light_level = 3,
 
+    -- BUG-050: These objects are already described in room.description
+    embedded_presences = {
+        "torch-lit-west", "torch-lit-east",
+        "portrait-1", "portrait-2", "portrait-3",
+    },
+
     instances = {
         -- Torches
         { id = "torch-lit-west",          type = "Lit Torch",     type_id = "d95glu9s-6077-4a80-c393-e57156345678" },

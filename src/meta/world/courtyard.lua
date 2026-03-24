@@ -19,6 +19,11 @@ return {
     moisture = 0.7,
     light_level = 1,
 
+    -- BUG-050: These objects are already described in room.description
+    embedded_presences = {
+        "stone-well", "ivy",
+    },
+
     instances = {
         { id = "stone-well",    type = "Stone Well",         type_id = "24alqz4x-b5c2-4fd5-18e8-3a260b890123",
             contents = {
