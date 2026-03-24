@@ -1,0 +1,29 @@
+
+=== Bug #47 ΓÇö dark room search narration ===
+  PASS container_contents_no_target uses 'you feel' in dark room
+  PASS container_contents_no_target uses 'you see' in lit room
+  PASS container_contents_no_target with target uses 'you feel' in dark
+  PASS container_peek uses 'feel around' in dark room
+  PASS container_peek uses 'check inside' in lit room
+  PASS step_narrative uses touch language in dark
+  PASS found_target uses touch template in dark
+
+=== Bug #49 ΓÇö stab yourself weapon inference ===
+  PASS 'stab yourself' with knife in hand auto-infers weapon
+  PASS 'stab yourself' with two weapons disambiguates
+  PASS 'stab yourself' with no weapons gives helpful error
+  PASS 'stab me' with knife in hand works (synonym for yourself)
+  PASS 'stab self' with knife in hand works
+
+=== Bug #52 ΓÇö mirror shows full appearance ===
+  PASS healthy player with held item shows overall health AND item
+  PASS player with worn item shows worn item in mirror
+  PASS player with injury shows injury in mirror
+  PASS healthy player with no items still shows overall description
+  PASS mirror output starts with 'In the mirror' prefix
+
+=== Bug #53 ΓÇö get pot duplicate response ===
+  PASS 'get pot' prints exactly one 'You take' message
+  PASS 'take pot' prints exactly one 'You take' message
+  PASS taking already-held object says 'already have'
+  PASS 'grab pot' prints exactly one 'You take' message

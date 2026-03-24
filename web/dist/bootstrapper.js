@@ -42,6 +42,57 @@
     var _outputFragment = null;
     var _rafScheduled = false;
 
+    // --- Search trickle (#72): drip-feed search output line by line ---
+    var _trickleTimers = [];
+    var _trickleActive = false;
+    var TRICKLE_DELAY_MS = 350;
+    var _SEARCH_RE = /^(search|find)\b/i;
+    var _SEARCH_LOOK_RE = /^look\s+(for|in)\b/i;
+
+    function _isSearchCommand(text) {
+        return _SEARCH_RE.test(text) || _SEARCH_LOOK_RE.test(text);
+    }
+
+    function _cancelTrickle() {
+        for (var i = 0; i < _trickleTimers.length; i++) {
+            clearTimeout(_trickleTimers[i].id);
+            outputEl.appendChild(_trickleTimers[i].node);
+        }
+        _trickleTimers = [];
+        if (_trickleActive) {
+            outputEl.scrollTop = outputEl.scrollHeight;
+            _trickleActive = false;
+        }
+    }
+
+    function _trickleFlush() {
+        if (!_outputFragment) { _outputBatching = false; return; }
+        var nodes = [];
+        while (_outputFragment.firstChild) {
+            nodes.push(_outputFragment.removeChild(_outputFragment.firstChild));
+        }
+        _outputFragment = null;
+        _outputBatching = false;
+
+        if (nodes.length === 0) { _rafScheduled = false; return; }
+
+        _trickleActive = true;
+        _trickleTimers = [];
+        for (var i = 0; i < nodes.length; i++) {
+            (function (node, idx) {
+                var timerId = setTimeout(function () {
+                    outputEl.appendChild(node);
+                    outputEl.scrollTop = outputEl.scrollHeight;
+                    // Remove from pending list
+                    _trickleTimers = _trickleTimers.filter(function (t) { return t.id !== timerId; });
+                    if (_trickleTimers.length === 0) { _trickleActive = false; }
+                }, idx * TRICKLE_DELAY_MS);
+                _trickleTimers.push({ id: timerId, node: node });
+            })(nodes[i], i);
+        }
+        _rafScheduled = false;
+    }
+
     function _flushOutput() {
         if (_outputFragment && _outputFragment.childNodes.length > 0) {
             outputEl.appendChild(_outputFragment);
@@ -62,6 +113,10 @@
             _rafScheduled = true;
             requestAnimationFrame(_flushOutput);
         }
+    }
+
+    function _endBatchTrickle() {
+        _trickleFlush();
     }
 
     function appendOutput(text, className) {
@@ -97,8 +152,8 @@
     }
 
     // --- Build version (embedded at build time) ---
-    const BUILD_TIMESTAMP = "2026-03-23 15:11";
-    const CACHE_BUST = "20260323151146";
+    const BUILD_TIMESTAMP = "2026-03-23 21:15";
+    const CACHE_BUST = "20260323211540";
 
     // --- Size formatting ---
     function formatSize(bytes) {
@@ -208,6 +263,9 @@
             outputEl.appendChild(echoDiv);
             outputEl.scrollTop = outputEl.scrollHeight;
             if (window._gameProcessCommand) {
+                // #72: cancel any in-progress trickle before new command
+                _cancelTrickle();
+                var useSearchTrickle = _isSearchCommand(text);
                 _beginBatch();
                 try {
                     window._gameProcessCommand(text);
@@ -215,7 +273,11 @@
                     appendOutput('[Error: ' + err.message + ']', 'error-line');
                     console.error(err);
                 }
-                _endBatch();
+                if (useSearchTrickle) {
+                    _endBatchTrickle();
+                } else {
+                    _endBatch();
+                }
             } else {
                 appendOutput('[Game engine still loading...]', 'error-line');
             }

@@ -14,6 +14,7 @@ This is the canonical bug database for the MMO project. Every bug found by Nelso
 | Bug ID | Summary | Found In | Understood | Assigned To | Regression Test |
 |--------|---------|----------|------------|-------------|-----------------|
 | BUG-072 | Screen flicker during progressive object discovery | pass-023 | no | unassigned | ❌ |
+| BUG-116 | `get X from Y` ignores container accessibility — extracts from closed containers | verify-85-86-87 | yes | unassigned | ✅ test/verbs/test-verify-85-86-87.lua |
 
 ## Fixed Bugs
 

@@ -93,7 +93,7 @@ local function list_contains(list, id)
 end
 
 -------------------------------------------------------------------------------
-h.suite("#79 -- put in closed drawer must fail (accessibility)")
+h.suite("#79 — put in closed drawer must fail (accessibility)")
 -------------------------------------------------------------------------------
 
 test("#79: can_contain rejects root-level container with accessible=false", function()
@@ -132,6 +132,7 @@ end)
 test("#79: put in closed drawer fails via verb handler", function()
     local ctx, reg, room, handlers = make_ctx()
 
+    -- Nightstand with drawer as a composite part
     local nightstand = {
         id = "nightstand", name = "a small nightstand",
         keywords = {"nightstand"},
@@ -150,6 +151,7 @@ test("#79: put in closed drawer fails via verb handler", function()
     }
     place_in_room(ctx, nightstand)
 
+    -- Drawer in closed state (accessible = false)
     local drawer = {
         id = "drawer", name = "a small drawer",
         keywords = {"drawer", "small drawer"},
@@ -170,6 +172,7 @@ test("#79: put in closed drawer fails via verb handler", function()
     end)
     eq(true, output:find("not accessible") ~= nil,
        "Expected 'not accessible' error, got: " .. output)
+    -- Knife should still be in hand
     eq("knife", hand_id(ctx.player.hands[1]))
 end)
 
@@ -219,7 +222,7 @@ test("#79: put in open drawer succeeds", function()
 end)
 
 -------------------------------------------------------------------------------
-h.suite("#80 -- put in furniture with no inside rejects gracefully")
+h.suite("#80 — put in furniture with no inside rejects gracefully")
 -------------------------------------------------------------------------------
 
 test("#80: put in nightstand fails when no inside surface", function()
@@ -244,7 +247,9 @@ test("#80: put in nightstand fails when no inside surface", function()
     end)
     eq(true, output:find("can't put anything inside") ~= nil,
        "Expected 'can't put anything inside' error, got: " .. output)
+    -- Item stays in hand
     eq("knife", hand_id(ctx.player.hands[1]))
+    -- Item NOT placed on top
     eq(0, #nightstand.surfaces.top.contents)
 end)
 

@@ -18,6 +18,24 @@
 - [ ] #3: Screen flicker (Bart, queued)
 - [ ] #41: "search the drawer" not distinct from nightstand
 
+### Evening Play-Test Bugs (2026-03-23, filed by Wayne)
+- [ ] #85: Nested search doesn't traverse `nested` key — matchbox unfindable on live
+- [ ] #86: "wear X" after "find X" says "aren't holding that" — container auto-pickup missing
+- [ ] #87: "get X" from container fails — same root cause as #86
+- [ ] #88: "feel inside drawer" resolves to nightstand parent — drawer→parent resolution bug
+- [ ] #89: "what's inside?" shows room description instead of container contents
+
+### Mirror Quality Review Bugs (Phase M4, filed by Nelson)
+- [ ] #90: Worn cloak invisible in mirror — appearance checks `wear_slot` not `wear.slot`
+- [ ] #91: Double period in mirror output `"...your head.. You appear..."`
+- [ ] #92: Duplicate same-location injuries silently collapsed
+- [ ] #93: Injury severity never set — adjective system is dead code
+- [ ] #94: Hands layer mixes grammar structures awkwardly
+- [ ] #95: Overall health double-and: `"healthy and alert and dried blood..."`
+
+### Design Carry-Over
+- [ ] Chest object — Design doc + chest.lua (two-handed carry, open/close FSM, container, based on drawer pattern)
+
 ### Verify Fixed (need Marge to close)
 - [ ] #46: Match search P0 — Smithers found root cause (fuzzy resolver hijack), fix deployed
 - [ ] #50: Stab no injury — Flanders migrated knife to pipeline
@@ -430,3 +448,21 @@ G1-G2 (deploy + newspaper)             [after everything else]
 5. Architecture docs must match shipped code — no aspirational content
 6. When object behavior changes, update design docs
 7. Material-derived behavior is the goal — minimize per-object hardcoding
+
+---
+
+## 📦 BACKLOG — Migrated to GitHub Issues
+
+> All backlog items have been filed as GitHub Issues #100–#131 (Wayne directive: GitHub Issues is the single source of truth).
+> See: `gh issue list --repo WayneWalterBerry/MMO --state open` for the full list.
+
+### Design Decisions — RESOLVED (2026-03-24)
+
+- [x] Place nightshade antidote in Level 1? → **YES** ✅
+- [ ] Bob's 5 open questions on self-infliction → **DEFERRED** (combat design not ready)
+- [x] Infection risk from soiled bandages? → **Level 2** (keep L1 simpler) ✅
+- [x] Material Consistency as Core Principle? → **YES** + object instances can override ✅
+- [x] Bob's 12 puzzles? → **Stay 🔴 Theorized** — Wayne reviews quality later
+- [x] Verb expansion (Frink's gap analysis)? → **DEFERRED** — no new scope approved
+- [x] Remove non-single-player puzzles? → **YES** — audit done, all single-player ✅
+- [x] Combat/armor design? → **DEFERRED** — Wayne not ready

@@ -217,21 +217,13 @@
 
 Wayne identified a gap: only poison bottle and bear trap were migrated to the pipeline. ALL injury-causing objects need to work. The knife stab (#50) proves backward compat isn't covering everything.
 
-- [ ] Bart: Audit ALL objects in `src/meta/objects/` — which ones have injury/effect behavior?
-  - List every object with `effect`, `on_consume`, `on_touch`, stab/hit/cut behavior
-  - Classify: ✅ Pipeline-routed | 🟡 Legacy but working | 🔴 Broken (like knife stab)
-- [ ] Smithers: Fix #52 (mirror showing only hand contents instead of full appearance)
-- [ ] Smithers: Fix #49/#50 (stab verb: infer weapon, actually create injury)
-- [ ] Nelson: Write stab regression tests BEFORE fix ships — lock down the contract:
-  - "stab yourself" with knife in hand → infers knife, creates stab wound injury
-  - "stab self with knife" → creates bleeding injury, injury appears in "injuries" output
-  - Stab wound ticks health per turn (bleeding)
-  - Multiple stabs = multiple injuries or severity increase
-  - Stab with no weapon in hand → helpful error message
-  - Stab with multiple weapons → disambiguation prompt
-- [ ] Flanders: Migrate any 🔴 objects to use Effects Pipeline
-- [ ] Nelson: Regression tests for each migrated object
-- [ ] Marge: Verify all migrations, gate each one
+- [x] Bart: Audit ALL objects in `src/meta/objects/` — ✅ Done (earlier session: 80 objects, 5 injury-causing, all pipeline-routed)
+- [x] Smithers: Fix #52 (mirror showing only hand contents instead of full appearance) — ✅ Fixed commit 5738359
+- [x] Smithers: Fix #49/#50 (stab verb: infer weapon, actually create injury) — ✅ #49 already working, #50 fixed prior session
+- [x] Nelson: Write stab regression tests — ✅ Tests in test-verify-f1-bugs.lua
+- [x] Flanders: Migrate any 🔴 objects to use Effects Pipeline — ✅ N/A (audit found all 5 already pipeline-routed)
+- [x] Nelson: Regression tests for each migrated object — ✅ N/A (nothing to migrate)
+- [x] Marge: Verify all migrations, gate each one — ✅ N/A (nothing to migrate)
 - [ ] Gil: Fix #45 (status bar showing inventory/7 matches)
 
 ---
@@ -240,19 +232,12 @@ Wayne identified a gap: only poison bottle and bear trap were migrated to the pi
 
 Wayne directive: All object templates must be audited for nesting compliance. The nightstand.lua still has `surfaces.inside` which violates Principle 0.5. Need deep architecture guidance and syntax documentation.
 
-- [ ] Flanders: Fix nightstand.lua — remove `surfaces.inside` from all states, remove `surface = "inside"` from parts.drawer
-- [ ] Flanders: Audit ALL 80 objects in src/meta/objects/ for nesting violations (surfaces.inside on non-containers, stale location references, etc.)
-- [ ] Flanders: Fix any objects that violate nesting rules
-- [ ] Bart: Write comprehensive deep nesting architecture doc with:
-  - Full syntax reference (on_top, contents, nested, underneath)
-  - When to use each key
-  - Object template rules (containers have contents, furniture does NOT have inside)
-  - Room instance nesting patterns
-  - Composite object patterns (nightstand + drawer)
-  - Anti-patterns (surface mapping, flat location strings)
-  - Examples for every pattern
-- [ ] Bart: Update core-principles.md Principle 0.5 with link to full arch doc
-- [ ] Nelson: Run full test suite after fixes
+- [x] Flanders: Fix nightstand.lua — ✅ Fixed (surfaces.inside removed, container category removed)
+- [x] Flanders: Audit ALL 80 objects — ✅ Done (nightstand + vanity fixed, pillow borderline OK)
+- [x] Flanders: Fix any objects that violate nesting rules — ✅ nightstand + vanity fixed
+- [x] Bart: Write comprehensive deep nesting architecture doc — ✅ 1016-line doc at docs/architecture/objects/deep-nesting-syntax.md
+- [x] Bart: Update core-principles.md Principle 0.5 with link to full arch doc — ✅ Done
+- [x] Nelson: Run full test suite after fixes — ✅ 74/74 files pass
 
 ---
 
@@ -260,41 +245,41 @@ Wayne directive: All object templates must be audited for nesting compliance. Th
 
 Wayne directive: Thoroughly test all spatial placement phrasing — put on, put in, put under, shut/close, synonym verbs (place, set, drop, hide, slide, stuff, toss). Test invalid placements too (put pillow inside nightstand should fail). File issues for every failure.
 
-- [ ] Nelson: Run full put-phrasing test pass in --headless mode
-- [ ] Nelson: Test put ON surfaces (nightstand, bed, vanity)
-- [ ] Nelson: Test put IN containers (drawer, wardrobe)
-- [ ] Nelson: Test put UNDER things (rug, pillow, bed)
-- [ ] Nelson: Test invalid placements (nightstand has no inside)
-- [ ] Nelson: Test drawer open/close sequences
-- [ ] Nelson: Test synonym verbs (place, set, drop, hide, slide, stuff, toss)
-- [ ] Nelson: Test edge cases (not holding, closed container, pronouns)
-- [ ] Nelson: File GitHub issues for all FAILs and MISSINGs
+- [x] Nelson: Run full put-phrasing test pass in --headless mode — ✅ 36 tests (15 pass, 5 fail → all fixed)
+- [x] Nelson: Test put ON surfaces (nightstand, bed, vanity) — ✅
+- [x] Nelson: Test put IN containers (drawer, wardrobe) — ✅
+- [x] Nelson: Test put UNDER things (rug, pillow, bed) — ✅
+- [x] Nelson: Test invalid placements (nightstand has no inside) — ✅
+- [x] Nelson: Test drawer open/close sequences — ✅
+- [x] Nelson: Test synonym verbs (place, set, drop, hide, slide, stuff, toss) — ✅
+- [x] Nelson: Test edge cases (not holding, closed container, pronouns) — ✅
+- [x] Nelson: File GitHub issues for all FAILs and MISSINGs — ✅ Filed #79-83, all fixed and closed
 
 ---
 
 #### Wayne Play-Test Bugs (2026-03-23 afternoon) — FIXING
 
 **P0 Blockers:**
-- [ ] #46: "search for a match" STILL broken on live — 3rd recurrence (Smithers investigating root cause)
+- [x] #46: "search for a match" — ✅ Fixed 3x (final fix: expand_object root contents, commit a4b0c50)
 
 **P1 Critical:**
 - [x] #40: Contradictory search narration — fixed in 491f9a8
 - [x] #42: "sleep to dawn" — fixed in 491f9a8
 - [x] #43/#44: Match search / nightstand container — fixed in 491f9a8
 - [ ] #45: Status bar shows "7 matches" at start (Gil fixing)
-- [ ] #50: Stab doesn't create injury — "wound doesn't take hold" (Smithers, after #46)
-- [ ] #52: Mirror shows only hand contents, not full appearance (Smithers, after #46)
-- [ ] #55: "hit head" says no effect — unconsciousness not triggering (Smithers, after #46)
+- [x] #50: Stab creates injury — ✅ Fixed prior session (knife migrated to pipeline)
+- [x] #52: Mirror full appearance — ✅ Fixed commit 5738359 (worn items, injuries, health, double-period, etc.)
+- [x] #55: "hit head" unconsciousness — ✅ Fixed prior session (weapons migrated to pipeline)
 
 **P2 Polish:**
 - [ ] #41: "search the drawer" not distinct from nightstand
-- [ ] #47: Dark search uses "find/see" instead of "feel" narration
+- [x] #47: Dark search narration — ✅ Fixed commit 5738359
 - [ ] #48: Search results dump all at once — should stream with clock advance
-- [ ] #49: "stab yourself" should infer weapon from hand contents
-- [ ] #53: "get pot" outputs take message twice — duplicate response
+- [x] #49: "stab yourself" weapon inference — ✅ Already working, regression tests confirm
+- [x] #53: "get pot" duplicate take — ✅ Already working, regression tests confirm
 
 **P3 Features:**
-- [ ] #54: Chamber pot wearable as improvised helmet + unit tests
+- [x] #54: Chamber pot wearable as helmet — ✅ Fixed prior session (Flanders)
 
 **Process notes:**
 - Every fix MUST include regression test (Wayne directive)
@@ -324,9 +309,9 @@ Frink's MUD gap analysis (`docs/research/mud-system-gap-analysis.md`) identified
 - Magic/spells, guild wars, leaderboards, class-specific verbs
 
 **Wayne's call:**
-- [ ] Wayne: Review `docs/research/mud-system-gap-analysis.md`
-- [ ] Wayne: Decide which verb categories to prioritize for next sprint
-- [ ] Wayne: Approve/reject multiplayer communication as next major feature
+- [x] Wayne: Review `docs/research/mud-system-gap-analysis.md` — ✅ Reviewed, deferred all verb expansion
+- [x] Wayne: Decide which verb categories to prioritize — ✅ None for now
+- [x] Wayne: Approve/reject multiplayer communication — ✅ Deferred
 - After Wayne reviews → CBG designs, Bart architects, Smithers implements
 
 ---
@@ -335,18 +320,13 @@ Frink's MUD gap analysis (`docs/research/mud-system-gap-analysis.md`) identified
 
 Wayne directive: Puzzles should use real-world objects in realistic ways AND take advantage of the Effects Pipeline event hooks. Also think about what NEW event hooks puzzles might need.
 
-- [ ] Bob: Design 8-12 real-world object puzzle concepts (`docs/puzzles/`)
-  - Puzzles that leverage existing event hooks (on_consume, on_touch, on_traverse)
-  - Puzzles that suggest NEW hooks the engine doesn't have yet
-  - Each puzzle: premise, objects needed, prerequisite chain, sensory hints, failure states
-  - Classification: 🔴 Theorized (Wayne approves before build)
-  - Focus: real-world logic — "use wine as wound disinfectant" not "use key on door"
-- [ ] Bob: Update `docs/puzzles/README.md` — fix any errors, add puzzle index
-- [ ] Bob: Flag which puzzles need new objects (hand off to Flanders)
-- [ ] Bob: Flag which puzzles suggest new engine event hooks (hand off to Bart)
-- [ ] CBG: Review puzzle designs for gameplay quality and pacing
-- [ ] Bart: Evaluate any new hook proposals from puzzle designs
-- [ ] Flanders: Build new objects needed for approved puzzles
+- [x] Bob: Design 8-12 real-world object puzzle concepts (`docs/puzzles/`) — ✅ 11 puzzles designed (prior session)
+- [x] Bob: Update `docs/puzzles/README.md` — ✅ Done (prior session)
+- [x] Bob: Flag which puzzles need new objects — ✅ Done (prior session)
+- [x] Bob: Flag which puzzles suggest new engine event hooks — ✅ Done (prior session)
+- [ ] CBG: Review puzzle designs for gameplay quality and pacing — ⏸️ Wayne deferred (puzzles stay 🔴 Theorized)
+- [ ] Bart: Evaluate any new hook proposals from puzzle designs — ⏸️ Deferred
+- [ ] Flanders: Build new objects needed for approved puzzles — ⏸️ No puzzles approved yet
 
 ---
 
@@ -441,19 +421,11 @@ Wayne directive: Puzzles should use real-world objects in realistic ways AND tak
   - Empty slot → skipped gracefully (no "you are wearing nothing on your feet")
 - [x] `git commit && git push` (commit 14b2ef4)
 
-#### Phase M4: Nelson Review
-- [ ] Nelson examines the mirror with various player configurations:
-  - Fresh player (no injuries, basic clothing)
-  - Injured player (stab wound, bleeding)
-  - Bandaged player (treated wound)
-  - Armored player (helmet, armor, boots)
-  - Injured + armored (blood on armor, bandage under helmet)
-  - Unconscious player can't look in mirror (verify error message)
-- [ ] Nelson reviews the QUALITY of the mirror text — does it read naturally?
-  - Not robotic: "You are wearing a helmet. You have a cut." ❌
-  - Natural: "Your reflection shows a battered figure in dented iron armor, dried blood visible on the left pauldron where a deep gash runs beneath." ✅
-- [ ] File Issues for any awkward/robotic phrasing
-- [ ] `git commit && git push`
+#### Phase M4: Nelson Review ✅ COMPLETE
+- [x] Nelson examines the mirror with various player configurations — ✅ 8 scenarios tested
+- [x] Nelson reviews the QUALITY of the mirror text — ✅ Filed #90-95, ALL fixed by Smithers
+- [x] File Issues for any awkward/robotic phrasing — ✅ #90-95 filed and closed
+- [x] `git commit && git push` — ✅ Multiple commits
 
 ---
 
