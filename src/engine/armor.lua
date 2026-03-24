@@ -94,11 +94,19 @@ local function item_protection(item)
 end
 
 --- Check whether a worn item covers a given injury location.
+-- Checks explicit `covers` array first, then falls back to
+-- `wear.slot` or `wear_slot` for items that declare a single slot.
 local function covers_location(item, location)
-    if not item.covers then return false end
-    for _, loc in ipairs(item.covers) do
-        if loc == location then return true end
+    -- Explicit covers array (highest priority)
+    if item.covers then
+        for _, loc in ipairs(item.covers) do
+            if loc == location then return true end
+        end
+        return false
     end
+    -- Fall back to wear.slot or wear_slot (single-slot items)
+    local slot = (item.wear and item.wear.slot) or item.wear_slot
+    if slot and slot == location then return true end
     return false
 end
 
@@ -135,6 +143,21 @@ local function check_degradation(item, original_damage, impact_type)
             print("Your " .. name .. " develops a hairline crack.")
         elseif next_state == "shattered" then
             print("Your " .. name .. " shatters into pieces!")
+        end
+    end
+end
+
+--- Degrade worn armor covering a given location (called by hit verb).
+-- @param player       table   Player state (must have .worn)
+-- @param location     string  Body location that was hit
+-- @param damage       number  Original damage of the hit
+-- @param impact_type  string  "blunt", "slashing", "piercing", or nil
+function armor.degrade_covering_armor(player, location, damage, impact_type)
+    local worn = player.worn
+    if not worn or #worn == 0 then return end
+    for _, item in ipairs(worn) do
+        if type(item) == "table" and covers_location(item, location) then
+            check_degradation(item, damage, impact_type)
         end
     end
 end

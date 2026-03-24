@@ -37,6 +37,7 @@ return {
         tear = {
             becomes = nil,
             spawns = {"cloth", "cloth"},
+            message = "You grip the moth-eaten cloak and tear it apart. The old wool gives way easily, leaving you with two rough pieces of cloth.",
         },
     },
 }
