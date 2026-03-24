@@ -47,6 +47,21 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+### 2026-03-28: Issue #108 — "pour X into Y" parser pattern
+
+**What shipped:** Parser now handles "pour X into Y", "pour X in Y", and "fill Y with X" (reverse syntax). Verb handler updated to support targeted pouring with `context.pour_target`.
+
+**Three layers of change:**
+1. **Preprocess** (`transform_compound_actions`): "pour X in Y" → canonical "pour X into Y"; "fill Y with X" → "pour X into Y" (reverse). Added pouring/filling gerund mappings.
+2. **Game loop**: Extract "into Y" target from noun for pour/spill/dump verbs, stored as `context.pour_target` (mirrors the `context.tool_noun` pattern from #110).
+3. **Verb handler** (`survival.lua`): Pour handler checks `context.pour_target`, resolves target object, and supports FSM transitions for targeted pours. Added "fill" as verb alias.
+
+**Key learning:** The "into Y" target extraction follows the same pattern as "with Y" tool extraction — strip the prepositional phrase in the game loop and stash it on context for the verb handler. This keeps the parser and verb handler cleanly separated. The canonical form uses "into" (not "in") to avoid ambiguity with the put handler's "in" preposition.
+
+**Files changed:** `src/engine/parser/preprocess.lua`, `src/engine/loop/init.lua`, `src/engine/verbs/survival.lua`, `test/parser/pipeline/test-pour-patterns.lua`
+
+**Tests:** 17 new tests. 105 test files passing, 0 regressions. Commit 28622af.
+
 ### 2026-03-27: Issue #100 — Container sensory gating
 
 **What shipped:** Implemented FSM-based sensory gating for containers. Look/feel/search are now blocked when a container's `_state` doesn't contain "open". Smell and listen pass through (smells leak, sounds travel). Transparent containers still allow visual access when closed. 18 new tests, zero regressions across 103 test files.
