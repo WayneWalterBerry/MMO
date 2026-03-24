@@ -2294,6 +2294,12 @@ function verbs.create()
             -- Determine where to search: regular contents or surfaces
             local search_lists = {}
             if bag.container and bag.contents then
+                -- BUG-116: check accessible flag on root-content containers
+                if bag.accessible == false then
+                    local bag_name = bag.name or "that"
+                    print(bag_name:sub(1,1):upper() .. bag_name:sub(2) .. " is closed.")
+                    return
+                end
                 search_lists[#search_lists + 1] = { source = bag.contents, type = "contents" }
             end
             if bag.surfaces then

@@ -289,7 +289,27 @@ function narrator.part_closed(ctx, surface_name, parent)
     return "The drawer is closed. You need to open it first."
 end
 
---- Generate narrative for direct part search contents (#41)
+--- Resolve a human-friendly part name.
+-- If the parent object has parts, find the part that maps to this surface.
+-- e.g. nightstand surface "inside" → part with surface="inside" → "drawer"
+local function resolve_part_display(surface_name, parent)
+    if parent and parent.parts and surface_name then
+        -- First try: find a part with matching surface mapping
+        for key, part in pairs(parent.parts) do
+            if part.surface == surface_name then
+                return key
+            end
+        end
+        -- Second try: find a part with matching key
+        if parent.parts[surface_name] then
+            local part = parent.parts[surface_name]
+            return part.name or surface_name
+        end
+    end
+    return surface_name or "compartment"
+end
+
+--- Generate narrative for direct part search contents (#41, #47)
 -- @param ctx game context
 -- @param surface_name string
 -- @param parent object
@@ -300,16 +320,21 @@ function narrator.part_contents(ctx, surface_name, parent, items)
         return narrator.part_empty(ctx, surface_name, parent)
     end
     local list = table.concat(items, ", ")
-    return "You rummage through the drawer and find: " .. list .. "."
+    local room = ctx and ctx.current_room
+    local sense = get_primary_sense(ctx, room)
+    local part = resolve_part_display(surface_name, parent)
+    local verb = (sense == "touch") and "feel" or "find"
+    return "You rummage through the " .. part .. " and " .. verb .. ": " .. list .. "."
 end
 
---- Generate narrative for empty direct part search (#41)
+--- Generate narrative for empty direct part search (#41, #47)
 -- @param ctx game context
 -- @param surface_name string
 -- @param parent object
 -- @return string
 function narrator.part_empty(ctx, surface_name, parent)
-    return "You rummage through the drawer. It is empty."
+    local part = resolve_part_display(surface_name, parent)
+    return "You rummage through the " .. part .. ". It is empty."
 end
 
 ---------------------------------------------------------------------------

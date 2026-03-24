@@ -126,6 +126,52 @@ test("found_target uses touch template in dark", function()
         "Dark room found target should use touch language, got: " .. result)
 end)
 
+test("#47: part_contents uses touch language in dark", function()
+    local ctx = {
+        current_room = { id = "dark-room", light_level = 0 }
+    }
+    local parent = { name = "a nightstand", id = "nightstand",
+        parts = { drawer = { id = "drawer", name = "drawer" } } }
+    local result = narrator.part_contents(ctx, "inside", parent, {"a matchbox"})
+    truthy(result:find("feel"),
+        "#47: part_contents in dark should use 'feel', got: " .. result)
+    truthy(not result:find("and find"),
+        "#47: part_contents in dark should NOT use 'find', got: " .. result)
+end)
+
+test("#47: part_contents uses visual language in light", function()
+    local ctx = {
+        current_room = { id = "lit-room", light_level = 1 }
+    }
+    local parent = { name = "a nightstand", id = "nightstand",
+        parts = { drawer = { id = "drawer", name = "drawer" } } }
+    local result = narrator.part_contents(ctx, "inside", parent, {"a matchbox"})
+    truthy(result:find("find"),
+        "#47: part_contents in light should use 'find', got: " .. result)
+end)
+
+test("#47: part_empty uses rummage in both dark and light", function()
+    local ctx_dark = {
+        current_room = { id = "dark-room", light_level = 0 }
+    }
+    local parent = { name = "a nightstand", id = "nightstand",
+        parts = { drawer = { id = "drawer", name = "drawer" } } }
+    local result = narrator.part_empty(ctx_dark, "inside", parent)
+    truthy(result:find("rummage"),
+        "#47: part_empty should use 'rummage', got: " .. result)
+end)
+
+test("#47: part_contents resolves part name from parent", function()
+    local ctx = {
+        current_room = { id = "lit-room", light_level = 1 }
+    }
+    local parent = { name = "a wardrobe", id = "wardrobe",
+        parts = { compartment = { id = "compartment", name = "compartment" } } }
+    local result = narrator.part_contents(ctx, "inside", parent, {"a key"})
+    truthy(result:find("compartment"),
+        "#47: part_contents should resolve part name 'compartment', got: " .. result)
+end)
+
 ---------------------------------------------------------------------------
 -- BUG #49: "stab yourself" should infer weapon from hand contents
 ---------------------------------------------------------------------------
@@ -492,4 +538,84 @@ test("'grab pot' prints exactly one 'You take' message", function()
     local count = 0
     for _ in output:gmatch("You take") do count = count + 1 end
     eq(1, count, "Should print 'You take' exactly once, got " .. count .. " in: " .. output)
+end)
+
+---------------------------------------------------------------------------
+-- BUG-116: get from closed container bypasses accessible check
+---------------------------------------------------------------------------
+suite("BUG-116 — get from closed container")
+
+local function make_drawer_ctx(drawer_open)
+    local matchbox = {
+        id = "matchbox", name = "a small matchbox",
+        keywords = {"matchbox", "match box", "box of matches"},
+        portable = true, container = true, is_open = true,
+        contents = {}, categories = {"small", "container"},
+    }
+    local drawer = {
+        id = "drawer", name = "a small drawer",
+        keywords = {"drawer", "small drawer"},
+        container = true,
+        is_open = drawer_open,
+        accessible = drawer_open and true or false,
+        contents = {"matchbox"},
+        categories = {"furniture", "wooden", "container"},
+    }
+    local objs = {
+        matchbox = matchbox,
+        drawer = drawer,
+    }
+    local reg = make_mock_registry(objs)
+    local room = {
+        id = "test-room", name = "Test Room",
+        contents = { "drawer" }, exits = {},
+        light_level = 1,
+    }
+    return {
+        registry = reg,
+        current_room = room,
+        player = {
+            hands = { nil, nil },
+            worn = {},
+            state = {},
+        },
+        time_offset = 8,
+        game_start_time = os.time(),
+        current_verb = "get",
+    }
+end
+
+test("BUG-116: 'get matchbox from drawer' fails when drawer is closed", function()
+    local ctx = make_drawer_ctx(false)
+    local output = capture_output(function()
+        handlers["get"](ctx, "matchbox from drawer")
+    end)
+    local lower = output:lower()
+    truthy(not lower:find("you take"),
+        "BUG-116: should NOT take from closed drawer, got: " .. output)
+    truthy(lower:find("closed") or lower:find("not accessible") or lower:find("can't") or lower:find("open"),
+        "BUG-116: should mention drawer is closed/not accessible, got: " .. output)
+end)
+
+test("BUG-116: 'get matchbox from drawer' succeeds when drawer is open", function()
+    local ctx = make_drawer_ctx(true)
+    local output = capture_output(function()
+        handlers["get"](ctx, "matchbox from drawer")
+    end)
+    local lower = output:lower()
+    truthy(lower:find("you take") or lower:find("matchbox"),
+        "BUG-116: should take from open drawer, got: " .. output)
+end)
+
+test("BUG-116: matchbox stays in drawer when closed", function()
+    local ctx = make_drawer_ctx(false)
+    capture_output(function()
+        handlers["get"](ctx, "matchbox from drawer")
+    end)
+    local drawer = ctx.registry:get("drawer")
+    local still_there = false
+    for _, id in ipairs(drawer.contents) do
+        if id == "matchbox" then still_there = true; break end
+    end
+    truthy(still_there, "BUG-116: matchbox should remain in closed drawer")
 end)

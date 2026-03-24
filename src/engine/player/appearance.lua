@@ -14,7 +14,7 @@ local appearance = {}
 --- Combine phrases into natural English with Oxford comma.
 --- Deduplicates identical phrases (Issue #31: duplicate bruise text).
 local function compose_natural(phrases)
-    -- Deduplicate identical phrases
+    -- Deduplicate identical phrases (Issue #31: duplicate bruise text)
     local seen = {}
     local unique = {}
     for _, p in ipairs(phrases) do
@@ -56,15 +56,20 @@ local severity_adjectives = {
     severe   = { "grievous", "terrible" },
 }
 
-local function pick_severity_adjective(severity)
+local function pick_severity_adjective(severity, index)
     local options = severity_adjectives[severity]
     if not options then return nil end
-    return options[math.random(#options)]
+    -- Issue #92: Use deterministic cycling so multiple injuries get distinct adjectives
+    local idx = ((index or math.random(#options)) - 1) % #options + 1
+    return options[idx]
 end
 
 --- Compose a natural injury phrase from structured data.
-local function render_injury_phrase(injury)
-    local adj = pick_severity_adjective(injury.severity)
+-- @param injury table — injury data
+-- @param index number|nil — ordinal index for deterministic adjective cycling
+local function render_injury_phrase(injury, index)
+    local sev = injury.severity or "moderate"
+    local adj = pick_severity_adjective(sev, index)
 
     -- Determine injury noun based on type
     local noun_map = {
@@ -89,7 +94,12 @@ local function render_injury_phrase(injury)
     return "a " .. phrase
 end
 
---- Resolve object from ID or table.
+--- Resolve the wear slot from either obj.wear_slot or obj.wear.slot.
+local function get_wear_slot(obj)
+    if obj.wear_slot then return obj.wear_slot end
+    if obj.wear and obj.wear.slot then return obj.wear.slot end
+    return nil
+end
 local function resolve_obj(item, registry)
     if type(item) == "table" then return item end
     if type(item) == "string" and registry then
@@ -110,7 +120,7 @@ local function render_head(player, registry)
     if player.worn then
         for _, worn_id in ipairs(player.worn) do
             local obj = resolve_obj(worn_id, registry)
-            if obj and (obj.wear_slot == "head" or obj.is_helmet) then
+            if obj and (get_wear_slot(obj) == "head" or obj.is_helmet) then
                 if obj.appearance and obj.appearance.worn_description then
                     parts[#parts + 1] = obj.appearance.worn_description
                 else
@@ -122,8 +132,8 @@ local function render_head(player, registry)
 
     -- Head injuries
     local head_injuries = get_injuries_at(player, {"head", "face", "forehead", "scalp"})
-    for _, injury in ipairs(head_injuries) do
-        parts[#parts + 1] = render_injury_phrase(injury)
+    for i, injury in ipairs(head_injuries) do
+        parts[#parts + 1] = render_injury_phrase(injury, i)
     end
 
     if #parts == 0 then return nil end
@@ -137,7 +147,7 @@ local function render_torso(player, registry)
     if player.worn then
         for _, worn_id in ipairs(player.worn) do
             local obj = resolve_obj(worn_id, registry)
-            if obj and obj.wear_slot == "torso" then
+            if obj and get_wear_slot(obj) == "torso" then
                 if obj.appearance and obj.appearance.worn_description then
                     parts[#parts + 1] = obj.appearance.worn_description
                 else
@@ -149,8 +159,8 @@ local function render_torso(player, registry)
 
     -- Torso injuries
     local torso_injuries = get_injuries_at(player, {"torso", "chest", "ribs", "stomach", "side"})
-    for _, injury in ipairs(torso_injuries) do
-        parts[#parts + 1] = render_injury_phrase(injury)
+    for i, injury in ipairs(torso_injuries) do
+        parts[#parts + 1] = render_injury_phrase(injury, i)
     end
 
     if #parts == 0 then return nil end
@@ -162,8 +172,8 @@ local function render_arms(player, registry)
 
     -- Arm injuries
     local arm_injuries = get_injuries_at(player, {"left arm", "right arm", "arm"})
-    for _, injury in ipairs(arm_injuries) do
-        parts[#parts + 1] = render_injury_phrase(injury)
+    for i, injury in ipairs(arm_injuries) do
+        parts[#parts + 1] = render_injury_phrase(injury, i)
     end
 
     if #parts == 0 then return nil end
@@ -188,8 +198,8 @@ local function render_hands(player, registry)
 
     -- Hand injuries
     local hand_injuries = get_injuries_at(player, {"hand", "fingers", "wrist"})
-    for _, injury in ipairs(hand_injuries) do
-        parts[#parts + 1] = render_injury_phrase(injury)
+    for i, injury in ipairs(hand_injuries) do
+        parts[#parts + 1] = render_injury_phrase(injury, i)
     end
 
     if #parts == 0 then return nil end
@@ -201,8 +211,8 @@ local function render_legs(player, registry)
 
     -- Leg injuries
     local leg_injuries = get_injuries_at(player, {"left leg", "right leg", "leg"})
-    for _, injury in ipairs(leg_injuries) do
-        parts[#parts + 1] = render_injury_phrase(injury)
+    for i, injury in ipairs(leg_injuries) do
+        parts[#parts + 1] = render_injury_phrase(injury, i)
     end
 
     if #parts == 0 then return nil end
@@ -216,7 +226,7 @@ local function render_feet(player, registry)
     if player.worn then
         for _, worn_id in ipairs(player.worn) do
             local obj = resolve_obj(worn_id, registry)
-            if obj and obj.wear_slot == "feet" then
+            if obj and get_wear_slot(obj) == "feet" then
                 if obj.appearance and obj.appearance.worn_description then
                     parts[#parts + 1] = obj.appearance.worn_description
                 else
@@ -253,15 +263,14 @@ local function render_overall(player)
 
     -- Global blood state
     if player.state and player.state.bloody then
-        parts[#parts + 1] = "dried blood is visible on your skin and clothes"
+        parts[#parts + 1] = "dried blood stains your skin"
     end
 
     if #parts == 0 then return nil end
-    return compose_natural(parts)
+    -- Issue #95: Use semicolons when phrases already contain "and"
+    if #parts == 1 then return parts[1] end
+    return table.concat(parts, "; ")
 end
-
----------------------------------------------------------------------------
--- Main API
 ---------------------------------------------------------------------------
 
 --- Compose a natural language description of a player's appearance.
@@ -304,6 +313,10 @@ function appearance.describe(player, registry)
     end
 
     -- Capitalize first letter of composed description
+    -- Issue #91: strip trailing periods from each phrase before joining
+    for i, p in ipairs(phrases) do
+        phrases[i] = p:gsub("[%.]+$", "")
+    end
     local desc = table.concat(phrases, ". ")
     -- Issue #30: Capitalize first letter after every ". " separator
     desc = desc:gsub("%.%s+(%l)", function(c) return ". " .. c:upper() end)
