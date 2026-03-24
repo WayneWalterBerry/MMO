@@ -80,6 +80,22 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 **Tests:** 34 new tests in `test/parser/test-p1-parser-fixes.lua`. Zero regressions (4 pre-existing failures in test-search-find.lua confirmed unrelated).
 
+### 2026-03-28: Issue #110 — "pry/open with" parser gap (BUG-049)
+
+**What shipped:** Parser now handles "X with Y" tool patterns for open/pry verbs. Three layers of change:
+
+1. **Preprocess** (`transform_compound_actions`): Added "pry X with Y" → "open X with Y" and "force open X" → "open X" rules. The existing "pry open X" rule already captured "with Y" suffix correctly.
+
+2. **Game loop**: Extended prepositional parsing to extract "with Y" for open/pry verbs. Tool noun stored on `context.tool_noun` so verb handlers can access it without re-parsing.
+
+3. **Open handler** (`containers.lua`): When encountering a locked door with `context.tool_noun` set, attempts unlock with the specified tool before falling back to "It is locked." Matches the existing unlock handler's key-matching logic.
+
+**Key learning:** The parser pipeline (`natural_language()`) returns nil when no stage transforms input — "open door with key" passes through unchanged because it's already canonical. The game loop's `parse()` fallback handles it, and the "with Y" extraction happens post-parse in the loop. Tests must account for this two-stage flow.
+
+**Files changed:** `src/engine/parser/preprocess.lua`, `src/engine/loop/init.lua`, `src/engine/verbs/containers.lua`, `test/parser/pipeline/test-transform-compound-actions.lua`, `test/parser/pipeline/test-pipeline-integration.lua`
+
+**Tests:** 10 new tests (7 unit in compound-actions, 5 integration in pipeline-integration minus 2 shared). 103 test files passing, 0 regressions.
+
 **Result:** Commit 25f5372.
 
 ### 2026-03-25: Issue #154 --- Prepositional suffixes corrupt item resolution

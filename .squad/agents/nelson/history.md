@@ -820,6 +820,19 @@ Created 7 test files in `test/parser/pipeline/` covering all pipeline stages:
 
 ## Learnings
 
+### Issue #49: Weapon Inference Verification (2026-03-24)
+
+**Status:** VERIFIED - weapon inference works correctly
+**Test file:** test/verbs/test-stab-inference.lua - 17 tests, 17 pass
+
+- handle_self_infliction() scans both hand slots for items with the relevant damage profile
+- Single weapon match = auto-use; zero = helpful error; two = disambiguation
+- All self-reference phrasings work: self, myself, yourself, me
+- Non-weapons (pillow, candle) correctly rejected - no false positives
+- Shared inference logic covers stab, cut, and slash verbs
+- Full suite: 103 test files, 0 failures
+
+
 - GOAP is game-changing (single command replaces 7-step manual sequence)
 - Systematic regression testing catches reintroductions early
 - Spatial puzzles (push bed → pull rug → discover) are excellent game design
