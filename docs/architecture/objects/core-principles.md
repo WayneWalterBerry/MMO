@@ -1,15 +1,15 @@
 # Core Architecture Principles
 
-**Version:** 1.0  
-**Last Updated:** 2026-03-22  
-**Author:** Brockman (Documentation)  
-**Purpose:** The 8 foundational principles that govern how the object system works.
+**Version:** 1.1  
+**Last Updated:** 2026-03-27  
+**Author:** Brockman (Documentation); Updated by Bart (Architect)  
+**Purpose:** The 9 foundational principles that govern how the object system works.
 
 ---
 
 ## Overview
 
-These eight principles form the bedrock of the MMO architecture. They define how objects are created, stored, modified, perceived, and related to each other in the game world. Every design decision in the engine traces back to one or more of these principles.
+These nine principles form the bedrock of the MMO architecture. They define how objects are created, stored, modified, perceived, and related to each other in the game world. Every design decision in the engine traces back to one or more of these principles.
 
 ## Table of Contents
 
@@ -23,6 +23,7 @@ These eight principles form the bedrock of the MMO architecture. They define how
 6. [Objects Exist in Sensory Space; State Determines Perception](#6-objects-exist-in-sensory-space-state-determines-perception)
 7. [Objects Exist in Spatial Relationships](#7-objects-exist-in-spatial-relationships)
 8. [The Engine Executes Metadata; Objects Declare Behavior](#8-the-engine-executes-metadata-objects-declare-behavior)
+9. [Material Consistency](#9-material-consistency)
 
 ---
 
@@ -1106,4 +1107,139 @@ This principle is the architectural complement to Principle 1 (Code-Derived Muta
 
 ---
 
-**End of Core Architecture Principles**
+## 9. Material Consistency
+
+**Every object MUST derive its physical behavior from a material in the material registry.** Objects do not hard-code fragility, flammability, hardness, or weight. Instead, they declare a `material` property that references an entry in `src/engine/materials/init.lua`. The engine resolves all physical properties from that material definition at runtime.
+
+### The Material Registry
+
+The material registry (`src/engine/materials/init.lua`) is the single source of truth for physical properties:
+
+```lua
+materials.registry = {
+    wax = {
+        density = 900,
+        melting_point = 60,
+        ignition_point = 230,
+        hardness = 2,
+        flexibility = 0.8,
+        absorbency = 0.0,
+        opacity = 0.6,
+        flammability = 0.7,
+        conductivity = 0.0,
+        fragility = 0.3,
+        value = 1,
+    },
+    wood = {
+        density = 600,
+        melting_point = nil,
+        ignition_point = 300,
+        hardness = 4,
+        flexibility = 0.2,
+        absorbency = 0.3,
+        opacity = 1.0,
+        flammability = 0.5,
+        conductivity = 0.0,
+        fragility = 0.2,
+        value = 3,
+    },
+    -- ... more materials
+}
+```
+
+Each material defines:
+- **density** — mass per volume (kg/m³); affects weight calculations
+- **melting_point / ignition_point** — temperature thresholds for physical transitions
+- **hardness** — resistance to deformation (1-10 Mohs-inspired scale)
+- **flexibility** — ability to bend without breaking (0.0–1.0 normalized)
+- **absorbency** — capacity to absorb liquids (0.0–1.0)
+- **opacity** — light transmission (0.0 = transparent, 1.0 = opaque)
+- **flammability** — propensity to burn (0.0–1.0)
+- **conductivity** — heat/electricity transfer (0.0–1.0)
+- **fragility** — likelihood to break under impact (0.0–1.0)
+- **value** — economic multiplier for crafting/commerce (1–100)
+
+### Object → Material Binding
+
+Objects declare their material in the base object definition:
+
+```lua
+-- candle.lua
+return {
+    id = "candle",
+    material = "wax",      -- Binds this object to wax properties
+    name = "a white candle",
+    description = "A tapered candle, waiting to be lit.",
+    -- Fragility, flammability, weight etc. are all derived from wax material
+}
+
+-- wooden-chair.lua
+return {
+    id = "wooden-chair",
+    material = "wood",     -- Binds to wood properties
+    name = "a wooden chair",
+    -- Hardness, flexibility, etc. derived from wood
+}
+```
+
+### Runtime Property Resolution
+
+When the engine needs a physical property (e.g., "is this object fragile?"), it resolves it as follows:
+
+1. **Look up the object's material:** `obj.material` (e.g., `"wax"`)
+2. **Fetch material properties:** `materials.get("wax")`
+3. **Use the property:** Apply fragility, flammability, hardness, etc. in gameplay logic
+4. **No hard-coded fallbacks:** Every object MUST have a valid material
+
+Example in engine logic:
+
+```lua
+local obj = registry:get(obj_id)
+local mat = materials.get(obj.material)
+
+if mat.fragility > 0.7 then
+    -- Object is fragile; handle breaking on impact
+end
+
+if mat.flammability > 0.5 and is_burning then
+    -- Object ignites easily; apply fire damage
+end
+
+local weight = mat.density * obj.volume
+-- Weight is derived from material density
+```
+
+### The Exception: Instance Overrides
+
+**Object instances CAN override material properties when needed**, but this is the exception, not the rule. The material provides defaults; the instance override is the override.
+
+```lua
+-- Instance in a room, overriding the wax fragility
+{
+    id = "candle-special",
+    type_id = "{guid-candle}",
+    material = "wax",
+    fragility_override = 0.1,  -- This specific candle is reinforced
+}
+```
+
+Instance overrides are documented explicitly so they're visible during debugging. They should be rare and purposeful (e.g., a magically hardened candle, a weighted toy arrow that doesn't break).
+
+### Why This Matters
+
+1. **Consistency:** Two wax objects always have the same physical properties unless explicitly overridden. No secret sauce or balance tweaks hidden in code.
+2. **Content-driven:** Adding new materials or adjusting existing ones requires zero engine changes. A designer can balance wood vs. stone by editing the registry.
+3. **Scalability:** New object types inherit physical behavior from their material automatically. Creating 50 wooden objects doesn't require 50 separate fragility definitions.
+4. **Debuggability:** Physical behavior is traceable. "Why does this burn?" → Look up the material, check flammability. Clear causality.
+5. **Simulation integrity:** The entire game world operates under consistent physical rules. A wax candle in room A has identical properties to a wax candle in room B (unless instance-overridden).
+6. **Reusability:** Multiple object types can share the same material (e.g., "wood" applies to chairs, doors, arrows, bows, etc.).
+
+### Design Consequences
+
+1. **Material declaration is mandatory:** If an object has no `material` property, the engine errors at load time.
+2. **Material must exist in the registry:** References to unknown materials fail validation.
+3. **Material properties are immutable per material:** The registry is the single source of truth; individual objects don't redefine material properties.
+4. **Override-driven tuning:** If an object needs different properties than its material provides, use an instance override, not a code change.
+5. **Future: Composite materials:** Multi-part objects can declare different materials for different parts (e.g., a wooden hilt with an iron blade).
+
+---
