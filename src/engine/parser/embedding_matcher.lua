@@ -228,6 +228,18 @@ function matcher:match(input_text)
     if score > best_score then
       best_score = score
       best_phrase = phrase
+    elseif score == best_score and best_phrase then
+      -- Tiebreaker: prefer base-state (non-suffixed) noun variant.
+      -- "examine match" should match "examine a wooden match" not "examine a lit match".
+      local cur_has_suffix = best_phrase.noun:find("-", 1, true) and
+        (best_phrase.noun:match("%-lit$") or best_phrase.noun:match("%-open$") or
+         best_phrase.noun:match("%-broken$") or best_phrase.noun:match("%-closed$"))
+      local new_has_suffix = phrase.noun:find("-", 1, true) and
+        (phrase.noun:match("%-lit$") or phrase.noun:match("%-open$") or
+         phrase.noun:match("%-broken$") or phrase.noun:match("%-closed$"))
+      if cur_has_suffix and not new_has_suffix then
+        best_phrase = phrase
+      end
     end
   end
 

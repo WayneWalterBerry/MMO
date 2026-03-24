@@ -152,20 +152,49 @@ def build_index(rows: list[dict], embeddings: list[list[float]]) -> dict:
     return {"phrases": phrases, "dimensions": EXPECTED_DIM, "model": MODEL_NAME}
 
 
-def save_index(index: dict, output_dir: Path) -> tuple[Path, Path]:
-    """Save index as both uncompressed JSON and gzip-compressed."""
+def build_slim_index(full_index: dict) -> dict:
+    """Strip embedding vectors, keep only text/verb/noun for Jaccard matching."""
+    slim_phrases = []
+    for entry in full_index["phrases"]:
+        slim_phrases.append({
+            "id": entry["id"],
+            "text": entry["text"],
+            "verb": entry["verb"],
+            "noun": entry["noun"],
+        })
+    return {
+        "phrases": slim_phrases,
+        "model": full_index.get("model", MODEL_NAME),
+        "note": "Slim index - vectors stripped. Full index archived at resources/archive/embedding-index-full.json",
+    }
+
+
+def save_index(index: dict, output_dir: Path, slim: bool = False) -> tuple[Path, Path]:
+    """Save index as both uncompressed JSON and gzip-compressed.
+    When slim=True, also saves a slim (no vectors) version as the primary index."""
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Always save the full version (with vectors) to archive
+    archive_dir = output_dir.parent.parent.parent / "resources" / "archive"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    archive_path = archive_dir / "embedding-index-full.json"
+    with open(archive_path, "w", encoding="utf-8") as f:
+        json.dump(index, f, separators=(",", ":"))
+
+    # Primary index: slim (no vectors) by default
+    if slim:
+        primary = build_slim_index(index)
+    else:
+        primary = index
 
     json_path = output_dir / "embedding-index.json"
     gz_path = output_dir / "embedding-index.json.gz"
 
-    json_str = json.dumps(index, separators=(",", ":"))
+    json_str = json.dumps(primary, separators=(",", ":"))
 
-    # Uncompressed (for debugging)
     with open(json_path, "w", encoding="utf-8") as f:
         f.write(json_str)
 
-    # Compressed (for production)
     with gzip.open(gz_path, "wt", encoding="utf-8", compresslevel=9) as f:
         f.write(json_str)
 
@@ -198,6 +227,14 @@ Examples:
     parser.add_argument(
         "--model-cache", type=Path, default=MODELS_DIR,
         help=f"Directory to cache the GTE-tiny model. Default: {MODELS_DIR.relative_to(REPO_ROOT)}",
+    )
+    parser.add_argument(
+        "--slim", action="store_true", default=True,
+        help="Output slim index (no vectors) as primary. Full index archived to resources/archive/. Default: True",
+    )
+    parser.add_argument(
+        "--no-slim", action="store_false", dest="slim",
+        help="Output full index with vectors as primary.",
     )
     args = parser.parse_args()
 
@@ -232,7 +269,7 @@ Examples:
     # --- Step 4: Build and save index ---
     print(f"\n[4/4] Building index and saving ...")
     index = build_index(rows, embeddings)
-    json_path, gz_path = save_index(index, args.output_dir)
+    json_path, gz_path = save_index(index, args.output_dir, slim=args.slim)
 
     json_size = json_path.stat().st_size
     gz_size = gz_path.stat().st_size

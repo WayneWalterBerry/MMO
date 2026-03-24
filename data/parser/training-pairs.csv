@@ -4336,3 +4336,245 @@ phrase_id,phrase_text,verb,noun,context
 4335,x a moth-eaten wool cloak,x,wool-cloak,observation
 4336,x moth-eaten wool cloak,x,wool-cloak,observation
 4337,x cloak,x,wool-cloak,observation
+4338,gimme a crude bandage,get,bandage,interaction
+4339,hold a crude bandage,get,bandage,interaction
+4340,lift a crude bandage,get,bandage,interaction
+4341,gimme a large four-poster bed,get,bed,interaction
+4342,hold a large four-poster bed,get,bed,interaction
+4343,lift a large four-poster bed,get,bed,interaction
+4344,gimme rumpled bed sheets,get,bed-sheets,interaction
+4345,hold rumpled bed sheets,get,bed-sheets,interaction
+4346,lift rumpled bed sheets,get,bed-sheets,interaction
+4347,gimme a heavy wool blanket,get,blanket,interaction
+4348,hold a heavy wool blanket,get,blanket,interaction
+4349,lift a heavy wool blanket,get,blanket,interaction
+4350,gimme a small brass key,get,brass-key,interaction
+4351,hold a small brass key,get,brass-key,interaction
+4352,lift a small brass key,get,brass-key,interaction
+4353,gimme a tallow candle,get,candle,interaction
+4354,hold a tallow candle,get,candle,interaction
+4355,lift a tallow candle,get,candle,interaction
+4356,gimme a lit tallow candle,get,candle-lit,interaction
+4357,hold a lit tallow candle,get,candle-lit,interaction
+4358,lift a lit tallow candle,get,candle-lit,interaction
+4359,gimme a ceramic chamber pot,get,chamber-pot,interaction
+4360,hold a ceramic chamber pot,get,chamber-pot,interaction
+4361,lift a ceramic chamber pot,get,chamber-pot,interaction
+4362,gimme a piece of cloth,get,cloth,interaction
+4363,hold a piece of cloth,get,cloth,interaction
+4364,lift a piece of cloth,get,cloth,interaction
+4365,gimme heavy velvet curtains,get,curtains,interaction
+4366,hold heavy velvet curtains,get,curtains,interaction
+4367,lift heavy velvet curtains,get,curtains,interaction
+4368,gimme heavy velvet curtains (open),get,curtains-open,interaction
+4369,hold heavy velvet curtains (open),get,curtains-open,interaction
+4370,lift heavy velvet curtains (open),get,curtains-open,interaction
+4371,gimme a glass shard,get,glass-shard,interaction
+4372,hold a glass shard,get,glass-shard,interaction
+4373,lift a glass shard,get,glass-shard,interaction
+4374,gimme a small knife,get,knife,interaction
+4375,hold a small knife,get,knife,interaction
+4376,lift a small knife,get,knife,interaction
+4377,gimme a wooden match,get,match,interaction
+4378,hold a wooden match,get,match,interaction
+4379,lift a wooden match,get,match,interaction
+4380,gimme a lit match,get,match-lit,interaction
+4381,hold a lit match,get,match-lit,interaction
+4382,lift a lit match,get,match-lit,interaction
+4383,gimme a small matchbox,get,matchbox,interaction
+4384,hold a small matchbox,get,matchbox,interaction
+4385,lift a small matchbox,get,matchbox,interaction
+4386,gimme a sewing needle,get,needle,interaction
+4387,hold a sewing needle,get,needle,interaction
+4388,lift a sewing needle,get,needle,interaction
+4389,gimme a small nightstand,get,nightstand,interaction
+4390,hold a small nightstand,get,nightstand,interaction
+4391,lift a small nightstand,get,nightstand,interaction
+4392,gimme a small nightstand (drawer open),get,nightstand-open,interaction
+4393,hold a small nightstand (drawer open),get,nightstand-open,interaction
+4394,lift a small nightstand (drawer open),get,nightstand-open,interaction
+4395,gimme a blank sheet of paper,get,paper,interaction
+4396,hold a blank sheet of paper,get,paper,interaction
+4397,lift a blank sheet of paper,get,paper,interaction
+4398,gimme an ink pen,get,pen,interaction
+4399,hold an ink pen,get,pen,interaction
+4400,lift an ink pen,get,pen,interaction
+4401,gimme a graphite pencil,get,pencil,interaction
+4402,hold a graphite pencil,get,pencil,interaction
+4403,lift a graphite pencil,get,pencil,interaction
+4404,gimme a goose-down pillow,get,pillow,interaction
+4405,hold a goose-down pillow,get,pillow,interaction
+4406,lift a goose-down pillow,get,pillow,interaction
+4407,gimme a sewing pin,get,pin,interaction
+4408,hold a sewing pin,get,pin,interaction
+4409,lift a sewing pin,get,pin,interaction
+4410,gimme a small glass bottle,get,poison-bottle,interaction
+4411,hold a small glass bottle,get,poison-bottle,interaction
+4412,lift a small glass bottle,get,poison-bottle,interaction
+4413,gimme a dirty rag,get,rag,interaction
+4414,hold a dirty rag,get,rag,interaction
+4415,lift a dirty rag,get,rag,interaction
+4416,gimme a threadbare rug,get,rug,interaction
+4417,hold a threadbare rug,get,rug,interaction
+4418,lift a threadbare rug,get,rug,interaction
+4419,gimme a burlap sack,get,sack,interaction
+4420,hold a burlap sack,get,sack,interaction
+4421,lift a burlap sack,get,sack,interaction
+4422,gimme a terrible burlap jacket,get,terrible-jacket,interaction
+4423,hold a terrible burlap jacket,get,terrible-jacket,interaction
+4424,lift a terrible burlap jacket,get,terrible-jacket,interaction
+4425,gimme a spool of thread,get,thread,interaction
+4426,hold a spool of thread,get,thread,interaction
+4427,lift a spool of thread,get,thread,interaction
+4428,gimme an oak vanity,get,vanity,interaction
+4429,hold an oak vanity,get,vanity,interaction
+4430,lift an oak vanity,get,vanity,interaction
+4431,gimme an oak vanity (mirror broken),get,vanity-mirror-broken,interaction
+4432,hold an oak vanity (mirror broken),get,vanity-mirror-broken,interaction
+4433,lift an oak vanity (mirror broken),get,vanity-mirror-broken,interaction
+4434,gimme an oak vanity (drawer open),get,vanity-open,interaction
+4435,hold an oak vanity (drawer open),get,vanity-open,interaction
+4436,lift an oak vanity (drawer open),get,vanity-open,interaction
+4437,"gimme an oak vanity (drawer open, mirror broken)",get,vanity-open-mirror-broken,interaction
+4438,"hold an oak vanity (drawer open, mirror broken)",get,vanity-open-mirror-broken,interaction
+4439,"lift an oak vanity (drawer open, mirror broken)",get,vanity-open-mirror-broken,interaction
+4440,gimme a heavy wardrobe,get,wardrobe,interaction
+4441,hold a heavy wardrobe,get,wardrobe,interaction
+4442,lift a heavy wardrobe,get,wardrobe,interaction
+4443,gimme a heavy wardrobe (open),get,wardrobe-open,interaction
+4444,hold a heavy wardrobe (open),get,wardrobe-open,interaction
+4445,lift a heavy wardrobe (open),get,wardrobe-open,interaction
+4446,gimme a leaded glass window,get,window,interaction
+4447,hold a leaded glass window,get,window,interaction
+4448,lift a leaded glass window,get,window,interaction
+4449,gimme an open leaded glass window,get,window-open,interaction
+4450,hold an open leaded glass window,get,window-open,interaction
+4451,lift an open leaded glass window,get,window-open,interaction
+4452,gimme a moth-eaten wool cloak,get,wool-cloak,interaction
+4453,hold a moth-eaten wool cloak,get,wool-cloak,interaction
+4454,lift a moth-eaten wool cloak,get,wool-cloak,interaction
+4455,peer at a crude bandage,look,bandage,interaction
+4456,peer at a large four-poster bed,look,bed,interaction
+4457,peer at rumpled bed sheets,look,bed-sheets,interaction
+4458,peer at a heavy wool blanket,look,blanket,interaction
+4459,peer at a small brass key,look,brass-key,interaction
+4460,peer at a tallow candle,look,candle,interaction
+4461,peer at a lit tallow candle,look,candle-lit,interaction
+4462,peer at a ceramic chamber pot,look,chamber-pot,interaction
+4463,peer at a piece of cloth,look,cloth,interaction
+4464,peer at heavy velvet curtains,look,curtains,interaction
+4465,peer at heavy velvet curtains (open),look,curtains-open,interaction
+4466,peer at a glass shard,look,glass-shard,interaction
+4467,peer at a small knife,look,knife,interaction
+4468,peer at a wooden match,look,match,interaction
+4469,peer at a lit match,look,match-lit,interaction
+4470,peer at a small matchbox,look,matchbox,interaction
+4471,peer at a sewing needle,look,needle,interaction
+4472,peer at a small nightstand,look,nightstand,interaction
+4473,peer at a small nightstand (drawer open),look,nightstand-open,interaction
+4474,peer at north,look,north,interaction
+4475,peer at a blank sheet of paper,look,paper,interaction
+4476,peer at an ink pen,look,pen,interaction
+4477,peer at a graphite pencil,look,pencil,interaction
+4478,peer at a goose-down pillow,look,pillow,interaction
+4479,peer at a sewing pin,look,pin,interaction
+4480,peer at a small glass bottle,look,poison-bottle,interaction
+4481,peer at a dirty rag,look,rag,interaction
+4482,peer at a threadbare rug,look,rug,interaction
+4483,peer at a burlap sack,look,sack,interaction
+4484,peer at a terrible burlap jacket,look,terrible-jacket,interaction
+4485,peer at a spool of thread,look,thread,interaction
+4486,peer at an oak vanity,look,vanity,interaction
+4487,peer at an oak vanity (mirror broken),look,vanity-mirror-broken,interaction
+4488,peer at an oak vanity (drawer open),look,vanity-open,interaction
+4489,"peer at an oak vanity (drawer open, mirror broken)",look,vanity-open-mirror-broken,interaction
+4490,peer at a heavy wardrobe,look,wardrobe,interaction
+4491,peer at a heavy wardrobe (open),look,wardrobe-open,interaction
+4492,peer at a leaded glass window,look,window,interaction
+4493,peer at an open leaded glass window,look,window-open,interaction
+4494,peer at a moth-eaten wool cloak,look,wool-cloak,interaction
+4495,peer around,look,,interaction
+4496,inspect a crude bandage,examine,bandage,interaction
+4497,inspect a large four-poster bed,examine,bed,interaction
+4498,inspect rumpled bed sheets,examine,bed-sheets,interaction
+4499,inspect a heavy wool blanket,examine,blanket,interaction
+4500,inspect a small brass key,examine,brass-key,interaction
+4501,inspect a tallow candle,examine,candle,interaction
+4502,inspect a lit tallow candle,examine,candle-lit,interaction
+4503,inspect a ceramic chamber pot,examine,chamber-pot,interaction
+4504,inspect a piece of cloth,examine,cloth,interaction
+4505,inspect heavy velvet curtains,examine,curtains,interaction
+4506,inspect heavy velvet curtains (open),examine,curtains-open,interaction
+4507,inspect a glass shard,examine,glass-shard,interaction
+4508,inspect a small knife,examine,knife,interaction
+4509,inspect a wooden match,examine,match,interaction
+4510,inspect a lit match,examine,match-lit,interaction
+4511,inspect a small matchbox,examine,matchbox,interaction
+4512,inspect a sewing needle,examine,needle,interaction
+4513,inspect a small nightstand,examine,nightstand,interaction
+4514,inspect a small nightstand (drawer open),examine,nightstand-open,interaction
+4515,inspect a blank sheet of paper,examine,paper,interaction
+4516,inspect an ink pen,examine,pen,interaction
+4517,inspect a graphite pencil,examine,pencil,interaction
+4518,inspect a goose-down pillow,examine,pillow,interaction
+4519,inspect a sewing pin,examine,pin,interaction
+4520,inspect a small glass bottle,examine,poison-bottle,interaction
+4521,inspect a dirty rag,examine,rag,interaction
+4522,inspect a threadbare rug,examine,rug,interaction
+4523,inspect a burlap sack,examine,sack,interaction
+4524,inspect a terrible burlap jacket,examine,terrible-jacket,interaction
+4525,inspect a spool of thread,examine,thread,interaction
+4526,inspect an oak vanity,examine,vanity,interaction
+4527,inspect an oak vanity (mirror broken),examine,vanity-mirror-broken,interaction
+4528,inspect an oak vanity (drawer open),examine,vanity-open,interaction
+4529,"inspect an oak vanity (drawer open, mirror broken)",examine,vanity-open-mirror-broken,interaction
+4530,inspect a heavy wardrobe,examine,wardrobe,interaction
+4531,inspect a heavy wardrobe (open),examine,wardrobe-open,interaction
+4532,inspect a leaded glass window,examine,window,interaction
+4533,inspect an open leaded glass window,examine,window-open,interaction
+4534,inspect a moth-eaten wool cloak,examine,wool-cloak,interaction
+4535,check out a crude bandage,look,bandage,interaction
+4536,check out a large four-poster bed,look,bed,interaction
+4537,check out rumpled bed sheets,look,bed-sheets,interaction
+4538,check out a heavy wool blanket,look,blanket,interaction
+4539,check out a small brass key,look,brass-key,interaction
+4540,check out a tallow candle,look,candle,interaction
+4541,check out a lit tallow candle,look,candle-lit,interaction
+4542,check out a ceramic chamber pot,look,chamber-pot,interaction
+4543,check out a piece of cloth,look,cloth,interaction
+4544,check out heavy velvet curtains,look,curtains,interaction
+4545,check out heavy velvet curtains (open),look,curtains-open,interaction
+4546,check out a glass shard,look,glass-shard,interaction
+4547,check out a small knife,look,knife,interaction
+4548,check out a wooden match,look,match,interaction
+4549,check out a lit match,look,match-lit,interaction
+4550,check out a small matchbox,look,matchbox,interaction
+4551,check out a sewing needle,look,needle,interaction
+4552,check out a small nightstand,look,nightstand,interaction
+4553,check out a small nightstand (drawer open),look,nightstand-open,interaction
+4554,check out north,look,north,interaction
+4555,check out a blank sheet of paper,look,paper,interaction
+4556,check out an ink pen,look,pen,interaction
+4557,check out a graphite pencil,look,pencil,interaction
+4558,check out a goose-down pillow,look,pillow,interaction
+4559,check out a sewing pin,look,pin,interaction
+4560,check out a small glass bottle,look,poison-bottle,interaction
+4561,check out a dirty rag,look,rag,interaction
+4562,check out a threadbare rug,look,rug,interaction
+4563,check out a burlap sack,look,sack,interaction
+4564,check out a terrible burlap jacket,look,terrible-jacket,interaction
+4565,check out a spool of thread,look,thread,interaction
+4566,check out an oak vanity,look,vanity,interaction
+4567,check out an oak vanity (mirror broken),look,vanity-mirror-broken,interaction
+4568,check out an oak vanity (drawer open),look,vanity-open,interaction
+4569,"check out an oak vanity (drawer open, mirror broken)",look,vanity-open-mirror-broken,interaction
+4570,check out a heavy wardrobe,look,wardrobe,interaction
+4571,check out a heavy wardrobe (open),look,wardrobe-open,interaction
+4572,check out a leaded glass window,look,window,interaction
+4573,check out an open leaded glass window,look,window-open,interaction
+4574,check out a moth-eaten wool cloak,look,wool-cloak,interaction
+4575,check out,look,,interaction
+4576,use a tallow candle,ignite,candle,interaction
+4577,use a wooden match,ignite,match,interaction
+4578,use a lit tallow candle,ignite,candle-lit,interaction
+4579,use a lit match,ignite,match-lit,interaction
