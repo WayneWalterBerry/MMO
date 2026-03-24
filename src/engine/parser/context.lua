@@ -21,6 +21,8 @@ local _max_stack = 5
 local _previous_room_id = nil   -- Room ID before last room transition
 local _discoveries = {}         -- Objects found via search (most recent first)
 local _max_discoveries = 5
+local _last_command = nil       -- { verb, noun, raw } for "again" support
+local _last_direction = nil     -- Last movement direction for "continue" support
 
 ---------------------------------------------------------------------------
 -- Context stack operations
@@ -111,6 +113,12 @@ function context_window.resolve(noun)
         return _stack[1]
     end
 
+    -- Tier 4: "the other one" → second most recent context object
+    if kw == "other one" or kw == "other" then
+        if #_stack >= 2 then return _stack[2] end
+        return nil
+    end
+
     -- BUG-114: "thing I found" / "one I found" / "what I found" etc. → last discovery
     if kw:match("thing%s+i%s+found")
         or kw:match("one%s+i%s+found")
@@ -127,6 +135,57 @@ function context_window.resolve(noun)
 end
 
 ---------------------------------------------------------------------------
+-- Tier 4: Command repeat ("again" / "do it again")
+---------------------------------------------------------------------------
+
+--- Record the last executed command (called after successful dispatch).
+function context_window.set_last_command(verb, noun, raw)
+    _last_command = { verb = verb, noun = noun, raw = raw }
+end
+
+--- Resolve repeat phrases. Returns last command table or nil.
+function context_window.resolve_repeat(text)
+    if not text then return nil end
+    local kw = text:lower():gsub("^%s+", ""):gsub("%s+$", "")
+    if kw == "again" or kw == "do it again" or kw == "repeat"
+        or kw == "do that again" or kw == "same thing"
+        or kw == "one more time" then
+        return _last_command
+    end
+    return nil
+end
+
+---------------------------------------------------------------------------
+-- Tier 4: Direction history
+---------------------------------------------------------------------------
+
+--- Record the last movement direction.
+function context_window.set_last_direction(dir)
+    _last_direction = dir
+end
+
+--- Get the last movement direction.
+function context_window.get_last_direction()
+    return _last_direction
+end
+
+---------------------------------------------------------------------------
+-- Tier 4: Recency scoring (for Tier 5 fuzzy integration)
+---------------------------------------------------------------------------
+
+--- Score an object by recency in the context stack.
+--- Returns 0 for unknown objects, higher for more recent.
+function context_window.recency_score(obj_id)
+    if not obj_id then return 0 end
+    for i, obj in ipairs(_stack) do
+        if obj.id == obj_id then
+            return _max_stack - i + 1
+        end
+    end
+    return 0
+end
+
+---------------------------------------------------------------------------
 -- Reset (for testing)
 ---------------------------------------------------------------------------
 
@@ -134,6 +193,8 @@ function context_window.reset()
     _stack = {}
     _discoveries = {}
     _previous_room_id = nil
+    _last_command = nil
+    _last_direction = nil
 end
 
 return context_window
