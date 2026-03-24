@@ -48,6 +48,112 @@
 
 ## Recent Updates
 
+### Armor System LLM Playtest (2026-03-24)
+
+**Status:** ✅ COMPLETE — 32 tests, 22 PASS, 7 FAIL, 3 WARN (69% pass rate)
+**Report:** `test-pass/gameplay/2026-03-24-armor-playtest.md`
+
+Comprehensive LLM play-test of the new armor system using creative human-like phrases.
+
+**Key findings:**
+- Armor core is **solid**: wear/remove/slot conflicts/protection/mirror all work with standard phrasing
+- Unconsciousness reduction confirmed: ~2 turns with pot vs ~5 without (~60% reduction)
+- 5 hit synonyms work (hit, bash, punch, thump, bonk); 3 don't (slap, whack, smack)
+- Head slot conflict correctly blocks second helmet
+- Spittoon not in bedroom — swap test deferred to unit tests (18/18 pass in A6b)
+
+**Bugs discovered (BUG-137 through BUG-143):**
+- **BUG-137 (HIGH):** "put X on my head" picks up item then says can't wear — parser breaks on "on my head" suffix
+- **BUG-138 (MEDIUM):** "wear X on my head" says "not holding" when player IS holding item
+- **BUG-139 (MEDIUM):** "look at myself in the mirror" fails even with light
+- **BUG-140 (LOW):** "remove X from head" not understood
+- **BUG-141 (LOW):** Hit synonyms slap/whack/smack not recognized
+- **BUG-142 (LOW):** Mirror appearance comma splice formatting
+- **BUG-143 (MEDIUM):** Ceramic pot never degrades from self-hits after 8 hits
+
+**Pattern:** All HIGH/MEDIUM bugs share a common root cause — prepositional suffixes ("on my head", "in the mirror", "from head") corrupt item resolution. A single parser fix to strip locational phrases would resolve BUG-137/138/139/140.
+
+### Search System LLM Playtest (2026-03-24)
+
+**Status:** ⚠️ PARTIAL — 30 tests, 19 PASS, 6 FAIL, 5 WARN
+**Report:** `test-pass/gameplay/2026-03-24-search-playtest.md`
+**Focus:** Regression verification for #132/#135 compound search+get fix, creative phrase testing
+**Key findings:**
+- **BUG-117 (HIGH):** Compound "find X, get X" — search finds item but standalone get can't access it
+- **BUG-118 (HIGH):** Items inside drawer not accessible after search (wardrobe/burlap sack items ARE accessible — drawer-specific gap)
+- **BUG-119 (MEDIUM):** "search for X" parses "for X" as location scope, not target
+- **BUG-120 (MEDIUM):** Lit-room search still uses "feel" language instead of "see"
+- **BUG-121-123 (LOW):** Missing synonyms: "explore", "grope", "search by touch"
+- #132/#135 fix is PARTIAL: `get X from Y` works after search ✅, but bare `get X` does not ❌
+- Core search UX excellent: darkness language, container traversal, scoped search, parser quality all solid
+- **Workaround:** `take matchbox from drawer` works; bare `get matchbox` does not
+
+### Brass Spittoon LLM Playtest (2026-03-24)
+
+**Status:** ❌ BLOCKED — 21 tests, 10 PASS, 9 FAIL, 2 WARN
+**Report:** `test-pass/gameplay/2026-03-24-spittoon-playtest.md`
+
+**Root Cause:** `brass-spittoon.lua` is fully implemented (71/71 unit tests PASS) but **not placed in any game room**. No room instance exists — the object is a blueprint without a home. Every in-game test fails because the spittoon simply isn't in the world.
+
+**What Works:**
+- Parser recognizes all keywords: "spittoon", "brass bowl", "cuspidor" ✅
+- Search system correctly traverses room for targeted searches ✅
+- Chamber pot baseline confirms all helmet/wear/container/mirror/durability mechanics work ✅
+- Ceramic pot shatters on drop (fragility 0.7) — correct behavior ✅
+- Hit-head with pot triggers concussion system ✅
+- Mirror reflects worn items correctly ✅
+
+**Bugs Filed:**
+- BUG-147 (HIGH): Brass spittoon not placed in any game room
+- BUG-148 (LOW): "brass bowl" keyword may collide with "brass candle holder" in same room
+
+**Action Required:** Add spittoon instance to a room file, then re-run playtest. Suggested placement: hallway or cellar (thematically appropriate for a saloon fixture in a manor).
+
+### Flavor Text Playtest — event_output.on_wear System (2026-03-24)
+
+**Status:** ✅ COMPLETE — 18 tests, 15 PASS, 2 WARN, 1 SKIP, 0 FAIL
+**Report:** `test-pass/gameplay/2026-03-24-flavor-playtest.md`
+
+**Core System:** BULLETPROOF — `event_output.on_wear` fires exactly once, then nils itself. Verified on wool-cloak ("I need to get better outfits. I look like a peasant.") and chamber-pot ("This is going to smell worse than I thought."). Re-wear is silent. Flavor text appears immediately after the "You put on..." message, same response block.
+
+**terrible-jacket:** SKIPPED — craft-only item (2× cloth + sewing tool). Object definition is correctly authored; code path identical to cloak/pot.
+
+**Creative Phrasing:** "wear X", "put on X", "don X", "I want to wear X", "please put on X" all ✅. "put X on my head" ⚠️ (auto-pickup works, slot-wear rejected). "wear X as a hat" ⚠️ (parser confused by suffix).
+
+**Edge Cases:** Non-wearable items → clean rejection. Wearable items without event_output (sack) → no flavor, no errors. Wearing in darkness → works. Multiple wearables on different slots → each flavor fires independently.
+
+### Drop Fragility System Playtest — Phase E, Issue #56 (2026-03-24)
+
+**Status:** ✅ COMPLETE — 24 tests, 14 PASS, 8 FAIL, 2 WARN
+**Report:** `test-pass/gameplay/2026-03-24-drop-playtest.md`
+
+**Core Engine:** SOLID — ceramic pot shatters on stone floor, spawns 2 shards. Knife survives with "resonant clang". Surface placement avoids breakage. Wear→remove→drop cycle works correctly.
+
+**BUG-127 (HIGH):** Glass bottle shatters with narration but spawns ZERO glass shards. Ceramic shards work fine — glass shard objects either missing or failing to load.
+
+**BUG-128 (MEDIUM):** Worn pot → "drop pot" → error says "get that out of the bag" — references non-existent bag.
+
+**BUG-129–131 (MEDIUM):** Parser gaps — "put X down" word order fails, "set X down" garbled error, "drop all/everything" unsupported.
+
+**BUG-132–133 (LOW):** "toss", "throw X on ground" not recognized as drop synonyms.
+
+**Creative Phrases Tested:** "let go of" ✅, "release" ✅, "put down X" ✅, "drop carefully" ✅ (adverb stripped). "hurl", "toss", "throw", "smash", "let slip" all ❌.
+
+### Self-Infliction & Consciousness Playtest — Issue #133 Verification (2026-03-24)
+
+**Status:** ✅ COMPLETE — 31 tests, 21 PASS, 3 WARN, 7 FAIL, 0 HANG
+
+**#133 Fix Verified:** ✅ CONFIRMED — Repeated self-inflicted head hits (tested up to 5×) NEVER cause death. Player always goes unconscious → wakes up → can act immediately.
+
+**Findings:**
+- Engine core: Excellent. Hit mechanics, body-part targeting (7 parts), unconscious/recovery cycle all solid.
+- Verb coverage: hit, punch, strike, bash all work. Missing: smack, bang, slap, kick, headbutt.
+- Stab/cut guards: Correct "no weapon" messages.
+- Consciousness recovery: Instant, clean, no lingering state.
+- 5 new bugs filed (BUG-132 through BUG-136) — all parser synonym gaps, no engine bugs.
+
+**Report:** `test-pass/gameplay/2026-03-24-selfharm-playtest.md`
+
 ### Phase A6b: Event Output Tests + Phase C1: Helmet Swap Tests (2026-03-25)
 
 **Status:** ✅ BOTH TASKS COMPLETE

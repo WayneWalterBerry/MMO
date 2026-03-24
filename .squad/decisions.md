@@ -1,9 +1,78 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-24T23:25Z  
+**Last Updated:** 2026-03-24T16:18:09Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
-**New Decisions:** D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION
+**New Decisions:** D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION, D-BRASS-BOWL-KEYWORD-REMOVAL, D-EMBEDDED-PRESENCES, D-OPEN-CLOSE-HOOKS, D-P1-PARSER-CLUSTER
+
+---
+
+## OBJECT & PARSER DECISIONS (2026-03-24)
+
+### D-BRASS-BOWL-KEYWORD-REMOVAL
+**Author:** Flanders (Object & Injury Systems Engineer)  
+**Date:** 2026-03-24  
+**Status:** Implemented  
+**Fixes:** #153
+
+Removed `"brass bowl"` from `brass-spittoon.lua` keywords to eliminate collision with `candle-holder.lua`. The fuzzy parser (Tier 5) scores objects by material match. Both brass-spittoon and candle-holder have `material = "brass"`. When a player typed "brass bowl", the spittoon matched on exact keyword AND the candle-holder scored on material, creating ambiguous resolution.
+
+A spittoon is not a bowl — removing the misleading keyword is the correct fix. The spittoon retains 6 other keywords including "spittoon", "brass spittoon", "cuspidor", and "spit bowl." No player-facing regression; "brass spittoon" and "spittoon" still work. Reduces fuzzy disambiguation prompts for brass objects in the same room. Existing test updated; 11 new disambiguation tests added.
+
+---
+
+### D-EMBEDDED-PRESENCES
+**Author:** Bart (Architect)  
+**Date:** 2026-03-24  
+**Status:** Implemented  
+
+Rooms can now declare `embedded_presences = { "obj-id-1", "obj-id-2", ... }` — a list of object IDs whose presence is already described in `room.description`. The look handler skips these objects during the presences iteration, preventing duplicate display.
+
+**Rationale:** BUG-050 — Multiple rooms (hallway, crypt, courtyard) had objects described in both `room.description` AND in the room_presence presences section. Torches, portraits, sarcophagi, etc. appeared twice. The previous `seen_presences` text-dedup only prevented identical text from repeating — it didn't prevent objects described in the prose from also rendering room_presence.
+
+**Pattern:** Rooms add `embedded_presences` when their `description` already mentions specific instance objects. Objects in `embedded_presences` are still interactable — they're just not double-rendered in `look`. If an object is picked up and dropped in another room, it renders normally (the flag is per-room, not per-object).
+
+---
+
+### D-OPEN-CLOSE-HOOKS
+**Author:** Bart (Architect)  
+**Date:** 2026-03-24  
+**Status:** Implemented  
+
+Added `on_open` and `on_close` hooks to the open/close verb handlers, following the exact pattern of `on_wear`/`on_remove_worn`. Both support:
+1. **Callback hooks:** `obj.on_open = function(obj, ctx) ... end` — fires after successful FSM transition
+2. **event_output:** `event_output = { on_open = "text", on_close = "text" }` — one-shot flavor text, consumed after first fire
+
+**Hook Taxonomy (Updated):**
+
+| Hook | Verb | Pattern |
+|------|------|---------|
+| `on_wear` | wear | callback + event_output |
+| `on_remove_worn` | remove | callback + event_output |
+| `on_open` | open | callback + event_output |
+| `on_close` | close | callback + event_output |
+| `on_drop` | drop | fragility + event_output |
+| `on_take` | take | event_output only |
+
+**Constraints:** Hooks only fire on the FSM path (objects with `.states`). Mutation-based open/close does not fire hooks. Hooks fire AFTER the transition message prints but BEFORE the verb handler returns. Failed transitions (already open/closed, can't open) do NOT fire hooks.
+
+---
+
+### D-P1-PARSER-CLUSTER
+**Author:** Smithers (UI/Parser Engineer)  
+**Date:** 2026-03-24  
+**Status:** Implemented  
+**Issues:** #137, #138, #139, #140, #144, #145, #156
+
+Seven parser/UI bugs fixed via TDD. Key design decisions:
+
+1. **Idiom table ordering matters:** `set X down` → `drop X` idioms placed BEFORE `set fire to` in the table, but `set fire to` pattern is more specific (3 fixed words) so it wins when applicable. No ordering conflict.
+2. **BODY_PARTS extended:** Added stomach/belly/gut/chest/side to the preprocessor's `BODY_PARTS` lookup to match `BODY_AREA_ALIASES` in verbs. These were missing, causing "in the gut" to not strip.
+3. **Drop handler priority:** Worn items now checked BEFORE bags when generating error messages. Behavior change — previously all non-hand items got the "bag" error message regardless of actual location.
+4. **Bulk drop is hands-only:** `drop all` iterates `player.hands[1..2]` only. Does NOT auto-remove worn items or dump bag contents. Drop = "release from hands."
+5. **compose_natural period stripping:** Defensive — strips trailing periods from all phrases before joining with Oxford comma. Prevents splices when metadata `worn_description` fields end with periods.
+
+**Commit:** 25f5372 — 34 new tests, zero regressions.
 
 ---
 

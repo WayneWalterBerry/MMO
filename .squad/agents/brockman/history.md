@@ -99,6 +99,31 @@
 - **Mega-session coverage:** Sessions with 40+ agent spawns and 10+ pipeline phases benefit from a phase-by-phase walkthrough (EP1→EP10) rather than grouping by role. Readers want to see the *sequence* — architecture → safety net → gate → build → verify → refactor → document. Each phase gets its own subsection with owner emoji, phase number, and outcome. This creates a "progress bar" effect that makes the session's momentum tangible.
 - **Wayne's design doc directive:** Design documentation should NOT list bug fixes, issue numbers, or fix history. Bug fixes belong in issues and changelogs. Instead, design docs should capture the DESIGN INSIGHTS that emerged from bugs — what principles did they reveal? What patterns does the system need to honor? Example: instead of "BUG-078: Drawer not searched—fixed by recursive traversal," write "Containers inside containers must be traversable because players think in physical spaces, not object trees. The traversal engine recursively follows nested containers." Transform chronological bug lists into thematic "Design Principles" or "Lessons Learned" sections that read as timeless design guidance, not historical bug trackers.
 
+### Session: Morning Edition (2026-03-24T08:30Z)
+**Status:** ✅ COMPLETED
+**File:** newspaper/2026-03-24-morning.md (~6,800 words)
+
+**Coverage:**
+- Armor System (Phase A): Material-derived protection values (22 materials, 1-10 scale)
+- Fit multipliers (makeshift 0.5×, fitted 1.0×, masterwork 1.2×)
+- State multipliers (intact 1.0×, cracked 0.7×, shattered 0.0×)
+- Equipment event hooks (on_wear, on_remove_worn callbacks)
+- Instance-level flavor text system (event_output, one-shot)
+- Parser bug cluster (#137-145, #156): Hit synonyms, case normalization, keyword collisions, nested access
+- Flanders fixes: Ceramic pot degradation (#155), cloak tear mechanics (#134), brass bowl collision
+- Architecture decisions: D-EQUIP-HOOKS, D-EVENT-OUTPUT
+- Test coverage: 60+ new regression tests, 1,067+ total tests, 74/74 files passing
+- Stats: 15+ issues closed, 12+ commits, 2+ deploys
+
+**Key Themes:**
+- Material-derived systems enforce Core Principle 9 (Material Consistency) without hardcoding
+- Protection formula: (hardness × 0.4) + (density × 0.3) + (thickness × 0.3)
+- Equipment callbacks + instance flavor text add expressiveness without mutation
+- Parser centralization (scattered synonyms → unified dispatch) reduces bugs and improves maintainability
+- Chamber pot helmet achieves peak absurd game design
+
+**Tone:** Technical depth with architectural insights; celebration of material-consistency principle; preview of afternoon code review and meta-compiler tool
+
 ### Session: Player System Extraction (2026-03-22)
 **Status:** ✅ COMPLETED
 - Created docs/architecture/player/ subfolder

@@ -25,6 +25,71 @@
 
 ## Recent Updates
 
+### Meta-Compiler Research (2026-03-28)
+**Status:** ✅ COMPLETE (5 research documents)
+**Reports:** `resources/research/meta-compiler/` (76 KB, 5 documents)
+**Requested by:** Wayne Berry (Effe), for Lisa (Object Tester)
+
+**Scope:** Research for a custom meta-compiler that validates `.lua` object and room files using compiler-like techniques (lexer → parser → semantic analysis). P0 for shipping tomorrow.
+
+**Key Findings:**
+
+1. **Compiler Techniques Work** (`compiler-techniques-for-game-data.md`)
+   - Dwarf Fortress RAW validators use lexer → parser → semantic analyzer
+   - Factorio uses load-time prototype validation
+   - Unity ScriptableObjects use OnValidate hooks
+   - All major tools follow: lex → parse → analyze → report
+   - Recommendation: ✅ Our approach is sound and proven
+
+2. **Lua Subset is Tiny** (`lua-subset-parsing.md`)
+   - Objects are: `return { key = value, ... }` (nested table literals)
+   - Values: strings, numbers, booleans, nil, nested tables, arrays, functions
+   - **NO:** function calls, control flow, computed keys, variables
+   - **Parser estimate:** 50-100 lines with Lark, 200-300 hand-written
+   - **Real-world:** All 74 objects fit this pattern; 0 exceptions
+
+3. **Python + Lark is Best** (`language-evaluation.md`)
+   - **Speed:** 2-3 hours to MVP (vs. 8-12 for Rust, 6-8 for TypeScript)
+   - **Fit:** Already using Python in scripts/
+   - **Ecosystem:** Lark is mature; error messages easy to polish
+   - **Integration:** Perfect for CI/CD, pre-commit hooks
+   - **Estimate:** 750 lines for MVP; 8-12 hours build time
+
+4. **Tool Name: meta-check** (`naming-and-architecture.md`)
+   - Full name: "MMO Meta Validator"
+   - Short name: "meta-check" (clear, memorable, domain-specific)
+   - Architecture: Layered CLI tool (lexer → parser → validators → error reporter)
+   - Integration: Pre-commit hook, GitHub Actions, IDE extension (optional), manual CLI
+   - CLI: `meta-check src/meta/` outputs JSON or human-readable errors
+
+5. **Schema Catalog Complete** (`schema-catalog.md`)
+   - 5 templates: small-item, container, furniture, room, sheet
+   - For each: required fields, optional fields, constraints, FSM rules, nesting rules
+   - Cross-references: material registry, room targets, GUID uniqueness
+   - Validation rules: types, enums, patterns, ranges, references
+
+**Architecture:**
+```
+File → Lexer (tokens) → Parser (AST) → Semantic Analyzer 
+  → Field Validator → Type Validator → Reference Validator → FSM Validator → Error Reporter
+  → Output (JSON or CLI)
+```
+
+**Next Phase (Bart's Work):**
+1. Finalize Lark EBNF grammar for Lua subset
+2. Formalize field definitions per template
+3. Outline each validator module
+4. Build working MVP in 1 day
+
+**Deliverables:**
+- `compiler-techniques-for-game-data.md` (13 KB) — Industry precedent research
+- `lua-subset-parsing.md` (16 KB) — Parser complexity analysis + real-world patterns
+- `language-evaluation.md` (14 KB) — 5 languages compared; recommendation: Python + Lark
+- `naming-and-architecture.md` (15 KB) — Design, CLI interface, integration points
+- `schema-catalog.md` (18 KB) — Formal validation rules per template (76 fields, 9 principles)
+
+---
+
 ### MUD System Gap Analysis (2026-03-27)
 **Status:** ✅ COMPLETE
 **Report:** `docs/research/mud-system-gap-analysis.md` (22KB, 6 matrices)
