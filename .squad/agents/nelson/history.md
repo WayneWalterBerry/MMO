@@ -1708,3 +1708,20 @@ Player said "light" but error says "burn".
   Headless smoke tests confirm live pipeline: 'take a look' resolves via idiom tier, 'where am I?'
   resolves via question tier, 'examine candel' resolves via fuzzy tier in darkness. Pre-existing
   failures in search (#24) and burn unrelated to parser tiers. Commented on #106. Verdict: PASS.
+
+- **#174 — SLM Embedding Index Overhaul** (Smithers)
+  Verified slim index loads correctly: embedding-index.json is 361.6 KB (down from 15.3 MB full).
+  Archived full index preserved at resources/archive/embedding-index-full.json (15.3 MB).
+  All 129 test files PASSED — zero regressions. Smoke tests: 'take a look' resolved to look,
+  'gimme candle' processed without crash, 'examine match' resolved to examine in darkness.
+  Parser pipeline loads slim index and processes all input. Commented on #174. Verdict: PASS.
+
+- **#162 — TDD Red Phase: Unconsciousness Triggers** (2026-07-26)
+  Wrote `test/injuries/test-unconsciousness-triggers.lua` — 39 tests across 12 suites.
+  TDD contract for 4 trigger objects (falling-rock-trap, unstable-ceiling, poison-gas-vent,
+  falling-club-trap) per CBG's design doc. Results: 31 FAIL / 8 PASS (expected red phase).
+  8 passing tests verify existing engine behavior: injury ticking during KO, wake-in-same-room,
+  self-KO + external bleeding death, inventory/get rejection while unconscious.
+  Bug found: `look` while unconscious crashes (sensory.lua:163 nil noun) — verb handlers
+  don't gate on consciousness state. Commented on #162 with handoff to Flanders/Smithers/Bart.
+  Branch: `squad/162-tdd-unconsciousness-triggers`. Zero regressions in existing suite.
