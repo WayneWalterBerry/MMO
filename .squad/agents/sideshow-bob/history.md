@@ -671,6 +671,36 @@ Designed the first 5 Level 1 injury types as individual design documents in `doc
 
 7. **Bleeding extends existing `bleed_ticks` prototype.** The bleeding doc formalizes the prototype mechanic into a full FSM with two-phase recovery (bandage → rest → healed).
 
+---
+
+## Learnings
+
+### 2026-03-24: Audit docs/puzzles/ — All Puzzles Are Single-Player
+
+**Task:** Wayne requested audit of `docs/puzzles/` to remove non-single-player puzzles (multiplayer, trading, cooperation, competitive elements).
+
+**Audit Results:**
+- **Puzzles Reviewed:** 11 total (020, 021, 022, 023, 024, 027, 028, 029, 030, 031, plus README)
+- **Multiplayer Puzzles Found:** 0
+- **Status:** All puzzles are pure single-player mechanics with real-world object interactions
+- **Action Taken:** No deletions required. All puzzles kept.
+
+**Puzzle Breakdown — All Single-Player:**
+
+1. **020 Wine Wound Wash** — Personal injury treatment, real-world antiseptic knowledge
+2. **021 Improvised Torch** — Solo crafting progression (fire mastery)
+3. **022 Smoke Draft Reveal** — Environmental observation, hidden passage discovery
+4. **023 Counterweight Gate** — Mechanical puzzle with weight system
+5. **024 Mirror Light Redirect** — Environmental physics, light redirection
+6. **027 Glass Edge Escape** — Solo escape, improvised tools from breakage
+7. **028 Wax Seal Secret** — Information discovery, forensic investigation
+8. **029 Bandage Before Climb** — Injury gating capabilities, solo progression
+9. **030 Rag and Oil Molotov** — Advanced fire crafting, destruction-as-puzzle-solution
+10. **031 Triage Under Pressure** — Injury prioritization, medical decision-making
+11. **README.md** — Index and design philosophy documentation
+
+**Conclusion:** The puzzle set is coherent, focused, and correctly scoped for single-player. No changes needed. The design philosophy already emphasizes real-world logic and individual agency — no room for trading, cooperation, or competitive elements.
+
 #### Handoffs
 
 - **Flanders:** 5 injury templates needed in `src/meta/injuries/`. Plus nightshade antidote object (`nightshade-antidote.lua`). Full specs in each doc's "Implementation Notes" section.
