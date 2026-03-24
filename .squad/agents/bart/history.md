@@ -76,6 +76,13 @@
 
 ## Learnings
 
+### Material Consistency Principle (2026-03-27)
+- The material registry `src/engine/materials/init.lua` already exists as a complete property-bag system, making Material Consistency a natural fit as a core principle
+- Material binding (object.material → materials.get(name)) enables content-driven physics without engine changes
+- Instance overrides (fragility_override, etc.) should be documented as exceptions, not defaults — this is critical to maintain consistency across the world
+- Material properties cascade naturally: density → weight, flammability → burning behavior, hardness → impact resistance. No need to hard-code individual properties per object.
+- This principle aligns perfectly with the Dwarf Fortress architectural reference (D-DF-ARCHITECTURE) where the simulation engine operates on physical properties, not object type names
+
 ### Effect Pipeline Architecture (2026-07-26)
 - Structured effect tables (`{ type = "inflict_injury", ... }`) already exist in Flanders' objects (poison-bottle.lua, bear-trap.lua) — the objects are ahead of the engine
 - The taste verb handler bypasses the injury system entirely — calls `os.exit(0)` inline instead of `injuries.inflict()`. The pipeline migration fixes this.
