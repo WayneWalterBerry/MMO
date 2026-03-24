@@ -586,9 +586,14 @@ end)
 ---------------------------------------------------------------------------
 
 suite("mirror — is_mirror flag")
-test("vanity object has is_mirror flag", function()
+test("mirror object has is_mirror flag", function()
+    local mirror = require("meta.objects.mirror")
+    assert_truthy(mirror.is_mirror, "Mirror should have is_mirror = true")
+end)
+
+test("vanity object does NOT have is_mirror flag", function()
     local vanity = require("meta.objects.vanity")
-    assert_truthy(vanity.is_mirror, "Vanity should have is_mirror = true")
+    assert_eq(nil, vanity.is_mirror, "Vanity should not have is_mirror (mirror is separate object)")
 end)
 
 ---------------------------------------------------------------------------

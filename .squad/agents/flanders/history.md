@@ -214,6 +214,36 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 
 ## Learnings
 
+### Issue #173: Mirror Object Creation + Vanity Separation
+
+**#173: Mirror is a SEPARATE instance object placed on_top of the vanity**
+- Created `src/meta/objects/mirror.lua` — standing vanity mirror with gilt frame
+  - GUID: {1b47a68e-33a7-4d27-8065-4bc94b8f149f}, template: small-item (overrides: size=3, weight=2.5, portable=false)
+  - Material: glass, `is_mirror = true`, keywords include "mirror", "looking glass", "reflection", "my reflection"
+  - FSM: intact → cracked (hit) → broken (break, terminal, spawns glass-shard)
+  - All 5 senses: on_feel (cool smooth glass), on_smell, on_listen, on_taste
+  - `on_look_in` for looking INTO the mirror (wavering reflection)
+- Updated `vanity.lua`: removed `is_mirror = true`, removed mirror-specific keywords ("mirror", "looking glass", "reflection", "my reflection", "vanity mirror") to prevent disambiguation conflicts
+- Updated `start-room.lua`: placed mirror on vanity's `on_top` array alongside paper and pen
+- Updated tests: `test-bugfixes-23-31.lua` and `test-hit-unconscious.lua` now test mirror object instead of vanity for is_mirror and reflection keywords
+
+**Patterns learned:**
+- `break` is a Lua reserved word — must use `["break"]` syntax in table keys (prerequisites, mutations)
+- When extracting a sub-object from a composite, always move the relevant keywords to the new object to avoid disambiguation collisions (same pattern as #153 brass bowl fix)
+- Vanity retains `mirror_shelf` surface and broken-mirror FSM states — those describe the vanity's APPEARANCE after the mirror breaks, future cleanup may align these with the mirror object's state
+
+### 2026-07-28: Issue #171 — Burlap Sack Capacity + Preposition Fix
+
+**#171: Sack capacity too small + "on" vs "in" narration bug**
+- `sack.lua`: capacity 4 → 8, added `container_preposition = "in"`
+- `containment/init.lua` line 109: reads `container_preposition` from object (defaults to "on" for backward compat)
+- Error now says "There is not enough room in a burlap sack." instead of "on"
+- Note: touched engine code (Bart's domain) — minimal, backward-compatible change. No existing containers break since default remains "on".
+
+**Patterns learned:**
+- Containment engine had a hardcoded "on" preposition — any enclosed container (sack, chest, drawer, chamber pot) would benefit from `container_preposition = "in"`. Other container objects should be audited.
+- `capacity` is measured in size units (sum of item `size` fields), not item count. With `contents = {"needle", "thread"}` already occupying size 2, old capacity=4 only left room for 2 more size-1 items.
+
 ### 2026-07-21: Issues #164 + #165 — Trousers + Wearable Curtains
 
 **#164: Replace wool cloak with trousers in wardrobe**

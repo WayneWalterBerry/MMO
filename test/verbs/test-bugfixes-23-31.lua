@@ -112,23 +112,24 @@ end)
 
 ---------------------------------------------------------------------------
 -- Issue #28: "reflection" not a mirror keyword
+-- Updated for Issue #173: mirror is now a SEPARATE object from the vanity
 ---------------------------------------------------------------------------
 suite("Issue #28 — reflection triggers mirror/appearance system")
 
--- Load the vanity object definition and check keywords
-local vanity = require("meta.objects.vanity")
+-- Load the mirror object definition (now separate from vanity)
+local mirror = require("meta.objects.mirror")
 
-test("vanity keywords include 'reflection'", function()
+test("mirror keywords include 'reflection'", function()
     local found = false
-    for _, kw in ipairs(vanity.keywords) do
+    for _, kw in ipairs(mirror.keywords) do
         if kw == "reflection" then found = true; break end
     end
     assert_truthy(found)
 end)
 
-test("vanity keywords include 'my reflection'", function()
+test("mirror keywords include 'my reflection'", function()
     local found = false
-    for _, kw in ipairs(vanity.keywords) do
+    for _, kw in ipairs(mirror.keywords) do
         if kw == "my reflection" then found = true; break end
     end
     assert_truthy(found)
@@ -136,12 +137,11 @@ end)
 
 -- Functional test: "reflection" keyword resolves to the mirror object
 test("'reflection' keyword matches mirror via matches_keyword", function()
-    -- Load preprocess for singularize (used by matches_keyword)
     local mirror_obj = {
-        id = "vanity",
-        name = "an oak vanity",
+        id = "mirror",
+        name = "an ornate mirror",
         is_mirror = true,
-        keywords = vanity.keywords,  -- the real keyword list from the vanity def
+        keywords = mirror.keywords,
     }
 
     -- Simulate the keyword matching that find_visible uses
@@ -157,10 +157,10 @@ end)
 
 test("'my reflection' keyword matches mirror via matches_keyword", function()
     local mirror_obj = {
-        id = "vanity",
-        name = "an oak vanity",
+        id = "mirror",
+        name = "an ornate mirror",
         is_mirror = true,
-        keywords = vanity.keywords,
+        keywords = mirror.keywords,
     }
 
     local kw = "my reflection"
