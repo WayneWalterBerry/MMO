@@ -1,9 +1,9 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-24T23:20Z  
+**Last Updated:** 2026-03-24T23:25Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
-**New Decisions:** D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS
+**New Decisions:** D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION
 
 ---
 
@@ -2049,8 +2049,57 @@ Wayne directed that the search slow-reveal (user-facing trickle delay in the bro
 
 ---
 
-**End of 2026-03-24T12:41:24Z Spawn Orchestration Merge**  
-**Total Active Decisions:** 81 (77 prior + 4 new from inbox)  
-**Last Merge:** 2026-03-24T12:41:24Z (Scribe)  
-**Inbox Status:** EMPTY (all 11 inbox files processed)
+## NEW DECISIONS (2026-03-24 Spawn Merge)
+
+### D-ARMOR-INTERCEPTOR: Armor Protection Formula Weights
+
+**Author:** Smithers (Engine Engineer)  
+**Date:** 2026-03-24  
+**Status:** Implemented  
+**Commit:** f46d69d
+
+The armor before-effect interceptor uses material properties to calculate protection. Bart's architecture doc specified weights "≈ 2.0, 1.0, 0.5" for hardness, flexibility, and density respectively. The implementation uses **1.0, 1.0, 0.5** instead.
+
+**Reason:** With hardness_weight=2.0, ceramic protection ≈ 14.4 — at damage=10 (Nelson's test value), both intact and cracked (× 0.7 = 10.08) states hit the minimum-damage floor of 1, making degradation indistinguishable. Tuning hardness to 1.0 gives ceramic ≈ 7.4, so cracked (≈ 5.2) produces meaningfully different damage than intact (≈ 7.4).
+
+**Formula:**
+```
+protection = hardness × 1.0 + flexibility × 1.0 + min(1.0, density/3000) × 0.5
+effective_protection = floor(protection × coverage × fit_multiplier × state_multiplier)
+final_damage = max(1, original_damage - effective_protection)
+```
+
+**Fit multipliers:** makeshift 0.5×, fitted 1.0×, masterwork 1.2×  
+**State multipliers:** intact 1.0×, cracked 0.7×, shattered 0.0×
+
+**Impact:** All 22 materials now have sensible protection values in the 1–10 range rather than 2–20. This aligns better with the game's typical damage values (5–20 per hit).
+
+**Cross-Agent Notes:**
+- **Bart:** Architecture doc §3.1 weights were approximate ("≈"). Implementation chose values that satisfy Nelson's test contracts while preserving relative ordering.
+- **Nelson:** `test/armor/` directory needs to be added to `test/run-tests.lua` for inclusion in the full test suite.
+- **CBG:** Material → Protection ranking in design doc remains valid (relative ordering is preserved).
+
+---
+
+### D-META-VALIDATION: Compile-Time Safety for Meta Objects (Research Priority)
+
+**Author:** Wayne Berry (via Copilot)  
+**Date:** 2026-03-24T05:53:31Z  
+**Status:** Research / Priority Backlog
+
+**Directive:** Wayne is concerned about using Lua as a "script" language for meta objects (objects, rooms, levels) because there are no compile-time checks. LLMs writing .lua data can introduce bugs only caught at runtime. As the project scales to 100s of objects and rooms, this becomes a real risk.
+
+**Problem Space to Explore:**
+1. Configuration-style tests that cheaply parse text for correctness
+2. A custom meta compiler with parser/tokenizer that validates objects are correct objects (not just valid Lua)
+3. Potentially a different language entirely for meta definitions
+
+**Note:** The easiest answer may not be the best — think deeply about scale and correctness guarantees. This is an architectural risk mitigation task for future phases. Recommend deep exploration before committing to a solution.
+
+---
+
+**End of 2026-03-24T23:25Z Spawn Orchestration Merge**  
+**Total Active Decisions:** 83 (81 prior + 2 new from inbox)  
+**Last Merge:** 2026-03-24T23:25Z (Scribe)  
+**Inbox Status:** CLEARED (2 inbox files → merged, deleted)
 

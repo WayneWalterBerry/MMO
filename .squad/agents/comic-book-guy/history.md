@@ -550,3 +550,16 @@ Both deliverables exist and are complete:
 - ✅ No outstanding design decisions or implementation blockers
 
 **Conclusion:** Chest object design + implementation carries over from yesterday as **COMPLETE & VERIFIED**. Both design doc and .lua file are production-ready. Can proceed to next phase (chest instance placement in Level 1 rooms) without further design work.
+## CROSS-AGENT UPDATES (2026-03-24T23:25Z Spawn Orchestration Merge)
+
+**Decision Merged: D-ARMOR-INTERCEPTOR**
+
+- Smithers (Phase A4) completed armor interceptor with 30/30 tests passing
+- **Material → Protection ranking:** All 22 materials verified to have sensible protection values in 1–10 range
+- **Design doc impact:** Material properties (hardness, flexibility, density) used as specified in armor system
+  - Hardness weights adjusted from architecture spec (≈ 2.0 → 1.0) but relative material ordering preserved
+  - Example: Ceramic still has higher protection than silk, leather still higher than felt (orderings maintained)
+- **Cross-reference:** Brass spittoon design doc material list aligns with armor system's material registry (all 22 materials accounted for)
+
+**Status:** Phase D1 (Brass Spittoon Design) & Carry-over (Chest Design) SHIPPED.
+

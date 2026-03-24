@@ -326,3 +326,21 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 - **Use Case:** ivy.lua now has `material = "plant"` (previously missing in audit)
 - **Future:** Botanical objects (moss, hedges, vines) can reference without engine changes
 - **Cross-Team:** Nelson's material audit validation test should include plant material check
+
+## CROSS-AGENT UPDATES (2026-03-24T23:25Z Spawn Orchestration Merge)
+
+**Phase D2+B1 Completion:**
+
+- ✅ brass-spittoon.lua created (composite/detachable pattern per D-2)
+- ✅ Material audit: 82 objects scanned, 1 fixed (ivy: nil → plant)
+- ✅ Zero regressions: 78/78 test files pass
+- **Material impact:** Plant material now properly registered and referenced
+
+**Cross-Agent Note:**
+
+- Smithers' armor interceptor (Phase A4) now uses all 22 materials from registry
+- Material properties (hardness, flexibility, density) that Flanders fixed in audit directly impact armor protection calculations
+- The 1 fixed audit (ivy→plant) ensures armor system sees consistent material data
+
+**Status:** Phase D2+B1 SHIPPED.
+

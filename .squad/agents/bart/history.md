@@ -1111,3 +1111,18 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - **File:** `src/engine/search/containers.lua` (1-line fix)
 - **Tests:** 14 new tests, all passing, zero regressions
 - **Commit:** Referenced in orchestration log
+
+## CROSS-AGENT UPDATES (2026-03-24T23:25Z Spawn Orchestration Merge)
+
+**Decision Merged: D-ARMOR-INTERCEPTOR**
+
+- Smithers (Phase A4) completed armor interceptor implementation with 30/30 tests passing
+- **Formula weight clarification:** Architecture doc specified "≈ 2.0, 1.0, 0.5" — implementation uses 1.0, 1.0, 0.5 due to tuning for test contracts
+  - At damage=10 (Nelson's test value), hardness_weight=2.0 makes ceramic protection ≈ 14.4, causing both intact and cracked states to hit the minimum-damage floor of 1
+  - Tuning to hardness_weight=1.0 gives ceramic ≈ 7.4, so cracked (≈ 5.2) produces meaningfully different damage than intact (≈ 7.4)
+  - This preserves relative material ordering from architecture doc while satisfying Nelson's test contracts
+- **Impact:** All 22 materials now in 1–10 range (better alignment with typical 5–20 damage values)
+- **Fit/State multipliers verified:** makeshift 0.5×, fitted 1.0×, masterwork 1.2× + intact 1.0×, cracked 0.7×, shattered 0.0× (as specified in architecture doc)
+
+**Status:** Phase A4 SHIPPED.
+
