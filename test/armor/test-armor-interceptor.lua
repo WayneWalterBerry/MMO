@@ -88,7 +88,8 @@ local function make_armor(overrides)
     local item = {
         id       = "test-armor",
         name     = "test armor",
-        material = "iron",
+        -- material intentionally omitted: callers must specify explicitly
+        -- (Lua pairs() skips nil values, so {material=nil} can't clear a default)
         covers   = { "head" },
         fit      = "fitted",
         _state   = "intact",
@@ -105,7 +106,8 @@ local function make_effect(overrides)
         type        = "inflict_injury",
         injury_type = "test-bruise",
         source      = "test-source",
-        location    = "head",
+        -- location intentionally omitted: callers must specify explicitly
+        -- (Lua pairs() skips nil values, so {location=nil} can't clear a default)
         damage      = 10,
     }
     if overrides then
