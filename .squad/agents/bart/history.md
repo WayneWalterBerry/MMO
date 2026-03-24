@@ -29,7 +29,27 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
-### Recent Work: #149 Drawer Accessibility Fix (2026-03-28)
+### Recent Work: #125 BUG-050 Fix + #103 Open/Close Hooks (2026-03-28)
+
+**#125 BUG-050 — Duplicate Instance Display (TDD):**
+- Root cause: objects already described in `room.description` also rendered their `room_presence` text in the presences section — double display (torches ×2, portraits ×3, sarcophagi ×5)
+- Fix: Added `room.embedded_presences` — array of object IDs whose presence is already woven into room.description. Look handler builds a hash set and skips those IDs during presences iteration
+- Also added `seen_ids` dedup to prevent duplicate object IDs in `room.contents` from rendering multiple presences
+- Updated hallway, crypt, courtyard room files with `embedded_presences` lists
+- TDD: 6 tests in `test/rooms/test-duplicate-presences.lua`
+- Commit: d610975
+
+**#103 Engine Hooks: on_open, on_close (TDD):**
+- Added `on_open` hook after successful FSM open transition — `obj.on_open(obj, ctx)` callback pattern
+- Added `on_close` hook after successful FSM close transition — same pattern
+- Added `event_output` support for `on_open`/`on_close` — one-shot flavor text, nils key after printing
+- Follows exact pattern of existing `on_wear`/`on_remove_worn` hooks
+- Updated `docs/architecture/engine/event-hooks.md` to v3.1
+- TDD: 14 tests in `test/verbs/test-open-close-hooks.lua`
+- Zero regressions across full test suite
+- Commit: d610975
+
+### Prior Work: #149 Drawer Accessibility Fix (2026-03-28)
 
 **#149 TDD Bug Fix — Search Drawer Items Not Accessible to Get:**
 - Root cause: `_fv_surfaces` in `verbs/init.lua` never searched root-level contents of objects with surfaces
