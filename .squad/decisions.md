@@ -1,9 +1,9 @@
 # Squad Decisions — MERGED
 
-**Last Updated:** 2026-03-24T19:55:00Z  
+**Last Updated:** 2026-03-24T20:40:00Z  
 **Merger:** Scribe  
 **Source:** Inbox merged (deduplicated, reorganized by category)  
-**Latest Merge (2026-03-24T19:55:00Z):** D-FIRE-PROPAGATION-ARCHITECTURE, D-WASH-VERB-FSM, D-MATCH-TERMINAL-STATE, D-PUSH-LIFT-SLIDE-VERBS, D-ENGINE-HOOKS-USE-EAT-DRINK, D-SALVE-ANTIDOTE-OBJECTS  
+**Latest Merge (2026-03-24T20:40:00Z):** D-PLAYER-CANONICAL-STATE, D-OBJECT-INSTANCING-FACTORY, D-CONTAINER-SENSORY-GATING, D-COMPOUND-COMMAND-SPLITTING, D-DOOR-FSM-ERROR-ROUTING, D-AUTO-IGNITE-PATTERN, D-MATERIAL-MIGRATION, D-P0C-META-CHECK-V2, D-MIRROR-SEPARATE-OBJECT, D-MATERIAL-WEB-LOADER, D-V2-ACCEPTANCE-CRITERIA
 **Previous Decisions:** D-PLAYER-CANONICAL-STATE, D-OBJECT-INSTANCING-FACTORY, D-ENGINE-REFACTORING-REVIEW, D-META-CHECK-V1-APPROVAL, D-WAYNE-CODE-REVIEW-DIRECTIVE, D-WAYNE-METACOMPILER-COMPILER-LINTER, D-WAYNE-TDD-REFACTORING-DIRECTIVE, D-TESTFIRST, D-HIRING-DEPT, D-WAYNE-BATCH-2026-03-24, D-CHEST-DESIGN, D-SEARCH-OPENS, D-ARMOR-INTERCEPTOR, D-META-VALIDATION, D-BRASS-BOWL-KEYWORD-REMOVAL, D-EMBEDDED-PRESENCES, D-OPEN-CLOSE-HOOKS, D-P1-PARSER-CLUSTER, D-CONTAINER-SENSORY-GATING
 
 ---
@@ -2890,5 +2890,258 @@ Salve and antidote objects created with FSM states and healing effects.
 
 **End of 2026-03-24T19:55:00Z Decision Inbox Merge**
 **Total Active Decisions:** 98 (92 prior + 6 new from Wave 8 inbox)
-**Last Merge:** 2026-03-24T19:55:00Z (Scribe)
-**Inbox Status:** All Wave 8 inbox files processed and archived
+**Previous Merge:** 2026-03-24T19:55:00Z (Scribe)
+
+---
+
+## SPAWN MANIFEST COMPLETION (2026-03-24T20-40-00Z)
+
+### D-104: PLAYER-CANONICAL-STATE (Wave 9 — Burndown)
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-24 (Implemented in #104)  
+**Status:** Implemented  
+**Issue:** #104
+
+All player state MUST live on `ctx.player`. No player-related data on `ctx` root level.
+
+**What Changed:**
+- `visited_rooms` moved from `ctx.visited_rooms` → `ctx.player.visited_rooms`
+- Created canonical `src/engine/player.lua` module
+- Updated 113+ files for consistency
+- All engine code and tests now use `ctx.player.*`
+
+**Rule Going Forward:**
+When adding new player state (quest flags, reputation, discovered secrets), put it on `ctx.player` or a sub-table like `ctx.player.state`. Never on `ctx` directly.
+
+**Verification:** 8 tests passing, 113 files green, 0 regressions.
+
+---
+
+### D-105: OBJECT-INSTANCING-FACTORY (Wave 9 — Burndown)
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-24 (Implemented in #105)  
+**Status:** Implemented  
+**Issue:** #105
+
+Created `src/engine/factory/init.lua` — a formal instancing factory implementing Core Principle 5 (Multiple Instances Per Base Object).
+
+**Key API:**
+```lua
+-- Create N instances from one base object
+local matches = factory.create_instances(match_base, 6, {...})
+
+-- Create a single instance
+local candle = factory.create_one(candle_base, {...})
+
+-- Generate GUID
+local guid = factory.generate_guid()
+```
+
+**Key Decisions:**
+1. **Self-contained module** — has its own `deep_copy`/`deep_merge`, dependency-free
+2. **`instance_guid` field** (not `guid`) — instances get unique guid; base guid cleared
+3. **`type_id` traceability** — every instance records `base.guid` as `type_id`
+4. **Pure Lua GUID generator** — UUID v4 via `math.random`
+5. **Sequential id naming** — `{prefix}-1`, `{prefix}-2`, etc.
+
+**Verification:** 24 tests passing, zero regressions.
+
+---
+
+### D-169: AUTO-IGNITE-PATTERN (Wave 9 — Burndown)
+**Author:** Smithers (UI/Parser Engineer)  
+**Date:** 2026-03-24 (Implemented in #169/#172)  
+**Status:** Implemented  
+**Issues:** #169, #172
+
+When `find_fire_source()` detects an object whose FSM states (but not current state) provide required tool capability, it auto-transitions that object to the capable state.
+
+**Example:** Unlit match's `lit` state provides `fire_source`, but normal FSM transition requires `has_striker` (matchbox). When player says "light candle with match", auto-striking is automatic.
+
+**Key Design:**
+- Auto-ignite uses direct state application (not `fsm.transition`) — implicit engine action, guard checks don't apply
+- Objects with multi-state tool provision work automatically as tools
+- No changes needed to object definitions
+
+**Verification:** Fire tests passing, fire_source resolution verified.
+
+---
+
+### D-170: DOOR-FSM-ERROR-ROUTING (Wave 9 — Burndown)
+**Author:** Smithers (UI/Parser Engineer)  
+**Date:** 2026-03-24 (Implemented in #170)  
+**Status:** Implemented  
+**Issue:** #170
+
+When an FSM object's current state has no matching verb transition, the handler uses state-specific messaging. Priority:
+
+1. State's `on_push` field (Principle 8 metadata)
+2. State name: "{Name} is {state}. It won't budge."
+3. Generic fallback (when state is "closed" or no state info)
+
+**Example:** Barred door with `on_push = "The door doesn't budge. The iron bar holds from the other side."` displays context instead of generic error.
+
+**Added:** New `handlers["lock"]` verb for locking exit doors.
+
+**Verification:** 16 new tests in `test/verbs/test-door-resolution.lua`, all passing.
+
+---
+
+### D-168: COMPOUND-COMMAND-SPLITTING (Wave 9 — Burndown)
+**Author:** Smithers (UI/Parser Engineer)  
+**Date:** 2026-03-24 (Implemented in #168)  
+**Status:** Implemented  
+**Issue:** #168
+
+Added verb-aware compound command splitting to parser pipeline.
+
+**Key Decisions:**
+1. **Static KNOWN_VERBS table** in `preprocess.lua` (~100 verbs) — keeps module dependency-free
+2. **Split on ` and ` only when next word is recognized verb** — prevents breaking "get candle and matchbox"
+3. **`, and` handled by stripping leading "and "** after comma-based splitting
+
+**Pattern:**
+- ✅ "get candle and matchbox" stays as single command
+- ✅ "take key and unlock door" splits into 2 commands
+- ✅ "get match from matchbox and light candle" splits correctly
+
+**Verification:** 29 new tests in `test/parser/test-compound-commands.lua`, all passing.
+
+---
+
+### D-123: MATERIAL-MIGRATION (Wave 9 — Burndown)
+**Author:** Smithers (UI/Parser Engineer)  
+**Date:** 2026-03-24 (Implemented in #123)  
+**Status:** Implemented  
+**Issue:** #123
+
+Material definitions now live in `src/meta/materials/` as individual `.lua` files, following the same pattern as objects and templates.
+
+**Rationale:**
+- **Principle 1** — Materials are metadata, not engine logic
+- **Extensibility** — Adding a new material = drop a `.lua` file, zero engine changes
+- **Consistency** — Objects, templates, rooms, levels, injuries all in `src/meta/`
+
+**Changes:**
+- `src/engine/materials/init.lua` — rewritten from 333-line data store to 54-line loader
+- `src/meta/materials/*.lua` — 23 new individual material files
+- Material names stripped from property table at load time
+
+**Impact:**
+- **Flanders:** Create `src/meta/materials/{name}.lua` for new materials
+- **Gil (Web):** Material files need to be included in web build's meta bundle
+
+**Verification:** Material audit tests pass, 23 files validated.
+
+---
+
+### D-167: P0C-META-CHECK-V2 (Wave 9 — Burndown)
+**Author:** Smithers (UI/Parser Engineer)  
+**Date:** 2026-03-24 (Implemented in #167)  
+**Status:** Implemented  
+**Issue:** #167
+
+Meta-check V2 shipped: full validation coverage for ALL `.lua` files under `src/meta/`.
+
+**New Rule Categories:**
+
+| Category | Rules | Coverage |
+|----------|-------|----------|
+| Template Definitions (TD) | 27 | `src/meta/templates/` (5 files) |
+| Injury Definitions (INJ) | 69 | `src/meta/injuries/` (7 files) |
+| Material Definitions (MD) | 24 | `src/meta/materials/` (23 files) |
+| Level Definitions (LV ext.) | 31 | `src/meta/levels/` |
+| Cross-References (XR) | 11 | Cross-type validation |
+| **Total V2 new** | **~160** | Combined with V1: **~306 total** |
+
+**MAT-02 Fix:** Dynamic scan of `src/meta/materials/*.lua` (was reading stale hardcoded registry).
+
+**Verification:** 130 files, 0 violations.
+
+---
+
+### D-173: MIRROR-SEPARATE-OBJECT (Wave 9 — Burndown)
+**Author:** Flanders (Object Designer)  
+**Date:** 2026-03-24 (Implemented in #173)  
+**Status:** Implemented  
+**Issue:** #173
+
+Mirror is now a **separate instance object** (`src/meta/objects/mirror.lua`) placed `on_top` of the vanity.
+
+**Changes:**
+1. **New object:** `mirror.lua` with `is_mirror = true`, own FSM (intact/cracked/broken), glass material
+2. **Vanity:** `is_mirror` flag removed; mirror-specific keywords moved to mirror object
+3. **start-room.lua:** Mirror placed in vanity's `on_top` array
+4. **Parser:** "mirror", "reflection", "looking glass" now resolve to mirror object
+
+**Key Design:**
+- Objects should be composites (Principle 4), not flag-decorated
+- Mirror supports "look in mirror" verb routing
+- Vanity still has `closed_broken`/`open_broken` states (separate concern)
+
+**Verification:** Mirror FSM transitions verified, object tests passing.
+
+---
+
+### D-171: SACK-CAPACITY-PREPOSITIONS (Wave 9 — Burndown)
+**Author:** Flanders (Object Designer)  
+**Date:** 2026-03-24 (Implemented in #171)  
+**Status:** Implemented  
+**Issue:** #171
+
+Sack object with capacity limits and preposition support ("put X in/on/under/inside sack").
+
+**Features:**
+- Container with capacity FSM states
+- Preposition-based command syntax support
+- Capacity enforcement in combined commands
+- Material: burlap
+
+**Verification:** Sack capacity enforcement verified, preposition parsing tests passing.
+
+---
+
+### UD-2026-03-24T19-56-23Z: Material Web Loader Directive
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-24  
+**Status:** Documented  
+
+Materials moved to `src/meta/` must be handled by web loader like objects — downloaded on-demand and cached in browser. Engine already has code to download/cache meta objects for web build. Materials in meta must follow the same pattern. See existing object loader code for pattern.
+
+**Why:** Critical implementation constraint for #123 material migration. Without this, materials won't load in browser.
+
+---
+
+### UD-2026-03-24T20-35Z: Mirror Design Directive
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-24  
+**Status:** Implemented (D-173)  
+
+Mirror on vanity is separate instance object (hand mirror base class) placed `on_top` of vanity, NOT a vanity property. Remove `is_mirror = true` from vanity.lua. Mirror needs own object definition with keywords, sensory properties, and "look in mirror" support.
+
+---
+
+### D-V2-ACCEPTANCE-CRITERIA: P0-C V2 Acceptance Criteria Complete
+**Author:** Lisa (Object Testing Specialist)  
+**Date:** 2026-03-24  
+**Status:** Ready for Implementation  
+**Affects:** Smithers (implementation), Flanders (injury/material authors), Moe (level authors)
+
+Authored `docs/meta-check/acceptance-criteria-v2.md` — ~160 new validation rules covering 4 meta types that V1 skipped:
+
+| Meta Type | Rules | Files Covered |
+|-----------|-------|---------------|
+| Templates (definitions) | 27 | 5 files in `src/meta/templates/` |
+| Injuries | 67 | 7 files in `src/meta/injuries/` |
+| Materials | 24 | 23 files in `src/meta/materials/` |
+| Levels (extended) | 31 | 1+ files in `src/meta/levels/` |
+| Cross-references | 11 | References between all meta types |
+
+Combined V1 + V2 = **~306 total rules**. Every `.lua` file under `src/meta/` is now covered.
+
+---
+
+**End of 2026-03-24T20:40:00Z Decision Inbox Merge**
+**Total Active Decisions:** 108 (98 prior + 10 new from Wave 9 inbox)
+**Last Merge:** 2026-03-24T20:40:00Z (Scribe)
+**Inbox Status:** All Wave 9 inbox files processed and archived
