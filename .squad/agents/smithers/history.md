@@ -46,7 +46,22 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 - `history-archive-2026-03-20T22-40Z-smithers.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): UI architecture, parser pipeline implementation, web performance optimization, 880+ tests
 
 ## Learnings
-
+
+### 2026-07-18: Issue #168 — Compound commands only execute first part
+
+**What shipped:** Two fixes so compound commands like "get candle, and light it" execute both parts. (1) Enhanced `split_commands` in preprocess.lua to handle `, and` and `and then` as compound separators, stripping leftover "and" prefixes from segments. (2) Added `split_compound` — a verb-aware ` and ` splitter that only splits when the word after "and" is a recognized verb. Prevents breaking multi-object commands like "get candle and matchbox".
+
+**The fix (two layers):**
+1. **split_commands** (`preprocess.lua`): Added ` and then ` as a compound separator (checked before ` then `). After splitting on commas, strips leading "and " from each segment. This handles ", and light it" → "light it".
+2. **split_compound** (`preprocess.lua`): New function with a static `KNOWN_VERBS` table (~100 verbs). Iteratively finds ` and ` positions and only splits when the next word after "and" is in KNOWN_VERBS. Replaces the naive ` and ` loop in the game loop.
+3. **Game loop** (`loop/init.lua`): Replaced 20-line naive ` and ` while-loop with a 4-line call to `preprocess.split_compound()`.
+
+**Key learning:** Pronoun resolution ("it" → last object) already worked via `context.last_noun` set after each sub-command executes (line 492 of loop). The bug was entirely in splitting — "and light it" was arriving as verb="and" which has no handler. The KNOWN_VERBS heuristic is the right trade-off: it's a static set that doesn't need runtime context, covers all registered handlers, and correctly distinguishes "take sword and shield" (no split) from "take sword and examine shield" (split).
+
+**Files changed:** `src/engine/parser/preprocess.lua`, `src/engine/loop/init.lua`, `test/parser/test-compound-commands.lua` (new, 29 tests)
+
+**Tests:** 29 new tests, 0 regressions. 3 pre-existing failures in unrelated files (sack-capacity, light-burn-redirect, light-fire-source) unchanged.
+
 ### 2026-07-18: Issue #170 — Exit door resolution + lock handler
 
 **What shipped:** Three fixes for door interaction: (1) FSM failure messages now explain WHY a door can't be opened (e.g., "A heavy oak door is barred. It won't budge.") instead of generic "You can't open that." Uses on_push from current FSM state if available. (2) Added `lock` handler — mirrors unlock, searches exits by keyword, auto-closes open doors, validates key_id. (3) 16 TDD tests covering door object intercepts, exit-only open/close/lock/unlock with key, exit keyword resolution.
