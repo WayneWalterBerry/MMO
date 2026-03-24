@@ -44,22 +44,29 @@ local function fresh_wine_bottle()
             sealed = {
                 name = "a dusty wine bottle",
                 description = "Sealed with wax-dipped cork.",
+                on_feel = "Cool glass, smooth and heavy. Wax seal at the neck. Liquid shifts inside when tilted.",
                 on_smell = "Faintly vinegary through the seal.",
+                on_taste = "You lick the wax seal. It tastes of dust, old wax, and nothing useful.",
             },
             open = {
                 name = "an open wine bottle",
                 description = "An open wine bottle.",
+                on_feel = "Cool glass, open top. Liquid weight still inside. Wine-sticky neck.",
                 on_smell = "Sharp vinegar and old grape.",
+                on_taste = "Sour, acidic, old -- but recognizably wine, not poison.",
             },
             empty = {
                 name = "an empty wine bottle",
                 description = "An empty wine bottle.",
+                on_feel = "Light glass, hollow and dry inside. Sticky residue where the wine was.",
                 on_smell = "Stale wine residue.",
+                on_taste = "You tip the bottle. A single drop of sour dregs.",
                 terminal = true,
             },
             broken = {
                 name = "a shattered wine bottle",
                 description = "Shattered glass.",
+                on_feel = "Sharp glass fragments -- dangerous to touch!",
                 terminal = true,
             },
         },
@@ -401,6 +408,128 @@ test("open state offers drink, pour, and break transitions", function()
     h.assert_truthy(verbs["pour"], "Open state should offer pour")
     h.assert_truthy(verbs["break"], "Open state should offer break")
     h.assert_truthy(not verbs["open"], "Open state should NOT offer open")
+end)
+
+---------------------------------------------------------------------------
+-- BUG-061 regression: sensory descriptions change with state
+---------------------------------------------------------------------------
+suite("BUG-061 regression — sensory per state")
+
+test("sealed state has wax-seal on_feel", function()
+    local wine = fresh_wine_bottle()
+    local state_data = wine.states[wine._state]
+    h.assert_truthy(state_data.on_feel:find("Wax seal"), "Sealed feel should mention wax seal")
+end)
+
+test("open state has open-top on_feel", function()
+    local wine = fresh_wine_bottle()
+    local reg = make_registry_with(wine)
+    fsm_mod.transition(reg, "wine-bottle", "open", {}, "open")
+    local state_data = wine.states[wine._state]
+    h.assert_truthy(state_data.on_feel:find("open top"), "Open feel should mention open top")
+end)
+
+test("sealed on_smell differs from open on_smell", function()
+    local wine = fresh_wine_bottle()
+    local sealed_smell = wine.states["sealed"].on_smell
+    local open_smell = wine.states["open"].on_smell
+    h.assert_truthy(sealed_smell ~= open_smell, "Smell should change after opening")
+end)
+
+test("open state on_taste confirms wine not poison", function()
+    local wine = fresh_wine_bottle()
+    local taste = wine.states["open"].on_taste
+    h.assert_truthy(taste:find("not poison"), "Open taste should distinguish wine from poison")
+end)
+
+test("empty state on_feel is hollow and dry", function()
+    local wine = fresh_wine_bottle()
+    local feel = wine.states["empty"].on_feel
+    h.assert_truthy(feel:find("hollow"), "Empty feel should mention hollow")
+end)
+
+---------------------------------------------------------------------------
+-- BUG-061 regression: pour from sealed blocked
+---------------------------------------------------------------------------
+suite("BUG-061 regression — pour from sealed blocked")
+
+test("pour from sealed bottle returns no_transition", function()
+    local wine = fresh_wine_bottle()
+    local reg = make_registry_with(wine)
+    local trans, err = fsm_mod.transition(reg, "wine-bottle", "empty", {}, "pour")
+    h.assert_nil(trans, "Should NOT be able to pour from sealed bottle")
+    h.assert_eq("no_transition", err, "Error should be no_transition")
+    h.assert_eq("sealed", wine._state, "State should remain sealed")
+end)
+
+---------------------------------------------------------------------------
+-- BUG-061 regression: drink aliases (quaff, sip, swig)
+---------------------------------------------------------------------------
+suite("BUG-061 regression — drink aliases")
+
+test("quaff alias transitions open bottle to empty", function()
+    local wine = fresh_wine_bottle()
+    local reg = make_registry_with(wine)
+    fsm_mod.transition(reg, "wine-bottle", "open", {}, "open")
+    local trans = fsm_mod.transition(reg, "wine-bottle", "empty", {}, "quaff")
+    h.assert_truthy(trans, "Quaff should trigger drink transition")
+    h.assert_eq("empty", wine._state, "State should be empty after quaff")
+end)
+
+test("sip alias transitions open bottle to empty", function()
+    local wine = fresh_wine_bottle()
+    local reg = make_registry_with(wine)
+    fsm_mod.transition(reg, "wine-bottle", "open", {}, "open")
+    local trans = fsm_mod.transition(reg, "wine-bottle", "empty", {}, "sip")
+    h.assert_truthy(trans, "Sip should trigger drink transition")
+    h.assert_eq("empty", wine._state, "State should be empty after sip")
+end)
+
+test("swig alias transitions open bottle to empty", function()
+    local wine = fresh_wine_bottle()
+    local reg = make_registry_with(wine)
+    fsm_mod.transition(reg, "wine-bottle", "open", {}, "open")
+    local trans = fsm_mod.transition(reg, "wine-bottle", "empty", {}, "swig")
+    h.assert_truthy(trans, "Swig should trigger drink transition")
+    h.assert_eq("empty", wine._state, "State should be empty after swig")
+end)
+
+---------------------------------------------------------------------------
+-- BUG-061 regression: throw alias for break
+---------------------------------------------------------------------------
+suite("BUG-061 regression — throw alias")
+
+test("throw alias breaks sealed bottle", function()
+    local wine = fresh_wine_bottle()
+    local reg = make_registry_with(wine)
+    local trans = fsm_mod.transition(reg, "wine-bottle", "broken", {}, "throw")
+    h.assert_truthy(trans, "Throw should trigger break transition")
+    h.assert_eq("broken", wine._state, "State should be broken after throw")
+end)
+
+---------------------------------------------------------------------------
+-- BUG-061 regression: full puzzle chain (sealed→open→empty)
+---------------------------------------------------------------------------
+suite("BUG-061 regression — full puzzle chain")
+
+test("complete wine puzzle: sealed → open → empty", function()
+    local wine = fresh_wine_bottle()
+    local reg = make_registry_with(wine)
+
+    h.assert_eq("sealed", wine._state, "Start sealed")
+
+    local t1 = fsm_mod.transition(reg, "wine-bottle", "open", {}, "open")
+    h.assert_truthy(t1, "Open should succeed")
+    h.assert_eq("open", wine._state, "Now open")
+
+    local t2 = fsm_mod.transition(reg, "wine-bottle", "empty", {}, "drink")
+    h.assert_truthy(t2, "Drink should succeed")
+    h.assert_eq("empty", wine._state, "Now empty")
+    h.assert_eq(0.5, wine.weight, "Final weight 0.5")
+
+    local t3, err = fsm_mod.transition(reg, "wine-bottle", "broken", {}, "break")
+    h.assert_nil(t3, "Cannot break from terminal empty")
+    h.assert_eq("terminal", err, "Terminal blocks further transitions")
 end)
 
 ---------------------------------------------------------------------------

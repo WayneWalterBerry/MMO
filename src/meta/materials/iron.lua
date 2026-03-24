@@ -1,0 +1,15 @@
+return {
+    name = "iron",
+    density = 7870,
+    melting_point = 1538,
+    ignition_point = nil,
+    hardness = 8,
+    flexibility = 0.3,
+    absorbency = 0.0,
+    opacity = 1.0,
+    flammability = 0.0,
+    conductivity = 0.8,
+    fragility = 0.1,
+    rust_susceptibility = 0.9,
+    value = 5,
+}

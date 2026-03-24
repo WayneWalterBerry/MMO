@@ -299,6 +299,44 @@ test("'Perhaps carefully check the nightstand' → examine nightstand", function
 end)
 
 -------------------------------------------------------------------------------
+h.suite("Pipeline Integration: 'X with Y' tool patterns (BUG-049)")
+-------------------------------------------------------------------------------
+
+test("'open door with key' → verb=open via parse fallback", function()
+    local v, n = preprocess.natural_language("open door with key")
+    if not v then
+        v, n = preprocess.parse("open door with key")
+    end
+    eq("open", v)
+    truthy(n and n:find("door"), "Should target door")
+    truthy(n and n:find("with key"), "Should preserve 'with key' for game loop extraction")
+end)
+
+test("'pry open chest with crowbar' → verb=open, noun has chest", function()
+    local v, n = preprocess.natural_language("pry open chest with crowbar")
+    eq("open", v)
+    truthy(n and n:find("chest"), "Should target chest")
+end)
+
+test("'pry crate with crowbar' → verb=open, noun has crate", function()
+    local v, n = preprocess.natural_language("pry crate with crowbar")
+    eq("open", v)
+    truthy(n and n:find("crate"), "Should target crate")
+end)
+
+test("'please pry open the door with a bar' → verb=open, noun has door", function()
+    local v, n = preprocess.natural_language("please pry open the door with a bar")
+    eq("open", v)
+    truthy(n and n:find("door"), "Should target door")
+end)
+
+test("'force open the crate' → verb=open, noun has crate", function()
+    local v, n = preprocess.natural_language("force open the crate")
+    eq("open", v)
+    truthy(n and n:find("crate"), "Should target crate")
+end)
+
+-------------------------------------------------------------------------------
 -- Summary
 -------------------------------------------------------------------------------
 local failures = h.summary()

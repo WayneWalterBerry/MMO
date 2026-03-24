@@ -1,25 +1,37 @@
-# Search Traverse System Design
+# Search System Design
 
-## Overview
+> Search is a convenience command that saves the player from manually looking in every container. But it shouldn't be too convenient — the player pays real time for this service.
 
-Search and find verbs have been redesigned from instant discovery to **progressive room traversals**. The engine walks through a room step-by-step, narrating discoveries, with time cost and interruptibility.
+## Design Philosophy
 
-**Core philosophy:** Discovery is not instant; it's a time commitment with narrative pacing that makes exploration feel real.
+**Search as Costly Convenience**
+
+Search and find are **progressive room traversals** — engines that walk through a room step-by-step, narrating discoveries, with time cost and interruptibility. The mechanic transforms discovery from instant (query a database) to earned (traverse, invest time, manage risk).
+
+**Core Principle:** Discovery is not instant; it's a time commitment with narrative pacing that makes exploration feel real.
+
+**Why Time Costs Matter:**
+- **Incentive to search strategically** — Player won't search if bleeding out
+- **Risk-reward tension** — Finding something may cost you dearly (injuries tick during search)
+- **Rewards knowledge** — Targeted search is faster than blind sweep
+- **Realism** — Thorough exploration takes time
+- **Agency** — Player can escape a long search by interrupting
+
+This design ensures search feels like a deliberate choice, not a convenience shortcut that bypasses all discovery.
 
 ---
 
-## Proximity Ordering System
+## Mechanical Behavior
 
-### Definition
-Proximity ordering is a **fixed, per-room ordered list** of furniture objects, arranged from closest to farthest from the player's current position.
+### Traversal Ordering: Proximity Lists
 
-### Room Metadata
+**Definition:** Proximity ordering is a **fixed, per-room ordered list** of furniture objects, arranged from closest to farthest from the player's current position.
+
 Each room includes a `proximity_list` in its metadata:
 
 ```lua
 bedroom = {
   name = "Master Bedroom",
-  description = "...",
   proximity_list = {
     "bed",           -- Player is likely on this
     "nightstand",    -- Adjacent to bed
@@ -31,34 +43,44 @@ bedroom = {
 }
 ```
 
-### Traversal Order
-During search/find, the engine iterates through `proximity_list` in order:
-1. Start at index 1 (closest)
-2. Examine each object
-3. Auto-open unlocked containers (stay open)
-4. Skip locked containers (with narrative note)
-5. Continue until found or list exhausted
+During search/find, the engine iterates through `proximity_list` in order, examining each object and its surfaces/contents.
 
-### Game Design Implications
-- **Proximity feels real:** Player searches closest objects first, expanding outward
-- **Fixed per room:** Allows designers to shape discovery narrative through ordering
-- **Predictable:** Players learn room layouts through repeated searches
-- **Optimization:** Reduces AI computation; order is metadata, not calculated
+**Why Proximity?**
+- Proximity feels real — explore closest objects first, expanding outward
+- Fixed per room allows designers to shape discovery narrative through ordering
+- Predictable — players learn room layouts through repeated searches
+- Optimization — order is metadata, not calculated at runtime
 
----
+### Search Scope Rules
 
-## Turn Cost Model
+**Three Search Patterns:**
 
-### Per-Step Cost
+1. **Undirected Sweep (`search` or `search around`)**
+   - Full room traversal following proximity list
+   - Narrates all discoverable objects
+   - Continues until all furniture exhausted or player interrupts
+   
+2. **Targeted Search (`search for matchbox` or `find matchbox`)**
+   - Follows same proximity ordering
+   - **Stops immediately upon finding target**
+   - Narrates path to discovery only
+
+3. **Scoped Search (`search nightstand` or `search for candle in drawer`)**
+   - Limits traversal to single object + contents
+   - Still follows priority: surfaces before nested containers
+   - Narrates only within that scope
+
+### Turn Cost Model
+
 **Each step (each furniture object examined) costs one game turn.**
 
-Turn effects during search:
-- Injuries tick (e.g., bleeding, poison)
+Effects during search turn:
+- Injuries tick (bleeding, poison, etc. worsen by 1 tick)
 - Clock advances (game time moves forward)
 - NPC actions process
 - Weather changes occur
 
-### Example: 3-step search
+Example: 3-step search takes 3 turns.
 ```
 > search for knife
 You begin searching...
@@ -70,20 +92,18 @@ You begin searching...
 You have found: a kitchen knife.
 ```
 
-After these commands, 3 turns have elapsed. Any injuries worsen by 3 ticks.
+**Design Intent:**
+- Search is a real cost, not a freebie
+- Incentivizes players to search strategically
+- Creates time pressure and tension
 
-### Design Intent
-- **Incentive to search strategically:** Don't search if you're bleeding out
-- **Time pressure:** Finding something important may cost you dearly
-- **Realistic:** Thorough exploration takes time
-- **Interruptibility gateway:** Player can escape a long search by interrupting
+### Container Mechanics During Search
 
----
-
-## Container Auto-Open Mechanics
-
-### Unlocked Containers
-**Behavior:** Auto-open silently during traversal; remain open after search.
+**Unlocked Containers:**
+- Auto-open **silently** during traversal (no extra turn cost)
+- Remain **open after search** (reflects realism — you physically opened them)
+- Contents become visible in subsequent `look` commands
+- Player sees fruits of search effort
 
 Example:
 ```
@@ -92,13 +112,11 @@ You pull the drawer open.
 Inside, your fingers find: a small matchbox and a candle.
 ```
 
-- Drawer is now **permanently open**
-- Player did not pay extra turn cost to open it
-- Subsequent `look` shows it as open
-- Contents visible without further action
-
-### Locked Containers
-**Behavior:** Skip with narrative note; container remains locked.
+**Locked Containers:**
+- Skip with narrative note (no turn cost for the skip itself)
+- Container remains locked
+- Player must use `unlock` verb separately
+- Acknowledges presence without breaking flow
 
 Example:
 ```
@@ -106,92 +124,34 @@ You spot a locked chest in the corner.
 You examine it, but it's locked tight.
 ```
 
-- Chest remains **locked**
-- Player must use `unlock` verb separately
-- Does NOT consume a turn during search
-- Narrative acknowledges it but doesn't break flow
+**Container State Persistence:**
+- Containers opened during search **stay open** after search completes
+- Reflects world consistency (no magical closing)
+- Creates strategic considerations (opened containers expose items to NPCs)
+- Players must manage consequences of opened containers
 
-### Persistent State
-- Containers opened during search **stay open**
-- Reflects reality: player physically opened them
-- Reduces "magical closing" immersion breaks
-- Players must manage opened containers (security, narrative implications)
+### Surface Priority
 
----
+Surfaces are always searched **before** nested containers:
 
-## Interruption Handling
-
-### Trigger
-Any new player command interrupts the current search traversal.
-
-### Clean Termination
-1. Search loop breaks immediately
-2. Turn cost applied **only for steps completed**
-3. Engine resumes normal command processing
-4. No lingering state
-
-### Example
 ```
-> search for torch
-You begin searching...
+Nightstand search order:
+1. Nightstand top surface
+2. Nightstand drawer contents (container)
 
-[Turn 1] You feel the bed — nothing there.
-
-> look
-[Search interrupted]
-
-You are in a dark bedroom. You can feel:
-- A large bed
-- A nightstand
+Dresser search order:
+1. Dresser top surface
+2. Dresser drawer 1 contents
+3. Dresser drawer 2 contents
 ```
 
-- Only 1 turn was spent (Step 1 completed)
-- Injuries ticked by 1
-- New `look` command processes normally
-- Search loop fully cleaned up
+This ensures player explores obvious places before digging into nested storage.
 
-### Design Rationale
-- **Agency:** Player can escape if search takes too long
-- **Tactical depth:** Player must choose when to search, when to interrupt
-- **Narrative flexibility:** Interruption allows dynamic scene changes
+### Discovery, Not Acquisition
 
----
+**Core Principle:** Finding an object **does NOT pick it up**. It announces it and sets context.
 
-## Container State Persistence
-
-### Why Containers Stay Open
-
-1. **Realism:** If you physically open a drawer, it stays open
-2. **Narrative continuity:** No magical closing between commands
-3. **World consistency:** Objects reflect player's past actions
-4. **Exploration reward:** Player sees fruits of their search effort
-
-### Implications
-
-- Player can see what's in opened containers without re-searching
-- Opened containers become part of room state (persistent)
-- Security considerations: opened containers can be found by NPCs
-- Players must manage opened containers for story/stealth reasons
-
-### Implementation
-```lua
--- After search opens a container
-container.is_open = true
-room:persist_object_state(container)  -- Save to room state
-
--- Subsequent look/examine shows it open
-container:describe()  -- "The drawer is open. Inside: ..."
-```
-
----
-
-## Discovery, Not Acquisition
-
-### Core Principle
-Finding an object **does NOT pick it up**. It announces it and sets context.
-
-### Workflow
-
+Workflow:
 ```
 [Find succeeds]
 You have found: a small matchbox.
@@ -205,85 +165,56 @@ You pick up the matchbox.  -- Works without repeating "matchbox"
 You take the matchbox.  -- Works with pronoun
 ```
 
-### Context System
-When an object is found, its identifier is stored in the command context:
-- `bare_noun_context` = "matchbox"
+When an object is found, its identifier is stored in command context:
 - Allows follow-up commands to reference it without re-stating name
 - Persists until new object found or player moves
 
-### Design Benefit
-- **Pacing:** Find announces discovery; take is separate action
-- **Agency:** Player chooses to acquire or leave
-- **Narrative clarity:** "You have found X" is distinct from "You acquire X"
-- **Realism:** Finding ≠ obtaining
+**Benefits:**
+- Pacing — find announces; take is separate
+- Agency — player chooses to acquire or leave
+- Narrative clarity — "found" ≠ "obtained"
+- Realism — discovery is not possession
+
+### Interruption Handling
+
+**Trigger:** Any new player command interrupts current search traversal.
+
+**Clean Termination:**
+1. Search loop breaks immediately
+2. Turn cost applied **only for steps completed**
+3. Engine resumes normal command processing
+4. No lingering state
+
+Example:
+```
+> search for torch
+You begin searching...
+
+[Turn 1] You feel the bed — nothing there.
+
+> look
+[Search interrupted]
+
+You are in a dark bedroom...
+```
+
+- Only 1 turn was spent (Step 1 completed)
+- Injuries ticked by 1
+- New `look` command processes normally
+- Search loop fully cleaned up
+
+**Design Rationale:**
+- Agency — player can escape if search takes too long
+- Tactical depth — player chooses when to search, when to interrupt
+- Narrative flexibility — interruption allows dynamic scene changes
 
 ---
 
-## Goal-Oriented Search (TBD)
-
-### Syntax
-```
-find something that can [action]
-find something that can light [target]
-find something sharp
-find something to write with
-```
-
-### What It Does
-Engine searches for an object that can fulfill the goal (action or property).
-
-### Two Possible Implementations
-
-#### Option A: GOAP-Driven
-- Engine uses GOAP (Goal-Oriented Action Planning)
-- Determines if found object can achieve goal through available actions
-- Most flexible but computationally heavier
-- Example: "find something to cut" → engine checks if object has cutting actions
-
-#### Option B: Property Matching
-- Objects have simple properties: `fire_source`, `sharp`, `writing_tool`, `container`, etc.
-- Engine searches for objects matching the required property
-- Fastest but less flexible
-- Example: "find something sharp" → searches for `is_sharp = true`
-
-### Current Status: TBD
-Wayne wants unit tests to determine the best approach:
-1. Start with property matching (simpler, faster)
-2. Write unit tests exploring GOAP approach
-3. Measure performance and complexity
-4. Decide based on test results
-
-### Suggested Unit Tests
-```lua
--- Property-based test
-test("find something sharp finds knife", function()
-  knife.is_sharp = true
-  assert(find_goal_match("sharp") == knife)
-end)
-
--- GOAP-based test
-test("find something that can cut finds cutting tool", function()
-  scissors.actions = {"cut"}
-  assert(find_goal_match_goap("cut") == scissors)
-end)
-
--- Hybrid test
-test("find something that can light finds fire source", function()
-  -- Test both approaches
-  -- Measure response time
-  -- Evaluate player experience
-end)
-```
-
----
-
-## Narrative Generation Pattern
-
-### Sensory-Aware Narration
+## Sensory Narration
 
 Narration adapts to light level and available senses:
 
-#### In Daylight (Light Available)
+**In Daylight (Light Available):**
 ```
 You search the room...
 
@@ -292,7 +223,7 @@ Your eyes scan across a large bed — nothing useful.
 You turn toward the nightstand and notice: a small lamp.
 ```
 
-#### In Darkness (No Light)
+**In Darkness (No Light):**
 ```
 You search the room...
 
@@ -303,7 +234,7 @@ You pull it open.
 Inside, your fingers find: a small matchbox.
 ```
 
-#### Sound-Based Discovery
+**Sound-Based Discovery:**
 ```
 You listen carefully...
 
@@ -328,106 +259,223 @@ You hear the faint tick of a clock. Moving closer, you locate: a wall-mounted cl
 **Target found:**
 - "You have found: {object name}."
 
-### Engine Responsibilities
-- **Traverse system:** Walks through proximity list, applies turn cost
-- **Container logic:** Checks locked/unlocked state, opens automatically
-- **Narrative engine:** Generates prose based on sense used and discovery type
-- **Context system:** Sets found object as context for follow-up commands
+---
+
+## Search-Related Decisions
+
+All decisions below are from `.squad/` and recorded in this doc to ensure they're respected in implementation:
+
+| Decision | Rationale |
+|----------|-----------|
+| **Turn cost per step** | Makes search a real commitment, not a convenience shortcut. Encourages strategic use. |
+| **Proximity-ordered traversal** | Feels real and gives designers control over discovery flow. Avoids random search chaos. |
+| **Auto-open unlocked containers** | Saves turn cost on obvious containers; speeds up intended discovery flow. |
+| **Skip locked containers** | Prevents search from immediately revealing all locked areas. Maintains suspense. |
+| **Containers stay open** | Reflects realism (you physically opened them). Creates narrative consequences. |
+| **Found ≠ acquired** | Separates discovery from possession. Gives player agency to leave items. |
+| **Interruptible** | Player can escape long searches. Creates tactical tension. |
+| **Same-room-only traversal** | Prevents search from crossing room boundaries (unrealistic). |
+| **Surfaces before nested containers** | Ensures obvious places explored before digging deeper. |
 
 ---
 
-## Interruption Flow Chart
+## Design Principles: Lessons in Search Mechanics
 
+The search system evolved through extensive playtesting to embody these core principles:
+
+### 1. **Scope Precision is Sacred**
+
+Players must always control *what* they're searching. A scoped search (`search nightstand`) must be tight and predictable — if the engine wanders into unintended containers, players lose trust in the command. The traversal engine must recognize that **drawers, shelves, and nested containers are valid search targets**, not just top-level furniture. This means:
+
+- Containers must be addressable by name during search
+- The preprocessor must strip natural language fluff ("search the drawer" = "search drawer") without losing target identity
+- Fuzzy matching is a hidden danger: if the player says "search dresser" and the engine fuzzy-matches to "desk," the wrong container opens
+
+### 2. **Recursion Must Be Bounded**
+
+Players expect to search "inside the wardrobe" and get the contents, but the system must prevent infinite loops through nested containers. A drawer in a cabinet in a chest must be searchable but bounded. This requires:
+
+- Visited set tracking to prevent re-traversing already-examined containers
+- Clear depth limits to keep traversal predictable
+- Narrative confirmation when entering nested depths ("You notice the drawer. You pull it open. Inside you find...")
+
+### 3. **Articles and Politeness Must Vanish Silently**
+
+Players use natural language: "search the nightstand," "find a matchbox," "look for something sharp." The engine strips these decorations (`the`, `a`, modifiers like `thoroughly`, `carefully`, `check`) but must do so without breaking compound commands like "find a match and light it" or misinterpreting "find something that can light a candle." The parser is complex; the experience must be seamless.
+
+### 4. **Narration Must Be Articulate**
+
+Sensory narration adapts to light conditions, but more fundamentally: **the player must never see doubled articles, misnamed objects, or grammatically broken prose**. When a container is opened during search ("You pull the drawer open"), the object must be named cleanly the first time. This teaches us:
+
+- Container references must be tracked and correctly introduced ("the drawer," "a shelf," "the chest")
+- Found objects must be named with proper grammar
+- Proximity steps narrate cleanly with consistent sensory language
+
+### 5. **Container Discovery ≠ Item Discovery**
+
+When search narrates finding a container (`You notice the drawer...`), that's *different* from finding an item inside it (`Inside, your fingers find: a matchbox`). The system must:
+
+- Announce container presence before contents
+- Surface items before nested containers within that surface
+- Ensure that once a container is opened during search, items inside become immediately accessible for `take` or `get` commands
+
+### 6. **Target Recognition Must Be Exact at Scope Boundaries**
+
+When a player searches for a specific item, the engine must **not** be tricked by fuzzy matching at the container level. If the player says "search for match," the engine searches containers, not guessing which drawer might have matches based on fuzzy item names. This prevents:
+
+- Wrong container opening
+- Search scope hijacking (fuzzy matching pulling in unrelated containers)
+- Player confusion about *where* the item was found
+
+### 7. **Multi-Step Goals Need Gentle Parsing**
+
+Commands like "find a match and light it" are sequences, not atomic queries. The parser must:
+
+- Understand that "and" can join verbs (find / light) with a single noun (match)
+- Not hang when trying to plan multi-step goals
+- Separate goal planning from search execution
+
+### 8. **Surface Mapping Must Be Consistent**
+
+When the player "feels inside the drawer," they should get the drawer's contents, not the nightstand's surface or some other confusing mix. Surface state must be:
+
+- Correctly mapped during container traversal
+- Persist across search steps
+- Not confused between nested containers
+
+These principles emerged from playtesting and are honored by regression tests to ensure the system remains stable as it evolves.
+
+---
+
+## Goal-Oriented Search (TBD)
+
+**Syntax Examples:**
 ```
-[Search Start]
-        |
-        v
-[Initialize: turn_cost = 0, current_step = 0]
-        |
-        v
-[Loop: Next furniture in proximity_list]
-        |
-    +---+---+
-    |       |
-[Found?]  [More items?]
-    |       |
-   YES      NO
-    |       |
-    +---+---+
-        |
-        v
-[Apply turn cost, tick injuries, advance clock]
-    |
-    +--- [Player inputs new command] ---> [Interrupt search]
-    |                                        |
-    |                                        v
-    +---- [Search completes] -----------> [Return to prompt]
+find something that can [action]
+find something that can light [target]
+find something sharp
+find something to write with
 ```
 
+**Two Implementation Approaches** (Wayne wants unit tests to decide):
+
+#### Option A: Property Matching (Simple, Fast)
+- Objects have simple properties: `is_sharp`, `is_fire_source`, `is_writing_tool`, etc.
+- Engine searches for objects matching required property
+- Fastest but less flexible
+- Example: `find something sharp` → searches for `is_sharp = true`
+
+#### Option B: GOAP-Driven (Flexible, Heavier)
+- Uses GOAP (Goal-Oriented Action Planning)
+- Determines if found object can achieve goal through available actions
+- More flexible but computationally heavier
+- Example: `find something that can cut` → checks cutting actions
+
+**Current Status:** Not yet implemented. Design is in place; unit tests needed to determine best approach.
+
 ---
 
-## Room Metadata Example
+## Integration with Other Systems
 
-```lua
-rooms.bedroom = {
-  id = "bedroom",
-  name = "Master Bedroom",
-  description = "A spacious bedroom with morning light filtering through curtains.",
-  
-  -- Proximity ordering for search/find traversal
-  proximity_list = {
-    "bed",           -- Player starts here
-    "nightstand",    -- Right of bed
-    "vanity",        -- Opposite wall
-    "wardrobe",      -- Corner
-    "dresser",       -- Another wall
-    "bookshelf",     -- Far corner
-  },
-  
-  furniture = {
-    bed = { /* ... */ },
-    nightstand = { is_container = true, is_locked = false /* ... */ },
-    vanity = { /* ... */ },
-    -- ...
-  }
-}
+### Container System
+Search module queries container properties:
+- `is_locked` — Skip with narrative
+- `is_open` — Check state before opening
+- Container state persists after search
+
+Reuses existing container open/close logic — no duplication.
+
+### Light System
+Narration adapts based on room light level:
+- Light available → vision-based prose
+- Darkness → touch-based prose
+- Hearing → sound-based discovery
+
+### Context System
+Found objects set command context:
+- Enables `find matchbox` → `take it` (pronoun resolution)
+- Persists until new object found or player moves
+
+### Injury System
+Turn cost causes injuries to tick:
+- Each search step advances turn counter
+- Active injuries worsen during search
+- Creates time pressure
+
+### FSM Engine
+Search steps trigger FSM transitions:
+- Container opening fires state transitions
+- Narration respects object state changes
+
+### Smithers UI System
+Narrative generation is owned by Smithers:
+- Adapts prose to available senses
+- Manages narrative pacing
+- Handles streaming output (line-by-line reveal)
+
+---
+
+## Module Architecture
+
+**File Structure:**
+```
+src/engine/search/
+├── init.lua          -- Public API and state coordination
+├── traverse.lua      -- Walk algorithm and proximity ordering
+├── containers.lua    -- Container interaction during search
+├── narrator.lua      -- Narrative generation system
+└── goals.lua         -- Goal-oriented matching (TBD)
 ```
 
----
+**Verb Handlers** (verbs/init.lua):
+- `handlers["search"]` — Parses syntax, delegates to search module
+- `handlers["find"]` — Targeted search, goal-oriented variants
 
-## System Ownership
-
-- **Brockman:** Documentation, design narrative, test specification
-- **Bart:** Traverse system architecture, proximity ordering logic, interruption handling
-- **Smithers:** Narrative generation, sensory-aware prose templates
-- **[TBD Goal-Matcher]:** Goal-oriented search implementation (GOAP or property matching)
+**Game Loop Integration:**
+Search module manages ALL traverse state internally. Game loop calls `search.tick()` once per turn; search module handles step machine internally.
 
 ---
 
-## Testing Strategy
+## Testing Coverage
 
-### Unit Tests Required
-1. Proximity ordering respected in traversal
-2. Turn cost applied per step
-3. Container auto-open (unlocked) and skip (locked)
-4. Interruption cleans up state
-5. Context set correctly on discovery
-6. Goal-oriented search (both approaches for comparison)
-7. Sensory narration adapts to light level
+### Unit Tests (15+ test files)
+- Proximity ordering validation
+- Turn cost application
+- Container auto-open (unlocked) vs skip (locked)
+- Interruption state cleanup
+- Context setting on discovery
+- Narration adaptation (light vs dark)
+- Fuzzy scope hijack prevention (BUG-146)
+- Article stripping
+- Politeness/idiom handling
+- Nested container recursion
 
-### Integration Tests Required
-1. Search + take workflow
-2. Find + interruption workflow
-3. Multiple searches with persistent container state
-4. Goal-oriented search with various object types
-5. Time pressure scenario (injuries ticking during search)
+### Regression Tests
+All 38 bugs fixed during playtesting have regression tests to prevent recurrence.
+
+### Integration Tests
+- Search → take workflow
+- Find → interruption workflow
+- Multiple searches with persistent container state
+- Time pressure scenarios (injuries ticking)
+- Sensory narration across light levels
 
 ---
 
 ## Future Considerations
 
-- **Partial matches:** "Find something that can make light" (multiple objects qualify)
-- **Filtering by location:** "Search the dresser" (search only one container)
-- **Time optimization:** Player learns to search efficiently (faster searches for known objects)
-- **NPC awareness:** NPCs notice opened containers; can affect story state
+- **Partial matches:** Multiple objects qualify for goal-oriented search
+- **Search efficiency:** Player learns to search efficiently (faster searches for known objects)
+- **NPC awareness:** NPCs notice opened containers; affects story state
+- **Search memory:** Track what's been searched, skip on re-search
+- **Learning system:** Player gets faster at searching known locations
+
+---
+
+## System Ownership
+
+- **Brockman:** Documentation, design narrative
+- **Bart:** Architecture, traversal logic, goal matching
+- **Smithers:** Narrative generation, sensory-aware prose templates, UI presentation
+- **Wayne:** Design direction, decisions, playtest oversight
 

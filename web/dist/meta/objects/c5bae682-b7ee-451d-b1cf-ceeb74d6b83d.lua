@@ -1,5 +1,5 @@
--- wall-clock.lua — 24-state cyclic FSM clock
--- States: hour_1 through hour_24, each transitioning to the next via timed event.
+-- wall-clock.lua — 24-state cyclic FSM clock with breakable stopped state
+-- States: hour_1 through hour_24 (working), stopped (broken via break/smash/hit/strike)
 -- Standard FSM object — no special engine code required.
 -- The clock chimes on each hour transition. Cyclic: hour_24 wraps to hour_1.
 
@@ -64,12 +64,24 @@ for h = 1, 24 do
             .. word .. ". The pendulum swings steadily behind a small glass door. "
             .. time_flavor[h],
         room_presence = "The clock reads " .. word .. " o'clock. " .. time_flavor[h],
+        on_listen = "Tick... tock... tick... tock. Steady and reliable, marking time whether anyone cares or not.",
+        on_feel = "Smooth wooden case, cool to the touch. You can feel the faint vibration of the mechanism through the wood. The brass face is cold and slightly dusty.",
 
         timed_events = {
             { event = "transition", delay = 3600, to_state = "hour_" .. next_h },
         },
     }
 end
+
+-- Stopped state (clock is broken)
+states["stopped"] = {
+    name = "a stopped wall clock",
+    description = "A wooden wall clock with Roman numerals on a tarnished brass face. The pendulum hangs motionless behind cracked glass. The hands are frozen in place, pointing nowhere meaningful.",
+    room_presence = "A wooden wall clock hangs on the wall, its pendulum still and silent.",
+    on_listen = "Nothing. The clock is silent -- no tick, no tock. Just dead air where rhythm used to be.",
+    on_feel = "Smooth wooden case, cool to the touch. The mechanism is still -- no vibration. The glass face has a crack running diagonally across it.",
+    on_smell = "Old wood and clock oil. A faint hint of dust.",
+}
 
 -- Generate transitions programmatically
 local transitions = {}
@@ -80,6 +92,17 @@ for h = 1, 24 do
         trigger = "auto",
         condition = "timer_expired",
         message = chime_message(next_h),
+    }
+    -- Break transition from each hour to stopped
+    transitions[#transitions + 1] = {
+        from = "hour_" .. h, to = "stopped",
+        verb = "break",
+        aliases = {"smash", "hit", "strike"},
+        message = "You strike the clock. The glass cracks, the pendulum shudders to a halt, and the ticking stops. Silence fills the space where time used to be.",
+        mutate = {
+            keywords = { add = "broken" },
+            categories = { add = "broken" },
+        },
     }
 end
 

@@ -100,14 +100,28 @@ return {
         {
             from = "sealed", to = "broken", verb = "break",
             aliases = {"smash", "throw"},
-            message = "The bottle shatters on the stone floor. Glass and wine spray across the flagstones.",
+            message = "The bottle shatters on the stone floor. Glass and wine spray across the flagstones, sharp shards skittering in every direction.",
+            mutate = {
+                becomes = nil,
+                spawns = {"glass-shard", "glass-shard"},
+            },
         },
         {
             from = "open", to = "broken", verb = "break",
             aliases = {"smash", "throw"},
-            message = "The open bottle shatters. Glass and the dregs of wine scatter.",
+            message = "The open bottle shatters. Glass and the dregs of wine scatter, leaving razor-sharp shards on the stone.",
+            mutate = {
+                becomes = nil,
+                spawns = {"glass-shard", "glass-shard"},
+            },
         },
     },
 
-    mutations = {},
+    mutations = {
+        shatter = {
+            becomes = nil,
+            spawns = {"glass-shard", "glass-shard"},
+            narration = "The glass bottle shatters on impact, sending wicked shards of green glass skittering across the stone floor.",
+        },
+    },
 }

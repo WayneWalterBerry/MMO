@@ -154,6 +154,10 @@ function M.register(handlers)
             if not item.instance_id then item.instance_id = next_instance_id() end
             ctx.player.hands[slot] = item
             print("You take " .. (item and item.name or found_id) .. " from " .. (bag.name or "the container") .. ".")
+            -- on_pickup hook: fire callback if object declares one
+            if item.on_pickup and type(item.on_pickup) == "function" then
+                item.on_pickup(item, ctx)
+            end
             -- event_output: one-shot flavor text for on_take
             if item.event_output and item.event_output["on_take"] then
                 print(item.event_output["on_take"])
@@ -303,6 +307,10 @@ function M.register(handlers)
             ctx.player.hands[slot] = obj
             obj.location = "player"
             print("You take " .. (obj.name or obj.id) .. " from " .. (parent.name or "the container") .. ".")
+            -- on_pickup hook: fire callback if object declares one
+            if obj.on_pickup and type(obj.on_pickup) == "function" then
+                obj.on_pickup(obj, ctx)
+            end
             -- event_output: one-shot flavor text for on_take
             if obj.event_output and obj.event_output["on_take"] then
                 print(obj.event_output["on_take"])
@@ -330,6 +338,10 @@ function M.register(handlers)
             ctx.player.hands[2] = obj
             obj.location = "player"
             print("You take " .. (obj.name or obj.id) .. " with both hands.")
+            -- on_pickup hook: fire callback if object declares one
+            if obj.on_pickup and type(obj.on_pickup) == "function" then
+                obj.on_pickup(obj, ctx)
+            end
             -- event_output: one-shot flavor text for on_take
             if obj.event_output and obj.event_output["on_take"] then
                 print(obj.event_output["on_take"])
@@ -350,6 +362,10 @@ function M.register(handlers)
         obj.location = "player"
 
         print("You take " .. (obj.name or obj.id) .. ".")
+        -- on_pickup hook: fire callback if object declares one
+        if obj.on_pickup and type(obj.on_pickup) == "function" then
+            obj.on_pickup(obj, ctx)
+        end
         -- event_output: one-shot flavor text for on_take
         if obj.event_output and obj.event_output["on_take"] then
             print(obj.event_output["on_take"])
@@ -477,9 +493,10 @@ function M.register(handlers)
     end
 
     handlers["shove"] = handlers["push"]
+    handlers["nudge"] = handlers["push"]
 
     ---------------------------------------------------------------------------
-    -- MOVE / SHIFT — general spatial movement
+    -- MOVE / SHIFT / DRAG — general spatial movement
     ---------------------------------------------------------------------------
     handlers["move"] = function(ctx, noun)
         if noun == "" then print("Move what?") return end
@@ -497,15 +514,36 @@ function M.register(handlers)
     end
 
     handlers["shift"] = handlers["move"]
-    handlers["slide"] = handlers["move"]
+    handlers["drag"]  = handlers["move"]
 
     ---------------------------------------------------------------------------
-    -- LIFT — pick up or reveal what's under something
+    -- SLIDE — slide objects sideways (#111)
+    ---------------------------------------------------------------------------
+    handlers["slide"] = function(ctx, noun)
+        if noun == "" then print("Slide what?") return end
+
+        -- Strip trailing "aside" / "away" / "over"
+        local target = noun:gsub("%s+aside$", ""):gsub("%s+away$", ""):gsub("%s+over$", "")
+
+        local obj = find_visible(ctx, target)
+        if not obj then
+            err_not_found(ctx)
+            return
+        end
+
+        move_spatial_object(ctx, obj, "slide")
+    end
+
+    ---------------------------------------------------------------------------
+    -- LIFT / HEAVE — pick up or reveal what's under something
     ---------------------------------------------------------------------------
     handlers["lift"] = function(ctx, noun)
         if noun == "" then print("Lift what?") return end
 
-        local obj = find_visible(ctx, noun)
+        -- Strip trailing "up"
+        local target = noun:gsub("%s+up$", "")
+
+        local obj = find_visible(ctx, target)
         if not obj then
             err_not_found(ctx)
             return
@@ -529,6 +567,8 @@ function M.register(handlers)
             print("You can't lift " .. (obj.name or "that") .. ".")
         end
     end
+
+    handlers["heave"] = handlers["lift"]
 
     ---------------------------------------------------------------------------
     -- UNCORK / UNSTOP / UNSEAL — shorthand for detaching cork-type parts
@@ -611,6 +651,10 @@ function M.register(handlers)
                         ctx.current_room.contents[#ctx.current_room.contents + 1] = held_obj.id
                         held_obj.location = ctx.current_room.id
                         print("You drop " .. (held_obj.name or held_obj.id) .. ".")
+                        -- on_drop hook: fire callback if object declares one
+                        if held_obj.on_drop and type(held_obj.on_drop) == "function" then
+                            held_obj.on_drop(held_obj, ctx)
+                        end
                         dropped_any = true
                     end
                 end
@@ -755,6 +799,10 @@ function M.register(handlers)
             end
         end
 
+        -- on_drop hook: fire callback if object declares one
+        if obj.on_drop and type(obj.on_drop) == "function" then
+            obj.on_drop(obj, ctx)
+        end
         -- event_output: one-shot flavor text for on_drop
         if obj.event_output and obj.event_output["on_drop"] then
             print(obj.event_output["on_drop"])

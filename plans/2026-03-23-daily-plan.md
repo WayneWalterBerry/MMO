@@ -224,7 +224,7 @@ Wayne identified a gap: only poison bottle and bear trap were migrated to the pi
 - [x] Flanders: Migrate any 🔴 objects to use Effects Pipeline — ✅ N/A (audit found all 5 already pipeline-routed)
 - [x] Nelson: Regression tests for each migrated object — ✅ N/A (nothing to migrate)
 - [x] Marge: Verify all migrations, gate each one — ✅ N/A (nothing to migrate)
-- [ ] Gil: Fix #45 (status bar showing inventory/7 matches)
+- [x] Gil: Fix #45 (status bar showing inventory/7 matches) (CLOSED)
 
 ---
 
@@ -266,15 +266,15 @@ Wayne directive: Thoroughly test all spatial placement phrasing — put on, put 
 - [x] #40: Contradictory search narration — fixed in 491f9a8
 - [x] #42: "sleep to dawn" — fixed in 491f9a8
 - [x] #43/#44: Match search / nightstand container — fixed in 491f9a8
-- [ ] #45: Status bar shows "7 matches" at start (Gil fixing)
+- [x] #45: Status bar shows "7 matches" at start (Gil fixing) (CLOSED)
 - [x] #50: Stab creates injury — ✅ Fixed prior session (knife migrated to pipeline)
 - [x] #52: Mirror full appearance — ✅ Fixed commit 5738359 (worn items, injuries, health, double-period, etc.)
 - [x] #55: "hit head" unconsciousness — ✅ Fixed prior session (weapons migrated to pipeline)
 
 **P2 Polish:**
-- [ ] #41: "search the drawer" not distinct from nightstand
+- [x] #41: "search the drawer" not distinct from nightstand (CLOSED)
 - [x] #47: Dark search narration — ✅ Fixed commit 5738359
-- [ ] #48: Search results dump all at once — should stream with clock advance
+- [x] #48: Search results dump all at once — should stream with clock advance (CLOSED)
 - [x] #49: "stab yourself" weapon inference — ✅ Already working, regression tests confirm
 - [x] #53: "get pot" duplicate take — ✅ Already working, regression tests confirm
 

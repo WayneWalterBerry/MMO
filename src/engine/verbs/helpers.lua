@@ -77,6 +77,18 @@ local function err_nothing_happens(obj)
     print("Nothing obvious happens. Try examining it more closely, or try a different approach.")
 end
 
+-- One-shot tutorial hint — shows once per player session, tracked in player.state.
+local function show_hint(ctx, hint_id, message)
+    if not ctx.player or not ctx.player.state then return false end
+    if not ctx.player.state.hints_shown then
+        ctx.player.state.hints_shown = {}
+    end
+    if ctx.player.state.hints_shown[hint_id] then return false end
+    ctx.player.state.hints_shown[hint_id] = true
+    print("(Hint: " .. message .. ")")
+    return true
+end
+
 ---------------------------------------------------------------------------
 -- Helper: keyword matching
 ---------------------------------------------------------------------------
@@ -1186,13 +1198,19 @@ local function move_spatial_object(ctx, obj, verb)
     -- Perform the move
     obj.moved = true
 
-    -- Print movement message
-    if verb == "push" and obj.push_message then
-        print(obj.push_message)
+    -- Print movement message (verb-specific → generic → fallback)
+    local verb_msg_key = verb .. "_message"
+    if obj[verb_msg_key] then
+        print(obj[verb_msg_key])
     elseif obj.move_message then
         print(obj.move_message)
     else
         print("You " .. verb .. " " .. (obj.name or "it") .. " aside.")
+    end
+
+    -- Fire on_move callback if the object declares one (#111)
+    if obj.on_move and type(obj.on_move) == "function" then
+        obj:on_move(ctx, verb)
     end
 
     -- Clear resting_on relationship
@@ -1470,6 +1488,7 @@ H._hobj = _hobj
 H.err_not_found = err_not_found
 H.err_cant_do_that = err_cant_do_that
 H.err_nothing_happens = err_nothing_happens
+H.show_hint = show_hint
 H.matches_keyword = matches_keyword
 H.hands_full = hands_full
 H.first_empty_hand = first_empty_hand

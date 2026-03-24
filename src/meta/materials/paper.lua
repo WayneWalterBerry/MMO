@@ -1,0 +1,14 @@
+return {
+    name = "paper",
+    density = 700,
+    melting_point = nil,
+    ignition_point = 230,
+    hardness = 1,
+    flexibility = 0.7,
+    absorbency = 0.9,
+    opacity = 0.7,
+    flammability = 0.8,
+    conductivity = 0.0,
+    fragility = 0.1,
+    value = 1,
+}

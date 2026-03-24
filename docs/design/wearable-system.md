@@ -1223,4 +1223,193 @@ This design respects the player's agency (they choose what to wear), maintains i
 
 ---
 
-**Document Status:** ✅ Complete. Ready for Bart (Implementation).
+---
+
+## Appendix A: Implementation Status (Shipped, Phase A7)
+
+**Status:** ✅ **Fully Implemented**  
+**Location:** `src/engine/verbs/equipment.lua` (wear/remove handlers)  
+**Related:** `src/engine/armor.lua`, `src/engine/player/appearance.lua`  
+
+### A.1 Event Hooks (Implemented)
+
+The system implements two event hooks for custom object behavior:
+
+#### `on_wear` Hook
+
+Fired **after** an item is equipped and flavor text is printed.
+
+```lua
+-- Signature: function(obj, ctx)
+-- Receives: (object, game context)
+
+-- Example: armor registration
+on_wear = function(obj, ctx)
+    local armor = require("engine.armor")
+    if armor and armor.register_worn_item then
+        armor.register_worn_item(obj, ctx)
+    end
+end
+```
+
+**Use Cases:**
+- Register armor protection with damage interceptor
+- Apply stat bonuses/penalties
+- Trigger sensory narration (e.g., pot smell)
+- Update player state for cursed items
+
+#### `on_remove_worn` Hook
+
+Fired **after** an item is removed from worn list and return message is printed.
+
+```lua
+-- Signature: function(obj, ctx)
+
+on_remove_worn = function(obj, ctx)
+    -- De-register armor, remove stat effects, etc.
+end
+```
+
+### A.2 One-Shot Flavor Text System
+
+Objects declare one-shot messages via `event_output`:
+
+```lua
+event_output = {
+    on_wear = "This is going to smell worse than I thought.",
+    on_remove_worn = "You quickly take it off.",
+}
+```
+
+**Engine behavior:**
+1. Prints message after state change
+2. Nils the key (`event_output["on_wear"] = nil`)
+3. Subsequent wears/removes don't repeat
+
+### A.3 Appearance Rendering
+
+The appearance subsystem renders worn items in mirror/self-examine:
+
+```lua
+-- Object declaration:
+appearance = {
+    worn_description = "A ceramic chamber pot sits absurdly atop your head.",
+}
+
+-- Engine renders via appearance.describe(player, registry)
+-- Output: "A ceramic chamber pot sits absurdly atop your head."
+```
+
+### A.4 Armor Integration (Material-Derived)
+
+Worn items automatically provide protection based on material properties:
+
+```lua
+-- Material property lookup: materials.get(item.material)
+-- Formula: prot = hardness*1.0 + flexibility*1.0 + (density/3000)*0.5
+-- Modified by: coverage × fit_multiplier × state_multiplier
+
+-- State degradation (FSM):
+-- intact (1.0x) → cracked (0.7x) → shattered (0.0x)
+
+-- Example: ceramic pot (wear.coverage = 0.8, fit = "makeshift" = 0.5x)
+-- Base ceramic hardness ≈ 7 → protection ≈ 7 × 0.8 × 0.5 = 2.8 points/hit
+```
+
+### A.5 Actual Wear Table Properties (From Equipment Handler)
+
+```lua
+wear = {
+    slot = "head",              -- body location (required)
+    layer = "outer",            -- layer: inner/outer/accessory (required)
+    
+    coverage = 0.8,             -- 0-1, fraction of body covered (armor calc)
+    fit = "makeshift",          -- "makeshift"(0.5x), "fitted"(1.0x), "masterwork"(1.2x)
+    wear_quality = "makeshift", -- display flavor text
+    
+    blocks_vision = true,       -- helmet pulls over head → "Everything goes dark"
+    provides_armor = N,         -- legacy (now material-derived)
+    provides_warmth = true,     -- flavor: "Its warmth immediately envelops you"
+    
+    max_per_slot = 1,           -- for accessories: count limit
+}
+```
+
+### A.6 Slot Override Feature
+
+Players can wear items on alternate slots:
+
+```lua
+-- Object declaration:
+wear = { slot = "feet", layer = "outer" }
+wear_alternate = {
+    head = { slot = "head", layer = "outer", coverage = 0.6, fit = "makeshift" }
+}
+
+-- Player input: WEAR SACK ON HEAD
+-- Engine applies alternate config, player feels ridiculous
+```
+
+### A.7 Conflict Resolution (Implemented Algorithm)
+
+```lua
+-- For each item already worn:
+if (new_slot == worn_slot) then
+    if (new_layer == "accessory" and worn_layer == "accessory") then
+        -- Check max_per_slot counter
+        if count >= max_per_slot then reject end
+    elseif (new_layer != "accessory" and worn_layer != "accessory") then
+        -- Both non-accessory
+        if (new_layer == worn_layer) then
+            reject "You're already wearing X. Remove it first."
+        end
+    end
+    -- Otherwise: different layers or one is accessory → allow
+end
+```
+
+### A.8 Two-Hand Inventory Prerequisite
+
+```lua
+-- Wear only works if item is in player.hands[1] or player.hands[2]
+-- Auto-pickup from room (Infocom pattern):
+--   1. Check if item is wearable (has wear table)
+--   2. If found in room/container, auto-pick into first empty hand
+--   3. Then equip to worn list in same action
+```
+
+### A.9 Vision Blocking (Implemented)
+
+```lua
+-- If any worn item has: wear.blocks_vision = true
+-- Then: all LOOK/EXAMINE of room blocked
+--       only inventory items visible
+-- Example: sack on head, chamber pot with blocks_vision=true
+
+-- Flavor message: "You pull X over your head. Everything goes dark."
+-- Remove message: "You pull X off. Light floods back in."
+```
+
+### A.10 Related Files
+
+| File | Purpose |
+|------|---------|
+| `src/engine/verbs/equipment.lua` | WEAR/REMOVE handlers, conflict detection, state transitions |
+| `src/engine/armor.lua` | Material→protection calculation, degradation on impact |
+| `src/engine/player/appearance.lua` | Render worn items in mirror description per slot |
+| `docs/architecture/engine/event-hooks.md` | Lifecycle documentation for `on_wear`/`on_remove_worn` |
+
+### A.11 Example Objects Shipped
+
+| Object | Slot | Layer | Notes |
+|--------|------|-------|-------|
+| `chamber-pot.lua` | head | outer | Makeshift helmet, ceramic armor, vision allowed, container while worn |
+| `wool-cloak.lua` | back | outer | Provides warmth flavor, no armor, shows in appearance |
+| `terrible-jacket.lua` | torso | outer | Makeshift quality, poor armor (fabric), no vision block |
+| `bronze-ring.lua` | finger | accessory | Multiple stacking, no armor |
+
+---
+
+**Implementation Verified:** 2026-03-24  
+**Shipper:** Smithers (UI/Parser Engineer)  
+**Documented By:** Brockman (Documentation Specialist)

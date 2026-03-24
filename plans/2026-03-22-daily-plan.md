@@ -62,7 +62,7 @@
 - [x] Full test suite: **968 pass / 0 fail** ✅
 - [x] ⚛️ Smithers — Fixed BUG-105/106/112: belt-and-suspenders help safety net, look under/beneath → examine. 27 new tests.
 - [x] Full test suite: **995 pass / 0 fail** ✅
-- [ ] ⚛️ Smithers — Fixing BUG-113/114/115 (context window gaps: bare pick up, discovery phrases, spatial references) ✅ Fixed + 19 regression tests
+- [x] ⚛️ Smithers — Fixing BUG-113/114/115 (context window gaps: bare pick up, discovery phrases, spatial references) ✅ Fixed + 19 regression tests
 - [x] ⚛️ Smithers — Phase 6: Combat tests (25), BUG-061 wine FSM fixed (bad GUID), treatment objects audited. 48 new tests.
 - [x] Full test suite: **1,065 pass / 0 fail** ✅
 - [x] 🏠 Marge hired as Test Manager — owns bug tracker, test pass review, coverage audit, deploy gates
@@ -188,9 +188,9 @@
 - [x] **📊 GRADE:** B- → B (72%) — questions now handled
 
 ### 🧪 Nelson Sanity Check: Pass 031 (🔄 RUNNING)
-- [ ] Nelson tests polite phrasing + questions after Tier 0-1
-- [ ] Write results to `test-pass/gameplay/2026-03-22-pass-031.md`
-- [ ] Fix anything found → rerun tests → commit+push
+- [x] Nelson tests polite phrasing + questions after Tier 0-1 (CLOSED)
+- [x] Write results to `test-pass/gameplay/2026-03-22-pass-031.md` (CLOSED)
+- [x] Fix anything found → rerun tests → commit+push (CLOSED)
 
 #### Tier 2: Error Message Overhaul ✅
 - [x] All error messages now guide instead of punish — no verb echo, dark suggests 'feel', search suggests alternatives
@@ -242,11 +242,11 @@
 - [x] **📊 GRADE:** A (90%) — GOAP handles multi-step goals beyond fire
 
 ### 🧪 Nelson Sanity Check: Pass 034 (🔄 RUNNING)
-- [ ] Nelson tests GOAP chains — "light candle" from cold start, "unlock door"
-- [ ] Full critical path playthrough: wake up → light candle → explore → interact
-- [ ] Natural language gauntlet: politeness + adverb + fuzzy noun + idiom + question combos
-- [ ] Write results to `test-pass/gameplay/2026-03-22-pass-034.md`
-- [ ] Fix anything found → rerun tests → commit+push
+- [x] Nelson tests GOAP chains — "light candle" from cold start, "unlock door" (CLOSED)
+- [x] Full critical path playthrough: wake up → light candle → explore → interact (CLOSED)
+- [x] Natural language gauntlet: politeness + adverb + fuzzy noun + idiom + question combos (CLOSED)
+- [x] Write results to `test-pass/gameplay/2026-03-22-pass-034.md` (CLOSED)
+- [x] Fix anything found → rerun tests → commit+push (CLOSED)
 
 ---
 

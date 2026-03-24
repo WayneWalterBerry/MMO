@@ -1,0 +1,14 @@
+return {
+    name = "cardboard",
+    density = 650,
+    melting_point = nil,
+    ignition_point = 230,
+    hardness = 1,
+    flexibility = 0.4,
+    absorbency = 0.7,
+    opacity = 0.8,
+    flammability = 0.8,
+    conductivity = 0.0,
+    fragility = 0.2,
+    value = 1,
+}

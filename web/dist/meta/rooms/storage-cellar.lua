@@ -48,6 +48,7 @@ return {
         { id = "rope-coil",     type = "Rope Coil",      type_id = "0c28h6f7-93a4-4d45-f067-124389012345" },
         { id = "crowbar",       type = "Crowbar",        type_id = "3f5bk9i0-c6d7-4078-2390-4576bc345678" },
         { id = "oil-flask",     type = "Oil Flask",      type_id = "ae5df831-7c42-4b19-8e60-f9a3c7d21b54" },
+        { id = "brass-spittoon", type = "Brass Spittoon", type_id = "{b763fdf9-f7d2-4eac-8952-7c03771c5013}" },
     },
 
     exits = {

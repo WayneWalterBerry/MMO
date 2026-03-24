@@ -59,6 +59,7 @@ local time_of_day_desc = H.time_of_day_desc
 local get_light_level = H.get_light_level
 local has_some_light = H.has_some_light
 local vision_blocked_by_worn = H.vision_blocked_by_worn
+local show_hint = H.show_hint
 
 local M = {}
 
@@ -1068,6 +1069,10 @@ function M.register(handlers)
             print(obj.on_taste)
         else
             print("You give " .. (obj.name or "it") .. " a cautious lick. Nothing remarkable.")
+        end
+
+        if obj.edible then
+            show_hint(ctx, "eat", "If it's edible, you can eat it outright with 'eat [item]'.")
         end
 
         -- Check for taste effects AFTER printing the taste description

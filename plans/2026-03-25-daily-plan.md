@@ -163,6 +163,77 @@ Wayne has narrowed this to ONE approach: **a custom meta compiler** that uses co
 
 ---
 
+## 🔴 P0-C: Meta-Check V2 — Full Meta Type Coverage
+
+Meta-check v1 **shipped today** (March 25) and validates objects and rooms. But it skips 3 critical meta types entirely. This P0-C expands coverage.
+
+### What V1 Covers (Shipped Today) ✅
+
+- **Objects** (83 files in `src/meta/objects/`):
+  - Required fields: `guid`, `id`, `name`, `on_feel`, `template`
+  - GUID uniqueness and format validation
+  - Material references (exists in registry)
+  - FSM consistency (states/transitions/initial_state)
+  - Template references
+  - Cross-file checks (keyword collisions)
+  - Sensory completeness (`on_feel`, `on_smell`, `on_listen`, `on_taste` coverage)
+
+- **Rooms** (7 files in `src/meta/world/`):
+  - GUID, id, name, description, exits structure
+  - Instance references (template lookup)
+  - Exit target validation (target room exists)
+  - Nesting hierarchy validation (`on_top`, `contents`, `nested`, `underneath`)
+
+### What V1 Skips (The Gap) ⚠️
+
+Meta-check **detects** these types but has **no validation rules**:
+
+- **Levels** (`src/meta/levels/`) — defined but not validated
+  - Example: `src/meta/levels/level-01.lua` contains level metadata (progression, objectives)
+  - Needs: required fields, transitions, object/room references
+
+- **Injuries** (`src/meta/injuries/`) — defined but not validated
+  - Example: `src/meta/injuries/bleeding.lua` defines damage types, effects, recovery
+  - Needs: required fields, effect/state consistency, material interactions
+
+- **Templates** (`src/meta/templates/`) — base definitions exist but unchecked
+  - Example: `src/meta/templates/small-item.lua` defines schema for all small items
+  - Needs: field inheritance chains, required vs optional field declarations, type contracts
+
+### Deliverables
+
+1. **Lisa** (Test/QA):
+   - Define acceptance criteria for level, injury, and template validation
+   - List every field that must exist, allowed values, cross-reference rules
+   - Document what constitutes "valid level/injury/template"
+   - **Target:** Complete before Smithers builds
+
+2. **Smithers** (Parser/Tools):
+   - Implement validation rules for all 3 types in `scripts/meta-check/check.py`
+   - Add schema definitions for level, injury, template to `docs/meta-check/schemas.md`
+   - Update `docs/meta-check/rules.md` with new rule categories
+   - Ensure exit codes remain: 0=pass, 1=errors, 2=warnings
+   - **Target:** Full coverage; zero false positives on existing 5 levels, 7 injuries, 5 templates
+
+3. **Lisa** (Validation):
+   - Run expanded tool against all meta files in repository
+   - Document any false positives or ambiguous edge cases
+   - Approve rules before merge to CI gate
+   - **Target:** Green pass on entire `src/meta/` tree
+
+4. **Bonus:** Implement more of Lisa's 144 acceptance criteria
+   - V1 covers 19/144 = 13% ✓
+   - V2 should expand coverage significantly with level/injury/template validation
+
+### Dependencies
+
+- **Depends on:** P0-B shipped (done ✓)
+- **Lisa's criteria must come before Smithers builds**
+- **Blockers:** None (v1 shipped successfully)
+- **Merge gate:** All rules defined + Lisa approves before merge to main
+
+---
+
 ## Carry-Over from 2026-03-24
 
 ### What SHIPPED Today (March 24) ✅
@@ -337,6 +408,17 @@ P0-B: Custom Meta Compiler ("meta-check")
     ├─ Verify no false positives
     └─ Merge to CI gate
 
+P0-C: Meta-Check V2 — Full Meta Type Coverage (depends on: P0-B ✓)
+├─ Lisa: Define acceptance criteria for levels, injuries, templates
+│   └─ Deliverable: Level/injury/template validation spec
+├─ Smithers: Implement validation rules in check.py
+│   ├─ Add schemas for 3 types to docs/meta-check/schemas.md
+│   ├─ Add rules to docs/meta-check/rules.md
+│   └─ Target: 5 levels + 7 injuries + 5 templates, zero false positives
+└─ Lisa: Validate expanded tool on full src/meta/ tree
+    ├─ Green pass on all objects, rooms, levels, injuries, templates
+    └─ Merge to main
+
 P1 (Carry-Over):
 ├─ #158: Deploy (depends on: main green, test suite pass)
 ├─ #160: event-hooks.md (depends on: P0-B review complete)
@@ -348,7 +430,7 @@ P2 (Design):
 
 BLOCKERS:
 - P0-A sequencing → Chalmers decision (before or after meta-compiler?)
-- P0-B: Python + Lark tool naming + location → Wayne decision
+- P0-B: Python + Lark tool naming + location → Wayne decision (RESOLVED: Python + Lark, scripts/meta-check/)
 - Deploy: Manual approval → Wayne/Gil decision
 ```
 

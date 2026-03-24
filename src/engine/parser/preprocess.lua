@@ -190,9 +190,13 @@ local GERUND_MAP = {
     tasting = "taste", lighting = "light", dropping = "drop",
     wearing = "wear", climbing = "climb", moving = "move",
     pulling = "pull", pushing = "push", finding = "find",
+    lifting = "lift", sliding = "slide", shoving = "shove",
+    heaving = "heave", dragging = "drag", nudging = "nudge",
     getting = "get", giving = "give", hiding = "hide",
     picking = "pick", drinking = "drink", eating = "eat",
     using = "use", pouring = "pour", filling = "fill",
+    applying = "apply", rubbing = "rub",
+    washing = "wash", cleaning = "clean", rinsing = "rinse", scrubbing = "scrub",
 }
 local function strip_gerunds(text)
     local first, rest = text:match("^(%S+)%s+(.+)$")
@@ -743,6 +747,27 @@ local function transform_compound_actions(text)
         return "hit " .. bonk_noun
     end
 
+    -- #112: wash synonyms: "clean X" / "rinse X" / "scrub X" → "wash X"
+    -- Handle "with Y" and "in Y" prepositions for synonyms before bare conversion
+    local WASH_SYNONYMS = { clean=true, rinse=true, scrub=true, wash=true }
+    if first_word and WASH_SYNONYMS[first_word] then
+        local rest = text:sub(#first_word + 1)
+        -- "verb X in Y" → "wash X in Y"
+        local item_in, target_in = rest:match("^%s+(.+)%s+in%s+(.+)$")
+        if item_in then
+            return "wash " .. item_in .. " in " .. target_in
+        end
+        -- "verb X with Y" → "wash X in Y"
+        local item_w, target_w = rest:match("^%s+(.+)%s+with%s+(.+)$")
+        if item_w then
+            return "wash " .. item_w .. " in " .. target_w
+        end
+        -- bare synonym → "wash X"
+        if first_word ~= "wash" then
+            return "wash" .. rest
+        end
+    end
+
     -- #108: "pour X into Y" / "pour X in Y" → canonical "pour X into Y"
     local pour_item, pour_target = text:match("^pour%s+(.+)%s+into%s+(.+)$")
     if not pour_item then
@@ -756,6 +781,24 @@ local function transform_compound_actions(text)
     local fill_target, fill_source = text:match("^fill%s+(.+)%s+with%s+(.+)$")
     if fill_target and fill_source then
         return "pour " .. fill_source .. " into " .. fill_target
+    end
+
+    -- #109: "apply X to Y" — canonical form passes through unchanged
+    local apply_item, apply_target = text:match("^apply%s+(.+)%s+to%s+(.+)$")
+    if apply_item then
+        return "apply " .. apply_item .. " to " .. apply_target
+    end
+
+    -- #109: "rub X on/to Y" → "apply X to Y"
+    local rub_item, rub_target = text:match("^rub%s+(.+)%s+on%s+(.+)$")
+    if not rub_item then
+        rub_item, rub_target = text:match("^rub%s+(.+)%s+to%s+(.+)$")
+    end
+    if not rub_item then
+        rub_item, rub_target = text:match("^rub%s+(.+)%s+into%s+(.+)$")
+    end
+    if rub_item then
+        return "apply " .. rub_item .. " to " .. rub_target
     end
 
     -- BUG-049: "pry open X" / "pry open X with Y" → "open X" / "open X with Y"
@@ -837,7 +880,8 @@ local function transform_compound_actions(text)
             or use_tool:match("fire") or use_tool:match("flame") then
             return "light " .. use_target .. " with " .. use_tool
         end
-        return "put " .. use_tool .. " on " .. use_target
+        -- #109: default "use X on Y" → apply (application semantics)
+        return "apply " .. use_tool .. " to " .. use_target
     end
 
     -- #83: Placement verb aliases → put
@@ -946,6 +990,29 @@ local function transform_compound_actions(text)
     if push_back_target then
         return "put " .. push_back_target .. " in " .. push_back_target
     end
+
+    -- #111: "heave X up" → "lift X"; "heave up X" → "lift X"
+    local heave_target = text:match("^heave%s+(.+)%s+up$")
+    if heave_target then return "lift " .. heave_target end
+    heave_target = text:match("^heave%s+up%s+(.+)$")
+    if heave_target then return "lift " .. heave_target end
+
+    -- #111: "drag X across/along" → "move X"
+    local drag_target = text:match("^drag%s+(.+)%s+across$")
+    if drag_target then return "move " .. drag_target end
+    drag_target = text:match("^drag%s+(.+)%s+along$")
+    if drag_target then return "move " .. drag_target end
+
+    -- #111: "shove X aside/away/over" → "push X" (strip suffix for push handler)
+    local shove_target = text:match("^shove%s+(.+)%s+aside$")
+        or text:match("^shove%s+(.+)%s+away$")
+        or text:match("^shove%s+(.+)%s+over$")
+    if shove_target then return "push " .. shove_target end
+
+    -- #111: "nudge X aside/over" → "push X"
+    local nudge_target = text:match("^nudge%s+(.+)%s+aside$")
+        or text:match("^nudge%s+(.+)%s+over$")
+    if nudge_target then return "push " .. nudge_target end
 
     -- "put X back in Y" → "put X in Y"
     local put_back_item, put_back_target2 = text:match("^put%s+(.+)%s+back%s+in%s+(.+)")

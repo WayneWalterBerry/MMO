@@ -1,7 +1,7 @@
 # Unified Effect Processing Pipeline — Architecture
 
-**Version:** 2.0 (Implementation Record)  
-**Date:** 2026-07-26 (proposed) · Updated 2026-07-27 (shipped)  
+**Version:** 3.0 (Armor Interceptor + Implementation Record)  
+**Date:** 2026-07-26 (proposed) · Updated 2026-07-27 (shipped) · Updated 2026-03-28 (armor interceptor)
 **Author:** Bart (Architect) — design · Smithers (UI Engineer) — implementation  
 **Status:** ✅ IMPLEMENTED — `src/engine/effects.lua`  
 **Decision:** D-EFFECTS-PIPELINE  
@@ -719,20 +719,117 @@ Phase 3: AFTER_EFFECT
   │  Use cases: achievement triggers, NPC reactions, log entries, narration
 ```
 
-### 4.3 Interceptor Examples
+### 4.3 Armor Interceptor — Material-Derived Protection (SHIPPED)
 
-**Armor reduces injury damage (before_effect):**
+The armor interceptor is a **before_effect** interceptor that reduces incoming `inflict_injury` damage based on worn items' materials, fit, and degradation state. It is registered at engine startup via `src/engine/armor.lua`.
+
+**Core Formula:**
+
+```
+actual_damage = max(1, incoming_damage - total_protection)
+```
+
+where `total_protection = sum of protection from all worn items covering the injury location`.
+
+**Protection Calculation:**
+
+For each worn item:
+
+```
+item_protection = base_protection × coverage × fit_multiplier × state_multiplier
+
+base_protection = (hardness × 1.0)
+                + (flexibility × 1.0)
+                + (min(density / 3000, 1.0) × 0.5)
+```
+
+where material properties come from `engine.materials` (hardness, flexibility, density scales 0–10).
+
+**Fit Multipliers** (from armor definition or object metadata):
+- `makeshift`:  0.5× (poorly fitted armor)
+- `fitted`:     1.0× (well-fitted armor, default)
+- `masterwork`: 1.2× (expertly crafted armor)
+
+**Degradation State Multipliers** (from `item._state`):
+- `intact`:     1.0× (full protection)
+- `cracked`:    0.7× (reduced protection)
+- `shattered`:  0.0× (no protection)
+
+**Location Coverage:**
+
+Armor protects injury locations if:
+1. Object declares `covers = {"head", "chest", "arm-left", ...}` (explicit list), OR
+2. Object declares `wear.slot` or `wear_slot` matching the injury location (single-slot items)
+
+**Degradation Transition:**
+
+When an attack hits armor, check for degradation:
+
+```
+break_chance = material.fragility × (original_damage / 20) × impact_factor
+```
+
+where `impact_factor` is:
+- `piercing`: 0.5× (less likely to break)
+- `slashing`: 1.0× (normal break chance)
+- `blunt`:    1.5× (more likely to break)
+
+If `math.random() < break_chance`, the armor state transitions: `intact` → `cracked` → `shattered`.
+
+**Narration:**
+
+After armor reduces damage, the engine prints one line per hit:
+- Reduction ≥ 5: "Your {item} absorbs much of the blow."
+- Reduction < 5:  "Your {item} absorbs some of the blow."
+
+**Implementation Location:**
+
+- Registration: `src/engine/armor.lua` → `armor.register(effects)` (called at engine startup)
+- Interceptor installed at: `effects.add_interceptor("before", armor_fn)`
+- Called before every `inflict_injury` effect
+
+**Actual Example from armor.lua (shipped):**
 
 ```lua
 effects.add_interceptor("before", function(effect, ctx)
     if effect.type ~= "inflict_injury" then return end
-    local armor = ctx.player and ctx.player.worn_armor
-    if armor and armor.damage_reduction then
-        effect.damage = math.max(1, effect.damage - armor.damage_reduction)
-        print("Your " .. armor.name .. " absorbs some of the blow.")
+    if not effect.location then return end
+    if not ctx or not ctx.player then return end
+
+    local worn = ctx.player.worn
+    if not worn or #worn == 0 then return end
+
+    -- Gather worn items covering this injury location
+    local covering = {}
+    for _, item in ipairs(worn) do
+        if covers_location(item, effect.location) then
+            covering[#covering + 1] = item
+        end
     end
+    if #covering == 0 then return end
+
+    -- Sum protection from all covering layers
+    local total_protection = 0
+    for _, item in ipairs(covering) do
+        total_protection = total_protection + item_protection(item)
+    end
+
+    local original_damage = effect.damage
+    local protection_int = math.floor(total_protection)
+
+    -- Reduce damage (minimum 1)
+    if protection_int > 0 then
+        effect.damage = math.max(1, effect.damage - protection_int)
+    end
+
+    -- Narrate and check degradation
+    ...
 end)
 ```
+
+---
+
+### 4.4 Interceptor Examples (Hypothetical)
 
 **Poison immunity cancels effect (before_effect):**
 
@@ -759,7 +856,7 @@ effects.add_interceptor("after", function(effect, ctx)
 end)
 ```
 
-### 4.4 Interceptor Ordering
+### 4.5 Interceptor Ordering
 
 Interceptors run in registration order (first registered, first called). The engine registers built-in interceptors at startup. Objects and systems register their own interceptors via the effects module's public API.
 

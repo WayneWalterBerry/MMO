@@ -11,6 +11,7 @@ return {
     weight = 40,
     categories = {"container", "wooden", "furniture"},
     portable = false,
+    provides_tool = "water_source",
 
     name = "a rain barrel",
     description = "A large wooden barrel stands under a downspout, brimming with dark rainwater. Dead leaves float on the surface. The water reflects the stars.",

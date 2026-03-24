@@ -22,6 +22,11 @@ return {
         wear_quality = "normal",
     },
 
+    -- One-shot flavor text (event_output system — fires once, engine nils it out)
+    event_output = {
+        on_wear = "I need to get better outfits. I look like a peasant.",
+    },
+
     location = nil,
 
     on_look = function(self)
@@ -32,6 +37,7 @@ return {
         tear = {
             becomes = nil,
             spawns = {"cloth", "cloth"},
+            message = "You grip the moth-eaten cloak and tear it apart. The old wool gives way easily, leaving you with two rough pieces of cloth.",
         },
     },
 }

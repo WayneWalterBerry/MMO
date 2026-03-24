@@ -1,7 +1,8 @@
 -- bandage.lua — Reusable treatment object with FSM
--- States: clean → applied (to injury) → soiled (after removal)
+-- States: clean → applied (to injury) → soiled (after removal) → clean (after wash)
 -- Cycle: clean → applied via APPLY, applied → soiled via REMOVE, soiled → clean via WASH
 -- Reusable resource: attaches to one injury at a time, dual-binds with injury instance
+-- Wash verb (#112) returns soiled bandage to clean state via water_source
 return {
     -- ═══════════════════════════════════════════════════════════
     -- IDENTITY
@@ -19,8 +20,8 @@ return {
     size = 1,
     weight = 0.1,
     portable = true,
-    material = "fabric",
-    categories = {"medical", "fabric", "small"},
+    material = "linen",
+    categories = {"medical", "fabric", "linen", "small"},
 
     container = false,
     capacity = 0,
@@ -45,9 +46,11 @@ return {
         -- ── CLEAN: Ready to apply ──
         clean = {
             name = "a clean linen bandage",
-            description = "A strip of clean cloth, suitable for bandaging wounds.",
-            on_feel = "A rolled cloth strip, soft and tightly wound. It smells faintly of lye.",
+            description = "A strip of white linen cloth, tightly rolled and ready for use.",
+            on_feel = "A rolled cloth strip, soft and tightly wound. The weave is fine and even.",
             on_smell = "Clean linen. A trace of lye soap.",
+            on_listen = "Silent.",
+            on_taste = "Dry cloth fiber, faintly bitter from lye.",
             on_look = function(self)
                 return self.description
             end,
@@ -56,9 +59,11 @@ return {
         -- ── APPLIED: Bound to a specific injury instance ──
         applied = {
             name = "an applied bandage",
-            description = "This bandage is wrapped around a wound.",
-            on_feel = "Taut cloth, damp where blood has seeped through.",
-            on_smell = "Blood and linen.",
+            description = "This bandage is wrapped tightly around a wound, pressing firm against the skin.",
+            on_feel = "Taut cloth under tight pressure. Damp where blood has seeped through the weave.",
+            on_smell = "Copper tang of fresh blood through linen.",
+            on_listen = "Silent.",
+            on_taste = "You shouldn't put that in your mouth while it's on a wound.",
             in_use = true,
             on_look = function(self)
                 return self.description
@@ -68,9 +73,11 @@ return {
         -- ── SOILED: Used, removable, washable ──
         soiled = {
             name = "a soiled bandage",
-            description = "A used bandage, stained but still intact.",
-            on_feel = "Damp, stiff cloth. Crusted with dried blood.",
-            on_smell = "Old blood and sweat.",
+            description = "A blood-stained bandage, damp and discolored but still intact.",
+            on_feel = "Damp, sticky cloth. Crusted with dried blood at the edges, tacky in the center.",
+            on_smell = "Strong smell of old blood. Iron and sweat.",
+            on_listen = "Silent.",
+            on_taste = "Metallic, foul. Blood and grime.",
             on_look = function(self)
                 return self.description
             end,

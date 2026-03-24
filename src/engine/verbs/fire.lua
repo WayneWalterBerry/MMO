@@ -52,6 +52,7 @@ local perform_mutation = H.perform_mutation
 local inventory_weight = H.inventory_weight
 local move_spatial_object = H.move_spatial_object
 local parse_self_infliction = H.parse_self_infliction
+local show_hint = H.show_hint
 
 local get_game_time = H.get_game_time
 local is_daytime = H.is_daytime
@@ -95,6 +96,15 @@ function M.register(handlers)
             end
         end
 
+        -- Issue #119: terminal state (spent match, etc.) — can't relight
+        if obj._state and obj.states then
+            local cur = obj.states[obj._state]
+            if cur and cur.terminal then
+                print("The " .. (obj.id or "object") .. " is spent. You can't relight it.")
+                return
+            end
+        end
+
         local mut_data = find_mutation(obj, "light")
         if not mut_data then
             -- FSM path: check for "light" or "strike" transitions
@@ -128,6 +138,8 @@ function M.register(handlers)
                             if trans then
                                 print("You touch the match flame to the wick...")
                                 print(trans.message or ("You light " .. (obj.name or obj.id) .. "."))
+                                show_hint(ctx, "extinguish", "You can extinguish flames with 'extinguish' or 'blow out'.")
+                                show_hint(ctx, "burn", "You can burn flammable objects with 'burn [item]' while holding a flame.")
                             end
                             return
                         end
@@ -145,6 +157,8 @@ function M.register(handlers)
                         local trans = fsm_mod.transition(ctx.registry, obj.id, found_trans.to, {})
                         if trans then
                             print(trans.message or ("You light " .. (obj.name or obj.id) .. "."))
+                            show_hint(ctx, "extinguish", "You can extinguish flames with 'extinguish' or 'blow out'.")
+                            show_hint(ctx, "burn", "You can burn flammable objects with 'burn [item]' while holding a flame.")
                         else
                             print("You can't light " .. (obj.name or "that") .. ".")
                         end
@@ -155,6 +169,8 @@ function M.register(handlers)
                     local trans = fsm_mod.transition(ctx.registry, obj.id, found_trans.to, {})
                     if trans then
                         print(trans.message or ("You light " .. (obj.name or obj.id) .. "."))
+                        show_hint(ctx, "extinguish", "You can extinguish flames with 'extinguish' or 'blow out'.")
+                        show_hint(ctx, "burn", "You can burn flammable objects with 'burn [item]' while holding a flame.")
                     else
                         print("You can't light " .. (obj.name or "that") .. ".")
                     end
@@ -176,6 +192,8 @@ function M.register(handlers)
                     print(mut_data.message
                         or ("You light " .. (mutated and mutated.name or obj.id) .. ". It casts a warm glow."))
                     print("The match, spent, curls into ash between your fingers.")
+                    show_hint(ctx, "extinguish", "You can extinguish flames with 'extinguish' or 'blow out'.")
+                    show_hint(ctx, "burn", "You can burn flammable objects with 'burn [item]' while holding a flame.")
                 end
                 return
             end
@@ -194,6 +212,8 @@ function M.register(handlers)
                 local mutated = ctx.registry:get(obj.id)
                 print(mut_data.message
                     or ("You light " .. (mutated and mutated.name or obj.id) .. ". It casts a warm glow."))
+                show_hint(ctx, "extinguish", "You can extinguish flames with 'extinguish' or 'blow out'.")
+                show_hint(ctx, "burn", "You can burn flammable objects with 'burn [item]' while holding a flame.")
             end
             return
         end
@@ -203,6 +223,8 @@ function M.register(handlers)
             local mutated = ctx.registry:get(obj.id)
             print(mut_data.message
                 or ("You light " .. (mutated and mutated.name or obj.id) .. ". It casts a warm glow."))
+            show_hint(ctx, "extinguish", "You can extinguish flames with 'extinguish' or 'blow out'.")
+            show_hint(ctx, "burn", "You can burn flammable objects with 'burn [item]' while holding a flame.")
         end
     end
 
@@ -213,7 +235,10 @@ function M.register(handlers)
     -- EXTINGUISH
     ---------------------------------------------------------------------------
     handlers["extinguish"] = function(ctx, noun)
-        if noun == "" then print("Extinguish what?") return end
+        if noun == "" then
+            print("Extinguish what? Try 'extinguish [item]' to put out a flame.")
+            return
+        end
 
         local obj = find_in_inventory(ctx, noun)
         if not obj then obj = find_visible(ctx, noun) end
@@ -424,11 +449,16 @@ function M.register(handlers)
         print("You hold the small flame carefully. It won't last long.")
     end
     ---------------------------------------------------------------------------
-    -- BURN -- stub for consumables
+    -- BURN — material-derived burnability (#120)
+    -- Burnability is determined by the object's material flammability property.
+    -- Threshold: flammability >= 0.3 → burnable.
+    -- Objects with burn FSM states use those transitions; others get destroyed.
     ---------------------------------------------------------------------------
+    local BURN_THRESHOLD = 0.3
+
     handlers["burn"] = function(ctx, noun)
         if noun == "" then
-            print("Burn what?")
+            print("Burn what? Try 'burn [item]' on something flammable while you have a flame.")
             return
         end
 
@@ -460,22 +490,53 @@ function M.register(handlers)
             return
         end
 
-        if obj.flammable or (obj.categories and type(obj.categories) == "table") then
-            local is_flammable = obj.flammable
-            if not is_flammable and obj.categories then
-                for _, cat in ipairs(obj.categories) do
-                    if cat == "flammable" then is_flammable = true break end
+        -- Derive burnability from material flammability (Principle 9: material consistency)
+        local mat = obj.material and materials.get(obj.material)
+        local flammability = mat and mat.flammability or 0
+
+        if flammability < BURN_THRESHOLD then
+            print("You can't burn " .. (obj.name or "that") .. ".")
+            return
+        end
+
+        -- FSM path: check for "burn" transition (intact → burning → burnt/ash)
+        if obj.states then
+            local transitions = fsm_mod.get_transitions(obj)
+            local burn_trans
+            for _, t in ipairs(transitions) do
+                if t.verb == "burn" then burn_trans = t; break end
+                if t.aliases then
+                    for _, alias in ipairs(t.aliases) do
+                        if alias == "burn" then burn_trans = t; break end
+                    end
+                    if burn_trans then break end
                 end
             end
-            if is_flammable then
-                print("You hold the flame to " .. (obj.name or "it") .. ". It catches fire and burns away to ash.")
-                remove_from_location(ctx, obj)
-                ctx.registry:remove(obj.id)
+            if burn_trans then
+                local trans, err = fsm_mod.transition(ctx.registry, obj.id, burn_trans.to, {})
+                if trans then
+                    print(trans.message or ("You hold the flame to " .. (obj.name or "it") .. ". It catches fire."))
+                    if trans.spawns then spawn_objects(ctx, trans.spawns) end
+                else
+                    print("You can't burn " .. (obj.name or "that") .. " right now.")
+                end
                 return
             end
         end
 
-        print("You can't burn " .. (obj.name or "that") .. ".")
+        -- Mutation path: check for "burn" mutation
+        local mut_data = find_mutation(obj, "burn")
+        if mut_data then
+            if perform_mutation(ctx, obj, mut_data) then
+                print(mut_data.message or ("You hold the flame to " .. (obj.name or "it") .. ". It catches fire and burns away to ash."))
+            end
+            return
+        end
+
+        -- Generic destruction: flammable material, no custom burn behavior
+        print("You hold the flame to " .. (obj.name or "it") .. ". It catches fire and burns away to ash.")
+        remove_from_location(ctx, obj)
+        ctx.registry:remove(obj.id)
     end
 end
 

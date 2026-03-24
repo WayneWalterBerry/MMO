@@ -1,0 +1,15 @@
+return {
+    name = "steel",
+    density = 7850,
+    melting_point = 1370,
+    ignition_point = nil,
+    hardness = 9,
+    flexibility = 0.3,
+    absorbency = 0.0,
+    opacity = 1.0,
+    flammability = 0.0,
+    conductivity = 0.7,
+    fragility = 0.05,
+    rust_susceptibility = 0.4,
+    value = 10,
+}

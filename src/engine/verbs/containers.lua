@@ -156,7 +156,23 @@ function M.register(handlers)
                     print("It is already open.")
                     return
                 end
-                if exit.locked then
+                -- BUG-049: if locked and player specified a tool, try unlock first
+                if exit.locked and ctx.tool_noun then
+                    local key_obj = find_in_inventory(ctx, ctx.tool_noun)
+                    if key_obj and exit.key_id and key_obj.id == exit.key_id then
+                        exit.locked = false
+                        local door_name = exit.name or "The door"
+                        local nice_name = door_name:sub(1,1):upper() .. door_name:sub(2)
+                        print("You insert " .. (key_obj.name or "the key")
+                            .. " into the lock. *click* " .. nice_name .. " unlocks.")
+                    elseif key_obj and exit.key_id then
+                        print("That doesn't fit this lock.")
+                        return
+                    else
+                        print("It is locked.")
+                        return
+                    end
+                elseif exit.locked then
                     print("It is locked.")
                     return
                 end

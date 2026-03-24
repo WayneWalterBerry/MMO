@@ -5,7 +5,7 @@ on:
     branches: [main, preview, insider]
     types: [opened, synchronize, reopened]
   push:
-    branches: [preview, insider]
+    branches: [main, preview, insider]
 
 permissions:
   contents: read

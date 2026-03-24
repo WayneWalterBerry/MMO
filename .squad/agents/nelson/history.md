@@ -1240,6 +1240,19 @@ Authored 116 comprehensive poison bottle regression tests as safety net for Effe
 - EP2b (Marge): ✅ APPROVED — EP3 cleared to proceed (1361/1362 full suite pass pre-pipeline)
 - EP4 (Nelson+Marge): ✅ APPROVED — EP5 cleared to proceed (1361/1362 full suite pass post-pipeline, 1 pre-existing failure unrelated)
 
+### Issue #123: TDD Material Migration Safety Tests (2026-07-25)
+
+**Status:** ✅ GREEN BASELINE — 15/15 tests pass, 121/121 full suite pass
+**Test file:** `test/objects/test-material-migration.lua`
+**Issue:** #123
+
+- Wrote 15 TDD tests across 3 suites (Public API, Cross-reference, Migration Safety) before Smithers migrates materials from monolithic `src/engine/materials/init.lua` to per-file `src/meta/materials/`
+- Discovery: `src/meta/materials/` already exists with 23 per-file .lua files — test 11 confirmed they load correctly via dofile
+- Existing tests (`test-material-properties.lua`, `test-material-audit.lua`) covered property completeness and object→material audit but lacked migration-specific contract testing (exact count=23, value spot-checks, armor/burn cross-reference, per-file directory detection)
+- Cross-reference tests verify the two main engine consumers: armor system (hardness-based protection) and burn system (flammability >= 0.3 threshold)
+- Spot-check values pinned: ceramic.hardness=7, brass.fragility=0.1, glass.fragility=0.9, silver.density=10490, wax.melting_point=60
+- Key learning: TDD-first for migrations is extremely valuable — the tests document the exact API contract that must survive, making the migration a mechanical transformation rather than a risky refactor
+
 **Bug Status:** 0 CRITICAL, 0 HIGH (Phase 3 regressions prevented)
 
 **Outcome:** Engine SOLID, ready for Phase 3+ expansion. Foundation validated.
@@ -1589,3 +1602,35 @@ Wrote `test/objects/test-material-audit.lua` — structural CI gate that prevent
 - `restricted_objects` in level-01.lua is currently empty — no diegetic removal mechanisms yet
 - Brass spittoon (BUG-147) not yet placed in any room — excluded from in-game carry analysis
 - **Key learning:** The 2-hand inventory + worn slots + sack container creates a meaningful strategic layer. Players can theoretically carry 11 items but practically carry 3-5. Level 2 puzzle designers should expect knife + light source as near-certainties, wool-cloak as likely, and everything else as optional.
+
+### Issue #166: Fabric Burn Verification (2026-07-25)
+
+**Status:** ✅ COMPLETE — 35 tests, 35 PASS, 0 bugs found
+**Test file:** `test/verbs/test-fabric-burn.lua`
+**Issue:** #166
+
+**Design Verification:**
+- All 7 fabric materials in registry have flammability ≥ 0.3 (burn threshold from #120):
+  fabric (0.6), wool (0.4), cotton (0.7), velvet (0.6), linen (0.5), hemp (0.5), burlap (0.6)
+- All 15 fabric objects have correct material assignment: curtains (velvet), wool-cloak (wool),
+  bandage (linen), bed-sheets (cotton), terrible-jacket (fabric), blanket (wool), cloth (fabric),
+  cloth-scraps (fabric), rag (fabric), sack (fabric), grain-sack (burlap), pillow (linen),
+  rug (wool), rope-coil (hemp), thread (cotton)
+- No `trousers.lua` exists yet. No silk material in registry (none needed).
+- **Verdict: Zero bugs.** Every fabric object can burn.
+
+**Tests written (35):**
+- 7 material registry threshold checks (flammability ≥ 0.3 for each fabric material)
+- 15 fabric object burn tests (every fabric object catches fire with flame)
+- 3 narration quality tests (fire-related language in output)
+- 4 negative tests (stone, steel, brass, silver correctly refuse to burn)
+- 4 full-chain tests (hold + burn = destroyed + hand empty)
+- 2 no-flame rejection tests (fabric won't burn without flame source)
+
+**Full suite:** 120/120 test files pass, zero regressions.
+
+**Key learning:** The existing `test-burn-material.lua` (from #120) already covered generic material
+thresholds, but lacked per-object fabric coverage. This new file ensures every actual fabric object
+in the game world — not just the material type — correctly participates in the burn system.
+The wool material at 0.4 is the lowest fabric flammability, just above the 0.3 threshold;
+future fabric materials should stay above 0.3 or explicitly document why they don't burn.

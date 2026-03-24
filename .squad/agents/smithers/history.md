@@ -774,3 +774,19 @@ Wayne requested Phase F1 carry-over bug fixes (#47, #49, #52, #53) using TDD. Up
 **Files changed:** `src/engine/parser/preprocess.lua`, `src/engine/loop/init.lua`, `src/engine/verbs/survival.lua`, `src/meta/objects/rain-barrel.lua`, `src/meta/objects/well-bucket.lua`, `test/parser/pipeline/test-wash-patterns.lua`, `test/verbs/test-wash-verb.lua`
 
 **Tests:** 22 preprocess + 12 verb handler = 34 new tests, 0 regressions. Full suite: 115 files passing.
+
+### 2026-07-18: Issue #123 — Material data migration: engine → meta
+
+**What shipped:** Migrated 23 hardcoded material definitions from the monolithic `src/engine/materials/init.lua` into individual `.lua` files under `src/meta/materials/`. The engine file became a thin loader that discovers and loads material files at require-time using the same `io.popen` + `dofile` pattern used elsewhere in the codebase (test-material-audit, main.lua loader).
+
+**Migration pattern:**
+1. Created `src/meta/materials/` with 23 files (wax.lua, wood.lua, ceramic.lua, etc.)
+2. Each file returns `{ name = "material_name", density = ..., hardness = ..., ... }` — the `name` field is used as the registry key, then stripped from the property table to maintain API compatibility.
+3. `src/engine/materials/init.lua` reduced from 333 lines of hardcoded data to 54 lines of loader code.
+4. Public API unchanged: `materials.get()`, `materials.get_property()`, `materials.registry` all work identically.
+
+**Key learning:** Material property tables must NOT contain a `name` key after loading — the original registry stored properties only (density, hardness, etc.) without the material name as a table field. Stripping `mat.name = nil` after using it as the key maintains exact API parity. Iron and steel have an extra `rust_susceptibility` property beyond the standard 11; the loader handles this transparently since it loads the full table.
+
+**Files changed:** `src/engine/materials/init.lua` (rewritten), 23 new files in `src/meta/materials/`
+
+**Tests:** All 121 test files pass. Material audit (#163): 86/86 objects validated. Material properties (#123): 23 materials × 11 properties validated. meta-check clean. 0 regressions.

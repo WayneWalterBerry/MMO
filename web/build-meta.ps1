@@ -118,6 +118,25 @@ $adapterContent = $adapterContent -replace 'local BUILD_TIMESTAMP = ".*?"', "loc
 [System.IO.File]::WriteAllText($adapterPath, $adapterContent, $utf8NoBom)
 Write-Host "  Stamped game-adapter.lua: BUILD_TIMESTAMP = `"$timestamp`""
 
+# Generate meta/_index.lua manifest for browser JIT loading
+# Lists filenames (without .lua extension) per non-object meta directory
+$indexLines = @("return {")
+foreach ($srcName in ($srcDirs | Sort-Object)) {
+    if ($specialDirs -contains $srcName) { continue }
+    $outName = if ($dirMap[$srcName]) { $dirMap[$srcName] } else { $srcName }
+    $srcPath = Join-Path $MetaRoot $srcName
+    $files = Get-ChildItem -Path $srcPath -File -Filter "*.lua" | Sort-Object Name
+    $names = ($files | ForEach-Object { '    "' + $_.BaseName + '"' }) -join ",`n"
+    $indexLines += "  $outName = {"
+    $indexLines += $names
+    $indexLines += "  },"
+}
+$indexLines += "}"
+$indexPath = Join-Path $MetaOut "_index.lua"
+$indexContent = $indexLines -join "`n"
+[System.IO.File]::WriteAllText($indexPath, $indexContent, $utf8NoBom)
+Write-Host "  Generated meta/_index.lua manifest"
+
 $objectCount = if ($counts["objects"]) { $counts["objects"] } else { 0 }
 $roomCount = if ($counts["rooms"]) { $counts["rooms"] } else { 0 }
 Write-Host "Meta built ($timestamp) -> $objectCount objects, $roomCount rooms, $total total"

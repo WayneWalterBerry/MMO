@@ -33,6 +33,38 @@ test("'pry open rusty lock' → 'open rusty lock'", function()
     eq("open rusty lock", transform_compound_actions("pry open rusty lock"))
 end)
 
+test("'pry open chest with crowbar' → 'open chest with crowbar'", function()
+    eq("open chest with crowbar", transform_compound_actions("pry open chest with crowbar"))
+end)
+
+-------------------------------------------------------------------------------
+h.suite("Stage 6: transform_compound_actions — 'pry X with Y' (BUG-049)")
+-------------------------------------------------------------------------------
+
+test("'pry crate with crowbar' → 'open crate with crowbar'", function()
+    eq("open crate with crowbar", transform_compound_actions("pry crate with crowbar"))
+end)
+
+test("'pry door with bar' → 'open door with bar'", function()
+    eq("open door with bar", transform_compound_actions("pry door with bar"))
+end)
+
+test("'pry lid with knife' → 'open lid with knife'", function()
+    eq("open lid with knife", transform_compound_actions("pry lid with knife"))
+end)
+
+-------------------------------------------------------------------------------
+h.suite("Stage 6: transform_compound_actions — 'force open X'")
+-------------------------------------------------------------------------------
+
+test("'force open crate' → 'open crate'", function()
+    eq("open crate", transform_compound_actions("force open crate"))
+end)
+
+test("'force open the door' → 'open the door'", function()
+    eq("open the door", transform_compound_actions("force open the door"))
+end)
+
 -------------------------------------------------------------------------------
 h.suite("Stage 6: transform_compound_actions — 'use crowbar/bar on X'")
 -------------------------------------------------------------------------------
@@ -77,8 +109,8 @@ test("'use thread on fabric' → 'sew fabric with thread'", function()
     eq("sew fabric with thread", transform_compound_actions("use thread on fabric"))
 end)
 
-test("'use rock on window' → 'put rock on window' (fallback)", function()
-    eq("put rock on window", transform_compound_actions("use rock on window"))
+test("'use rock on window' → 'apply rock to window' (#109: default apply)", function()
+    eq("apply rock to window", transform_compound_actions("use rock on window"))
 end)
 
 -------------------------------------------------------------------------------

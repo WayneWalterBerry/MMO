@@ -11,6 +11,18 @@
 
 ## Learnings
 
+### 2026-03-24: Issue #123 — Web Build Materials Verification
+- **Timestamp:** 2026-03-24T13:11Z
+- **Status:** ✅ FIXED — Materials now load in browser
+- **Build:** `build-meta.ps1` auto-discovery already picks up `src/meta/materials/` (23 files) — zero build script changes needed for the copy step. Added `_index.lua` manifest generation to build-meta.ps1 so the browser adapter knows which materials exist.
+- **Runtime gaps found & fixed in game-adapter.lua:**
+  1. Added generic `meta.*` package searcher (position 3 in `package.searchers`) — intercepts `require("meta.X.Y")` and fetches `meta/X/Y.lua` via HTTP. Enables injuries and any future meta `require()` calls.
+  2. Added boot-time materials loader — `engine/materials/init.lua` uses `io.popen()`+`dofile()` which are stubbed in browser, so the adapter fetches the `_index.lua` manifest and populates `materials.registry` directly.
+  3. Added `materials` and `injuries` to both `web_loader_api.fetch()` and `web_loader_api.invalidate()` url_maps (were missing — only had objects/rooms/levels/templates).
+- **Meta total:** 129 files + manifest (86 objects, 7 rooms, 5 templates, 1 level, 23 materials, 7 injuries)
+- ⚠️ `injuries` had the same browser gap — `require("meta.injuries.X")` would have failed before the package searcher fix. Now covered by the generic searcher.
+- ⚠️ Materials engine (`src/engine/materials/init.lua`) still uses `io.popen()`+`dofile()` for CLI — works fine there, but the browser path is entirely via the adapter bootstrap. If Bart refactors to `require()`, the package searcher already handles it.
+
 ### 2026-03-24: Issue #129 — Web CSS Verification
 - **Timestamp:** 2026-03-24T11:38Z
 - **Status:** ✅ VERIFIED — All CSS correct, no fixes needed

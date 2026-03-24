@@ -72,7 +72,7 @@ return {
         -- === Wardrobe ===
         { id = "wardrobe", type = "Wardrobe", type_id = "9c4701d1-4cc4-49e7-9c4a-041e1e37caf1",
             contents = {
-                { id = "wool-cloak", type = "Wool Cloak", type_id = "ecdccb0f-134d-436f-9f1c-d53911ac1445" },
+                { id = "trousers", type = "Moth-Eaten Trousers", type_id = "3c75a0cc-0b60-458b-a533-7ec1c48da76a" },
                 { id = "sack", type = "Sack", type_id = "4720ace5-baed-4133-b5db-977257f5b680",
                     contents = {
                         { id = "needle", type = "Needle", type_id = "07b9daaf-ee36-408e-8c66-d794bc175ed1" },
@@ -95,7 +95,7 @@ return {
         { id = "window", type = "Window", type_id = "4ecd1058-5cbe-4601-a98e-c994631f7d6b" },
         { id = "curtains", type = "Curtains", type_id = "cc981807-a74e-4ecc-8d52-903cc4fc5bd6" },
         { id = "chamber-pot", type = "Chamber Pot", type_id = "9a9ff109-93a0-4dcf-9d6e-0f0f4b83f4ba" },
-        { id = "bedroom-door", type = "Bedroom Door", type_id = "e4a7f3b2-91d6-4c8e-b5a0-3f2d1e8c6a49" },
+        { id = "bedroom-door", type = "Bedroom Door", type_id = "e4a7f3b2-91d6-4c8e-b5a0-3f2d1e8c6a49", location = "room" },
     },
 
     exits = {

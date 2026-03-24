@@ -214,6 +214,26 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 
 ## Learnings
 
+### 2026-07-21: Issues #164 + #165 — Trousers + Wearable Curtains
+
+**#164: Replace wool cloak with trousers in wardrobe**
+- Created `src/meta/objects/trousers.lua` — moth-eaten wool trousers (legs slot, inner layer, makeshift fit)
+- Material: wool (flammability 0.4, meets ≥0.3 burnable requirement)
+- Replaced wool-cloak reference in `start-room.lua` wardrobe contents and `wardrobe.lua` surfaces
+- Kept `wool-cloak.lua` — still referenced by 20+ test files. Retirement deferred.
+
+**#165: Make curtains portable + wearable**
+- Updated `curtains.lua`: portable=true, weight 4→3, size 4→3
+- Added wear metadata (back slot, outer layer, makeshift), mirror_appearance, event_output.on_wear
+- Added on_listen and on_taste sensory properties
+- Material stays velvet (flammability 0.6) — FSM open/close transitions preserved
+- Curtains are now the heaviest wearable in Room 1 (weight 3, same as blanket/wool-cloak)
+
+**Patterns learned:**
+- When replacing objects in rooms, check THREE places: room .lua instances, furniture surfaces.inside.contents, and the object definition itself
+- Wool-cloak is deeply embedded in test infrastructure — always grep before retiring objects
+- Velvet qualifies as burnable fabric (flammability 0.6) despite not being "cotton or wool" — the material registry is the source of truth
+
 ### 2026-03-23: Wave2 — Decision Documentation & Cross-Agent Propagation
 
 **Wave2 Spawn:** Scribe merged all decision documents into decisions.md
@@ -362,6 +382,31 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 - Added `on_smell_worn` — worn-state smell feedback metadata for future ambient smell system
 - Added helmet-related keywords: "helmet", "head pot", "improvised helmet"
 - Added file header comment with doc and issue references
+
+### 2026-07-29: Issue #122 — Bandage Reusable Lifecycle
+
+**Task:** Enhance bandage.lua with full FSM lifecycle and per-state sensory properties for the clean → applied → soiled → washed → clean cycle. Connects to wash verb (#112).
+
+**What Changed in bandage.lua:**
+- Upgraded `material` from "fabric" to "linen" — more historically accurate, matches material registry properties (absorbency 0.8, flexibility 0.8)
+- Added "linen" to categories array for material-based search
+- Added `on_listen` and `on_taste` to all three states (clean, applied, soiled) — previously only had on_feel/on_smell
+- Enhanced sensory descriptions per issue spec: copper blood smell (applied), sticky/tacky feel (soiled), white linen cloth (clean)
+- Updated header comment to reference wash verb (#112) and full cycle
+- Updated clean state description to "white linen cloth, tightly rolled"
+
+**FSM Already Present (no structural changes needed):**
+- 3 states: clean, applied, soiled
+- 3 transitions: apply (clean→applied, requires_target_injury), remove (applied→soiled), wash (soiled→clean, requires_tool water_source)
+- `reusable = true`, `applied_to` field tracks injury binding
+- Wash transition compatible with Smithers' wash verb handler (#112) via `requires_tool = "water_source"`
+
+**Pattern Notes:**
+- Medical objects follow the sealed→open→empty progression for consumables; bandage is unique as a reusable cycle (clean→applied→soiled→clean)
+- Per-state sensory is the standard pattern (candle, wall-clock both do it) — on_feel is mandatory, on_listen/on_taste are best practice for completeness
+- The wash verb auto-finds water_source in inventory or visible objects, so the bandage doesn't need to know WHERE water is
+
+**Result:** 118/118 test files pass. Zero regressions. Lua parses clean.
 
 **Engine Integration Points (no engine changes needed):**
 - Wear verb: `wear.provides_armor = 1` + `wear.wear_quality = "makeshift"` triggers existing comedic narration at verbs/init.lua:4636

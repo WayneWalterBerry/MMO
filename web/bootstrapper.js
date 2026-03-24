@@ -45,7 +45,7 @@
     // --- Search trickle (#72): drip-feed search output line by line ---
     var _trickleTimers = [];
     var _trickleActive = false;
-    var TRICKLE_DELAY_MS = 350;
+    var TRICKLE_DELAY_MS = 1050;
     var _SEARCH_RE = /^(search|find)\b/i;
     var _SEARCH_LOOK_RE = /^look\s+(for|in)\b/i;
 
@@ -152,8 +152,8 @@
     }
 
     // --- Build version (embedded at build time) ---
-    const BUILD_TIMESTAMP = "2026-03-23 21:15";
-    const CACHE_BUST = "20260323211540";
+    const BUILD_TIMESTAMP = "2026-03-24 13:11";
+    const CACHE_BUST = "20260324131105";
 
     // --- Size formatting ---
     function formatSize(bytes) {

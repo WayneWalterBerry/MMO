@@ -499,6 +499,16 @@ function M.register(handlers)
         -- Find target -- could be a held bag, worn bag, or room object
         local target = find_visible(ctx, target_word)
         if not target then
+            -- #109: "put X on Y" where Y isn't a room object but player has
+            -- injuries → delegate to apply handler (e.g. "put salve on wound")
+            if prep == "on" and ctx.player.injuries and #ctx.player.injuries > 0 then
+                local apply_handler = handlers["apply"]
+                if apply_handler then
+                    ctx.apply_target = target_word
+                    apply_handler(ctx, item_word)
+                    return
+                end
+            end
             print("You don't see " .. target_word .. " here.")
             return
         end

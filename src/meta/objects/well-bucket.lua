@@ -11,6 +11,7 @@ return {
     weight = 2,
     categories = {"container", "wooden", "tool"},
     portable = true,
+    provides_tool = "water_source",
 
     name = "a wooden bucket",
     description = "A wooden bucket hangs from the well's crossbeam by a frayed rope. It's empty, dry inside, with dark water stains marking past use. The iron bands are rusted but intact.",

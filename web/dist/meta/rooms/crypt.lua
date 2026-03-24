@@ -19,6 +19,14 @@ return {
     moisture = 0.1,
     light_level = 0,
 
+    -- BUG-050: These objects are already described in room.description
+    embedded_presences = {
+        "sarcophagus-1", "sarcophagus-2", "sarcophagus-3",
+        "sarcophagus-4", "sarcophagus-5",
+        "candle-stub-1", "candle-stub-2",
+        "wall-inscription",
+    },
+
     instances = {
         -- Sarcophagi (south wall, west to east: 1, 2, 3)
         { id = "sarcophagus-1",    type = "Stone Sarcophagus", type_id = "80grw50d-1b28-4531-7e4e-908c61456789" },

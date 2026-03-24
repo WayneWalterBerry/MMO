@@ -6,7 +6,7 @@ return {
     template = "small-item",
 
     id = "candle-holder",
-    keywords = {"candle holder", "holder", "candlestick", "sconce", "brass holder"},
+    keywords = {"candle holder", "holder", "candlestick", "candelabra", "sconce", "brass holder"},
     size = 2,
     weight = 1.5,
     categories = {"furniture", "small", "portable"},

@@ -1342,3 +1342,19 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - Deterministic RNG injection (`ctx.fire_rng`) makes propagation fully testable without mocking math.random globally.
 - `is_burning` detection supports three patterns: explicit flag, FSM state name "burning", and `state.is_burning = true` property — covers all object authoring styles.
 - Lit candles are NOT burning (they cast light but don't propagate fire). Only objects in "burning" state or with `is_burning` flag spread fire.
+
+### Session: Oil Lantern Object — Issue #118 (2025-07-18)
+**Status:** ✅ COMPLETE
+**Requested by:** Wayne "Effe" Berry
+
+**Deliverables:**
+- Enhanced `src/meta/objects/oil-lantern.lua` — material brass, 6-state FSM (empty/fueled/lit/extinguished/spent/broken), wind resistance, refuelable from spent, glass chimney break mechanic
+- Pour handler enhancement in `src/engine/verbs/survival.lua` — target-driven FSM transitions for "pour X into Y" pattern
+- 32 tests in `test/verbs/test-oil-lantern.lua` — full lifecycle coverage
+
+**Key Notes:**
+- Pour handler had a gap: only checked the SOURCE object for "pour" FSM transitions, but the lantern's fuel transition is on the TARGET. Added target-driven FSM check with `requires_tool` validation so "pour oil into lantern" correctly transitions the lantern from empty→fueled.
+- Spent state is NOT terminal on the lantern — it can be refueled via pour. Only the broken state (glass chimney shatters) is terminal. This diverges from the candle pattern where spent is terminal.
+- `wind_resistant = true` integrates with existing `traverse_effects.lua` infrastructure. The lantern is the first object to use this property — it protects the flame from wind gusts during room traversal.
+- Every non-broken state has a break→broken transition. Breaking while lit includes a flavor beat about the flame leaping free before dying.
+- The `provides_capability()` helper cleanly handles both string and table forms of `provides_tool` — used it for tool validation in the pour handler enhancement.
