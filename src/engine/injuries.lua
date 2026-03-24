@@ -88,6 +88,14 @@ function injuries.inflict(player, injury_type, source, location, override_damage
         instance.damage_per_tick = def.degenerative.base_damage or instance.damage_per_tick
     end
 
+    -- Self-infliction damage ceiling: never reduce health below 1
+    if source and source:find("self%-inflicted") then
+        local current_health = injuries.compute_health(player)
+        if current_health - instance.damage < 1 then
+            instance.damage = math.max(0, current_health - 1)
+        end
+    end
+
     player.injuries = player.injuries or {}
     player.injuries[#player.injuries + 1] = instance
 
@@ -195,7 +203,17 @@ function injuries.tick(player)
     -- Phase 3: Check death
     local health = injuries.compute_health(player)
     if health <= 0 then
-        died = true
+        -- Self-inflicted injuries alone cannot kill (design: ceiling on self-damage)
+        local has_external = false
+        for _, injury in ipairs(player.injuries) do
+            if not injury.source or not injury.source:find("self%-inflicted") then
+                has_external = true
+                break
+            end
+        end
+        if has_external then
+            died = true
+        end
     end
 
     return messages, died

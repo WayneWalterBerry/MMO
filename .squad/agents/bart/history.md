@@ -92,6 +92,87 @@
 
 ## Recent Updates
 
+### Issue #135 / #132: Compound `find X, get X` corrupts context (2026-07-28)
+**Status:** ✅ FIXED  
+**Requested by:** Wayne "Effe" Berry  
+**Commit:** f92435e
+
+**Root cause:** `containers.open()` in `src/engine/search/containers.lua` set `is_open = true` and `open = true` but did NOT set `accessible = true`. The `find_visible` function checks `obj.accessible ~= false` before searching container contents. So after search traversal opened a closed container (like the matchbox), the container's contents remained invisible to `get`/`take` commands.
+
+**Fix:** One-line addition: `object.accessible = true` in `containers.open()`. When the search system opens a container during traversal, the accessible flag is now set, making contents visible to subsequent verb handlers.
+
+**TDD approach:** 14 tests written first in `test/search/test-compound-search-get.lua`:
+- `containers.open` sets accessible flag (root cause validation)
+- Search results persist (container accessible after search)
+- Separate find + get works
+- Compound comma split parsing
+- Compound "and" split + pronoun resolution
+- No state corruption across turns
+- Search integrity (no content duplication/loss)
+
+**All 78 test files pass, zero regressions.**
+
+### Session: Phase A1 — Armor System Architecture Document (2026-03-24)
+**Status:** ✅ COMPLETE  
+**Requested by:** Wayne "Effe" Berry (Daily Plan Phase A1)
+
+**Task:** Write `docs/architecture/engine/armor-system.md` covering:
+- How protection is derived from material properties (formulas using hardness, flexibility, density)
+- How the before-effect interceptor queries worn items by injury location
+- Slot-to-location mapping (head slot → head injuries)
+- Degradation model (fragility → crack → shatter FSM states)
+- Armor template specification (what objects declare vs what engine derives)
+- Integration diagram: materials.lua ↔ effects.lua ↔ injuries.lua ↔ wear system
+
+**Deliverable:** `docs/architecture/engine/armor-system.md` (v1.0, 570 lines)
+
+**Key Design Decisions:**
+- **Material Consistency Principle:** Armor protection derived ONLY from material properties (hardness, flexibility, density, fragility), never from hardcoded object fields
+- **Protection Formula:** `protection = hardness×2.0 + flexibility×1.0 + density_factor×0.5`, then scaled by `coverage` and `fit` multiplier
+- **Degradation FSM:** Armor states intact → cracked (0.7x protection) → shattered (0x protection), triggered by fragility-based roll
+- **Slot-to-Location Mapping:** 8 slots (head, torso, left_arm, right_arm, left_leg, right_leg, hands, feet) map to canonical injury location names
+- **Multi-Layer Stacking:** Inner + outer layers both contribute to protection; damage must pass through both
+- **Instance Overrides:** Allowed (e.g., `fragility_override` for enchanted items) but documented as rare exceptions, not defaults
+
+**Architecture Principles (Dwarf Fortress-inspired):**
+- Engine operates on property bags, not object type names
+- Same ceramic pot can be armor, container, tool, or projectile — behavior emerges from material properties
+- Before-interceptor pattern (Inform-style) for armor damage reduction
+- No hardcoded "provides_armor" field on objects — engine derives everything
+
+**Integration Points:**
+- Armor query: `player.worn` array with slot/layer organization
+- Protection calculation: before-effect interceptor in `effects.lua`
+- Material lookup: `materials.get(object.material)`
+- Degradation: FSM state mutation on armor object
+- Injury reduction: `effect.damage = max(1, damage - protection)`
+
+**Cross-Referenced:**
+- `docs/architecture/engine/effects-pipeline.md` (v2.0) — before/after interceptor infrastructure
+- `docs/design/material-properties-system.md` — material property definitions
+- `src/engine/materials/init.lua` — 22-material registry
+- D-DF-ARCHITECTURE decision (Dwarf Fortress simulation philosophy)
+
+**Completion Checklist:**
+- [x] Protection formulas (hardness, flexibility, density weighting)
+- [x] Coverage and fit modifiers (makeshift/fitted/masterwork)
+- [x] Slot-to-location canonical mapping table (8 slots, 6-10 locations each)
+- [x] Degradation states and break_chance formula
+- [x] Armor template specification (required vs derived fields)
+- [x] Before-interceptor lifecycle (3 phases: before, handler, after)
+- [x] Worn item query function signature and implementation
+- [x] Multi-layer stacking logic
+- [x] Material consistency principle (no instance overrides as default)
+- [x] Full integration diagram (materials → armor → effects → injuries)
+- [x] 3 detailed example scenarios (ceramic pot stab, degradation, leather slash)
+
+**Next Actions:**
+- Phase A2 (CBG): Design doc (designer-facing examples, narratives, material × damage type matrix)
+- Phase A3 (Nelson): Unit tests (armor reduces damage, location matching, material degradation, makeshift/fitted/masterwork scaling)
+- Phase A4 (Smithers): Implementation (armor interceptor in effects.lua)
+
+---
+
 ### Session: EP6 — Update Architecture Docs to Match Implementation (2026-07-27)
 **Status:** ✅ COMPLETE  
 **Requested by:** Wayne "Effe" Berry

@@ -117,9 +117,10 @@ function loop.run(context)
         -- Health status on wake
         if inj_ok2 and inj_mod2 then
           local health = inj_mod2.compute_health(player)
-          if health < player.max_health * 0.5 then
+          local max_hp = player.max_health or 100
+          if health < max_hp * 0.5 then
             print("You feel weak. Something is very wrong.")
-          elseif health < player.max_health * 0.75 then
+          elseif health < max_hp * 0.75 then
             print("You feel battered but alive.")
           end
         end
