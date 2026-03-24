@@ -1,7 +1,7 @@
 # Meta-Check: Schema Definitions
 
-**Date:** 2026-03-24  
-**Version:** 1.0  
+**Date:** 2026-07-19  
+**Version:** 2.0  
 **Author:** Brockman (Documentation)  
 **Purpose:** Complete field contracts for each template type. Meta-check enforces these schemas.
 
@@ -623,10 +623,221 @@ candle: { template = "small-item", portable = false }  -- Unusual but allowed
 
 ---
 
+## Schema: Template Definition (V2)
+
+**Files:** `src/meta/templates/*.lua`  
+**New in V2.** Templates define field contracts for objects. They are NOT objects themselves — they have no `template` field.
+
+### Physical Template (container, furniture, small-item, sheet)
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `guid` | string | ✅ | Bare format (no braces) |
+| `id` | string | ✅ | Must match filename |
+| `name` | string | ✅ | Display name |
+| `keywords` | table | ✅ | Empty valid for templates |
+| `description` | string | ✅ | |
+| `size` | number | ✅ | > 0 |
+| `weight` | number | ✅ | > 0 |
+| `portable` | boolean | ✅ | |
+| `material` | string | ✅ | "generic" acceptable |
+| `container` | boolean | ✅ | |
+| `capacity` | number | ✅ | >= 0 |
+| `contents` | table | ✅ | Should be empty |
+| `location` | nil | 🟡 | Structural clarity |
+| `categories` | table | 🟡 | Strings if present |
+| `mutations` | table | 🟡 | Even if empty |
+
+### Room Template
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `guid` | string | ✅ | Bare format |
+| `id` | string | ✅ | "room" |
+| `name` | string | ✅ | |
+| `keywords` | table | ✅ | |
+| `description` | string | ✅ | |
+| `contents` | table | ✅ | Empty |
+| `exits` | table | ✅ | Empty |
+| `mutations` | table | 🟡 | |
+
+### Key Constraints
+
+- Templates must NOT declare a `template` field (TD-09).
+- Container template: `container = true`, `capacity > 0` (TD-21, TD-22).
+- Room template must NOT have physical properties: `size`, `weight`, `portable`, `material`, `capacity`, `container` (TD-24).
+- Sheet template `material` should be fabric-class (TD-27).
+
+---
+
+## Schema: Injury Definition (V2)
+
+**Files:** `src/meta/injuries/*.lua`  
+**New in V2.** Injuries define damage models, FSM states, transitions, and healing interactions.
+
+### Required Fields
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `guid` | string | ✅ | Braced format `{xxxx-xxxx-...}` |
+| `id` | string | ✅ | Must match filename |
+| `name` | string | ✅ | Display name |
+| `category` | string | ✅ | physical / environmental / toxin / unconsciousness |
+| `description` | string | ✅ | |
+| `damage_type` | string | ✅ | "over_time" or "one_time" |
+| `initial_state` | string | ✅ | Key in `states` table |
+| `on_inflict` | table | ✅ | `{initial_damage, damage_per_tick, message}` |
+| `states` | table | ✅ | Keyed by state name. Min 2. Each has `name`, `description`. Non-terminal: `on_feel`, `damage_per_tick`. Terminal: `terminal = true`. |
+| `transitions` | table | ✅ | Array of `{from, to, verb/trigger, message}`. |
+| `healing_interactions` | table | ✅ | Keyed by item ID. Each has `transitions_to`, `from_states`. |
+
+### Optional Fields
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `causes_unconsciousness` | boolean | optional | Only for concussion-type |
+| `unconscious_duration` | table | optional | Requires `causes_unconsciousness = true` |
+
+### State Structure
+
+Each entry in the `states` table:
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `name` | string | ✅ | State display name |
+| `description` | string | ✅ | |
+| `on_feel` | string | ✅ (non-terminal) | Tactile description |
+| `damage_per_tick` | number | ✅ (non-terminal) | >= 0 |
+| `terminal` | boolean | optional | `true` for healed/fatal states |
+| `on_look` | string | 🟢 | Visual description |
+| `on_smell` | string | 🟢 | For bleeding/infected states |
+| `timed_events` | table | optional | `[{event, delay, to_state}]` |
+| `restricts` | table | optional | `{action = true}` |
+
+### Healing Interaction Structure
+
+Each entry in `healing_interactions` (keyed by item ID):
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `transitions_to` | string | ✅ | Target state (must exist in `states`) |
+| `from_states` | table | ✅ | Array of state names (should be non-terminal) |
+
+---
+
+## Schema: Material Definition (V2)
+
+**Files:** `src/meta/materials/*.lua`  
+**New in V2.** Materials define physical properties used by the containment and effects systems.
+
+### Required Fields
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `name` | string | ✅ | Must match filename |
+| `density` | number | ✅ | > 0, kg/m³ |
+| `hardness` | number | ✅ | 0–10 |
+| `flexibility` | number | ✅ | 0.0–1.0 |
+| `absorbency` | number | ✅ | 0.0–1.0 |
+| `opacity` | number | ✅ | 0.0–1.0 |
+| `flammability` | number | ✅ | 0.0–1.0 |
+| `conductivity` | number | ✅ | 0.0–1.0 |
+| `fragility` | number | ✅ | 0.0–1.0 |
+| `value` | number | ✅ | > 0, integer |
+| `melting_point` | number/nil | ✅ | nil = doesn't melt |
+| `ignition_point` | number/nil | ✅ | nil = doesn't ignite |
+
+### Optional Fields
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `rust_susceptibility` | number | optional | 0.0–1.0, ferrous materials only |
+
+### Cross-Field Constraints
+
+- `flammability > 0` requires `ignition_point` to be set (MD-17).
+- `flammability = 0` implies `ignition_point` should be nil (MD-18).
+- High `flexibility` + high `fragility` is unusual — flagged as warning (MD-20).
+- `conductivity > 0` on non-metal is info-level (MD-21).
+- Materials must NOT have `guid` or `id` fields (MD-04, MD-05).
+
+---
+
+## Schema: Level Definition (V2)
+
+**Files:** `src/meta/levels/*.lua`  
+**New in V2.** Extended schema covering intro, completion, boundaries, and restricted objects.
+
+### Required Fields
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `guid` | string | ✅ | Bare format |
+| `template` | string | ✅ | Must be "level" |
+| `number` | number | ✅ | Positive integer, unique |
+| `name` | string | ✅ | Level title |
+| `description` | string | ✅ | Narrative arc |
+| `rooms` | table | ✅ | Non-empty array of room ID strings |
+| `start_room` | string | ✅ | Must be in `rooms` list |
+
+### Recommended Fields
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `intro` | table | 🟡 | `{title, narrative: [strings], help, subtitle?}` |
+| `completion` | table | 🟡 | `[{type, room, from?, message}]` |
+| `boundaries` | table | 🟡 | `{entry: [rooms], exit: [{room, exit_direction, target_level}]}` |
+
+### Optional Fields
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `restricted_objects` | table | optional | Array of object ID strings |
+
+### Intro Structure
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `title` | string | ✅ | Non-empty |
+| `narrative` | table | ✅ | Array of strings |
+| `help` | string | 🟡 | Help text for new players |
+| `subtitle` | string | 🟢 | String if present |
+
+### Completion Structure
+
+Each entry in the `completion` array:
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `type` | string | ✅ | E.g., "reach_room" |
+| `room` | string | ✅ (for reach_room) | Must be in `rooms` list |
+| `from` | string | 🟡 | Source room reference |
+| `message` | string | 🟡 | Player-facing completion text |
+
+### Boundaries Structure
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `entry` | table | ✅ | Non-empty array of room IDs in `rooms` list |
+| `exit` | table | 🟡 | Array of exit definitions |
+
+Each exit in `boundaries.exit`:
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `room` | string | ✅ | Must be in `rooms` list |
+| `exit_direction` | string | ✅ | Direction on the room |
+| `target_level` | number | ✅ | Should be > current `number` |
+
+---
+
 ## References
 
 - **Template Files:** `src/meta/templates/` (source definitions)
 - **Object Examples:** `src/meta/objects/` (83 objects following these schemas)
 - **Room Examples:** `src/meta/world/` (7 rooms following room schema)
+- **Injury Definitions:** `src/meta/injuries/` (7 injury types)
+- **Material Definitions:** `src/meta/materials/` (17+ materials)
+- **Level Definitions:** `src/meta/levels/` (level configurations)
 - **Rules:** `docs/meta-check/rules.md` (validation rules per field)
 

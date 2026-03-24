@@ -1,9 +1,9 @@
 # Meta-Check: Validation Rules
 
-**Date:** 2026-03-24  
-**Version:** 1.0  
+**Date:** 2026-07-19  
+**Version:** 2.0  
 **Author:** Brockman (Documentation), rule catalog from Lisa  
-**Total Rules:** 144 across 15 categories  
+**Total Rules:** 306 across 20 categories (V1: 144, V2: +162)
 
 ---
 
@@ -17,24 +17,29 @@
 
 ## Quick Reference by Category
 
-| Category | 🔴 Errors | 🟡 Warnings | 🟢 Infos | Total |
-|----------|-----------|-------------|---------|-------|
-| [Structural](#1-structural-checks--all-objects) | 11 | 2 | 5 | 18 |
-| [Template-Specific](#2-template-specific-checks) | 13 | 3 | 0 | 16 |
-| [GUID](#3-guid-checks) | 3 | 2 | — | 5 |
-| [Sensory](#4-sensory-checks) | 5 | 5 | 2 | 12 |
-| [FSM](#5-fsm-checks) | 5 | 5 | 2 | 12 |
-| [Transitions](#6-transition-checks) | 7 | 3 | — | 10 |
-| [Mutations](#7-mutation-checks) | 2 | 3 | — | 5 |
-| [Materials](#8-material-reference-checks) | 2 | 2 | — | 4 |
-| [Rooms](#9-room-checks) | 1 | 6 | 1 | 8 |
-| [Nesting](#10-nesting--containment-checks) | — | 5 | 3 | 8 |
-| [Cross-File](#11-cross-file-checks) | 3 | 6 | 2 | 11 |
-| [Levels](#12-level-definition-checks) | 5 | 3 | — | 8 |
-| [Composite Parts](#13-composite-parts-checks) | 3 | 4 | — | 7 |
-| [Effects Pipeline](#14-effects-pipeline-checks) | 2 | 2 | 1 | 5 |
-| [Lint Rules](#15-lint-rules) | — | 2 | 9 | 11 |
-| **TOTAL** | **~65** | **~54** | **~25** | **~144** |
+| Category | 🔴 Errors | 🟡 Warnings | 🟢 Infos | Total | Version |
+|----------|-----------|-------------|---------|-------|---------|
+| [Structural](#1-structural-checks--all-objects) | 11 | 2 | 5 | 18 | V1 |
+| [Template-Specific](#2-template-specific-checks) | 13 | 3 | 0 | 16 | V1 |
+| [GUID](#3-guid-checks) | 3 | 2 | — | 5 | V1 |
+| [Sensory](#4-sensory-checks) | 5 | 5 | 2 | 12 | V1 |
+| [FSM](#5-fsm-checks) | 5 | 5 | 2 | 12 | V1 |
+| [Transitions](#6-transition-checks) | 7 | 3 | — | 10 | V1 |
+| [Mutations](#7-mutation-checks) | 2 | 3 | — | 5 | V1 |
+| [Materials](#8-material-reference-checks) | 2 | 2 | — | 4 | V1 |
+| [Rooms](#9-room-checks) | 1 | 6 | 1 | 8 | V1 |
+| [Nesting](#10-nesting--containment-checks) | — | 5 | 3 | 8 | V1 |
+| [Cross-File](#11-cross-file-checks) | 3 | 6 | 2 | 11 | V1 |
+| [Levels](#12-level-definition-checks) | 5 | 3 | — | 8 | V1 |
+| [Composite Parts](#13-composite-parts-checks) | 3 | 4 | — | 7 | V1 |
+| [Effects Pipeline](#14-effects-pipeline-checks) | 2 | 2 | 1 | 5 | V1 |
+| [Lint Rules](#15-lint-rules) | — | 2 | 9 | 11 | V1 |
+| [Template Definitions](#16-template-definition-checks-v2) | 21 | 5 | 1 | 27 | V2 |
+| [Injury Definitions](#17-injury-definition-checks-v2) | 51 | 14 | 4 | 69 | V2 |
+| [Material Definitions](#18-material-definition-checks-v2) | 15 | 4 | 5 | 24 | V2 |
+| [Level Definitions (V2)](#19-level-definition-checks-extended-v2) | 20 | 10 | 1 | 31 | V2 |
+| [Cross-References](#20-cross-reference-checks-v2) | 4 | 6 | 1 | 11 | V2 |
+| **TOTAL** | **~176** | **~93** | **~37** | **~306** | |
 
 ---
 
@@ -369,6 +374,255 @@
 
 ---
 
+## 16. Template Definition Checks (V2)
+
+**Apply to:** Files in `src/meta/templates/*.lua`  
+**New in V2.** These rules validate template files themselves (not objects that reference templates).
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| **TD-01** | 🔴 | File must `return { ... }`. (Covered by PARSE-01) |
+| **TD-02** | 🔴 | `guid` exists and valid bare format (no braces). |
+| **TD-03** | 🔴 | `id` exists as non-empty string. |
+| **TD-04** | 🔴 | `id` matches filename (e.g., `container.lua` → `id = "container"`). |
+| **TD-05** | 🔴 | `name` exists as non-empty string. |
+| **TD-06** | 🔴 | `keywords` is a table (empty is valid for templates). |
+| **TD-07** | 🔴 | `description` exists as non-empty string. |
+| **TD-08** | 🟡 | `mutations` should be a table (even if `{}`). |
+| **TD-09** | 🔴 | Templates must NOT have a `template` field. |
+| **TD-10** | 🔴 | GUID uniqueness across templates. (Covered by XF-01) |
+| **TD-11** | 🔴 | Physical templates: `size` must be > 0. |
+| **TD-12** | 🔴 | Physical templates: `weight` must be > 0. |
+| **TD-13** | 🔴 | Physical templates: `portable` must be boolean. |
+| **TD-14** | 🔴 | Physical templates: `material` must be a string. |
+| **TD-15** | 🔴 | Physical templates: `container` must be boolean. |
+| **TD-16** | 🔴 | Physical templates: `capacity` must be >= 0. |
+| **TD-17** | 🔴 | Physical templates: `contents` must be a table. |
+| **TD-18** | 🟡 | Template `contents` should be empty. |
+| **TD-19** | 🟢 | Physical templates should declare `location = nil`. |
+| **TD-20** | 🟡 | `categories` must be a table of strings if present. |
+| **TD-21** | 🔴 | Container template: `container` must be `true`. |
+| **TD-22** | 🔴 | Container template: `capacity` must be > 0. |
+| **TD-23** | 🟡 | Container template should declare `weight_capacity > 0`. |
+| **TD-24** | 🔴 | Room template must NOT have physical properties (size, weight, portable, material, capacity, container). |
+| **TD-25** | 🔴 | Room template must declare `contents`. |
+| **TD-26** | 🔴 | Room template must declare `exits`. |
+| **TD-27** | 🟡 | Sheet template `material` should be fabric-class. |
+
+---
+
+## 17. Injury Definition Checks (V2)
+
+**Apply to:** Files in `src/meta/injuries/*.lua`  
+**New in V2.** 69 rules covering injury metadata validation.
+
+### 17.1 Identity & Structural (INJ-01 to INJ-10)
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| **INJ-01** | 🔴 | File must return a table. (PARSE-01) |
+| **INJ-02** | 🔴 | `guid` exists and valid braced format. |
+| **INJ-03** | 🔴 | `id` exists. |
+| **INJ-04** | 🔴 | `id` matches filename. |
+| **INJ-05** | 🔴 | `name` exists. |
+| **INJ-06** | 🔴 | `category` exists. |
+| **INJ-07** | 🟡 | `category` is known value. |
+| **INJ-08** | 🔴 | `description` exists. |
+| **INJ-09** | 🔴 | GUID uniqueness. (XF-01) |
+| **INJ-10** | 🟢 | No `template` field. |
+
+### 17.2 Damage Model (INJ-11 to INJ-19)
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| **INJ-11** | 🔴 | `damage_type` exists. |
+| **INJ-12** | 🔴 | `damage_type` is known ("over_time" or "one_time"). |
+| **INJ-13** | 🔴 | `initial_state` exists. |
+| **INJ-14** | 🔴 | `initial_state` references defined state. |
+| **INJ-15** | 🔴 | `on_inflict` exists as table. |
+| **INJ-16** | 🔴 | `on_inflict.initial_damage` >= 0. |
+| **INJ-17** | 🔴 | `on_inflict.damage_per_tick` >= 0. |
+| **INJ-18** | 🔴 | `on_inflict.message` exists. |
+| **INJ-19** | 🟡 | Consistency: over_time + dpt=0 or one_time + dpt>0. |
+
+### 17.3 FSM States (INJ-20 to INJ-33)
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| **INJ-20** | 🔴 | `states` exists as table. |
+| **INJ-21** | 🔴 | At least 2 states. |
+| **INJ-22** | 🔴 | Every state has `name`. |
+| **INJ-23** | 🔴 | Every state has `description`. |
+| **INJ-24** | 🔴 | Non-terminal states have `on_feel`. |
+| **INJ-25** | 🔴 | Non-terminal states have `damage_per_tick`. |
+| **INJ-26** | 🔴 | States named "healed"/"fatal" must have `terminal = true`. |
+| **INJ-27** | 🔴 | At least one terminal state. |
+| **INJ-28** | 🟡 | Should have a positive terminal (healed). |
+| **INJ-29** | 🟡 | Terminal states no damage_per_tick > 0. |
+| **INJ-30** | 🟡 | Terminal states no timed_events. |
+| **INJ-31** | 🟡 | Terminal states no restricts. |
+| **INJ-32** | 🟢 | Non-terminal states should have `on_look`. |
+| **INJ-33** | 🟢 | Bleeding/infected states should have `on_smell`. |
+
+### 17.4 Timed Events (INJ-34 to INJ-40)
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| **INJ-34** | 🔴 | `timed_events` is array of tables. |
+| **INJ-35** | 🔴 | Each timed event has `event`. |
+| **INJ-36** | 🔴 | Each timed event has positive `delay`. |
+| **INJ-37** | 🔴 | Each timed event has `to_state`. |
+| **INJ-38** | 🔴 | `to_state` references defined state. |
+| **INJ-39** | 🟡 | Delay 360–10800 seconds. |
+| **INJ-40** | 🟡 | No conflicting timed events from same state. |
+
+### 17.5 Restricts (INJ-41 to INJ-43)
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| **INJ-41** | 🔴 | `restricts` is a table. |
+| **INJ-42** | 🔴 | `restricts` values are boolean `true`. |
+| **INJ-43** | 🟡 | `restricts` keys are known actions. |
+
+### 17.6 Transitions (INJ-44 to INJ-57)
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| **INJ-44** | 🔴 | `transitions` is array of tables. |
+| **INJ-45** | 🔴 | Each transition has `from`. |
+| **INJ-46** | 🔴 | Each transition has `to`. |
+| **INJ-47** | 🔴 | `from` references defined state. |
+| **INJ-48** | 🔴 | `to` references defined state. |
+| **INJ-49** | 🔴 | Non-auto transitions have `verb`. |
+| **INJ-50** | 🔴 | Auto transitions have `trigger = "auto"`. |
+| **INJ-51** | 🟡 | Auto transitions should have `condition`. |
+| **INJ-52** | 🔴 | Every transition has `message`. |
+| **INJ-53** | 🔴 | No transitions from terminal states. |
+| **INJ-54** | 🟡 | No duplicate from+verb pairs. |
+| **INJ-55** | 🔴 | `requires_item_cures` is string if present. |
+| **INJ-56** | 🔴 | `mutate` is table if present. |
+| **INJ-57** | 🟡 | `mutate.damage_per_tick` >= 0. |
+
+### 17.7 Healing Interactions (INJ-58 to INJ-65)
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| **INJ-58** | 🔴 | `healing_interactions` exists. |
+| **INJ-59** | 🔴 | `healing_interactions` is a table. |
+| **INJ-60** | 🔴 | Each interaction has `transitions_to`. |
+| **INJ-61** | 🔴 | `transitions_to` references defined state. |
+| **INJ-62** | 🔴 | Each interaction has `from_states`. |
+| **INJ-63** | 🔴 | `from_states` entries reference defined states. |
+| **INJ-64** | 🟡 | `from_states` entries are non-terminal. |
+| **INJ-65** | 🟡 | Healing item IDs reference existing objects. (XR-01) |
+
+### 17.8 Special Fields (INJ-66 to INJ-69)
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| **INJ-66** | 🔴 | `causes_unconsciousness` boolean if present. |
+| **INJ-67** | 🔴 | `unconscious_duration` valid structure. |
+| **INJ-68** | 🔴 | `unconscious_duration` requires `causes_unconsciousness = true`. |
+| **INJ-69** | 🟢 | No unknown top-level fields. |
+
+---
+
+## 18. Material Definition Checks (V2)
+
+**Apply to:** Files in `src/meta/materials/*.lua`  
+**New in V2.** Validates material property files for physical consistency.
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| **MD-01** | 🔴 | File must return a table. (PARSE-01) |
+| **MD-02** | 🔴 | `name` exists as string. |
+| **MD-03** | 🔴 | `name` matches filename. |
+| **MD-04** | 🟢 | No `guid` field. |
+| **MD-05** | 🟢 | No `id` field. |
+| **MD-06** | 🔴 | `density` > 0. |
+| **MD-07** | 🔴 | `hardness` 0–10. |
+| **MD-08** | 🔴 | `flexibility` 0.0–1.0. |
+| **MD-09** | 🔴 | `absorbency` 0.0–1.0. |
+| **MD-10** | 🔴 | `opacity` 0.0–1.0. |
+| **MD-11** | 🔴 | `flammability` 0.0–1.0. |
+| **MD-12** | 🔴 | `conductivity` 0.0–1.0. |
+| **MD-13** | 🔴 | `fragility` 0.0–1.0. |
+| **MD-14** | 🔴 | `value` > 0. |
+| **MD-15** | 🔴 | `melting_point` positive number or nil. |
+| **MD-16** | 🔴 | `ignition_point` positive number or nil. |
+| **MD-17** | 🟡 | `flammability` > 0 requires `ignition_point`. |
+| **MD-18** | 🟡 | `flammability` = 0 implies `ignition_point` nil. |
+| **MD-19** | 🟢 | Both `melting_point` and `ignition_point` present. |
+| **MD-20** | 🟡 | High flexibility with high fragility is unusual. |
+| **MD-21** | 🟢 | `conductivity` > 0 on non-metal. |
+| **MD-22** | 🔴 | `rust_susceptibility` 0.0–1.0 if present. |
+| **MD-23** | 🟡 | `rust_susceptibility` only on ferrous materials. |
+| **MD-24** | 🟢 | Unknown fields flagged. |
+
+---
+
+## 19. Level Definition Checks — Extended (V2)
+
+**Apply to:** Files in `src/meta/levels/`  
+**New in V2.** V1 covered LV-01 to LV-10. V2 adds deep sub-structure checks for intro, completion, boundaries, and restricted objects.
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| **LV-11** | 🔴 | `intro` must be a table. |
+| **LV-12** | 🔴 | `intro.title` non-empty string. |
+| **LV-13** | 🔴 | `intro.narrative` table of strings. |
+| **LV-14** | 🟡 | `intro.narrative` should not be empty. |
+| **LV-15** | 🟡 | `intro.help` should exist. |
+| **LV-16** | 🟢 | `intro.subtitle` should be string if present. |
+| **LV-17** | 🔴 | `completion` is table of tables. |
+| **LV-18** | 🔴 | Each completion has `type`. |
+| **LV-19** | 🔴 | `type = "reach_room"` requires `room`. |
+| **LV-20** | 🔴 | `completion[].room` in `rooms` list. |
+| **LV-21** | 🟡 | `completion[].message` should exist. |
+| **LV-22** | 🟡 | `completion[].from` references valid room. |
+| **LV-23** | 🟡 | `boundaries` should be a table. |
+| **LV-24** | 🔴 | `boundaries.entry` non-empty table of strings. |
+| **LV-25** | 🔴 | `boundaries.entry` rooms in `rooms` list. |
+| **LV-26** | 🟡 | `boundaries.entry` includes `start_room`. |
+| **LV-27** | 🟡 | `boundaries.exit` is table of tables. |
+| **LV-28** | 🔴 | Each exit has `room`. |
+| **LV-29** | 🔴 | Each exit has `exit_direction`. |
+| **LV-30** | 🔴 | Each exit has `target_level`. |
+| **LV-31** | 🔴 | Exit `room` in `rooms` list. |
+| **LV-32** | 🟡 | Exit direction exists on room. (Covered by XR-09) |
+| **LV-33** | 🟡 | `target_level` > current `number`. |
+| **LV-34** | 🔴 | `restricted_objects` is table of strings. |
+| **LV-35** | 🟡 | Restricted objects reference existing object files. |
+| **LV-36** | 🔴 | `description` is non-empty string. |
+| **LV-37** | 🔴 | `rooms` entries are unique. |
+| **LV-38** | 🔴 | `rooms` entries reference valid room files. |
+| **LV-39** | 🔴 | `start_room` in `rooms` list. (Restates LV-06) |
+| **LV-40** | 🔴 | `number` uniqueness across levels. |
+| **LV-41** | 🔴 | GUID uniqueness across levels. (Covered by XF-01) |
+
+---
+
+## 20. Cross-Reference Checks (V2)
+
+**Apply to:** Cross-file relationships between all meta types.  
+**New in V2.** Validates that references between objects, injuries, materials, templates, and levels resolve correctly.
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| **XR-01** | 🟡 | Healing item IDs in `healing_interactions` resolve to objects in `src/meta/objects/`. |
+| **XR-02** | 🟡 | Objects with `on_use.cures` reference valid injury IDs. |
+| **XR-03** | 🟡 | `requires_item_cures` on transitions reference valid injury IDs. |
+| **XR-04** | 🔴 | Object `material` values reference material files. (Covered by MAT-02) |
+| **XR-05** | 🟢 | Template `material = "generic"` is intentional (instances must override). |
+| **XR-06** | 🔴 | Object `template` value resolves to a template file. |
+| **XR-07** | 🟡 | Template default values satisfy type checks. (Covered by template validation) |
+| **XR-08** | 🔴 | Level `completion[].room` exists as room file. |
+| **XR-09** | 🟡 | Level boundary exit direction exists on the room. |
+| **XR-10** | 🟡 | Every room file belongs to at least one level. |
+| **XR-11** | 🔴 | GUID global uniqueness across ALL meta types. (Covered by XF-01) |
+
+---
+
 ## Top 10 Most Critical Rules
 
 For developers: Focus on these first.
@@ -414,7 +668,7 @@ Run ALL checks. Exit code must be 0 (no errors).
 
 ## References
 
-- **Acceptance Criteria (Full):** `docs/meta-check/acceptance-criteria.md` (Lisa's original specification, 144 rules detailed)
+- **Acceptance Criteria (Full):** `docs/meta-check/acceptance-criteria.md` (Lisa's original specification, 306 rules detailed)
 - **Architecture:** `docs/meta-check/architecture.md` (how meta-check validates)
 - **Usage:** `docs/meta-check/usage.md` (how to run meta-check)
 - **Schemas:** `docs/meta-check/schemas.md` (template field contracts)
