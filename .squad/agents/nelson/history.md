@@ -858,6 +858,26 @@ Created 7 test files in `test/parser/pipeline/` covering all pipeline stages:
 - Moe's bedroom north door fix VERIFIED: heavy oak door is locked, cellar route is now the only path
 - Compound commands ("open drawer and get matchbox") work cleanly — split on "and" with GOAP integration
 - Death system works: drinking poison bottle produces "YOU HAVE DIED" game over
+
+### Pre-Refactoring Test Coverage (P0-A) — 2026-03-28
+
+**Status:** ✅ COMPLETE — 172 new tests, 172 PASS, 0 FAIL
+**Full suite:** Still 1 pre-existing failure (objects/test-bedroom-door-object.lua) — not related to this work.
+
+**New test files created:**
+1. `test/verbs/test-helpers-refactor.lua` (54 tests) — Helper functions moving to verbs/helpers.lua: err_not_found, matches_keyword, find_visible search order, container gating, find_mutation, exit_matches, hand helpers, 26 verb alias registration checks
+2. `test/verbs/test-movement-verbs.lua` (31 tests) — Navigation verbs: go, north/s/e/w/up/down, enter, climb, descend, ascend, back, closed/locked/hidden exit blocking, move disambiguation, visit tracking, preposition stripping, direction alias completeness
+3. `test/verbs/test-consumption-verbs.lua` (23 tests) — Eat/drink/pour/burn: edible consumption + removal, FSM drink transitions, "from" preposition stripping, on_drink_reject, on_eat_message, event_output, pour FSM, burn flammable + non-flammable, fire source requirement
+4. `test/verbs/test-container-verbs.lua` (18 tests) — Open/close/unlock: FSM transitions, already-open/closed, on_open/on_close hooks, event_output one-shot, exit door mutations, locked exit blocking, unlock with correct/wrong/no key, "unlock X with Y" parsing, no-keyhole exits
+5. `test/verbs/test-meta-verbs.lua` (31 tests) — Help (7 section checks), wait, inventory (empty/held/worn/bags/flame), time, injuries/health, appearance, set/adjust clock puzzle (advance, wrap, on_correct_time callback), report_bug URL generation, apply with no injuries
+6. `test/verbs/test-fire-verbs.lua` (15 tests) — Light/extinguish: FSM with fire_source tool, player flame (has_flame), already-lit detection, fail without tool, non-lightable rejection, no-tool-required path, extinguish lit→unlit, extinguish already-unlit "isn't lit" message, non-extinguishable rejection
+
+**Key findings during test authoring:**
+- context_window is module-level state that leaks between tests — tests must account for state from prior navigation
+- `find_visible` search order is correctly verb-dependent (interaction vs acquisition) — verified working
+- All 26 verb aliases correctly registered (critical for refactoring — alias chains must survive file splitting)
+- `exit_matches` uses plain string find — "door" ambiguously matches all door exits, tests must use specific keywords
+- The set/adjust clock puzzle handler is ~80 lines of complex FSM manipulation — now covered before Bart touches it
 - Sleep/rest/nap all advance time by 1 hour — time system fully functional
 - All 7 Level 1 rooms visited and tested: bedroom, cellar, storage-cellar, deep-cellar, hallway, courtyard, crypt
 - Crypt writing is extraordinary — silence description is best-in-class atmospheric text

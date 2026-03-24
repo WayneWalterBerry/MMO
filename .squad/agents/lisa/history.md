@@ -407,6 +407,16 @@ The .lua metadata files ARE the test oracle. Every assertion can be derived by:
 
 This is the core advantage over Dwarf Fortress: our metadata is structured, machine-readable Lua — we can auto-generate test cases from it.
 
+### meta-check Acceptance Criteria (2026-03-24)
+- Authored `docs/meta-check/acceptance-criteria.md` — 144 checks across 15 categories
+- Examined all 5 templates, 83 objects, 7 rooms, 1 level, 23 materials to derive rules
+- Key insight: GUID format inconsistency (some braced, some bare) across rooms vs objects — flagged as WARNING
+- Key insight: rooms often lack sensory properties (on_feel, on_smell, on_listen) that are critical for darkness navigation — flagged as WARNING
+- Some room exit targets reference future rooms (level-2, manor-west, manor-east) — these need WARNING not ERROR to avoid blocking
+- Composite parts (nightstand drawer, poison cork) need their own validation pass — factory functions must produce objects with on_feel
+- Cross-file checks (GUID uniqueness, type_id resolution, bidirectional exits) are the most complex to implement but catch the most dangerous bugs
+- The .lua metadata IS the oracle — meta-check codifies what I've been verifying manually into machine-checkable rules
+
 ---
 
 ## Archives

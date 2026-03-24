@@ -108,6 +108,26 @@
 
 ## Learnings
 
+### Lark Grammar: Lua Object Parsing is Tractable (2026-07-28)
+- Python + Lark (Earley parser) successfully parses ALL 83 object .lua files with a ~30-line grammar
+- Three-phase pipeline: tokenize → preprocess (strip preamble, neutralize functions) → Lark parse
+- 82/83 objects are pure data tables (`return { ... }` with literals, nested tables, functions-as-values)
+- 1/83 (wall-clock.lua) uses programmatic generation — builds tables with `for` loops, references locals. Handled via `ident_ref` rule (bare identifier as value), treated as opaque
+- Function bodies (50%+ of objects) are safely replaced with `__FUNC__` placeholders — meta-check validates DATA, not logic
+- Nightstand's local function preamble correctly handled by block-depth tracking in the preprocessor
+- Key limitation: objects with `ident_ref` values can't be fully validated statically — only runtime Lua knows the computed value
+- Decision filed: D-LARK-GRAMMAR
+- Deliverable: `scripts/meta-check/lua_grammar.py`
+
+### Loader Is a Sandbox Executor, Not a Validator (2026-07-28)
+- `src/engine/loader/init.lua` checks 3 things: Lua compilation, runtime execution, return-type-is-table
+- Template/instance resolution checks existence of template and base class by GUID
+- The loader checks ZERO field-level properties: no required fields, no type validation, no FSM consistency, no sensory completeness, no material validity, no cross-reference integrity
+- An object with only `{ guid = "x" }` loads without error — meta-check must catch everything else
+- This minimalism is deliberate and correct for the engine (fast, permissive, forward-compatible)
+- The entire validation burden falls on pre-deploy tooling (meta-check) — this is the right architectural layer
+- Deliverable: `resources/research/meta-compiler/existing-validation-audit.md`
+
 ### find_visible Must Mirror Container Nesting Depth (2026-03-28)
 - The search system (`traverse.lua`) correctly opens all containers recursively during search
 - But `_fv_surfaces` in `verbs/init.lua` only searched surface zone contents — NOT root-level contents of objects with surfaces
@@ -122,6 +142,16 @@
 - Instance overrides (fragility_override, etc.) should be documented as exceptions, not defaults — this is critical to maintain consistency across the world
 - Material properties cascade naturally: density → weight, flammability → burning behavior, hardness → impact resistance. No need to hard-code individual properties per object.
 - This principle aligns perfectly with the Dwarf Fortress architectural reference (D-DF-ARCHITECTURE) where the simulation engine operates on physical properties, not object type names
+
+### Monolith Splitting Sweet Spot (2026-03-28)
+- Reviewed all engine files >500 lines for P0-A refactoring review
+- `verbs/init.lua` at 5,884 lines is the critical target — 8-12 split files is the sweet spot for LLM context reduction (74-84% less context per edit) without excessive cross-file coordination
+- Key insight: the `register(handlers)` pattern lets each verb module inject its handlers into a shared table without knowing about other modules. Clean decoupling.
+- Utility duplication across 3+ files (`strip_articles`, `kw_match`, hand accessors) must be centralized BEFORE any file split — otherwise duplication multiplies
+- `traverse.lua` (871 lines) should NOT be split despite its size — it's a single FSM with high internal cohesion. Size ≠ bad structure.
+- `loop/init.lua` (585 lines) should NOT be split — its phases are sequential safety barriers (consciousness → search tick → input → dispatch → FSM tick). Fragmenting the ordering contract is more dangerous than the file size.
+- Pre-refactoring tests are the prerequisite. No code moves without a green test covering the function being moved.
+- Sequencing matters: refactor BEFORE meta-compiler because meta-check validates file paths — building against a monolith then splitting creates wasted work
 
 ### Effect Pipeline Architecture (2026-07-26)
 - Structured effect tables (`{ type = "inflict_injury", ... }`) already exist in Flanders' objects (poison-bottle.lua, bear-trap.lua) — the objects are ahead of the engine

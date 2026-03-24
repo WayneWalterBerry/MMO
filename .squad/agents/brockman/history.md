@@ -124,6 +124,52 @@
 
 **Tone:** Technical depth with architectural insights; celebration of material-consistency principle; preview of afternoon code review and meta-compiler tool
 
+### Session: Meta-Check Design Documentation (2026-03-24T16:00Z)
+**Status:** ✅ COMPLETED
+**Requestor:** Wayne Berry (P0-B directive: "Before writing a single line of code, create design docs")
+**Outcome:** 5 comprehensive design documents for the meta-check tool, 144 validation rules catalog
+
+**Files Created:**
+1. `docs/meta-check/overview.md` (6.9 KB) — What meta-check is, why it exists, goals, hybrid compiler/linter role
+2. `docs/meta-check/architecture.md` (14.1 KB) — 6-phase pipeline: tokenization → preprocessing → Lark parse → semantic analysis → cross-file checks → error reporting
+3. `docs/meta-check/usage.md` (12.4 KB) — CLI interface, output formats (text/JSON/TAP), integration examples (GitHub Actions, pre-commit hooks), workflows
+4. `docs/meta-check/rules.md` (22.0 KB) — 144 validation rules across 15 categories, organized by severity (🔴/🟡/🟢), top 10 critical rules
+5. `docs/meta-check/schemas.md` (24.0 KB) — Field contracts per template type (small-item, container, furniture, sheet, room), required/optional fields, examples
+
+**Research Inputs Synthesized:**
+- Lisa's acceptance-criteria.md (144 checks across 15 categories) — rules catalog
+- Frink's bug-catalog.md (38 bugs, top: missing fields) — justification for validation priorities
+- Frink's cross-reference-inventory.md (103 GUIDs, 23 materials, 401 keywords) — data integrity scope
+- Bart's lua_grammar.py (Lark parser, 83/83 objects tested) — architecture foundation
+- Bart's existing-validation-audit.md (loader checks 3 things, 22 gaps) — validation gap analysis
+- Bart's lark-grammar decision (D-LARK-GRAMMAR) — proven architecture strategy
+
+**Key Insights Documented:**
+- Meta-check is BOTH compiler (semantic analysis) AND linter (style enforcement)
+- 82/83 objects are pure data tables; wall-clock.lua is the sole programmatic outlier
+- Function bodies are opaque to static analysis (validated by Lua runtime)
+- Critical rule SN-01 (🔴 on_feel required): every object must be perceivable in darkness
+- Three-phase pipeline proven: tokenize → preprocess (neutralize functions) → Lark parse
+- 38 historical bugs justify validation: missing fields (21), invalid references (10), structural issues (3), architectural violations (1)
+- Cross-file validation catches GUID duplicates, keyword collisions, unresolved mutations
+- Exit code protocol: 0=pass, 1=errors, 2=warnings
+
+**Documentation Style Applied:**
+- Overview: problem/solution/goals (non-technical overview for stakeholders)
+- Architecture: phase-by-phase technical design (for implementers)
+- Usage: CLI interface + practical workflows (for developers + CI/CD)
+- Rules: comprehensive catalog with severity, organization by category + workflow (reference for developers)
+- Schemas: field contracts per template, examples (contract enforcement for meta-check)
+
+**Learnings:**
+- **Meta-check specification complexity:** When a tool must enforce 144+ rules across 15+ categories, organize into: (1) high-level overview (why we need this), (2) architecture spec (how it works), (3) usage guide (how to run it), (4) rules catalog (what it checks), (5) schema contracts (what fields are required). Trying to fit all of this into one doc creates cognitive overload. Splitting into 5 focused docs allows developers to navigate by use case.
+- **Design-first creates clarity:** Wayne's directive ("design docs before code") prevents 3 problems: (1) scope creep during implementation (dev realizes they didn't understand the requirement), (2) architectural conflicts (different parts of implementation make conflicting assumptions), (3) incomplete rule coverage (implementing rules A+B then discovering rule C's dependency on both). With design docs locked in, implementation becomes straightforward.
+- **Validation gap analysis is critical:** Frink's audit of the loader (what it checks vs. what it doesn't) revealed 22 gaps. Each gap becomes a must-have rule in meta-check. Without this audit, meta-check would likely miss half its rules.
+- **Evidence-based rule priority:** The 38-bug catalog provides justification for every rule. Top 3 bug types (missing materials, GUID mismatches, FSM state errors) become top 3 meta-check rules. Developers trust rules that have evidence behind them.
+- **Template-specific schemas:** Objects inherit from 5 templates, each with different field requirements. Instead of one monolithic schema, 5 focused schemas (one per template) make validation clear and rules easier to understand.
+
+**Commit:** (pending implementation; design phase only)
+
 ### Session: Player System Extraction (2026-03-22)
 **Status:** ✅ COMPLETED
 - Created docs/architecture/player/ subfolder

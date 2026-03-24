@@ -2237,3 +2237,119 @@ Do NOT write a newspaper edition until Wayne explicitly requests one. Phase G2 (
 **Last Merge:** 2026-03-24T06:13:16Z (Scribe)
 **Inbox Status:** CLEARED (2 inbox files → merged, deleted)
 
+
+
+---
+
+### D-NELSON-COVERAGE-GAPS: Pre-Refactoring Test Coverage Audit
+
+**Author:** Nelson (QA)  
+**Date:** 2026-03-28  
+**Status:** Active  
+
+# Nelson: Pre-Refactoring Coverage Gaps
+
+**Date:** 2026-03-28
+**Author:** Nelson (QA)
+**Context:** P0-A pre-refactoring test coverage audit for verbs/init.lua split
+
+## Coverage Added (172 tests)
+
+Six new test files covering the major verb categories that previously had ZERO dedicated tests:
+- **Helpers** (54): find_visible search order, matches_keyword, error helpers, hand helpers, all 26 verb aliases
+- **Movement** (31): All direction handlers, go/enter/climb/descend/ascend/back, exit blocking, visit tracking
+- **Consumption** (23): eat/drink/pour/burn with FSM transitions, preposition handling, edge cases
+- **Containers** (18): open/close/unlock with FSM, hooks, exit doors, key resolution
+- **Meta** (31): help/wait/inventory/time/injuries/appearance/set/adjust/report_bug/apply
+- **Fire** (15): light/extinguish with tool requirements, player flame, already-lit detection
+
+## Remaining Gaps (Bart: be careful here)
+
+These verb handlers still have LOW or NO dedicated test coverage. Extra caution during file extraction:
+
+| Handler | Risk | Why |
+|---------|------|-----|
+| **write/inscribe** | 🔴 HIGH | 163 lines of runtime code generation. Dynamic mutation. Needs light check + tool resolution + text parsing. |
+| **sew/stitch/mend** | 🔴 HIGH | 149 lines. Skill-gated, requires tool + material. Complex preconditions. |
+| **put/place** | 🟡 MEDIUM | 228 lines. Containment surfaces + reattach_part. Some coverage in test/inventory but not comprehensive. |
+| **pull/yank/extract** | 🟡 MEDIUM | Part detachment logic. Shared codepath with cork removal. |
+| **lift** | 🟡 MEDIUM | Spatial vs portable disambiguation. ~30 lines, not complex but untested. |
+| **uncork/unstop** | 🟡 MEDIUM | Part detachment shortcut. ~50 lines. |
+| **sleep** | 🟡 MEDIUM | 246 lines. Time advancement + FSM ticking during sleep. Complex but isolated. |
+| **strike** | 🟡 MEDIUM | 138 lines. Match+matchbox compound interaction. Partially tested via fire integration. |
+
+## Alarming Finds
+
+1. **write/inscribe** has ZERO tests and is the engine's only runtime code generation verb. If this breaks during refactoring, there's no safety net.
+
+2. **context_window is module-level mutable state** — tests that navigate rooms pollute the context_window for subsequent tests. Bart needs to ensure the context_window reference is properly shared across verb modules after splitting.
+
+3. **_next_instance_id counter** is module-level. After split, it must live in exactly ONE module (helpers.lua) or verb modules will generate duplicate instance IDs.
+
+## Recommendation
+
+The 172 tests I wrote cover the highest-traffic verb handlers. For the remaining gaps, I recommend Bart:
+- Extract write/sew/put LAST (highest complexity, lowest coverage)
+- Test each file extraction individually with `lua test/run-tests.lua` before proceeding
+- Flag me for any new test needs discovered during extraction
+
+
+---
+
+### D-LARK-GRAMMAR: Lark-Based Lua Object Parser
+
+**Author:** Bart (Architect)  
+**Date:** 2026-07-28  
+**Status:** Proven  
+
+# Decision: D-LARK-GRAMMAR — Lark-Based Lua Object Parser
+
+**Author:** Bart (Architect)  
+**Date:** 2026-07-28  
+**Status:** PROVEN  
+**Scope:** Meta-compiler parsing strategy
+
+---
+
+## Decision
+
+**Use Python + Lark (Earley parser) to parse Lua object files for the meta-check tool.**
+
+The prototype at `scripts/meta-check/lua_grammar.py` successfully parses all 83 objects in `src/meta/objects/` with zero failures.
+
+## Architecture
+
+Three-phase pipeline:
+1. **Tokenize** — Custom Lua tokenizer handles strings, comments, keywords, nesting
+2. **Preprocess** — Strip preamble (local declarations), neutralize function bodies → `__FUNC__` placeholders
+3. **Lark Parse** — Earley grammar: `return { key = value, ... }` with nested tables, arrays, booleans, nil, trailing commas
+
+## Key Findings
+
+1. **82/83 objects are pure data tables** — `return { ... }` with only literals, tables, and function expressions as values. Lark's ~30-line grammar handles them directly.
+
+2. **1/83 objects (wall-clock.lua) uses programmatic generation** — builds `states` and `transitions` tables with `for` loops, then references them by variable name (`states = states`). Handled by adding `ident_ref` support (bare identifier as value). Meta-check treats these as opaque — only the Lua runtime knows the computed value.
+
+3. **Function bodies are safely opaque** — 50%+ of objects have functions (`on_look`, `on_feel`, `factory`, `guard`). Preprocessing replaces them with `__FUNC__` markers. Meta-check validates data fields only; function logic is Lua's responsibility.
+
+4. **Nightstand pattern (local function preamble)** — Some objects define helper functions before `return`. The preprocessor's block-depth tracker correctly finds the top-level `return` past any `function`/`if`/`for`/`end` nesting.
+
+## Implications
+
+- **For meta-check:** Parse → extract fields → validate against schema. Functions and ident_refs are "pass-through" — can't be validated statically.
+- **For wall-clock pattern:** Consider whether programmatic objects should be refactored to inline data, or whether meta-check should accept `ident_ref` as "runtime-validated only."
+- **For future:** Grammar is extensible. Room files follow the same pattern and should parse with the same grammar.
+
+## Affected Team Members
+
+- **Frink** — Confirms Lua-subset-parsing.md findings; Lark is the recommended tool
+- **Nelson** — Grammar can be used to build test fixtures (parse → extract → assert)
+- **Flanders** — Objects with `ident_ref` values (wall-clock) can't be fully validated statically
+
+
+---
+
+**End of 2026-03-24T16-40-00Z Decision Inbox Merge**
+**Total Active Decisions:** 88 (86 prior + 2 new from inbox)
+**Last Merge:** 2026-03-24T16:40:00Z (Scribe)
+**Inbox Status:** 2 files merged, ready for deletion
