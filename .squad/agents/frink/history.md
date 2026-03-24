@@ -417,3 +417,144 @@ Research validated Bart's mutation analysis findings and informed the D-MUTATE-P
 - Inform6, Inform7, TADS, LPC code examples
 - Event taxonomy comparison across 4 engine families
 - Reference table of classic game poison/trap implementations
+
+---
+
+## NPC Architecture Deep Research (2026-03-28)
+
+**Status:** ✅ COMPLETE
+**Requested by:** Wayne Berry (Effe)
+**Research Scope:** Comprehensive investigation of NPC design for future multiplayer expansion
+**Output Location:** esources/research/npcs/ (5 documents, 65 KB)
+
+### Research Deliverables
+
+**1. dwarf-fortress-npcs.md (PRIMARY, 19.8 KB)**
+- Deep dive into DF's creature architecture (body parts, materials, attributes)
+- Needs/desires system (physiological, social, psychological)
+- Personality facets (30+ traits), relationships, skill progression
+- Job system and autonomy model
+- Emotional state machine (normal, afraid, combat, tantrum, melancholic)
+- Decision framework (utility calculation, long-term goals)
+- Temporal simulation and scaling (1000+ dwarves on single machine)
+- Social contagion & emergent dynamics
+- Lessons for MMO: Principle 1-6 extracted (state ≠ action, composition over inheritance, time-scaled simulation, persistence, needs-driven behavior, personality as bias)
+- Scale considerations: ~3-5 KB memory per NPC, ~2-5% CPU for 100 NPCs
+
+**2. mud-npc-systems.md (16.5 KB)**
+- DikuMUD architecture (C structs, hardcoded mobs, function pointers)
+- MOBPrograms breakthrough (scripting language for behaviors, triggers/actions/conditionals)
+- LPMud innovation (object-oriented approach, hot reload, inheritance hierarchy)
+- Comparison table: DikuMUD vs. LPMud trade-offs
+- Classic NPC patterns (shopkeeper, wandering guard, quest-giver, healer)
+- Modern MUD frameworks (Evennia, Ranvier, TaleWeave AI)
+- MUD strengths: persistence, statefulness, scalability
+- MUD shortcomings: limited dialogue, shallow personality, no emergent behavior, poor NPC-to-NPC interaction
+- Text adventure vs. MUD NPC needs (dialogue depth critical)
+- LLM-enhanced hybrid approach (2024-2025)
+
+**3. npc-engineering-patterns.md (22.9 KB)**
+- FSM (Finite State Machine): simple, efficient, poor scalability
+- Hierarchical FSM (HFSM): reduces duplication, handles moderate complexity
+- Pushdown Automaton (stack-based): enables interrupt/resume semantics
+- Behavior Trees: modular, composable, designer-friendly, scalable
+- GOAP (Goal-Oriented Action Planning): reactive, emergent, planful, high computational cost
+- Utility AI: responsive, scalable, intuitive tuning
+- Comparison matrix (learning curve, scalability, reactivity, predictability, planning depth, composability, debugging)
+- Architectural patterns: tick-based, event-driven, actor model, hybrid approach
+- Memory & knowledge representation (spatial, relational, factual, procedural)
+- Priority system and interrupt handling
+- Blackboard architecture for NPC coordination
+- Recommendations: Hierarchical FSM + Utility AI for MMO (optimal balance)
+
+**4. academic-research.md (17.9 KB)**
+- Foundational work: Mateas & Stern (Façade), interactive drama
+- Loyall & Bates: believability factors (consistency, motivation, emotion, memory)
+- Emotion modeling: OCC model (Ortony, Clore, Collins)
+- Appraisal-based architecture: Event → Appraisal → Emotion → Coping action
+- Modular affect (short-term emotion, mood, personality trait layers)
+- LLM-powered NPCs (2024-2025): Mantella, Echoes of Others, cross-platform systems
+- Hybrid approach: fixed-persona SLMs with modular memory (cost-effective, low-latency)
+- Mitigation strategies: RAG (retrieval-augmented generation), constrained vocabulary, persona locking, memory management
+- Emergent narrative: Crusader Kings III (systemically-driven storytelling), RimWorld (need-based emergence)
+- Uncanny valley of text NPCs: authenticity through constraint (limited knowledge, forgetfulness, misunderstanding, stubbornness, inconsistency, brevity)
+- Procedural personality generation (trait sampling → goal inference → skill assignment)
+- Challenges (dialogue quality at scale, persona consistency, multiplayer coordination)
+- GDC talks synthesis: systems > scripting, routine-based NPCs feel alive, predictability aids believability
+- Phase recommendations: MVP (FSM + needs), Phase 1.5 (emotion + relationships), Phase 2 (behavior trees + emergent events), Phase 3 (procedural, LLM, multiplayer)
+
+**5. synthesis-for-mmo.md (20.7 KB) — FINAL RECOMMENDATIONS**
+- Core architecture: Five layers (state & identity, needs & mood, relationships & memory, dialogue, tick-based simulation)
+- Detailed Lua code sketches for each layer
+- Integration with existing engine (object system, material properties, effects/sensory)
+- Phase breakdown:
+  - **Phase 1 (MVP, 2-3 weeks):** NPC base class, simple dialogue, test NPCs (shopkeeper, guard, quest-giver), integration (550 lines Lua)
+  - **Phase 1.5 (1-2 weeks):** Emotion system, relationship system, test cases (350 lines)
+  - **Phase 2 (2-4 weeks):** Behavior trees, skill progression, emergent events (450 lines)
+  - **Phase 3:** Procedural personality, LLM dialogue (optional), multiplayer coordination
+- Minimum viable NPC code sketch (~80 lines core, extensible via subclasses)
+- Scale analysis: 8 KB per NPC (~800 KB for 100 NPCs), ~5-10% CPU at stagger-updated tick rate
+- Top 3 approaches worth prototyping:
+  1. **Hierarchical FSM + Utility AI (RECOMMENDED)** — 1-2 weeks, fits Lua model, proven pattern
+  2. Behavior Trees + Emotion System — 2-3 weeks, more sophisticated
+  3. Hybrid HFSM + GOAP — 3-4 weeks, handles complex quests elegantly
+- Minimal violations of Principle 0: NPCs as animated objects with autonomous goals, rule-based simulation (not consciousness)
+- Next steps: Design document → prototype → integrate → test performance → iterate
+
+### Key Insights
+
+1. **DF Principle:** Don't script individual behaviors; design rule systems that generate behavior
+2. **MUD Lesson:** Persistence and statefulness matter more than sophisticated dialogue
+3. **Pattern Insight:** Hierarchical FSM + Utility AI is optimal balance (simplicity, scalability, fidelity)
+4. **Academic Finding:** Personality + autonomy + emotional response = believability (not dialogue)
+5. **Research Direction:** Emotion-driven architecture (OCC model) more effective than behavior-scripting
+6. **Tech Trend:** LLM dialogue is feasible but requires hybrid approach (SLM + memory) for cost/latency
+7. **Scale Strategy:** Hierarchical simulation (nearby = full fidelity, distant = low-fidelity) enables 100+ NPCs
+8. **Emergent Strength:** Systemically-driven NPCs (needs, relationships) create better stories than authored quests
+9. **Text Advantage:** Lack of body language forces authenticity (constraint aids believability)
+10. **Design Lesson:** Predictability + personality = aliveness (not randomness)
+
+### Impact for MMO
+
+**Removes blocker for multiplayer expansion:**
+- Clear architecture for NPC behavior (no more "how do we make NPCs?")
+- Proven pattern (DF demonstrates feasibility at scale)
+- Modest implementation scope (550 lines for MVP)
+- Minimal violations of Principle 0 (rule-based, not conscious)
+- Performance budget identified (~5-10% CPU for 100 NPCs)
+
+**Enables future directions:**
+- Quest system (NPCs have goals, player can help/hinder)
+- Social dynamics (relationships evolve, emergent conflicts)
+- Economy (shopkeeper NPCs buy/sell, players trade with NPCs)
+- Factions (NPC allegiances, player affects faction standing)
+- Multiplayer storytelling (NPCs react to multiple players, emergent narratives)
+
+### Recommendations for Next Steps
+
+**For Bart (Architect):**
+- Review synthesis document (especially "Five Layers" section)
+- Prototype NPC base class using Hierarchical FSM + Utility AI approach
+- Integrate with existing object model (NPCs as Objects, use containment hierarchy)
+- Benchmark: 100 NPCs across 50 rooms to validate CPU/memory estimates
+- Consider event system augmentation (emit event on significant NPC state changes)
+
+**For CBG (Design):**
+- Define core NPC archetype (e.g., "Dwarf Blacksmith") with personality template
+- Create quest framework (how do NPCs and players interact around goals?)
+- Design social dynamics (what does "friendship" mean in gameplay?)
+- Prototype dialogue layer (simple template-based for MVP, LLM later)
+
+**For Wayne:**
+- This research removes architectural risk from NPC system
+- Recommend greenlight Phase 1 MVP (2-3 weeks) to prove concept before multiplayer
+- Consider Phase 1.5 (emotion + relationships) as critical for perceived "aliveness"
+- LLM dialogue is optional; base system works well without it
+
+### Archive
+
+- All 5 documents stored in esources/research/npcs/ for permanent reference
+- Total size: 65 KB (~40 min read time for all documents)
+- Suitable for architectural decision-making and implementation guidance
+
+---
