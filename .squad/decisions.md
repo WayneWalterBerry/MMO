@@ -1032,14 +1032,15 @@ When Wayne gives a directive, classify it into one of three categories and route
 ### DIRECTIVE: Daily Edition Requirements (Comic Strip + Op-Ed)
 **Author:** Brockman (Documentation)  
 **Date:** 2026-03-21  
-**Status:** SQUAD PROCESS DIRECTIVE
+**Status:** SQUAD PROCESS DIRECTIVE (UPDATED 2026-03-24)
 
-Every daily newspaper edition must include two recurring sections:
+Every daily newspaper edition must include one recurring section:
 
 | Section | Content | Frequency |
 |---------|---------|-----------|
-| **Comic Strip** | Daily comic panel or short sequence | Every edition |
 | **Op-Ed Piece** | Editorial opinion, developer commentary, in-character article | Every edition |
+
+**Note:** Comic strips were removed from newspapers per Wayne's directive (2026-03-24). Newspapers now focus on news, analysis, and op-eds.
 
 **Current editions:** See `newspaper/` folder (2026-03-20-morning.md, etc.)
 

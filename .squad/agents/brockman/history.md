@@ -14,7 +14,7 @@
 - **Core Docs:** README.md, vocabulary.md (200+ terms, 6 categories), architecture-decisions.md, design-directives.md
 - **Design Docs:** 11 files in docs/design/ (gameplay mechanics, player-facing systems)
 - **Architecture Docs:** 6 files in docs/architecture/ (engine internals, technical patterns)
-- **Newspaper (MMO Gazette):** In-universe daily updates; multiple editions per day; comic + op-ed sections
+- **Newspaper (MMO Gazette):** In-universe daily updates; multiple editions per day; op-ed sections
 - **Decision Log:** decisions.md (canonical source for squad process + architecture choices)
 
 **Key Achievements:**
@@ -59,7 +59,7 @@
 ### Session: Morning Edition Publication (2026-03-20T06:00Z)
 **Status:** ✅ COMPLETE
 - Created newspaper/2026-03-20-morning.md (overnight progress, composite objects, bug fixes)
-- Maintained in-universe voice with comic + op-ed sections
+- Maintained in-universe voice with op-ed sections
 
 ### Session: Post-Integration Documentation Sweep (2026-03-21)
 **Status:** ✅ COMPLETE

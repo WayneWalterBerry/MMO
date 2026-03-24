@@ -742,48 +742,6 @@ The root README.md now includes:
 
 ---
 
-## 🎨 THE DAILY COMIC: "THE BUG THAT BROKE EVERYTHING (AND THEN DIDN'T)"
-
-```
-┌─────────────────────────────────────────────────────┐
-│  BUG-036: THE GREAT "I" AMBIGUITY OF LEVEL 1 DAY   │
-└─────────────────────────────────────────────────────┘
-
-PANEL 1:
-  Nelson, testing Level 1, types a command:
-  Nelson: "> I open the door"
-  Game console shows: "Your inventory: matchbox, candle, key"
-  Nelson: "...that's not what I meant?"
-
-PANEL 2:
-  Nelson calls Bart on Slack:
-  Nelson: "The 'I' command isn't working right"
-  Bart: "What's the expected behavior?"
-  Nelson: "Well, 'I' should refer to me. Like 'I open' = 'I (the player) open'"
-  
-PANEL 3:
-  Bart stares at the code:
-  Bart: "Oh. OH. We made 'I' a shortcut for inventory."
-  Bart: "So 'I open the door' becomes 'inventory' + 'open the door'"
-  Bart: "That's... a collision."
-
-PANEL 4:
-  CBG appears in Slack:
-  CBG: "This is a linguistics problem, not an engineering problem."
-  CBG: "We need to define the grammar. Does 'I' refer to player or inventory?"
-  
-PANEL 5:
-  Nelson: "Can't we just... not use 'I' as a shortcut?"
-  Bart: "We could. But removing a feature is a design decision."
-  
-PANEL 6:
-  All three staring at the code:
-  Nelson, Bart, CBG: "Add to design backlog."
-  Narrator: "BUG-036 lives to see another day."
-```
-
----
-
 ## 📰 OP-ED: "FROM NINE TO FOURTEEN: THE MOMENT WE BECAME A REAL TEAM"
 ### *By Brockman, Chief Correspondent*
 

@@ -501,36 +501,6 @@ Bart created a **puzzle design menu** for Bob (Puzzle Master). Instead of coding
 
 ---
 
-## 🎨 THE DAILY COMIC: "THE MULTI-COMMAND REVOLUTION"
-
-```
-┌─────────────────────────────────────────────────────┐
-│      WAYNE: "Why can't I do multiple commands?"      │
-│                                                      │
-│      PARSER (OLD): "One command. Per input."        │
-│                                                      │
-│      WAYNE: "But I want: take flask, go north..."   │
-│                                                      │
-│      PARSER: "Nope. One. At. A. Time."              │
-│                                                      │
-│                  [SEVERAL HOURS PASS]               │
-│                                                      │
-│      BART: "Fixed it."                              │
-│                                                      │
-│      WAYNE: "take flask, go north, drink wine!"     │
-│                                                      │
-│      PARSER (NEW): "✅ ✅ ✅ All three complete"     │
-│                                                      │
-│      NELSON: "And it passes all 54 test cases."    │
-│                                                      │
-│      SMITHERS: "Deployed to production."            │
-│                                                      │
-│      THE ENTIRE TEAM: "That's the velocity."        │
-└─────────────────────────────────────────────────────┘
-```
-
----
-
 ## 📰 NEWSPAPER STATS (Evening Edition)
 
 | Stat | Value |
@@ -543,7 +513,7 @@ Bart created a **puzzle design menu** for Bob (Puzzle Master). Instead of coding
 | **Bugs Documented** | 3 fixed |
 | **Puzzles Covered** | 2 shipped |
 | **UX Improvements** | 5 |
-| **Humor Level** | High (comic included) |
+| **Humor Level** | High |
 | **Inspirational Quotes** | 6 |
 
 ---
