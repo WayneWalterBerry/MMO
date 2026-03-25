@@ -48,7 +48,7 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-24 13:11"
+local BUILD_TIMESTAMP = "2026-03-25 11:55"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -344,6 +344,7 @@ local ok, err = pcall(function()
     if index_src then
         local index = loader.load_source(index_src)
         if index and index.materials then
+            log_debug("  Found " .. #index.materials .. " materials in manifest")
             for _, name in ipairs(index.materials) do
                 local mat_src = fetch_text("meta/materials/" .. name .. ".lua")
                 if mat_src then
@@ -353,10 +354,18 @@ local ok, err = pcall(function()
                         mat.name = nil
                         materials_mod.registry[mname] = mat
                         mat_count = mat_count + 1
+                    else
+                        log_debug("  WARNING: Material '" .. name .. "' has no name field")
                     end
+                else
+                    log_debug("  WARNING: Failed to fetch material '" .. name .. "'")
                 end
             end
+        else
+            log_debug("  WARNING: No materials section in manifest")
         end
+    else
+        log_debug("  WARNING: Failed to fetch meta/_index.lua")
     end
     log_debug("  Loaded " .. mat_count .. " materials")
 
@@ -747,6 +756,22 @@ local ok, err = pcall(function()
             -- Refresh status bar after each command
             context.update_status(context)
         end
+    end
+
+    -------------------------------------------------------------------
+    -- SLM vector injection (called by bootstrapper.js lazy-load)
+    -- Stores vector data in VFS so embedding_matcher can access it.
+    -- Game works without vectors (BM25 scoring is the default).
+    -------------------------------------------------------------------
+    window._injectSLMVectors = function(a, b)
+        local json_str
+        if b ~= nil then
+            json_str = tostring(b)
+        else
+            json_str = tostring(a)
+        end
+        _G.__VFS["src/assets/parser/embedding-vectors.json"] = json_str
+        log_debug("SLM vectors: injected into VFS (" .. format_size(#json_str) .. ")")
     end
 
     -- Enable input

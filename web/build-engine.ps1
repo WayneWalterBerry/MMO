@@ -131,6 +131,30 @@ if (Test-Path $AssetsDir) {
     }
 }
 
+# --- Extract embedding vectors into a separate lazy-load file ---
+# Reads the FULL embedding index (with 384-dim vectors), extracts vectors
+# into a compressed file for async loading after game boot.
+$fullEmbeddingFile = Join-Path $RepoRoot "resources\archive\embedding-index-full.json"
+$vectorsVersion = ""
+if (Test-Path $fullEmbeddingFile) {
+    Write-Host "  Extracting embedding vectors for lazy-load..."
+    $vectorsGzPath = Join-Path $OutDir "embedding-vectors.json.gz"
+    $extractScript = Join-Path $ScriptDir "extract-vectors.py"
+    $vectorsResult = & python $extractScript $fullEmbeddingFile $vectorsGzPath 2>&1
+    if ($LASTEXITCODE -eq 0 -and $vectorsResult) {
+        $parts = "$vectorsResult".Split('|')
+        $vectorsVersion = $parts[0]
+        Write-Host "  Vectors: $($parts[1]) entries, version $vectorsVersion"
+        Write-Host "  embedding-vectors.json.gz: $($parts[3]) KB ($($parts[2]) KB raw)"
+    } else {
+        Write-Host "  WARNING: Vector extraction failed (Python required)"
+        $vectorsVersion = ""
+    }
+} else {
+    Write-Host "  No full embedding index -- skipping vector extraction"
+    Write-Host "  (Expected: resources/archive/embedding-index-full.json)"
+}
+
 # Write raw engine.lua
 $engineLuaPath = Join-Path $OutDir "engine.lua"
 $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
@@ -162,8 +186,9 @@ $bootstrapperPath = Join-Path $ScriptDir "bootstrapper.js"
 $bsContent = [System.IO.File]::ReadAllText($bootstrapperPath, $utf8NoBom)
 $bsContent = $bsContent -replace 'const BUILD_TIMESTAMP = ".*?"', "const BUILD_TIMESTAMP = `"$timestamp`""
 $bsContent = $bsContent -replace 'const CACHE_BUST = ".*?"', "const CACHE_BUST = `"$timestampCompact`""
+$bsContent = $bsContent -replace 'const VECTORS_VERSION = ".*?"', "const VECTORS_VERSION = `"$vectorsVersion`""
 [System.IO.File]::WriteAllText($bootstrapperPath, $bsContent, $utf8NoBom)
-Write-Host "  Stamped bootstrapper.js: BUILD_TIMESTAMP = `"$timestamp`", CACHE_BUST = `"$timestampCompact`""
+Write-Host "  Stamped bootstrapper.js: BUILD_TIMESTAMP = `"$timestamp`", CACHE_BUST = `"$timestampCompact`", VECTORS = `"$vectorsVersion`""
 
 # Embed cache-bust version in index.html (bootstrapper.js?v=XXXX)
 $indexPath = Join-Path $ScriptDir "index.html"
