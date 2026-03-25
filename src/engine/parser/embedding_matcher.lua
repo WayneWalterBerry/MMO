@@ -16,6 +16,10 @@ if not bm25_ok then bm25_data = nil end
 local syn_ok, synonym_table = pcall(require, "engine.parser.synonym_table")
 if not syn_ok then synonym_table = nil end
 
+-- Word similarity matrix for soft matching (Phase 2)
+local wsim_ok, word_sim = pcall(require, "engine.parser.word_similarity")
+if not wsim_ok then word_sim = nil end
+
 local matcher = {}
 matcher.__index = matcher
 
@@ -194,6 +198,84 @@ local function jaccard_with_bonus(input_tokens, phrase_tokens)
 end
 
 ---------------------------------------------------------------------------
+-- Word similarity lookup (uses word_similarity.lua matrix)
+-- Returns 1.0 for identical words, matrix value for known pairs, 0 otherwise.
+---------------------------------------------------------------------------
+local function get_similarity(w1, w2)
+  if w1 == w2 then return 1.0 end
+  if not word_sim then return 0.0 end
+  if word_sim[w1] and word_sim[w1][w2] then
+    return word_sim[w1][w2]
+  end
+  if word_sim[w2] and word_sim[w2][w1] then
+    return word_sim[w2][w1]
+  end
+  return 0.0
+end
+
+---------------------------------------------------------------------------
+-- Soft Cosine Measure (Sidorov et al. 2014)
+-- Uses word similarity matrix S for cross-term weighting.
+-- score = (q·S·p) / (sqrt(q·S·q) * sqrt(p·S·p))
+---------------------------------------------------------------------------
+local function soft_cosine_score(input_tokens, phrase_tokens)
+  -- Build frequency maps (tokens are deduplicated by tokenizer, so freq=1)
+  local q_freq, p_freq = {}, {}
+  for _, t in ipairs(input_tokens) do q_freq[t] = (q_freq[t] or 0) + 1 end
+  for _, t in ipairs(phrase_tokens) do p_freq[t] = (p_freq[t] or 0) + 1 end
+
+  -- Numerator: sum over all (qi, pj) pairs weighted by similarity
+  local numerator = 0
+  for qi, qf in pairs(q_freq) do
+    for pi, pf in pairs(p_freq) do
+      local s = get_similarity(qi, pi)
+      if s > 0 then
+        numerator = numerator + qf * pf * s
+      end
+    end
+  end
+
+  -- Denominator: soft norms for proper normalization
+  local norm_q = 0
+  for qi, qf in pairs(q_freq) do
+    for qj, qf2 in pairs(q_freq) do
+      local s = get_similarity(qi, qj)
+      if s > 0 then norm_q = norm_q + qf * qf2 * s end
+    end
+  end
+
+  local norm_p = 0
+  for pi, pf in pairs(p_freq) do
+    for pj, pf2 in pairs(p_freq) do
+      local s = get_similarity(pi, pj)
+      if s > 0 then norm_p = norm_p + pf * pf2 * s end
+    end
+  end
+
+  if norm_q <= 0 or norm_p <= 0 then return 0 end
+  return numerator / (math.sqrt(norm_q) * math.sqrt(norm_p))
+end
+
+---------------------------------------------------------------------------
+-- MaxSim scoring (ColBERT-inspired late interaction)
+-- For each input token, find max similarity with any phrase token, sum them.
+-- Normalized by input token count for comparability across inputs.
+---------------------------------------------------------------------------
+local function maxsim_score(input_tokens, phrase_tokens)
+  if #input_tokens == 0 then return 0 end
+  local total = 0
+  for _, qt in ipairs(input_tokens) do
+    local max_sim = 0
+    for _, pt in ipairs(phrase_tokens) do
+      local s = get_similarity(qt, pt)
+      if s > max_sim then max_sim = s end
+    end
+    total = total + max_sim
+  end
+  return total / #input_tokens
+end
+
+---------------------------------------------------------------------------
 -- BM25 scoring: IDF-weighted term frequency with length normalization
 -- k1=1.2 (TF saturation), b=0.5 (moderate length norm for short docs)
 ---------------------------------------------------------------------------
@@ -234,7 +316,7 @@ function matcher.new(index_path, debug)
   self.phrases = {}
   self.loaded = false
   self.diagnostic = debug or false
-  self.scoring_mode = "bm25"  -- "bm25" or "jaccard"
+  self.scoring_mode = "bm25"  -- "bm25", "jaccard", "softcosine", "maxsim"
 
   local f = io.open(index_path, "r")
   if not f then
@@ -277,10 +359,38 @@ function matcher.new(index_path, debug)
 end
 
 ---------------------------------------------------------------------------
+-- Tiebreaker: prefer base-state (non-suffixed) noun variant.
+-- "examine match" should match "examine a wooden match" not "examine a lit match".
+---------------------------------------------------------------------------
+local function prefer_base_state(cur_phrase, new_phrase)
+  if not cur_phrase or not new_phrase then return false end
+  local cur_noun = cur_phrase.noun or ""
+  local new_noun = new_phrase.noun or ""
+  local state_suffixes = {"%-lit$", "%-open$", "%-broken$", "%-closed$"}
+  local cur_has_suffix = false
+  local new_has_suffix = false
+  for _, pat in ipairs(state_suffixes) do
+    if cur_noun:find("-", 1, true) and cur_noun:match(pat) then cur_has_suffix = true end
+    if new_noun:find("-", 1, true) and new_noun:match(pat) then new_has_suffix = true end
+  end
+  return cur_has_suffix and not new_has_suffix
+end
+
+---------------------------------------------------------------------------
 -- match(input_text) -> verb, noun, score, matched_phrase
 -- Returns the best-matching phrase's verb+noun with confidence score.
 -- Returns nil if no phrases loaded.
+--
+-- Scoring modes:
+--   "bm25"       — BM25 only (Phase 1 baseline)
+--   "jaccard"    — Jaccard only (legacy)
+--   "softcosine" — Two-stage: BM25 → soft cosine re-rank (Phase 2)
+--   "maxsim"     — Two-stage: BM25 → MaxSim re-rank (Phase 2)
 ---------------------------------------------------------------------------
+local HYBRID_BM25_WEIGHT = 0.70   -- D1 decision: 70% BM25, 30% re-rank
+local HYBRID_RERANK_WEIGHT = 0.30
+local RERANK_TOP_K = 50           -- Re-rank top 50 BM25 candidates
+
 function matcher:match(input_text)
   if not self.loaded or #self.phrases == 0 then
     return nil, nil, 0, nil
@@ -291,21 +401,39 @@ function matcher:match(input_text)
     return nil, nil, 0, nil
   end
 
-  -- Synonym expansion first: map unknown verbs to canonical forms
+  -- Synonym expansion: map unknown verbs to canonical forms
   -- before typo correction can misfire (e.g., "snatch" → "search")
   local syn_mappings = nil
-  if self.scoring_mode == "bm25" and synonym_table then
+  local mode = self.scoring_mode
+  if mode ~= "jaccard" and synonym_table then
     input_tokens, syn_mappings = synonym_table.expand_tokens(input_tokens)
   end
 
   -- Apply typo correction against known verbs on remaining tokens
   input_tokens = correct_typos(input_tokens, self.known_verbs)
 
-  local use_bm25 = (self.scoring_mode == "bm25" and bm25_data ~= nil)
+  -- Pure Jaccard mode (legacy)
+  if mode == "jaccard" then
+    local best_score = -1
+    local best_phrase = nil
+    for _, phrase in ipairs(self.phrases) do
+      local score = jaccard_with_bonus(input_tokens, phrase.tokens)
+      if score > best_score then
+        best_score = score
+        best_phrase = phrase
+      elseif score == best_score and prefer_base_state(best_phrase, phrase) then
+        best_phrase = phrase
+      end
+    end
+    if best_phrase then
+      return best_phrase.verb, best_phrase.noun, best_score, best_phrase.text
+    end
+    return nil, nil, 0, nil
+  end
 
-  local best_score = -1
-  local best_phrase = nil
-
+  -- Stage 1: BM25 scoring on all phrases
+  local use_bm25 = (bm25_data ~= nil)
+  local candidates = {}
   for _, phrase in ipairs(self.phrases) do
     local score
     if use_bm25 then
@@ -313,26 +441,67 @@ function matcher:match(input_text)
     else
       score = jaccard_with_bonus(input_tokens, phrase.tokens)
     end
-    if score > best_score then
-      best_score = score
-      best_phrase = phrase
-    elseif score == best_score and best_phrase then
-      -- Tiebreaker: prefer base-state (non-suffixed) noun variant.
-      -- "examine match" should match "examine a wooden match" not "examine a lit match".
-      local cur_has_suffix = best_phrase.noun:find("-", 1, true) and
-        (best_phrase.noun:match("%-lit$") or best_phrase.noun:match("%-open$") or
-         best_phrase.noun:match("%-broken$") or best_phrase.noun:match("%-closed$"))
-      local new_has_suffix = phrase.noun:find("-", 1, true) and
-        (phrase.noun:match("%-lit$") or phrase.noun:match("%-open$") or
-         phrase.noun:match("%-broken$") or phrase.noun:match("%-closed$"))
-      if cur_has_suffix and not new_has_suffix then
-        best_phrase = phrase
-      end
+    if score > 0 then
+      candidates[#candidates + 1] = { phrase = phrase, bm25 = score, score = score }
     end
   end
 
-  if best_phrase then
-    return best_phrase.verb, best_phrase.noun, best_score, best_phrase.text
+  -- Pure BM25 mode — no re-ranking
+  if mode == "bm25" or (mode ~= "softcosine" and mode ~= "maxsim") then
+    local best_score = -1
+    local best_phrase = nil
+    for _, c in ipairs(candidates) do
+      if c.score > best_score then
+        best_score = c.score
+        best_phrase = c.phrase
+      elseif c.score == best_score and prefer_base_state(best_phrase, c.phrase) then
+        best_phrase = c.phrase
+      end
+    end
+    if best_phrase then
+      return best_phrase.verb, best_phrase.noun, best_score, best_phrase.text
+    end
+    return nil, nil, 0, nil
+  end
+
+  -- Stage 2: Re-rank top candidates with soft cosine or MaxSim
+  -- Sort by BM25 score descending to select top-K
+  table.sort(candidates, function(a, b) return a.bm25 > b.bm25 end)
+  local top_k = math.min(RERANK_TOP_K, #candidates)
+
+  -- Choose re-ranking function
+  local rerank_fn = (mode == "softcosine") and soft_cosine_score or maxsim_score
+
+  -- Find max BM25 score for normalization (re-rank scores are 0-1, BM25 is unbounded)
+  local max_bm25 = 0
+  for i = 1, top_k do
+    if candidates[i].bm25 > max_bm25 then max_bm25 = candidates[i].bm25 end
+  end
+  if max_bm25 <= 0 then max_bm25 = 1 end
+
+  for i = 1, top_k do
+    local rerank = rerank_fn(input_tokens, candidates[i].phrase.tokens)
+    local bm25_norm = candidates[i].bm25 / max_bm25  -- Normalize BM25 to 0-1
+    candidates[i].rerank = rerank
+    candidates[i].score = HYBRID_BM25_WEIGHT * bm25_norm + HYBRID_RERANK_WEIGHT * rerank
+  end
+
+  -- Re-sort top-K by hybrid score
+  local top_candidates = {}
+  for i = 1, top_k do top_candidates[i] = candidates[i] end
+  table.sort(top_candidates, function(a, b) return a.score > b.score end)
+
+  -- Find best with tiebreaker
+  if #top_candidates > 0 then
+    local best = top_candidates[1]
+    -- Check tiebreakers among equal-score candidates
+    for i = 2, #top_candidates do
+      if top_candidates[i].score < best.score then break end
+      if prefer_base_state(best.phrase, top_candidates[i].phrase) then
+        best = top_candidates[i]
+      end
+    end
+    return best.phrase.verb, best.phrase.noun, best.score, best.phrase.text
   end
 
   return nil, nil, 0, nil

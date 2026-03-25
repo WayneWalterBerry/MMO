@@ -1,6 +1,6 @@
 -- test/parser/test-tier2-benchmark.lua
--- A/B benchmark for Tier 2 parser: compares Jaccard vs BM25+Synonyms scoring.
--- Run: lua test/parser/test-tier2-benchmark.lua [jaccard|bm25]
+-- A/B benchmark for Tier 2 parser scoring modes.
+-- Run: lua test/parser/test-tier2-benchmark.lua [jaccard|bm25|softcosine|maxsim]
 
 package.path = "src/?.lua;src/?/init.lua;" .. package.path
 
@@ -11,10 +11,12 @@ local embedding_matcher = require("engine.parser.embedding_matcher")
 ---------------------------------------------------------------------------
 local THRESHOLD = 0.40  -- Jaccard threshold (will be overridden for BM25)
 local BM25_THRESHOLD = 3.00  -- BM25 threshold (tuned after baseline run)
+local HYBRID_THRESHOLD = 0.20 -- Hybrid mode threshold (scores are 0-1 normalized)
 
 -- Parse CLI arg for scoring mode
 local scoring_mode = arg and arg[1] or "jaccard"
-if scoring_mode ~= "jaccard" and scoring_mode ~= "bm25" then
+local valid_modes = { jaccard = true, bm25 = true, softcosine = true, maxsim = true }
+if not valid_modes[scoring_mode] then
   scoring_mode = "jaccard"
 end
 
@@ -99,6 +101,23 @@ local cases = {
   {"break knife",                         "break",    "knife",        "ambiguous"},
   -- verb that could be noun
   {"strike match",                        "strike",   "match",        "ambiguous"},
+
+  -- CATEGORY 6: Synonym-stress cases (10 cases) — Phase 2
+  -- These test soft matching with word similarity, NOT just synonym table expansion.
+  -- Words that are related but may not be exact synonyms in synonym_table.
+  {"seize the candle",                    "grab",     "candle",       "soft-synonym"},
+  {"clutch the brass key",                "grab",     "brass-key",    "soft-synonym"},
+  {"gaze at the knife",                   "look",     "knife",        "soft-synonym"},
+  {"survey the wardrobe",                 "look",     "wardrobe",     "soft-synonym"},
+  {"handle the blanket",                  "feel",     "blanket",      "soft-synonym"},
+  {"crush the candle",                    "break",    "candle",       "soft-synonym"},
+  {"wreck the window",                    "break",    "window",       "soft-synonym"},
+  {"sever the cloth",                     "cut",      "cloth",        "soft-synonym"},
+  -- Cases where soft matching adds value over BM25 alone:
+  -- "grip" not in synonym table — soft similarity to "grab" needed
+  {"grip the candle",                     "grab",     "candle",       "soft-synonym"},
+  -- "yank" not in synonym table — soft similarity to "take" needed
+  {"yank the knife",                      "take",     "knife",        "soft-synonym"},
 }
 
 ---------------------------------------------------------------------------
@@ -116,7 +135,14 @@ end
 -- Set scoring mode
 m.scoring_mode = scoring_mode
 
-local threshold = scoring_mode == "bm25" and BM25_THRESHOLD or THRESHOLD
+local threshold
+if scoring_mode == "bm25" then
+  threshold = BM25_THRESHOLD
+elseif scoring_mode == "softcosine" or scoring_mode == "maxsim" then
+  threshold = HYBRID_THRESHOLD
+else
+  threshold = THRESHOLD
+end
 
 ---------------------------------------------------------------------------
 -- Run benchmark
@@ -181,7 +207,13 @@ end
 ---------------------------------------------------------------------------
 -- Print results
 ---------------------------------------------------------------------------
-local algo_name = scoring_mode == "bm25" and "BM25 + Synonyms (improved)" or "Jaccard (baseline)"
+local algo_names = {
+  jaccard = "Jaccard (baseline)",
+  bm25 = "BM25 + Synonyms (Phase 1)",
+  softcosine = "BM25 + Soft Cosine re-rank (Phase 2)",
+  maxsim = "BM25 + MaxSim re-rank (Phase 2)",
+}
+local algo_name = algo_names[scoring_mode] or scoring_mode
 
 print(string.format("\n=== TIER 2 A/B BENCHMARK ==="))
 print(string.format("Algorithm: %s", algo_name))
@@ -191,7 +223,7 @@ print(string.format("False positives: %d", false_positives))
 print(string.format("False negatives: %d", false_negatives))
 
 print("\n--- Per-Category ---")
-local cat_order = {"filler", "synonym", "polite", "negative", "ambiguous"}
+local cat_order = {"filler", "synonym", "polite", "negative", "ambiguous", "soft-synonym"}
 for _, cat in ipairs(cat_order) do
   local s = category_stats[cat]
   if s then
