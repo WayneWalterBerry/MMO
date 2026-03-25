@@ -8,6 +8,10 @@ Phase 1 improvements:
   - Smart XF-03 keyword collision filtering
   - MD-19 melting/ignition point conflict detection
   - XR-05b generic material inheritance warning
+
+Phase 3 improvements:
+  - Squad routing: violations tagged with owning squad member
+  - Incremental caching: SHA-256 file hashing, skip unchanged files
 """
 
 from __future__ import annotations
@@ -42,6 +46,8 @@ def _load_sibling(name: str):
 
 rule_registry = _load_sibling("rule_registry")
 config_mod = _load_sibling("config")
+squad_routing_mod = _load_sibling("squad_routing")
+cache_mod = _load_sibling("cache")
 
 
 # =============================================================================
@@ -502,6 +508,7 @@ class Violation:
     message: str
     fixable: bool = False
     fix_safety: str = "unsafe"
+    owner: str = "unassigned"
 
 
 @dataclass
@@ -595,26 +602,22 @@ def _parse_file(path: Path, violations: List[Violation]) -> Optional[ParsedFile]
 
 # Config reference — set by main() before validation runs
 _active_config: config_mod.CheckConfig = config_mod.CheckConfig()
+_squad_router: squad_routing_mod.SquadRouter = squad_routing_mod.SquadRouter()
 
 
 def _add_violation(violations: List[Violation], path: Path, line: int, severity: str, rule_id: str, message: str) -> None:
     if not _active_config.is_rule_enabled(rule_id):
         return
-    # Only override severity if the config has an explicit per-rule override
     rc = _active_config.rules.get(rule_id)
     if rc is not None and rc.severity is not None:
         severity = rc.severity
     meta = rule_registry.get_rule(rule_id)
     fixable = meta.fixable if meta else False
     fix_safety = meta.fix_safety if meta else "unsafe"
+    owner = _squad_router.owner_for(rule_id)
     violations.append(Violation(
-        file=str(path),
-        line=line,
-        severity=severity,
-        rule_id=rule_id,
-        message=message,
-        fixable=fixable,
-        fix_safety=fix_safety,
+        file=str(path), line=line, severity=severity, rule_id=rule_id,
+        message=message, fixable=fixable, fix_safety=fix_safety, owner=owner,
     ))
 
 
@@ -1934,28 +1937,40 @@ def _collect_lua_files(path: Path) -> List[Path]:
     return lua_files
 
 
-def _format_text(violations: List[Violation]) -> str:
+def _format_text(violations: List[Violation], by_owner: bool = False) -> str:
+    if by_owner and violations:
+        return _format_text_by_owner(violations)
     lines = []
     for v in violations:
-        lines.append(f"{v.file} : {v.line} : {v.severity.upper()} : {v.rule_id} : {v.message}")
+        lines.append(f"{v.file} : {v.line} : {v.severity.upper()} : {v.rule_id} : [{v.owner}] : {v.message}")
     return "\n".join(lines)
 
 
-def _format_json(violations: List[Violation], files_scanned: int, exit_code: int) -> str:
+def _format_text_by_owner(violations: List[Violation]) -> str:
+    """Group violations by squad owner for easy assignment."""
+    from collections import defaultdict
+    by_owner: Dict[str, List[Violation]] = defaultdict(list)
+    for v in violations:
+        by_owner[v.owner].append(v)
+    lines = []
+    for owner in sorted(by_owner.keys()):
+        vlist = by_owner[owner]
+        lines.append(f"\n=== {owner} ({len(vlist)} violations) ===")
+        for v in vlist:
+            lines.append(f"  {v.file} : {v.line} : {v.severity.upper()} : {v.rule_id} : {v.message}")
+    return "\n".join(lines)
+
+
+def _format_json(violations: List[Violation], files_scanned: int, exit_code: int,
+                 cache_stats: Optional[Dict] = None) -> str:
     payload = {
-        "meta_check_version": "2.0",
+        "meta_check_version": "3.0",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "files_scanned": files_scanned,
         "violations": [
-            {
-                "file": v.file,
-                "line": v.line,
-                "severity": v.severity,
-                "rule_id": v.rule_id,
-                "message": v.message,
-                "fixable": v.fixable,
-                "fix_safety": v.fix_safety,
-            }
+            {"file": v.file, "line": v.line, "severity": v.severity,
+             "rule_id": v.rule_id, "message": v.message,
+             "fixable": v.fixable, "fix_safety": v.fix_safety, "owner": v.owner}
             for v in violations
         ],
         "summary": {
@@ -1969,6 +1984,12 @@ def _format_json(violations: List[Violation], files_scanned: int, exit_code: int
         },
         "exit_code": exit_code,
     }
+    owner_counts: Dict[str, int] = {}
+    for v in violations:
+        owner_counts[v.owner] = owner_counts.get(v.owner, 0) + 1
+    payload["summary"]["by_owner"] = owner_counts
+    if cache_stats:
+        payload["cache"] = cache_stats
     return json.dumps(payload, indent=2)
 
 
@@ -1986,7 +2007,7 @@ def _list_rules_text() -> str:
 
 
 def main() -> int:
-    global _active_config
+    global _active_config, _squad_router
 
     parser_cli = argparse.ArgumentParser(description="Meta-check validator for MMO meta files")
     parser_cli.add_argument("path", nargs="?", default="src/meta/", help="File or directory to validate")
@@ -1997,6 +2018,8 @@ def main() -> int:
     parser_cli.add_argument("--config", default=None, help="Path to .meta-check.json config file")
     parser_cli.add_argument("--list-rules", action="store_true", help="List all rules and exit")
     parser_cli.add_argument("--init-config", action="store_true", help="Generate default .meta-check.json and exit")
+    parser_cli.add_argument("--by-owner", action="store_true", help="Group text output by squad member owner")
+    parser_cli.add_argument("--no-cache", action="store_true", help="Disable incremental caching (full re-scan)")
 
     args = parser_cli.parse_args()
 
@@ -2011,7 +2034,6 @@ def main() -> int:
         print(f"Created {out}")
         return 0
 
-    # Load configuration
     if args.config:
         config_path = Path(args.config)
         if not config_path.is_absolute():
@@ -2024,6 +2046,9 @@ def main() -> int:
     else:
         _active_config = config_mod.load_config(root)
 
+    routing_overrides = getattr(_active_config, 'squad_routing', None)
+    _squad_router = squad_routing_mod.SquadRouter(routing_overrides)
+
     target = Path(args.path)
     if not target.is_absolute():
         target = (root / target).resolve()
@@ -2033,17 +2058,70 @@ def main() -> int:
         print("No .lua files found.")
         return 65
 
+    use_cache = not args.no_cache
+    cache = cache_mod.load_cache(root) if use_cache else cache_mod.LintCache()
+    cache_hits = 0
+    cache_misses = 0
+    file_hashes: Dict[str, str] = {}
+
+    any_file_changed = False
+    for path in lua_files:
+        h = cache_mod.hash_file(path)
+        file_hashes[str(path)] = h
+        if cache.get_cached(str(path), h) is None:
+            any_file_changed = True
+
     materials = _load_materials(root)
     violations: List[Violation] = []
     parsed_files: List[ParsedFile] = []
 
     for path in lua_files:
+        file_key = str(path)
+        h = file_hashes[file_key]
+
+        if use_cache and not any_file_changed:
+            cached = cache.get_cached(file_key, h)
+            if cached is not None:
+                cache_hits += 1
+                for cv in cached:
+                    violations.append(Violation(
+                        file=cv["file"], line=cv["line"],
+                        severity=cv["severity"], rule_id=cv["rule_id"],
+                        message=cv["message"],
+                        fixable=cv.get("fixable", False),
+                        fix_safety=cv.get("fix_safety", "unsafe"),
+                        owner=cv.get("owner", _squad_router.owner_for(cv["rule_id"])),
+                    ))
+                parsed = _parse_file(path, [])
+                if parsed:
+                    parsed_files.append(parsed)
+                continue
+
+        cache_misses += 1
         parsed = _parse_file(path, violations)
         if parsed:
             parsed_files.append(parsed)
 
     for parsed in parsed_files:
+        file_key = str(parsed.path)
+        if use_cache and not any_file_changed and cache.get_cached(file_key, file_hashes.get(file_key, "")) is not None:
+            continue
         _validate_file(parsed, materials, violations)
+
+    if use_cache:
+        for parsed in parsed_files:
+            file_key = str(parsed.path)
+            h = file_hashes.get(file_key)
+            if h is None:
+                continue
+            file_violations = [
+                {"file": v.file, "line": v.line, "severity": v.severity,
+                 "rule_id": v.rule_id, "message": v.message,
+                 "fixable": v.fixable, "fix_safety": v.fix_safety, "owner": v.owner}
+                for v in violations
+                if v.file == file_key and not cache_mod.is_cross_file_rule(v.rule_id)
+            ]
+            cache.update(file_key, h, file_violations)
 
     guid_map: Dict[str, List[ParsedFile]] = {}
     keyword_map: Dict[str, List[ParsedFile]] = {}
@@ -2404,10 +2482,12 @@ def main() -> int:
     else:
         exit_code = 0
 
+    cache_stats = {"enabled": use_cache, "hits": cache_hits, "misses": cache_misses}
+
     if args.format == "json":
-        output = _format_json(filtered, len(lua_files), exit_code)
+        output = _format_json(filtered, len(lua_files), exit_code, cache_stats)
     else:
-        output = _format_text(filtered)
+        output = _format_text(filtered, by_owner=args.by_owner)
 
     if args.output:
         Path(args.output).write_text(output, encoding="utf-8")
@@ -2418,6 +2498,13 @@ def main() -> int:
     if args.verbose:
         print(f"Files scanned: {len(lua_files)}")
         print(f"Violations: {len(filtered)}")
+        if use_cache:
+            print(f"Cache: {cache_hits} hits, {cache_misses} misses")
+
+    if use_cache:
+        valid_paths = {str(p) for p in lua_files}
+        cache.prune(valid_paths)
+        cache_mod.save_cache(root, cache)
 
     return exit_code
 
