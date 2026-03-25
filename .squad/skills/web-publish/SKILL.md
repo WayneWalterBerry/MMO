@@ -63,7 +63,7 @@ Every deploy MUST copy these files (miss one and the site breaks or shows stale 
 | `web/index.html` | **ALL CSS**, DOM structure, boot script | CSS fixes, layout changes, new UI elements |
 | `web/bootstrapper.js` | JS engine, bold rendering, debug flag, echo styling | JS behavior changes, formatting fixes |
 | `web/game-adapter.lua` | Lua↔browser bridge, coroutine loop, JIT loader | Engine integration changes |
-| `web/dist/*` | Engine bundle (.gz), meta .lua files | Any `src/` changes |
+| `web/dist/*` | Engine bundle (.gz), meta .lua files, embedding vectors | Any `src/` changes |
 
 ## Hidden Link Pattern
 
@@ -81,6 +81,7 @@ The web build is intentionally unlisted:
 | `web/index.html` | Terminal UI page | Manual edits only |
 | `web/game-adapter.lua` | Lua↔browser bridge | Manual edits only |
 | `web/build-bundle.ps1` | Bundle generator | N/A (it's the tool) |
+| `web/extract-vectors.py` | SLM vector extractor | N/A (it's the tool) |
 | `web/game-bundle.js` | All game source files | **Yes — run build-bundle.ps1** |
 
 ## Verification
