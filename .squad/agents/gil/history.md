@@ -326,3 +326,17 @@
   - Engine grew from 169.7 KB → 231.9 KB compressed (+62.2 KB) — significant jump due to 9 new engine files (50 vs 41 previously). Likely parser tier additions and linter modules.
   - Meta count grew from 130 → 134 (+4 objects: 87 → 91). The 27 GUID fixes were corrections to existing objects, not new additions.
   - First deploy to include `embedding-vectors.json.gz` (4.8 MB) for lazy-load SLM. Previous deploys only had the stripped index.
+### 2026-03-25: Fixed Issue #251 — SLM lazy-load + materials loading
+- **Timestamp:** 2026-03-25T13:55Z
+- **Status:** $([char]0x2705) FIXED — Deployed to GitHub Pages
+- **Root causes found:**
+  1. **SLM lazy-load never implemented:** The build script (uild-engine.ps1) extracted vectors into mbedding-vectors.json.gz (4.8 MB), but no code in ootstrapper.js ever fetched it. Zero SLM log lines because the feature was never wired up.
+  2. **Materials: GitHub Pages Jekyll 404ing _index.lua:** Jekyll silently ignores files/directories starting with _. The meta/_index.lua manifest got a 404, so etch_text() returned nil and the materials loop was skipped entirely. Result: "Loaded 0 materials".
+- **Fixes applied:**
+  1. **SLM lazy-load in ootstrapper.js:** Added loadSLMVectors() async function that fires after game adapter loads. Checks IndexedDB cache first (keyed by CACHE_BUST timestamp), falls back to fetching + decompressing mbedding-vectors.json.gz. Stores parsed data in window._slmVectors for engine access. Full debug logging: "SLM vectors: loading…", "cached (IndexedDB, N entries)", "decompressing (X.X MB)…", "loaded (N entries)", or "error — message".
+  2. **.nojekyll file** added to root of WayneWalterBerry.github.io repo. This tells GitHub Pages to skip Jekyll processing and serve ALL files including _index.lua.
+  3. **Materials debug logging** in game-adapter.lua: Now logs warnings when _index.lua fetch fails or parse fails, instead of silently returning 0 materials.
+- **Pages commits:** 2cd5779 (initial deploy with .nojekyll + SLM) and 137e53 (cleanup).
+- **MMO branch:** squad/251-web-debug-fix commit 7d21a7f
+- $([char]0x26A0)$([char]0xFE0F) **Critical learning: .nojekyll is mandatory.** Any file starting with _ will be 404'd by GitHub Pages without this file. The _index.lua manifest and potentially any future _-prefixed files depend on it. This must be part of every deploy checklist.
+- $([char]0x26A0)$([char]0xFE0F) **Critical learning: build scripts overwrite source files.** uild-engine.ps1 reads ootstrapper.js, stamps timestamps via regex, and writes it back. uild-meta.ps1 does the same for game-adapter.lua. Any code changes must be made AFTER the build runs, or the build will overwrite them. The deploy script (deploy.ps1) calls both builds first.
