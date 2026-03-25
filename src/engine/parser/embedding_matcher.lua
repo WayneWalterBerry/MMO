@@ -20,6 +20,10 @@ if not syn_ok then synonym_table = nil end
 local wsim_ok, word_sim = pcall(require, "engine.parser.word_similarity")
 if not wsim_ok then word_sim = nil end
 
+-- Context window for recency boosting (Phase 3)
+local ctx_ok, context_window = pcall(require, "engine.parser.context")
+if not ctx_ok then context_window = nil end
+
 local matcher = {}
 matcher.__index = matcher
 
@@ -309,6 +313,41 @@ local function bm25_score(input_tokens, phrase_tokens)
 end
 
 ---------------------------------------------------------------------------
+-- BM25F scoring: verb-weighted BM25 (Phase 3, Section 4.8)
+-- Like standard BM25 on full phrase tokens, but when a matching token
+-- is the phrase's verb, it gets boosted weight for disambiguation.
+-- "light candle" → verb "light" scored 2x helps disambiguate from noun "light".
+---------------------------------------------------------------------------
+local BM25F_VERB_WEIGHT = 2.0
+local BM25F_NOUN_WEIGHT = 1.0
+
+local function bm25f_score(input_tokens, phrase)
+  if not bm25_data or not bm25_data.idf then return 0 end
+
+  local avgdl = bm25_data.avg_doc_length
+  local doc_len = #phrase.tokens
+  local idf_table = bm25_data.idf
+  local verb = phrase.verb
+
+  local phrase_set = {}
+  for _, t in ipairs(phrase.tokens) do phrase_set[t] = true end
+
+  local score = 0
+  for _, qt in ipairs(input_tokens) do
+    if phrase_set[qt] then
+      local idf = idf_table[qt] or 0
+      local weight = (qt == verb) and BM25F_VERB_WEIGHT or BM25F_NOUN_WEIGHT
+      local tf = 1
+      local tf_component = (tf * (BM25_K1 + 1)) /
+        (tf + BM25_K1 * (1 - BM25_B + BM25_B * doc_len / avgdl))
+      score = score + idf * tf_component * weight
+    end
+  end
+
+  return score
+end
+
+---------------------------------------------------------------------------
 -- Constructor
 ---------------------------------------------------------------------------
 function matcher.new(index_path, debug)
@@ -316,7 +355,7 @@ function matcher.new(index_path, debug)
   self.phrases = {}
   self.loaded = false
   self.diagnostic = debug or false
-  self.scoring_mode = "bm25"  -- "bm25", "jaccard", "softcosine", "maxsim"
+  self.scoring_mode = "bm25"  -- "bm25", "jaccard", "softcosine", "maxsim", "phase3"
 
   local f = io.open(index_path, "r")
   if not f then
@@ -334,12 +373,16 @@ function matcher.new(index_path, debug)
   end
 
   -- Build phrase dictionary (we skip the embedding vectors -- Lua doesn't use them)
-  for _, entry in ipairs(index.phrases or {}) do
+  for i, entry in ipairs(index.phrases or {}) do
+    local phrase_tokens = tokenize(entry.text)
+    local noun_tokens = entry.noun and tokenize(entry.noun) or {}
     self.phrases[#self.phrases + 1] = {
+      id = i,
       text = entry.text,
       verb = entry.verb,
       noun = entry.noun,
-      tokens = tokenize(entry.text),
+      tokens = phrase_tokens,
+      noun_tokens = noun_tokens,
     }
   end
 
@@ -351,9 +394,25 @@ function matcher.new(index_path, debug)
     end
   end
 
+  -- Build inverted index: token → list of phrase references (Phase 3, Section 4.7)
+  -- Enables fast candidate retrieval — only score phrases sharing tokens with input
+  self.inverted_index = {}
+  for _, phrase in ipairs(self.phrases) do
+    for _, token in ipairs(phrase.tokens) do
+      if not self.inverted_index[token] then
+        self.inverted_index[token] = {}
+      end
+      self.inverted_index[token][#self.inverted_index[token] + 1] = phrase
+    end
+  end
+
   self.loaded = true
   if self.diagnostic then
     io.stderr:write("[Parser] Tier 2 loaded: " .. #self.phrases .. " phrases from index\n")
+    -- Report inverted index stats
+    local idx_count = 0
+    for _ in pairs(self.inverted_index) do idx_count = idx_count + 1 end
+    io.stderr:write("[Parser] Inverted index: " .. idx_count .. " unique tokens\n")
   end
   return self
 end
@@ -386,10 +445,33 @@ end
 --   "jaccard"    — Jaccard only (legacy)
 --   "softcosine" — Two-stage: BM25 → soft cosine re-rank (Phase 2)
 --   "maxsim"     — Two-stage: BM25 → MaxSim re-rank (Phase 2)
+--   "phase3"     — Inverted index + BM25F + MaxSim re-rank + context boost
 ---------------------------------------------------------------------------
 local HYBRID_BM25_WEIGHT = 0.70   -- D1 decision: 70% BM25, 30% re-rank
 local HYBRID_RERANK_WEIGHT = 0.30
 local RERANK_TOP_K = 50           -- Re-rank top 50 BM25 candidates
+local CONTEXT_BOOST_FACTOR = 0.1  -- 10% boost per recency rank (Phase 3, 4.6)
+
+---------------------------------------------------------------------------
+-- Inverted index candidate retrieval (Phase 3, Section 4.7)
+-- Returns only phrases sharing at least one token with input.
+---------------------------------------------------------------------------
+local function get_candidates_inverted(inverted_index, input_tokens)
+  local seen = {}
+  local candidates = {}
+  for _, qt in ipairs(input_tokens) do
+    local postings = inverted_index[qt]
+    if postings then
+      for _, phrase in ipairs(postings) do
+        if not seen[phrase.id] then
+          seen[phrase.id] = true
+          candidates[#candidates + 1] = phrase
+        end
+      end
+    end
+  end
+  return candidates
+end
 
 function matcher:match(input_text)
   if not self.loaded or #self.phrases == 0 then
@@ -412,7 +494,7 @@ function matcher:match(input_text)
   -- Apply typo correction against known verbs on remaining tokens
   input_tokens = correct_typos(input_tokens, self.known_verbs)
 
-  -- Pure Jaccard mode (legacy)
+  -- Pure Jaccard mode (legacy) — no inverted index
   if mode == "jaccard" then
     local best_score = -1
     local best_phrase = nil
@@ -431,12 +513,23 @@ function matcher:match(input_text)
     return nil, nil, 0, nil
   end
 
-  -- Stage 1: BM25 scoring on all phrases
+  -- Candidate retrieval: inverted index (phase3) vs full scan (other modes)
+  local phrase_pool
+  if mode == "phase3" and self.inverted_index then
+    phrase_pool = get_candidates_inverted(self.inverted_index, input_tokens)
+  else
+    phrase_pool = self.phrases
+  end
+
+  -- Stage 1: Scoring (BM25F for phase3, standard BM25 for others)
   local use_bm25 = (bm25_data ~= nil)
+  local use_bm25f = (mode == "phase3") and use_bm25
   local candidates = {}
-  for _, phrase in ipairs(self.phrases) do
+  for _, phrase in ipairs(phrase_pool) do
     local score
-    if use_bm25 then
+    if use_bm25f then
+      score = bm25f_score(input_tokens, phrase)
+    elseif use_bm25 then
       score = bm25_score(input_tokens, phrase.tokens)
     else
       score = jaccard_with_bonus(input_tokens, phrase.tokens)
@@ -447,7 +540,7 @@ function matcher:match(input_text)
   end
 
   -- Pure BM25 mode — no re-ranking
-  if mode == "bm25" or (mode ~= "softcosine" and mode ~= "maxsim") then
+  if mode == "bm25" then
     local best_score = -1
     local best_phrase = nil
     for _, c in ipairs(candidates) do
@@ -464,13 +557,17 @@ function matcher:match(input_text)
     return nil, nil, 0, nil
   end
 
-  -- Stage 2: Re-rank top candidates with soft cosine or MaxSim
-  -- Sort by BM25 score descending to select top-K
+  -- Stage 2: Re-rank top candidates with MaxSim or soft cosine
   table.sort(candidates, function(a, b) return a.bm25 > b.bm25 end)
   local top_k = math.min(RERANK_TOP_K, #candidates)
 
   -- Choose re-ranking function
-  local rerank_fn = (mode == "softcosine") and soft_cosine_score or maxsim_score
+  local rerank_fn
+  if mode == "softcosine" then
+    rerank_fn = soft_cosine_score
+  else
+    rerank_fn = maxsim_score  -- maxsim and phase3
+  end
 
   -- Find max BM25 score for normalization (re-rank scores are 0-1, BM25 is unbounded)
   local max_bm25 = 0
@@ -486,7 +583,20 @@ function matcher:match(input_text)
     candidates[i].score = HYBRID_BM25_WEIGHT * bm25_norm + HYBRID_RERANK_WEIGHT * rerank
   end
 
-  -- Re-sort top-K by hybrid score
+  -- Phase 3: Context-aware recency boost (Section 4.6)
+  if mode == "phase3" and context_window then
+    for i = 1, top_k do
+      local noun = candidates[i].phrase.noun
+      if noun then
+        local recency = context_window.recency_score(noun)
+        if recency > 0 then
+          candidates[i].score = candidates[i].score * (1.0 + CONTEXT_BOOST_FACTOR * recency)
+        end
+      end
+    end
+  end
+
+  -- Re-sort top-K by final score
   local top_candidates = {}
   for i = 1, top_k do top_candidates[i] = candidates[i] end
   table.sort(top_candidates, function(a, b) return a.score > b.score end)

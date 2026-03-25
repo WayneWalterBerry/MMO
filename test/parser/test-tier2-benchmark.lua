@@ -15,7 +15,7 @@ local HYBRID_THRESHOLD = 0.20 -- Hybrid mode threshold (scores are 0-1 normalize
 
 -- Parse CLI arg for scoring mode
 local scoring_mode = arg and arg[1] or "jaccard"
-local valid_modes = { jaccard = true, bm25 = true, softcosine = true, maxsim = true }
+local valid_modes = { jaccard = true, bm25 = true, softcosine = true, maxsim = true, phase3 = true }
 if not valid_modes[scoring_mode] then
   scoring_mode = "jaccard"
 end
@@ -138,7 +138,7 @@ m.scoring_mode = scoring_mode
 local threshold
 if scoring_mode == "bm25" then
   threshold = BM25_THRESHOLD
-elseif scoring_mode == "softcosine" or scoring_mode == "maxsim" then
+elseif scoring_mode == "softcosine" or scoring_mode == "maxsim" or scoring_mode == "phase3" then
   threshold = HYBRID_THRESHOLD
 else
   threshold = THRESHOLD
@@ -212,6 +212,7 @@ local algo_names = {
   bm25 = "BM25 + Synonyms (Phase 1)",
   softcosine = "BM25 + Soft Cosine re-rank (Phase 2)",
   maxsim = "BM25 + MaxSim re-rank (Phase 2)",
+  phase3 = "Inverted Index + BM25F + MaxSim + Context (Phase 3)",
 }
 local algo_name = algo_names[scoring_mode] or scoring_mode
 
