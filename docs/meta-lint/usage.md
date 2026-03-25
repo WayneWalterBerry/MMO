@@ -1,4 +1,4 @@
-# Meta-Lint: Usage
+# Meta-Check: Usage
 
 **Date:** 2026-03-24  
 **Version:** 1.0  
@@ -11,22 +11,22 @@
 
 ```bash
 # Check a single object file
-python scripts/meta-lint/lint.py src/meta/objects/candle.lua
+python scripts/meta-check/check.py src/meta/objects/candle.lua
 
 # Scan all objects in a directory
-python scripts/meta-lint/lint.py src/meta/objects/
+python scripts/meta-check/check.py src/meta/objects/
 
 # Full meta validation (all objects + rooms + levels)
-python scripts/meta-lint/lint.py src/meta/
+python scripts/meta-check/check.py src/meta/
 
 # With JSON output (for CI parsing)
-python scripts/meta-lint/lint.py --format=json src/meta/objects/
+python scripts/meta-check/check.py --format=json src/meta/objects/
 
 # Suppress info/warning messages (errors only)
-python scripts/meta-lint/lint.py --severity=error src/meta/
+python scripts/meta-check/check.py --severity=error src/meta/
 
 # Run with verbose output (debug mode)
-python scripts/meta-lint/lint.py --verbose src/meta/
+python scripts/meta-check/check.py --verbose src/meta/
 ```
 
 ---
@@ -35,7 +35,7 @@ python scripts/meta-lint/lint.py --verbose src/meta/
 
 ### Syntax
 ```bash
-python scripts/meta-lint/lint.py [OPTIONS] [PATH]
+python scripts/meta-check/check.py [OPTIONS] [PATH]
 ```
 
 ### Arguments
@@ -48,13 +48,13 @@ python scripts/meta-lint/lint.py [OPTIONS] [PATH]
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `--format` | `text` \| `json` \| `tap` | `text` | Output format. `json` for CI parsing, `tap` for pre-commit hooks. |
+| `--format` | `text` \| `json` | `text` | Output format. `json` for CI parsing. |
 | `--severity` | `all` \| `warning` \| `error` | `all` | Minimum severity to report. `error` suppresses warnings. |
 | `--output` | filepath | stdout | Write output to file instead of stdout. |
-| `--fix` | flag | off | Auto-fix simple issues (see [Auto-Fix](#auto-fix)). |
-| `--verbose` | flag | off | Print debug info (tokenization, AST, phase timings). |
-| `--config` | filepath | `.meta-lint.yaml` | Load validation rules from config file. |
-| `--exclude` | glob | (none) | Exclude files matching glob (e.g., `*.bak`). |
+| `--verbose` | flag | off | Print file count and violation count. |
+| `--config` | filepath | `.meta-check.json` | Load per-rule configuration from JSON file. |
+| `--list-rules` | flag | off | Print all rules with metadata and exit. |
+| `--init-config` | flag | off | Generate default `.meta-check.json` at project root and exit. |
 
 ### Exit Codes
 
@@ -74,7 +74,7 @@ python scripts/meta-lint/lint.py [OPTIONS] [PATH]
 
 **Default output:**
 ```
-meta-lint v1.0 — Validating src/meta/
+meta-check v1.0 — Validating src/meta/
 
 src/meta/objects/candle.lua
   [ERROR]   S-02 (line 5)  Missing guid field
@@ -103,7 +103,7 @@ Exit code: 1 (errors found)
 
 ```json
 {
-  "meta_lint_version": "1.0",
+  "meta_check_version": "1.0",
   "timestamp": "2026-03-24T14:30:00Z",
   "files_scanned": 83,
   "violations": [
@@ -163,7 +163,7 @@ ok 3 - src/meta/objects/sword.lua
 ### GitHub Actions Workflow
 
 ```yaml
-name: meta-lint
+name: meta-check
 
 on: [pull_request, push]
 
@@ -181,16 +181,16 @@ jobs:
       - name: Install Lark
         run: pip install lark
       
-      - name: Run meta-lint
+      - name: Run meta-check
         run: |
-          python scripts/meta-lint/lint.py --format=json \
-            --output=meta-lint-report.json src/meta/
+          python scripts/meta-check/check.py --format=json \
+            --output=meta-check-report.json src/meta/
       
       - name: Check results
         run: |
           if [ $? -eq 1 ]; then
-            echo "❌ Meta-Lint failed (errors found)"
-            cat meta-lint-report.json
+            echo "❌ Meta-check failed (errors found)"
+            cat meta-check-report.json
             exit 1
           fi
 ```
@@ -202,21 +202,21 @@ jobs:
 ```bash
 #!/bin/bash
 
-# Run meta-lint on staged Lua files
+# Run meta-check on staged Lua files
 STAGED_LUA=$(git diff --cached --name-only --diff-filter=ACM | grep '\.lua$')
 
 if [ -z "$STAGED_LUA" ]; then
   exit 0
 fi
 
-python scripts/meta-lint/lint.py --format=tap $STAGED_LUA
+python scripts/meta-check/check.py --format=tap $STAGED_LUA
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 1 ]; then
-  echo "❌ meta-lint found errors. Fix before commit."
+  echo "❌ meta-check found errors. Fix before commit."
   exit 1
 elif [ $EXIT_CODE -eq 2 ]; then
-  echo "⚠️ meta-lint found warnings. Review before commit."
+  echo "⚠️ meta-check found warnings. Review before commit."
   # Non-blocking — allow commit with --no-verify
 fi
 
@@ -227,7 +227,7 @@ exit 0
 
 ```bash
 # In a GitHub Actions workflow
-python scripts/meta-lint/lint.py --severity=error --format=json src/meta/ \
+python scripts/meta-check/check.py --severity=error --format=json src/meta/ \
   | jq '.summary | select(.errors > 0) | error("Found \(.errors) errors")'
 ```
 
@@ -254,8 +254,8 @@ return {
 }
 EOF
 
-# 2. Run meta-lint
-python scripts/meta-lint/lint.py src/meta/objects/my-item.lua
+# 2. Run meta-check
+python scripts/meta-check/check.py src/meta/objects/my-item.lua
 
 # Output:
 # src/meta/objects/my-item.lua
@@ -266,7 +266,7 @@ python scripts/meta-lint/lint.py src/meta/objects/my-item.lua
 # ... developer adds location = nil, mutations = {}
 
 # 4. Re-run
-python scripts/meta-lint/lint.py src/meta/objects/my-item.lua
+python scripts/meta-check/check.py src/meta/objects/my-item.lua
 # Output: OK (exit code 0)
 
 # 5. Commit
@@ -278,19 +278,19 @@ git commit -m "Add my-item object"
 
 ```bash
 # 1. Scan entire meta directory before manual testing
-python scripts/meta-lint/lint.py src/meta/
+python scripts/meta-check/check.py src/meta/
 
 # If errors → stop, report to developers
 # If warnings → proceed with caution
 # If OK → proceed to gameplay testing
 
 # 2. During playtesting, if object is buggy:
-# a. Check if meta-lint should have caught it
-# b. If yes → add rule to meta-lint
+# a. Check if meta-check should have caught it
+# b. If yes → add rule to meta-check
 # c. If no → document as semantic rule (gameplay design)
 
 # Example: Object has state but transitions are impossible
-python scripts/meta-lint/lint.py src/meta/objects/broken-fsm.lua
+python scripts/meta-check/check.py src/meta/objects/broken-fsm.lua
 # Output: [ERROR] FSM-STATE-UNREACHABLE (line 25)
 #         State 'open' is unreachable from initial state 'closed'
 ```
@@ -303,10 +303,10 @@ python scripts/meta-lint/lint.py src/meta/objects/broken-fsm.lua
 
 set -e
 
-echo "Step 1: Running meta-lint..."
-python scripts/meta-lint/lint.py --severity=error src/meta/
+echo "Step 1: Running meta-check..."
+python scripts/meta-check/check.py --severity=error src/meta/
 if [ $? -eq 1 ]; then
-  echo "❌ Deployment blocked: meta-lint errors found"
+  echo "❌ Deployment blocked: meta-check errors found"
   exit 1
 fi
 
@@ -333,10 +333,10 @@ echo "✅ All checks passed. Ready to deploy."
 
 **Flag: `--fix`**
 
-Meta-Lint can auto-fix common, **low-risk issues**:
+Meta-check can auto-fix common, **low-risk issues**:
 
 ```bash
-python scripts/meta-lint/lint.py --fix src/meta/objects/
+python scripts/meta-check/check.py --fix src/meta/objects/
 ```
 
 **Auto-fixable issues:**
@@ -360,27 +360,27 @@ python scripts/meta-lint/lint.py --fix src/meta/objects/
 
 ```bash
 # 1. Run with --fix to auto-correct simple issues
-python scripts/meta-lint/lint.py --fix src/meta/objects/
+python scripts/meta-check/check.py --fix src/meta/objects/
 
 # 2. Review changes
 git diff src/meta/objects/
 
 # 3. If changes look good, commit
 git add src/meta/objects/
-git commit -m "Auto-fix: meta-lint style issues"
+git commit -m "Auto-fix: meta-check style issues"
 
 # 4. Re-run without --fix to verify all violations are addressed
-python scripts/meta-lint/lint.py src/meta/objects/
+python scripts/meta-check/check.py src/meta/objects/
 ```
 
 ---
 
 ## Configuration File
 
-**File: `.meta-lint.yaml` (optional)**
+**File: `.meta-check.yaml` (optional)**
 
 ```yaml
-# Meta-Lint Configuration
+# Meta-Check Configuration
 
 version: 1.0
 
@@ -486,8 +486,8 @@ Pre-commit hook overhead: ~200 ms (acceptable for staged files).
 
 ## References
 
-- **Rules Catalog:** `docs/meta-lint/rules.md` (144 rules across 15 categories)
-- **Schemas:** `docs/meta-lint/schemas.md` (template-specific field contracts)
-- **Architecture:** `docs/meta-lint/architecture.md` (6-phase pipeline)
-- **Acceptance Criteria:** `docs/meta-lint/acceptance-criteria.md` (Lisa's specification)
+- **Rules Catalog:** `docs/meta-check/rules.md` (144 rules across 15 categories)
+- **Schemas:** `docs/meta-check/schemas.md` (template-specific field contracts)
+- **Architecture:** `docs/meta-check/architecture.md` (6-phase pipeline)
+- **Acceptance Criteria:** `docs/meta-check/acceptance-criteria.md` (Lisa's specification)
 

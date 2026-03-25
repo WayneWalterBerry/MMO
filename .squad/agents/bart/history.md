@@ -143,19 +143,19 @@
 - Three-phase pipeline: tokenize → preprocess (strip preamble, neutralize functions) → Lark parse
 - 82/83 objects are pure data tables (`return { ... }` with literals, nested tables, functions-as-values)
 - 1/83 (wall-clock.lua) uses programmatic generation — builds tables with `for` loops, references locals. Handled via `ident_ref` rule (bare identifier as value), treated as opaque
-- Function bodies (50%+ of objects) are safely replaced with `__FUNC__` placeholders — meta-lint validates DATA, not logic
+- Function bodies (50%+ of objects) are safely replaced with `__FUNC__` placeholders — meta-check validates DATA, not logic
 - Nightstand's local function preamble correctly handled by block-depth tracking in the preprocessor
 - Key limitation: objects with `ident_ref` values can't be fully validated statically — only runtime Lua knows the computed value
 - Decision filed: D-LARK-GRAMMAR
-- Deliverable: `scripts/meta-lint/lua_grammar.py`
+- Deliverable: `scripts/meta-check/lua_grammar.py`
 
 ### Loader Is a Sandbox Executor, Not a Validator (2026-07-28)
 - `src/engine/loader/init.lua` checks 3 things: Lua compilation, runtime execution, return-type-is-table
 - Template/instance resolution checks existence of template and base class by GUID
 - The loader checks ZERO field-level properties: no required fields, no type validation, no FSM consistency, no sensory completeness, no material validity, no cross-reference integrity
-- An object with only `{ guid = "x" }` loads without error — meta-lint must catch everything else
+- An object with only `{ guid = "x" }` loads without error — meta-check must catch everything else
 - This minimalism is deliberate and correct for the engine (fast, permissive, forward-compatible)
-- The entire validation burden falls on pre-deploy tooling (meta-lint) — this is the right architectural layer
+- The entire validation burden falls on pre-deploy tooling (meta-check) — this is the right architectural layer
 - Deliverable: `resources/research/meta-compiler/existing-validation-audit.md`
 
 ### find_visible Must Mirror Container Nesting Depth (2026-03-28)
@@ -181,7 +181,7 @@
 - `traverse.lua` (871 lines) should NOT be split despite its size — it's a single FSM with high internal cohesion. Size ≠ bad structure.
 - `loop/init.lua` (585 lines) should NOT be split — its phases are sequential safety barriers (consciousness → search tick → input → dispatch → FSM tick). Fragmenting the ordering contract is more dangerous than the file size.
 - Pre-refactoring tests are the prerequisite. No code moves without a green test covering the function being moved.
-- Sequencing matters: refactor BEFORE meta-compiler because meta-lint validates file paths — building against a monolith then splitting creates wasted work
+- Sequencing matters: refactor BEFORE meta-compiler because meta-check validates file paths — building against a monolith then splitting creates wasted work
 
 ### Effect Pipeline Architecture (2026-07-26)
 - Structured effect tables (`{ type = "inflict_injury", ... }`) already exist in Flanders' objects (poison-bottle.lua, bear-trap.lua) — the objects are ahead of the engine
@@ -1373,39 +1373,29 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - `exclude_obj` parameter on `find_fire_source()` prevents the candle (target) from being detected as its own fire source — its lit state also provides `fire_source`.
 - The `container_preposition` override only affects the narration text, not the surface-routing logic. Parsing still uses the player's input preposition for determining which surface to place items on.
 
-### Session: Bug #180 — Wear from Hand Doesn't Free Hand Slot (2026-03-31)
+## Learnings
+
+### Session: Linter Phase 1 — Quick Wins (2026-03-30)
 **Status:** ✅ COMPLETE
-**Requested by:** Wayne "Effe" Berry
+**Branch:** squad/linter-improvements
 
-**Deliverables:**
-- `src/engine/verbs/equipment.lua` — wear handler: replaced single `hands[hand_slot] = nil` with defensive sweep that clears ALL hand slots holding the worn item's ID. Prevents stale references in edge-case dispatches.
-- `src/engine/verbs/acquisition.lua` — take handler: extended Bug #53 guard to also check `ctx.player.worn` list. Taking a worn item now prints "You're wearing that. You'll need to remove it first." instead of silently placing it back in a hand.
-- `test/integration/test-wear-hand-integration.lua` — 7 integration tests exercising the full command pipeline (preprocess → dispatch) for wear/don/put-on, inventory display, take-of-worn blocking, and take→wear→take sequence.
+**Architecture decisions:**
 
-**Key Notes:**
-- Nelson's 9 unit tests confirmed the handler-level logic was correct. The bug was a defensive gap: the handler only cleared the single `hand_slot` it searched, but stale object references could survive in the other hand slot under certain integration-layer dispatch paths (put handler routing, compound commands).
-- The defensive sweep iterates both hand slots comparing by `obj.id` — handles both object-table and string-ID hand entries, which coexist in the engine.
-- The take handler's `obj.location == "player"` guard (Bug #53) only checked hands, not the worn list. This allowed `take spittoon` to re-acquire a worn item into a hand, creating the duplication Wayne observed.
-- Zero regressions: all 9 unit + 7 integration tests pass. Full suite pre-existing failures unchanged.
+1. **Rule registry as separate module** — scripts/meta-check/rule_registry.py holds all rule metadata (severity, fixable, fix_safety, category, description). Decoupled from validation logic so other tools can query rule metadata without importing the full checker.
 
-### Session: Deep Architecture Analysis — Doors/Portals/Exits (2026-07-28)
-**Status:** ✅ COMPLETE (analysis delivered, awaiting Wayne's decision)
-**Requested by:** Wayne "Effe" Berry
+2. **Config-first severity** — _add_violation() only overrides severity when config has an explicit per-rule override. The code-level severity is the ground truth; config is the exception mechanism. This lets rules like MD-19 emit different severities for different code paths (warning vs info) without the registry default flattening them.
 
-**Deliverables:**
-- `plans/door-architecture-analysis.md` — comprehensive analysis of three architectural options for door/exit system
-- `.squad/decisions/inbox/bart-door-architecture.md` — decision proposal for team
+3. **Category keyword filtering for XF-03** — Built-in CATEGORY_KEYWORDS frozenset for words that legitimately appear across objects (garment, clothing, weapon, etc.). Config keyword_allowlist handles project-specific cases. This cut XF-03 false positives from 145 to 135 without losing real collision detection.
 
-**Key Findings:**
-- The current exit system is a **parallel object system**: ~322 lines of exit-specific engine code across 8 verb files duplicating FSM, mutation, keyword matching, sensory, and effects capabilities
-- `becomes_exit` property-merge mutation violates D-14 Prime Directive (code mutation IS state change)
-- Exit tables satisfy **0 of 11** Core Principles; full object unification satisfies **11/11**
-- Recommended **Option B: doors as first-class passage objects** — thin `exits` routing table on rooms, all door behavior via standard object system
-- Net engine impact: **-177 lines** (remove 252 exit-specific, add 75 passage support)
-- Migration path: incremental, backward-compatible, estimated 4-6 sessions
+4. **importlib.util pattern for hyphenated directories** — Python can't import from meta-check/ as a package. Solution: _load_sibling() helper using importlib.util.spec_from_file_location() + register in sys.modules (required for dataclass module resolution).
 
-**Learnings:**
-- Parallel systems are the most insidious form of tech debt — they work fine individually but double the maintenance surface for every cross-cutting feature (hooks, effects, materials, meta-lint)
-- The `becomes_exit` pattern is a flag-merge mutation system masquerading as code mutation — it violates the Prime Directive (D-14) while appearing functional
-- Direction-keyed routing (`room.exits[direction]`) is still valuable even under unification — it provides O(1) lookup for cardinal movement. The key is making it a thin reference, not a state container
-- Bidirectional door sync (two rooms sharing one passage) is best handled via paired objects with a shared `bidirectional_id`, not a single shared object — asymmetric descriptions (bedroom side vs hallway side) are the norm, not the exception
+5. **XR-05b cascading check** — Collects generic_templates set during XR-05 pass, then iterates objects to detect missing material overrides. O(n) second pass, no extra file I/O.
+
+**Key files:**
+- scripts/meta-check/rule_registry.py — 110+ rules with metadata
+- scripts/meta-check/config.py — .meta-check.json loader, per-rule/category config
+- scripts/meta-check/check.py — Updated with config integration, smart XF-03, enhanced MD-19, XR-05b
+- 	est/meta-check/test_phase1.py — 29 tests (registry, config, integration)
+- docs/meta-check/usage.md — Updated CLI reference
+
+**Test results:** 29/29 Phase 1 tests pass, 129/129 Lua tests pass, 0 regressions.

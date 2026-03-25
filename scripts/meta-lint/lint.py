@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """
-meta-lint: static validator for MMO meta .lua files.
+meta-check: static validator for MMO meta .lua files.
+
+Phase 1 improvements:
+  - Rule registry with metadata (severity, fixable, fix_safety)
+  - Per-rule configuration via .meta-check.json
+  - Smart XF-03 keyword collision filtering
+  - MD-19 melting/ignition point conflict detection
+  - XR-05b generic material inheritance warning
 """
 
 from __future__ import annotations
@@ -13,13 +20,28 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 try:
     from lark import Lark, Tree, Token
 except ImportError:
     print("ERROR: lark not installed. Run: pip install lark")
     sys.exit(1)
+
+# Rule registry & config — import via importlib (directory has hyphen)
+import importlib.util as _ilu
+
+_script_dir = Path(__file__).resolve().parent
+
+def _load_sibling(name: str):
+    spec = _ilu.spec_from_file_location(name, _script_dir / f"{name}.py")
+    mod = _ilu.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+rule_registry = _load_sibling("rule_registry")
+config_mod = _load_sibling("config")
 
 
 # =============================================================================
@@ -351,6 +373,14 @@ def _parse_table(node: Tree) -> LuaTable:
 GUID_RE_BRACED = re.compile(r"^\{[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\}$")
 GUID_RE_BARE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
+# Category keywords that legitimately appear across multiple objects.
+# These are broad classifiers, not unique identifiers.
+CATEGORY_KEYWORDS = frozenset({
+    "garment", "clothing", "weapon", "armor", "container", "tool",
+    "furniture", "light source", "food", "drink", "key", "potion",
+    "consumable", "fixture", "decoration", "wearable",
+})
+
 KNOWN_INJURY_CATEGORIES = {"physical", "environmental", "toxin", "unconsciousness"}
 KNOWN_DAMAGE_TYPES = {"over_time", "one_time"}
 KNOWN_RESTRICT_ACTIONS = {"climb", "run", "jump", "fight", "grip", "focus"}
@@ -470,6 +500,8 @@ class Violation:
     severity: str
     rule_id: str
     message: str
+    fixable: bool = False
+    fix_safety: str = "unsafe"
 
 
 @dataclass
@@ -488,7 +520,7 @@ def _detect_kind(path: Path) -> str:
     lower = str(path).lower()
     if os.sep + "src" + os.sep + "meta" + os.sep + "objects" + os.sep in lower:
         return "object"
-    if os.sep + "src" + os.sep + "meta" + os.sep + "rooms" + os.sep in lower:
+    if os.sep + "src" + os.sep + "meta" + os.sep + "world" + os.sep in lower:
         return "room"
     if os.sep + "src" + os.sep + "meta" + os.sep + "levels" + os.sep in lower:
         return "level"
@@ -559,13 +591,28 @@ def _parse_file(path: Path, violations: List[Violation]) -> Optional[ParsedFile]
     )
 
 
+# Config reference — set by main() before validation runs
+_active_config: config_mod.CheckConfig = config_mod.CheckConfig()
+
+
 def _add_violation(violations: List[Violation], path: Path, line: int, severity: str, rule_id: str, message: str) -> None:
+    if not _active_config.is_rule_enabled(rule_id):
+        return
+    # Only override severity if the config has an explicit per-rule override
+    rc = _active_config.rules.get(rule_id)
+    if rc is not None and rc.severity is not None:
+        severity = rc.severity
+    meta = rule_registry.get_rule(rule_id)
+    fixable = meta.fixable if meta else False
+    fix_safety = meta.fix_safety if meta else "unsafe"
     violations.append(Violation(
         file=str(path),
         line=line,
         severity=severity,
         rule_id=rule_id,
         message=message,
+        fixable=fixable,
+        fix_safety=fix_safety,
     ))
 
 
@@ -1375,10 +1422,17 @@ def _validate_material(parsed: ParsedFile, violations: List[Violation]) -> None:
         _add_violation(violations, path, _line_for(parsed, "ignition_point"), "warning", "MD-18",
                        "Non-flammable material should not have ignition_point")
 
-    # MD-19: Both melting_point and ignition_point present (INFO)
+    # MD-19: Melting/ignition point conflict detection (upgraded from INFO)
     if has_mp and has_ip:
-        _add_violation(violations, path, _line_for(parsed, "melting_point"), "info", "MD-19",
-                       "Material declares both melting_point and ignition_point")
+        mp_val = mp_v.value if _value_kind(mp_v) == "number" else None
+        ip_val = ip_v.value if _value_kind(ip_v) == "number" else None
+        if mp_val is not None and ip_val is not None and mp_val <= ip_val:
+            _add_violation(violations, path, _line_for(parsed, "melting_point"), "warning", "MD-19",
+                           f"melting_point ({mp_val}) <= ignition_point ({ip_val}): "
+                           f"material melts before or at ignition temperature")
+        elif mp_val is not None and ip_val is not None:
+            _add_violation(violations, path, _line_for(parsed, "melting_point"), "info", "MD-19",
+                           f"Material declares both melting_point ({mp_val}) and ignition_point ({ip_val})")
 
     # MD-20: flexibility >= 0.7 and fragility > 0.3 (WARNING)
     flex_v = fields.get("flexibility")
@@ -1887,7 +1941,7 @@ def _format_text(violations: List[Violation]) -> str:
 
 def _format_json(violations: List[Violation], files_scanned: int, exit_code: int) -> str:
     payload = {
-        "meta_lint_version": "1.0",
+        "meta_check_version": "2.0",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "files_scanned": files_scanned,
         "violations": [
@@ -1897,6 +1951,8 @@ def _format_json(violations: List[Violation], files_scanned: int, exit_code: int
                 "severity": v.severity,
                 "rule_id": v.rule_id,
                 "message": v.message,
+                "fixable": v.fixable,
+                "fix_safety": v.fix_safety,
             }
             for v in violations
         ],
@@ -1905,23 +1961,67 @@ def _format_json(violations: List[Violation], files_scanned: int, exit_code: int
             "errors": sum(1 for v in violations if v.severity == "error"),
             "warnings": sum(1 for v in violations if v.severity == "warning"),
             "infos": sum(1 for v in violations if v.severity == "info"),
+            "fixable_count": sum(1 for v in violations if v.fixable),
+            "safe_fixes": sum(1 for v in violations if v.fixable and v.fix_safety == "safe"),
+            "unsafe_fixes": sum(1 for v in violations if v.fixable and v.fix_safety == "unsafe"),
         },
         "exit_code": exit_code,
     }
     return json.dumps(payload, indent=2)
 
 
+def _list_rules_text() -> str:
+    """Format all rules as a human-readable table."""
+    rules = rule_registry.get_all_rules()
+    lines = [f"{'Rule':<10} {'Severity':<10} {'Fixable':<10} {'Safety':<8} {'Category':<15} Description"]
+    lines.append("-" * 100)
+    for rule_id in sorted(rules):
+        r = rules[rule_id]
+        fix = "yes" if r.fixable else "no"
+        safety = r.fix_safety if r.fixable else "-"
+        lines.append(f"{r.id:<10} {r.severity:<10} {fix:<10} {safety:<8} {r.category:<15} {r.description}")
+    return "\n".join(lines)
+
+
 def main() -> int:
-    parser_cli = argparse.ArgumentParser(description="Meta-Lint validator for MMO meta files")
+    global _active_config
+
+    parser_cli = argparse.ArgumentParser(description="Meta-check validator for MMO meta files")
     parser_cli.add_argument("path", nargs="?", default="src/meta/", help="File or directory to validate")
     parser_cli.add_argument("--format", default="text", choices=("text", "json"), help="Output format")
     parser_cli.add_argument("--severity", default="all", choices=("all", "warning", "error"), help="Minimum severity to report")
     parser_cli.add_argument("--output", default=None, help="Write output to file")
     parser_cli.add_argument("--verbose", action="store_true", help="Verbose output")
+    parser_cli.add_argument("--config", default=None, help="Path to .meta-check.json config file")
+    parser_cli.add_argument("--list-rules", action="store_true", help="List all rules and exit")
+    parser_cli.add_argument("--init-config", action="store_true", help="Generate default .meta-check.json and exit")
 
     args = parser_cli.parse_args()
 
     root = Path(__file__).resolve().parents[2]
+
+    if args.list_rules:
+        print(_list_rules_text())
+        return 0
+
+    if args.init_config:
+        out = config_mod.write_default_config(root)
+        print(f"Created {out}")
+        return 0
+
+    # Load configuration
+    if args.config:
+        config_path = Path(args.config)
+        if not config_path.is_absolute():
+            config_path = (root / config_path).resolve()
+        if config_path.exists():
+            _active_config = config_mod.parse_config(config_path.read_text(encoding="utf-8"))
+        else:
+            print(f"WARNING: Config file not found: {config_path}", file=sys.stderr)
+            _active_config = config_mod.CheckConfig()
+    else:
+        _active_config = config_mod.load_config(root)
+
     target = Path(args.path)
     if not target.is_absolute():
         target = (root / target).resolve()
@@ -1959,6 +2059,11 @@ def main() -> int:
 
     for keyword, files in keyword_map.items():
         if len(files) > 1:
+            # Smart XF-03: skip category keywords and config-allowlisted keywords
+            if keyword in CATEGORY_KEYWORDS:
+                continue
+            if _active_config.is_keyword_allowed(keyword):
+                continue
             file_list = ", ".join(sorted({f.path.name for f in files}))
             for parsed in files:
                 _add_violation(violations, parsed.path, _line_for(parsed, "keywords"), "warning", "XF-03", f"Keyword '{keyword}' appears in multiple files: {file_list}")
@@ -2074,6 +2179,7 @@ def main() -> int:
     # XR-04: Object material values reference material files (covered by MAT-02)
     # XR-05: Template material = "generic" is intentional (INFO)
     template_ids: set = set()
+    generic_templates: Set[str] = set()
     for parsed in parsed_files:
         if parsed.kind == "template":
             tid = _as_string(parsed.fields.get("id"))
@@ -2081,10 +2187,25 @@ def main() -> int:
                 template_ids.add(tid)
             mat = _as_string(parsed.fields.get("material"))
             if mat and mat == "generic" and mat not in materials:
+                generic_templates.add(tid or "")
                 _add_violation(violations, parsed.path,
                                _line_for(parsed, "material"),
                                "info", "XR-05",
                                "Template uses 'generic' material (instances must override)")
+
+    # XR-05b: Objects inheriting a generic-material template without override
+    if generic_templates:
+        for parsed in parsed_files:
+            if parsed.kind == "object":
+                tmpl = _as_string(parsed.fields.get("template"))
+                if tmpl and tmpl in generic_templates:
+                    obj_mat = _as_string(parsed.fields.get("material"))
+                    if obj_mat is None or obj_mat == "generic":
+                        _add_violation(violations, parsed.path,
+                                       _line_for(parsed, "template"),
+                                       "warning", "XR-05b",
+                                       f"Object inherits '{tmpl}' template with generic material "
+                                       f"but does not override material")
 
     # XR-06: Every template value on objects resolves to a template file
     if template_ids:
