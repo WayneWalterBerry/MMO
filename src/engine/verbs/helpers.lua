@@ -1528,4 +1528,28 @@ H.get_light_level = get_light_level
 H.has_some_light = has_some_light
 H.vision_blocked_by_worn = vision_blocked_by_worn
 
+-- Sync a linked exit after an FSM transition on an object with linked_exit.
+-- When an object declares linked_exit and linked_passage_id, state changes
+-- (open, close, unlock, break) should propagate to the corresponding exit.
+local function sync_linked_exit(ctx, obj, verb)
+    if not obj.linked_exit then return end
+    local room = ctx.current_room
+    if not room or not room.exits then return end
+    local exit = room.exits[obj.linked_exit]
+    if not exit then return end
+    if obj.linked_passage_id and exit.passage_id ~= obj.linked_passage_id then return end
+    local muts = exit.mutations
+    if not muts or not muts[verb] then return end
+    local mut = muts[verb]
+    if mut.becomes_exit then
+        for k, v in pairs(mut.becomes_exit) do
+            exit[k] = v
+        end
+    end
+    if mut.spawns then
+        H.spawn_objects(ctx, mut.spawns)
+    end
+end
+H.sync_linked_exit = sync_linked_exit
+
 return H

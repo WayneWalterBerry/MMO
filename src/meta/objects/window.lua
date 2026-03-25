@@ -8,6 +8,9 @@ return {
     keywords = {"window", "glass", "pane", "leaded glass"},
     room_presence = "A tall leaded glass window is set deep in the stone of the far wall.",
 
+    linked_exit = "window",
+    linked_passage_id = "bedroom-courtyard-window",
+
     on_feel = "Cold glass pane, thick and uneven. Lead strips divide it into diamond shapes. An iron latch holds it shut.",
     on_listen = "Faint sounds from outside -- muffled by glass. Wind, maybe. A distant city, maybe.",
 

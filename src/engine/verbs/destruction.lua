@@ -90,6 +90,8 @@ function M.register(handlers)
                     if trans then
                         print(trans.message or ("You break " .. (obj.name or obj.id) .. "."))
                         if trans.spawns then spawn_objects(ctx, trans.spawns) end
+                        -- Sync linked exit when breaking objects linked to exits
+                        H.sync_linked_exit(ctx, obj, "break")
                     else
                         print("You can't break " .. (obj.name or "that") .. ".")
                     end

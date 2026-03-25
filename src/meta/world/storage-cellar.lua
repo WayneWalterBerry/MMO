@@ -26,12 +26,12 @@ return {
                 { id = "small-crate",   type = "Small Crate",    type_id = "c8d4e2b3-5f60-4901-bc23-def045678901",
                     contents = {
                         { id = "cloth-scraps",  type = "Cloth Scraps",   type_id = "7cb2e194-3d80-4a51-bf63-e8d1c5a40927" },
-                        { id = "candle-stubs",  type = "Candle Stub",    type_id = "91hsx61e-2c39-4642-8f5f-a19d72567890" },
+                        { id = "candle-stubs",  type = "Candle Stub",    type_id = "076d1bf6-12c3-443f-b88a-85452cb4477c" },
                     },
                 },
             },
             contents = {
-                { id = "iron-key",      type = "Iron Key",       type_id = "1d39i7g8-a4b5-4e56-0178-23549a123456" },
+                { id = "iron-key",      type = "Iron Key",       type_id = "438f3f05-00d9-4b5a-b50d-bd46012b27c7" },
             },
         },
 
@@ -44,9 +44,9 @@ return {
 
         -- === Room-level objects ===
         { id = "grain-sack",    type = "Grain Sack",     type_id = "d9e5f3c4-6071-4a12-cd34-ef1056789012" },
-        { id = "oil-lantern",   type = "Oil Lantern",    type_id = "2e4aj8h9-b5c6-4f67-1289-3465ab234567" },
-        { id = "rope-coil",     type = "Rope Coil",      type_id = "0c28h6f7-93a4-4d45-f067-124389012345" },
-        { id = "crowbar",       type = "Crowbar",        type_id = "3f5bk9i0-c6d7-4078-2390-4576bc345678" },
+        { id = "oil-lantern",   type = "Oil Lantern",    type_id = "675d14a9-6ab6-40c2-bc74-90308232c5e1" },
+        { id = "rope-coil",     type = "Rope Coil",      type_id = "9aaf7810-427b-428e-9902-34ab5d1c2fbe" },
+        { id = "crowbar",       type = "Crowbar",        type_id = "b30076fe-7931-4089-8ea2-2cac139b022c" },
         { id = "oil-flask",     type = "Oil Flask",      type_id = "ae5df831-7c42-4b19-8e60-f9a3c7d21b54" },
         { id = "brass-spittoon", type = "Brass Spittoon", type_id = "{b763fdf9-f7d2-4eac-8952-7c03771c5013}" },
     },

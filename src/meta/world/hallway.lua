@@ -27,18 +27,18 @@ return {
 
     instances = {
         -- Torches
-        { id = "torch-lit-west",          type = "Lit Torch",     type_id = "d95glu9s-6077-4a80-c393-e57156345678" },
-        { id = "torch-lit-east",          type = "Lit Torch",     type_id = "d95glu9s-6077-4a80-c393-e57156345678" },
+        { id = "torch-lit-west",          type = "Lit Torch",     type_id = "816862a1-c892-45ba-8d0f-2a72315f8eb2" },
+        { id = "torch-lit-east",          type = "Lit Torch",     type_id = "816862a1-c892-45ba-8d0f-2a72315f8eb2" },
 
         -- Portraits
-        { id = "portrait-1",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789" },
-        { id = "portrait-2",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789" },
-        { id = "portrait-3",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789" },
+        { id = "portrait-1",              type = "Portrait",      type_id = "21c70054-ed7f-4873-ac0e-f8c90a2ff18a" },
+        { id = "portrait-2",              type = "Portrait",      type_id = "21c70054-ed7f-4873-ac0e-f8c90a2ff18a" },
+        { id = "portrait-3",              type = "Portrait",      type_id = "21c70054-ed7f-4873-ac0e-f8c90a2ff18a" },
 
         -- === Side Table ===
-        { id = "side-table",              type = "Side Table",    type_id = "f17inw1u-8299-4ca2-e5b5-079378567890",
+        { id = "side-table",              type = "Side Table",    type_id = "b9c53625-2c37-4a70-988b-0769375705bd",
             on_top = {
-                { id = "vase",                    type = "Vase",          type_id = "028jox2v-93a0-4db3-f6c6-180489678901" },
+                { id = "vase",                    type = "Vase",          type_id = "1ae1f401-2c06-421c-8530-eb339c061a9f" },
             },
         },
     },

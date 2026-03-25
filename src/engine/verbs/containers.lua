@@ -104,6 +104,8 @@ function M.register(handlers)
                                 room.exits[obj.reveals_exit].open = true
                             end
                         end
+                        -- Sync linked exit when opening objects linked to exits
+                        H.sync_linked_exit(ctx, obj, "open")
                         -- on_open hook: fire callback if object declares one
                         if obj.on_open and type(obj.on_open) == "function" then
                             obj.on_open(obj, ctx)
@@ -246,7 +248,8 @@ function M.register(handlers)
                     if trans then
                         print(trans.message or ("You close " .. (obj.name or obj.id) .. "."))
                         if trans.spawns then spawn_objects(ctx, trans.spawns) end
-                        -- on_close hook: fire callback if object declares one
+                        -- Sync linked exit when closing objects linked to exits
+                        H.sync_linked_exit(ctx, obj, "close")
                         if obj.on_close and type(obj.on_close) == "function" then
                             obj.on_close(obj, ctx)
                         end
