@@ -47,6 +47,29 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+
+### Issue #174: SLM Embedding Index Overhaul (Sections 1-4)
+
+**What shipped:** Full embedding index overhaul with BM25 scoring, synonym expansion, inverted index, and 56 new object entries. 51 TDD tests pass, 131 total test files pass, zero regressions.
+
+**Section 1 (Strip vectors):** Already done on main — slim index (883KB, no vectors) exists at `src/assets/parser/embedding-index.json`. Full 15MB archive at `resources/parser/embedding-index-full.json` and `resources/archive/`. Build script (`scripts/build_embedding_index.py`) already outputs both.
+
+**Section 2 (Audit staleness):** Found 56 objects with zero embedding coverage out of 87 total. Added all 56 missing objects (6,552 new phrases). Index grew from 4,579 → 11,131 phrases. Key objects added: mirror, drawer, chest, silver-dagger, torch, barrel, skull, sarcophagus, crowbar, rope-coil, trousers, oil-flask, wine-bottle, bear-trap, tattered-scroll, bronze-ring, and 40 more.
+
+**Section 3 (Phrase variants):** Added synonym mappings: gimme→get, hold→get, lift→get, peer→look, use→ignite. Existing index already had phrase-level variants (gimme/hold/lift/peer/check-out/inspect) for all 40 original nouns; these now also cover the 56 new nouns. Removed "check"→"examine" from synonyms to preserve "check out" → look routing.
+
+**Section 4 (Tiebreaker):** `prefer_base_state()` function already existed inline. Refactored to a clean extracted function with `STATE_SUFFIXES` table. Works for all state variants: `-lit`, `-open`, `-broken`, `-closed`. 8 tiebreaker tests pass.
+
+**Architecture changes:**
+- `src/engine/parser/embedding_matcher.lua` — Upgraded from Jaccard-only to BM25+inverted-index with Jaccard fallback. Added synonym expansion, IDF-aware typo correction, extracted tiebreaker function.
+- `src/engine/parser/bm25_data.lua` — Restored (was on feature branches but missing from main). Regenerated: 244 tokens, avgdl=3.67.
+- `src/engine/parser/synonym_table.lua` — Restored and updated with 3 new mappings (gimme, hold, lift, use→ignite), peer→look fix.
+
+**Key learnings:**
+- The bm25_data.lua and synonym_table.lua files existed on feature branches (commit 82cf1d8, c76688b) but were never merged to main. This caused the matcher to silently fall back to Jaccard scoring, missing the Phase 1 improvements entirely on main.
+- BM25's IDF-aware typo correction is critical — without it, tokens like "gimme" (5 chars) get aggressively corrected to verbs like "time" (dist=2).
+- The inverted index candidate retrieval is a huge performance win: instead of scoring 11,131 phrases for every input, we only score phrases that share at least one token with the input (typically <500).
+- Door disambiguation is hard: 4 door objects compete for "door". Players need to use adjectives ("oak door", "trap door") to disambiguate. The embedding index uses the object's display name, not its file ID.
 
 ### 2026-07-20: Issue #106 Phase 3 — Prime Directive Tiers 1-5 Implementation
 
