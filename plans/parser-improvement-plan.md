@@ -1,42 +1,57 @@
-# Parser Improvement Plan: From 68% to 80%+ Accuracy
+# Parser Improvement Plan: Tier 2 Accuracy Roadmap
 
-**Author:** Frink (Researcher)  
-**Date:** 2026-03-29  
-**Status:** READY FOR REVIEW  
+**Author:** Frink (Researcher), updated by Smithers (UI/Parser)  
+**Date:** 2026-03-29 (updated 2026-03-25)  
+**Status:** PHASES 1-3 SHIPPED — Ongoing improvements  
 **Requested by:** Wayne Berry (Effe)  
 
 ---
 
-## Executive Summary
+## Current State (2026-03-25)
 
-### Current State
+### Benchmark Results
 
-Our 5-tier parser achieves **68% command accuracy** on test inputs:
-- **Tier 1:** Exact verb dispatch + questions + idioms (~48% hit rate)
-- **Tier 2:** Jaccard token overlap against 4,579 phrase variants (~20% additional coverage)
-- **Tier 3-5:** Context window, GOAP planner, fuzzy resolution (catch pronouns, typos, material references)
+**Expanded benchmark:** 134/147 cases passing = **91.2% accuracy**  
+**Baseline (pre-improvement):** 83.7% on 147 cases (Nelson's expanded benchmark)
 
-The primary bottleneck is **Tier 2** (embedding_matcher.lua): it uses unweighted Jaccard similarity against a flat phrase list, ignoring:
-- **Term importance** (rare words like "candle" vs common words like "the")
-- **Synonym relationships** ("grab" ≈ "take")
-- **Word order/proximity** (treats "light match" = "match light")
-- **Optimal retrieval algorithms** (no inverted index, no BM25 scoring)
+### Shipped Phases
 
-### Target State
+| Phase | Status | What Shipped | Accuracy |
+|-------|--------|-------------|----------|
+| **Phase 1** | ✅ DONE | BM25 scoring, IDF weighting, inverted index | 68% → ~78% |
+| **Phase 2** | ✅ DONE | Synonym table (40+ mappings), typo correction with IDF guard | ~78% → ~84% |
+| **Phase 3** | ✅ DONE | Context-aware recency boost, state-variant tiebreaker | ~84% → 89% |
+| **#242-244 fixes** | ✅ DONE | peer/check→examine synonyms, context boost in BM25 path, noun_tokens | 84% → 89% |
+| **Typo tightening** | ✅ DONE | Tighter Levenshtein thresholds (4→d1, 5→d1, 6+→d2), snag/show synonyms | 89% → 91.2% |
 
-**Goal: 80%+ accuracy** by Q2 2026 through three implementation phases:
+### Remaining Failures (13/147)
 
-| Phase | Techniques | Expected Gain | Target Accuracy |
-|-------|-----------|---------------|-----------------|
-| **Phase 1: Quick Wins** | BM25 scoring, synonym expansion | 68% → 75% | **75%** |
-| **Phase 2: Soft Matching** | Soft cosine, word similarity matrix | 75% → 80% | **80%** |
-| **Phase 3: Advanced** | Context-aware ranking, adaptive weighting | 80% → 85% | **85%** |
+Categorized by root cause and prioritized by fix impact:
 
-### Top 3 Techniques (Prioritized by Effort/Impact)
+| Priority | Category | Count | Root Cause | Example |
+|----------|----------|-------|-----------|---------|
+| **P1** | False positives (unknown nouns) | 6 | BM25 matches verb-only when noun isn't in index. "eat the dragon" → "eat portrait" | E-131..E-147 |
+| **P2** | BM25 dilution on verbose input | 2 | Stop words removed but many noise tokens remain. Long inputs dilute BM25 signal | C-98, C-99 |
+| **P3** | Question pattern routing | 1 | "what is the candle" → "what can i do" (help). Needs question→examine transform | B-75 |
+| **P4** | Noun resolution (bed vs bed-sheets) | 1 | "hit bed" matches "hit bed sheets" because "bed" is a substring | F-14 |
+| **P5** | Adjective-only matching | 2 | "get small" / "get something small" false-matches "get a small knife" | A-47, C-100 |
+| **P6** | Edge cases | 1 | "match match" (duplicate word) resolves to drop instead of ignite | C-97 |
 
-1. **BM25 Scoring** — Replace Jaccard with term-weighted scoring (effort: 2-3 days, gain: +5-7%)
-2. **Synonym Expansion** — Offline phrase augmentation via manual synonym table (effort: 1-2 days, gain: +3-5%)
-3. **Soft Cosine Matching** — Word similarity matrix for partial token matches (effort: 3-5 days, gain: +3-5%)
+### Recommended Next Improvements (by impact)
+
+1. **Noun validation gate** (P1, est. +6 cases) — Require that at least one input noun token matches a phrase's noun_tokens before accepting the match. This prevents verb-only matches against unrelated nouns. Uses the noun_tokens field now populated on all phrases.
+
+2. **Question transform expansion** (P3, est. +1 case) — Add "what is X" → "examine X" to the questions.lua transform pipeline. Currently only handles "what can I do" → help.
+
+3. **Adjective-only false positive guard** (P5, est. +2 cases) — When input after stop-word removal contains only adjectives (words in IDF that aren't verbs or nouns), suppress the match. "get small" should be rejected.
+
+4. **Verbose input truncation** (P2, est. +2 cases) — For inputs exceeding N tokens after stop-word removal, keep only the first verb + nearest noun tokens, discarding noise. Prevents BM25 dilution on long player input.
+
+5. **Noun prefix matching** (P4, est. +1 case) — When noun candidates tie, prefer shorter nouns that are exact prefixes of the input ("bed" over "bed-sheets" for input "hit bed").
+
+---
+
+## Original Plan (Historical — Phases 1-3 below are now shipped)
 
 ---
 
