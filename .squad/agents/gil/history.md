@@ -231,6 +231,25 @@
   - ✅ No stale files — dist/ was deleted and rebuilt from scratch
   - ✅ File counts match: dist/ = 98, play/ = 98
   - ✅ No source files modified after the previous build (no gap detected)
+
+### 2026-03-25: Issue #210 — SLM Lazy-Load for Web Build
+- **Timestamp:** 2026-03-25T11:56Z
+- **Status:** ✅ IMPLEMENTED — Branch `squad/210-slm-lazy-load` pushed
+- **Problem:** Web build strips embedding vectors at build time, but no mechanism existed to lazy-load them back when needed. No SLM/embedding log lines in bootstrap.
+- **Solution — three-layer approach:**
+  1. **Build pipeline** (`build-engine.ps1` + `extract-vectors.py`): Reads `resources/archive/embedding-index-full.json` (16 MB, 4337 vectors × 384-dim), extracts vectors into `embedding-vectors.json.gz` (4.8 MB compressed). Computes SHA256 content hash (first 16 chars) as version key. Stamps `VECTORS_VERSION` into `bootstrapper.js` alongside existing `BUILD_TIMESTAMP` and `CACHE_BUST`.
+  2. **Bootstrapper lazy-load** (`bootstrapper.js`): After game boots and adapter loads, `lazyLoadVectors()` fires async (non-blocking). Checks IndexedDB (`mmo-slm-cache` database) for cached vectors matching `VECTORS_VERSION`. If stale/missing, fetches `embedding-vectors.json.gz`, decompresses, caches in IndexedDB, injects into Lua VFS via `window._injectSLMVectors`. Debug-mode log lines: "downloading...", "cached (IndexedDB)", "loaded (N entries)", "unavailable".
+  3. **Game adapter bridge** (`game-adapter.lua`): Exposes `window._injectSLMVectors` function that stores vector JSON into `_G.__VFS["src/assets/parser/embedding-vectors.json"]`. Engine can access vectors via VFS when soft-cosine scoring is implemented.
+- **Materials investigation:** Added diagnostic logging to materials boot sequence — now logs manifest count and per-file warnings in debug mode. The `_index.lua` manifest correctly lists 23 materials, and all 23 files exist in dist. The "Loaded 0 materials" issue is likely a runtime path or Fengari parsing issue — needs browser testing to confirm.
+- **Key files:**
+  - `web/build-engine.ps1` — vector extraction section + VECTORS_VERSION stamping
+  - `web/extract-vectors.py` — Python helper for JSON processing + gzip
+  - `web/bootstrapper.js` — VECTORS_VERSION const, IndexedDB helpers, lazyLoadVectors()
+  - `web/game-adapter.lua` — _injectSLMVectors bridge, materials diagnostics
+  - `web/dist/embedding-vectors.json.gz` — built artifact (4.8 MB)
+- ⚠️ The vectors are NOT used by the engine yet — embedding_matcher.lua uses BM25 scoring exclusively. This is infrastructure for future Tier 2 soft-cosine matching.
+- ⚠️ The IndexedDB version key is a SHA256 hash of the vector content, not the build timestamp. This means cache invalidation only happens when vectors actually change, not on every build.
+- ⚠️ Python is required for the vector extraction step. If Python is unavailable, the build continues without vectors (VECTORS_VERSION stays empty, lazy-load gracefully skips).
   - ⚠️ The previous build (14:03) was actually already in sync with Pages — the "gap" Wayne experienced may have been CDN propagation delay or browser cache
 - **Fix spot-checks (all PRESENT in deployed engine.lua.gz):**
   - ✅ #63: `narrator.lua` — "On top of the" surface narration (2 matches)
