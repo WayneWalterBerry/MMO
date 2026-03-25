@@ -296,7 +296,7 @@ function M.register(handlers)
         -- or taking a candle from a holder on a surface). (#215)
         if (where == "bag" or where == "container") and parent then
             if not obj.portable then
-                print("You can't carry " .. (obj.name or "that") .. ".")
+                print(obj.not_portable_reason or ("You can't carry " .. (obj.name or "that") .. "."))
                 return
             end
             local slot = first_empty_hand(ctx)
@@ -329,7 +329,7 @@ function M.register(handlers)
         end
 
         if not obj.portable then
-            print("You can't carry " .. (obj.name or "that") .. ".")
+            print(obj.not_portable_reason or ("You can't carry " .. (obj.name or "that") .. "."))
             return
         end
 

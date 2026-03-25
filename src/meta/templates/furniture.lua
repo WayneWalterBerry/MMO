@@ -12,6 +12,7 @@ return {
     size = 5,
     weight = 30,
     portable = false,
+    not_portable_reason = "It's far too heavy to carry.",
     material = "wood",
 
     container = false,
