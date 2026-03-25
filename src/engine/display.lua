@@ -33,19 +33,41 @@ function display.word_wrap(text, width)
             if #indent + #content <= width then
                 output[#output + 1] = segment
             else
+                local lines = {}
                 local line = indent
                 for word in content:gmatch("%S+") do
                     if line == indent then
                         line = indent .. word
                     elseif #line + 1 + #word > width then
-                        output[#output + 1] = line
+                        lines[#lines + 1] = line
                         line = indent .. word
                     else
                         line = line .. " " .. word
                     end
                 end
                 if line ~= indent then
-                    output[#output + 1] = line
+                    lines[#lines + 1] = line
+                end
+
+                -- Orphan prevention: if last line is very short (< width/4),
+                -- pull the last word from the previous line down so phrases
+                -- stay together instead of leaving a single word stranded.
+                if #lines >= 2 then
+                    local last = lines[#lines]
+                    local last_content = last:sub(#indent + 1)
+                    if #last_content < width / 4 then
+                        local prev = lines[#lines - 1]
+                        local sp = prev:match(".*()%s%S+$")
+                        if sp and sp > #indent + 1 then
+                            local moved = prev:sub(sp + 1)
+                            lines[#lines - 1] = prev:sub(1, sp - 1)
+                            lines[#lines] = indent .. moved:match("^%s*(.+)") .. " " .. last_content
+                        end
+                    end
+                end
+
+                for _, l in ipairs(lines) do
+                    output[#output + 1] = l
                 end
             end
         end

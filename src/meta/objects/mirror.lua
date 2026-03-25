@@ -8,11 +8,12 @@ return {
     id = "mirror",
     material = "glass",
     is_mirror = true,
-    keywords = {"mirror", "looking glass", "glass", "vanity mirror", "reflection", "my reflection"},
+    keywords = {"mirror", "looking glass", "vanity mirror", "reflection", "my reflection"},
     size = 3,
     weight = 2.5,
     categories = {"reflective", "glass", "fragile"},
     portable = false,
+    not_portable_reason = "The mirror is firmly mounted to the vanity. You can't take it.",
 
     -- Initial state (intact)
     name = "an ornate mirror",
