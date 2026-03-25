@@ -22,13 +22,15 @@ M.verbs = {
   pick      = "take",   -- "pick up" after preprocess strips "up"
   nab       = "grab",
   swipe     = "grab",
+  gimme     = "get",    -- #174: casual pickup
+  hold      = "get",    -- #174: "hold X" → acquire
+  lift      = "get",    -- #174: "lift X" → acquire
 
   -- Looking synonyms (look/examine are in index)
   gaze      = "look",
-  peer      = "examine",
+  peer      = "look",     -- #174: "peer at X" → look
   observe   = "examine",
-  inspect   = "examine",
-  check     = "examine",
+  inspect   = "examine",  -- #174: confirmed
   view      = "examine",
   study     = "examine",
   regard    = "examine",
@@ -77,6 +79,7 @@ M.verbs = {
   -- Fire synonyms (ignite/burn/strike/extinguish/snuff are in index)
   kindle    = "ignite",
   inflame   = "burn",
+  use       = "ignite",   -- #174: "use candle" → ignite
 
   -- Reading/writing (read/write are in index)
   peruse    = "read",

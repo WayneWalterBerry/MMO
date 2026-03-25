@@ -174,11 +174,18 @@ def save_index(index: dict, output_dir: Path, slim: bool = False) -> tuple[Path,
     When slim=True, also saves a slim (no vectors) version as the primary index."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Always save the full version (with vectors) to archive
+    # Always save the full version (with vectors) to both archive locations
     archive_dir = output_dir.parent.parent.parent / "resources" / "archive"
     archive_dir.mkdir(parents=True, exist_ok=True)
     archive_path = archive_dir / "embedding-index-full.json"
     with open(archive_path, "w", encoding="utf-8") as f:
+        json.dump(index, f, separators=(",", ":"))
+
+    # Also save to resources/parser/ (canonical location per Issue #174)
+    parser_archive_dir = output_dir.parent.parent.parent / "resources" / "parser"
+    parser_archive_dir.mkdir(parents=True, exist_ok=True)
+    parser_archive_path = parser_archive_dir / "embedding-index-full.json"
+    with open(parser_archive_path, "w", encoding="utf-8") as f:
         json.dump(index, f, separators=(",", ":"))
 
     # Primary index: slim (no vectors) by default

@@ -25,14 +25,14 @@ return {
     },
 
     instances = {
-        { id = "stone-well",    type = "Stone Well",         type_id = "24alqz4x-b5c2-4fd5-18e8-3a260b890123",
+        { id = "stone-well",    type = "Stone Well",         type_id = "096114c9-418d-41df-a5bf-d6a977664f8a",
             contents = {
-                { id = "well-bucket",   type = "Well Bucket",        type_id = "35bmr05y-c6d3-40e6-29f9-4b371c901234" },
+                { id = "well-bucket",   type = "Well Bucket",        type_id = "d2fcb814-b606-4525-8a03-e031d3800332" },
             },
         },
-        { id = "ivy",           type = "Ivy",                type_id = "46cns16z-d7e4-41f7-3a0a-5c482d012345" },
-        { id = "cobblestone",   type = "Loose Cobblestone",  type_id = "57dot27a-e8f5-4208-4b1b-6d593e123456" },
-        { id = "rain-barrel",   type = "Rain Barrel",        type_id = "79fqv49c-0a17-4420-6d3d-8f7b50345678" },
+        { id = "ivy",           type = "Ivy",                type_id = "18723096-bed0-46fa-bcf8-d79514f994ff" },
+        { id = "cobblestone",   type = "Loose Cobblestone",  type_id = "4388e944-50e3-4382-9068-646421c0741f" },
+        { id = "rain-barrel",   type = "Rain Barrel",        type_id = "ff526b60-83e1-4c82-9d5f-c303bac5bdf3" },
     },
 
     exits = {

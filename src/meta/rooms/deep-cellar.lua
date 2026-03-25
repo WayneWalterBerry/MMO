@@ -21,27 +21,27 @@ return {
 
     instances = {
         -- === Stone Altar ===
-        { id = "stone-altar",        type = "Stone Altar",       type_id = "5178dm1k-e8f9-420a-451b-6798de567890",
+        { id = "stone-altar",        type = "Stone Altar",       type_id = "a5fbf32f-530b-49af-9a19-255575a5eb77",
             on_top = {
-                { id = "incense-burner",     type = "Incense Burner",    type_id = "739afo3m-0a11-442c-673d-891bf0789012" },
-                { id = "tattered-scroll",    type = "Tattered Scroll",   type_id = "840bgp4n-1b22-453d-784e-902c01890123" },
-                { id = "offering-bowl",      type = "Offering Bowl",     type_id = "b73ejs7q-4e55-486f-a171-c35f34123456" },
+                { id = "incense-burner",     type = "Incense Burner",    type_id = "2fce1fb5-94ad-44f7-9036-4332a62d3405" },
+                { id = "tattered-scroll",    type = "Tattered Scroll",   type_id = "08d903bb-98fa-4c75-a986-26502479d12f" },
+                { id = "offering-bowl",      type = "Offering Bowl",     type_id = "dfea4690-5a7c-406d-ba4e-20388319ea0e" },
             },
         },
 
         -- === Sconces ===
-        { id = "unlit-sconce-east",  type = "Unlit Sconce",      type_id = "6289en2l-f900-431b-562c-780aef678901" },
-        { id = "unlit-sconce-west",  type = "Unlit Sconce",      type_id = "6289en2l-f900-431b-562c-780aef678901" },
+        { id = "unlit-sconce-east",  type = "Unlit Sconce",      type_id = "fd0fb6ed-a643-4b1a-96fd-ad1d520e4f75" },
+        { id = "unlit-sconce-west",  type = "Unlit Sconce",      type_id = "fd0fb6ed-a643-4b1a-96fd-ad1d520e4f75" },
 
         -- === Stone Sarcophagus ===
-        { id = "stone-sarcophagus",  type = "Stone Sarcophagus", type_id = "a62dir6p-3d44-475f-9060-b24e23012345",
+        { id = "stone-sarcophagus",  type = "Stone Sarcophagus", type_id = "3fd2ce07-0c8b-421e-8e56-fa4687c815de",
             contents = {
-                { id = "silver-key",         type = "Silver Key",        type_id = "951chq5o-2c33-464e-895f-a13d12901234" },
+                { id = "silver-key",         type = "Silver Key",        type_id = "336a1fce-6bfb-405d-a59e-c55faf83dd9d" },
             },
         },
 
         -- === Room-level ===
-        { id = "chain",              type = "Chain",             type_id = "c84fkt8r-5f66-497f-b282-d46045234567" },
+        { id = "chain",              type = "Chain",             type_id = "5f18202e-220f-4a16-b75e-170595f22845" },
     },
 
     exits = {

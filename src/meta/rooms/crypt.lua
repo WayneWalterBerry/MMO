@@ -29,37 +29,37 @@ return {
 
     instances = {
         -- Sarcophagi (south wall, west to east: 1, 2, 3)
-        { id = "sarcophagus-1",    type = "Stone Sarcophagus", type_id = "80grw50d-1b28-4531-7e4e-908c61456789" },
-        { id = "sarcophagus-2",    type = "Stone Sarcophagus", type_id = "80grw50d-1b28-4531-7e4e-908c61456789",
+        { id = "sarcophagus-1",    type = "Stone Sarcophagus", type_id = "f46656fd-02ca-4549-bb0d-e2366c6a43da" },
+        { id = "sarcophagus-2",    type = "Stone Sarcophagus", type_id = "f46656fd-02ca-4549-bb0d-e2366c6a43da",
             contents = {
                 { id = "bronze-ring",      type = "Bronze Ring",       type_id = "d4f18a63-9e27-4c85-b790-3a6e2f8d1c04" },
             },
         },
-        { id = "sarcophagus-3",    type = "Stone Sarcophagus", type_id = "80grw50d-1b28-4531-7e4e-908c61456789",
+        { id = "sarcophagus-3",    type = "Stone Sarcophagus", type_id = "f46656fd-02ca-4549-bb0d-e2366c6a43da",
             contents = {
-                { id = "silver-dagger",    type = "Silver Dagger",     type_id = "e6mx2b6j-7184-4b97-d4a4-f64227012345" },
+                { id = "silver-dagger",    type = "Silver Dagger",     type_id = "2155adb3-839c-451b-8078-892e839013b2" },
             },
         },
 
         -- Sarcophagi (north wall, west to east: 4, 5)
-        { id = "sarcophagus-4",    type = "Stone Sarcophagus", type_id = "80grw50d-1b28-4531-7e4e-908c61456789",
+        { id = "sarcophagus-4",    type = "Stone Sarcophagus", type_id = "f46656fd-02ca-4549-bb0d-e2366c6a43da",
             contents = {
                 { id = "burial-necklace",  type = "Burial Necklace",   type_id = "5e9b3c71-a284-4df6-8e13-7d0f4a5b2c89" },
             },
         },
-        { id = "sarcophagus-5",    type = "Stone Sarcophagus", type_id = "80grw50d-1b28-4531-7e4e-908c61456789",
+        { id = "sarcophagus-5",    type = "Stone Sarcophagus", type_id = "f46656fd-02ca-4549-bb0d-e2366c6a43da",
             contents = {
-                { id = "tome",             type = "Tome",              type_id = "d5lw1a5i-6073-4a86-c393-e53116901234" },
+                { id = "tome",             type = "Tome",              type_id = "7283ca72-a6be-4727-8de2-a7c1998e46cf" },
             },
         },
 
         -- Wall niches and their contents
-        { id = "candle-stub-1",    type = "Candle Stub",       type_id = "91hsx61e-2c39-4642-8f5f-a19d72567890" },
-        { id = "candle-stub-2",    type = "Candle Stub",       type_id = "91hsx61e-2c39-4642-8f5f-a19d72567890" },
-        { id = "burial-coins",     type = "Burial Coins",      type_id = "c4kv094h-5f62-4975-b282-d42005890123" },
+        { id = "candle-stub-1",    type = "Candle Stub",       type_id = "076d1bf6-12c3-443f-b88a-85452cb4477c" },
+        { id = "candle-stub-2",    type = "Candle Stub",       type_id = "076d1bf6-12c3-443f-b88a-85452cb4477c" },
+        { id = "burial-coins",     type = "Burial Coins",      type_id = "76d22caa-0c4e-4671-bdce-7eeb3093b861" },
 
         -- Wall inscription (east wall, back of crypt)
-        { id = "wall-inscription", type = "Wall Inscription",  type_id = "f7ny3c7k-8295-4ca8-e5b5-075338123456" },
+        { id = "wall-inscription", type = "Wall Inscription",  type_id = "959a08fd-057e-4cf6-b80e-c419d184bcc1" },
     },
 
     exits = {
