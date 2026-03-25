@@ -688,6 +688,25 @@ function M.register(handlers)
             end
         end
 
+        -- Bug #181: Fuzzy fallback when exact keyword match fails on hands
+        if not obj and fuzzy then
+            local parsed = fuzzy.parse_noun_phrase(kw)
+            for i = 1, 2 do
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local candidate = _hobj(hand, ctx.registry)
+                    if candidate then
+                        local score = fuzzy.score_object(candidate, parsed)
+                        if score > 0 then
+                            obj = candidate
+                            hand_slot = i
+                            break
+                        end
+                    end
+                end
+            end
+        end
+
         if not obj then
             -- #137: Check if it's a worn item — give appropriate message
             local kw_check = noun:lower()
@@ -698,6 +717,20 @@ function M.register(handlers)
                 if worn_obj and matches_keyword(worn_obj, kw_check) then
                     is_worn = true
                     break
+                end
+            end
+            -- Bug #181: Fuzzy fallback for worn item check
+            if not is_worn and fuzzy then
+                local parsed = fuzzy.parse_noun_phrase(kw_check)
+                for _, worn_id in ipairs(ctx.player.worn or {}) do
+                    local worn_obj = ctx.registry and ctx.registry:get(worn_id)
+                    if worn_obj then
+                        local score = fuzzy.score_object(worn_obj, parsed)
+                        if score > 0 then
+                            is_worn = true
+                            break
+                        end
+                    end
                 end
             end
             if is_worn then
