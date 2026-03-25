@@ -1912,7 +1912,7 @@ def _format_json(violations: List[Violation], files_scanned: int, exit_code: int
 
 
 def main() -> int:
-    parser_cli = argparse.ArgumentParser(description="Meta-check validator for MMO meta files")
+    parser_cli = argparse.ArgumentParser(description="Meta-Lint validator for MMO meta files")
     parser_cli.add_argument("path", nargs="?", default="src/meta/", help="File or directory to validate")
     parser_cli.add_argument("--format", default="text", choices=("text", "json"), help="Output format")
     parser_cli.add_argument("--severity", default="all", choices=("all", "warning", "error"), help="Minimum severity to report")

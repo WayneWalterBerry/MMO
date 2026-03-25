@@ -1,4 +1,4 @@
-# Meta-Check: Usage
+# Meta-Lint: Usage
 
 **Date:** 2026-03-24  
 **Version:** 1.0  
@@ -189,7 +189,7 @@ jobs:
       - name: Check results
         run: |
           if [ $? -eq 1 ]; then
-            echo "❌ Meta-check failed (errors found)"
+            echo "❌ Meta-Lint failed (errors found)"
             cat meta-lint-report.json
             exit 1
           fi
@@ -333,7 +333,7 @@ echo "✅ All checks passed. Ready to deploy."
 
 **Flag: `--fix`**
 
-Meta-check can auto-fix common, **low-risk issues**:
+Meta-Lint can auto-fix common, **low-risk issues**:
 
 ```bash
 python scripts/meta-lint/lint.py --fix src/meta/objects/
@@ -380,7 +380,7 @@ python scripts/meta-lint/lint.py src/meta/objects/
 **File: `.meta-lint.yaml` (optional)**
 
 ```yaml
-# Meta-Check Configuration
+# Meta-Lint Configuration
 
 version: 1.0
 

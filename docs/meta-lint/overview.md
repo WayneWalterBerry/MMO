@@ -1,4 +1,4 @@
-# Meta-Check: Overview
+# Meta-Lint: Overview
 
 **Date:** 2026-03-24  
 **Version:** 1.0  
@@ -7,9 +7,9 @@
 
 ---
 
-## What is Meta-Check?
+## What is Meta-Lint?
 
-Meta-check is a **static validation tool** that analyzes Lua object, room, and level definition files before they reach the game engine. It combines compiler-like semantic analysis with linter-like style enforcement to catch bugs at CI time, not runtime.
+Meta-Lint is a **static validation tool** that analyzes Lua object, room, and level definition files before they reach the game engine. It combines compiler-like semantic analysis with linter-like style enforcement to catch bugs at CI time, not runtime.
 
 **In short:** Before a `.lua` file in `src/meta/` is merged, meta-lint verifies that every field exists, has the correct type, references valid resources, and follows core principles.
 
@@ -45,7 +45,7 @@ This is the right trade-off for runtime performance. But it means broken objects
 
 ### The Solution
 
-Meta-check is the **primary quality gate** for Lisa (Object Testing Specialist) and automated CI. It enforces:
+Meta-Lint is the **primary quality gate** for Lisa (Object Testing Specialist) and automated CI. It enforces:
 
 1. **Structural correctness** — All required fields present, correct types
 2. **Reference integrity** — GUIDs unique, materials/templates/rooms exist
@@ -69,7 +69,7 @@ Meta-check is the **primary quality gate** for Lisa (Object Testing Specialist) 
 
 ## Both a Compiler AND a Linter
 
-Meta-check is **hybrid**:
+Meta-Lint is **hybrid**:
 
 ### Compiler Aspect
 - Parses Lua table syntax (nested objects, arrays, FSM definitions)
@@ -85,7 +85,7 @@ Meta-check is **hybrid**:
 
 ---
 
-## Meta-Check as Lisa's Primary Tool
+## Meta-Lint as Lisa's Primary Tool
 
 Lisa (Object Testing Specialist) will use meta-lint **before any manual testing**:
 
@@ -110,7 +110,7 @@ python scripts/meta-lint/lint.py src/meta/
 
 ## Architecture Overview
 
-Meta-check is a **6-phase pipeline**:
+Meta-Lint is a **6-phase pipeline**:
 
 ```
 Phase 1: Tokenization
@@ -139,11 +139,11 @@ Phase 6: Error Reporter
 
 ## Key Design Insight
 
-**82 of 83 objects are pure data tables** (return { ... } with only literals, tables, and functions). Wall-clock.lua is the sole outlier—it generates states/transitions with for-loops, then references them by variable name. Meta-check treats function bodies as opaque (validated by Lua runtime) and focuses on the data layer.
+**82 of 83 objects are pure data tables** (return { ... } with only literals, tables, and functions). Wall-clock.lua is the sole outlier—it generates states/transitions with for-loops, then references them by variable name. Meta-Lint treats function bodies as opaque (validated by Lua runtime) and focuses on the data layer.
 
 ---
 
-## What Meta-Check Does NOT Do
+## What Meta-Lint Does NOT Do
 
 - **Runtime validation** — Function logic is Lua's job (e.g., `on_look` implementations)
 - **Gameplay semantics** — "Is this object fun?" is Lisa's job, not the compiler's

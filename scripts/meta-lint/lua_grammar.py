@@ -400,7 +400,7 @@ def main():
     print("  KNOWN LIMITATIONS")
     print(f"{'=' * w}")
     print("  1. Function bodies are opaque (__FUNC__ placeholders).")
-    print("     Meta-check validates DATA fields; function logic is Lua's job.")
+    print("     Meta-Lint validates DATA fields; function logic is Lua's job.")
     print("  2. Bare identifier references (e.g., wall-clock's `states = states`)")
     print("     are parsed as ident_ref nodes but NOT validated. The meta-lint")
     print("     tool can't see the computed value — only the runtime Lua can.")

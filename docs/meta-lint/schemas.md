@@ -1,9 +1,9 @@
-# Meta-Check: Schema Definitions
+# Meta-Lint: Schema Definitions
 
 **Date:** 2026-07-19  
 **Version:** 2.0  
 **Author:** Brockman (Documentation)  
-**Purpose:** Complete field contracts for each template type. Meta-check enforces these schemas.
+**Purpose:** Complete field contracts for each template type. Meta-Lint enforces these schemas.
 
 ---
 
@@ -16,7 +16,7 @@ A schema is a **contract** that defines:
 - Valid **value ranges** or **enum values**
 - **Inheritance rules** (templates inherit from base templates)
 
-Meta-check validates all objects against their template schema.
+Meta-Lint validates all objects against their template schema.
 
 ---
 
@@ -583,7 +583,7 @@ return {
 
 ## Validation Steps for Schemas
 
-Meta-check validates objects in this order:
+Meta-Lint validates objects in this order:
 
 1. **File Structure** — Does the file return a table?
 2. **Required Fields** — Are all required fields present?
@@ -605,7 +605,7 @@ small-item: { portable = true }
 -- Object override:
 candle: { template = "small-item", portable = false }  -- Unusual but allowed
 
--- Meta-check will flag this as a warning (small items should be portable)
+-- Meta-Lint will flag this as a warning (small items should be portable)
 ```
 
 ---

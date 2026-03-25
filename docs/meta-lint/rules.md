@@ -1,4 +1,4 @@
-# Meta-Check: Validation Rules
+# Meta-Lint: Validation Rules
 
 **Date:** 2026-07-19  
 **Version:** 2.0  

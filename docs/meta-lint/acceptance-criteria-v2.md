@@ -366,11 +366,11 @@ These checks validate references BETWEEN the new meta types and the rest of the 
 
 ### 6.1 Injury Gotchas
 
-1. **Burn has conflicting auto-transitions from `active`.** The `active` state has a timed event to `"healed"` (self-heal for minor burns) AND a transition `active → blistered` with `trigger = "auto"`. The resolution is that severe burn sources override the timer at infliction time. Meta-check should flag multiple auto-transitions from the same state as 🟡 WARNING, not 🔴 ERROR — Burn is the known exception (see INJ-40).
+1. **Burn has conflicting auto-transitions from `active`.** The `active` state has a timed event to `"healed"` (self-heal for minor burns) AND a transition `active → blistered` with `trigger = "auto"`. The resolution is that severe burn sources override the timer at infliction time. Meta-Lint should flag multiple auto-transitions from the same state as 🟡 WARNING, not 🔴 ERROR — Burn is the known exception (see INJ-40).
 
 2. **`healing_interactions` keys are object IDs, not injury types.** A common confusion: the keys are the *healing item's* `id` (e.g., `"bandage"`), not the injury type. The `requires_item_cures` field on transitions contains the injury type. Don't cross-validate them against each other — they reference different namespaces.
 
-3. **`_timer_delay` in mutate.** Some transitions mutate `_timer_delay` (e.g., crushing-wound worsened→treated sets `_timer_delay = 7200`). This overrides the target state's timed event delay. Meta-check should allow `_timer_delay` as a known mutate key without flagging it as suspicious.
+3. **`_timer_delay` in mutate.** Some transitions mutate `_timer_delay` (e.g., crushing-wound worsened→treated sets `_timer_delay = 7200`). This overrides the target state's timed event delay. Meta-Lint should allow `_timer_delay` as a known mutate key without flagging it as suspicious.
 
 4. **Empty `healing_interactions = {}` is valid.** Bruised and Concussion have no item-based healing — they self-heal with time/rest. An empty table is correct, not missing.
 
@@ -378,13 +378,13 @@ These checks validate references BETWEEN the new meta types and the rest of the 
 
 ### 6.2 Material Gotchas
 
-1. **Engine strips `name` from the loaded table.** After `dofile()`, the engine sets `mat.name = nil` and stores the rest under `materials.registry[name]`. So `materials.get("glass").name` returns `nil` at runtime. Meta-check validates the raw file, not the runtime table — `name` IS present in the file and must match the filename.
+1. **Engine strips `name` from the loaded table.** After `dofile()`, the engine sets `mat.name = nil` and stores the rest under `materials.registry[name]`. So `materials.get("glass").name` returns `nil` at runtime. Meta-Lint validates the raw file, not the runtime table — `name` IS present in the file and must match the filename.
 
-2. **`"generic"` is not a material file.** Templates use `material = "generic"` but no `generic.lua` exists. This is intentional — objects must override. Meta-check should NOT flag `"generic"` as a missing material when scanning template files, but SHOULD flag it on object files.
+2. **`"generic"` is not a material file.** Templates use `material = "generic"` but no `generic.lua` exists. This is intentional — objects must override. Meta-Lint should NOT flag `"generic"` as a missing material when scanning template files, but SHOULD flag it on object files.
 
-3. **Optional properties are material-specific.** `rust_susceptibility` only appears on iron and steel. Future materials may add properties like `toxicity` (for poisons) or `transparency` (distinct from opacity). Meta-check should flag unknown properties as 🟢 INFO, not ERROR.
+3. **Optional properties are material-specific.** `rust_susceptibility` only appears on iron and steel. Future materials may add properties like `toxicity` (for poisons) or `transparency` (distinct from opacity). Meta-Lint should flag unknown properties as 🟢 INFO, not ERROR.
 
-4. **`nil` values are meaningful.** `melting_point = nil` means "does not melt" (burns or decomposes instead). `ignition_point = nil` means "does not ignite." These are not missing values — they encode physical truth. Meta-check must NOT flag `nil` as missing for these two fields.
+4. **`nil` values are meaningful.** `melting_point = nil` means "does not melt" (burns or decomposes instead). `ignition_point = nil` means "does not ignite." These are not missing values — they encode physical truth. Meta-Lint must NOT flag `nil` as missing for these two fields.
 
 ### 6.3 Template Gotchas
 
@@ -402,7 +402,7 @@ These checks validate references BETWEEN the new meta types and the rest of the 
 
 2. **`restricted_objects` can be empty.** Level 1 has an empty `restricted_objects` array. This is valid — no objects are restricted for this level.
 
-3. **`completion` conditions are OR'd.** Multiple completion entries mean "any one of these triggers completion." Meta-check should not require a single entry.
+3. **`completion` conditions are OR'd.** Multiple completion entries mean "any one of these triggers completion." Meta-Lint should not require a single entry.
 
 4. **`rooms` ordering is narrative, not mechanical.** The rooms array is ordered by story arc (Act I, II, III, IV) but the engine doesn't depend on order. Duplicate detection should still check for repeated entries.
 

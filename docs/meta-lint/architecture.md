@@ -1,4 +1,4 @@
-# Meta-Check: Architecture
+# Meta-Lint: Architecture
 
 **Date:** 2026-03-24  
 **Version:** 1.0  
@@ -8,7 +8,7 @@
 
 ## High-Level Pipeline
 
-Meta-check is a **6-phase compiler pipeline** proven by Bart's Lark grammar prototype:
+Meta-Lint is a **6-phase compiler pipeline** proven by Bart's Lark grammar prototype:
 
 ```
 INPUT: Lua object/room/level files
@@ -349,7 +349,7 @@ src/meta/ : global : ERROR : DUPLICATE_GUID : guid 'abc-123' appears in candle.l
 
 ### Why Function Bodies Are Opaque
 
-**Observation:** 82/83 objects are pure data tables. Function bodies (`on_look`, `on_feel`, `factory`) contain game logic that Lua validates at runtime. Meta-check validates the **data layer** only.
+**Observation:** 82/83 objects are pure data tables. Function bodies (`on_look`, `on_feel`, `factory`) contain game logic that Lua validates at runtime. Meta-Lint validates the **data layer** only.
 
 **Implication:** Wall-clock.lua (the 1 programmatic outlier) is treated as "pass-through"—meta-lint can't validate computed values, only the Lua runtime can.
 
@@ -385,7 +385,7 @@ src/meta/ : global : ERROR : DUPLICATE_GUID : guid 'abc-123' appears in candle.l
 
 ## Error Recovery & Reporting
 
-Meta-check is **not a fail-fast validator**. It collects **all violations** and reports them together:
+Meta-Lint is **not a fail-fast validator**. It collects **all violations** and reports them together:
 
 ```
 Example: Run on a completely broken object
