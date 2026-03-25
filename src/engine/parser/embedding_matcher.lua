@@ -79,13 +79,21 @@ local function levenshtein(a, b)
 end
 
 ---------------------------------------------------------------------------
--- Typo correction: fix misspelled verbs using known verb set
+-- Typo correction: fix misspelled verbs using known verb set.
+-- Skip tokens that already exist in the BM25 IDF vocabulary — they are
+-- known game-world words (nouns, adjectives) and must not be "corrected"
+-- to verbs. E.g. "small" (IDF-known adjective) must not become "smell".
 ---------------------------------------------------------------------------
 local function correct_typos(tokens, known_verbs)
   if not known_verbs or not next(known_verbs) then return tokens end
+  local idf_table = bm25_data and bm25_data.idf or nil
   local corrected = {}
   for _, token in ipairs(tokens) do
     if known_verbs[token] then
+      corrected[#corrected + 1] = token
+    elseif idf_table and idf_table[token] then
+      -- Token is a known game-world word (noun/adjective in the phrase index).
+      -- Don't "correct" it to a verb — it's not a typo.
       corrected[#corrected + 1] = token
     else
       -- Short words (≤4 chars): require exact match only — no fuzzy correction.
