@@ -20,7 +20,7 @@ return {
         up = {
             target = "start-room",
             type = "stairway",
-            passage_id = "cellar-bedroom-stairway",
+            passage_id = "bedroom-cellar-trapdoor",
             name = "a narrow stone stairway",
             keywords = {"stairs", "stairway", "staircase", "up", "steps", "stone stairs"},
             description = "A narrow stone stairway spirals upward through the open trap door, back to the bedroom above.",
