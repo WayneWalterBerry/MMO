@@ -17,6 +17,7 @@ M.verbs = {
   snatch    = "take",
   acquire   = "take",
   collect   = "take",
+  snag      = "take",    -- #242: casual pickup
   obtain    = "get",
   retrieve  = "get",
   pick      = "take",   -- "pick up" after preprocess strips "up"
@@ -37,6 +38,7 @@ M.verbs = {
   regard    = "examine",
   survey    = "look",
   glance    = "look",
+  show      = "look",    -- #242: "show me X" → look
   peek      = "examine",
 
   -- Open/close synonyms (open/close/shut are in index)

@@ -176,7 +176,7 @@ t.suite("Category B: Creative Phrasings")
 
 -- Casual/slang pickup attempts
 bench("B", "grab the knife",                "grab",    "knife")
-bench("B", "snag the matchbox",             "get",     "matchbox")
+bench("B", "snag the matchbox",             "take",    "matchbox")
 bench("B", "pick up the candle",            "take",    "candle")
 bench("B", "gimme the blanket",             "get",     "blanket")
 bench("B", "fetch me the key",              "get",     "brass-key")

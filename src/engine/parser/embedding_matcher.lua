@@ -99,13 +99,13 @@ local function correct_typos(tokens, known_verbs)
       -- Token is a known game-world word — don't "correct" it to a verb
       corrected[#corrected + 1] = token
     else
-      -- Short words (≤4 chars): no fuzzy correction (kick→lick is too risky).
+      -- 4-char words: max dist 1 (conservative — kick≠lick but brek→break).
       -- 5-char words: max dist 1. 6+ chars: max dist 2.
-      if #token <= 4 then
+      if #token <= 3 then
         corrected[#corrected + 1] = token
       else
-        local max_dist = #token <= 5 and 2 or 3
-        local best_verb, best_dist = nil, max_dist
+        local max_dist = #token <= 5 and 1 or 2
+        local best_verb, best_dist = nil, max_dist + 1
         for verb in pairs(known_verbs) do
           if math.abs(#token - #verb) <= 2 then
             local dist = levenshtein(token, verb)

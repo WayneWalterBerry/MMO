@@ -522,6 +522,8 @@ def _detect_kind(path: Path) -> str:
         return "object"
     if os.sep + "src" + os.sep + "meta" + os.sep + "world" + os.sep in lower:
         return "room"
+    if os.sep + "src" + os.sep + "meta" + os.sep + "rooms" + os.sep in lower:
+        return "room"
     if os.sep + "src" + os.sep + "meta" + os.sep + "levels" + os.sep in lower:
         return "level"
     if os.sep + "src" + os.sep + "meta" + os.sep + "templates" + os.sep in lower:
@@ -2251,6 +2253,125 @@ def main() -> int:
                                                    f"Room '{er}' has no '{ed}' exit")
 
     # XR-11: GUID global uniqueness (already covered by XF-01 guid_map above)
+
+    # -----------------------------------------------------------------
+    # Phase 2: GUID Cross-Reference Validation (GUID-01, GUID-02, GUID-03)
+    # -----------------------------------------------------------------
+
+    # Build bare GUID → object path map for cross-reference
+    obj_guid_bare: Dict[str, ParsedFile] = {}
+    for parsed in parsed_files:
+        if parsed.kind == "object" and parsed.guid:
+            bare = parsed.guid.strip("{}")
+            obj_guid_bare[bare] = parsed
+
+    # Collect all type_ids from room instances (recursive walk)
+    all_referenced_guids: Set[str] = set()
+
+    def _collect_instance_type_ids(
+        table_value: Optional[LuaValue],
+        room_parsed: ParsedFile,
+        violations_list: List[Violation],
+        seen_ids: Set[str],
+    ) -> None:
+        """Recursively walk room instances to validate type_ids and instance ids."""
+        if table_value is None or table_value.kind != "table":
+            return
+        for item in table_value.value.array:
+            if item.kind != "table":
+                continue
+            item_fields = item.value.fields
+            instance_id = _as_string(item_fields.get("id"))
+            type_id = _as_string(item_fields.get("type_id"))
+
+            # GUID-03: Duplicate instance id within same room
+            if instance_id is not None:
+                if instance_id in seen_ids:
+                    _add_violation(violations_list, room_parsed.path,
+                                   _line_for(room_parsed, "instances"),
+                                   "error", "GUID-03",
+                                   f"Duplicate instance id '{instance_id}' in room")
+                seen_ids.add(instance_id)
+
+            # GUID-01: type_id must resolve to a known object GUID
+            if type_id is not None:
+                bare_type_id = type_id.strip("{}")
+                all_referenced_guids.add(bare_type_id)
+                if bare_type_id not in obj_guid_bare:
+                    _add_violation(violations_list, room_parsed.path,
+                                   _line_for(room_parsed, "instances"),
+                                   "error", "GUID-01",
+                                   f"Instance '{instance_id or '?'}' has type_id "
+                                   f"'{type_id}' which does not match any object GUID")
+
+            # Recurse into nested relationships
+            for rel in ("on_top", "contents", "nested", "underneath"):
+                rel_value = item_fields.get(rel)
+                if rel_value is not None:
+                    _collect_instance_type_ids(
+                        rel_value, room_parsed, violations_list, seen_ids)
+
+    for parsed in parsed_files:
+        if parsed.kind == "room":
+            instances_v = parsed.fields.get("instances")
+            seen_instance_ids: Set[str] = set()
+            _collect_instance_type_ids(instances_v, parsed, violations, seen_instance_ids)
+
+    # GUID-02: Orphan objects — GUID not referenced by any room instance
+    if all_referenced_guids:
+        for parsed in parsed_files:
+            if parsed.kind == "object" and parsed.guid:
+                bare = parsed.guid.strip("{}")
+                if bare not in all_referenced_guids:
+                    _add_violation(violations, parsed.path,
+                                   _line_for(parsed, "guid"),
+                                   "warning", "GUID-02",
+                                   f"Object '{_as_string(parsed.fields.get('id')) or '?'}' "
+                                   f"GUID not referenced by any room instance")
+
+    # -----------------------------------------------------------------
+    # Phase 2: EXIT Validation (EXIT-01, EXIT-02)
+    # -----------------------------------------------------------------
+
+    # EXIT-01: Exit target must reference a valid room
+    # EXIT-02: Bidirectional exit check
+    room_exit_map: Dict[str, Dict[str, str]] = {}
+    for parsed in parsed_files:
+        if parsed.kind == "room":
+            rid = _as_string(parsed.fields.get("id"))
+            exits_v = parsed.fields.get("exits")
+            exits_t = _as_table(exits_v)
+            if rid and exits_t:
+                room_exits: Dict[str, str] = {}
+                for direction, exit_val in exits_t.fields.items():
+                    if exit_val.kind == "table":
+                        target = _as_string(exit_val.value.fields.get("target"))
+                        if target:
+                            room_exits[direction] = target
+                            if target not in room_ids:
+                                _add_violation(violations, parsed.path,
+                                               _line_for(parsed, "exits"),
+                                               "error", "EXIT-01",
+                                               f"Exit '{direction}' targets room "
+                                               f"'{target}' which does not exist")
+                room_exit_map[rid] = room_exits
+
+    for room_id, exits in room_exit_map.items():
+        for direction, target in exits.items():
+            if target in room_exit_map:
+                target_exits = room_exit_map[target]
+                has_return = any(t == room_id for t in target_exits.values())
+                if not has_return:
+                    for parsed in parsed_files:
+                        if parsed.kind == "room":
+                            rid = _as_string(parsed.fields.get("id"))
+                            if rid == room_id:
+                                _add_violation(violations, parsed.path,
+                                               _line_for(parsed, "exits"),
+                                               "warning", "EXIT-02",
+                                               f"Exit '{direction}' goes to '{target}' "
+                                               f"but '{target}' has no exit back to "
+                                               f"'{room_id}'")
 
     # LV-40: number uniqueness across levels
     level_numbers: Dict[int, List[ParsedFile]] = {}

@@ -246,6 +246,15 @@ _r("XR-08",    "warning", "cross-ref",  "Level completion rooms exist as room fi
 _r("XR-09",    "warning", "cross-ref",  "Boundary exit directions exist on rooms")
 _r("XR-10",    "warning", "cross-ref",  "Every room file belongs to at least one level")
 
+# ── GUID Cross-Reference (Phase 2) ──────────────────────────────────────────
+_r("GUID-01",  "error",   "guid-xref",  "Room instance type_id must reference a known object GUID")
+_r("GUID-02",  "warning", "guid-xref",  "Orphan object — GUID not referenced by any room instance")
+_r("GUID-03",  "error",   "guid-xref",  "Duplicate instance id within same room")
+
+# ── EXIT Portal Validation (Phase 2) ────────────────────────────────────────
+_r("EXIT-01",  "error",   "exit",       "Exit target must reference a valid room")
+_r("EXIT-02",  "warning", "exit",       "Bidirectional exit mismatch — target room has no return exit")
+
 
 def get_rule(rule_id: str) -> Optional[RuleMeta]:
     """Look up rule metadata by ID."""
