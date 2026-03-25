@@ -281,11 +281,21 @@ local function strip_decorative_prepositions(text)
     local in_prefix, in_part = text:match("^(.+)%s+in%s+the%s+(%S+)$")
     if in_prefix and BODY_PARTS[in_part] then return in_prefix end
 
-    -- "in the mirror/reflection" (reflective surface)
-    text = text:gsub("%s+in%s+the%s+mirror$", "")
-    text = text:gsub("%s+in%s+mirror$", "")
-    text = text:gsub("%s+in%s+the%s+reflection$", "")
-    text = text:gsub("%s+in%s+reflection$", "")
+    -- "in the mirror/reflection" (reflective surface) — only strip when there's
+    -- a noun between the verb and "in" (decorative: "examine yourself in the mirror").
+    -- Bare "look in mirror" keeps "in mirror" as the functional target (#212).
+    local pre_mirror = text:match("^(%S+%s+%S.-)%s+in%s+the%s+mirror$")
+    if pre_mirror then text = pre_mirror end
+    if not pre_mirror then
+        pre_mirror = text:match("^(%S+%s+%S.-)%s+in%s+mirror$")
+        if pre_mirror then text = pre_mirror end
+    end
+    local pre_refl = text:match("^(%S+%s+%S.-)%s+in%s+the%s+reflection$")
+    if pre_refl then text = pre_refl end
+    if not pre_refl then
+        pre_refl = text:match("^(%S+%s+%S.-)%s+in%s+reflection$")
+        if pre_refl then text = pre_refl end
+    end
 
     -- "on the floor/ground" (drop location)
     text = text:gsub("%s+on%s+the%s+floor$", "")

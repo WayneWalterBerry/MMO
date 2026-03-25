@@ -291,9 +291,10 @@ function M.register(handlers)
             return
         end
 
-        -- "bag" means item is inside a container the player is holding.
-        -- Allow extracting it to a free hand (e.g., pulling a match from a matchbox).
-        if where == "bag" and parent then
+        -- "bag" or "container" means item is inside a container (held or in the room).
+        -- Allow extracting it to a free hand (e.g., pulling a match from a matchbox,
+        -- or taking a candle from a holder on a surface). (#215)
+        if (where == "bag" or where == "container") and parent then
             if not obj.portable then
                 print("You can't carry " .. (obj.name or "that") .. ".")
                 return

@@ -596,6 +596,31 @@ function M.register(handlers)
         local ok, reason = ctx.containment.can_contain(
             item, target, surface_name, ctx.registry)
         if not ok then
+            -- #222: If surface is full but item has reattach_to, check if the
+            -- reattach target is on this surface and redirect to reattach.
+            if item.reattach_to and surface_name and target.surfaces
+                    and target.surfaces[surface_name] then
+                local zone = target.surfaces[surface_name]
+                for _, content_id in ipairs(zone.contents or {}) do
+                    local content_obj = ctx.registry:get(content_id)
+                    if content_obj and content_obj.id == item.reattach_to
+                            and content_obj.parts then
+                        local reattach_ok, reattach_msg = reattach_part(ctx, item, content_obj)
+                        if reattach_ok then
+                            ctx.player.hands[item_hand] = nil
+                            if item.hands_required and item.hands_required >= 2 then
+                                for i = 1, 2 do
+                                    if _hid(ctx.player.hands[i]) == item.id then
+                                        ctx.player.hands[i] = nil
+                                    end
+                                end
+                            end
+                            print(reattach_msg)
+                            return
+                        end
+                    end
+                end
+            end
             print(reason or "You can't put that there.")
             return
         end

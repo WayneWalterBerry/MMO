@@ -135,6 +135,7 @@ return {
                     condition = function(self) return not self.locked end,
                     becomes_exit = {
                         open = true,
+                        locked = false,
                         description = "A heavy oak door with iron hinges, standing open to the corridor beyond.",
                     },
                     message = "The door swings open on groaning iron hinges.",
@@ -194,6 +195,7 @@ return {
                     condition = function(self) return not self.locked end,
                     becomes_exit = {
                         open = true,
+                        locked = false,
                         description = "The window stands open. Cold night air drifts in, carrying the scent of rain and chimney smoke from the courtyard below.",
                     },
                     message = "You push the window open. Cold air rushes in, guttering the candle flame.",

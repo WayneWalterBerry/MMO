@@ -1178,6 +1178,33 @@ local function exit_matches(exit, dir, keyword)
 end
 
 ---------------------------------------------------------------------------
+-- Helper: sync a linked exit after an FSM object transition.
+-- When an FSM object (e.g. door, window) transitions state, the
+-- corresponding exit in the room must be updated to match.
+-- The verb name maps to the exit's mutations[verb].becomes_exit table.
+-- #216, #217: fixes exit-sync bugs where FSM objects intercept verbs
+-- before the exit-only path can apply becomes_exit.
+---------------------------------------------------------------------------
+local function sync_linked_exit(ctx, obj, verb)
+    if not obj or not obj.linked_exit then return end
+    local room = ctx.current_room
+    if not room or not room.exits then return end
+    local exit = room.exits[obj.linked_exit]
+    if not exit or type(exit) ~= "table" then return end
+    if obj.linked_passage_id and exit.passage_id
+       and obj.linked_passage_id ~= exit.passage_id then
+        return
+    end
+    -- Apply the exit's becomes_exit for the matching verb
+    if exit.mutations and exit.mutations[verb]
+       and exit.mutations[verb].becomes_exit then
+        for k, v in pairs(exit.mutations[verb].becomes_exit) do
+            exit[k] = v
+        end
+    end
+end
+
+---------------------------------------------------------------------------
 -- Helper: spawn objects from a mutation's spawns list
 ---------------------------------------------------------------------------
 local function spawn_objects(ctx, spawns)
@@ -1195,6 +1222,7 @@ local function spawn_objects(ctx, spawns)
                         while ctx.registry:get(spawn_id .. "-" .. n) do n = n + 1 end
                         actual_id = spawn_id .. "-" .. n
                     end
+                    spawn_obj.id = actual_id
                     spawn_obj.location = room.id
                     ctx.registry:register(actual_id, spawn_obj)
                     room.contents[#room.contents + 1] = actual_id
@@ -1660,6 +1688,7 @@ H.remove_from_location = remove_from_location
 H.container_contents_accessible = container_contents_accessible
 H.find_mutation = find_mutation
 H.exit_matches = exit_matches
+H.sync_linked_exit = sync_linked_exit
 H.spawn_objects = spawn_objects
 H.perform_mutation = perform_mutation
 H.inventory_weight = inventory_weight

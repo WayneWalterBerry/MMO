@@ -19,6 +19,9 @@ return {
     container = false,
     allows_daylight = true,
 
+    linked_exit = "window",
+    linked_passage_id = "bedroom-courtyard-window",
+
     location = nil,
 
     -- FSM
