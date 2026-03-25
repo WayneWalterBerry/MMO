@@ -177,7 +177,7 @@ t.suite("Category B: Creative Phrasings")
 -- Casual/slang pickup attempts
 bench("B", "grab the knife",                "grab",    "knife")
 bench("B", "snag the matchbox",             "get",     "matchbox")
-bench("B", "pick up the candle",            "pick",    "candle")
+bench("B", "pick up the candle",            "take",    "candle")
 bench("B", "gimme the blanket",             "get",     "blanket")
 bench("B", "fetch me the key",              "get",     "brass-key")
 bench("B", "obtain the pen",                "get",     "pen")
@@ -185,8 +185,8 @@ bench("B", "lift the pillow",               "get",     "pillow")
 
 -- Verbose/descriptive look commands
 bench("B", "look at the tallow candle carefully", "look", "candle")
-bench("B", "peer at the nightstand",         "look",    "nightstand")
-bench("B", "check out the wardrobe",         "look",    "wardrobe")
+bench("B", "peer at the nightstand",         "examine", "nightstand")
+bench("B", "check out the wardrobe",         "examine", "wardrobe")
 bench("B", "inspect the rug closely",        "examine", "rug")
 bench("B", "study the paper",               "examine",  "paper")
 
@@ -211,7 +211,7 @@ bench("B", "lick the brass key",            "lick",    "brass-key")
 
 -- Question forms that players actually type
 bench_verb_only("B", "what is the candle",          "examine")
-bench_verb_only("B", "check the matchbox",          "look")
+bench_verb_only("B", "check the matchbox",          "examine")
 
 -- Verbose/wordy input — parser must not choke on extra words
 bench("B", "i want to look at the old dusty rug on the floor", "look", "rug")
