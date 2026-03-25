@@ -244,6 +244,36 @@
 
 ## Learnings
 
+### 2026-07-27: Door/Portal/Exit Architecture — Game Design Analysis
+**Status:** ✅ ANALYSIS COMPLETE
+
+**Deliverable:** `plans/door-design-analysis.md` — ~40 KB comprehensive game design analysis
+
+**What was done:**
+- Analyzed 40+ years of IF genre precedent (Zork/ZIL, Inform 6/7, TADS 3, Hugo, Adventuron)
+- Evaluated 10 door/portal scenarios under both exit-construct and door-object approaches
+- Compared player experience, designer ergonomics, and creative constraints
+- Recommended doors-as-first-class-objects with thin exit references in room files
+- Identified migration path: 4 phases from current hybrid to clean door-object architecture
+
+**Key Findings:**
+- Genre precedent overwhelmingly favors doors-as-objects (Zork, Inform 6/7, Hugo all use this model)
+- TADS 3 is the cautionary tale — treating doors as exit-constructs is its most criticized design decision
+- Door-objects won all 10 scenario comparisons; exit-constructs couldn't implement 3 scenarios at all (talking doors, remote levers, timed drawbridges)
+- Sensory system requires doors to be objects — the game starts at 2 AM in darkness, players FEEL doors
+- Exit-constructs violate Principles 1, 3, 4, 6, 7, 8, 9, and D-14 (Prime Directive)
+- Current codebase already has both systems coexisting awkwardly (bedroom-door.lua + inline exit definitions)
+- Template inheritance for door-objects produces LESS boilerplate than current 150+ line inline exit definitions
+
+**Affects:**
+- Bart (Architect): Engine movement handler, exit table schema, door-object source-of-truth pattern
+- Flanders (Object Designer): Door template creation, door object definitions
+- Moe (World Builder): Room file simplification — thin exit references instead of inline door logic
+- Smithers (Parser/UI): Verb dispatch to door objects instead of exit mutation tables
+- Nelson (QA): Door interaction regression tests during migration
+
+**Decision filed:** `.squad/decisions/inbox/cbg-door-design.md`
+
 ### 2026-07-25: Injury-Causing Objects — Hook Taxonomy & Design Patterns
 **Status:** ✅ 2 DESIGN DOCS WRITTEN
 

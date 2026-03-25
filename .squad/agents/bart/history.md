@@ -1387,3 +1387,25 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - The defensive sweep iterates both hand slots comparing by `obj.id` — handles both object-table and string-ID hand entries, which coexist in the engine.
 - The take handler's `obj.location == "player"` guard (Bug #53) only checked hands, not the worn list. This allowed `take spittoon` to re-acquire a worn item into a hand, creating the duplication Wayne observed.
 - Zero regressions: all 9 unit + 7 integration tests pass. Full suite pre-existing failures unchanged.
+
+### Session: Deep Architecture Analysis — Doors/Portals/Exits (2026-07-28)
+**Status:** ✅ COMPLETE (analysis delivered, awaiting Wayne's decision)
+**Requested by:** Wayne "Effe" Berry
+
+**Deliverables:**
+- `plans/door-architecture-analysis.md` — comprehensive analysis of three architectural options for door/exit system
+- `.squad/decisions/inbox/bart-door-architecture.md` — decision proposal for team
+
+**Key Findings:**
+- The current exit system is a **parallel object system**: ~322 lines of exit-specific engine code across 8 verb files duplicating FSM, mutation, keyword matching, sensory, and effects capabilities
+- `becomes_exit` property-merge mutation violates D-14 Prime Directive (code mutation IS state change)
+- Exit tables satisfy **0 of 11** Core Principles; full object unification satisfies **11/11**
+- Recommended **Option B: doors as first-class passage objects** — thin `exits` routing table on rooms, all door behavior via standard object system
+- Net engine impact: **-177 lines** (remove 252 exit-specific, add 75 passage support)
+- Migration path: incremental, backward-compatible, estimated 4-6 sessions
+
+**Learnings:**
+- Parallel systems are the most insidious form of tech debt — they work fine individually but double the maintenance surface for every cross-cutting feature (hooks, effects, materials, meta-lint)
+- The `becomes_exit` pattern is a flag-merge mutation system masquerading as code mutation — it violates the Prime Directive (D-14) while appearing functional
+- Direction-keyed routing (`room.exits[direction]`) is still valuable even under unification — it provides O(1) lookup for cardinal movement. The key is making it a thin reference, not a state container
+- Bidirectional door sync (two rooms sharing one passage) is best handled via paired objects with a shared `bidirectional_id`, not a single shared object — asymmetric descriptions (bedroom side vs hallway side) are the norm, not the exception
