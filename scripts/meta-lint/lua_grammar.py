@@ -3,7 +3,7 @@
 lua_grammar.py — Lark-based parser for MMO Lua object files.
 
 Proves the Lua subset used by src/meta/objects/*.lua is parseable with Lark.
-Foundation for the meta-compiler / meta-check tool.
+Foundation for the meta-compiler / meta-lint tool.
 
 Architecture:
   Phase 1: Lua tokenizer — handles strings, comments, keywords, nesting
@@ -12,7 +12,7 @@ Architecture:
   Phase 4: Test harness — parse 5 diverse object files, report results
 
 Usage:
-  python scripts/meta-check/lua_grammar.py
+  python scripts/meta-lint/lua_grammar.py
 
 Tested against 5 diverse objects:
   1. match.lua       — Simple small-item, 3-state FSM, timer events
@@ -402,7 +402,7 @@ def main():
     print("  1. Function bodies are opaque (__FUNC__ placeholders).")
     print("     Meta-check validates DATA fields; function logic is Lua's job.")
     print("  2. Bare identifier references (e.g., wall-clock's `states = states`)")
-    print("     are parsed as ident_ref nodes but NOT validated. The meta-check")
+    print("     are parsed as ident_ref nodes but NOT validated. The meta-lint")
     print("     tool can't see the computed value — only the runtime Lua can.")
     print("  3. Long strings ([[ ... ]]) tokenized but untested on real objects")
     print("     (none of the 83 objects currently use them).")

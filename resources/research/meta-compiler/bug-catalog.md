@@ -364,7 +364,7 @@ surfaces = {
 
 1. **Immediate:** Implement Priority 1-3 checks (missing materials, GUID mismatches, structural properties)
 2. **Phase 2:** Add keyword collision detection and base-file verification
-3. **Continuous:** Run meta-check before every commit (pre-commit hook)
+3. **Continuous:** Run meta-lint before every commit (pre-commit hook)
 4. **Testing:** Create regression tests for each BUG category
 
 ---

@@ -839,5 +839,5 @@ Each exit in `boundaries.exit`:
 - **Injury Definitions:** `src/meta/injuries/` (7 injury types)
 - **Material Definitions:** `src/meta/materials/` (17+ materials)
 - **Level Definitions:** `src/meta/levels/` (level configurations)
-- **Rules:** `docs/meta-check/rules.md` (validation rules per field)
+- **Rules:** `docs/meta-lint/rules.md` (validation rules per field)
 

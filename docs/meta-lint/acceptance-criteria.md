@@ -1,9 +1,9 @@
-# meta-check Acceptance Criteria
+# meta-lint Acceptance Criteria
 
 **Author:** Lisa (Object Testing Specialist)
 **Version:** 1.0
 **Date:** 2026-03-24
-**Purpose:** Complete rules catalog for the meta-check static validator. Every check Lisa wants performed against `.lua` object, room, and level files before they reach the engine.
+**Purpose:** Complete rules catalog for the meta-lint static validator. Every check Lisa wants performed against `.lua` object, room, and level files before they reach the engine.
 
 **Severity Legend:**
 - 🔴 **ERROR** — Invalid object. Must fix before merge.
@@ -420,4 +420,4 @@ underneath  — Hidden items under parent
 
 ---
 
-*This document is Lisa's wishlist. If meta-check doesn't check it, nobody will.*
+*This document is Lisa's wishlist. If meta-lint doesn't check it, nobody will.*

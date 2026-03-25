@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-meta-check: static validator for MMO meta .lua files.
+meta-lint: static validator for MMO meta .lua files.
 """
 
 from __future__ import annotations
@@ -1887,7 +1887,7 @@ def _format_text(violations: List[Violation]) -> str:
 
 def _format_json(violations: List[Violation], files_scanned: int, exit_code: int) -> str:
     payload = {
-        "meta_check_version": "1.0",
+        "meta_lint_version": "1.0",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "files_scanned": files_scanned,
         "violations": [

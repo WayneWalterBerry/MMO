@@ -947,7 +947,7 @@ end
 
 ## 11. Meta-Lint Extension: Creature Validation Rules
 
-The static metadata validator (`scripts/meta-check/check.py`, being renamed to `meta-lint` per #187) must be extended to validate creature/NPC metadata. This section documents what linter rules need to exist by the time creature `.lua` files are authored in Phase 1.
+The static metadata validator (`scripts/meta-lint/lint.py`, being renamed to `meta-lint` per #187) must be extended to validate creature/NPC metadata. This section documents what linter rules need to exist by the time creature `.lua` files are authored in Phase 1.
 
 ### Required Fields for Creatures
 
@@ -1042,11 +1042,11 @@ The linter should auto-detect creature files by:
 
 ### Implementation Notes
 
-- The linter currently lives at `scripts/meta-check/check.py` (being renamed to `meta-lint` per #187)
+- The linter currently lives at `scripts/meta-lint/lint.py` (being renamed to `meta-lint` per #187)
 - Creature validation should integrate into the existing Lark-based Lua parser and table extraction pipeline
 - The `CREATURE-*` rule prefix extends the existing taxonomy (alongside OBJ-*, ROOM-*, MAT-*, XR-*)
 - Validation runs on all `.lua` files in `src/meta/objects/` and `src/meta/templates/`
-- Phase 1 implementation should update `check.py` to include CREATURE-001 through CREATURE-020 rules before the first creature definition is committed
+- Phase 1 implementation should update `lint.py` to include CREATURE-001 through CREATURE-020 rules before the first creature definition is committed
 
 ---
 

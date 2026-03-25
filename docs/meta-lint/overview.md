@@ -11,7 +11,7 @@
 
 Meta-check is a **static validation tool** that analyzes Lua object, room, and level definition files before they reach the game engine. It combines compiler-like semantic analysis with linter-like style enforcement to catch bugs at CI time, not runtime.
 
-**In short:** Before a `.lua` file in `src/meta/` is merged, meta-check verifies that every field exists, has the correct type, references valid resources, and follows core principles.
+**In short:** Before a `.lua` file in `src/meta/` is merged, meta-lint verifies that every field exists, has the correct type, references valid resources, and follows core principles.
 
 ---
 
@@ -87,24 +87,24 @@ Meta-check is **hybrid**:
 
 ## Meta-Check as Lisa's Primary Tool
 
-Lisa (Object Testing Specialist) will use meta-check **before any manual testing**:
+Lisa (Object Testing Specialist) will use meta-lint **before any manual testing**:
 
 ```bash
-# Run meta-check on a new object file
-python scripts/meta-check/check.py src/meta/objects/my-new-item.lua
+# Run meta-lint on a new object file
+python scripts/meta-lint/lint.py src/meta/objects/my-new-item.lua
 
 # Scan an entire directory
-python scripts/meta-check/check.py src/meta/objects/
+python scripts/meta-lint/lint.py src/meta/objects/
 
 # Full meta validation (objects + rooms + levels)
-python scripts/meta-check/check.py src/meta/
+python scripts/meta-lint/lint.py src/meta/
 ```
 
 **Workflow:**
 1. Developer creates `src/meta/objects/candle.lua`
-2. Developer (or CI) runs meta-check → catches missing fields, typos, broken references
+2. Developer (or CI) runs meta-lint → catches missing fields, typos, broken references
 3. Lisa reviews, validates gameplay semantics
-4. Object merges only if meta-check passes + Lisa approves
+4. Object merges only if meta-lint passes + Lisa approves
 
 ---
 
@@ -155,7 +155,7 @@ Phase 6: Error Reporter
 ## Next: Read the Documentation
 
 1. **[architecture.md](architecture.md)** — The 6-phase pipeline, technical design
-2. **[usage.md](usage.md)** — How to run meta-check, CLI interface
+2. **[usage.md](usage.md)** — How to run meta-lint, CLI interface
 3. **[rules.md](rules.md)** — Complete catalog of 144 validation rules (15 categories)
 4. **[schemas.md](schemas.md)** — Template-specific field contracts
 
@@ -165,8 +165,8 @@ Phase 6: Error Reporter
 
 - **Bug Catalog:** `resources/research/meta-compiler/bug-catalog.md` (38 bugs, 7 categories)
 - **Cross-Reference Inventory:** `resources/research/meta-compiler/cross-reference-inventory.md` (103 GUIDs, 23 materials, 401 keywords)
-- **Lark Grammar Proof:** `scripts/meta-check/lua_grammar.py` (parses 83/83 objects)
+- **Lark Grammar Proof:** `scripts/meta-lint/lua_grammar.py` (parses 83/83 objects)
 - **Validation Audit:** `resources/research/meta-compiler/existing-validation-audit.md` (loader checks 3 things, 22 gaps)
 - **Architecture Decision:** `.squad/decisions/inbox/bart-lark-grammar.md` (Python + Lark proven strategy)
-- **Acceptance Criteria:** `docs/meta-check/acceptance-criteria.md` (144 checks, Lisa's specification)
+- **Acceptance Criteria:** `docs/meta-lint/acceptance-criteria.md` (144 checks, Lisa's specification)
 

@@ -7,13 +7,13 @@
 
 ## 🌟 HEADLINE: THE MARCH 24 MIRACLE — 40+ ISSUES CLOSED IN ONE EPIC SESSION. ENGINE REFACTORED. META-CHECK SHIPPED TWICE. ONLY 3 ISSUES REMAIN.
 
-In the single longest and most productive session in project history, the entire team executed a flawless three-phase offensive that transformed the backlog from crisis to near-completion. When the sun set on Monday evening, we had closed 40+ issues (173 → 3 remaining), shipped three P0 systems, refactored the verb engine into 12 focused modules, validated 304 meta-check rules with zero false positives, fixed six playtest-discovered bugs in real-time, and killed the daily-planning process in favor of a decision-based workflow that respects each team member's agency. This is not a day we shipped features. This is the day we shipped a *process*.
+In the single longest and most productive session in project history, the entire team executed a flawless three-phase offensive that transformed the backlog from crisis to near-completion. When the sun set on Monday evening, we had closed 40+ issues (173 → 3 remaining), shipped three P0 systems, refactored the verb engine into 12 focused modules, validated 304 meta-lint rules with zero false positives, fixed six playtest-discovered bugs in real-time, and killed the daily-planning process in favor of a decision-based workflow that respects each team member's agency. This is not a day we shipped features. This is the day we shipped a *process*.
 
 The scoreboard:
 
 - **Issues Closed:** 40+ (173 → 3 remaining)
 - **Tests Passing:** 3,342 with zero failures
-- **P0 Systems Shipped:** 3 (verb refactor, meta-check v1, meta-check v2)
+- **P0 Systems Shipped:** 3 (verb refactor, meta-lint v1, meta-lint v2)
 - **Verb Modules Created:** 12 (from 1 monolithic 5,884-line file)
 - **Material Files Migrated:** 23 (from 1 monolithic file)
 - **Pre-Refactor Tests:** 172 → Post-Refactor Assertions: 2,670 (zero regressions)
@@ -348,7 +348,7 @@ This matters because it means:
 
 1. **Developers can't accidentally break the metadata format.** If a state transition references a nonexistent state, the compiler catches it before the code runs.
 
-2. **New team members can't introduce silent failures.** They write a room definition. The meta-check validates it against 32 rules. They ship code that *works* — not code that compiles but fails mysteriously.
+2. **New team members can't introduce silent failures.** They write a room definition. The meta-lint validates it against 32 rules. They ship code that *works* — not code that compiles but fails mysteriously.
 
 3. **Scaling works.** When we have 500 objects instead of 83, the validator scales. When Flanders adds a new injury type tomorrow, the validator automatically validates it against 18 rules without code changes.
 

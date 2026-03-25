@@ -351,7 +351,7 @@ src/meta/ : global : ERROR : DUPLICATE_GUID : guid 'abc-123' appears in candle.l
 
 **Observation:** 82/83 objects are pure data tables. Function bodies (`on_look`, `on_feel`, `factory`) contain game logic that Lua validates at runtime. Meta-check validates the **data layer** only.
 
-**Implication:** Wall-clock.lua (the 1 programmatic outlier) is treated as "pass-through"—meta-check can't validate computed values, only the Lua runtime can.
+**Implication:** Wall-clock.lua (the 1 programmatic outlier) is treated as "pass-through"—meta-lint can't validate computed values, only the Lua runtime can.
 
 ### Why Lark Over PEG / Antlr / Hand Parser
 
@@ -406,6 +406,6 @@ This allows developers to fix multiple issues in a single pass.
 ## References
 
 - **Lark Documentation:** https://lark-parser.readthedocs.io/ (Earley parser, tree patterns)
-- **Bart's Grammar Prototype:** `scripts/meta-check/lua_grammar.py` (~420 lines, battle-tested on 83 objects)
-- **Acceptance Criteria (Lisa):** `docs/meta-check/acceptance-criteria.md` (144 rules across 15 categories)
+- **Bart's Grammar Prototype:** `scripts/meta-lint/lua_grammar.py` (~420 lines, battle-tested on 83 objects)
+- **Acceptance Criteria (Lisa):** `docs/meta-lint/acceptance-criteria.md` (144 rules across 15 categories)
 

@@ -98,6 +98,7 @@
 - **Morning edition (2026-03-23):** Created newspaper/2026-03-23-morning.md (~5,800 words, 14 sections). Covered the most productive single session in project history: 25 issues closed (34→3), Effects Pipeline (EP1–EP10) designed/built/tested/shipped, 284 new pipeline tests with 0 regressions, 3 objects built (poison bottle, bear trap, crushing wound), 30+ parser phrase transforms. Pattern: when a session has a clear 3-wave chronological structure (burndown → design → implementation), organize sections by wave to preserve narrative momentum. The "before/after" architecture diagram (spaghetti vs pipeline) is the most effective way to explain why an architectural change matters. Running gags (os.exit(0)) create narrative threads readers can follow. Wayne's interventions (test ordering, hook questions) deserve their own narrative weight — they changed the session's trajectory.
 - **Mega-session coverage:** Sessions with 40+ agent spawns and 10+ pipeline phases benefit from a phase-by-phase walkthrough (EP1→EP10) rather than grouping by role. Readers want to see the *sequence* — architecture → safety net → gate → build → verify → refactor → document. Each phase gets its own subsection with owner emoji, phase number, and outcome. This creates a "progress bar" effect that makes the session's momentum tangible.
 - **Wayne's design doc directive:** Design documentation should NOT list bug fixes, issue numbers, or fix history. Bug fixes belong in issues and changelogs. Instead, design docs should capture the DESIGN INSIGHTS that emerged from bugs — what principles did they reveal? What patterns does the system need to honor? Example: instead of "BUG-078: Drawer not searched—fixed by recursive traversal," write "Containers inside containers must be traversable because players think in physical spaces, not object trees. The traversal engine recursively follows nested containers." Transform chronological bug lists into thematic "Design Principles" or "Lessons Learned" sections that read as timeless design guidance, not historical bug trackers.
+- **OP-ED IS MANDATORY:** The op-ed section (established March 18 as a permanent daily feature) is NOT optional. Every newspaper edition must include a `## 📰 OP-ED` section written by a rotating team member. The op-ed should be 3-5 substantive paragraphs tied to that session's work, expressing an opinion or architectural argument. If a paper ships without an op-ed, it is incomplete. Never skip this section.
 
 ### Session: SLM/Embedding Architecture Documentation (2026-03-24T21:15Z)
 **Status:** ✅ COMPLETED  
@@ -165,14 +166,14 @@
 ### Session: Meta-Check Design Documentation (2026-03-24T16:00Z)
 **Status:** ✅ COMPLETED
 **Requestor:** Wayne Berry (P0-B directive: "Before writing a single line of code, create design docs")
-**Outcome:** 5 comprehensive design documents for the meta-check tool, 144 validation rules catalog
+**Outcome:** 5 comprehensive design documents for the meta-lint tool, 144 validation rules catalog
 
 **Files Created:**
-1. `docs/meta-check/overview.md` (6.9 KB) — What meta-check is, why it exists, goals, hybrid compiler/linter role
-2. `docs/meta-check/architecture.md` (14.1 KB) — 6-phase pipeline: tokenization → preprocessing → Lark parse → semantic analysis → cross-file checks → error reporting
-3. `docs/meta-check/usage.md` (12.4 KB) — CLI interface, output formats (text/JSON/TAP), integration examples (GitHub Actions, pre-commit hooks), workflows
-4. `docs/meta-check/rules.md` (22.0 KB) — 144 validation rules across 15 categories, organized by severity (🔴/🟡/🟢), top 10 critical rules
-5. `docs/meta-check/schemas.md` (24.0 KB) — Field contracts per template type (small-item, container, furniture, sheet, room), required/optional fields, examples
+1. `docs/meta-lint/overview.md` (6.9 KB) — What meta-lint is, why it exists, goals, hybrid compiler/linter role
+2. `docs/meta-lint/architecture.md` (14.1 KB) — 6-phase pipeline: tokenization → preprocessing → Lark parse → semantic analysis → cross-file checks → error reporting
+3. `docs/meta-lint/usage.md` (12.4 KB) — CLI interface, output formats (text/JSON/TAP), integration examples (GitHub Actions, pre-commit hooks), workflows
+4. `docs/meta-lint/rules.md` (22.0 KB) — 144 validation rules across 15 categories, organized by severity (🔴/🟡/🟢), top 10 critical rules
+5. `docs/meta-lint/schemas.md` (24.0 KB) — Field contracts per template type (small-item, container, furniture, sheet, room), required/optional fields, examples
 
 **Research Inputs Synthesized:**
 - Lisa's acceptance-criteria.md (144 checks across 15 categories) — rules catalog
@@ -197,13 +198,13 @@
 - Architecture: phase-by-phase technical design (for implementers)
 - Usage: CLI interface + practical workflows (for developers + CI/CD)
 - Rules: comprehensive catalog with severity, organization by category + workflow (reference for developers)
-- Schemas: field contracts per template, examples (contract enforcement for meta-check)
+- Schemas: field contracts per template, examples (contract enforcement for meta-lint)
 
 **Learnings:**
 - **Meta-check specification complexity:** When a tool must enforce 144+ rules across 15+ categories, organize into: (1) high-level overview (why we need this), (2) architecture spec (how it works), (3) usage guide (how to run it), (4) rules catalog (what it checks), (5) schema contracts (what fields are required). Trying to fit all of this into one doc creates cognitive overload. Splitting into 5 focused docs allows developers to navigate by use case.
 - **Design-first creates clarity:** Wayne's directive ("design docs before code") prevents 3 problems: (1) scope creep during implementation (dev realizes they didn't understand the requirement), (2) architectural conflicts (different parts of implementation make conflicting assumptions), (3) incomplete rule coverage (implementing rules A+B then discovering rule C's dependency on both). With design docs locked in, implementation becomes straightforward.
-- **Validation gap analysis is critical:** Frink's audit of the loader (what it checks vs. what it doesn't) revealed 22 gaps. Each gap becomes a must-have rule in meta-check. Without this audit, meta-check would likely miss half its rules.
-- **Evidence-based rule priority:** The 38-bug catalog provides justification for every rule. Top 3 bug types (missing materials, GUID mismatches, FSM state errors) become top 3 meta-check rules. Developers trust rules that have evidence behind them.
+- **Validation gap analysis is critical:** Frink's audit of the loader (what it checks vs. what it doesn't) revealed 22 gaps. Each gap becomes a must-have rule in meta-lint. Without this audit, meta-lint would likely miss half its rules.
+- **Evidence-based rule priority:** The 38-bug catalog provides justification for every rule. Top 3 bug types (missing materials, GUID mismatches, FSM state errors) become top 3 meta-lint rules. Developers trust rules that have evidence behind them.
 - **Template-specific schemas:** Objects inherit from 5 templates, each with different field requirements. Instead of one monolithic schema, 5 focused schemas (one per template) make validation clear and rules easier to understand.
 
 **Commit:** (pending implementation; design phase only)

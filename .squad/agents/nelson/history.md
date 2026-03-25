@@ -48,6 +48,37 @@
 
 ## Recent Updates
 
+### TDD Tests for #181 — "drop spitton" Fails (2026-03-25)
+
+**Status:** ✅ RED PHASE COMPLETE — 24 tests written, 7 FAIL, 17 PASS
+**Test file:** `test/verbs/test-fuzzy-drop.lua`
+
+Wrote TDD failing tests covering two sub-bugs in #181:
+
+- **Bug A (fuzzy not applied to drop):** Drop handler uses `matches_keyword()` (exact match only). Fuzzy Tier 5 is never consulted for drop targets. "drop spitton" → "You aren't holding that." even though spittoon IS in hand. 4 tests fail on drop+typo, 2 fail on examine/look+typo.
+- **Bug B (worn item + typo):** Dropping a worn item with exact "spittoon" correctly says "remove it first." But "drop spitton" (typo) on a worn item falls through to "aren't holding" because `matches_keyword` can't fuzzy-match the worn list either. 1 test fails.
+
+**Root cause confirmed:** `acquisition.lua` drop handler (line 683) and worn check (line 698) both use `matches_keyword()` which does exact + singularize only — no Levenshtein fallback. Meanwhile `fuzzy.resolve()` handles the same typos perfectly (all 3 fuzzy.resolve sanity tests pass).
+
+**Passing tests (17):** Levenshtein distances ✓, keyword vocabulary ✓, score_object typo match ✓, fuzzy.resolve in room/hand ✓, "get spitton" works (find_visible uses fuzzy) ✓, exact drop ✓, multi-word keyword drop ✓, worn item message (exact) ✓, remove→drop flow ✓.
+
+**No regressions:** Only pre-existing `injuries/test-unconsciousness-triggers.lua` failure; all other test files pass.
+
+### TDD Tests for #182 — Sack Disambiguation Cluster (2026-03-25)
+
+**Status:** ✅ RED PHASE COMPLETE — 13 tests written, 9 FAIL, 4 PASS
+**Test file:** `test/parser/test-disambiguation.lua`
+
+Wrote TDD failing tests covering three bugs in #182:
+
+- **Bug A (adjective ignored):** "burlap sack" resolves to grain-sack because `find_visible` returns the first keyword match in room.contents order. Both objects share "burlap sack" as a keyword. 2 tests fail — adjective-qualified nouns don't prefer the object whose name matches the adjective.
+- **Bug B (dump/empty missing):** "dump" aliases to "pour" which only handles liquid FSM transitions. No "empty" verb exists. "dump sack" returns "You can't pour a burlap sack." 4 tests fail — no container-emptying verb.
+- **Bug C (silent disambiguation):** "sack" and "bag" match both objects but `_fv_room` returns the first match without asking "Which sack?" 3 tests fail — no disambiguation prompt generated.
+
+**Passing tests (4):** "sack of grain" → grain-sack ✓, "grain sack" → grain-sack ✓, "heavy sack" → grain-sack ✓, fuzzy.resolve disambiguates tied scores ✓.
+
+**No regressions:** All previously passing tests still pass.
+
 ### Armor System LLM Playtest (2026-03-24)
 
 **Status:** ✅ COMPLETE — 32 tests, 22 PASS, 7 FAIL, 3 WARN (69% pass rate)
@@ -1725,3 +1756,21 @@ Player said "light" but error says "burn".
   Bug found: `look` while unconscious crashes (sensory.lua:163 nil noun) — verb handlers
   don't gate on consciousness state. Commented on #162 with handoff to Flanders/Smithers/Bart.
   Branch: `squad/162-tdd-unconsciousness-triggers`. Zero regressions in existing suite.
+
+- **#178 — TDD Red Phase: Match Burn-Out via auto_ignite Bypass** (2026-07-27)
+  Wrote `test/verbs/test-match-burnout.lua` — 10 tests across 4 suites. 4 FAIL / 6 PASS.
+  **Root cause found:** `auto_ignite()` in `fire.lua` sets `_state = "lit"` directly without calling
+  `fsm.start_timer()`. When player types "light candle" with an unlit match, the match is auto-ignited
+  through this bypass path — no burn timer registered, match stays lit forever. The explicit
+  `strike match on matchbox` path works correctly because it goes through `fsm.transition()` which
+  calls `start_timer()`. Fix: `auto_ignite()` must call `fsm_mod.start_timer(registry, obj_id)`.
+  Key insight: ANY code path that changes `_state` outside `fsm.transition()` will bypass timers.
+  Search for direct `_state =` assignments — there are at least 3 in the codebase (auto_ignite,
+  meta.lua set handler, helpers.lua detach/reattach). All may need timer auditing.
+
+- **#180 — TDD Regression Guards: Wear-From-Hand Slot Clearing** (2026-07-27)
+  Wrote `test/inventory/test-wear-hand.lua` — 9 tests across 3 suites. 9 PASS / 0 FAIL.
+  The `wear` handler in `equipment.lua` correctly clears the hand slot in all three code paths
+  (direct hand, auto-pickup from room, auto-fetch from container). Wayne's bug (spittoon in both
+  hand AND worn) does NOT reproduce at the handler level. Bug likely manifests at integration level
+  (parser routing, compound commands, or game-loop state). Tests serve as regression guards.

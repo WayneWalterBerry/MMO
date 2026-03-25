@@ -335,9 +335,9 @@
 | Text/Display | BUG-001,020,023 | Text wrapping, capitalization, Unicode encoding |
 | Verb Parsing Edge Cases | BUG-034 | "put out" treated as PUT instead of phrasal extinguish |
 
-### 2026-03-25: meta-check Tool Validation (P0-B Step 2)
+### 2026-03-25: meta-lint Tool Validation (P0-B Step 2)
 
-**What I tested:** Smithers' `scripts/meta-check/check.py` v1.0 against all 103 meta files (83 objects, 7 rooms, 13 others). Validated against my 144 acceptance criteria in `docs/meta-check/acceptance-criteria.md`.
+**What I tested:** Smithers' `scripts/meta-lint/lint.py` v1.0 against all 103 meta files (83 objects, 7 rooms, 13 others). Validated against my 144 acceptance criteria in `docs/meta-lint/acceptance-criteria.md`.
 
 **Results:**
 - 0 errors on valid production files (no false positives)
@@ -352,7 +352,7 @@
 - Empty string values not treated as missing (SN-03 gap)
 - 125 checks still missing — biggest gaps: template-specific validation, room exit/instance checks, mutation validation, composite parts, effects pipeline, level definitions, lint rules
 
-**Verdict:** PASS WITH NOTES. Strong V1 foundation. Report at `test-pass/2026-03-25-meta-check-validation.md`.
+**Verdict:** PASS WITH NOTES. Strong V1 foundation. Report at `test-pass/2026-03-25-meta-lint-validation.md`.
 
 ### Objects Most Likely to Break
 
@@ -426,18 +426,18 @@ The .lua metadata files ARE the test oracle. Every assertion can be derived by:
 
 This is the core advantage over Dwarf Fortress: our metadata is structured, machine-readable Lua — we can auto-generate test cases from it.
 
-### meta-check Acceptance Criteria (2026-03-24)
-- Authored `docs/meta-check/acceptance-criteria.md` — 144 checks across 15 categories
+### meta-lint Acceptance Criteria (2026-03-24)
+- Authored `docs/meta-lint/acceptance-criteria.md` — 144 checks across 15 categories
 - Examined all 5 templates, 83 objects, 7 rooms, 1 level, 23 materials to derive rules
 - Key insight: GUID format inconsistency (some braced, some bare) across rooms vs objects — flagged as WARNING
 - Key insight: rooms often lack sensory properties (on_feel, on_smell, on_listen) that are critical for darkness navigation — flagged as WARNING
 - Some room exit targets reference future rooms (level-2, manor-west, manor-east) — these need WARNING not ERROR to avoid blocking
 - Composite parts (nightstand drawer, poison cork) need their own validation pass — factory functions must produce objects with on_feel
 - Cross-file checks (GUID uniqueness, type_id resolution, bidirectional exits) are the most complex to implement but catch the most dangerous bugs
-- The .lua metadata IS the oracle — meta-check codifies what I've been verifying manually into machine-checkable rules
+- The .lua metadata IS the oracle — meta-lint codifies what I've been verifying manually into machine-checkable rules
 
-### meta-check V2 Acceptance Criteria (2026-03-24)
-- Authored `docs/meta-check/acceptance-criteria-v2.md` — ~160 new rules across 5 categories
+### meta-lint V2 Acceptance Criteria (2026-03-24)
+- Authored `docs/meta-lint/acceptance-criteria-v2.md` — ~160 new rules across 5 categories
 - V2 covers the 4 meta types V1 skipped: **templates** (27 rules), **injuries** (67 rules), **materials** (24 rules), **levels extended** (31 rules), **cross-references** (11 rules)
 - Combined V1 + V2 = ~304 total validation rules
 - Examined all 7 injury files: bleeding, bruised, burn, concussion, crushing-wound, minor-cut, poisoned-nightshade
@@ -451,9 +451,9 @@ This is the core advantage over Dwarf Fortress: our metadata is structured, mach
 - `_timer_delay` is a valid mutate key on injury transitions (overrides timed event delay on target state)
 - Empty `healing_interactions = {}` is valid (bruised, concussion self-heal with time/rest)
 
-### meta-check V2 Validation Results (2026-03-24)
+### meta-lint V2 Validation Results (2026-03-24)
 - **Verdict: PASS WITH NOTES** — posted on #167
-- Ran meta-check against all 130 `.lua` files: 0 errors, 152 warnings, 8 info on valid data
+- Ran meta-lint against all 130 `.lua` files: 0 errors, 152 warnings, 8 info on valid data
 - 0 false positives — the tool correctly ignores valid files
 - Per-type scans all work: objects, rooms, templates, injuries, materials, levels
 - 159/160 V2 rule IDs implemented; 11 IDs consolidated under equivalent checks (XF-01, MAT-02, etc.)

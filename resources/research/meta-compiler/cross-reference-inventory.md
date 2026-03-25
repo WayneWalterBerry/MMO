@@ -176,7 +176,7 @@ instances = {
 - manor-east: Eastern manor wing (not yet created)
 - manor-kitchen: Kitchen area (not yet created)
 
-**Status:** Not errors—these exits represent planned future expansion content. Mark as PENDING in meta-check, not ERROR.
+**Status:** Not errors—these exits represent planned future expansion content. Mark as PENDING in meta-lint, not ERROR.
 
 ### Room Connectivity Graph
 

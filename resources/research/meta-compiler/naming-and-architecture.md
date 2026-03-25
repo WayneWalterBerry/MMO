@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-**Tool Name:** `meta-check` (or `meta-validator`)  
+**Tool Name:** `meta-lint` (or `meta-validator`)  
 **Full Name:** MMO Meta Validator — validates `.lua` object and room definitions  
 **Metaphor:** Static analyzer / schema validator (not quite a compiler, but uses compiler techniques)  
 **Input:** Path to `.lua` file or directory  
@@ -23,7 +23,7 @@
 
 | Name | Pros | Cons |
 |------|------|------|
-| **meta-check** | Clear, short, emphasizes validation | Generic |
+| **meta-lint** | Clear, short, emphasizes validation | Generic |
 | **meta-validator** | Explicit about function | Verbose |
 | **meta-analyzer** | Suggests deep analysis | Implies output code generation |
 | **meta-compiler** | Technically accurate (compiler techniques) | Misleading (produces no compiled output) |
@@ -32,19 +32,19 @@
 | **schema-check** | Emphasizes validation rules | Too generic, not Lua-specific |
 | **luacheck** | Concise, existing tool name (conflict) | Conflicts with existing `luacheck` linter |
 
-### Recommendation: **meta-check**
+### Recommendation: **meta-lint**
 
 **Rationale:**
 - Short and memorable
 - Clear: checks the "meta" layer (objects, rooms, templates)
-- Part of established naming: "meta-compiler" (concept) → "meta-check" (tool)
+- Part of established naming: "meta-compiler" (concept) → "meta-lint" (tool)
 - Fits alongside future tools: `meta-lint`, `meta-test`, `meta-profile`
 - Not trademarked or widely used in Lua ecosystem
 
 ### Full Name
 
 **"MMO Meta Validator"** — Long form for documentation
-**"meta-check"** — Short form for CLI commands, files, documentation
+**"meta-lint"** — Short form for CLI commands, files, documentation
 
 ---
 
@@ -90,7 +90,7 @@ The term "compiler" in computer science includes:
 
 Our tool is a **"compiler front-end"** — it does lexing, parsing, and semantic analysis, but stops before code generation. The game engine is the "back-end" that consumes the validated `.lua` files.
 
-So "meta-compiler" is **technically correct but slightly misleading.** Use it for architecture discussions; use "meta-check" for user-facing naming.
+So "meta-compiler" is **technically correct but slightly misleading.** Use it for architecture discussions; use "meta-lint" for user-facing naming.
 
 ---
 
@@ -107,7 +107,7 @@ So "meta-compiler" is **technically correct but slightly misleading.** Use it fo
 ### Component Structure
 
 ```
-meta-check/
+meta-lint/
 ├── cli.py                    # Entry point, argument parsing
 ├── parser.py                 # Lexer + Parser (Lark)
 ├── ast_nodes.py              # AST data structures
@@ -154,9 +154,9 @@ Output (JSON or human-readable)
 **Input:** `.lua` file or directory
 
 ```bash
-meta-check src/meta/objects/torch.lua          # Single file
-meta-check src/meta/objects/                   # Directory
-meta-check src/meta/                           # Recursive
+meta-lint src/meta/objects/torch.lua          # Single file
+meta-lint src/meta/objects/                   # Directory
+meta-lint src/meta/                           # Recursive
 ```
 
 **Output: JSON (machine-readable)**
@@ -219,7 +219,7 @@ Summary: 1 object(s) validated, 2 error(s) found
 #!/bin/bash
 # .git/hooks/pre-commit
 
-python scripts/meta-check.py --staged --fail-on-error
+python scripts/meta-lint.py --staged --fail-on-error
 
 if [ $? -ne 0 ]; then
   echo "Validation failed. Fix errors before committing."
@@ -234,7 +234,7 @@ fi
 ### 2. GitHub Actions CI/CD
 
 ```yaml
-# .github/workflows/meta-check.yml
+# .github/workflows/meta-lint.yml
 name: Validate Meta Objects
 
 on:
@@ -251,7 +251,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -q lark
-      - run: python scripts/meta-check.py src/meta/ --fail-on-error --json > results.json
+      - run: python scripts/meta-lint.py src/meta/ --fail-on-error --json > results.json
       - if: failure()
         uses: actions/upload-artifact@v3
         with:
@@ -269,7 +269,7 @@ jobs:
 ### 3. IDE Extension (Optional, Future)
 
 ```typescript
-// VSCode extension: .vscode/meta-check.js
+// VSCode extension: .vscode/meta-lint.js
 import { spawn } from 'child_process';
 
 export function activateMeta(context) {
@@ -278,7 +278,7 @@ export function activateMeta(context) {
   workspace.onDidSaveTextDocument(doc => {
     if (!doc.fileName.includes('src/meta')) return;
     
-    const proc = spawn('python', ['scripts/meta-check.py', doc.fileName, '--json']);
+    const proc = spawn('python', ['scripts/meta-lint.py', doc.fileName, '--json']);
     let output = '';
     
     proc.stdout.on('data', (data) => output += data);
@@ -303,7 +303,7 @@ export function activateMeta(context) {
 
 ```bash
 # Lisa's workflow: validate an object before committing
-python scripts/meta-check.py src/meta/objects/new-vase.lua
+python scripts/meta-lint.py src/meta/objects/new-vase.lua
 
 # Output:
 # ✓ new-vase.lua: 1 object validated, 0 errors
@@ -322,23 +322,23 @@ python scripts/meta-check.py src/meta/objects/new-vase.lua
 
 ```bash
 # Validate single file
-meta-check src/meta/objects/torch.lua
+meta-lint src/meta/objects/torch.lua
 
 # Validate directory
-meta-check src/meta/objects/
+meta-lint src/meta/objects/
 
 # Validate with options
-meta-check src/meta/ --strict         # Fail on warnings
-meta-check src/meta/ --json           # JSON output
-meta-check src/meta/ --fail-on-error  # Exit with status 1 on error
-meta-check src/meta/ --verbose        # Detailed output
-meta-check src/meta/ --show-suggestions  # Include suggestions
+meta-lint src/meta/ --strict         # Fail on warnings
+meta-lint src/meta/ --json           # JSON output
+meta-lint src/meta/ --fail-on-error  # Exit with status 1 on error
+meta-lint src/meta/ --verbose        # Detailed output
+meta-lint src/meta/ --show-suggestions  # Include suggestions
 
 # Check only staged files (pre-commit integration)
-meta-check --staged
+meta-lint --staged
 
 # Check specific template type
-meta-check src/meta/objects/ --template small-item
+meta-lint src/meta/objects/ --template small-item
 ```
 
 ### Return Codes

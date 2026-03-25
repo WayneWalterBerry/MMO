@@ -668,8 +668,8 @@ Run ALL checks. Exit code must be 0 (no errors).
 
 ## References
 
-- **Acceptance Criteria (Full):** `docs/meta-check/acceptance-criteria.md` (Lisa's original specification, 306 rules detailed)
-- **Architecture:** `docs/meta-check/architecture.md` (how meta-check validates)
-- **Usage:** `docs/meta-check/usage.md` (how to run meta-check)
-- **Schemas:** `docs/meta-check/schemas.md` (template field contracts)
+- **Acceptance Criteria (Full):** `docs/meta-lint/acceptance-criteria.md` (Lisa's original specification, 306 rules detailed)
+- **Architecture:** `docs/meta-lint/architecture.md` (how meta-lint validates)
+- **Usage:** `docs/meta-lint/usage.md` (how to run meta-lint)
+- **Schemas:** `docs/meta-lint/schemas.md` (template field contracts)
 

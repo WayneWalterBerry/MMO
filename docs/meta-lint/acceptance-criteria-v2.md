@@ -1,10 +1,10 @@
-# meta-check Acceptance Criteria — V2 (Full Meta Type Coverage)
+# meta-lint Acceptance Criteria — V2 (Full Meta Type Coverage)
 
 **Author:** Lisa (Object Testing Specialist)
 **Version:** 2.0
 **Date:** 2026-03-24
 **Builds On:** `acceptance-criteria.md` (V1 — 144 rules for objects + rooms)
-**Purpose:** Extends meta-check to validate the 4 remaining meta types: **Levels**, **Injuries**, **Templates** (as definitions, not as instance contracts), and **Materials**. Smithers codes from this spec.
+**Purpose:** Extends meta-lint to validate the 4 remaining meta types: **Levels**, **Injuries**, **Templates** (as definitions, not as instance contracts), and **Materials**. Smithers codes from this spec.
 
 **Severity Legend:**
 - 🔴 **ERROR** — Invalid definition. Must fix before merge.
@@ -392,7 +392,7 @@ These checks validate references BETWEEN the new meta types and the rest of the 
 
 2. **Template GUIDs are bare (no braces).** All 5 template files use GUIDs without `{...}` braces: `guid = "f1596a51-4e1f-4f9a-a6d0-93b279066910"`. Objects use braced GUIDs. This inconsistency is established convention — don't ERROR on it, but note it.
 
-3. **Room template is minimal.** The room template has no physical properties (`size`, `weight`, `portable`, `material`). This is correct — rooms are spatial containers. But meta-check should verify that any new template follows the same pattern: room-type templates must NOT have physical properties.
+3. **Room template is minimal.** The room template has no physical properties (`size`, `weight`, `portable`, `material`). This is correct — rooms are spatial containers. But meta-lint should verify that any new template follows the same pattern: room-type templates must NOT have physical properties.
 
 4. **Sheet template has default mutations.** The sheet template declares `mutations = { tear = { becomes = nil, spawns = {"cloth"} } }`. This is the only template with non-empty mutations. Instances that don't want this mutation must explicitly override it.
 
@@ -530,4 +530,4 @@ What each template provides as defaults, and what instances MUST override:
 
 ---
 
-*V2 completes the meta-check coverage. Every `.lua` file under `src/meta/` is now covered by at least one validation section. If meta-check doesn't check it, nobody will.*
+*V2 completes the meta-lint coverage. Every `.lua` file under `src/meta/` is now covered by at least one validation section. If meta-lint doesn't check it, nobody will.*

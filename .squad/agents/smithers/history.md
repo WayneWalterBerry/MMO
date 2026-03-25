@@ -75,11 +75,11 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ### 2026-07-19: Issue #167 — Meta-check V2 (full meta type coverage)
 
-**What shipped:** Extended `scripts/meta-check/check.py` with ~160 new validation rules covering all 4 remaining meta types: templates (27 rules), injuries (69 rules), materials (24 rules), and levels (41 rules), plus 11 cross-reference checks. Fixed MAT-02 false positives by reading material names from `src/meta/materials/*.lua` filenames instead of parsing the engine registry file.
+**What shipped:** Extended `scripts/meta-lint/lint.py` with ~160 new validation rules covering all 4 remaining meta types: templates (27 rules), injuries (69 rules), materials (24 rules), and levels (41 rules), plus 11 cross-reference checks. Fixed MAT-02 false positives by reading material names from `src/meta/materials/*.lua` filenames instead of parsing the engine registry file.
 
 **Key learning:** The Lua parser already handled nil values correctly, which meant material fields like `melting_point = nil` were properly distinguished from missing. Template/level GUIDs use bare format while injury/object GUIDs use braced format — established convention. The ~160 rule IDs match Lisa's V2 acceptance criteria exactly.
 
-**Files changed:** `scripts/meta-check/check.py`, `docs/meta-check/rules.md`, `docs/meta-check/schemas.md`
+**Files changed:** `scripts/meta-lint/lint.py`, `docs/meta-lint/rules.md`, `docs/meta-lint/schemas.md`
 
 **Tests:** 130 files scanned, 0 errors, 0 regressions.
 
@@ -252,7 +252,7 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ### 2026-03-27: Meta-Check CLI build
 
-**What shipped:** Created `scripts/meta-check/check.py` using Bart’s Lark grammar. Implemented required-field/type checks, GUID/material validation, FSM state consistency, and cross-file GUID/keyword collision detection with text/JSON output.
+**What shipped:** Created `scripts/meta-lint/lint.py` using Bart’s Lark grammar. Implemented required-field/type checks, GUID/material validation, FSM state consistency, and cross-file GUID/keyword collision detection with text/JSON output.
 
 **Key learning:** Keep FSM validation conservative when state tables are non-literal (ident refs) to avoid false positives while still enforcing core object integrity.
 
@@ -884,7 +884,7 @@ Wayne requested Phase F1 carry-over bug fixes (#47, #49, #52, #53) using TDD. Up
 
 **Files changed:** `src/engine/materials/init.lua` (rewritten), 23 new files in `src/meta/materials/`
 
-**Tests:** All 121 test files pass. Material audit (#163): 86/86 objects validated. Material properties (#123): 23 materials × 11 properties validated. meta-check clean. 0 regressions.
+**Tests:** All 121 test files pass. Material audit (#163): 86/86 objects validated. Material properties (#123): 23 materials × 11 properties validated. meta-lint clean. 0 regressions.
 
 ### 2026-03-24: Issue #174 - SLM Embedding Index Overhaul
 
