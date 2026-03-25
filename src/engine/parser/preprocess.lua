@@ -852,6 +852,16 @@ local function transform_compound_actions(text)
         return "pull " .. pull_target
     end
 
+    -- #224: "jump out X", "jump out of X", "leap out X" → "jump X"
+    -- Prevents Tier 2 matching "jump out" as "blow out" (extinguish)
+    local jump_target = text:match("^jump%s+out%s+of%s+(.+)")
+        or text:match("^jump%s+out%s+(.+)")
+        or text:match("^leap%s+out%s+of%s+(.+)")
+        or text:match("^leap%s+out%s+(.+)")
+    if jump_target then
+        return "jump " .. jump_target
+    end
+
     -- BUG-113: "pick up" (bare, no target) → "take" so loop context fallback kicks in
     if text == "pick up" then
         return "take"

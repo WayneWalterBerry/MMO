@@ -316,6 +316,19 @@ function M.register(handlers)
             handle_movement(ctx, noun)
         end
     end
+
+    -- #224: JUMP — not yet implemented as a real action.
+    -- Registered to prevent Tier 2 embedding fallback from mismatching
+    -- "jump out window" as "blow out" (extinguish).
+    handlers["jump"] = function(ctx, noun)
+        if noun == "" then
+            print("You jump in place. Nothing happens.")
+        else
+            print("You can't jump to or through " .. noun .. ". Try a different approach.")
+        end
+    end
+    handlers["leap"]   = handlers["jump"]
+    handlers["hop"]    = handlers["jump"]
 end
 
 return M

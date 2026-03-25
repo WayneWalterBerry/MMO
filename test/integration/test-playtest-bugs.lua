@@ -164,7 +164,9 @@ test("BUG-156: jump out window should not trigger extinguish", function()
     cmds[#cmds + 1] = "open window"
     cmds[#cmds + 1] = "jump out window"
     local output = run_game(cmds)
-    assert_not_contains(output, "extinguish", "jump out should not be parsed as extinguish")
+    local responses = split_responses(output)
+    local jump_response = responses[#responses] or ""
+    assert_not_contains(jump_response, "extinguish", "jump out should not be parsed as extinguish")
 end)
 
 print("")
@@ -219,10 +221,9 @@ test("BUG-163: feel around in lit room should not say 'in the darkness'", functi
     cmds[#cmds + 1] = "look around"
     cmds[#cmds + 1] = "feel around"
     local output = run_game(cmds)
-    -- The room is lit (look around works). Feel around should not say "in the darkness"
-    local feel_output = output:match("feel around.-(You reach.-)%-%-%-END%-%-%-") or
-                        output:match("(You reach[^\n]*darkness[^\n]*)") or ""
-    -- This is a low-severity text issue but still a regression test
+    local responses = split_responses(output)
+    -- The last response is the "feel around" in the lit room
+    local feel_output = responses[#responses] or ""
     if feel_output:find("in the darkness", 1, true) then
         error("feel around says 'in the darkness' but the room is lit")
     end

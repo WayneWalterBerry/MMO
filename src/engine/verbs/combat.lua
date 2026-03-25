@@ -62,6 +62,7 @@ local time_of_day_desc = H.time_of_day_desc
 local get_light_level = H.get_light_level
 local has_some_light = H.has_some_light
 local vision_blocked_by_worn = H.vision_blocked_by_worn
+local add_article = H.add_article
 
 local M = {}
 
@@ -73,9 +74,57 @@ function M.register(handlers)
     -- STAB {target} WITH {tool}  /  STAB SELF
     ---------------------------------------------------------------------------
     handlers["stab"] = function(ctx, noun)
+        if noun == "" then
+            print("Stab what?")
+            return
+        end
+
+        -- Try self-infliction first
         if handle_self_infliction(ctx, noun, "stab", "on_stab") then return end
-        -- Stab is only for self-infliction — there are no world objects to stab
-        print("You can only stab yourself. (Try: stab self with <weapon>)")
+
+        -- Fall through: try stabbing a world object (FSM or generic)
+        local target_word = noun:match("^(.+)%s+with%s+") or noun
+        local obj = find_visible(ctx, target_word)
+        if not obj then
+            err_not_found(ctx)
+            return
+        end
+
+        -- Try FSM "stab" transition
+        if obj.states then
+            local transitions = fsm_mod.get_transitions(obj)
+            for _, t in ipairs(transitions) do
+                if t.verb == "stab" or (t.aliases and ({table.unpack(t.aliases)})) then
+                    local alias_match = false
+                    if t.aliases then
+                        for _, a in ipairs(t.aliases) do
+                            if a == "stab" then alias_match = true; break end
+                        end
+                    end
+                    if t.verb == "stab" or alias_match then
+                        local trans = fsm_mod.transition(ctx.registry, obj.id, t.to, {})
+                        if trans then
+                            print(trans.message or ("You stab " .. (obj.name or "it") .. "."))
+                        else
+                            print("You can't stab " .. (obj.name or "that") .. ".")
+                        end
+                        return
+                    end
+                end
+            end
+        end
+
+        -- Try mutation
+        local mut_data = find_mutation(obj, "stab")
+        if mut_data then
+            if perform_mutation(ctx, obj, mut_data) then
+                print(mut_data.message or ("You stab " .. (obj.name or "it") .. "."))
+            end
+            return
+        end
+
+        -- Generic fallback
+        print("You stab at " .. (obj.name or "it") .. ", but it doesn't seem to accomplish much.")
     end
     handlers["jab"] = handlers["stab"]
     handlers["pierce"] = handlers["stab"]
@@ -220,8 +269,12 @@ function M.register(handlers)
         if handle_self_infliction(ctx, noun, "cut", "on_cut") then return end
 
         -- CUT {object} — world object cutting (existing logic)
+        -- #221: Check context.tool_noun (extracted by loop) first, then local parsing
         local target_word, tool_word = noun:match("^(.+)%s+with%s+(.+)$")
         if not target_word then target_word = noun end
+        if ctx.tool_noun then
+            tool_word = ctx.tool_noun
+        end
 
         if not has_some_light(ctx) then
             print("It is too dark to see what you're doing.")
@@ -241,7 +294,7 @@ function M.register(handlers)
                 if tool_word then
                     tool = find_in_inventory(ctx, tool_word)
                     if not tool then
-                        print("You don't have " .. tool_word .. ".")
+                        print("You don't have " .. add_article(tool_word) .. ".")
                         return
                     end
                     if not provides_capability(tool, mut_data.requires_tool) then
@@ -305,7 +358,7 @@ function M.register(handlers)
             if tool_word then
                 tool = find_in_inventory(ctx, tool_word)
                 if not tool then
-                    print("You don't have " .. tool_word .. ".")
+                    print("You don't have " .. add_article(tool_word) .. ".")
                     return
                 end
                 if not provides_capability(tool, "injury_source") then

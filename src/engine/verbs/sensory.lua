@@ -570,6 +570,16 @@ function M.register(handlers)
             return
         end
 
+        -- #228: Writable objects — check for written text vs blank
+        if obj.writable then
+            if obj.written_text then
+                print("It reads:\n\n  \"" .. obj.written_text .. "\"")
+            else
+                print("The " .. (obj.id or "surface") .. " is blank. There is nothing to read.")
+            end
+            return
+        end
+
         -- Readable but no skill: delegate to examine for description
         handlers["look"](ctx, "at " .. noun)
     end
@@ -600,7 +610,11 @@ function M.register(handlers)
                 end
             end
             if #found > 0 then
-                print("You reach out in the darkness, feeling around you...")
+                if has_some_light(ctx) then
+                    print("You reach out, feeling around you...")
+                else
+                    print("You reach out in the darkness, feeling around you...")
+                end
                 for _, entry in ipairs(found) do
                     print("  " .. entry)
                 end

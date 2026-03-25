@@ -172,6 +172,7 @@ function traverse.build_queue(room, scope, target, registry, part_surface)
     -- If scope provided, filter to just that object
     local search_list = proximity_list
     local include_nested_containers = false
+    local scope_is_nested = false
     if scope then
         search_list = {}
         for _, obj_id in ipairs(proximity_list) do
@@ -204,6 +205,30 @@ function traverse.build_queue(room, scope, target, registry, part_surface)
                 end
             end
         end
+        -- #220: If scope not found as top-level or part, check surface contents
+        -- of room objects (e.g., pillow is on bed's "top" surface)
+        if #search_list == 0 and registry then
+            for _, obj_id in ipairs(proximity_list) do
+                local obj = registry:get(obj_id)
+                if obj and obj.surfaces then
+                    for _, surface_data in pairs(obj.surfaces) do
+                        if type(surface_data) == "table" and surface_data.contents then
+                            for _, child_id in ipairs(surface_data.contents) do
+                                local child = registry:get(child_id)
+                                if child and child.id == scope then
+                                    search_list[#search_list + 1] = child_id
+                                    include_nested_containers = true
+                                    scope_is_nested = true
+                                    break
+                                end
+                            end
+                        end
+                        if #search_list > 0 then break end
+                    end
+                    if #search_list > 0 then break end
+                end
+            end
+        end
     end
     
     -- Expand each object into searchable entries
@@ -219,6 +244,11 @@ function traverse.build_queue(room, scope, target, registry, part_surface)
                 end
                 -- Skip object entries and non-matching surfaces
             else
+                -- #220: Mark surface entries as force-accessible when the scope
+                -- is a nested object found via surface-content lookup
+                if scope_is_nested and entry.type == "surface" then
+                    entry.force_accessible = true
+                end
                 queue[#queue + 1] = entry
             end
         end
@@ -494,8 +524,16 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
             -- Non-container inaccessible surfaces (e.g., rug's "underneath")
             -- are truly hidden and can't be searched until made accessible (#26)
             if not containers.is_container(parent) then
-                result.narrative = ""
-                return result
+                -- #220: If search explicitly targeted this object (scoped search),
+                -- allow rummaging through its inaccessible surfaces
+                if entry.force_accessible then
+                    local actual_check = parent.surfaces and parent.surfaces[entry.surface_name]
+                    if actual_check then actual_check.accessible = true end
+                    -- Fall through to accessible-surface search below
+                else
+                    result.narrative = ""
+                    return result
+                end
             end
 
             -- #97/#98/#99: Actually open the container so items become

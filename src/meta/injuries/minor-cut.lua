@@ -33,7 +33,7 @@ return {
         -- ── ACTIVE: Cut is fresh, stinging ──
         active = {
             name = "minor cut",
-            description = "A small cut on your hand where the glass caught you. It stings, but the bleeding has mostly stopped on its own.",
+            description = "A small cut on your hand. It stings, but the bleeding has mostly stopped on its own.",
             on_feel = "The skin around the cut is tender and slightly raised.",
             on_look = "A thin red line, barely bleeding. Nothing serious.",
 

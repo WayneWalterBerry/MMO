@@ -44,6 +44,13 @@ return {
             becomes = nil,
             spawns = {"cloth", "cloth", "rag"},
         },
+        cut = {
+            becomes = nil,
+            requires_tool = "cutting_edge",
+            spawns = {"cloth", "cloth", "rag"},
+            message = "You slice through the heavy velvet with the knife. The curtains fall apart into strips of fabric.",
+            fail_message = "You have nothing sharp enough to cut with.",
+        },
     },
 
     -- FSM
@@ -76,6 +83,17 @@ return {
                 return self.description .. "\n\nThey could be closed again."
             end,
         },
+
+        burning = {
+            name = "burning curtains",
+            description = "The heavy velvet curtains are engulfed in flame. Fire races up the fabric, filling the room with acrid smoke and the smell of burning velvet. Embers drift down like dark snow.",
+            room_presence = "Burning curtains blaze against the far wall, filling the room with smoke and flickering orange light.",
+            on_feel = "Searing heat radiates from the burning fabric. Do not touch.",
+            on_smell = "Choking smoke and the thick, oily stench of burning velvet.",
+            casts_light = true,
+            allows_daylight = true,
+            terminal = true,
+        },
     },
 
     transitions = {
@@ -94,6 +112,20 @@ return {
             mutate = {
                 keywords = { remove = "open" },
             },
+        },
+        {
+            from = "closed", to = "burning", verb = "burn",
+            aliases = {"ignite", "set fire to"},
+            requires_tool = "fire_source",
+            message = "You hold the flame to the heavy velvet. The dusty fabric catches immediately — fire races up the curtains, filling the room with acrid smoke and flickering orange light.",
+            fail_message = "You have no flame to burn the curtains with.",
+        },
+        {
+            from = "open", to = "burning", verb = "burn",
+            aliases = {"ignite", "set fire to"},
+            requires_tool = "fire_source",
+            message = "You hold the flame to the bunched velvet. The dusty fabric catches immediately — fire engulfs the curtains in seconds.",
+            fail_message = "You have no flame to burn the curtains with.",
         },
     },
 }

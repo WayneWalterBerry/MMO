@@ -12,7 +12,7 @@ return {
 
     size = 1,
     weight = 0.1,
-    categories = {"small", "writable", "flammable"},
+    categories = {"small", "writable", "flammable", "readable"},
     portable = true,
     material = "paper",
 

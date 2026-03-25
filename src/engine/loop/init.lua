@@ -387,7 +387,8 @@ function loop.run(context)
       -- BUG-049, #169: extract "with Y" tool for verbs that use tools
       context.tool_noun = nil
       if verb == "open" or verb == "pry"
-          or verb == "light" or verb == "ignite" or verb == "burn" then
+          or verb == "light" or verb == "ignite" or verb == "burn"
+          or verb == "cut" or verb == "slash" or verb == "slice" then
         local obj_noun, tool = noun:match("^(.-)%s+with%s+(.+)$")
         if obj_noun and obj_noun ~= "" and tool and tool ~= "" then
           noun = obj_noun

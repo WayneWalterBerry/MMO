@@ -194,9 +194,13 @@ function M.register(handlers)
         if noun == "" then print("Pour what?") return end
 
         local obj = find_in_inventory(ctx, noun)
-        if not obj then obj = find_visible(ctx, noun) end
         if not obj then
-            err_not_found(ctx)
+            local visible = find_visible(ctx, noun)
+            if visible then
+                print("You'll need to pick that up first.")
+            else
+                err_not_found(ctx)
+            end
             return
         end
 
@@ -309,6 +313,9 @@ function M.register(handlers)
     ---------------------------------------------------------------------------
     local function dump_container(ctx, noun)
         if noun == "" then print("Dump what?") return end
+
+        -- Strip phrasal verb particle: "dump out X" → "X"
+        noun = noun:gsub("^out%s+", ""):gsub("^over%s+", "")
 
         local obj = find_in_inventory(ctx, noun)
         if not obj then obj = find_visible(ctx, noun) end
