@@ -155,7 +155,7 @@ We are **zero files written** in `src/` today. Here is the dependency chain from
         ↓
 [7] engine/loop          — minimal read/eval/print loop
         ↓
-[8] meta/world/start-room.lua        — one room containing the mirror
+[8] meta/rooms/start-room.lua        — one room containing the mirror
 ```
 
 **Blockers before writing the mirror:**  

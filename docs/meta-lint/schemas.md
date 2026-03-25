@@ -835,7 +835,7 @@ Each exit in `boundaries.exit`:
 
 - **Template Files:** `src/meta/templates/` (source definitions)
 - **Object Examples:** `src/meta/objects/` (83 objects following these schemas)
-- **Room Examples:** `src/meta/world/` (7 rooms following room schema)
+- **Room Examples:** `src/meta/rooms/` (7 rooms following room schema)
 - **Injury Definitions:** `src/meta/injuries/` (7 injury types)
 - **Material Definitions:** `src/meta/materials/` (17+ materials)
 - **Level Definitions:** `src/meta/levels/` (level configurations)

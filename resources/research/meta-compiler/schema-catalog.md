@@ -425,7 +425,7 @@ exits = {
 
 1. **target must be a valid room ID**
    ```lua
-   target = "hallway"      -- ✓ Must exist in src/meta/world/
+   target = "hallway"      -- ✓ Must exist in src/meta/rooms/
    target = "invalid-room" -- ✗ Room doesn't exist
    ```
 
@@ -559,7 +559,7 @@ template = "custom-item"  -- ✗ Not a valid template
 Exit targets must reference existing rooms:
 
 ```lua
-target = "hallway"      -- ✓ Must be in src/meta/world/hallway.lua
+target = "hallway"      -- ✓ Must be in src/meta/rooms/hallway.lua
 target = "non-room"     -- ✗ No such room exists
 ```
 

@@ -1027,7 +1027,7 @@ When creatures reference external entities, validate their existence:
 
 | Rule ID | Severity | Check | Message |
 |---------|----------|-------|---------|
-| **CREATURE-019** | Error | If `room_spawn` list exists, each room GUID/ID must exist in `src/meta/world/` | Room `{room_id}` in `room_spawn` list not found |
+| **CREATURE-019** | Error | If `room_spawn` list exists, each room GUID/ID must exist in `src/meta/rooms/` | Room `{room_id}` in `room_spawn` list not found |
 | **CREATURE-020** | Error | If `loot_table` exists, each item GUID must exist in `src/meta/objects/` | Loot item `{item_id}` not found in objects registry |
 
 ### Auto-Detection and Categorization

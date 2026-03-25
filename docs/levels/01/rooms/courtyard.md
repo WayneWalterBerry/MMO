@@ -1,7 +1,7 @@
 # Room Design: The Inner Courtyard
 
 **Room ID:** `courtyard`  
-**File:** `src/meta/world/courtyard.lua` *(not yet created)*  
+**File:** `src/meta/rooms/courtyard.lua` *(not yet created)*  
 **Status:** 🔴 New — Design Only (OPTIONAL ROOM)  
 **Author:** Moe (World Builder)  
 **Date:** 2026-07-21  

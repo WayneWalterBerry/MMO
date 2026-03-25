@@ -488,7 +488,7 @@ def _detect_kind(path: Path) -> str:
     lower = str(path).lower()
     if os.sep + "src" + os.sep + "meta" + os.sep + "objects" + os.sep in lower:
         return "object"
-    if os.sep + "src" + os.sep + "meta" + os.sep + "world" + os.sep in lower:
+    if os.sep + "src" + os.sep + "meta" + os.sep + "rooms" + os.sep in lower:
         return "room"
     if os.sep + "src" + os.sep + "meta" + os.sep + "levels" + os.sep in lower:
         return "level"

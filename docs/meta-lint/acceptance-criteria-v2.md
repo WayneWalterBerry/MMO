@@ -318,7 +318,7 @@ V1 covers LV-01 through LV-10 (basic structure). V2 adds deep validation of sub-
 |---|-------|----------|-------------|
 | LV-36 | `description` is a non-empty string | 🔴 ERROR | Levels must have a description documenting the level's narrative arc. |
 | LV-37 | `rooms` entries are unique | 🔴 ERROR | No duplicate room IDs in the `rooms` array. |
-| LV-38 | `rooms` entries reference valid rooms | 🔴 ERROR | Every room ID must match a room file in `src/meta/world/`. (Strengthens V1's XF-09 from WARNING to ERROR for level membership.) |
+| LV-38 | `rooms` entries reference valid rooms | 🔴 ERROR | Every room ID must match a room file in `src/meta/rooms/`. (Strengthens V1's XF-09 from WARNING to ERROR for level membership.) |
 | LV-39 | `start_room` is in `rooms` list | 🔴 ERROR | The start room must be a member of this level. (Restates LV-06 for completeness in extended section.) |
 | LV-40 | `number` uniqueness across levels | 🔴 ERROR | No two level files may share the same `number`. Level numbers define progression order. |
 | LV-41 | `guid` uniqueness across levels | 🔴 ERROR | No two level files may share the same `guid`. |
@@ -355,9 +355,9 @@ These checks validate references BETWEEN the new meta types and the rest of the 
 
 | # | Check | Severity | Description |
 |---|-------|----------|-------------|
-| XR-08 | Level `completion[].room` exists as a room file | 🔴 ERROR | Completion target rooms must exist in `src/meta/world/`. |
+| XR-08 | Level `completion[].room` exists as a room file | 🔴 ERROR | Completion target rooms must exist in `src/meta/rooms/`. |
 | XR-09 | Level `boundaries.exit[].room` has matching exit direction | 🟡 WARNING | The boundary exit direction must correspond to an actual exit key on the room. |
-| XR-10 | Every room file belongs to at least one level | 🟡 WARNING | Rooms in `src/meta/world/` not listed in any level's `rooms` array are orphaned — exist but unreachable in normal play. |
+| XR-10 | Every room file belongs to at least one level | 🟡 WARNING | Rooms in `src/meta/rooms/` not listed in any level's `rooms` array are orphaned — exist but unreachable in normal play. |
 | XR-11 | GUID global uniqueness across ALL meta types | 🔴 ERROR | No two files in the entire `src/meta/` tree (objects, rooms, levels, templates, injuries) may share the same GUID. Extends V1 XF-01 to include all meta types. |
 
 ---

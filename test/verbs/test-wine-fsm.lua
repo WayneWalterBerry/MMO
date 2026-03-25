@@ -322,7 +322,7 @@ suite("BUG-061 regression — wine bottle instance data")
 
 test("storage-cellar wine-bottle type_id matches wine-bottle.lua GUID", function()
     -- Load the storage cellar room definition
-    local cellar_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "world" .. SEP .. "storage-cellar.lua"
+    local cellar_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "rooms" .. SEP .. "storage-cellar.lua"
     local f = io.open(cellar_path, "r")
     h.assert_truthy(f, "storage-cellar.lua should exist")
     local content = f:read("*a")
@@ -352,7 +352,7 @@ test("storage-cellar wine-bottle type_id matches wine-bottle.lua GUID", function
 end)
 
 test("storage-cellar wine-bottle is nested inside wine-rack contents", function()
-    local cellar_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "world" .. SEP .. "storage-cellar.lua"
+    local cellar_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "rooms" .. SEP .. "storage-cellar.lua"
     local f = io.open(cellar_path, "r")
     h.assert_truthy(f, "storage-cellar.lua should exist")
     local content = f:read("*a")

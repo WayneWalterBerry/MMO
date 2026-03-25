@@ -1,7 +1,7 @@
 # Room Design: The Bedroom (start-room)
 
 **Room ID:** `start-room`  
-**File:** `src/meta/world/start-room.lua`  
+**File:** `src/meta/rooms/start-room.lua`  
 **Status:** 🟢 Implemented  
 **Author:** Moe (World Builder)  
 **Date:** 2026-07-21  

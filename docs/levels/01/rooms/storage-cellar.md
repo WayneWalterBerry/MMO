@@ -1,7 +1,7 @@
 # Room Design: The Storage Cellar
 
 **Room ID:** `storage-cellar`  
-**File:** `src/meta/world/storage-cellar.lua` *(not yet created)*  
+**File:** `src/meta/rooms/storage-cellar.lua` *(not yet created)*  
 **Status:** 🔴 New — Design Only  
 **Author:** Moe (World Builder)  
 **Date:** 2026-07-21  

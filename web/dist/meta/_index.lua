@@ -36,13 +36,6 @@ return {
     "wood",
     "wool"
   },
-  templates = {
-    "container",
-    "furniture",
-    "room",
-    "sheet",
-    "small-item"
-  },
   rooms = {
     "cellar",
     "courtyard",
@@ -51,5 +44,12 @@ return {
     "hallway",
     "start-room",
     "storage-cellar"
+  },
+  templates = {
+    "container",
+    "furniture",
+    "room",
+    "sheet",
+    "small-item"
   },
 }

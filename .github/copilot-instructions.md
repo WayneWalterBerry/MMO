@@ -24,7 +24,7 @@ This project uses **Squad**, an AI team framework with 14 specialist agents coor
 |-------|--------|-------|
 | **Bart** | Engine architecture, module design | `src/engine/**` |
 | **Flanders** | Object definitions, injury types | `src/meta/objects/**`, `src/meta/injuries/**` |
-| **Moe** | Room definitions, world layout | `src/meta/world/**` |
+| **Moe** | Room definitions, world layout | `src/meta/rooms/**` |
 | **Smithers** | Parser pipeline, UI/text presentation | `src/engine/parser/**`, `src/engine/ui/**`, `src/engine/verbs/init.lua` (text output) |
 | **Gil** | Web build pipeline, browser wrapper | `web/**` |
 | **Sideshow Bob** | Puzzle design | `docs/design/puzzles/**`, `docs/levels/*/puzzles/**` |

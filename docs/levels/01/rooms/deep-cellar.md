@@ -1,7 +1,7 @@
 # Room Design: The Deep Cellar
 
 **Room ID:** `deep-cellar`  
-**File:** `src/meta/world/deep-cellar.lua` *(not yet created)*  
+**File:** `src/meta/rooms/deep-cellar.lua` *(not yet created)*  
 **Status:** 🔴 New — Design Only  
 **Author:** Moe (World Builder)  
 **Date:** 2026-07-21  

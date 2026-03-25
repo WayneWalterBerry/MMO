@@ -143,13 +143,13 @@ When a portal object transitions state, the engine looks up its `bidirectional_i
 
 ### 4.2 Update room files to thin references
 
-**`src/meta/world/start-room.lua`** — Replace `exits.north` inline table with:
+**`src/meta/rooms/start-room.lua`** — Replace `exits.north` inline table with:
 ```lua
 north = { portal = "bedroom-hallway-door-north" },
 ```
 Add the portal object to the room's `instances` list.
 
-**`src/meta/world/hallway.lua`** — Replace `exits.south` inline table with:
+**`src/meta/rooms/hallway.lua`** — Replace `exits.south` inline table with:
 ```lua
 south = { portal = "bedroom-hallway-door-south" },
 ```

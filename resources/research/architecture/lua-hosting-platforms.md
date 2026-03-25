@@ -216,7 +216,7 @@ Defold Project
 │  │  │  │  engine/mutation   — code rewrite mutations      │ │  │   │
 │  │  │  │  engine/containment — parent-child tree          │ │  │   │
 │  │  │  │  engine/registry   — object registration         │ │  │   │
-│  │  │  │  meta/world/*     — room definitions             │ │  │   │
+│  │  │  │  meta/rooms/*     — room definitions             │ │  │   │
 │  │  │  │  meta/objects/*   — object definitions           │ │  │   │
 │  │  │  │  meta/templates/* — object templates             │ │  │   │
 │  │  │  └────────────────────────────────────────────────┘ │  │   │

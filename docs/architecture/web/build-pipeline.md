@@ -140,7 +140,7 @@ Copies individual meta `.lua` files into the static file tree for JIT loading. O
 | Source | Contents |
 |--------|----------|
 | `src/meta/objects/*.lua` | Object definitions (~80 files) |
-| `src/meta/world/*.lua` | Room definitions (~7 files) |
+| `src/meta/rooms/*.lua` | Room definitions (~7 files) |
 | `src/meta/levels/*.lua` | Level definitions (~1 file) |
 | `src/meta/templates/*.lua` | Template definitions (~5 files) |
 
@@ -163,9 +163,8 @@ Copies individual meta `.lua` files into the static file tree for JIT loading. O
    b. Copy to web/dist/meta/objects/{guid}.lua
    c. If no guid found, WARN and skip
 
-3. For each file in src/meta/world/:
+3. For each file in src/meta/rooms/:
    a. Copy to web/dist/meta/rooms/{filename}
-   (Note: source is "world/", destination is "rooms/" — cleaner URL semantics)
 
 4. For each file in src/meta/levels/:
    a. Copy to web/dist/meta/levels/{filename}
@@ -210,12 +209,9 @@ When the JIT loader needs to fetch the matchbox definition, it has the GUID `41e
 
 No manifest or index lookup needed. The GUID IS the filename.
 
-### Room Directory Rename: world/ → rooms/
+### Room Directory
 
-Source files live in `src/meta/world/` but are served from `meta/rooms/` in the static site. This is intentional:
-- `world/` is the engine convention (rooms define the game world)
-- `rooms/` is the URL convention (clearer, matches what the JIT loader fetches)
-- The build script handles the mapping
+Source files live in `src/meta/rooms/` and are served from `meta/rooms/` in the static site. Source and URL paths match directly — no rename mapping needed.
 
 ---
 
@@ -327,6 +323,6 @@ The existing `web/build-bundle.ps1` is **replaced**, not modified:
 
 3. **Test the compressed bundle locally** — decompress `engine.lua.gz` manually and verify it's valid Lua before wiring up the bootstrapper.
 
-4. **The `world/` → `rooms/` rename** is intentional. Make sure the JIT loader uses `/play/meta/rooms/` (not `/play/meta/world/`).
+4. **Room paths** — source and URL paths both use `rooms/`. Make sure the JIT loader uses `/play/meta/rooms/`.
 
 5. **Clean builds** — always clear `web/dist/meta/` before running `build-meta.ps1`. Stale files from deleted objects will break the game.

@@ -343,7 +343,7 @@ However, the template documentation should note that room `description` must fol
 ## 12. File Changes Required
 
 ### Room File Updates
-- `src/meta/world/start-room.lua` — remove object references from `description`, remove custom `on_look` (engine handles it)
+- `src/meta/rooms/start-room.lua` — remove object references from `description`, remove custom `on_look` (engine handles it)
 
 ### Object File Updates
 All objects that appear in rooms need a `room_presence` field:

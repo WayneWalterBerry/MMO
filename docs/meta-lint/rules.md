@@ -128,7 +128,7 @@
 |------|----------|-------------|
 | **G-01** | 🔴 | GUID must be well-formed: 8-4-4-4-12 hex pattern. Braces `{...}` preferred for objects. |
 | **G-02** | 🔴 | GUID uniqueness across ALL objects in `src/meta/objects/`. No duplicates. |
-| **G-03** | 🔴 | GUID uniqueness across ALL rooms in `src/meta/world/`. No duplicates. |
+| **G-03** | 🔴 | GUID uniqueness across ALL rooms in `src/meta/rooms/`. No duplicates. |
 | **G-04** | 🟡 | GUIDs should be globally unique across entire `src/meta/` tree. |
 | **G-05** | 🔴 | Reject placeholder GUIDs: `{00000000-0000-...}`, `{guid}`, `{guid-candle}`, or any non-hex characters. |
 | **G-06** | 🟡 | All GUIDs in `src/meta/objects/` should use `{braced}` format. Mixed formats reduce readability. |
@@ -297,7 +297,7 @@
 | **LV-04** | 🔴 | Level MUST have non-empty `name`. |
 | **LV-05** | 🔴 | Level MUST have non-empty `rooms` table (at least one room). |
 | **LV-06** | 🔴 | `start_room` must be one of the rooms listed in `rooms`. |
-| **LV-07** | 🔴 | `start_room` must reference a valid room `id` in `src/meta/world/`. |
+| **LV-07** | 🔴 | `start_room` must reference a valid room `id` in `src/meta/rooms/`. |
 | **LV-08** | 🟡 | Levels should have `completion` criteria. |
 | **LV-09** | 🟡 | Levels should have `intro` text for new players. |
 | **LV-10** | 🟡 | Levels should declare `boundaries.entry` points. |

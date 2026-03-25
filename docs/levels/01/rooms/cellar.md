@@ -1,7 +1,7 @@
 # Room Design: The Cellar
 
 **Room ID:** `cellar`  
-**File:** `src/meta/world/cellar.lua`  
+**File:** `src/meta/rooms/cellar.lua`  
 **Status:** 🟢 Implemented  
 **Author:** Moe (World Builder)  
 **Date:** 2026-07-21  

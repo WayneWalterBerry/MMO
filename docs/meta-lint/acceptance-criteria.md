@@ -117,7 +117,7 @@ These apply to every `.lua` file in `src/meta/objects/`.
 |---|-------|----------|-------------|
 | G-01 | GUID is well-formed | 🔴 ERROR | Must be 8-4-4-4-12 hex pattern. Braces `{...}` optional but preferred for objects. |
 | G-02 | GUID uniqueness across all objects | 🔴 ERROR | No two `.lua` files in `src/meta/objects/` may share the same `guid`. Scan ALL files. |
-| G-03 | GUID uniqueness across all rooms | 🔴 ERROR | No two `.lua` files in `src/meta/world/` may share the same `guid`. |
+| G-03 | GUID uniqueness across all rooms | 🔴 ERROR | No two `.lua` files in `src/meta/rooms/` may share the same `guid`. |
 | G-04 | GUID uniqueness across objects + rooms + levels | 🟡 WARNING | GUIDs should be globally unique across the entire `src/meta/` tree. |
 | G-05 | No placeholder GUIDs | 🔴 ERROR | Reject GUIDs like `{00000000-0000-0000-0000-000000000000}`, `{guid}`, `{guid-candle}`, or any GUID containing non-hex characters. |
 | G-06 | GUID format consistency | 🟡 WARNING | All GUIDs in `src/meta/objects/` should use the `{braced}` format. Mixed formats (some braced, some bare) reduce readability. |
@@ -213,14 +213,14 @@ These apply to `mutate` fields on transitions and top-level `mutations`.
 
 ## 9. Room Checks
 
-These apply to `.lua` files in `src/meta/world/`.
+These apply to `.lua` files in `src/meta/rooms/`.
 
 ### 9.1 Exit Checks
 
 | # | Check | Severity | Description |
 |---|-------|----------|-------------|
 | EX-01 | `exits` is a table | 🔴 ERROR | If present, `exits` must be a table keyed by direction strings. |
-| EX-02 | Exit `target` references a valid room | 🟡 WARNING | Each exit's `target` should match the `id` of a room in `src/meta/world/`. Targets like `"level-2"` or `"manor-west"` that don't yet exist should be flagged as warning (future room), not error. |
+| EX-02 | Exit `target` references a valid room | 🟡 WARNING | Each exit's `target` should match the `id` of a room in `src/meta/rooms/`. Targets like `"level-2"` or `"manor-west"` that don't yet exist should be flagged as warning (future room), not error. |
 | EX-03 | Exit has `type` | 🟡 WARNING | Exits should declare `type` (e.g., `"door"`, `"stairway"`, `"window"`, `"trap_door"`). |
 | EX-04 | Exit has `name` | 🟡 WARNING | Exits should have a `name` for player-facing text. |
 | EX-05 | Exit has `description` | 🟡 WARNING | Exits should have a `description`. |
@@ -270,7 +270,7 @@ These require scanning multiple files together.
 | XF-06 | All `becomes` targets exist | 🟡 WARNING | Any `becomes = "object-id"` in mutations should reference an existing object file. |
 | XF-07 | All `spawns` targets exist | 🟡 WARNING | Any `spawns = {"object-id"}` entries should reference existing object files. |
 | XF-08 | Bidirectional exit completeness | 🟡 WARNING | For every room A with exit to room B, verify room B has a reciprocal exit to room A (unless one_way). |
-| XF-09 | Level room membership | 🟡 WARNING | Every room ID listed in a level's `rooms` table should correspond to an actual room file in `src/meta/world/`. |
+| XF-09 | Level room membership | 🟡 WARNING | Every room ID listed in a level's `rooms` table should correspond to an actual room file in `src/meta/rooms/`. |
 | XF-10 | Orphan objects | 🟢 INFO | Objects in `src/meta/objects/` that are not referenced by any room instance, mutation `becomes`/`spawns`, or composite `parts` are orphans. They exist but are unreachable in-game. |
 | XF-11 | `passage_id` uniqueness | 🟡 WARNING | If two rooms define exits with the same `passage_id`, they should be referring to opposite sides of the same passage. Verify the pair is consistent (same name/type). |
 
@@ -288,7 +288,7 @@ These apply to files in `src/meta/levels/`.
 | LV-04 | `name` exists | 🔴 ERROR | Level must have a non-empty `name`. |
 | LV-05 | `rooms` is a non-empty table | 🔴 ERROR | Level must list at least one room. |
 | LV-06 | `start_room` is in `rooms` list | 🔴 ERROR | The `start_room` must be one of the rooms listed in `rooms`. |
-| LV-07 | `start_room` references a valid room | 🔴 ERROR | `start_room` must match the `id` of a room file in `src/meta/world/`. |
+| LV-07 | `start_room` references a valid room | 🔴 ERROR | `start_room` must match the `id` of a room file in `src/meta/rooms/`. |
 | LV-08 | `completion` defined | 🟡 WARNING | Levels should have completion criteria. |
 | LV-09 | `intro` defined | 🟡 WARNING | Levels should have intro text for new players. |
 | LV-10 | `boundaries.entry` defined | 🟡 WARNING | Level should declare entry points. |

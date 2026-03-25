@@ -194,7 +194,7 @@ Verb handlers in `src/engine/verbs/init.lua` are generic infrastructure — they
 Example: The OPEN handler doesn't have special cases for "wooden doors," "drawers," "cursed gates," or "time-locked safes." Instead, each object declares its own transitions and prerequisites in its FSM metadata:
 
 ```lua
--- In src/meta/world/bedroom-door.lua
+-- In src/meta/rooms/bedroom-door.lua
 mutations = {
     open = {
         requires_tool = "key",       -- Only object knows it needs a key
@@ -315,7 +315,7 @@ Hooks enable puzzle designers to create complex behaviors without touching engin
 - **Player Location:** `ctx.current_room` tracks current room ID (see [player/player-movement.md](player/player-movement.md))
 
 **Loading:**
-- Startup: Load all `.lua` files from `src/meta/world/`
+- Startup: Load all `.lua` files from `src/meta/rooms/`
 - Each room returns: `{ id, name, description, contents, ...}`
 - Rooms instantiated into `context.rooms` table
 
