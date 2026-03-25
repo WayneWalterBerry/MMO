@@ -1372,3 +1372,30 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - `auto_ignite()` directly applies state properties (same approach as FSM's `apply_state`), bypassing FSM guards like `requires_property`. This is intentional — auto-striking a match during fire-source detection is an implicit convenience action, not a player-initiated verb.
 - `exclude_obj` parameter on `find_fire_source()` prevents the candle (target) from being detected as its own fire source — its lit state also provides `fire_source`.
 - The `container_preposition` override only affects the narration text, not the surface-routing logic. Parsing still uses the player's input preposition for determining which surface to place items on.
+
+## Learnings
+
+### Session: Linter Phase 1 — Quick Wins (2026-03-30)
+**Status:** ✅ COMPLETE
+**Branch:** squad/linter-improvements
+
+**Architecture decisions:**
+
+1. **Rule registry as separate module** — scripts/meta-check/rule_registry.py holds all rule metadata (severity, fixable, fix_safety, category, description). Decoupled from validation logic so other tools can query rule metadata without importing the full checker.
+
+2. **Config-first severity** — _add_violation() only overrides severity when config has an explicit per-rule override. The code-level severity is the ground truth; config is the exception mechanism. This lets rules like MD-19 emit different severities for different code paths (warning vs info) without the registry default flattening them.
+
+3. **Category keyword filtering for XF-03** — Built-in CATEGORY_KEYWORDS frozenset for words that legitimately appear across objects (garment, clothing, weapon, etc.). Config keyword_allowlist handles project-specific cases. This cut XF-03 false positives from 145 to 135 without losing real collision detection.
+
+4. **importlib.util pattern for hyphenated directories** — Python can't import from meta-check/ as a package. Solution: _load_sibling() helper using importlib.util.spec_from_file_location() + register in sys.modules (required for dataclass module resolution).
+
+5. **XR-05b cascading check** — Collects generic_templates set during XR-05 pass, then iterates objects to detect missing material overrides. O(n) second pass, no extra file I/O.
+
+**Key files:**
+- scripts/meta-check/rule_registry.py — 110+ rules with metadata
+- scripts/meta-check/config.py — .meta-check.json loader, per-rule/category config
+- scripts/meta-check/check.py — Updated with config integration, smart XF-03, enhanced MD-19, XR-05b
+- 	est/meta-check/test_phase1.py — 29 tests (registry, config, integration)
+- docs/meta-check/usage.md — Updated CLI reference
+
+**Test results:** 29/29 Phase 1 tests pass, 129/129 Lua tests pass, 0 regressions.

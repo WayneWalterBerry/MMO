@@ -48,13 +48,13 @@ python scripts/meta-check/check.py [OPTIONS] [PATH]
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `--format` | `text` \| `json` \| `tap` | `text` | Output format. `json` for CI parsing, `tap` for pre-commit hooks. |
+| `--format` | `text` \| `json` | `text` | Output format. `json` for CI parsing. |
 | `--severity` | `all` \| `warning` \| `error` | `all` | Minimum severity to report. `error` suppresses warnings. |
 | `--output` | filepath | stdout | Write output to file instead of stdout. |
-| `--fix` | flag | off | Auto-fix simple issues (see [Auto-Fix](#auto-fix)). |
-| `--verbose` | flag | off | Print debug info (tokenization, AST, phase timings). |
-| `--config` | filepath | `.meta-check.yaml` | Load validation rules from config file. |
-| `--exclude` | glob | (none) | Exclude files matching glob (e.g., `*.bak`). |
+| `--verbose` | flag | off | Print file count and violation count. |
+| `--config` | filepath | `.meta-check.json` | Load per-rule configuration from JSON file. |
+| `--list-rules` | flag | off | Print all rules with metadata and exit. |
+| `--init-config` | flag | off | Generate default `.meta-check.json` at project root and exit. |
 
 ### Exit Codes
 
