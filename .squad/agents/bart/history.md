@@ -1399,3 +1399,34 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - docs/meta-check/usage.md — Updated CLI reference
 
 **Test results:** 29/29 Phase 1 tests pass, 129/129 Lua tests pass, 0 regressions.
+
+### Session: Linter Phase 2 — GUID Cross-Ref & EXIT Validation (2026-07-29)
+**Status:** ✅ COMPLETE
+**Branch:** squad/linter-phase2
+
+**What was built:**
+
+1. **GUID-01 (error)** — Room instance type_id must resolve to a known object GUID. Recursively walks the full instances tree (on_top, contents, nested, underneath). Normalizes both braced and bare GUID formats. This is the "27 fabricated GUIDs" rule Wayne requested via issue #241.
+
+2. **GUID-02 (warning)** — Orphan object detection. Fires when rooms exist but an object's GUID isn't referenced by any room instance. Found 21 orphan objects on first run (mutation targets, healing items, traps not yet placed).
+
+3. **GUID-03 (error)** — Duplicate instance id within same room. Catches copy-paste errors in room instance arrays.
+
+4. **EXIT-01 (error)** — Exit target must reference a valid room file. Found 4 exits pointing to non-existent rooms (level-2, manor-kitchen, manor-west, manor-east — future content).
+
+5. **EXIT-02 (warning)** — Bidirectional exit consistency. Warns when room A exits to B but B has no return exit to A.
+
+**Bug fix:** `_detect_kind()` only matched `src/meta/world/` for rooms, but the actual directory is `src/meta/rooms/`. Added the `rooms/` pattern. This was a silent bug — rooms were classified as "unknown" and skipped room-specific validation (RM-01, SN-01 for rooms, and all cross-ref checks that depend on room_ids).
+
+**Architecture decisions:**
+- GUID normalization strips `{}` from both sides (object GUIDs are braced, room type_ids are usually bare but sometimes braced)
+- GUID-02 fires only when rooms exist in the scan — prevents false positives when linting objects-only
+- EXIT-02 only checks bidirectional consistency for rooms that ARE in the scan (doesn't flag exits to rooms outside the level)
+
+**Key files:**
+- scripts/meta-lint/rule_registry.py — 5 new rules (GUID-01/02/03, EXIT-01/02)
+- scripts/meta-lint/lint.py — ~120 lines of validation logic, _detect_kind fix
+- test/meta-check/test_phase2.py — 20 tests (6 registry, 14 integration)
+
+**Test results:** 20/20 Phase 2 tests pass, Lua test suite unaffected.
+
