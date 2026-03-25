@@ -121,8 +121,63 @@ local function narrate_absorption(item, reduction)
     end
 end
 
+--- Remove an item from the player's worn list (by identity or id).
+local function remove_from_worn(player, item)
+    if not player or not player.worn then return end
+    for i = #player.worn, 1, -1 do
+        local worn = player.worn[i]
+        if worn == item or (type(worn) == "table" and worn.id == item.id)
+           or worn == item.id then
+            table.remove(player.worn, i)
+            return true
+        end
+    end
+    return false
+end
+
+--- Check if an item's current state allows it to be worn.
+-- Checks both the armor STATE_MULTIPLIER table (shattered = 0 → non-wearable)
+-- and the item's FSM state definition (wearable = false → non-wearable).
+-- Items without FSM states or degradation are assumed wearable.
+function armor.is_wearable_state(item)
+    if not item then return false end
+    local state = item._state
+
+    -- Check armor degradation: shattered = non-wearable
+    if state and STATE_MULTIPLIER[state] == 0 then
+        return false
+    end
+
+    -- Check FSM state definition for explicit wearable = false
+    if state and item.states and item.states[state] then
+        local state_def = item.states[state]
+        if state_def.wearable == false then
+            return false
+        end
+    end
+
+    return true
+end
+
+--- Check if a worn item should be auto-unequipped due to non-wearable state.
+-- Removes the item from player.worn if its state is non-wearable.
+-- @return boolean removed, string|nil message
+function armor.auto_unequip_check(player, item)
+    if not player or not item then return false end
+    if armor.is_wearable_state(item) then return false end
+
+    local removed = remove_from_worn(player, item)
+    if removed then
+        local name = item.name or item.id or "your equipment"
+        print("Your " .. name .. " falls away!")
+        return true, "Your " .. name .. " falls away!"
+    end
+    return false
+end
+
 --- Check degradation and apply state transition.
-local function check_degradation(item, original_damage, impact_type)
+-- @param player  table|nil  Player state for auto-unequip (optional for backward compat)
+local function check_degradation(item, original_damage, impact_type, player)
     local state = item._state or "intact"
     local next_state = DEGRADE_NEXT[state]
     if not next_state then return end  -- already shattered or unknown
@@ -142,7 +197,10 @@ local function check_degradation(item, original_damage, impact_type)
         if next_state == "cracked" then
             print("Your " .. name .. " develops a hairline crack.")
         elseif next_state == "shattered" then
-            print("Your " .. name .. " shatters into pieces!")
+            print("Your " .. name .. " shatters and falls away!")
+            if player then
+                remove_from_worn(player, item)
+            end
         end
     end
 end
@@ -157,7 +215,7 @@ function armor.degrade_covering_armor(player, location, damage, impact_type)
     if not worn or #worn == 0 then return end
     for _, item in ipairs(worn) do
         if type(item) == "table" and covers_location(item, location) then
-            check_degradation(item, damage, impact_type)
+            check_degradation(item, damage, impact_type, player)
         end
     end
 end
@@ -213,7 +271,7 @@ function armor.register(effects_module)
         -- Degradation check per item
         local impact_type = effect.damage_type or nil
         for _, item in ipairs(covering) do
-            check_degradation(item, original_damage, impact_type)
+            check_degradation(item, original_damage, impact_type, ctx.player)
         end
     end)
 end

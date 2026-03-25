@@ -267,6 +267,14 @@ function M.register(handlers)
             return
         end
 
+        -- Reject wearing items in non-wearable states (shattered armor, shredded clothing)
+        local armor_mod_ok, armor_mod = pcall(require, "engine.armor")
+        if armor_mod_ok and armor_mod.is_wearable_state
+           and not armor_mod.is_wearable_state(obj) then
+            print("You can't wear " .. (obj.name or "that") .. ". It's too damaged.")
+            return
+        end
+
         -- Legacy support: objects with wearable=true but no wear table
         -- get a minimal default (torso/outer) so they still work
         if not wear then
