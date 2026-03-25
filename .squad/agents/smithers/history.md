@@ -47,6 +47,9 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+- **Bug #178 — auto_ignite() timer bypass (2026-07-17):** The `auto_ignite()` helper in `fire.lua` applied FSM state properties directly (clearing old state keys, setting new ones, updating `_state`) but never called `fsm_mod.stop_timer()` / `fsm_mod.start_timer()`. This meant objects auto-ignited as fire sources (e.g., match lit to light a candle) never registered burn-out timers with the FSM. Fix: added `fsm_mod.stop_timer(obj.id)` before state change and `fsm_mod.start_timer(ctx.registry, obj.id)` after. Same pattern applied to `containers.lua` fallback `_state = "open"` path. Injuries.lua direct `_state` assignments don't need timer fixes because injuries aren't registry objects — they use their own `turns_active` tick system.
+- **Lesson: any code that sets `_state` directly must also manage FSM timers.** The FSM module's `transition()` function handles this automatically. Direct `_state` writes are a code smell — they bypass the timer system. Future audit: grep for `\._state\s*=\s*"` and verify each site either uses `fsm.transition()` or manually calls stop/start_timer.
+
 
 ### 2026-07-20: Issue #106 Phase 3 — Prime Directive Tiers 1-5 Implementation
 
@@ -890,3 +893,16 @@ Wayne requested Phase F1 carry-over bug fixes (#47, #49, #52, #53) using TDD. Up
 **Files changed:** `src/assets/parser/embedding-index.json` (slim), `src/engine/parser/embedding_matcher.lua` (tiebreaker), `data/parser/training-pairs.csv` (+242 rows), `scripts/build_embedding_index.py` (slim flag), `resources/archive/embedding-index-full.json` (new).
 
 **Tests:** All 129 test files pass. Zero regressions.
+
+
+### 2026-03-24: Issue #182 - Sack Disambiguation Cluster (Bug A/B/C)
+**What shipped:** Three fixes for sack disambiguation in one pass.
+
+**Bug A (adjective resolution):** Added `_score_adjective_match()` to `helpers.lua` — tokenizes player input and scores each candidate object by how many tokens match its keywords (+2) or name words (+1). Added `_try_room_scored()` that collects ALL room keyword matches, scores them, and picks the highest. Replaced `_fv_room` calls in `find_visible` with the scored variant. "burlap sack" now correctly resolves to the burlap sack (score 4 vs 2), not the grain sack.
+
+**Bug B (dump/empty verb):** Replaced `handlers["dump"] = handlers["pour"]` alias in `survival.lua` with a proper `dump_container()` handler. When target is a dry container with `obj.contents`, spills items into the room. Also checks `surfaces.inside.contents` for surface-based containers. Falls through to `pour` for liquids. Registered both `dump` and `empty` as verbs. Added both to `interaction_verbs` table in `helpers.lua`.
+
+**Bug C (disambiguation prompt):** When `_try_room_scored` finds multiple objects with tied adjective scores, it builds a "Which do you mean: X or Y?" prompt and sets `ctx.disambiguation_prompt`. `find_visible` returns nil and stops searching further stages when disambiguation triggers. `fuzzy.resolve` already handled this correctly (was passing before).
+
+**Files changed:** `src/engine/verbs/helpers.lua` (scoring + scored room search + interaction_verbs), `src/engine/verbs/survival.lua` (dump/empty handler).
+**Tests:** All 13 Nelson disambiguation tests pass (was 4/13). Full suite: zero new regressions (pre-existing 7 failures in `test-unconsciousness-triggers.lua` unchanged).

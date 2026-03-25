@@ -300,8 +300,75 @@ function M.register(handlers)
     end
 
     handlers["spill"] = handlers["pour"]
-    handlers["dump"] = handlers["pour"]
     handlers["fill"] = handlers["pour"]
+
+    ---------------------------------------------------------------------------
+    -- DUMP / EMPTY — container-aware pour (#182)
+    -- If target is a dry container with item contents, spill them into the
+    -- room.  Otherwise fall through to pour behavior for liquids.
+    ---------------------------------------------------------------------------
+    local function dump_container(ctx, noun)
+        if noun == "" then print("Dump what?") return end
+
+        local obj = find_in_inventory(ctx, noun)
+        if not obj then obj = find_visible(ctx, noun) end
+        if not obj then err_not_found(ctx) return end
+
+        -- Container with direct item contents
+        if obj.container and obj.contents and #obj.contents > 0 then
+            local room = ctx.current_room
+            local dumped = {}
+            for _, item_id in ipairs(obj.contents) do
+                local item = ctx.registry:get(item_id)
+                if item then
+                    room.contents[#room.contents + 1] = item_id
+                    item.location = room.id
+                    dumped[#dumped + 1] = item.name or item.id
+                end
+            end
+            obj.contents = {}
+            if #dumped == 1 then
+                print("You dump " .. dumped[1] .. " out of " .. (obj.name or "that") .. ".")
+            else
+                print("You dump the contents of " .. (obj.name or "that") .. " onto the floor.")
+            end
+            return
+        end
+
+        -- Container with surface.inside contents
+        if obj.surfaces and obj.surfaces.inside then
+            local inside = obj.surfaces.inside
+            if inside.contents and #inside.contents > 0 then
+                if inside.accessible ~= false then
+                    local room = ctx.current_room
+                    for _, item_id in ipairs(inside.contents) do
+                        local item = ctx.registry:get(item_id)
+                        if item then
+                            room.contents[#room.contents + 1] = item_id
+                            item.location = room.id
+                        end
+                    end
+                    inside.contents = {}
+                    print("You dump the contents of " .. (obj.name or "that") .. " onto the floor.")
+                else
+                    print("You turn " .. (obj.name or "that") .. " upside down but nothing falls out.")
+                end
+                return
+            end
+        end
+
+        -- Empty container
+        if obj.container then
+            print("You turn " .. (obj.name or "that") .. " upside down but nothing falls out.")
+            return
+        end
+
+        -- Not a container — fall through to pour for liquids
+        handlers["pour"](ctx, noun)
+    end
+
+    handlers["dump"] = dump_container
+    handlers["empty"] = dump_container
 
     ---------------------------------------------------------------------------
     -- WASH -- clean soiled objects using a water source (#112)

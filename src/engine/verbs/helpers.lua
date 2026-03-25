@@ -118,6 +118,38 @@ local function matches_keyword(obj, kw)
 end
 
 ---------------------------------------------------------------------------
+-- Adjective-aware scoring: count how many input tokens appear in an
+-- object's keywords, name, or id. Used to break ties when multiple
+-- objects share a keyword (e.g. "burlap sack" vs "grain sack"). (#182)
+---------------------------------------------------------------------------
+local function _score_adjective_match(obj, input_text)
+    local score = 0
+    for token in input_text:lower():gmatch("%S+") do
+        local matched = false
+        if type(obj.keywords) == "table" then
+            for _, k in ipairs(obj.keywords) do
+                if k:lower() == token then
+                    score = score + 2
+                    matched = true
+                    break
+                end
+            end
+        end
+        if not matched and obj.name then
+            local padded = " " .. obj.name:lower() .. " "
+            if padded:find(" " .. token .. " ", 1, true) then
+                score = score + 1
+                matched = true
+            end
+        end
+        if not matched and obj.id and obj.id:lower() == token then
+            score = score + 2
+        end
+    end
+    return score
+end
+
+---------------------------------------------------------------------------
 -- Verb-dependent search order (see docs/architecture/player/inventory.md)
 --
 -- Interaction verbs act on something the player controls → search
@@ -129,6 +161,7 @@ local interaction_verbs = {
     use = true, light = true, drink = true, open = true, close = true,
     pour = true, eat = true, extinguish = true, wear = true, remove = true,
     apply = true, stab = true, cut = true, slash = true,
+    dump = true, empty = true,
     -- aliases that map to interaction verbs
     pry = true, shut = true, jab = true, pierce = true, stick = true,
     slice = true, nick = true, carve = true,
@@ -457,6 +490,54 @@ local function _fv_room(kw, reg, room)
     end
 end
 
+-- Scored room search: collect ALL keyword matches, score by adjective
+-- overlap, return best or set ctx.disambiguation_prompt if tied. (#182)
+local function _try_room_scored(kw, reg, room, ctx)
+    local matches = {}
+    for _, obj_id in ipairs(room.contents or {}) do
+        local obj = reg:get(obj_id)
+        if obj and not obj.hidden and matches_keyword(obj, kw) then
+            matches[#matches + 1] = { obj = obj, loc = "room" }
+        end
+    end
+    if #matches == 0 then return nil end
+    if #matches == 1 then return matches[1].obj, "room", nil, nil end
+
+    for _, m in ipairs(matches) do
+        m.score = _score_adjective_match(m.obj, kw)
+    end
+    table.sort(matches, function(a, b) return a.score > b.score end)
+
+    if matches[1].score > matches[2].score then
+        return matches[1].obj, "room", nil, nil
+    end
+
+    -- Tied scores — build disambiguation prompt
+    local top_score = matches[1].score
+    local names = {}
+    for _, m in ipairs(matches) do
+        if m.score == top_score then
+            names[#names + 1] = m.obj.name or m.obj.id or "something"
+        end
+    end
+    local prompt
+    if #names == 2 then
+        prompt = "Which do you mean: " .. names[1] .. " or " .. names[2] .. "?"
+    else
+        local parts = {}
+        for i, n in ipairs(names) do
+            if i == #names then
+                parts[#parts + 1] = "or " .. n
+            else
+                parts[#parts + 1] = n
+            end
+        end
+        prompt = "Which do you mean: " .. table.concat(parts, ", ") .. "?"
+    end
+    ctx.disambiguation_prompt = prompt
+    return nil
+end
+
 -- Sub-search: accessible surface contents + non-surface containers in room
 local function _fv_surfaces(kw, reg, room)
     for _, obj_id in ipairs(room.contents or {}) do
@@ -636,16 +717,18 @@ local function find_visible(ctx, keyword)
         if obj then return obj, loc, parent, surface end
         obj, loc, parent, surface = _fv_worn(kw, reg, ctx.player)
         if obj then return obj, loc, parent, surface end
-        obj, loc, parent, surface = _fv_room(kw, reg, room)
+        obj, loc, parent, surface = _try_room_scored(kw, reg, room, ctx)
         if obj then return obj, loc, parent, surface end
+        if ctx.disambiguation_prompt then return nil end
         obj, loc, parent, surface = _fv_surfaces(kw, reg, room)
         if obj then return obj, loc, parent, surface end
         obj, loc, parent, surface = _fv_parts(kw, reg, room)
         if obj then return obj, loc, parent, surface end
     else
         -- Acquisition / default: reaching for world objects → Room → Surfaces → Parts → Hands → Bags → Worn
-        obj, loc, parent, surface = _fv_room(kw, reg, room)
+        obj, loc, parent, surface = _try_room_scored(kw, reg, room, ctx)
         if obj then return obj, loc, parent, surface end
+        if ctx.disambiguation_prompt then return nil end
         obj, loc, parent, surface = _fv_surfaces(kw, reg, room)
         if obj then return obj, loc, parent, surface end
         obj, loc, parent, surface = _fv_parts(kw, reg, room)
