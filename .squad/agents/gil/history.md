@@ -303,3 +303,26 @@
   - Material _index.lua manifest
 - **Deploy method:** Used `web/deploy.ps1` — clean run, no issues
 - **Build note:** Engine grew from 152.3 KB → 169.7 KB compressed (+17.4 KB) due to parser tier additions. Acceptable.
+
+### 2026-03-25: Deploy — SLM overhaul, lazy-load vectors, 27 GUID fixes, parser 91.2%, linter improvements
+- **Timestamp:** 2026-03-25T13:21Z
+- **Status:** ✅ COMPLETE — Deployed to GitHub Pages
+- **Pages commit:** `a33b120` (main branch, 12 files changed, +401 −517 lines)
+- **Engine bundle:** 231.9 KB compressed (1638 KB raw), 50 engine files + 1 asset file
+- **Meta files:** 134 total (91 objects, 7 rooms, 5 templates, 1 level, 23 materials, 7 injuries)
+- **Cache-bust stamp:** `20260325132110` stamped into `bootstrapper.js` and `index.html`
+- **Embedding vectors:** `embedding-vectors.json.gz` 4813.6 KB (4337 entries, version `82be9354743ec21b`), lazy-loaded via IndexedDB
+- **Embedding index:** 882.4 KB (stripped vectors, down from 15 MB)
+- **Total files deployed:** 141
+- **What shipped:**
+  - SLM index overhaul (15 MB → 883 KB, 6,552 new phrases)
+  - Web lazy-load for embedding vectors (IndexedDB caching)
+  - 27 GUID fixes (rooms were empty before — objects now load correctly)
+  - Parser improvements (91.2% benchmark)
+  - Linter improvements (Phase 2 — GUID cross-ref and EXIT validation)
+- **Deploy method:** Used `web/deploy.ps1` — clean run, LF/CRLF warnings only (no errors)
+- **Verification:** All 4 key files confirmed on GitHub API (bootstrapper.js, engine.lua.gz, game-adapter.lua, embedding-vectors.json.gz). Live site returns HTTP 200 with correct BUILD_TIMESTAMP `2026-03-25 13:21`.
+- **Build notes:**
+  - Engine grew from 169.7 KB → 231.9 KB compressed (+62.2 KB) — significant jump due to 9 new engine files (50 vs 41 previously). Likely parser tier additions and linter modules.
+  - Meta count grew from 130 → 134 (+4 objects: 87 → 91). The 27 GUID fixes were corrections to existing objects, not new additions.
+  - First deploy to include `embedding-vectors.json.gz` (4.8 MB) for lazy-load SLM. Previous deploys only had the stripped index.
