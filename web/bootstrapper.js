@@ -6,8 +6,14 @@
 (function () {
     'use strict';
 
-    // --- Debug mode: ?debug in URL shows detailed loading messages ---
-    window._debugMode = new URLSearchParams(window.location.search).has('debug');
+    // --- URL parameters: ?debug and ?room={id} ---
+    var _urlParams = new URLSearchParams(window.location.search);
+    window._debugMode = _urlParams.has('debug');
+    window._startRoom = _urlParams.get('room') || null;
+
+    if (window._debugMode && window._startRoom) {
+        console.log('Starting in room: ' + window._startRoom + ' (via URL override)');
+    }
 
     var outputEl = document.getElementById('output');
     var inputEl  = document.getElementById('input');

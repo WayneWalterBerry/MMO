@@ -547,6 +547,33 @@ local ok, err = pcall(function()
     local level = level_source and loader.load_source(level_source)
 
     local start_room_id = (level and level.start_room) or "start-room"
+
+    -- ?room= URL override (set by bootstrapper.js → window._startRoom)
+    local url_room = window._startRoom
+    if url_room and tostring(url_room) ~= "" and tostring(url_room) ~= "null"
+       and tostring(url_room) ~= "undefined" then
+        local requested = tostring(url_room)
+        local level_rooms = (level and level.rooms) or {}
+        local valid = false
+        for _, rid in ipairs(level_rooms) do
+            if rid == requested then valid = true; break end
+        end
+        if valid then
+            start_room_id = requested
+            if DEBUG_MODE then
+                log_debug("Starting in room: " .. requested .. " (via URL override)")
+            end
+        else
+            append_error("Room '" .. requested .. "' not found in current level. Using default.")
+            if DEBUG_MODE then
+                local ids = {}
+                for _, rid in ipairs(level_rooms) do ids[#ids + 1] = rid end
+                table.sort(ids)
+                append_error("Available rooms: " .. table.concat(ids, ", "))
+            end
+        end
+    end
+
     local room = rooms[start_room_id]  -- triggers JIT load of starting room
     if not room then
         error("Starting room '" .. start_room_id .. "' not found")
