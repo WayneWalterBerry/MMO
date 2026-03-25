@@ -49,6 +49,7 @@ class CheckConfig:
     rules: Dict[str, RuleConfig] = field(default_factory=dict)
     disabled_categories: Set[str] = field(default_factory=set)
     keyword_allowlist: Set[str] = field(default_factory=set)
+    squad_routing: Optional[Dict[str, str]] = None
 
     def is_rule_enabled(self, rule_id: str) -> bool:
         """Check if a rule is enabled (per-rule overrides beat category)."""
@@ -107,6 +108,10 @@ def parse_config(json_text: str) -> CheckConfig:
 
     allowlist = data.get("keyword_allowlist", [])
     cfg.keyword_allowlist = {kw.lower() for kw in allowlist}
+
+    routing_data = data.get("squad_routing", None)
+    if isinstance(routing_data, dict):
+        cfg.squad_routing = routing_data
 
     return cfg
 

@@ -1430,3 +1430,31 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 
 **Test results:** 20/20 Phase 2 tests pass, Lua test suite unaffected.
 
+
+## Learnings
+
+### Linter Phase 3: Squad Routing + Incremental Caching (2026-03-25)
+
+**Squad Routing (squad_routing.py):**
+- Every registered rule maps to a squad member via fnmatch patterns
+- Routing precedence: exact match > wildcard pattern (longest first) > "unassigned"
+- Config overrides via `squad_routing` section in .meta-check.json
+- All 15 rule categories covered: S/PARSE/G/FSM/TR/SN/TD → Bart, INJ/MD/MAT/CREATURE → Flanders, RM → Moe, LV → Comic Book Guy, XF/XR → Smithers, GUID → Bart, EXIT → Sideshow Bob
+- JSON output includes `by_owner` summary; `--by-owner` flag groups text output
+
+**Incremental Caching (cache.py):**
+- SHA-256 per-file hashing; cached in .meta-lint-cache.json
+- Cross-file rules (XF/XR/GUID/EXIT/LV-40) never cached — always re-run
+- Conservative invalidation: if ANY file changed, all files re-validate
+- Cache prunes deleted files automatically
+- `--no-cache` flag for full re-scan; cache stats in JSON/verbose output
+- Version field for forward-compatible cache migration
+
+**Key files:**
+- scripts/meta-lint/squad_routing.py — routing table + SquadRouter class
+- scripts/meta-lint/cache.py — LintCache, hash_file, is_cross_file_rule
+- scripts/meta-lint/lint.py — integrated routing + caching into main pipeline
+- scripts/meta-lint/config.py — added squad_routing field to CheckConfig
+- test/meta-check/test_phase3.py — 31 tests
+
+**Test results:** 31/31 Phase 3 tests pass, 153/153 Lua tests unaffected.
