@@ -48,6 +48,29 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 ## Learnings
 
 
+### P1-P5 Tier 2 Parser Improvements — 144/147 (98.0%) Benchmark
+
+**What shipped:** Five parser improvements to the Tier 2 embedding matcher, taking the benchmark from 134/147 (91.2%) to 144/147 (98.0%). Branch: `squad/parser-p1-noun-gate`.
+
+**P1 (Noun validation gate, +5):** Added `token_matches()` and `noun_overlap()` helpers. Classifies input tokens into verb-like vs noun-like using a `verb_tokens` set (union of canonical verbs, phrase first words, synonym keys). Skips phrases where no input noun token matches any phrase token. Fuzzy matching (Levenshtein) prevents "take candel" regression.
+
+**P2 (Verbose input truncation, +1):** For inputs >5 tokens after stop-word removal, keeps top 5 by known-noun priority then IDF. Built `known_noun_tokens` set from all phrase noun_tokens plus hyphen-component parts.
+
+**P3 (Question transform, +1):** "what is X" → "examine X" in both Tier 2 (`match()`) and Tier 1 (`preprocess.lua`, `questions.lua`).
+
+**P4 (Noun exactness tiebreaker, +1):** Exact noun match (score=2) wins ties. Noun match bonus (+0.5 in BM25) helps when IDF scores are nearly identical but user names the exact object.
+
+**P5 (Adjective-only guard, +2):** Generic adjectives (small, big, large, colors) → nil. Material/descriptive adjectives (heavy, dirty, wooden) kept since they identify specific objects.
+
+**Key learnings:**
+- IDF values for many tokens are nearly identical (matchbox=4.541, dirty=4.549, dusty=4.541). Pure IDF sorting doesn't reliably distinguish nouns from adjectives — need `known_noun_tokens` priority.
+- Verb preservation in truncation can HURT: keeping "examine" gives both correct and incorrect phrases equal verb boost, then the wrong adjective wins by 0.008 IDF. Better to let IDF competition naturally drop the verb when nouns are more discriminating.
+- Noun match bonus (+0.5) is more robust than epsilon-based tie detection. It integrates into scoring rather than requiring approximate equality checks.
+- Branch switching by other agents can lose uncommitted work. Commit immediately after verifying benchmark scores.
+- Stop words "something/anything/everything" needed for "get something small" → nil (P5 combo).
+- The `goto continue` pattern works well for noun gate skip logic in Lua 5.2+.
+
+
 ### Issues #242-244: Parser Test Fixes + Benchmark Improvement (2026-03-25)
 
 **What shipped:** Fixed 3 parser test failures, tightened typo correction, added missing synonyms. Benchmark improved from 83.7% (123/147) to 91.2% (134/147).
