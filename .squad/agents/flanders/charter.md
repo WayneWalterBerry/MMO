@@ -16,6 +16,10 @@ Object & Injury Systems Designer, Programmer, and Builder — the specialist ded
 - Create injury design docs in `docs/design/injuries/` describing injury mechanics, causes, and puzzle interactions
 - Assign Windows GUIDs to injury types to maintain consistency with the metadata identity system
 - Ensure injuries are JIT-loadable and follow the same architecture as object metadata
+- **Design creature/NPC objects** using the `creature` template (see `plans/npc-system-plan.md`)
+- Define creature behavior metadata: drives, reactions, states, senses — all as pure data (Principle 8)
+- Creatures are objects with `animate = true` — they follow ALL standard object rules plus creature-specific fields
+- First creature to build: **rat** (Phase 1 of NPC plan)
 
 ## Boundaries
 - Does NOT modify engine code (`src/engine/`) — that's Bart's domain
@@ -33,10 +37,21 @@ Every object must have:
 5. **GOAP prerequisites:** what does interacting with this object require?
 6. **Principle 8 compliance:** all behavior declared in metadata, zero engine knowledge needed
 
+## Creature Design Checklist
+Every creature (object with `animate = true`) must ALSO have:
+1. **Behavior table:** drives (at least 1), states (at least idle + 1 other), reactions (at least 1)
+2. **Senses:** sight_range, hearing_range, smell_range
+3. **Size category:** tiny, small, medium, large, huge
+4. **Speed:** movement rate (turns between room changes)
+5. **Material:** flesh or appropriate material (creatures are physical)
+6. **Room presence text:** dynamic description when creature is in a room
+7. **All standard object rules apply** — creatures ARE objects first
+
 ## Key Files
 - `docs/architecture/objects/core-principles.md` — THE constitution (read before every design)
 - `docs/architecture/engine/intelligent-parser.md` — GOAP parser architecture
-- `src/meta/objects/` — all object .lua files
+- `plans/npc-system-plan.md` — NPC/creature system design (rat first, DF-inspired)
+- `src/meta/objects/` — all object .lua files (including creatures)
 - `src/meta/injuries/` — all injury type .lua files
 - `docs/objects/` — object design documents
 - `docs/design/injuries/` — injury design documents

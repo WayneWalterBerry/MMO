@@ -30,9 +30,10 @@ The guiding principle: **Don't author behaviors. Author the rules that generate 
 8. [New Verb Interactions](#8-new-verb-interactions)
 9. [Scaling Path: Rat → Creatures → Humanoids](#9-scaling-path-rat--creatures--humanoids)
 10. [Dwarf Fortress Lessons Applied](#10-dwarf-fortress-lessons-applied)
-11. [Implementation Phases & Estimates](#11-implementation-phases--estimates)
-12. [Risk Assessment](#12-risk-assessment)
-13. [Open Questions](#13-open-questions)
+11. [Meta-Lint Extension: Creature Validation Rules](#11-meta-lint-extension-creature-validation-rules)
+12. [Implementation Phases & Estimates](#12-implementation-phases--estimates)
+13. [Risk Assessment](#13-risk-assessment)
+14. [Open Questions](#14-open-questions)
 
 ---
 
@@ -944,7 +945,112 @@ end
 
 ---
 
-## 11. Implementation Phases & Estimates
+## 11. Meta-Lint Extension: Creature Validation Rules
+
+The static metadata validator (`scripts/meta-check/check.py`, being renamed to `meta-lint` per #187) must be extended to validate creature/NPC metadata. This section documents what linter rules need to exist by the time creature `.lua` files are authored in Phase 1.
+
+### Required Fields for Creatures
+
+All creatures must declare:
+
+| Field | Type | Required? | Notes |
+|-------|------|-----------|-------|
+| `guid` | string | Yes | Windows GUID; reuses existing OBJ-01 validation |
+| `template` | string | Yes | Must be `"creature"` or inherit from creature template |
+| `id` | string | Yes | kebab-case identifier (e.g., `"rat"`, `"spider"`) |
+| `name` | string | Yes | Display name (e.g., `"a hungry rat"`) |
+| `keywords` | table | Yes | Array of strings for parser resolution (e.g., `{"rat", "rodent", "vermin"}`) |
+| `on_feel` | string | Yes | Primary sense (dark navigation); reuses existing OBJ-02 validation |
+| `animate` | boolean | Yes | **MUST be `true`** for creatures |
+| `behavior` | table | Yes | Table with `drives`, `states`, `reactions` sub-tables |
+| `initial_state` | string | Yes | Must exist as a key in `behavior.states` |
+| `size` | string | Yes | One of: `tiny`, `small`, `medium`, `large`, `huge` |
+| `speed` | number | Yes | Movement speed (1–10 units per tick; typical: 2–4) |
+| `senses` | table | Yes | Table with at least `sight_range` (number, in rooms) |
+| `material` | string | Yes | Typically `"flesh"` for Phase 1 creatures; reuses MAT-02 validation |
+
+### Creature-Specific Validation Rules
+
+Linter rule prefix: **`CREATURE-`** (following the pattern of OBJ-*, ROOM-*, MAT-*)
+
+#### Core Metadata Rules
+
+| Rule ID | Severity | Check | Message |
+|---------|----------|-------|---------|
+| **CREATURE-001** | Error | `animate` field exists and equals `true` | `animate` field must be present and true for all creatures |
+| **CREATURE-002** | Error | `behavior` table exists | Missing `behavior` table (required for creatures) |
+| **CREATURE-003** | Error | `behavior.drives` table exists and has length ≥ 1 | `behavior.drives` must have at least 1 drive |
+| **CREATURE-004** | Error | `behavior.states` exists and includes `"idle"` key | `behavior.states` must define `idle` state |
+| **CREATURE-005** | Error | `behavior.reactions` table exists and has length ≥ 1 | `behavior.reactions` must have at least 1 reaction |
+| **CREATURE-006** | Error | `initial_state` is a valid key in `behavior.states` | `initial_state` does not match any key in `behavior.states` |
+
+#### Drive Validation
+
+| Rule ID | Severity | Check | Message |
+|---------|----------|-------|---------|
+| **CREATURE-007** | Error | Each drive has `name`, `weight` (0–1), `decay_rate` (>0) | Drive `{name}` missing required fields or invalid ranges |
+| **CREATURE-008** | Error | `weight` values sum to ≤ 1.0 (or warn if > 1.0) | Total drive weights exceed 1.0 (will be normalized at runtime) |
+
+#### Reaction Validation
+
+| Rule ID | Severity | Check | Message |
+|---------|----------|-------|---------|
+| **CREATURE-009** | Error | Each reaction has `trigger`, `condition`, `action` fields | Reaction entry missing required fields: `trigger`, `condition`, or `action` |
+| **CREATURE-010** | Warning | Reaction `trigger` is a known stimulus type | Unknown stimulus trigger `{trigger}` (known types: `player_enter`, `player_attack`, `sound`, `light_change`, `smell`) |
+
+#### Physical Properties
+
+| Rule ID | Severity | Check | Message |
+|---------|----------|-------|---------|
+| **CREATURE-011** | Error | `size` is one of: `tiny`, `small`, `medium`, `large`, `huge` | `size` must be one of: tiny, small, medium, large, huge |
+| **CREATURE-012** | Error | `speed` is a positive number, typically 1–10 | `speed` must be a positive number (typical range: 1–10) |
+| **CREATURE-013** | Error | `senses` table exists with at least `sight_range` (number) | `senses` table missing or incomplete; must have `sight_range` field |
+
+#### Standard Object Rules (Inherited)
+
+| Rule ID | Severity | Check | Message |
+|---------|----------|-------|---------|
+| **CREATURE-014** | Error | All standard object fields apply (GUID format, keywords non-empty, etc.) | Standard object validation applies; see OBJ-01, OBJ-02, OBJ-03, etc. |
+| **CREATURE-015** | Error | `on_feel` string is non-empty (primary dark sense) | Creatures must define `on_feel` (reuse OBJ-02 validation) |
+| **CREATURE-016** | Error | `material` field exists and references a known material | Material validation applies (reuse MAT-02); creatures typically use `"flesh"` |
+
+#### FSM State Validation
+
+| Rule ID | Severity | Check | Message |
+|---------|----------|-------|---------|
+| **CREATURE-017** | Error | Each state in `behavior.states` is a table with valid FSM fields | State `{state}` must be a table (defines behavior for that state) |
+| **CREATURE-018** | Warning | Optional: state description or metadata exists | State `{state}` lacks description field (helpful for debugging) |
+
+### Cross-Reference Validation Rules
+
+When creatures reference external entities, validate their existence:
+
+| Rule ID | Severity | Check | Message |
+|---------|----------|-------|---------|
+| **CREATURE-019** | Error | If `room_spawn` list exists, each room GUID/ID must exist in `src/meta/world/` | Room `{room_id}` in `room_spawn` list not found |
+| **CREATURE-020** | Error | If `loot_table` exists, each item GUID must exist in `src/meta/objects/` | Loot item `{item_id}` not found in objects registry |
+
+### Auto-Detection and Categorization
+
+The linter should auto-detect creature files by:
+
+1. **Checking for `animate = true`:** Any object with `animate = true` triggers creature rule checks
+2. **Checking for `template = "creature"`:** Objects inheriting from the creature template trigger checks
+3. **Separating rule categories:** Creature rules (CREATURE-*) run in addition to standard object rules (OBJ-*, MAT-*) so that creatures are thoroughly validated
+
+**Rule precedence:** CREATURE-* checks run AFTER standard OBJ-* checks, so that basic object validity is confirmed before creature-specific validation.
+
+### Implementation Notes
+
+- The linter currently lives at `scripts/meta-check/check.py` (being renamed to `meta-lint` per #187)
+- Creature validation should integrate into the existing Lark-based Lua parser and table extraction pipeline
+- The `CREATURE-*` rule prefix extends the existing taxonomy (alongside OBJ-*, ROOM-*, MAT-*, XR-*)
+- Validation runs on all `.lua` files in `src/meta/objects/` and `src/meta/templates/`
+- Phase 1 implementation should update `check.py` to include CREATURE-001 through CREATURE-020 rules before the first creature definition is committed
+
+---
+
+## 12. Implementation Phases & Estimates
 
 ### Phase 1: The Rat (Foundation Sprint)
 
@@ -1004,7 +1110,7 @@ end
 
 ---
 
-## 12. Risk Assessment
+## 13. Risk Assessment
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|-----------|
@@ -1019,7 +1125,7 @@ end
 
 ---
 
-## 13. Open Questions
+## 14. Open Questions
 
 These questions should be resolved before or during Phase 1 implementation:
 
