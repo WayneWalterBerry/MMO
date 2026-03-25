@@ -1399,3 +1399,34 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - docs/meta-check/usage.md — Updated CLI reference
 
 **Test results:** 29/29 Phase 1 tests pass, 129/129 Lua tests pass, 0 regressions.
+
+
+### Meta-lint Full Audit Run (2026-03-25)
+
+**Full linter execution:** Ran python scripts/meta-lint/lint.py --format json --severity all across all 134 meta files.
+
+**Results:**
+- 182 rules in registry, 7 rules with findings, 175 clean
+- 0 errors, 152 warnings, 6 info
+- 143 of 152 warnings are XF-03 keyword collisions (known issue #190)
+
+**Issues filed:**
+- #245: INJ-32 — Non-terminal injury states missing on_look (2 info findings)
+- #246: INJ-33 — Bleeding/infected states missing on_smell (2 info findings)
+- #247: S-11 — Missing description field on trap-door (1 warning)
+- #248: XR-01 — Healing items not found in object files (6 warnings)
+- Updated #190 comment: XF-03 count dropped from 148 to 143
+
+**Pre-existing issues (not re-filed):**
+- #190: XF-03 keyword collisions (143 warnings)
+- #195: MD-19 melting/ignition point (2 warnings)
+- #196: XR-05 generic template material (2 info)
+
+## Learnings
+
+- The meta-lint system is stable — 134 files scanned with zero crashes or parse errors.
+- XF-03 keyword collisions dominate findings (143/158 = 90%). Addressing these is the single biggest quality lever.
+- Zero errors across the entire codebase — all structural/GUID/FSM/template rules pass clean. The object definitions are well-formed.
+- Injury definitions have minor sensory gaps (INJ-32, INJ-33) but are structurally sound.
+- 4 healing items referenced by injuries don't exist yet (XR-01) — these are Level 2+ content gaps, not bugs.
+- The Phase 1 linter improvements (rule registry, per-rule config, severity) are working correctly in production.

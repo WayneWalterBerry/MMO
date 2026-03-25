@@ -28,7 +28,8 @@ M.verbs = {
 
   -- Looking synonyms (look/examine are in index)
   gaze      = "look",
-  peer      = "look",     -- #174: "peer at X" → look
+  peer      = "examine",  -- #242: "peer at X" → examine (close inspection)
+  check     = "examine",  -- #242: "check X" → examine
   observe   = "examine",
   inspect   = "examine",  -- #174: confirmed
   view      = "examine",

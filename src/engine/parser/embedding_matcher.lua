@@ -16,6 +16,10 @@ if not bm25_ok then bm25_data = nil end
 local syn_ok, synonym_table = pcall(require, "engine.parser.synonym_table")
 if not syn_ok then synonym_table = nil end
 
+-- Context window for recency boost in phase3 mode
+local ctx_ok, context = pcall(require, "engine.parser.context")
+if not ctx_ok then context = nil end
+
 local matcher = {}
 matcher.__index = matcher
 
@@ -264,12 +268,14 @@ function matcher.new(index_path, debug)
 
   -- Build phrase dictionary (vectors are not used — slim index only)
   for i, entry in ipairs(index.phrases or {}) do
+    local noun_toks = entry.noun and tokenize(entry.noun) or {}
     self.phrases[#self.phrases + 1] = {
       id = i,
       text = entry.text,
       verb = entry.verb,
       noun = entry.noun,
       tokens = tokenize(entry.text),
+      noun_tokens = noun_toks,
     }
   end
 
@@ -361,6 +367,8 @@ function matcher:match(input_text)
   -- Score all candidates
   local best_score = -1
   local best_phrase = nil
+  local use_context = (self.scoring_mode == "phase3") and context and context.recency_score
+  local CONTEXT_BOOST_WEIGHT = 0.1
 
   for _, phrase in ipairs(phrase_pool) do
     local score
@@ -368,6 +376,14 @@ function matcher:match(input_text)
       score = bm25_score(input_tokens, phrase.tokens)
     else
       score = jaccard_with_bonus(input_tokens, phrase.tokens)
+    end
+
+    -- Phase 3: apply context recency boost to BM25 scores
+    if use_context and phrase.noun then
+      local recency = context.recency_score(phrase.noun)
+      if recency > 0 then
+        score = score + recency * CONTEXT_BOOST_WEIGHT
+      end
     end
 
     if score > best_score then

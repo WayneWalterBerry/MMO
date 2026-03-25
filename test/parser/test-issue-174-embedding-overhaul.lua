@@ -101,8 +101,8 @@ assert_resolves("get bronze ring",      "get",     "bronze-ring",   "bronze-ring
 -- =========================================================================
 -- SECTION 3: New Phrase Variants
 -- gimme X → get, hold X → get, lift X → get
--- peer at X → look, inspect X → examine
--- ignite X → light, use candle → ignite, check out X → look
+-- peer at X → examine, inspect X → examine
+-- ignite X → light, use candle → ignite, check out X → examine
 -- =========================================================================
 t.suite("Section 3: New phrase variants")
 
@@ -113,8 +113,8 @@ assert_resolves("hold matchbox",        "get",     "matchbox", "hold matchbox �
 assert_resolves("lift the pillow",      "get",     "pillow",   "lift X → get")
 assert_resolves("lift rug",             "get",     "rug",      "lift rug → get")
 
-assert_resolves("peer at nightstand",   "look",    "nightstand", "peer at X → look")
-assert_resolves("peer at the candle",   "look",    "candle",     "peer at candle → look")
+assert_resolves("peer at nightstand",   "examine", "nightstand", "peer at X → examine")
+assert_resolves("peer at the candle",   "examine", "candle",     "peer at candle → examine")
 assert_resolves("inspect the rug",      "examine", "rug",        "inspect X → examine")
 assert_resolves("inspect knife",        "examine", "knife",      "inspect knife → examine")
 
@@ -122,8 +122,8 @@ assert_resolves("ignite the match",     "ignite",  "match",    "ignite X → lig
 assert_resolves("ignite candle",        "ignite",  "candle",   "ignite candle → light/ignite")
 assert_resolves("use candle",           "ignite",  "candle",   "use candle → ignite")
 assert_resolves("use match",            "ignite",  "match",    "use match → ignite")
-assert_resolves("check out the wardrobe", "look",  "wardrobe", "check out X → look")
-assert_resolves("check out rug",        "look",    "rug",      "check out rug → look")
+assert_resolves("check out the wardrobe", "examine", "wardrobe", "check out X → examine")
+assert_resolves("check out rug",        "examine",    "rug",      "check out rug → examine")
 
 -- =========================================================================
 -- SECTION 4: State-Variant Tiebreaker
