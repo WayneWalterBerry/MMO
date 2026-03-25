@@ -1220,6 +1220,19 @@ local function perform_mutation(ctx, obj, mut_data)
             print("Error: " .. tostring(err))
             return false
         end
+        -- Sync hand slot references: mutation replaces the registry entry
+        -- but hand slots may still hold the old object table reference.
+        if ctx.player then
+            for i = 1, 2 do
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local hid = type(hand) == "table" and hand.id or hand
+                    if hid == obj.id then
+                        ctx.player.hands[i] = new_obj
+                    end
+                end
+            end
+        end
     elseif mut_data.spawns then
         -- Destruction: object ceases to exist, spawns replace it
         remove_from_location(ctx, obj)
