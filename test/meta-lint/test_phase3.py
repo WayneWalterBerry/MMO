@@ -186,7 +186,7 @@ class TestCacheModule(unittest.TestCase):
         self.assertEqual(len(result), 1)
 
     def test_invalid_cache_version_ignored(self):
-        test_dir = _project_root / "test" / "meta-check"
+        test_dir = _project_root / "test" / "meta-lint"
         cache_path = test_dir / ".test-cache-version.json"
         try:
             cache_path.write_text(json.dumps({"version": 999, "entries": {}}), encoding="utf-8")

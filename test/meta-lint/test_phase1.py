@@ -19,9 +19,9 @@ from pathlib import Path
 # Add the scripts directory so we can import sibling modules
 _test_dir = Path(__file__).resolve().parent
 _project_root = _test_dir.parent.parent
-_scripts_dir = _project_root / "scripts" / "meta-check"
+_scripts_dir = _project_root / "scripts" / "meta-lint"
 
-# Import modules via importlib (same approach as check.py)
+# Import modules via importlib (same approach as lint.py)
 import importlib.util as _ilu
 
 def _load_mod(name: str, path: Path):
@@ -188,7 +188,7 @@ class TestConfig(unittest.TestCase):
 
 
 # ===========================================================================
-# Integration Tests — Run check.py against synthetic files
+# Integration Tests — Run lint.py against synthetic files
 # ===========================================================================
 
 class TestCheckIntegration(unittest.TestCase):
@@ -213,9 +213,9 @@ class TestCheckIntegration(unittest.TestCase):
         return p
 
     def _run_check(self, target_path: str = "src/meta/", config_json: str = None):
-        """Run check.py and return (exit_code, violations_list)."""
+        """Run lint.py and return (exit_code, violations_list)."""
         import subprocess
-        cmd = [sys.executable, str(_scripts_dir / "check.py"),
+        cmd = [sys.executable, str(_scripts_dir / "lint.py"),
                str(self.root / target_path), "--format", "json"]
         if config_json:
             cfg_path = self.root / ".meta-check.json"
@@ -225,7 +225,7 @@ class TestCheckIntegration(unittest.TestCase):
         try:
             data = json.loads(result.stdout)
         except json.JSONDecodeError:
-            self.fail(f"check.py produced invalid JSON:\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}")
+            self.fail(f"lint.py produced invalid JSON:\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}")
         return data.get("exit_code", -1), data.get("violations", [])
 
     def test_xf03_category_keywords_filtered(self):
