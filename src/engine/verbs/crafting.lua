@@ -59,6 +59,8 @@ local time_of_day_desc = H.time_of_day_desc
 local get_light_level = H.get_light_level
 local has_some_light = H.has_some_light
 local vision_blocked_by_worn = H.vision_blocked_by_worn
+local add_article = H.add_article
+local add_article = H.add_article
 
 local M = {}
 
@@ -138,7 +140,7 @@ function M.register(handlers)
                     if tool and not tool._is_blood then tool = nil end
                 end
                 if not tool then
-                    print("You don't have " .. tool_word .. ".")
+                    print("You don't have " .. add_article(tool_word) .. ".")
                     return
                 end
             end
@@ -283,7 +285,7 @@ function M.register(handlers)
         if tool_word then
             tool = find_in_inventory(ctx, tool_word)
             if not tool then
-                print("You don't have " .. tool_word .. ".")
+                print("You don't have " .. add_article(tool_word) .. ".")
                 return
             end
             if not provides_capability(tool, recipe.requires_tool or "sewing_tool") then
@@ -492,7 +494,7 @@ function M.register(handlers)
                 print("You need to be holding that to put it somewhere.")
                 return
             end
-            print("You don't have " .. item_word .. ".")
+            print("You don't have " .. add_article(item_word) .. ".")
             return
         end
 

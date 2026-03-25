@@ -90,6 +90,21 @@ local function show_hint(ctx, hint_id, message)
 end
 
 ---------------------------------------------------------------------------
+-- Helper: add article ("a"/"an") to a noun if it lacks one
+---------------------------------------------------------------------------
+local function add_article(word)
+    if not word or word == "" then return word end
+    local lw = word:lower()
+    if lw:match("^a%s") or lw:match("^an%s") or lw:match("^the%s") then
+        return word
+    end
+    if lw:match("^[aeiou]") then
+        return "an " .. word
+    end
+    return "a " .. word
+end
+
+---------------------------------------------------------------------------
 -- Helper: keyword matching
 ---------------------------------------------------------------------------
 local function matches_keyword(obj, kw)
@@ -1479,7 +1494,7 @@ local function handle_self_infliction(ctx, noun, verb_name, profile_field)
     if tool_word then
         weapon = find_in_inventory(ctx, tool_word)
         if not weapon then
-            print("You don't have " .. tool_word .. ".")
+            print("You don't have " .. add_article(tool_word) .. ".")
             return true
         end
     else
@@ -1703,5 +1718,6 @@ H.time_of_day_desc = time_of_day_desc
 H.get_light_level = get_light_level
 H.has_some_light = has_some_light
 H.vision_blocked_by_worn = vision_blocked_by_worn
+H.add_article = add_article
 
 return H

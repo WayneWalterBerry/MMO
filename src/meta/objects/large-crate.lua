@@ -35,7 +35,7 @@ return {
     },
 
     prerequisites = {
-        open = { requires = {"prying_tool"}, auto_steps = {"take crowbar"} },
+        open = { requires = {"prying_tool"} },
     },
 
     initial_state = "sealed",
@@ -112,7 +112,7 @@ return {
             from = "sealed", to = "pried-open", verb = "pry",
             aliases = {"open"},
             requires_tool = "prying_tool",
-            message = "You jam the crowbar under the lid and heave. Nails shriek as they pull free, and the lid comes away in a shower of splinters and rust. Inside: a heavy sack nestled in straw packing.",
+            message = "You jam the pry bar under the lid and heave. Nails shriek as they pull free, and the lid comes away in a shower of splinters and rust. Inside: a heavy sack nestled in straw packing.",
             fail_message = "The lid is nailed shut. You'd need something to pry it open.",
             mutate = {
                 keywords = { add = "open" },
@@ -122,7 +122,7 @@ return {
             from = "pried-open", to = "broken", verb = "break",
             aliases = {"smash"},
             requires_tool = "prying_tool",
-            message = "You bring the crowbar down hard. The crate shatters into splintered planks and bent nails. The contents spill across the floor.",
+            message = "You bring the pry bar down hard. The crate shatters into splintered planks and bent nails. The contents spill across the floor.",
             mutate = {
                 weight = 5,
                 keywords = { add = "broken" },

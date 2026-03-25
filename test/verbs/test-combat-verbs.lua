@@ -263,12 +263,13 @@ end)
 
 suite("stab — world object (non-self target)")
 
-test("stab a non-self target says self-only", function()
+test("stab a non-self target gives contextual response", function()
     setup_injuries()
     local ctx = make_ctx({ knife_in_hand = true, verb = "stab", has_light = true })
     local output = capture_output(function() handlers["stab"](ctx, "table") end)
-    h.assert_truthy(output:find("only stab yourself") or output:find("stab self"),
-        "Should indicate stab is self-only")
+    -- #232: stab now allows world objects — should give a contextual response, not "self-only"
+    h.assert_truthy(output:find("stab") or output:find("don't") or output:find("accomplish"),
+        "Should give contextual stab response for world objects")
 end)
 
 suite("stab — body area targeting")
@@ -297,7 +298,9 @@ test("stab self with uncarried weapon prints not-have message", function()
     setup_injuries()
     local ctx = make_ctx({ verb = "stab" })
     local output = capture_output(function() handlers["stab"](ctx, "self with sword") end)
-    h.assert_truthy(output:find("don't have sword"), "Should say you don't have that weapon")
+    -- #231: error now includes article ("a sword" not "sword")
+    h.assert_truthy(output:find("don't have a sword") or output:find("don't have sword"),
+        "Should say you don't have that weapon")
 end)
 
 ---------------------------------------------------------------------------

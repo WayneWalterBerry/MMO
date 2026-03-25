@@ -59,6 +59,8 @@ local time_of_day_desc = H.time_of_day_desc
 local get_light_level = H.get_light_level
 local has_some_light = H.has_some_light
 local vision_blocked_by_worn = H.vision_blocked_by_worn
+local add_article = H.add_article
+local add_article = H.add_article
 
 local M = {}
 
@@ -422,7 +424,7 @@ function M.register(handlers)
         -- Find healing item in inventory (hands, worn, etc.)
         local obj = find_in_inventory(ctx, item_kw)
         if not obj then
-            print("You don't have " .. item_kw .. ".")
+            print("You don't have " .. add_article(item_kw) .. ".")
             return
         end
 

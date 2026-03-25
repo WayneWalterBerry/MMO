@@ -167,10 +167,8 @@ assert_match("taste knife", "taste", "knife", "taste->lick (alias)")
 assert_match("sample pencil", "taste", "pencil", "sample->taste/lick (synonym)")
 assert_match("nibble paper", "taste", "paper", "nibble->taste/lick (synonym)")
 assert_match("listen window", "listen", "window", "listen (or hear)")
--- NOTE: "hear curtains" in the index is tagged noun=curtains-open (index data bug).
--- The short phrase "hear curtains" should map to base curtains, not curtains-open.
--- Filed as a known issue — accept curtains-open for now.
-assert_match("hear curtains", "hear", "curtains-open", "hear curtains (index maps to -open)")
+-- #239: Fixed "hear curtains" index entry — now correctly maps to base curtains.
+assert_match("hear curtains", "hear", "curtains", "hear curtains (fixed #239)")
 
 -- Destruction
 assert_match("break candle", "break", "candle", "break (canonical)")
