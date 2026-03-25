@@ -244,6 +244,38 @@
 
 ## Learnings
 
+### 2026-07-28: Deep Cellar Chain Puzzle Design (Issue #126)
+**Status:** ✅ DESIGN COMPLETE
+
+**Deliverable:** `docs/levels/01/puzzles/deep-cellar-chain-puzzle.md` — Puzzle 017: The Chain Mechanism (~35 KB)
+
+**What was done:**
+- Designed the chain puzzle for the Deep Cellar room (Issue #126)
+- Chain pulls a counterweight that reveals a hidden stone alcove in the west wall
+- Alcove contains ceremonial incense sticks (×3) and beeswax altar candles (×2)
+- Solves both "chain puzzle undefined" AND "incense/candles missing" from Issue #126
+- Chain puzzle serves as gateway to Puzzle 012 (Altar Ritual) — provides fresh incense
+- Designed two silver-key paths: ritual (chain → incense → altar) vs brute force (crowbar → sarcophagus)
+- Defined 3 new object types: incense-stick, altar-candle, stone-alcove with full specs
+- Beeswax as new material type (vs existing tallow) — higher quality, cleaner burn
+- Entire puzzle solvable in total darkness via FEEL/LISTEN/SMELL
+- Documented incense/candle placement, inventory allocation decisions, room modifications
+
+**Key Design Decisions:**
+- **Old ash is SPENT:** Incense burner's ash residue is atmospheric, not functional fuel. Fresh incense required from alcove.
+- **Beeswax > tallow:** Altar candles are upgrade from tallow — brighter, sweeter, longer burn. Sensory storytelling.
+- **Two paths to silver key:** Ritual path (knowledge gate) vs sarcophagus path (tool gate). Both valid.
+- **Alcove reveal via room-level on_state_change:** Chain doesn't "know" about alcove; room links them. Principle 8 compliant.
+
+**Affects:**
+- Bob (Puzzle): Puzzle 012 gains new prerequisite — chain provides incense
+- Flanders (Objects): 3 new object types needed with full specs
+- Moe (Rooms): deep-cellar.lua needs alcove instance + on_state_change listener + on_feel update
+- Bart (Engine): Room-level state-change triggers may need engine support
+- Nelson (QA): Chain puzzle tests + integration test (chain → incense → ritual → key)
+
+**Decision filed:** `.squad/decisions/inbox/cbg-deep-cellar-puzzle.md`
+
 ### 2026-07-27: Door/Portal/Exit Architecture — Game Design Analysis
 **Status:** ✅ ANALYSIS COMPLETE
 
