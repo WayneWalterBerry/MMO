@@ -335,6 +335,87 @@
         });
     }
 
+    // --- IndexedDB helpers for SLM vector caching ---
+    function openSLMDB() {
+        return new Promise(function (resolve, reject) {
+            var request = indexedDB.open('mmo-slm', 1);
+            request.onupgradeneeded = function (e) {
+                e.target.result.createObjectStore('vectors');
+            };
+            request.onsuccess = function (e) { resolve(e.target.result); };
+            request.onerror = function (e) { reject(e.target.error); };
+        });
+    }
+
+    function getFromIndexedDB(key) {
+        return openSLMDB().then(function (db) {
+            return new Promise(function (resolve) {
+                var tx = db.transaction('vectors', 'readonly');
+                var req = tx.objectStore('vectors').get(key);
+                req.onsuccess = function () { resolve(req.result || null); };
+                req.onerror = function () { resolve(null); };
+            });
+        }).catch(function () { return null; });
+    }
+
+    function storeInIndexedDB(key, value) {
+        return openSLMDB().then(function (db) {
+            return new Promise(function (resolve) {
+                var tx = db.transaction('vectors', 'readwrite');
+                tx.objectStore('vectors').put(value, key);
+                tx.oncomplete = function () { resolve(); };
+                tx.onerror = function () { resolve(); };
+            });
+        }).catch(function () {});
+    }
+
+    // --- SLM Vector Lazy-Load (runs after game boots) ---
+    async function loadSLMVectors() {
+        if (window._debugMode) {
+            showStatus('SLM vectors: loading...');
+        }
+
+        try {
+            var cacheKey = 'slm-v-' + CACHE_BUST;
+            var cached = await getFromIndexedDB(cacheKey);
+            if (cached) {
+                window._slmVectors = cached;
+                if (window._debugMode) {
+                    showStatus('SLM vectors: cached (IndexedDB, ' + (cached.count || 0) + ' entries)');
+                }
+                return;
+            }
+
+            var response = await fetch('embedding-vectors.json.gz?v=' + CACHE_BUST);
+            if (!response.ok) {
+                if (window._debugMode) {
+                    showStatus('SLM vectors: not available (HTTP ' + response.status + ')');
+                }
+                return;
+            }
+
+            var compressed = await response.arrayBuffer();
+            if (window._debugMode) {
+                showStatus('SLM vectors: decompressing (' + formatSize(compressed.byteLength) + ')...');
+            }
+
+            var jsonText = await decompress(compressed);
+            var data = JSON.parse(jsonText);
+            window._slmVectors = data;
+
+            await storeInIndexedDB(cacheKey, data);
+
+            if (window._debugMode) {
+                showStatus('SLM vectors: loaded (' + (data.count || 0) + ' entries, ' + formatSize(compressed.byteLength) + ' compressed)');
+            }
+        } catch (err) {
+            if (window._debugMode) {
+                showStatus('SLM vectors: error — ' + err.message);
+            }
+            console.error('SLM lazy-load error:', err);
+        }
+    }
+
     // --- Decompression ---
     async function decompress(compressedBuffer) {
         if (typeof DecompressionStream !== 'undefined') {
@@ -459,6 +540,9 @@
                 showStatus('Loading Game Adapter... (' + formatSize(adapterSource.length) + ')');
             }
             executeLua(L, adapterSource, 'game-adapter');
+
+            // Lazy-load SLM vectors in the background (non-blocking)
+            loadSLMVectors();
 
         } catch (err) {
             showError('Failed to load game: ' + err.message);
