@@ -1400,33 +1400,33 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 
 **Test results:** 29/29 Phase 1 tests pass, 129/129 Lua tests pass, 0 regressions.
 
+### Session: Linter Phase 2 — GUID Cross-Ref & EXIT Validation (2026-07-29)
+**Status:** ✅ COMPLETE
+**Branch:** squad/linter-phase2
 
-### Meta-lint Full Audit Run (2026-03-25)
+**What was built:**
 
-**Full linter execution:** Ran python scripts/meta-lint/lint.py --format json --severity all across all 134 meta files.
+1. **GUID-01 (error)** — Room instance type_id must resolve to a known object GUID. Recursively walks the full instances tree (on_top, contents, nested, underneath). Normalizes both braced and bare GUID formats. This is the "27 fabricated GUIDs" rule Wayne requested via issue #241.
 
-**Results:**
-- 182 rules in registry, 7 rules with findings, 175 clean
-- 0 errors, 152 warnings, 6 info
-- 143 of 152 warnings are XF-03 keyword collisions (known issue #190)
+2. **GUID-02 (warning)** — Orphan object detection. Fires when rooms exist but an object's GUID isn't referenced by any room instance. Found 21 orphan objects on first run (mutation targets, healing items, traps not yet placed).
 
-**Issues filed:**
-- #245: INJ-32 — Non-terminal injury states missing on_look (2 info findings)
-- #246: INJ-33 — Bleeding/infected states missing on_smell (2 info findings)
-- #247: S-11 — Missing description field on trap-door (1 warning)
-- #248: XR-01 — Healing items not found in object files (6 warnings)
-- Updated #190 comment: XF-03 count dropped from 148 to 143
+3. **GUID-03 (error)** — Duplicate instance id within same room. Catches copy-paste errors in room instance arrays.
 
-**Pre-existing issues (not re-filed):**
-- #190: XF-03 keyword collisions (143 warnings)
-- #195: MD-19 melting/ignition point (2 warnings)
-- #196: XR-05 generic template material (2 info)
+4. **EXIT-01 (error)** — Exit target must reference a valid room file. Found 4 exits pointing to non-existent rooms (level-2, manor-kitchen, manor-west, manor-east — future content).
 
-## Learnings
+5. **EXIT-02 (warning)** — Bidirectional exit consistency. Warns when room A exits to B but B has no return exit to A.
 
-- The meta-lint system is stable — 134 files scanned with zero crashes or parse errors.
-- XF-03 keyword collisions dominate findings (143/158 = 90%). Addressing these is the single biggest quality lever.
-- Zero errors across the entire codebase — all structural/GUID/FSM/template rules pass clean. The object definitions are well-formed.
-- Injury definitions have minor sensory gaps (INJ-32, INJ-33) but are structurally sound.
-- 4 healing items referenced by injuries don't exist yet (XR-01) — these are Level 2+ content gaps, not bugs.
-- The Phase 1 linter improvements (rule registry, per-rule config, severity) are working correctly in production.
+**Bug fix:** `_detect_kind()` only matched `src/meta/world/` for rooms, but the actual directory is `src/meta/rooms/`. Added the `rooms/` pattern. This was a silent bug — rooms were classified as "unknown" and skipped room-specific validation (RM-01, SN-01 for rooms, and all cross-ref checks that depend on room_ids).
+
+**Architecture decisions:**
+- GUID normalization strips `{}` from both sides (object GUIDs are braced, room type_ids are usually bare but sometimes braced)
+- GUID-02 fires only when rooms exist in the scan — prevents false positives when linting objects-only
+- EXIT-02 only checks bidirectional consistency for rooms that ARE in the scan (doesn't flag exits to rooms outside the level)
+
+**Key files:**
+- scripts/meta-lint/rule_registry.py — 5 new rules (GUID-01/02/03, EXIT-01/02)
+- scripts/meta-lint/lint.py — ~120 lines of validation logic, _detect_kind fix
+- test/meta-check/test_phase2.py — 20 tests (6 registry, 14 integration)
+
+**Test results:** 20/20 Phase 2 tests pass, Lua test suite unaffected.
+

@@ -25,7 +25,6 @@ _project_root = _test_dir.parent.parent
 _scripts_dir = _project_root / "scripts" / "meta-lint"
 _lint_script = _scripts_dir / "lint.py"
 
-# Import rule_registry for unit tests
 import importlib.util as _ilu
 
 def _load_mod(name: str, path: Path):
@@ -39,7 +38,7 @@ rule_registry = _load_mod("rule_registry_p2", _scripts_dir / "rule_registry.py")
 
 
 # ===========================================================================
-# Rule Registry Tests — Phase 2 rules registered
+# Rule Registry Tests
 # ===========================================================================
 
 class TestPhase2RuleRegistry(unittest.TestCase):
@@ -81,11 +80,10 @@ class TestPhase2RuleRegistry(unittest.TestCase):
 
 
 # ===========================================================================
-# Integration Tests — Run lint.py against synthetic files
+# Integration Tests
 # ===========================================================================
 
 class TestPhase2Integration(unittest.TestCase):
-    """Integration tests for GUID cross-ref and EXIT validation."""
 
     def setUp(self):
         self._tmpdir = tempfile.mkdtemp(prefix="meta-lint-p2-",
@@ -104,7 +102,6 @@ class TestPhase2Integration(unittest.TestCase):
         return p
 
     def _run_lint(self, target_path: str = "src/meta/", config_json: str = None):
-        """Run lint.py and return (exit_code, violations_list)."""
         cmd = [sys.executable, str(_lint_script),
                str(self.root / target_path), "--format", "json"]
         if config_json:
@@ -119,7 +116,6 @@ class TestPhase2Integration(unittest.TestCase):
         return data.get("exit_code", -1), data.get("violations", [])
 
     def _setup_base_files(self):
-        """Create minimal template + material files required by most tests."""
         self._write("src/meta/materials/wood.lua",
             'return { name = "wood", density = 0.6, hardness = 4, flexibility = 0.3, '
             'absorbency = 0.4, opacity = 1, flammability = 0.7, conductivity = 0.1, '
@@ -130,10 +126,10 @@ class TestPhase2Integration(unittest.TestCase):
             'weight = 1, portable = true, material = "wood", container = false, '
             'capacity = 0, contents = {} }')
 
-    # -- GUID-01: type_id must resolve to known object GUID --
+    # -- GUID-01 --
 
     def test_guid01_valid_type_id(self):
-        """No GUID-01 error when type_id matches an object GUID."""
+        """No GUID-01 when type_id matches an object GUID."""
         self._setup_base_files()
         self._write("src/meta/objects/candle.lua",
             'return { guid = "{aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee}", '
@@ -149,7 +145,6 @@ class TestPhase2Integration(unittest.TestCase):
             '{ id = "candle", type = "Candle", '
             'type_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" } '
             '}, exits = {} }')
-
         _, violations = self._run_lint()
         guid01 = [v for v in violations if v["rule_id"] == "GUID-01"]
         self.assertEqual(len(guid01), 0, "Valid type_id should not trigger GUID-01")
@@ -171,14 +166,13 @@ class TestPhase2Integration(unittest.TestCase):
             '{ id = "candle", type = "Candle", '
             'type_id = "ffffffff-ffff-ffff-ffff-ffffffffffff" } '
             '}, exits = {} }')
-
         _, violations = self._run_lint()
         guid01 = [v for v in violations if v["rule_id"] == "GUID-01"]
         self.assertGreater(len(guid01), 0, "Fabricated type_id should trigger GUID-01")
         self.assertIn("ffffffff", guid01[0]["message"])
 
     def test_guid01_braced_type_id_matches(self):
-        """GUID-01 should normalize braced type_id to match braced object GUID."""
+        """GUID-01 normalizes braced type_id to match braced object GUID."""
         self._setup_base_files()
         self._write("src/meta/objects/candle.lua",
             'return { guid = "{aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee}", '
@@ -194,17 +188,16 @@ class TestPhase2Integration(unittest.TestCase):
             '{ id = "candle", type = "Candle", '
             'type_id = "{aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee}" } '
             '}, exits = {} }')
-
         _, violations = self._run_lint()
         guid01 = [v for v in violations if v["rule_id"] == "GUID-01"]
-        self.assertEqual(len(guid01), 0, "Braced type_id matching braced GUID should not trigger GUID-01")
+        self.assertEqual(len(guid01), 0)
 
     def test_guid01_nested_instances(self):
-        """GUID-01 should validate type_ids in nested relationships."""
+        """GUID-01 validates type_ids in nested relationships."""
         self._setup_base_files()
-        self._write("src/meta/objects/table.lua",
+        self._write("src/meta/objects/table-obj.lua",
             'return { guid = "{aaaaaaaa-0000-0000-0000-000000000001}", '
-            'id = "table", template = "small-item", name = "a table", '
+            'id = "table-obj", template = "small-item", name = "a table", '
             'keywords = {"table"}, description = "A table.", '
             'on_feel = "Solid.", material = "wood" }')
         self._write("src/meta/objects/candle.lua",
@@ -218,20 +211,19 @@ class TestPhase2Integration(unittest.TestCase):
             'keywords = {"bedroom"}, description = "A room.", '
             'on_feel = "Cold stone.", '
             'instances = { '
-            '{ id = "table", type = "Table", '
+            '{ id = "table-obj", type = "Table", '
             'type_id = "aaaaaaaa-0000-0000-0000-000000000001", '
             'on_top = { '
             '{ id = "candle", type = "Candle", '
             'type_id = "ffffffff-0000-0000-0000-ffffffffffff" } '
             '} } '
             '}, exits = {} }')
-
         _, violations = self._run_lint()
         guid01 = [v for v in violations if v["rule_id"] == "GUID-01"]
-        self.assertEqual(len(guid01), 1, "Nested fabricated type_id should trigger GUID-01")
+        self.assertEqual(len(guid01), 1)
         self.assertIn("candle", guid01[0]["message"])
 
-    # -- GUID-02: Orphan objects --
+    # -- GUID-02 --
 
     def test_guid02_orphan_object(self):
         """GUID-02 warning for objects not referenced by any room."""
@@ -245,17 +237,15 @@ class TestPhase2Integration(unittest.TestCase):
             'return { guid = "11111111-2222-3333-4444-555555555555", '
             'template = "room", id = "bedroom", name = "Bedroom", '
             'keywords = {"bedroom"}, description = "A room.", '
-            'on_feel = "Cold stone.", '
-            'instances = {}, exits = {} }')
-
+            'on_feel = "Cold stone.", instances = {}, exits = {} }')
         _, violations = self._run_lint()
         guid02 = [v for v in violations if v["rule_id"] == "GUID-02"]
-        self.assertGreater(len(guid02), 0, "Unreferenced object should trigger GUID-02")
+        self.assertGreater(len(guid02), 0)
         msgs = " ".join(v["message"] for v in guid02)
         self.assertIn("candle", msgs)
 
     def test_guid02_referenced_not_orphan(self):
-        """GUID-02 should NOT fire for objects referenced by a room."""
+        """GUID-02 should NOT fire for referenced objects."""
         self._setup_base_files()
         self._write("src/meta/objects/candle.lua",
             'return { guid = "{aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee}", '
@@ -271,12 +261,11 @@ class TestPhase2Integration(unittest.TestCase):
             '{ id = "candle", type = "Candle", '
             'type_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" } '
             '}, exits = {} }')
-
         _, violations = self._run_lint()
         guid02 = [v for v in violations if v["rule_id"] == "GUID-02"]
-        self.assertEqual(len(guid02), 0, "Referenced object should not trigger GUID-02")
+        self.assertEqual(len(guid02), 0)
 
-    # -- GUID-03: Duplicate instance ids --
+    # -- GUID-03 --
 
     def test_guid03_duplicate_instance_id(self):
         """GUID-03 error for duplicate instance ids in same room."""
@@ -297,10 +286,9 @@ class TestPhase2Integration(unittest.TestCase):
             '{ id = "candle", type = "Candle", '
             'type_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" } '
             '}, exits = {} }')
-
         _, violations = self._run_lint()
         guid03 = [v for v in violations if v["rule_id"] == "GUID-03"]
-        self.assertGreater(len(guid03), 0, "Duplicate instance id should trigger GUID-03")
+        self.assertGreater(len(guid03), 0)
 
     def test_guid03_unique_ids_ok(self):
         """GUID-03 should NOT fire when instance ids are unique."""
@@ -326,12 +314,11 @@ class TestPhase2Integration(unittest.TestCase):
             '{ id = "torch", type = "Torch", '
             'type_id = "bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee" } '
             '}, exits = {} }')
-
         _, violations = self._run_lint()
         guid03 = [v for v in violations if v["rule_id"] == "GUID-03"]
-        self.assertEqual(len(guid03), 0, "Unique instance ids should not trigger GUID-03")
+        self.assertEqual(len(guid03), 0)
 
-    # -- EXIT-01: Exit target must reference valid room --
+    # -- EXIT-01 --
 
     def test_exit01_valid_target(self):
         """No EXIT-01 when exit targets a valid room."""
@@ -348,10 +335,9 @@ class TestPhase2Integration(unittest.TestCase):
             'keywords = {"hallway"}, description = "A hall.", '
             'on_feel = "Cold stone.", instances = {}, '
             'exits = { south = { target = "bedroom" } } }')
-
         _, violations = self._run_lint()
         exit01 = [v for v in violations if v["rule_id"] == "EXIT-01"]
-        self.assertEqual(len(exit01), 0, "Valid exit target should not trigger EXIT-01")
+        self.assertEqual(len(exit01), 0)
 
     def test_exit01_invalid_target(self):
         """EXIT-01 error when exit targets a non-existent room."""
@@ -362,13 +348,12 @@ class TestPhase2Integration(unittest.TestCase):
             'keywords = {"bedroom"}, description = "A room.", '
             'on_feel = "Cold stone.", instances = {}, '
             'exits = { north = { target = "nonexistent" } } }')
-
         _, violations = self._run_lint()
         exit01 = [v for v in violations if v["rule_id"] == "EXIT-01"]
-        self.assertGreater(len(exit01), 0, "Non-existent target should trigger EXIT-01")
+        self.assertGreater(len(exit01), 0)
         self.assertIn("nonexistent", exit01[0]["message"])
 
-    # -- EXIT-02: Bidirectional exit consistency --
+    # -- EXIT-02 --
 
     def test_exit02_bidirectional_ok(self):
         """No EXIT-02 when exits are bidirectional."""
@@ -385,13 +370,12 @@ class TestPhase2Integration(unittest.TestCase):
             'keywords = {"hallway"}, description = "A hall.", '
             'on_feel = "Cold stone.", instances = {}, '
             'exits = { south = { target = "bedroom" } } }')
-
         _, violations = self._run_lint()
         exit02 = [v for v in violations if v["rule_id"] == "EXIT-02"]
-        self.assertEqual(len(exit02), 0, "Bidirectional exits should not trigger EXIT-02")
+        self.assertEqual(len(exit02), 0)
 
     def test_exit02_one_way_exit(self):
-        """EXIT-02 warning when room A exits to B but B has no exit back to A."""
+        """EXIT-02 warning when room A exits to B but B has no exit back."""
         self._setup_base_files()
         self._write("src/meta/rooms/bedroom.lua",
             'return { guid = "11111111-2222-3333-4444-555555555555", '
@@ -403,15 +387,13 @@ class TestPhase2Integration(unittest.TestCase):
             'return { guid = "22222222-2222-3333-4444-555555555555", '
             'template = "room", id = "hallway", name = "Hallway", '
             'keywords = {"hallway"}, description = "A hall.", '
-            'on_feel = "Cold stone.", instances = {}, '
-            'exits = {} }')
-
+            'on_feel = "Cold stone.", instances = {}, exits = {} }')
         _, violations = self._run_lint()
         exit02 = [v for v in violations if v["rule_id"] == "EXIT-02"]
-        self.assertGreater(len(exit02), 0, "One-way exit should trigger EXIT-02")
+        self.assertGreater(len(exit02), 0)
         self.assertIn("hallway", exit02[0]["message"])
 
-    # -- _detect_kind: rooms/ directory recognition --
+    # -- rooms/ directory detection --
 
     def test_detect_kind_rooms_directory(self):
         """Files in src/meta/rooms/ should be detected as room kind."""
@@ -421,10 +403,7 @@ class TestPhase2Integration(unittest.TestCase):
             'template = "room", id = "bedroom", name = "Bedroom", '
             'keywords = {"bedroom"}, description = "A room.", '
             'on_feel = "Cold stone.", instances = {}, exits = {} }')
-
         _, violations = self._run_lint()
-        # Room files should get RM-01 checks (if description missing), not be "unknown"
-        # The absence of S-09 (keywords table check for objects) confirms it's treated as a room
         s09 = [v for v in violations if v["rule_id"] == "S-09"
                and "bedroom" in v.get("file", "")]
         self.assertEqual(len(s09), 0, "Room file should not get S-09 object validation")
@@ -444,11 +423,10 @@ class TestPhase2Integration(unittest.TestCase):
             'template = "room", id = "bedroom", name = "Bedroom", '
             'keywords = {"bedroom"}, description = "A room.", '
             'on_feel = "Cold stone.", instances = {}, exits = {} }')
-
         config = '{"rules": {"GUID-02": {"enabled": false}}}'
         _, violations = self._run_lint(config_json=config)
         guid02 = [v for v in violations if v["rule_id"] == "GUID-02"]
-        self.assertEqual(len(guid02), 0, "Disabled GUID-02 should not fire")
+        self.assertEqual(len(guid02), 0)
 
 
 if __name__ == "__main__":
