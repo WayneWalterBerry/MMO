@@ -172,7 +172,8 @@ function M.register(handlers)
             return
         end
 
-        -- Bug #53: Guard against duplicate take — if already in player's hands, skip
+        -- Bug #53 + #180: Guard against duplicate take — if already in player's
+        -- hands OR worn list, block the take.
         if obj.location == "player" then
             for i = 1, 2 do
                 if ctx.player.hands[i] then
@@ -181,6 +182,12 @@ function M.register(handlers)
                         print("You already have that.")
                         return
                     end
+                end
+            end
+            for _, worn_id in ipairs(ctx.player.worn or {}) do
+                if worn_id == obj.id then
+                    print("You're wearing that. You'll need to remove it first.")
+                    return
                 end
             end
         end

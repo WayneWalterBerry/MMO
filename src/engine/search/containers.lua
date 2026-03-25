@@ -103,8 +103,10 @@ function containers.open(ctx, object)
     if fsm_ok and fsm_mod and object._state and ctx.registry then
         local trans, err = fsm_mod.transition(ctx.registry, object.id, "open", nil, "open")
         if not trans and object.states and object.states.open then
-            -- Manual state transition
+            -- Manual state transition (no matching FSM transition found)
+            fsm_mod.stop_timer(object.id)
             object._state = "open"
+            fsm_mod.start_timer(ctx.registry, object.id)
         end
     end
     

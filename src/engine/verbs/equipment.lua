@@ -326,7 +326,18 @@ function M.register(handlers)
         end
 
         -- Equip: move from hand to worn list
-        ctx.player.hands[hand_slot] = nil
+        -- Bug #180: Defensive sweep — clear ALL hand slots holding this item,
+        -- not just the slot we found it in. Prevents stale references from
+        -- leaving the item in both hand and worn after edge-case dispatches.
+        for i = 1, 2 do
+            local hand = ctx.player.hands[i]
+            if hand then
+                local hid = type(hand) == "table" and hand.id or hand
+                if hid == obj.id then
+                    ctx.player.hands[i] = nil
+                end
+            end
+        end
         ctx.player.worn = ctx.player.worn or {}
         ctx.player.worn[#ctx.player.worn + 1] = obj.id
         obj.location = "player"

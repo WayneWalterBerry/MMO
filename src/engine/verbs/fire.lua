@@ -88,8 +88,11 @@ function M.register(handlers)
 
     -- #169: Auto-ignite an object to a target state (force transition for fire-making).
     -- Used when a match is auto-struck to serve as a fire source.
+    -- #178: Must use FSM timer system so timed_events (e.g. burn-out) fire correctly.
     local function auto_ignite(ctx, obj, target_state_name)
         local old_state = obj._state
+        -- Stop any existing timer for the old state
+        fsm_mod.stop_timer(obj.id)
         if old_state and obj.states[old_state] then
             for k in pairs(obj.states[old_state]) do
                 if k ~= "on_tick" and k ~= "terminal" then
@@ -106,6 +109,8 @@ function M.register(handlers)
             end
         end
         obj._state = target_state_name
+        -- Start timer for the new state (e.g. match lit→spent burn-out)
+        fsm_mod.start_timer(ctx.registry, obj.id)
     end
 
     -- #169: find fire source — explicit tool_noun, then hand scan, then inventory.
