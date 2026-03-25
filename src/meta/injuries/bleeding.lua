@@ -71,6 +71,7 @@ return {
             description = "The untreated wound festers. You feel feverish.",
             on_feel = "Hot, swollen. The skin around the wound is inflamed.",
             on_look = "The wound is red and swollen, oozing pus.",
+            on_smell = "A sour, rotten smell rises from the wound. Infection.",
 
             damage_per_tick = 10,
 
@@ -90,6 +91,8 @@ return {
             name = "septic wound",
             description = "Sepsis. Your vision blurs. You can barely stand.",
             on_feel = "Burning fever. The wound is black at the edges.",
+            on_look = "The wound is blackening at the edges. Dark streaks crawl up the veins beneath translucent, fevered skin.",
+            on_smell = "The sickly-sweet stench of sepsis. Rotting flesh beneath the bandage.",
 
             damage_per_tick = 20,
 

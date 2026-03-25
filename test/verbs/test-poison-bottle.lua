@@ -520,8 +520,8 @@ test("healed state is terminal", function()
 end)
 
 test("only nightshade antidote cures it", function()
-    h.assert_truthy(nightshade_injury_def.healing_interactions["antidote-nightshade"],
-        "Should accept antidote-nightshade")
+    h.assert_truthy(nightshade_injury_def.healing_interactions["nightshade-antidote"],
+        "Should accept nightshade-antidote")
     local cure_count = 0
     for _ in pairs(nightshade_injury_def.healing_interactions) do
         cure_count = cure_count + 1
