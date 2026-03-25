@@ -51,6 +51,7 @@ local spawn_objects = H.spawn_objects
 local perform_mutation = H.perform_mutation
 local inventory_weight = H.inventory_weight
 local move_spatial_object = H.move_spatial_object
+local try_fsm_verb = H.try_fsm_verb
 
 local get_game_time = H.get_game_time
 local is_daytime = H.is_daytime
@@ -491,8 +492,19 @@ function M.register(handlers)
         local target = noun:gsub("%s+aside$", ""):gsub("%s+away$", ""):gsub("%s+over$", "")
 
         local obj = find_visible(ctx, target)
+
+        -- Registry fallback for objects not in standard search paths (traps, etc.)
+        if not obj and ctx.registry and ctx.registry.find_by_keyword then
+            obj = ctx.registry:find_by_keyword(target)
+        end
+
         if not obj then
             err_not_found(ctx)
+            return
+        end
+
+        -- Check for FSM transitions first (traps, mechanisms, etc.)
+        if try_fsm_verb(ctx, obj, "push") then
             return
         end
 

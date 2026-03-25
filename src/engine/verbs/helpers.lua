@@ -1551,6 +1551,57 @@ local function handle_self_infliction(ctx, noun, verb_name, profile_field)
     return true
 end
 
+---------------------------------------------------------------------------
+-- try_fsm_verb: Execute an FSM transition on an object for a given verb.
+-- Returns true if a matching transition was found and executed.
+-- Processes pipeline_effects (injuries, narration, mutations) through
+-- the effects pipeline, including unconsciousness triggers.
+-- NOTE: Does NOT mutate obj._state directly — FSM state management is
+-- handled by the game loop via fsm_mod.transition in live play.
+-- This function only evaluates the transition and routes its effects.
+---------------------------------------------------------------------------
+local function try_fsm_verb(ctx, obj, verb)
+    if not obj or not obj.states or not obj.transitions then return false end
+
+    local matched = nil
+    for _, t in ipairs(obj.transitions) do
+        if t.from == (obj._state or obj.initial_state) and t.trigger ~= "auto" then
+            if t.verb == verb then
+                matched = t
+                break
+            end
+            if t.aliases then
+                for _, a in ipairs(t.aliases) do
+                    if a == verb then matched = t; break end
+                end
+                if matched then break end
+            end
+        end
+    end
+
+    if not matched then return false end
+
+    -- Print transition message
+    if matched.message and matched.message ~= "" then
+        print(matched.message)
+    end
+
+    -- Process effects through the pipeline (injuries, unconsciousness, etc.)
+    local fx = matched.pipeline_effects or matched.effect
+    if fx and ctx.player then
+        effects.process(fx, {
+            player = ctx.player,
+            source = obj,
+            source_id = obj.id,
+            registry = ctx.registry,
+            time_offset = ctx.time_offset or 0,
+        })
+    end
+
+    return true
+end
+
+H.try_fsm_verb = try_fsm_verb
 H.fsm_mod = fsm_mod
 H.presentation = presentation
 H.preprocess = preprocess

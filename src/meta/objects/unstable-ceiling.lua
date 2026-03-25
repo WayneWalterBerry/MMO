@@ -15,7 +15,7 @@ return {
 
     id = "unstable-ceiling",
     material = "wood",
-    keywords = {"ceiling", "cracks", "sagging ceiling", "unstable ceiling", "cracked ceiling", "timber", "plaster", "beams", "joists"},
+    keywords = {"ceiling", "cracks", "sagging ceiling", "unstable ceiling", "cracked ceiling", "timber", "plaster", "beam", "beams", "joists"},
     size = 10,
     weight = 500,
     categories = {"hazard", "dangerous", "environmental", "structural"},

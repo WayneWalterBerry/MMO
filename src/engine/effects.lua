@@ -159,6 +159,23 @@ effects.register("inflict_injury", function(effect, ctx)
         print(effect.message)
     end
 
+    -- Trigger unconsciousness if the effect declares it
+    if effect.causes_unconsciousness and ctx.player and instance then
+        local severity = effect.severity or "moderate"
+        local conc_def = injury_mod.load_definition("concussion")
+        local duration = conc_def and conc_def.unconscious_duration
+                         and conc_def.unconscious_duration[severity]
+        if not duration then
+            duration = effect.unconscious_duration
+                       and effect.unconscious_duration.min or 5
+        end
+        ctx.player.consciousness = ctx.player.consciousness or {}
+        ctx.player.consciousness.state = "unconscious"
+        ctx.player.consciousness.wake_timer = duration
+        ctx.player.consciousness.cause = effect.source or ctx.source_id or "unknown"
+        ctx.player.consciousness.unconscious_since = ctx.time_offset or 0
+    end
+
     -- Check for instant death after injury infliction
     if instance and ctx.player then
         local health = injury_mod.compute_health(ctx.player)
