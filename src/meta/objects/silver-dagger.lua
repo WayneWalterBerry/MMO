@@ -12,7 +12,7 @@ return {
 
     id = "silver-dagger",
     material = "silver",
-    keywords = {"dagger", "silver dagger", "knife", "blade", "weapon", "ceremonial dagger"},
+    keywords = {"dagger", "silver dagger", "weapon", "ceremonial dagger"},
     size = 2,
     weight = 0.5,
     categories = {"weapon", "tool", "metal", "treasure", "sharp"},

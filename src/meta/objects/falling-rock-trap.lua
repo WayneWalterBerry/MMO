@@ -15,7 +15,7 @@ return {
 
     id = "falling-rock-trap",
     material = "stone",
-    keywords = {"rock trap", "trap", "falling rock", "rock", "tripwire", "wire", "boulder", "rope"},
+    keywords = {"rock trap", "falling rock", "tripwire", "wire", "boulder"},
     size = 8,
     weight = 200,
     categories = {"trap", "dangerous", "hazard", "stone", "mechanism"},

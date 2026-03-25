@@ -1,7 +1,6 @@
 return {
     name = "wax",
     density = 900,
-    melting_point = 60,
     ignition_point = 230,
     hardness = 2,
     flexibility = 0.8,

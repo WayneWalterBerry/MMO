@@ -3,7 +3,7 @@ return {
     template = "furniture",
     id = "barrel",
     name = "an old barrel",
-    keywords = {"barrel", "cask", "keg"},
+    keywords = {"barrel", "old barrel", "keg"},
     description = "A stout wooden barrel banded with rusted iron hoops. The staves are dark with age and damp, and the top is sealed shut. Whatever it once held, it has been here a very long time.",
     room_presence = "An old barrel sits against the wall, its iron hoops flaking with rust.",
 

@@ -4,7 +4,6 @@ return {
     id = "trap-door",
     name = "a trap door",
     keywords = {"trap door", "trapdoor", "hatch", "door in floor", "floor door"},
-    description = "A heavy wooden trap door set flush with the flagstones, nearly invisible beneath the rug. An iron ring serves as a handle.",
 
     hidden = true,
     size = 6,

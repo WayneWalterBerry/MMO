@@ -8,7 +8,7 @@ return {
 
     id = "vanity",
     material = "oak",
-    keywords = {"vanity", "dressing table", "desk", "table", "oak vanity"},
+    keywords = {"vanity", "dressing table", "desk", "oak vanity"},
     size = 8,
     weight = 40,
     categories = {"furniture", "wooden", "reflective"},

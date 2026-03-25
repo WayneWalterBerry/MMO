@@ -9,7 +9,7 @@ return {
 
     id = "bedroom-door",
     material = "oak",
-    keywords = {"door", "oak door", "heavy door", "bedroom door", "barred door",
+    keywords = {"door", "heavy door", "bedroom door", "barred door",
                 "north door", "heavy oak door", "iron bands"},
     size = 6,
     weight = 120,

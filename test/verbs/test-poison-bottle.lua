@@ -167,7 +167,7 @@ end)
 
 test("has bottle in keywords", function()
     local bottle = fresh_poison_bottle()
-    h.assert_truthy(array_contains(bottle.keywords, "bottle"), "Keywords should include 'bottle'")
+    h.assert_truthy(array_contains(bottle.keywords, "poison bottle"), "Keywords should include 'poison bottle'")
     h.assert_truthy(array_contains(bottle.keywords, "poison"), "Keywords should include 'poison'")
 end)
 

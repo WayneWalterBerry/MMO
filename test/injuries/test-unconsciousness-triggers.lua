@@ -286,16 +286,16 @@ test("'breathe gas' triggers unconsciousness via poison-gas-vent", function()
         "player must be unconscious after 'breathe gas'")
 end)
 
-test("'trigger trap' triggers unconsciousness via falling-rock-trap", function()
+test("'trigger rock trap' triggers unconsciousness via falling-rock-trap", function()
     h.assert_truthy(rock_trap_ok and verbs_ok, "rock trap + verbs must load")
     local handlers = verbs_mod.create()
     local ctx = make_ctx({
         registry_data = { ["falling-rock-trap"] = rock_trap_def },
     })
 
-    capture_print(function() handlers["trigger"](ctx, "trap") end)
+    capture_print(function() handlers["trigger"](ctx, "rock trap") end)
     h.assert_eq("unconscious", ctx.player.consciousness.state,
-        "player must be unconscious after 'trigger trap'")
+        "player must be unconscious after 'trigger rock trap'")
 end)
 
 test("'step on plate' triggers unconsciousness via falling-club-trap", function()

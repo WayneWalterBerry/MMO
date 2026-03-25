@@ -5,7 +5,7 @@ return {
     template = "furniture",
     id = "window",
     material = "glass",
-    keywords = {"window", "glass", "pane", "leaded glass"},
+    keywords = {"window", "glass window", "pane", "leaded glass"},
     room_presence = "A tall leaded glass window is set deep in the stone of the far wall.",
 
     linked_exit = "window",

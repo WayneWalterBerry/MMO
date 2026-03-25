@@ -6,7 +6,7 @@ return {
 
     id = "grain-sack",
     material = "burlap",
-    keywords = {"sack", "grain sack", "grain", "burlap sack", "bag", "feed sack", "heavy sack"},
+    keywords = {"grain sack", "grain", "feed sack", "heavy sack"},
     size = 3,
     weight = 15,
     categories = {"container", "fabric"},
