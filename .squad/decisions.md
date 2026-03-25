@@ -781,7 +781,7 @@ This is NOT about adding an LLM to the parser — it's about building smarter NL
 - Logical divides between responsibilities
 - Impact on LLM context windows when editing individual files
 - Test coverage opportunities for extracted functions
-- Refactoring timing relative to meta-check tool development
+- Refactoring timing relative to meta-lint tool development
 
 **Related Decision:** D-ENGINE-REFACTORING-REVIEW (Bart's analysis, below)
 
@@ -791,15 +791,15 @@ This is NOT about adding an LLM to the parser — it's about building smarter NL
 **Author:** Wayne Berry (via Copilot)  
 **Status:** Approved  
 
-**Directive:** meta-check must be BOTH a semantic analyzer (compiler front-end: parse, tokenize, validate structure/references/FSM) AND a linter (style conventions, naming patterns, field ordering, documentation requirements). Not just "is this valid Lua" — also "does it follow our conventions?"
+**Directive:** meta-lint must be BOTH a semantic analyzer (compiler front-end: parse, tokenize, validate structure/references/FSM) AND a linter (style conventions, naming patterns, field ordering, documentation requirements). Not just "is this valid Lua" — also "does it follow our conventions?"
 
 **Rationale:** LLMs writing objects need correctness checks AND style enforcement. Lisa uses it as a quality gate.
 
 **Implementation Notes (resolved):**
-- **Name:** meta-check ✅
+- **Name:** meta-lint ✅
 - **Language:** Python + Lark ✅
-- **Location:** scripts/meta-check/ ✅
-- **Refactor vs meta-check:** Can run in parallel (independent) ✅
+- **Location:** scripts/meta-lint/ ✅
+- **Refactor vs meta-lint:** Can run in parallel (independent) ✅
 - **Deploy first:** Yes — before Phase 2 work ✅
 
 ---
@@ -840,7 +840,7 @@ This is NOT about adding an LLM to the parser — it's about building smarter NL
 
 5. **`loop/init.lua` (585 lines): KEEP as-is** — safety barrier ordering is critical, size reflects genuine complexity.
 
-6. **Sequencing: Refactor BEFORE meta-compiler (original plan)** — BUT reversed based on feedback: **meta-check ships independently**, refactoring verified via TDD afterward. No timing impact — both P0 items complete in parallel.
+6. **Sequencing: Refactor BEFORE meta-compiler (original plan)** — BUT reversed based on feedback: **meta-lint ships independently**, refactoring verified via TDD afterward. No timing impact — both P0 items complete in parallel.
 
 7. **Utility deduplication prerequisite:** `strip_articles()`, `kw_match()`/`matches_keyword()`, and hand accessors are duplicated across 3+ files. Centralize before any split (30-minute task, zero behavioral risk).
 
@@ -857,14 +857,14 @@ This is NOT about adding an LLM to the parser — it's about building smarter NL
 **Author:** Wayne Berry (via Copilot)  
 **Status:** New — Captured for March 25 plan  
 
-**Directive:** meta-check must expand beyond objects + rooms to cover ALL meta types:
+**Directive:** meta-lint must expand beyond objects + rooms to cover ALL meta types:
 - Levels (level-01.lua, level-02.lua, etc.)
 - Injuries (types and configurations)
 - Templates (templates/ base definitions)
 
 **Rationale:** User request to broaden validation scope for complete object system coverage.
 
-**Impact:** Expands meta-check roadmap. Will be included in V2+ expansion (rules 20-144+).
+**Impact:** Expands meta-lint roadmap. Will be included in V2+ expansion (rules 20-144+).
 
 ---
 
@@ -874,7 +874,7 @@ This is NOT about adding an LLM to the parser — it's about building smarter NL
 **Status:** Approved for use  
 **Affects:** Smithers (parser/tools), Nelson (QA), Flanders (object design)
 
-**Decision:** meta-check V1 is APPROVED for use — it correctly validates 19 checks with zero false positives. Covers only 13% of acceptance criteria (19/144), but sufficient for current object set.
+**Decision:** meta-lint V1 is APPROVED for use — it correctly validates 19 checks with zero false positives. Covers only 13% of acceptance criteria (19/144), but sufficient for current object set.
 
 **Validation Results:**
 - 103 object files tested
@@ -888,9 +888,9 @@ This is NOT about adding an LLM to the parser — it's about building smarter NL
 3. Priority checks to expand next: Template-specific (SI/CT/FU/SH), FSM completeness (FSM-02/03/05-08), room instance/exit checks (RI/EX)
 
 **Impact:**
-- ✅ Nelson can start using meta-check in CI for 19 implemented checks
+- ✅ Nelson can start using meta-lint in CI for 19 implemented checks
 - ⏳ Flanders should be aware template-specific validation is NOT yet enforced
-- ⏳ Tool will not catch missing size/weight on small-items, missing capacity on containers, or broken room references until those checks ship (meta-check V2, ~3-5 hours)
+- ⏳ Tool will not catch missing size/weight on small-items, missing capacity on containers, or broken room references until those checks ship (meta-lint V2, ~3-5 hours)
 
 **Confidence:** MODERATE — V1 correct but incomplete. Full 144-rule coverage queued for Phase 2.
 
@@ -2540,9 +2540,9 @@ The 172 tests I wrote cover the highest-traffic verb handlers. For the remaining
 
 ## Decision
 
-**Use Python + Lark (Earley parser) to parse Lua object files for the meta-check tool.**
+**Use Python + Lark (Earley parser) to parse Lua object files for the meta-lint tool.**
 
-The prototype at `scripts/meta-check/lua_grammar.py` successfully parses all 83 objects in `src/meta/objects/` with zero failures.
+The prototype at `scripts/meta-lint/lua_grammar.py` successfully parses all 83 objects in `src/meta/objects/` with zero failures.
 
 ## Architecture
 
@@ -2563,8 +2563,8 @@ Three-phase pipeline:
 
 ## Implications
 
-- **For meta-check:** Parse → extract fields → validate against schema. Functions and ident_refs are "pass-through" — can't be validated statically.
-- **For wall-clock pattern:** Consider whether programmatic objects should be refactored to inline data, or whether meta-check should accept `ident_ref` as "runtime-validated only."
+- **For meta-lint:** Parse → extract fields → validate against schema. Functions and ident_refs are "pass-through" — can't be validated statically.
+- **For wall-clock pattern:** Consider whether programmatic objects should be refactored to inline data, or whether meta-lint should accept `ident_ref` as "runtime-validated only."
 - **For future:** Grammar is extensible. Room files follow the same pattern and should parse with the same grammar.
 
 ## Affected Team Members
@@ -2607,7 +2607,7 @@ Split `src/engine/verbs/init.lua` (5,884 lines) into helper + 10 verb modules us
 **Date:** 2026-03-24  
 **Status:** Implemented  
 
-Built `scripts/meta-check/check.py` as a Python CLI validator based on Bart's proven Lark grammar to enforce core object integrity and cross-file consistency.
+Built `scripts/meta-lint/lint.py` as a Python CLI validator based on Bart's proven Lark grammar to enforce core object integrity and cross-file consistency.
 
 - Parses meta `.lua` files with Lark grammar from `lua_grammar.py`
 - Enforces required fields: `guid`, `template`, `id`, `name`, `keywords`, `on_feel`
@@ -3127,7 +3127,7 @@ Mirror on vanity is separate instance object (hand mirror base class) placed `on
 **Status:** Ready for Implementation  
 **Affects:** Smithers (implementation), Flanders (injury/material authors), Moe (level authors)
 
-Authored `docs/meta-check/acceptance-criteria-v2.md` — ~160 new validation rules covering 4 meta types that V1 skipped:
+Authored `docs/meta-lint/acceptance-criteria-v2.md` — ~160 new validation rules covering 4 meta types that V1 skipped:
 
 | Meta Type | Rules | Files Covered |
 |-----------|-------|---------------|

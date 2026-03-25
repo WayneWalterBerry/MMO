@@ -55,12 +55,12 @@
    - **Integration:** Perfect for CI/CD, pre-commit hooks
    - **Estimate:** 750 lines for MVP; 8-12 hours build time
 
-4. **Tool Name: meta-check** (`naming-and-architecture.md`)
+4. **Tool Name: meta-lint** (`naming-and-architecture.md`)
    - Full name: "MMO Meta Validator"
-   - Short name: "meta-check" (clear, memorable, domain-specific)
+   - Short name: "meta-lint" (clear, memorable, domain-specific)
    - Architecture: Layered CLI tool (lexer → parser → validators → error reporter)
    - Integration: Pre-commit hook, GitHub Actions, IDE extension (optional), manual CLI
-   - CLI: `meta-check src/meta/` outputs JSON or human-readable errors
+   - CLI: `meta-lint src/meta/` outputs JSON or human-readable errors
 
 5. **Schema Catalog Complete** (`schema-catalog.md`)
    - 5 templates: small-item, container, furniture, room, sheet
@@ -198,13 +198,13 @@ File → Lexer (tokens) → Parser (AST) → Semantic Analyzer
 1. **Bug Catalog:** `resources/research/meta-compiler/bug-catalog.md` (13.4 KB)
    - **38 total bugs** cataloged across 26 commits
    - **Classification:** 7 categories (missing metadata, invalid references, missing structural properties, missing base classes, keyword collisions, semantic logic errors, architectural violations)
-   - **Top 5 bug types** prioritized for meta-check implementation:
+   - **Top 5 bug types** prioritized for meta-lint implementation:
      1. Missing metadata fields (20 bugs) — materials, display names
      2. Invalid references (10 bugs) — GUID mismatches, missing templates
      3. Missing structural properties (3 bugs) — FSM surfaces, container definitions
      4. Missing base class files (4 bugs) — referenced objects not created
      5. Keyword collisions (1 bug) — fuzzy matcher disambiguation failures
-   - **Scope:** meta-check module estimate: 850 LOC, 110 ms execution time
+   - **Scope:** meta-lint module estimate: 850 LOC, 110 ms execution time
    - **Key finding:** All critical bugs fixed in history; system now clean
 
 2. **Cross-Reference Inventory:** `resources/research/meta-compiler/cross-reference-inventory.md` (14.5 KB)
@@ -247,6 +247,19 @@ File → Lexer (tokens) → Parser (AST) → Semantic Analyzer
 
 ## Learnings
 
+### RAG & Parser Research — Paper Cataloging (2026-07-24)
+
+- **78KB M365 Deep Research output** yielded 27+ cited academic papers and technical sources — only 5 are directly implementable under our constraints (pure Lua, no runtime neural inference, ~4.6K phrase index)
+- **BM25 is the #1 low-risk improvement** — Robertson & Zaragoza (2009) provides the exact scoring formula; pure arithmetic implementable in Lua with precomputed IDF weights; estimated 5–15% accuracy gain over Jaccard
+- **Soft cosine measure (Sidorov 2014) is the #2 highest-impact technique** — uses a precomputed word similarity matrix to give partial credit for synonyms; requires GTE-tiny word-pair cosine computed offline (~200 words → ~40K pairs → ~160KB matrix)
+- **WordNet synonym expansion (Lu et al. 2015) is proven in constrained domains** — 5% precision + 8% recall gains in code search; directly analogous to our ~48 verbs × ~74 objects domain; POS filtering is critical to avoid nonsense expansions
+- **SPLADE v2 validates our core thesis** — sparse lexical methods enhanced with offline semantic knowledge are competitive with dense neural retrieval; our planned BM25 + soft matching + synonym expansion follows the same pattern
+- **16 of 27 papers are SKIP** — mostly neural-runtime methods (DistilBERT, semantic hashing, DPR) or performance optimizations for scales we don't need (LSH, MinHash, feature hashing at ~4.6K phrases)
+- **Production AI assistants (Copilot, Cursor) use hybrid retrieval** (keyword + semantic) with heuristic ranking — validates our multi-tier cascade architecture and proposed BM25 + soft-cosine dual approach
+- **GraphRAG's hierarchical retrieval concept** maps to verb-first filtering: narrow 4,579 phrases to ~100 per verb category, then match — reduces search space 45× while improving precision
+- **Knowledge distillation (Hinton 2015) provides theoretical backing** for our word similarity matrix approach: we're "distilling" GTE-tiny's knowledge into a lookup table
+- **13 paper summaries + INDEX.md** created in `resources/research/architecture/papers/` — each includes full citation, abstract, key findings, relevance to MMO, and access URLs
+
 ### Meta-Compiler Architecture (2026-03-24)
 
 - **Compiler techniques proven effective** for game data validation — Dwarf Fortress, Factorio, Unity all use similar pipeline (lex → parse → analyze → report)
@@ -254,7 +267,7 @@ File → Lexer (tokens) → Parser (AST) → Semantic Analyzer
 - **Bug clustering reveals priorities:** Most common bugs cluster into 5 categories; implementing checks for top 3 (metadata, references, structures) prevents ~70% of historical issues
 - **GUID mismatches were systematic, not random** — systematic audit required to fix all 30 at once; implies need for automated GUID assignment rather than manual copy-paste
 - **Keyword collision density (13.5%) is noise-level** — generic terms ("door", "key") naturally appear 3+ times; only material-based fuzzy collisions are player-facing issues
-- **Room exit "broken" references are intentional planning artifacts** — 5 unresolved exits (level-2, manor-west, manor-east, manor-kitchen) are future expansion points, not errors; meta-check should mark as PENDING, not ERROR
+- **Room exit "broken" references are intentional planning artifacts** — 5 unresolved exits (level-2, manor-west, manor-east, manor-kitchen) are future expansion points, not errors; meta-lint should mark as PENDING, not ERROR
 - **Material property system is foundational** — all 83 objects depend on material registry; material field is non-negotiable dependency for any container/fragility system
 - **Template over-concentration in small-item (44.6%)** suggests opportunity to create sub-template taxonomy (consumables, treasures, tools) post-MVP
 - **FSM state consistency is highest-risk structural pattern** — BUG-048/109 show that FSM states must maintain identical surface property structure across all variants; incomplete states silently break containment logic
@@ -710,3 +723,140 @@ Research validated Bart's mutation analysis findings and informed the D-MUTATE-P
 - Jaccard full scan: 8.1ms (borderline, will need optimization as index grows)
 - Runtime encoding is the CRITICAL blocker: GTE-tiny can't run in Lua or Fengari; ONNX Runtime Web adds 17-70MB + JS deps
 - **Recommendation: Keep Jaccard**, strip vectors from index (15.3MB → ~200KB), add more phrase variants, fix state-variant tiebreaker bias
+
+
+### Parser Improvement Plan (2026-03-25 04:19:51)
+**Status:** ✅ COMPLETE
+**Deliverable:** `plans/parser-improvement-plan.md` (42KB)
+**Requested by:** Wayne Berry (Effe)
+
+**Task:** Deep analysis comparing RAG research findings against actual parser implementation, then create concrete improvement plan.
+
+**Research Materials Analyzed:**
+- M365 RAG research (78KB) — hybrid retrieval, soft matching, context packing
+- 5 academic papers:
+  - Robertson & Zaragoza 2009 (BM25 scoring formula)
+  - Sidorov et al. 2014 (soft cosine measure)
+  - Lu et al. 2015 (WordNet synonym expansion)
+  - Khattab & Zaharia 2020 (ColBERT late interaction)
+  - Lewis et al. 2020 (RAG architecture)
+- Issue #176 embedding vector research (D-KEEP-JACCARD decision)
+
+**Parser Code Audited:**
+- `src/engine/parser/embedding_matcher.lua` (Tier 2 Jaccard matcher, 68% accuracy)
+- `src/engine/parser/init.lua` (5-tier pipeline orchestration)
+- `src/engine/parser/preprocess.lua` (7-stage normalization)
+- `src/engine/parser/context.lua` (recency tracking)
+- `src/engine/parser/fuzzy.lua` (material/typo resolution)
+- `src/engine/parser/idioms.lua` (89 idiom patterns)
+- `src/engine/parser/questions.lua` (74 question transforms)
+- `src/assets/parser/embedding-index.json` (4,579 phrases)
+
+**Key Findings:**
+
+1. **Current Bottleneck: Tier 2 Jaccard Matcher**
+   - Uses unweighted token overlap (all words equal importance)
+   - "grab" and "take" have zero similarity (no synonym awareness)
+   - Treats "please take the candle now" same as "take candle" (no IDF weighting)
+   - 0.40 threshold may be miscalibrated
+   - 68% overall parser accuracy (Tier 2 adds ~20% beyond Tier 1)
+
+2. **Research-Reality Gap Analysis:**
+   - **BM25 scoring:** Research shows 10-20% improvement over Jaccard on short text. We use unweighted Jaccard → estimated +5-7% gain.
+   - **Soft cosine:** Sidorov et al. prove word similarity matrix captures synonyms without runtime inference. We treat all non-identical words as dissimilar → estimated +3-5% gain.
+   - **Synonym expansion:** Lu et al. achieved +5% precision, +8% recall via POS-filtered WordNet. We have zero synonym variants in phrase index → estimated +3-5% gain.
+   - **ColBERT MaxSim:** Per-token best-match aggregation. We use set-based Jaccard only → estimated +2-3% gain.
+   - **Hybrid retrieval:** Two-stage (BM25 candidates → soft re-rank) proven in production RAG systems. We do flat scan → 0% accuracy gain, but 10x speed gain.
+
+3. **Constraint Validation:**
+   - ✅ All proposed techniques work in pure Lua (no runtime neural inference)
+   - ✅ Fengari-compatible (lightweight algorithms, <20ms latency)
+   - ✅ Principle 8 compliant (object-agnostic matching logic)
+   - ✅ D-KEEP-JACCARD honored (no runtime GTE-tiny encoding)
+   - ✅ Small memory footprint (<2 MB index + data structures)
+
+**Improvement Plan Delivered:**
+
+**Three-Phase Roadmap (68% → 80%+ accuracy):**
+
+| Phase | Techniques | Effort | Gain | Target |
+|-------|-----------|--------|------|--------|
+| **Phase 1: Quick Wins** | BM25 scoring, synonym expansion, threshold tuning | 1 week | +7% | **75%** |
+| **Phase 2: Soft Matching** | Word similarity matrix, soft cosine re-ranker, MaxSim | 1 week | +5% | **80%** |
+| **Phase 3: Advanced** | Context-aware ranking, inverted index, adaptive weighting | 2 weeks | +5% | **85%** |
+
+**Phase 1 Details (Priority: Immediate):**
+
+1. **BM25 Scoring** (2-3 days, +5-7%)
+   - Build-time: Compute IDF for ~200 vocabulary tokens (Python script)
+   - Runtime: Replace `jaccard_with_bonus()` with BM25 scorer (TF-IDF weighted)
+   - Formula: `score = Σ IDF(term) * [TF * (k1+1)] / [TF + k1*(1-b+b*len/avglen)]`
+   - Parameters: k1=1.2, b=0.5 (tuned for short text)
+   - Handles verbose input: "please take the candle now" scores high (weights "take"/"candle", ignores fillers)
+
+2. **Synonym Expansion** (1-2 days, +3-5%)
+   - Build-time: Curate POS-filtered synonym table (48 verbs, ~150 nouns)
+   - Expand phrase index: 4,579 → ~23K phrases (5 synonyms avg per term)
+   - Example: "take candle" → also indexed as "grab candle", "get candle", "seize candle"
+   - Prevents synonym misses: "grab lamp" now matches "get lamp" variant
+
+3. **Threshold Tuning** (1 hour, +1-2%)
+   - Empirical calibration on 60-test benchmark
+   - Current: 0.40 (Jaccard scale). BM25 scale: likely 2.0-3.0
+   - Maximize F1 score (precision/recall balance)
+
+**Phase 2 Details (Priority: High):**
+
+4. **Word Similarity Matrix** (3-5 days, +3-5%)
+   - Build-time: Compute pairwise cosine similarity from GTE-tiny embeddings (Issue #176)
+   - Store sparse matrix: S_ij > 0.3 (~500-1000 pairs, 80KB Lua table)
+   - Runtime: `get_similarity("grab", "take") = 0.95`
+   - Enables soft cosine scoring (Sidorov et al. 2014)
+
+5. **Soft Cosine Re-Ranker** (2-3 days)
+   - Stage 1: BM25 retrieval (top 50 candidates)
+   - Stage 2: Soft cosine re-rank using word similarity matrix
+   - Hybrid score: 0.7*BM25 + 0.3*soft_cosine (tunable weights)
+   - Handles synonym variants without neural inference
+
+6. **MaxSim Alternative** (A/B test vs. soft cosine)
+   - ColBERT-inspired: For each input token, find max similarity with any phrase token
+   - Simpler than soft cosine (no normalization needed)
+   - Choose winner after empirical evaluation
+
+**Phase 3 Details (Priority: Medium):**
+
+7. **Context-Aware Ranking** (recency boost for recent interactions)
+8. **Inverted Index** (10x speedup: 4,579 phrases → ~200 candidates)
+9. **Adaptive Weighting** (BM25F: weight verb tokens 2x noun tokens)
+
+**Decision Points for Wayne:**
+
+- **D1:** Hybrid scoring weight ratio (70% BM25, 30% soft cosine?)
+- **D2:** Synonym expansion scope (2-3 or 5 synonyms per term?)
+- **D3:** Soft cosine vs. MaxSim (both A/B test, or pick one?)
+- **D4:** Phase 3 priority (stop at 80% or push to 85%?)
+- **D5:** Inverted index timing (Phase 2 or wait for profile data?)
+
+**Implementation Estimate:**
+- **Code:** +1,430 LOC (new modules), ~30 LOC modified
+- **Effort:** 40-60 hours coding + 20-30 hours testing = 2-3 weeks
+- **Risk:** Low (all techniques proven in research, pure Lua compatible)
+
+**Testing Strategy:**
+- Expand regression suite: 60 → 120 test cases
+- A/B testing: Jaccard → BM25 → BM25+synonyms → BM25+soft cosine
+- Performance profiling: Fengari latency <20ms, memory <25MB
+
+**Success Metrics:**
+- Phase 1: 75% accuracy (45/60 test cases)
+- Phase 2: 80% accuracy (48/60 test cases)
+- Phase 3: 85% accuracy (51/60 test cases)
+
+**Next Steps:**
+1. Wayne reviews plan, decides on D1-D5
+2. Bart or Smithers implements Phase 1 (BM25 + synonyms)
+3. Nelson validates via test suite
+4. Team decides Phase 2 go/no-go based on Phase 1 results
+
+**Deliverable Location:** `plans/parser-improvement-plan.md` (42KB, ready for implementation)

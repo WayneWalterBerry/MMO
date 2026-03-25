@@ -6,7 +6,7 @@
 .DESCRIPTION
     Auto-discovers ALL subdirectories under src/meta/.
     - Objects: renamed by their GUID field -> meta/objects/{guid}.lua
-    - Rooms (world/): copied as-is -> meta/rooms/{filename}
+    - Rooms (rooms/): copied as-is -> meta/rooms/{filename}
     - All other dirs: copied as-is -> meta/{dirname}/{filename}
 
     Adding new meta categories (injuries, materials, etc.) requires zero
@@ -46,8 +46,8 @@ if (Test-Path $MetaOut) {
 # Auto-discover ALL subdirectories under src/meta (no hardcoded list)
 $srcDirs = Get-ChildItem -Path $MetaRoot -Directory | Select-Object -ExpandProperty Name
 
-# Map source dir names to output dir names (world/ -> rooms/)
-$dirMap = @{ "world" = "rooms" }
+# No dir name mapping needed — source and output names match
+$dirMap = @{}
 
 # Create output directories
 $outputDirs = $srcDirs | ForEach-Object { if ($dirMap[$_]) { $dirMap[$_] } else { $_ } } | Sort-Object -Unique
@@ -77,7 +77,7 @@ if (Test-Path $objectDir) {
     }
 }
 
-# --- All other directories: copy as-is (world/ -> rooms/, rest keep name) ---
+# --- All other directories: copy as-is ---
 $specialDirs = @("objects")
 foreach ($srcName in $srcDirs) {
     if ($specialDirs -contains $srcName) { continue }

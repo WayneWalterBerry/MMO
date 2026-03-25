@@ -8,8 +8,10 @@ local embedding_matcher = require("engine.parser.embedding_matcher")
 local parser = {}
 
 -- Minimum score to accept a Tier 2 match.
--- Below this threshold, the command fails with diagnostic output.
-parser.THRESHOLD = 0.40
+-- Jaccard scores are 0-1 ratios; BM25 scores are IDF-weighted sums.
+parser.THRESHOLD_JACCARD = 0.40
+parser.THRESHOLD_BM25 = 3.00
+parser.THRESHOLD_HYBRID = 0.20  -- MaxSim, soft cosine, phase3 (normalized 0-1 scores)
 
 ---------------------------------------------------------------------------
 -- init(assets_root) -> parser instance with matcher loaded
@@ -18,9 +20,19 @@ parser.THRESHOLD = 0.40
 function parser.init(assets_root, debug)
   local SEP = package.config:sub(1, 1)
   local index_path = assets_root .. SEP .. "parser" .. SEP .. "embedding-index.json"
+  local m = embedding_matcher.new(index_path, debug)
+  local scoring_mode = m.scoring_mode or "jaccard"
+  local threshold
+  if scoring_mode == "bm25" then
+    threshold = parser.THRESHOLD_BM25
+  elseif scoring_mode == "maxsim" or scoring_mode == "softcosine" or scoring_mode == "phase3" then
+    threshold = parser.THRESHOLD_HYBRID
+  else
+    threshold = parser.THRESHOLD_JACCARD
+  end
   local instance = {
-    matcher = embedding_matcher.new(index_path, debug),
-    threshold = parser.THRESHOLD,
+    matcher = m,
+    threshold = threshold,
     diagnostic = debug or false,
   }
   return instance

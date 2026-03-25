@@ -4,7 +4,8 @@
 -- Architecture (see docs/architecture/web/jit-loader.md):
 --   1. Engine modules loaded via package.preload (from engine.lua.gz bundle)
 --   2. Asset files accessed via _G.__VFS (embedded in engine bundle)
---   3. Meta files (rooms, objects, templates, levels) fetched on demand via XHR
+--   3. Meta files (rooms, objects, templates, levels, materials, injuries)
+--      fetched on demand via XHR
 --   4. Coroutine-based game loop — io.read() yields, JS resumes with player input
 --
 -- JIT loading: rooms and their objects are fetched the first time the player
@@ -47,7 +48,7 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-24 10:49"
+local BUILD_TIMESTAMP = "2026-03-25 07:22"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -242,6 +243,25 @@ table.insert(package.searchers, 2, function(modname)
     return "\n\tno VFS file 'src/" .. path .. ".lua'"
 end)
 
+---------------------------------------------------------------------------
+-- Package searcher: resolve require("meta.X.Y") via HTTP JIT fetch
+-- Enables dynamic loading of injuries, materials, etc. in the browser
+---------------------------------------------------------------------------
+table.insert(package.searchers, 3, function(modname)
+    local meta_type, name = modname:match("^meta%.([^.]+)%.(.+)$")
+    if not meta_type then
+        return "\n\tno meta match for '" .. modname .. "'"
+    end
+    local url = "meta/" .. meta_type .. "/" .. name .. ".lua"
+    local src = fetch_text(url)
+    if src then
+        local fn, err = load(src, "@" .. modname)
+        if fn then return fn end
+        return "\n\tMeta load error: " .. tostring(err)
+    end
+    return "\n\tno meta file '" .. url .. "'"
+end)
+
 -- Stub the terminal UI module (the browser IS our UI)
 -- status() is wired to update the DOM status bar; is_enabled() stays false
 -- so the engine loop doesn't try to use TUI-specific input()/output()
@@ -311,6 +331,34 @@ local ok, err = pcall(function()
             end
         end
     end
+
+    -------------------------------------------------------------------
+    -- Load materials (fetch index, populate engine.materials registry)
+    -- Materials use io.popen+dofile on CLI — in the browser we fetch
+    -- via HTTP and inject into the registry directly.
+    -------------------------------------------------------------------
+    log_debug("Loading Materials...")
+    local materials_mod = require("engine.materials")
+    local index_src = fetch_text("meta/_index.lua")
+    local mat_count = 0
+    if index_src then
+        local index = loader.load_source(index_src)
+        if index and index.materials then
+            for _, name in ipairs(index.materials) do
+                local mat_src = fetch_text("meta/materials/" .. name .. ".lua")
+                if mat_src then
+                    local mat = loader.load_source(mat_src)
+                    if mat and mat.name then
+                        local mname = mat.name
+                        mat.name = nil
+                        materials_mod.registry[mname] = mat
+                        mat_count = mat_count + 1
+                    end
+                end
+            end
+        end
+    end
+    log_debug("  Loaded " .. mat_count .. " materials")
 
     -------------------------------------------------------------------
     -- JIT loader: fetch and load a single object by GUID
@@ -457,6 +505,8 @@ local ok, err = pcall(function()
             rooms     = "meta/rooms/"     .. id .. ".lua",
             levels    = "meta/levels/"    .. id .. ".lua",
             templates = "meta/templates/" .. id .. ".lua",
+            materials = "meta/materials/" .. id .. ".lua",
+            injuries  = "meta/injuries/"  .. id .. ".lua",
         }
         local url = url_map[meta_type]
         if not url then return nil, false, "unknown type: " .. tostring(meta_type) end
@@ -470,6 +520,8 @@ local ok, err = pcall(function()
             rooms     = "meta/rooms/"     .. id .. ".lua",
             levels    = "meta/levels/"    .. id .. ".lua",
             templates = "meta/templates/" .. id .. ".lua",
+            materials = "meta/materials/" .. id .. ".lua",
+            injuries  = "meta/injuries/"  .. id .. ".lua",
         }
         local url = url_map[meta_type]
         if url then cache_invalidate(url) end
@@ -495,6 +547,33 @@ local ok, err = pcall(function()
     local level = level_source and loader.load_source(level_source)
 
     local start_room_id = (level and level.start_room) or "start-room"
+
+    -- ?room= URL override (set by bootstrapper.js → window._startRoom)
+    local url_room = window._startRoom
+    if url_room and tostring(url_room) ~= "" and tostring(url_room) ~= "null"
+       and tostring(url_room) ~= "undefined" then
+        local requested = tostring(url_room)
+        local level_rooms = (level and level.rooms) or {}
+        local valid = false
+        for _, rid in ipairs(level_rooms) do
+            if rid == requested then valid = true; break end
+        end
+        if valid then
+            start_room_id = requested
+            if DEBUG_MODE then
+                log_debug("Starting in room: " .. requested .. " (via URL override)")
+            end
+        else
+            append_error("Room '" .. requested .. "' not found in current level. Using default.")
+            if DEBUG_MODE then
+                local ids = {}
+                for _, rid in ipairs(level_rooms) do ids[#ids + 1] = rid end
+                table.sort(ids)
+                append_error("Available rooms: " .. table.concat(ids, ", "))
+            end
+        end
+    end
+
     local room = rooms[start_room_id]  -- triggers JIT load of starting room
     if not room then
         error("Starting room '" .. start_room_id .. "' not found")
@@ -509,6 +588,7 @@ local ok, err = pcall(function()
         skills   = {},
         location = start_room_id,
         state    = { bloody = false, poisoned = false, has_flame = 0 },
+        visited_rooms = { [start_room_id] = true },  -- canonical visited-rooms tracking (#104)
     }
 
     -------------------------------------------------------------------
@@ -534,7 +614,7 @@ local ok, err = pcall(function()
         game_start_time = os.time(),
         game_start_hour = presentation.GAME_START_HOUR,
         ui              = nil,  -- set below after context creation
-        visited_rooms   = { [start_room_id] = true },
+
         -- JS bridge: open URL in a new browser tab (for "report bug")
         open_url        = function(url)
             window:_openUrl(url)

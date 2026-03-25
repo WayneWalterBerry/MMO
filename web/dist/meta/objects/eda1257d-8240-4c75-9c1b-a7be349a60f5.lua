@@ -1,5 +1,6 @@
--- vanity.lua — FSM-managed furniture with mirror
+-- vanity.lua — FSM-managed furniture with drawer and surfaces
 -- States: closed/open × mirror intact/broken. Surfaces: top + mirror_shelf.
+-- Mirror is a SEPARATE object placed on_top (Issue #173).
 -- Drawer contents come from room-file nesting (Principle 0.5).
 return {
     guid = "{eda1257d-8240-4c75-9c1b-a7be349a60f5}",
@@ -7,8 +8,7 @@ return {
 
     id = "vanity",
     material = "oak",
-    is_mirror = true,
-    keywords = {"vanity", "mirror", "vanity mirror", "dressing table", "desk", "table", "looking glass", "oak vanity", "reflection", "my reflection"},
+    keywords = {"vanity", "dressing table", "desk", "table", "oak vanity"},
     size = 8,
     weight = 40,
     categories = {"furniture", "wooden", "reflective"},

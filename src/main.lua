@@ -159,10 +159,10 @@ for _, fname in ipairs(object_files) do
 end
 
 ---------------------------------------------------------------------------
--- Load all rooms from meta/world/
+-- Load all rooms from meta/rooms/
 ---------------------------------------------------------------------------
 local rooms = {}
-local room_dir = meta_root .. SEP .. "world"
+local room_dir = meta_root .. SEP .. "rooms"
 local room_files = list_lua_files(room_dir)
 for _, fname in ipairs(room_files) do
     local path = room_dir .. SEP .. fname

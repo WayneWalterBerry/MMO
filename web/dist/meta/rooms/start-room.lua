@@ -61,6 +61,7 @@ return {
         -- === Vanity ===
         { id = "vanity", type = "Oak Vanity", type_id = "eda1257d-8240-4c75-9c1b-a7be349a60f5",
             on_top = {
+                { id = "mirror", type = "Mirror", type_id = "1b47a68e-33a7-4d27-8065-4bc94b8f149f" },
                 { id = "paper", type = "Paper", type_id = "e7409390-d4c4-4315-9768-72df1b3702e6" },
                 { id = "pen", type = "Pen", type_id = "4d35b030-0b8c-4159-b646-d669909133a3" },
             },

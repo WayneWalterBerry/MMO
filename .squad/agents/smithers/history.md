@@ -47,6 +47,34 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+- **Bug #178 — auto_ignite() timer bypass (2026-07-17):** The `auto_ignite()` helper in `fire.lua` applied FSM state properties directly (clearing old state keys, setting new ones, updating `_state`) but never called `fsm_mod.stop_timer()` / `fsm_mod.start_timer()`. This meant objects auto-ignited as fire sources (e.g., match lit to light a candle) never registered burn-out timers with the FSM. Fix: added `fsm_mod.stop_timer(obj.id)` before state change and `fsm_mod.start_timer(ctx.registry, obj.id)` after. Same pattern applied to `containers.lua` fallback `_state = "open"` path. Injuries.lua direct `_state` assignments don't need timer fixes because injuries aren't registry objects — they use their own `turns_active` tick system.
+- **Lesson: any code that sets `_state` directly must also manage FSM timers.** The FSM module's `transition()` function handles this automatically. Direct `_state` writes are a code smell — they bypass the timer system. Future audit: grep for `\._state\s*=\s*"` and verify each site either uses `fsm.transition()` or manually calls stop/start_timer.
+- **Bug #181 — drop handler bypasses fuzzy resolution (2026-07-17):** The `drop` verb handler in `acquisition.lua` used `matches_keyword()` (exact-only) to find held items, so typos like "spitton" for "spittoon" failed with "You aren't holding that." Fix: added `fuzzy.score_object()` fallback after exact match fails — both for hand search and worn-item check. Also fixed `sensory.lua`: (1) the dark-path examine output now includes the object name so fuzzy-matched items are identifiable, and (2) `look X` in darkness delegates to examine's dark path instead of returning a generic error. All 24 tests pass, zero regressions.
+- **Lesson: any verb handler that searches hands/worn/bags must use fuzzy fallback.** The `find_visible()` function in helpers.lua has Tier 5 fuzzy built in, but verb handlers that bypass `find_visible()` for hand-only searches (like `drop`) must add their own fuzzy fallback using `fuzzy.parse_noun_phrase()` + `fuzzy.score_object()`.
+
+### Parser Improvement Phase 1 — BM25 + Synonyms (A/B Proven)
+
+**What shipped:** Full Phase 1 parser improvement with A/B benchmarking proof. Tier 2 accuracy on 60-case benchmark: Jaccard baseline 47/60 (78.3%) → BM25+Synonyms 60/60 (100%).
+
+**New files created:**
+- `src/engine/parser/bm25_data.lua` — Auto-generated IDF table (177 tokens, avgdl=3.81) from `scripts/build-idf-table.py`
+- `src/engine/parser/synonym_table.lua` — Manual POS-filtered verb synonyms (60+ mappings to canonical verbs)
+- `scripts/build-idf-table.py` — Python build-time script to generate IDF data from embedding index
+- `test/parser/test-tier2-benchmark.lua` — 60-case A/B benchmark (5 categories: filler, synonym, polite, negative, ambiguous)
+
+**Modified files:**
+- `src/engine/parser/embedding_matcher.lua` — Added BM25 scorer alongside Jaccard (kept as fallback via `scoring_mode` flag), expanded stop words from 21→60+, synonym expansion before typo correction, tightened typo correction for 5-char words (max dist 1 instead of 2)
+- `src/engine/parser/init.lua` — Dual threshold: `THRESHOLD_BM25=3.00` / `THRESHOLD_JACCARD=0.40`, auto-selected by scoring mode
+
+**Key learnings:**
+- **BM25's additive scoring eliminates verbose-input penalty.** Jaccard divides by union size, so filler words (please, now, just) dilute the score. BM25 only sums contributions from matching tokens — extra words contribute 0, not negative.
+- **Synonym REPLACE, not ADD.** Initially expanded synonyms by adding canonical form alongside the original ("snatch" + "take"). This caused typo correction to corrupt the original (snatch→search, dist=2). Changed to REPLACE: unknown synonym is removed, only canonical form enters the token stream.
+- **Stop word expansion is the highest-ROI change.** Adding 40+ common English filler words (please, now, just, do, can, go, let, try, want, etc.) improved Jaccard from 42% to 78% AND BM25 from 68% to 86% before any other tuning. The stop words were the primary bottleneck.
+- **Typo correction distance must scale with word length.** 5-char words with dist-2 corrections are too aggressive: knife→sniff, cloth→close. Changed to: ≤4 chars = no correction, 5 chars = max dist 1, 6+ chars = max dist 2.
+- **"eat" IS a valid game verb** (mapped to consume in the phrase index). Test cases labeling "eat X" as negative were wrong — the parser correctly matches these.
+- **IDF table is static at build time.** The Python script generates the table; the Lua runtime just looks up values. No external dependencies at runtime. Fengari-compatible.
+
+**Zero regressions:** All 137 existing test files pass. Meta-lint: 0 new errors.
 
 ### 2026-07-20: Issue #106 Phase 3 — Prime Directive Tiers 1-5 Implementation
 
@@ -70,11 +98,11 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ### 2026-07-19: Issue #167 — Meta-check V2 (full meta type coverage)
 
-**What shipped:** Extended `scripts/meta-check/check.py` with ~160 new validation rules covering all 4 remaining meta types: templates (27 rules), injuries (69 rules), materials (24 rules), and levels (41 rules), plus 11 cross-reference checks. Fixed MAT-02 false positives by reading material names from `src/meta/materials/*.lua` filenames instead of parsing the engine registry file.
+**What shipped:** Extended `scripts/meta-lint/lint.py` with ~160 new validation rules covering all 4 remaining meta types: templates (27 rules), injuries (69 rules), materials (24 rules), and levels (41 rules), plus 11 cross-reference checks. Fixed MAT-02 false positives by reading material names from `src/meta/materials/*.lua` filenames instead of parsing the engine registry file.
 
 **Key learning:** The Lua parser already handled nil values correctly, which meant material fields like `melting_point = nil` were properly distinguished from missing. Template/level GUIDs use bare format while injury/object GUIDs use braced format — established convention. The ~160 rule IDs match Lisa's V2 acceptance criteria exactly.
 
-**Files changed:** `scripts/meta-check/check.py`, `docs/meta-check/rules.md`, `docs/meta-check/schemas.md`
+**Files changed:** `scripts/meta-lint/lint.py`, `docs/meta-lint/rules.md`, `docs/meta-lint/schemas.md`
 
 **Tests:** 130 files scanned, 0 errors, 0 regressions.
 
@@ -247,7 +275,7 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ### 2026-03-27: Meta-Check CLI build
 
-**What shipped:** Created `scripts/meta-check/check.py` using Bart’s Lark grammar. Implemented required-field/type checks, GUID/material validation, FSM state consistency, and cross-file GUID/keyword collision detection with text/JSON output.
+**What shipped:** Created `scripts/meta-lint/lint.py` using Bart’s Lark grammar. Implemented required-field/type checks, GUID/material validation, FSM state consistency, and cross-file GUID/keyword collision detection with text/JSON output.
 
 **Key learning:** Keep FSM validation conservative when state tables are non-literal (ident refs) to avoid false positives while still enforcing core object integrity.
 
@@ -879,7 +907,7 @@ Wayne requested Phase F1 carry-over bug fixes (#47, #49, #52, #53) using TDD. Up
 
 **Files changed:** `src/engine/materials/init.lua` (rewritten), 23 new files in `src/meta/materials/`
 
-**Tests:** All 121 test files pass. Material audit (#163): 86/86 objects validated. Material properties (#123): 23 materials × 11 properties validated. meta-check clean. 0 regressions.
+**Tests:** All 121 test files pass. Material audit (#163): 86/86 objects validated. Material properties (#123): 23 materials × 11 properties validated. meta-lint clean. 0 regressions.
 
 ### 2026-03-24: Issue #174 - SLM Embedding Index Overhaul
 
@@ -890,3 +918,16 @@ Wayne requested Phase F1 carry-over bug fixes (#47, #49, #52, #53) using TDD. Up
 **Files changed:** `src/assets/parser/embedding-index.json` (slim), `src/engine/parser/embedding_matcher.lua` (tiebreaker), `data/parser/training-pairs.csv` (+242 rows), `scripts/build_embedding_index.py` (slim flag), `resources/archive/embedding-index-full.json` (new).
 
 **Tests:** All 129 test files pass. Zero regressions.
+
+
+### 2026-03-24: Issue #182 - Sack Disambiguation Cluster (Bug A/B/C)
+**What shipped:** Three fixes for sack disambiguation in one pass.
+
+**Bug A (adjective resolution):** Added `_score_adjective_match()` to `helpers.lua` — tokenizes player input and scores each candidate object by how many tokens match its keywords (+2) or name words (+1). Added `_try_room_scored()` that collects ALL room keyword matches, scores them, and picks the highest. Replaced `_fv_room` calls in `find_visible` with the scored variant. "burlap sack" now correctly resolves to the burlap sack (score 4 vs 2), not the grain sack.
+
+**Bug B (dump/empty verb):** Replaced `handlers["dump"] = handlers["pour"]` alias in `survival.lua` with a proper `dump_container()` handler. When target is a dry container with `obj.contents`, spills items into the room. Also checks `surfaces.inside.contents` for surface-based containers. Falls through to `pour` for liquids. Registered both `dump` and `empty` as verbs. Added both to `interaction_verbs` table in `helpers.lua`.
+
+**Bug C (disambiguation prompt):** When `_try_room_scored` finds multiple objects with tied adjective scores, it builds a "Which do you mean: X or Y?" prompt and sets `ctx.disambiguation_prompt`. `find_visible` returns nil and stops searching further stages when disambiguation triggers. `fuzzy.resolve` already handled this correctly (was passing before).
+
+**Files changed:** `src/engine/verbs/helpers.lua` (scoring + scored room search + interaction_verbs), `src/engine/verbs/survival.lua` (dump/empty handler).
+**Tests:** All 13 Nelson disambiguation tests pass (was 4/13). Full suite: zero new regressions (pre-existing 7 failures in `test-unconsciousness-triggers.lua` unchanged).

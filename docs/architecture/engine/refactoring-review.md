@@ -504,18 +504,18 @@ The file is at the threshold (585 lines) but its size reflects genuine complexit
 
 **Arguments for refactoring first:**
 
-1. **Meta-compiler validates file paths.** If we build meta-check against `verbs/init.lua` (5,884 lines), then refactor into 12 files, every validation rule referencing the file path breaks. Refactoring first means meta-check is built against the final structure.
+1. **Meta-compiler validates file paths.** If we build meta-lint against `verbs/init.lua` (5,884 lines), then refactor into 12 files, every validation rule referencing the file path breaks. Refactoring first means meta-lint is built against the final structure.
 
 2. **Smaller files are easier to validate.** A 650-line helpers file has clearer invariants than a 5,884-line monolith. Meta-check rules will be simpler and more precise.
 
-3. **LLM productivity compounds.** Every squad member touching engine code benefits immediately from smaller files. The meta-compiler work itself involves editing engine code — Bart benefits from the split while building meta-check.
+3. **LLM productivity compounds.** Every squad member touching engine code benefits immediately from smaller files. The meta-compiler work itself involves editing engine code — Bart benefits from the split while building meta-lint.
 
 4. **Test safety net already exists.** We have 97+ test files with 500+ assertions. The refactoring is mechanical (move code, update requires). With TDD discipline, the risk is manageable.
 
 **Arguments for meta-compiler first (rejected):**
 
-- "Refactoring changes file paths" — true, but meta-check is a new tool. There are no existing paths to break.
-- "Safety net for refactoring" — meta-check validates object .lua files, not engine .lua files. It wouldn't catch refactoring bugs in `verbs/helpers.lua`.
+- "Refactoring changes file paths" — true, but meta-lint is a new tool. There are no existing paths to break.
+- "Safety net for refactoring" — meta-lint validates object .lua files, not engine .lua files. It wouldn't catch refactoring bugs in `verbs/helpers.lua`.
 
 **Proposed sequence:**
 

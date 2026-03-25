@@ -125,6 +125,14 @@ function presentation.get_light_level(ctx)
     for _, obj_id in ipairs(presentation.get_all_carried_ids(ctx)) do
         local obj = reg:get(obj_id)
         if obj and obj.casts_light then return "lit" end
+        -- #219: Check contents of carried items (e.g., candle inside holder)
+        -- even for non-container composites that have a contents list.
+        if obj and obj.contents then
+            for _, inner_id in ipairs(obj.contents) do
+                local inner = reg:get(inner_id)
+                if inner and inner.casts_light then return "lit" end
+            end
+        end
     end
 
     -- Daylight: open curtains = "lit", closed curtains = "dim"

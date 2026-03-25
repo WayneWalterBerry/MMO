@@ -30,7 +30,7 @@
 **Expected:** All instances resolve to their base class via GUID lookup
 **Actual:** 30 instances produce "base class not found for guid" warnings at startup. Objects in Cellar, Storage Cellar, Hallway, Courtyard, Deep Cellar, and Crypt rooms fail to load their base classes.
 
-**Root cause:** World instance files (`src/meta/world/*.lua`) reference GUIDs that don't match the GUIDs defined in object base class files (`src/meta/objects/*.lua`). This is a systemic issue — the world files were authored with placeholder/old GUIDs, and the object files use different GUIDs.
+**Root cause:** World instance files (`src/meta/rooms/*.lua`) reference GUIDs that don't match the GUIDs defined in object base class files (`src/meta/objects/*.lua`). This is a systemic issue — the world files were authored with placeholder/old GUIDs, and the object files use different GUIDs.
 
 **Affected rooms and objects:**
 
@@ -65,7 +65,7 @@
 | Crypt | sarcophagus (×5) | c265c580... | (sarcophagus.lua) |
 | Crypt | candle-stub (×2) | ad257f51... | (candle-stub.lua) |
 
-**Fix:** Update all `type_id` values in `src/meta/world/*.lua` to match the GUIDs defined in `src/meta/objects/*.lua`.
+**Fix:** Update all `type_id` values in `src/meta/rooms/*.lua` to match the GUIDs defined in `src/meta/objects/*.lua`.
 
 ---
 
@@ -852,7 +852,7 @@ Bugs: None
 
 ## RECOMMENDATIONS
 
-1. **BUG-106 (CRITICAL):** Bart or Flanders must update all `type_id` values in `src/meta/world/*.lua` to match the GUIDs in `src/meta/objects/*.lua`. This is a bulk find-and-replace across 5 world files.
+1. **BUG-106 (CRITICAL):** Bart or Flanders must update all `type_id` values in `src/meta/rooms/*.lua` to match the GUIDs in `src/meta/objects/*.lua`. This is a bulk find-and-replace across 5 world files.
 
 2. **BUG-107 (CRITICAL):** Flanders must create 4 missing base class files: oil-flask, cloth-scraps, bronze-ring, burial-necklace. Without these, the Storage Cellar and Crypt puzzles are incomplete.
 

@@ -51,6 +51,7 @@ local spawn_objects = H.spawn_objects
 local perform_mutation = H.perform_mutation
 local inventory_weight = H.inventory_weight
 local move_spatial_object = H.move_spatial_object
+local try_fsm_verb = H.try_fsm_verb
 
 local get_game_time = H.get_game_time
 local is_daytime = H.is_daytime
@@ -172,7 +173,8 @@ function M.register(handlers)
             return
         end
 
-        -- Bug #53: Guard against duplicate take — if already in player's hands, skip
+        -- Bug #53 + #180: Guard against duplicate take — if already in player's
+        -- hands OR worn list, block the take.
         if obj.location == "player" then
             for i = 1, 2 do
                 if ctx.player.hands[i] then
@@ -181,6 +183,12 @@ function M.register(handlers)
                         print("You already have that.")
                         return
                     end
+                end
+            end
+            for _, worn_id in ipairs(ctx.player.worn or {}) do
+                if worn_id == obj.id then
+                    print("You're wearing that. You'll need to remove it first.")
+                    return
                 end
             end
         end
@@ -283,9 +291,10 @@ function M.register(handlers)
             return
         end
 
-        -- "bag" means item is inside a container the player is holding.
-        -- Allow extracting it to a free hand (e.g., pulling a match from a matchbox).
-        if where == "bag" and parent then
+        -- "bag" or "container" means item is inside a container (held or in the room).
+        -- Allow extracting it to a free hand (e.g., pulling a match from a matchbox,
+        -- or taking a candle from a holder on a surface). (#215)
+        if (where == "bag" or where == "container") and parent then
             if not obj.portable then
                 print("You can't carry " .. (obj.name or "that") .. ".")
                 return
@@ -484,8 +493,19 @@ function M.register(handlers)
         local target = noun:gsub("%s+aside$", ""):gsub("%s+away$", ""):gsub("%s+over$", "")
 
         local obj = find_visible(ctx, target)
+
+        -- Registry fallback for objects not in standard search paths (traps, etc.)
+        if not obj and ctx.registry and ctx.registry.find_by_keyword then
+            obj = ctx.registry:find_by_keyword(target)
+        end
+
         if not obj then
             err_not_found(ctx)
+            return
+        end
+
+        -- Check for FSM transitions first (traps, mechanisms, etc.)
+        if try_fsm_verb(ctx, obj, "push") then
             return
         end
 
@@ -681,6 +701,25 @@ function M.register(handlers)
             end
         end
 
+        -- Bug #181: Fuzzy fallback when exact keyword match fails on hands
+        if not obj and fuzzy then
+            local parsed = fuzzy.parse_noun_phrase(kw)
+            for i = 1, 2 do
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local candidate = _hobj(hand, ctx.registry)
+                    if candidate then
+                        local score = fuzzy.score_object(candidate, parsed)
+                        if score > 0 then
+                            obj = candidate
+                            hand_slot = i
+                            break
+                        end
+                    end
+                end
+            end
+        end
+
         if not obj then
             -- #137: Check if it's a worn item — give appropriate message
             local kw_check = noun:lower()
@@ -691,6 +730,20 @@ function M.register(handlers)
                 if worn_obj and matches_keyword(worn_obj, kw_check) then
                     is_worn = true
                     break
+                end
+            end
+            -- Bug #181: Fuzzy fallback for worn item check
+            if not is_worn and fuzzy then
+                local parsed = fuzzy.parse_noun_phrase(kw_check)
+                for _, worn_id in ipairs(ctx.player.worn or {}) do
+                    local worn_obj = ctx.registry and ctx.registry:get(worn_id)
+                    if worn_obj then
+                        local score = fuzzy.score_object(worn_obj, parsed)
+                        if score > 0 then
+                            is_worn = true
+                            break
+                        end
+                    end
                 end
             end
             if is_worn then

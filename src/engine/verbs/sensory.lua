@@ -356,7 +356,8 @@ function M.register(handlers)
             return
         end
         if not has_some_light(ctx) then
-            print("It is too dark to see anything. Try 'feel' to explore by touch.")
+            -- Bug #181: delegate to examine dark path instead of generic error
+            handlers["examine"](ctx, noun)
             return
         end
         local obj = find_visible(ctx, noun)
@@ -461,9 +462,10 @@ function M.register(handlers)
             end
             if obj.on_feel then
                 local feel_text = type(obj.on_feel) == "function" and obj.on_feel(obj) or obj.on_feel
-                print("It's too dark to see, but you feel: " .. feel_text)
+                -- Bug #181: include object name so fuzzy-matched items are identifiable
+                print("It's too dark to see " .. (obj.name or "it") .. ", but you feel: " .. feel_text)
             elseif obj.touch_description then
-                print("It's too dark to see, but you feel: " .. obj.touch_description)
+                print("It's too dark to see " .. (obj.name or "it") .. ", but you feel: " .. obj.touch_description)
             else
                 print("It's too dark to see, and you can't make out much by touch.")
             end

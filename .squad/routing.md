@@ -60,3 +60,70 @@ When triaging, the Lead should ask:
 6. **Anticipate downstream work.** If a feature is being built, spawn the tester to write test cases from requirements simultaneously.
 7. **Issue-labeled work** — when a `squad:{member}` label is applied to an issue, route to that member. The Lead handles all `squad` (base label) triage.
 8. **@copilot routing** — when evaluating issues, check @copilot's capability profile in `team.md`. Route 🟢 good-fit tasks to `squad:copilot`. Flag 🟡 needs-review tasks for PR review. Keep 🔴 not-suitable tasks with squad members.
+
+## Swimlane Architecture
+
+**Swimlanes are enforceable queues, not visualizations.** Each swimlane represents an agent's work queue and maps directly to a `squad:{member}` label on GitHub Issues.
+
+### Core Model
+
+- **One swimlane = one owning agent** — single-agent ownership is mandatory. No shared swimlanes or cross-owner lanes.
+- **Labels are swimming** — when an issue gets a `squad:{member}` label, it **appears in that agent's swimlane** and enters their queue.
+- **Golden loop:** Issue created → labeled (`squad:{member}`) → appears in swimlane → agent pulls → works in worktree → PR created → PR merged → card moves to Done → status emitted
+
+### Swimlane States
+
+- **Backlog** — issues waiting to be triaged (have `squad` label, no member assigned)
+- **Ready** — issues with `squad:{member}` label, waiting for agent to pull
+- **In Progress** — agent is working (PR open, linked to issue)
+- **Review** — PR open, awaiting code review or QA sign-off
+- **Blocked / Needs Human** — agent cannot proceed; requires human input or action. See **Blocked Lane Protocol** below.
+- **Done** — PR merged, issue closed
+
+### Blocked Lane Protocol
+
+When an agent cannot proceed on an issue:
+
+1. **Move the issue to "Blocked / Needs Human"** (use a GitHub project board or label: `blocked`)
+2. **Emit status:** In the issue, post a comment with:
+   - **What is blocked:** The specific task or step
+   - **Why it's blocked:** The root cause or blocker
+   - **What input is needed:** Exactly what decision/data/review is required
+   - **Who needs to act:** Name the decision-maker or reviewer
+3. **Agent waits:** The agent does not continue work until the blocker is resolved and the issue is moved out of the blocked lane
+
+**Example:**
+```
+@wayne — This is blocked on D-DOOR-DESIGN. We need to decide:
+1. Should doors auto-open or require UNLOCK + OPEN verbs?
+2. What's the locked state initial value for each door?
+
+Moved to Blocked / Needs Human. Waiting on game design review.
+```
+
+### Ralph's Role (Work Monitor)
+
+Ralph monitors swimlanes and detects stalled work but **respects agent autonomy**:
+
+- **Monitor:** Ralph watches for issues that have been in "Ready" for > N days without being picked up
+- **Spawn:** If an agent hasn't picked up their work, Ralph can spawn the agent to review and pull issues
+- **Respect autonomy:** Ralph does NOT spawn if the agent already has a PR open or is actively working (in "In Progress" lane). No double-spawning.
+- **Escalate if needed:** If the agent still doesn't respond after spawn, Ralph flags for Lead review (not for manual card dragging)
+
+### Human Boundaries
+
+**Humans define the system; Squad executes it:**
+
+- **Humans define:** Lane names, swimlane groupings (workstream/owner/priority), issue triggers, review criteria
+- **Squad moves:** Cards/issues between lanes, updates status fields, closes loops (merges PRs, closes issues)
+- **Anti-pattern:** Humans manually dragging cards without automation. Humans should not be the execution layer.
+
+### Anti-Patterns
+
+❌ **Mixing agent responsibilities in the same lane** — Each lane should route to ONE agent. If two agents need to work on it, create TWO linked issues with separate swimlanes.
+
+❌ **Using swimlanes as passive visualization** — Swimlanes are the control mechanism. Labels + swimlanes drive work; swimlanes are not just a view of work.
+
+❌ **Humans dragging cards manually** — If the system requires manual card dragging, the system design is broken. Automation (labels, GitHub Actions, Ralph) should move cards.
+
+❌ **Pending state without clarity** — "Pending" with no context is a dead lane. Use "Blocked / Needs Human" with emitted status instead.

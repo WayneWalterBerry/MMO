@@ -48,7 +48,7 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-25 11:55"
+local BUILD_TIMESTAMP = "2026-03-25 07:22"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -344,7 +344,6 @@ local ok, err = pcall(function()
     if index_src then
         local index = loader.load_source(index_src)
         if index and index.materials then
-            log_debug("  Found " .. #index.materials .. " materials in manifest")
             for _, name in ipairs(index.materials) do
                 local mat_src = fetch_text("meta/materials/" .. name .. ".lua")
                 if mat_src then
@@ -354,18 +353,10 @@ local ok, err = pcall(function()
                         mat.name = nil
                         materials_mod.registry[mname] = mat
                         mat_count = mat_count + 1
-                    else
-                        log_debug("  WARNING: Material '" .. name .. "' has no name field")
                     end
-                else
-                    log_debug("  WARNING: Failed to fetch material '" .. name .. "'")
                 end
             end
-        else
-            log_debug("  WARNING: No materials section in manifest")
         end
-    else
-        log_debug("  WARNING: Failed to fetch meta/_index.lua")
     end
     log_debug("  Loaded " .. mat_count .. " materials")
 
@@ -556,6 +547,33 @@ local ok, err = pcall(function()
     local level = level_source and loader.load_source(level_source)
 
     local start_room_id = (level and level.start_room) or "start-room"
+
+    -- ?room= URL override (set by bootstrapper.js → window._startRoom)
+    local url_room = window._startRoom
+    if url_room and tostring(url_room) ~= "" and tostring(url_room) ~= "null"
+       and tostring(url_room) ~= "undefined" then
+        local requested = tostring(url_room)
+        local level_rooms = (level and level.rooms) or {}
+        local valid = false
+        for _, rid in ipairs(level_rooms) do
+            if rid == requested then valid = true; break end
+        end
+        if valid then
+            start_room_id = requested
+            if DEBUG_MODE then
+                log_debug("Starting in room: " .. requested .. " (via URL override)")
+            end
+        else
+            append_error("Room '" .. requested .. "' not found in current level. Using default.")
+            if DEBUG_MODE then
+                local ids = {}
+                for _, rid in ipairs(level_rooms) do ids[#ids + 1] = rid end
+                table.sort(ids)
+                append_error("Available rooms: " .. table.concat(ids, ", "))
+            end
+        end
+    end
+
     local room = rooms[start_room_id]  -- triggers JIT load of starting room
     if not room then
         error("Starting room '" .. start_room_id .. "' not found")
@@ -756,22 +774,6 @@ local ok, err = pcall(function()
             -- Refresh status bar after each command
             context.update_status(context)
         end
-    end
-
-    -------------------------------------------------------------------
-    -- SLM vector injection (called by bootstrapper.js lazy-load)
-    -- Stores vector data in VFS so embedding_matcher can access it.
-    -- Game works without vectors (BM25 scoring is the default).
-    -------------------------------------------------------------------
-    window._injectSLMVectors = function(a, b)
-        local json_str
-        if b ~= nil then
-            json_str = tostring(b)
-        else
-            json_str = tostring(a)
-        end
-        _G.__VFS["src/assets/parser/embedding-vectors.json"] = json_str
-        log_debug("SLM vectors: injected into VFS (" .. format_size(#json_str) .. ")")
     end
 
     -- Enable input

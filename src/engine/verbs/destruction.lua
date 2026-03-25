@@ -47,6 +47,7 @@ local remove_from_location = H.remove_from_location
 local container_contents_accessible = H.container_contents_accessible
 local find_mutation = H.find_mutation
 local exit_matches = H.exit_matches
+local sync_linked_exit = H.sync_linked_exit
 local spawn_objects = H.spawn_objects
 local perform_mutation = H.perform_mutation
 local inventory_weight = H.inventory_weight
@@ -90,6 +91,8 @@ function M.register(handlers)
                     if trans then
                         print(trans.message or ("You break " .. (obj.name or obj.id) .. "."))
                         if trans.spawns then spawn_objects(ctx, trans.spawns) end
+                        -- #216: sync linked exit after FSM break transition
+                        sync_linked_exit(ctx, obj, "break")
                     else
                         print("You can't break " .. (obj.name or "that") .. ".")
                     end

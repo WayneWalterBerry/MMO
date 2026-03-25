@@ -4,7 +4,7 @@
 **Date:** 2026-03-26  
 **Author:** Bart (Architecture Lead)  
 **Status:** Active — Core Architectural Document  
-**Gold standard:** `src/meta/world/start-room.lua`
+**Gold standard:** `src/meta/rooms/start-room.lua`
 
 ---
 
@@ -641,7 +641,7 @@ instances = {
 
 ### 4.5 The Complete Gold Standard — start-room.lua
 
-The bedroom from `src/meta/world/start-room.lua` demonstrates every relationship:
+The bedroom from `src/meta/rooms/start-room.lua` demonstrates every relationship:
 
 ```lua
 instances = {
@@ -1005,7 +1005,7 @@ return {
 - **Spatial Relationships:** [`spatial-relationships.md`](spatial-relationships.md) — Engine architecture for spatial visibility
 - **Instance Model:** [`instance-model.md`](instance-model.md) — Base class vs instance resolution
 - **Design Directives:** [`../../design/design-directives.md`](../../design/design-directives.md) — Room Nesting Architecture section
-- **Gold Standard Room:** `src/meta/world/start-room.lua` — The definitive example
+- **Gold Standard Room:** `src/meta/rooms/start-room.lua` — The definitive example
 
 ---
 

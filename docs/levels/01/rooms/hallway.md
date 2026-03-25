@@ -1,7 +1,7 @@
 # Room Design: The Manor Hallway
 
 **Room ID:** `hallway`  
-**File:** `src/meta/world/hallway.lua` *(not yet created)*  
+**File:** `src/meta/rooms/hallway.lua` *(not yet created)*  
 **Status:** 🔴 New — Design Only  
 **Author:** Moe (World Builder)  
 **Date:** 2026-07-21  

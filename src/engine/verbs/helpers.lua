@@ -118,6 +118,38 @@ local function matches_keyword(obj, kw)
 end
 
 ---------------------------------------------------------------------------
+-- Adjective-aware scoring: count how many input tokens appear in an
+-- object's keywords, name, or id. Used to break ties when multiple
+-- objects share a keyword (e.g. "burlap sack" vs "grain sack"). (#182)
+---------------------------------------------------------------------------
+local function _score_adjective_match(obj, input_text)
+    local score = 0
+    for token in input_text:lower():gmatch("%S+") do
+        local matched = false
+        if type(obj.keywords) == "table" then
+            for _, k in ipairs(obj.keywords) do
+                if k:lower() == token then
+                    score = score + 2
+                    matched = true
+                    break
+                end
+            end
+        end
+        if not matched and obj.name then
+            local padded = " " .. obj.name:lower() .. " "
+            if padded:find(" " .. token .. " ", 1, true) then
+                score = score + 1
+                matched = true
+            end
+        end
+        if not matched and obj.id and obj.id:lower() == token then
+            score = score + 2
+        end
+    end
+    return score
+end
+
+---------------------------------------------------------------------------
 -- Verb-dependent search order (see docs/architecture/player/inventory.md)
 --
 -- Interaction verbs act on something the player controls → search
@@ -129,6 +161,7 @@ local interaction_verbs = {
     use = true, light = true, drink = true, open = true, close = true,
     pour = true, eat = true, extinguish = true, wear = true, remove = true,
     apply = true, stab = true, cut = true, slash = true,
+    dump = true, empty = true,
     -- aliases that map to interaction verbs
     pry = true, shut = true, jab = true, pierce = true, stick = true,
     slice = true, nick = true, carve = true,
@@ -457,6 +490,54 @@ local function _fv_room(kw, reg, room)
     end
 end
 
+-- Scored room search: collect ALL keyword matches, score by adjective
+-- overlap, return best or set ctx.disambiguation_prompt if tied. (#182)
+local function _try_room_scored(kw, reg, room, ctx)
+    local matches = {}
+    for _, obj_id in ipairs(room.contents or {}) do
+        local obj = reg:get(obj_id)
+        if obj and not obj.hidden and matches_keyword(obj, kw) then
+            matches[#matches + 1] = { obj = obj, loc = "room" }
+        end
+    end
+    if #matches == 0 then return nil end
+    if #matches == 1 then return matches[1].obj, "room", nil, nil end
+
+    for _, m in ipairs(matches) do
+        m.score = _score_adjective_match(m.obj, kw)
+    end
+    table.sort(matches, function(a, b) return a.score > b.score end)
+
+    if matches[1].score > matches[2].score then
+        return matches[1].obj, "room", nil, nil
+    end
+
+    -- Tied scores — build disambiguation prompt
+    local top_score = matches[1].score
+    local names = {}
+    for _, m in ipairs(matches) do
+        if m.score == top_score then
+            names[#names + 1] = m.obj.name or m.obj.id or "something"
+        end
+    end
+    local prompt
+    if #names == 2 then
+        prompt = "Which do you mean: " .. names[1] .. " or " .. names[2] .. "?"
+    else
+        local parts = {}
+        for i, n in ipairs(names) do
+            if i == #names then
+                parts[#parts + 1] = "or " .. n
+            else
+                parts[#parts + 1] = n
+            end
+        end
+        prompt = "Which do you mean: " .. table.concat(parts, ", ") .. "?"
+    end
+    ctx.disambiguation_prompt = prompt
+    return nil
+end
+
 -- Sub-search: accessible surface contents + non-surface containers in room
 local function _fv_surfaces(kw, reg, room)
     for _, obj_id in ipairs(room.contents or {}) do
@@ -636,16 +717,18 @@ local function find_visible(ctx, keyword)
         if obj then return obj, loc, parent, surface end
         obj, loc, parent, surface = _fv_worn(kw, reg, ctx.player)
         if obj then return obj, loc, parent, surface end
-        obj, loc, parent, surface = _fv_room(kw, reg, room)
+        obj, loc, parent, surface = _try_room_scored(kw, reg, room, ctx)
         if obj then return obj, loc, parent, surface end
+        if ctx.disambiguation_prompt then return nil end
         obj, loc, parent, surface = _fv_surfaces(kw, reg, room)
         if obj then return obj, loc, parent, surface end
         obj, loc, parent, surface = _fv_parts(kw, reg, room)
         if obj then return obj, loc, parent, surface end
     else
         -- Acquisition / default: reaching for world objects → Room → Surfaces → Parts → Hands → Bags → Worn
-        obj, loc, parent, surface = _fv_room(kw, reg, room)
+        obj, loc, parent, surface = _try_room_scored(kw, reg, room, ctx)
         if obj then return obj, loc, parent, surface end
+        if ctx.disambiguation_prompt then return nil end
         obj, loc, parent, surface = _fv_surfaces(kw, reg, room)
         if obj then return obj, loc, parent, surface end
         obj, loc, parent, surface = _fv_parts(kw, reg, room)
@@ -1095,6 +1178,33 @@ local function exit_matches(exit, dir, keyword)
 end
 
 ---------------------------------------------------------------------------
+-- Helper: sync a linked exit after an FSM object transition.
+-- When an FSM object (e.g. door, window) transitions state, the
+-- corresponding exit in the room must be updated to match.
+-- The verb name maps to the exit's mutations[verb].becomes_exit table.
+-- #216, #217: fixes exit-sync bugs where FSM objects intercept verbs
+-- before the exit-only path can apply becomes_exit.
+---------------------------------------------------------------------------
+local function sync_linked_exit(ctx, obj, verb)
+    if not obj or not obj.linked_exit then return end
+    local room = ctx.current_room
+    if not room or not room.exits then return end
+    local exit = room.exits[obj.linked_exit]
+    if not exit or type(exit) ~= "table" then return end
+    if obj.linked_passage_id and exit.passage_id
+       and obj.linked_passage_id ~= exit.passage_id then
+        return
+    end
+    -- Apply the exit's becomes_exit for the matching verb
+    if exit.mutations and exit.mutations[verb]
+       and exit.mutations[verb].becomes_exit then
+        for k, v in pairs(exit.mutations[verb].becomes_exit) do
+            exit[k] = v
+        end
+    end
+end
+
+---------------------------------------------------------------------------
 -- Helper: spawn objects from a mutation's spawns list
 ---------------------------------------------------------------------------
 local function spawn_objects(ctx, spawns)
@@ -1112,6 +1222,7 @@ local function spawn_objects(ctx, spawns)
                         while ctx.registry:get(spawn_id .. "-" .. n) do n = n + 1 end
                         actual_id = spawn_id .. "-" .. n
                     end
+                    spawn_obj.id = actual_id
                     spawn_obj.location = room.id
                     ctx.registry:register(actual_id, spawn_obj)
                     room.contents[#room.contents + 1] = actual_id
@@ -1136,6 +1247,19 @@ local function perform_mutation(ctx, obj, mut_data)
         if not new_obj then
             print("Error: " .. tostring(err))
             return false
+        end
+        -- Sync hand slot references: mutation replaces the registry entry
+        -- but hand slots may still hold the old object table reference.
+        if ctx.player then
+            for i = 1, 2 do
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local hid = type(hand) == "table" and hand.id or hand
+                    if hid == obj.id then
+                        ctx.player.hands[i] = new_obj
+                    end
+                end
+            end
         end
     elseif mut_data.spawns then
         -- Destruction: object ceases to exist, spawns replace it
@@ -1468,6 +1592,57 @@ local function handle_self_infliction(ctx, noun, verb_name, profile_field)
     return true
 end
 
+---------------------------------------------------------------------------
+-- try_fsm_verb: Execute an FSM transition on an object for a given verb.
+-- Returns true if a matching transition was found and executed.
+-- Processes pipeline_effects (injuries, narration, mutations) through
+-- the effects pipeline, including unconsciousness triggers.
+-- NOTE: Does NOT mutate obj._state directly — FSM state management is
+-- handled by the game loop via fsm_mod.transition in live play.
+-- This function only evaluates the transition and routes its effects.
+---------------------------------------------------------------------------
+local function try_fsm_verb(ctx, obj, verb)
+    if not obj or not obj.states or not obj.transitions then return false end
+
+    local matched = nil
+    for _, t in ipairs(obj.transitions) do
+        if t.from == (obj._state or obj.initial_state) and t.trigger ~= "auto" then
+            if t.verb == verb then
+                matched = t
+                break
+            end
+            if t.aliases then
+                for _, a in ipairs(t.aliases) do
+                    if a == verb then matched = t; break end
+                end
+                if matched then break end
+            end
+        end
+    end
+
+    if not matched then return false end
+
+    -- Print transition message
+    if matched.message and matched.message ~= "" then
+        print(matched.message)
+    end
+
+    -- Process effects through the pipeline (injuries, unconsciousness, etc.)
+    local fx = matched.pipeline_effects or matched.effect
+    if fx and ctx.player then
+        effects.process(fx, {
+            player = ctx.player,
+            source = obj,
+            source_id = obj.id,
+            registry = ctx.registry,
+            time_offset = ctx.time_offset or 0,
+        })
+    end
+
+    return true
+end
+
+H.try_fsm_verb = try_fsm_verb
 H.fsm_mod = fsm_mod
 H.presentation = presentation
 H.preprocess = preprocess
@@ -1513,6 +1688,7 @@ H.remove_from_location = remove_from_location
 H.container_contents_accessible = container_contents_accessible
 H.find_mutation = find_mutation
 H.exit_matches = exit_matches
+H.sync_linked_exit = sync_linked_exit
 H.spawn_objects = spawn_objects
 H.perform_mutation = perform_mutation
 H.inventory_weight = inventory_weight

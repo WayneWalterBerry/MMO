@@ -1,7 +1,7 @@
 # Room Design: The Crypt
 
 **Room ID:** `crypt`  
-**File:** `src/meta/world/crypt.lua` *(not yet created)*  
+**File:** `src/meta/rooms/crypt.lua` *(not yet created)*  
 **Status:** 🔴 New — Design Only (OPTIONAL ROOM)  
 **Author:** Moe (World Builder)  
 **Date:** 2026-07-21  

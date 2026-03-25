@@ -3,7 +3,7 @@
 **Author:** Bart (Architect)  
 **Date:** 2026-07-28  
 **Source:** `src/engine/loader/init.lua` (226 lines)  
-**Purpose:** Identify what validation exists at load time, and what gaps meta-check must fill.
+**Purpose:** Identify what validation exists at load time, and what gaps meta-lint must fill.
 
 ---
 
@@ -192,7 +192,7 @@ Objects with `parts` table:
 
 The loader's minimalism is deliberate — it's a **sandbox executor**, not a linter. This is the right design for the engine: fast, permissive, forward-compatible. But it means the entire validation burden falls on either:
 
-1. **Pre-deploy tooling** (meta-check) — catch errors before they reach the engine
+1. **Pre-deploy tooling** (meta-lint) — catch errors before they reach the engine
 2. **Runtime errors** — discover problems when a player triggers them
 
 Meta-check is the right layer for validation. It can be strict, exhaustive, and catch cross-file consistency issues that no single-file loader could detect.

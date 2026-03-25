@@ -16,6 +16,19 @@
 - Architecture decision records (prose)
 - Changelogs and release notes
 - Developer onboarding docs
+- **The Springfield Shopper newspaper** (all editions in `newspaper/`)
+
+## Newspaper Format (MANDATORY)
+
+Every newspaper edition MUST include ALL of these sections:
+1. Masthead + headline
+2. Session coverage sections (what happened)
+3. Session metrics / statistics
+4. Credits
+5. **`## 📰 OP-ED` section** — a team member writes an opinion piece on a technical or design topic from the session. This is a PERMANENT feature established March 18. Different team members should rotate as op-ed authors. The op-ed should be substantive (3-5 paragraphs), opinionated, and tied to the session's work.
+6. What's Next
+
+**The op-ed is not optional. If a paper ships without one, it is incomplete.**
 
 ## How I Work
 

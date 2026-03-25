@@ -17,6 +17,7 @@ function verbs.create()
     local survival = require("engine.verbs.survival")
     local movement = require("engine.verbs.movement")
     local meta = require("engine.verbs.meta")
+    local traps = require("engine.verbs.traps")
 
     sensory.register(handlers)
     acquisition.register(handlers)
@@ -29,6 +30,27 @@ function verbs.create()
     survival.register(handlers)
     movement.register(handlers)
     meta.register(handlers)
+    traps.register(handlers)
+
+    -- Consciousness gate: block all verbs while the player is unconscious.
+    -- Cache wrappers by original function to preserve alias identity
+    -- (e.g., handlers["i"] == handlers["inventory"]).
+    local raw = {}
+    for k, v in pairs(handlers) do raw[k] = v end
+    local wrapper_cache = {}
+    for verb, fn in pairs(raw) do
+        if not wrapper_cache[fn] then
+            wrapper_cache[fn] = function(ctx, noun)
+                if ctx.player and ctx.player.consciousness
+                   and ctx.player.consciousness.state == "unconscious" then
+                    print("You are unconscious.")
+                    return
+                end
+                return fn(ctx, noun)
+            end
+        end
+        handlers[verb] = wrapper_cache[fn]
+    end
 
     return handlers
 end

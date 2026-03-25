@@ -79,7 +79,7 @@ reset_view()                    -- Show new room description + contents
 ## Multi-Room Architecture
 
 **Room Storage:**
-- All rooms loaded at startup from `src/meta/world/*.lua`
+- All rooms loaded at startup from `src/meta/rooms/*.lua`
 - Stored in `context.rooms = { bedroom = {...}, cellar = {...}, ... }`
 - Each room contains: id, name, description, contents array, exits
 

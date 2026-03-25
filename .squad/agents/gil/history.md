@@ -285,3 +285,21 @@
 - **Test suite:** 65/65 Lua tests PASS, 22/22 JS tests PASS
 - **Commit:** cc10a43 — pushed to main
 - ⚠️ This is a presentation-layer-only change. No engine code modified. The engine still outputs all search lines synchronously; the trickle effect is purely in the JS display layer.
+
+### 2026-03-24: Deploy — Full rebuild for Parser Tiers + SLM index
+- **Timestamp:** 2026-03-24T17:08Z
+- **Status:** ✅ COMPLETE — Deployed to GitHub Pages
+- **Pages commit:** `55fafd6` (main branch, 44 files changed, +3088 −462 lines)
+- **Engine bundle:** 169.7 KB compressed (1071.5 KB raw), 46 engine files + 1 asset file
+- **Meta files:** 130 total (87 objects (+4 new), 7 rooms, 5 templates, 1 level, 23 materials, 7 injuries)
+- **Cache-bust stamp:** `20260324170852`
+- **Embedding index:** Slim (361.4 KB stripped vectors) — not the 15MB full index
+- **Total files deployed:** 136
+- **What shipped:**
+  - Parser Tiers 1-5 (#106): embedding matcher, fuzzy noun resolution, GOAP planner, context window, preprocessor
+  - Slim SLM index with tiebreaker + 242 phrases (#174)
+  - 4 new objects (1b47a68e, 3c75a0cc, b05f1c4d, eed24985)
+  - 23 material definitions (new to web deploy)
+  - Material _index.lua manifest
+- **Deploy method:** Used `web/deploy.ps1` — clean run, no issues
+- **Build note:** Engine grew from 152.3 KB → 169.7 KB compressed (+17.4 KB) due to parser tier additions. Acceptable.

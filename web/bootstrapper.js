@@ -6,8 +6,14 @@
 (function () {
     'use strict';
 
-    // --- Debug mode: ?debug in URL shows detailed loading messages ---
-    window._debugMode = new URLSearchParams(window.location.search).has('debug');
+    // --- URL parameters: ?debug and ?room={id} ---
+    var _urlParams = new URLSearchParams(window.location.search);
+    window._debugMode = _urlParams.has('debug');
+    window._startRoom = _urlParams.get('room') || null;
+
+    if (window._debugMode && window._startRoom) {
+        console.log('Starting in room: ' + window._startRoom + ' (via URL override)');
+    }
 
     var outputEl = document.getElementById('output');
     var inputEl  = document.getElementById('input');
@@ -152,9 +158,8 @@
     }
 
     // --- Build version (embedded at build time) ---
-    const BUILD_TIMESTAMP = "2026-03-25 11:53";
-    const CACHE_BUST = "20260325115358";
-    const VECTORS_VERSION = "82be9354743ec21b";
+    const BUILD_TIMESTAMP = "2026-03-25 07:22";
+    const CACHE_BUST = "20260325072217";
 
     // --- Size formatting ---
     function formatSize(bytes) {
@@ -372,117 +377,6 @@
         }
     }
 
-    // --- SLM Vector Lazy-Loading (IndexedDB + async fetch) ---
-    // Loads embedding vectors AFTER game boot — non-blocking.
-    // Vectors are optional (BM25 scoring works without them).
-    var IDB_DB_NAME = 'mmo-slm-cache';
-    var IDB_STORE_NAME = 'vectors';
-
-    function openVectorDB() {
-        return new Promise(function (resolve, reject) {
-            if (!window.indexedDB) { reject(new Error('IndexedDB not available')); return; }
-            var request = indexedDB.open(IDB_DB_NAME, 1);
-            request.onupgradeneeded = function (e) {
-                var db = e.target.result;
-                if (!db.objectStoreNames.contains(IDB_STORE_NAME)) {
-                    db.createObjectStore(IDB_STORE_NAME);
-                }
-            };
-            request.onsuccess = function (e) { resolve(e.target.result); };
-            request.onerror = function (e) { reject(e.target.error); };
-        });
-    }
-
-    function idbGet(db, key) {
-        return new Promise(function (resolve, reject) {
-            var tx = db.transaction(IDB_STORE_NAME, 'readonly');
-            var store = tx.objectStore(IDB_STORE_NAME);
-            var request = store.get(key);
-            request.onsuccess = function (e) { resolve(e.target.result); };
-            request.onerror = function (e) { reject(e.target.error); };
-        });
-    }
-
-    function idbPut(db, key, value) {
-        return new Promise(function (resolve, reject) {
-            var tx = db.transaction(IDB_STORE_NAME, 'readwrite');
-            var store = tx.objectStore(IDB_STORE_NAME);
-            var request = store.put(value, key);
-            request.onsuccess = function () { resolve(); };
-            request.onerror = function (e) { reject(e.target.error); };
-        });
-    }
-
-    async function lazyLoadVectors() {
-        if (!VECTORS_VERSION) {
-            if (window._debugMode) {
-                showStatus('SLM vectors: not available (no vectors in build)');
-            }
-            return;
-        }
-
-        try {
-            // Step 1: Check IndexedDB cache
-            var db = null;
-            try {
-                db = await openVectorDB();
-                var cached = await idbGet(db, 'vectors');
-
-                if (cached && cached.version === VECTORS_VERSION) {
-                    if (window._debugMode) {
-                        showStatus('SLM vectors: cached (IndexedDB, ' + (cached.count || '?') + ' entries)');
-                    }
-                    if (window._injectSLMVectors) {
-                        window._injectSLMVectors(cached.data);
-                    }
-                    db.close();
-                    return;
-                }
-            } catch (idbErr) {
-                console.warn('IndexedDB unavailable:', idbErr.message);
-            }
-
-            // Step 2: Fetch from server
-            if (window._debugMode) {
-                showStatus('SLM vectors: downloading...');
-            }
-            var response = await fetchWithRetry('embedding-vectors.json.gz?v=' + CACHE_BUST, 1);
-            var compressedData = await response.arrayBuffer();
-            var vectorsJson = await decompress(compressedData);
-
-            // Parse to get metadata for logging and caching
-            var parsed = JSON.parse(vectorsJson);
-            var count = parsed.count || 0;
-
-            // Step 3: Cache in IndexedDB
-            if (db) {
-                try {
-                    await idbPut(db, 'vectors', {
-                        version: VECTORS_VERSION,
-                        count: count,
-                        data: vectorsJson
-                    });
-                } catch (e) { /* caching failed — continue anyway */ }
-                db.close();
-            }
-
-            // Step 4: Inject into Lua VFS
-            if (window._injectSLMVectors) {
-                window._injectSLMVectors(vectorsJson);
-            }
-
-            if (window._debugMode) {
-                showStatus('SLM vectors: loaded (' + count + ' entries, ' + formatSize(compressedData.byteLength) + ' compressed)');
-            }
-        } catch (err) {
-            // Graceful fallback — game works without vectors (BM25 scoring)
-            if (window._debugMode) {
-                showStatus('SLM vectors: unavailable (' + err.message + ')');
-            }
-            console.warn('SLM vector lazy-load failed (BM25 scoring active):', err.message);
-        }
-    }
-
     // --- Execute Lua source in Fengari shared state ---
     function executeLua(L, source, name) {
         var lua = fengari.lua;
@@ -565,10 +459,6 @@
                 showStatus('Loading Game Adapter... (' + formatSize(adapterSource.length) + ')');
             }
             executeLua(L, adapterSource, 'game-adapter');
-
-            // Step 5: Lazy-load SLM vectors (non-blocking, fire-and-forget)
-            // Game starts immediately with BM25 scoring; vectors load in background
-            lazyLoadVectors();
 
         } catch (err) {
             showError('Failed to load game: ' + err.message);

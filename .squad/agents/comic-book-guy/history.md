@@ -244,6 +244,36 @@
 
 ## Learnings
 
+### 2026-07-27: Door/Portal/Exit Architecture — Game Design Analysis
+**Status:** ✅ ANALYSIS COMPLETE
+
+**Deliverable:** `plans/door-design-analysis.md` — ~40 KB comprehensive game design analysis
+
+**What was done:**
+- Analyzed 40+ years of IF genre precedent (Zork/ZIL, Inform 6/7, TADS 3, Hugo, Adventuron)
+- Evaluated 10 door/portal scenarios under both exit-construct and door-object approaches
+- Compared player experience, designer ergonomics, and creative constraints
+- Recommended doors-as-first-class-objects with thin exit references in room files
+- Identified migration path: 4 phases from current hybrid to clean door-object architecture
+
+**Key Findings:**
+- Genre precedent overwhelmingly favors doors-as-objects (Zork, Inform 6/7, Hugo all use this model)
+- TADS 3 is the cautionary tale — treating doors as exit-constructs is its most criticized design decision
+- Door-objects won all 10 scenario comparisons; exit-constructs couldn't implement 3 scenarios at all (talking doors, remote levers, timed drawbridges)
+- Sensory system requires doors to be objects — the game starts at 2 AM in darkness, players FEEL doors
+- Exit-constructs violate Principles 1, 3, 4, 6, 7, 8, 9, and D-14 (Prime Directive)
+- Current codebase already has both systems coexisting awkwardly (bedroom-door.lua + inline exit definitions)
+- Template inheritance for door-objects produces LESS boilerplate than current 150+ line inline exit definitions
+
+**Affects:**
+- Bart (Architect): Engine movement handler, exit table schema, door-object source-of-truth pattern
+- Flanders (Object Designer): Door template creation, door object definitions
+- Moe (World Builder): Room file simplification — thin exit references instead of inline door logic
+- Smithers (Parser/UI): Verb dispatch to door objects instead of exit mutation tables
+- Nelson (QA): Door interaction regression tests during migration
+
+**Decision filed:** `.squad/decisions/inbox/cbg-door-design.md`
+
 ### 2026-07-25: Injury-Causing Objects — Hook Taxonomy & Design Patterns
 **Status:** ✅ 2 DESIGN DOCS WRITTEN
 
@@ -591,4 +621,78 @@ Both deliverables exist and are complete:
 - **Disambiguation memory** — game should remember the options it just asked about for 3 commands
 
 **Decision filed:** `.squad/decisions/inbox/comic-book-guy-prime-directive.md`
+
+---
+
+### Session Update: Unconsciousness Trigger Objects Design (2026-07-26)
+**Status:** ✅ DESIGN COMPLETE
+**Issue:** #162
+
+**Deliverable:** `docs/design/injuries/unconsciousness-triggers.md` — comprehensive design spec for 4 unconsciousness trigger objects.
+
+**What was done:**
+- Designed 4 trigger objects that cause unconsciousness through environmental gameplay:
+  1. **Falling Rock Trap** (`falling-rock-trap`) — tripwire + boulder, severe severity, 10–15 turn KO, one-shot permanent, can be disarmed by cutting wire
+  2. **Ceiling Collapse** (`unstable-ceiling`) — area hazard triggered by noise/vibration, severe severity, 12–18 turn KO, inflicts BOTH concussion + crushing-wound (most dangerous trigger, 25 HP initial + 2/turn bleed during KO), permanent room mutation
+  3. **Poison Gas Vent** (`poison-gas-vent`) — chemical sedation, minor severity, 3–5 turn KO, RESETS after wake-up (can KO repeatedly), creates room-escape puzzle, can be plugged with cloth
+  4. **Enemy Blow** (`falling-club-trap`) — spring-loaded club (V1 has no NPCs per Principle 0, so mechanical trap simulates combat strike), moderate severity, 6–10 turn KO, one-shot, can be disarmed
+- All 4 triggers use the existing `concussion` injury type — no new injury definitions needed
+- Full identity, sensory descriptions (on_feel, on_smell, on_listen, on_taste), FSM states with transitions, trigger conditions, self-infliction command tables, narration (trigger text, unconscious text, wake-up text), room/level placement suggestions, mutations
+- Injury stacking rules with worked numerical examples (bleeding + rock KO, crushing + concussion from ceiling, nightshade + gas KO)
+- Command rejection during unconsciousness: source-specific narration pools (not a single static message), varies by KO cause (impact vs sedation vs combat)
+- Critical edge case documented: self-inflicted KO + external bleeding = player CAN die (self-infliction ceiling doesn't protect against external injuries ticking)
+- Future multiplayer hooks noted: drag/carry/rob/wake unconscious players (design only, not implemented)
+- Per-team-member task breakdown for Flanders (object .lua files), Bart (engine verification), Nelson (TDD), Smithers (parser routing + rejection UI), Sideshow Bob (puzzle integration)
+
+**Key Design Decisions:**
+- All 4 triggers inflict the existing `concussion` injury — unified, no proliferation of injury types
+- Poison gas is the ONLY resettable trigger (creates distinct puzzle dynamic vs one-shot traps)
+- Ceiling collapse is intentionally lethal-tier (25 HP initial + bleed during long KO) — players who ignore warning signs face real consequences
+- Enemy blow implemented as mechanical trap for V1 (Principle 0 compliance); real NPC strikes use same concussion injury when NPCs arrive
+- Self-infliction commands defined per trigger (e.g., "breathe gas", "pull wire", "step on plate") — parser must route these correctly
+- `smell gas` is a WARNING (sensory verb), `breathe gas` is a TRIGGER (self-infliction) — important distinction for Smithers
+- Meta-commands (`save`, `quit`) must bypass consciousness gate
+
+**Decision filed:** `.squad/decisions/inbox/comic-book-guy-unconsciousness.md`
+
+### Session Update: NPC System Design Plan (2026-03-28)
+**Status:** ✅ DESIGN COMPLETE — Awaiting Wayne Approval
+
+**Deliverable:** `plans/npc-system-plan.md` — Comprehensive NPC/creature system design, ~46 KB.
+
+**Requested by:** Wayne Berry
+
+**What was done:**
+- Designed complete NPC system architecture extending Principle 0 with new Principle 0a (animate opt-in)
+- Researched and synthesized Dwarf Fortress creature RAWs, MUD NPC systems, and NPC engineering patterns from `resources/research/npcs/`
+- Designed `creature` base template with animate, behavior, drives, reactions, movement, awareness fields
+- Specified the rat as first NPC: full .lua definition with 3 drives (hunger, fear, curiosity), 4 reactions, 4 FSM states, movement rules, complete sensory descriptions
+- Designed Dwarf Fortress–inspired behavior system: drive-based utility scoring with random jitter for natural variation
+- Designed creature tick integration into game loop (after fire propagation, before injury tick)
+- Designed stimulus event system for creature reactions (player_enters, player_attacks, loud_noise, light_change)
+- Designed spatial tick fidelity optimization (full/partial/minimal based on distance from player)
+- Specified 2 new verbs (catch, chase) and extensions to attack/look/throw for creature interactions
+- Mapped 4-phase scaling path: Rat → Creature Variety → Creature Ecology → Humanoid NPCs
+- Estimated Phase 1 at ~1,390 lines (960 code + 430 tests) across 5 new files and 3 modified files
+- Documented risk assessment (8 risks with mitigations) and 7 open questions for team discussion
+
+**Key Design Decisions:**
+- **Principle 0a:** Creatures are objects with `animate = true` — clean opt-in, not a violation of Principle 0
+- **Principle 8 compliance:** All creature behavior is metadata-driven; engine evaluates generic behavior/drives/reactions tables
+- **Dwarf Fortress "RAWs" approach:** Creature `.lua` files are pure data definitions; engine doesn't know what a rat is
+- **Utility-based action selection** with random jitter prevents robotic behavior (DF lesson)
+- **Fear as primary emotional drive** for Phase 1 — expandable to full personality facets in Phase 4
+- **Spatial optimization:** Only creatures in/near player room get full tick evaluation
+- **Dead creatures become portable objects** (animate = false, portable = true in dead state)
+- **Nocturnal rats** more active at 2 AM game start — creates atmospheric tension in darkness
+- **Phase boundaries hard-locked:** Phase 1 is ONLY rat + creature foundation; no scope creep to humanoids
+
+**Affects:**
+- Bart (Architect): creature tick engine, game loop integration, stimulus emission
+- Flanders (Object Designer): creature template, rat definition, flesh material
+- Smithers (Parser/UI): new verbs (catch, chase), creature room presence, attack extensions
+- Nelson (QA): creature tick tests, rat behavior tests, verb interaction tests, integration tests
+- Moe (World Builder): creature placement in room definitions
+
+**Decision filed:** `.squad/decisions/inbox/cbg-npc-design.md`
 

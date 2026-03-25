@@ -24,7 +24,7 @@ local function pending(name, reason)
 end
 
 -- Load the room metadata table directly (it returns a plain Lua table)
-local room = dofile(script_dir .. "/../../src/meta/world/start-room.lua")
+local room = dofile(script_dir .. "/../../src/meta/rooms/start-room.lua")
 
 local north = room.exits and room.exits.north
 local window = room.exits and room.exits.window

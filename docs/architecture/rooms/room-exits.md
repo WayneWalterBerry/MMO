@@ -428,8 +428,8 @@ No new folders needed. The design fits cleanly into existing structure:
 
 ```
 src/meta/templates/room.lua          — base room template
-src/meta/world/start-room.lua        — updated with rich exits
-src/meta/world/*.lua                 — future rooms use same format
+src/meta/rooms/start-room.lua        — updated with rich exits
+src/meta/rooms/*.lua                 — future rooms use same format
 src/engine/traversal/init.lua        — exit validation (future)
 docs/architecture/room-exits.md            — this document
 ```

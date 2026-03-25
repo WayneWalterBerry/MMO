@@ -216,7 +216,7 @@ This engine operates on a fundamental architectural principle: **all game object
 ### The Pattern: Code → Live Instances → Mutations
 
 #### Load Phase
-At startup, the engine reads all `.lua` object files from disk exactly once. For each object file (e.g., `src/meta/world/candle.lua`):
+At startup, the engine reads all `.lua` object files from disk exactly once. For each object file (e.g., `src/meta/rooms/candle.lua`):
 
 1. **Store as string:** The entire source code is stored in memory as a Lua string
 2. **Parse into table:** The source string is parsed (via `load()`) into a live Lua table and registered in the object registry
