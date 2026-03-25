@@ -47,12 +47,14 @@ local STOP_WORDS = {
   ["now"] = true, ["just"] = true, ["here"] = true, ["right"] = true,
   ["really"] = true, ["very"] = true, ["quite"] = true,
   ["quickly"] = true, ["carefully"] = true, ["closely"] = true,
-  ["gently"] = true, ["ahead"] = true,
+  ["gently"] = true, ["ahead"] = true, ["slowly"] = true,
+  ["sitting"] = true, ["lying"] = true, ["standing"] = true,
   -- Other filler
   ["hey"] = true, ["maybe"] = true, ["perhaps"] = true,
   ["possible"] = true, ["great"] = true, ["kind"] = true,
   ["thing"] = true, ["think"] = true, ["see"] = true,
   ["hoping"] = true, ["yes"] = true, ["no"] = true, ["not"] = true,
+  ["something"] = true, ["anything"] = true, ["everything"] = true,
 }
 
 ---------------------------------------------------------------------------
@@ -243,6 +245,69 @@ local function prefer_base_state(cur_phrase, new_phrase)
 end
 
 ---------------------------------------------------------------------------
+-- P1 helpers: Noun validation gate — prevent verb-only false positives
+---------------------------------------------------------------------------
+local function token_matches(a, b)
+  if a == b then return true end
+  if b:find("-", 1, true) then
+    for part in b:gmatch("[^%-]+") do
+      if a == part then return true end
+    end
+  end
+  if a:find("-", 1, true) then
+    for part in a:gmatch("[^%-]+") do
+      if part == b then return true end
+    end
+  end
+  local len = #a
+  if len <= 3 then return false end
+  local threshold = len <= 5 and 1 or 2
+  return levenshtein(a, b) <= threshold
+end
+
+local function noun_overlap(input_noun_tokens, phrase_tokens)
+  for _, inp in ipairs(input_noun_tokens) do
+    for _, pt in ipairs(phrase_tokens) do
+      if token_matches(inp, pt) then
+        return true
+      end
+    end
+  end
+  return false
+end
+
+---------------------------------------------------------------------------
+-- P4 helper: Noun exactness tiebreaker — prefer exact noun match
+---------------------------------------------------------------------------
+local function noun_exactness(input_noun_tokens, phrase_noun)
+  if not phrase_noun or phrase_noun == "" then return 0 end
+  local pn = phrase_noun:lower()
+  for _, t in ipairs(input_noun_tokens) do
+    if t == pn then return 2 end
+  end
+  return 0
+end
+
+---------------------------------------------------------------------------
+-- P5: Adjective-only guard — reject inputs with only generic adjectives.
+-- Material/descriptive adjectives (heavy, dirty, wooden) are kept because
+-- they can narrow down to a specific game object.
+---------------------------------------------------------------------------
+local KNOWN_ADJECTIVES = {
+  small=true, big=true, large=true, little=true, tiny=true, huge=true,
+  old=true, new=true, long=true, short=true, round=true, flat=true,
+  red=true, blue=true, green=true, white=true, black=true, yellow=true,
+  brown=true, gray=true, grey=true,
+}
+
+local function all_adjectives(tokens)
+  for _, t in ipairs(tokens) do
+    if not KNOWN_ADJECTIVES[t] then return false end
+  end
+  return true
+end
+
+---------------------------------------------------------------------------
 -- Constructor
 ---------------------------------------------------------------------------
 function matcher.new(index_path, debug)
@@ -284,6 +349,36 @@ function matcher.new(index_path, debug)
   for _, entry in ipairs(self.phrases) do
     if entry.verb then
       self.known_verbs[entry.verb] = true
+    end
+  end
+
+  -- Build verb_tokens set for the noun validation gate (P1)
+  self.verb_tokens = {}
+  for v in pairs(self.known_verbs) do self.verb_tokens[v] = true end
+  for _, phrase in ipairs(self.phrases) do
+    if phrase.text then
+      local first_word = phrase.text:lower():match("^([%a%-]+)")
+      if first_word and not STOP_WORDS[first_word] then
+        self.verb_tokens[first_word] = true
+      end
+    end
+  end
+  if synonym_table and synonym_table.verbs then
+    for syn in pairs(synonym_table.verbs) do
+      self.verb_tokens[syn] = true
+    end
+  end
+
+  -- Build known noun tokens set (for P2 truncation priority)
+  self.known_noun_tokens = {}
+  for _, phrase in ipairs(self.phrases) do
+    for _, nt in ipairs(phrase.noun_tokens) do
+      self.known_noun_tokens[nt] = true
+      if nt:find("-", 1, true) then
+        for part in nt:gmatch("[^%-]+") do
+          self.known_noun_tokens[part] = true
+        end
+      end
     end
   end
 
@@ -340,19 +435,68 @@ function matcher:match(input_text)
     return nil, nil, 0, nil
   end
 
+  -- P3: Question transform — "what is X" → "examine X" before tokenization
+  local lower = input_text:lower()
+  if lower:match("^what%s+is%s+") or lower:match("^what'?s%s+") then
+    local noun = lower:match("^what%s+is%s+the%s+(.+)$")
+        or lower:match("^what'?s%s+the%s+(.+)$")
+        or lower:match("^what%s+is%s+an?%s+(.+)$")
+        or lower:match("^what%s+is%s+(.+)$")
+        or lower:match("^what'?s%s+(.+)$")
+    if noun then
+      input_text = "examine " .. noun
+    end
+  end
+
   local input_tokens = tokenize(input_text)
   if #input_tokens == 0 then
     return nil, nil, 0, nil
   end
 
   -- Synonym expansion: map unknown verbs to canonical forms
-  -- before typo correction can misfire (e.g., "snatch" → "search")
   if synonym_table then
     input_tokens = synonym_table.expand_tokens(input_tokens)
   end
 
   -- Apply typo correction against known verbs on remaining tokens
   input_tokens = correct_typos(input_tokens, self.known_verbs)
+
+  -- P2: Verbose input truncation — keep only the most relevant tokens.
+  -- Known game nouns get priority; remaining slots sorted by IDF.
+  local MAX_INPUT_TOKENS = 5
+  if #input_tokens > MAX_INPUT_TOKENS then
+    local scored = {}
+    for _, t in ipairs(input_tokens) do
+      local idf = (bm25_data and bm25_data.idf and bm25_data.idf[t]) or 0
+      local noun_priority = self.known_noun_tokens[t] and 1 or 0
+      scored[#scored + 1] = { token = t, idf = idf, noun_priority = noun_priority }
+    end
+    table.sort(scored, function(a, b)
+      if a.noun_priority ~= b.noun_priority then
+        return a.noun_priority > b.noun_priority
+      end
+      return a.idf > b.idf
+    end)
+    local kept = {}
+    for i = 1, MAX_INPUT_TOKENS do
+      if scored[i] then kept[#kept + 1] = scored[i].token end
+    end
+    input_tokens = kept
+  end
+
+  -- Classify input tokens into verb-like and noun-like
+  local input_noun_tokens = {}
+  for _, t in ipairs(input_tokens) do
+    if not self.verb_tokens[t] then
+      input_noun_tokens[#input_noun_tokens + 1] = t
+    end
+  end
+  local has_input_nouns = #input_noun_tokens > 0
+
+  -- P5: Adjective-only guard — if all noun tokens are generic adjectives, reject
+  if has_input_nouns and all_adjectives(input_noun_tokens) then
+    return nil, nil, 0, nil
+  end
 
   local use_bm25 = (bm25_data ~= nil)
 
@@ -367,15 +511,35 @@ function matcher:match(input_text)
   -- Score all candidates
   local best_score = -1
   local best_phrase = nil
+  local best_exactness = 0
   local use_context = (self.scoring_mode == "phase3") and context and context.recency_score
   local CONTEXT_BOOST_WEIGHT = 0.1
 
   for _, phrase in ipairs(phrase_pool) do
+    -- P1: Noun validation gate — skip candidates where no input noun
+    -- token matches any phrase token (prevents verb-only false positives)
+    if has_input_nouns and phrase.noun and phrase.noun ~= "" then
+      if not noun_overlap(input_noun_tokens, phrase.tokens) then
+        goto continue
+      end
+    end
+
     local score
     if use_bm25 then
       score = bm25_score(input_tokens, phrase.tokens)
     else
       score = jaccard_with_bonus(input_tokens, phrase.tokens)
+    end
+
+    -- Noun match bonus: boost when input directly names the phrase noun
+    if has_input_nouns and phrase.noun and phrase.noun ~= "" then
+      local pn = phrase.noun:lower()
+      for _, t in ipairs(input_noun_tokens) do
+        if t == pn then
+          score = score + 0.5
+          break
+        end
+      end
     end
 
     -- Phase 3: apply context recency boost to BM25 scores
@@ -389,9 +553,18 @@ function matcher:match(input_text)
     if score > best_score then
       best_score = score
       best_phrase = phrase
-    elseif score == best_score and prefer_base_state(best_phrase, phrase) then
-      best_phrase = phrase
+      best_exactness = noun_exactness(input_noun_tokens, phrase.noun)
+    elseif score == best_score then
+      -- P4: Prefer exact noun match over substring match
+      local ex = noun_exactness(input_noun_tokens, phrase.noun)
+      if ex > best_exactness then
+        best_phrase = phrase
+        best_exactness = ex
+      elseif ex == best_exactness and prefer_base_state(best_phrase, phrase) then
+        best_phrase = phrase
+      end
     end
+    ::continue::
   end
 
   if best_phrase then

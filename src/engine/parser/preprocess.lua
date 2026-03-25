@@ -518,6 +518,16 @@ local function transform_questions(text)
         return "examine it"
     end
 
+    -- "what is X" / "what's the X" → "examine X" (P3: prevents Tier 2 mismatch)
+    local what_noun = text:match("^what%s+is%s+the%s+(.+)$")
+        or text:match("^what'?s%s+the%s+(.+)$")
+        or text:match("^what%s+is%s+an?%s+(.+)$")
+        or text:match("^what%s+is%s+(.+)$")
+        or text:match("^what'?s%s+(.+)$")
+    if what_noun then
+        return "examine " .. what_noun
+    end
+
     -- Question patterns → help
     if text:match("^what%s+can%s+i%s+do")
         or text:match("^what%s+do%s+i%s+do")

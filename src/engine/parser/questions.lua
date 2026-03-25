@@ -59,6 +59,13 @@ M.QUESTION_MAP = {
     { pattern = "^what%s+is%s+this$",             verb = "look",      noun_capture = 0, priority = 70 },
     { pattern = "^what'?s%s+this$",               verb = "look",      noun_capture = 0, priority = 70 },
 
+    -- P3: "what is X" → examine X
+    { pattern = "^what%s+is%s+the%s+(.+)$",       verb = "examine",   noun_capture = 1, priority = 72 },
+    { pattern = "^what'?s%s+the%s+(.+)$",         verb = "examine",   noun_capture = 1, priority = 72 },
+    { pattern = "^what%s+is%s+an?%s+(.+)$",       verb = "examine",   noun_capture = 1, priority = 72 },
+    { pattern = "^what%s+is%s+(.+)$",             verb = "examine",   noun_capture = 1, priority = 74 },
+    { pattern = "^what'?s%s+(.+)$",               verb = "examine",   noun_capture = 1, priority = 74 },
+
     -- Inventory queries
     { pattern = "^what%s+am%s+i%s+carry",         verb = "inventory", noun_capture = 0, priority = 80 },
     { pattern = "^what%s+am%s+i%s+hold",          verb = "inventory", noun_capture = 0, priority = 80 },
