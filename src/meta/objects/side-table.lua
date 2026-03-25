@@ -5,7 +5,7 @@ return {
 
     id = "side-table",
     material = "oak",
-    keywords = {"table", "side table", "hall table", "oak table", "small table"},
+    keywords = {"side table", "hall table", "oak table", "small table"},
     size = 4,
     weight = 20,
     categories = {"furniture", "wooden"},

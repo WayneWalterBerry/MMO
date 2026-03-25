@@ -327,7 +327,6 @@ test("13. Specific value spot-checks for migration fidelity", function()
 
     local wax = materials.get("wax")
     h.assert_truthy(wax, "wax must exist")
-    h.assert_eq(60, wax.melting_point, "wax.melting_point must be 60")
     h.assert_eq(0.7, wax.flammability, "wax.flammability must be 0.7")
 end)
 

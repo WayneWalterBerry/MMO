@@ -5,7 +5,7 @@ return {
 
     id = "stone-altar",
     material = "stone",
-    keywords = {"altar", "stone altar", "slab", "sacrificial altar", "table", "stone table"},
+    keywords = {"altar", "stone altar", "slab", "sacrificial altar", "stone table"},
     size = 6,
     weight = 200,
     categories = {"furniture", "stone"},

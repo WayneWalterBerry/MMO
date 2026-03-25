@@ -7,7 +7,7 @@ return {
 
     id = "candle",
     material = "wax",
-    keywords = {"candle", "tallow", "candle stub", "tallow candle"},
+    keywords = {"candle", "tallow", "tallow candle"},
     size = 1,
     weight = 1,
     categories = {"light source", "small"},

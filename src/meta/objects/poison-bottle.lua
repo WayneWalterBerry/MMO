@@ -15,7 +15,7 @@ return {
 
     id = "poison-bottle",
     material = "glass",
-    keywords = {"bottle", "glass bottle", "poison", "vial", "potion", "flask", "small bottle", "poison bottle", "poison-bottle"},
+    keywords = {"poison", "poison bottle", "poison-bottle", "vial", "potion", "small bottle"},
     size = 1,
     weight = 0.4,
     categories = {"small-item", "container", "dangerous", "glass", "fragile", "consumable", "liquid", "poison"},

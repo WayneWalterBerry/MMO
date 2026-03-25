@@ -5,7 +5,7 @@ return {
 
     id = "silver-key",
     material = "silver",
-    keywords = {"key", "silver key", "small key", "silver", "ornate key"},
+    keywords = {"key", "silver key", "silver", "ornate key"},
     size = 1,
     weight = 0.3,
     categories = {"metal", "small", "treasure"},

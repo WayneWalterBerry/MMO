@@ -6,7 +6,7 @@ return {
 
     id = "rain-barrel",
     material = "wood",
-    keywords = {"barrel", "rain barrel", "water barrel", "cask", "tub"},
+    keywords = {"rain barrel", "water barrel", "tub"},
     size = 5,
     weight = 40,
     categories = {"container", "wooden", "furniture"},

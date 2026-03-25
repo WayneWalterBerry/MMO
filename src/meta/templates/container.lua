@@ -12,7 +12,7 @@ return {
     size = 2,
     weight = 0.5,
     portable = true,
-    material = "generic",
+    material = "wood",
 
     container = true,
     capacity = 4,

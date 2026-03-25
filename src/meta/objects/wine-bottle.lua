@@ -8,7 +8,7 @@ return {
 
     id = "wine-bottle",
     material = "glass",
-    keywords = {"bottle", "wine bottle", "wine", "glass bottle", "dusty bottle"},
+    keywords = {"wine bottle", "wine", "dusty bottle"},
     size = 2,
     weight = 1.5,
     categories = {"small-item", "fragile", "glass", "bottle"},

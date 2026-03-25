@@ -3,7 +3,7 @@ return {
     template = "furniture",
     id = "trap-door",
     name = "a trap door",
-    keywords = {"trap door", "trapdoor", "trap", "hatch", "door in floor", "floor door"},
+    keywords = {"trap door", "trapdoor", "hatch", "door in floor", "floor door"},
 
     hidden = true,
     size = 6,

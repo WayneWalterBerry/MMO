@@ -12,7 +12,7 @@ return {
     size = 1,
     weight = 0.1,
     portable = true,
-    material = "generic",
+    material = "iron",
 
     container = false,
     capacity = 0,

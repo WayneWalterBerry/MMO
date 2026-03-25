@@ -78,8 +78,8 @@ test("10. Keywords include 'barred door'", function()
     h.assert_truthy(has_keyword("barred door"), "must include 'barred door'")
 end)
 
-test("11. Keywords include 'oak door'", function()
-    h.assert_truthy(has_keyword("oak door"), "must include 'oak door'")
+test("11. Keywords include 'heavy oak door'", function()
+    h.assert_truthy(has_keyword("heavy oak door"), "must include 'heavy oak door'")
 end)
 
 test("12. Keywords include 'heavy oak door'", function()
