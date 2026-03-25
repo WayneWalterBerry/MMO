@@ -2318,7 +2318,8 @@ def main() -> int:
             _collect_instance_type_ids(instances_v, parsed, violations, seen_instance_ids)
 
     # GUID-02: Orphan objects — GUID not referenced by any room instance
-    if all_referenced_guids:
+    has_rooms = any(p.kind == "room" for p in parsed_files)
+    if has_rooms:
         for parsed in parsed_files:
             if parsed.kind == "object" and parsed.guid:
                 bare = parsed.guid.strip("{}")

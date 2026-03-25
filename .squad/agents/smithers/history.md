@@ -47,7 +47,18 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
-
+
+### Issues #242-244: Parser Test Fixes + Benchmark Improvement (2026-03-25)
+
+**What shipped:** Fixed 3 parser test failures, tightened typo correction, added missing synonyms. Benchmark improved from 83.7% (123/147) to 91.2% (134/147).
+
+**#242:** peer/check->examine synonyms. **#243:** context recency boost in BM25 path. **#244:** noun_tokens populated during phrase loading.
+
+**Also shipped:** Tighter Levenshtein thresholds (4->d1, 5->d1, 6+->d2), snag->take and show->look synonyms.
+
+**Key learnings:** Context boost 0.1 weight breaks ties without overriding. IDF guard makes tighter typo thresholds safe. Remaining 13/147 failures need noun validation gate.
+
+
 ### Issue #174: SLM Embedding Index Overhaul (Sections 1-4)
 
 **What shipped:** Full embedding index overhaul with BM25 scoring, synonym expansion, inverted index, and 56 new object entries. 51 TDD tests pass, 131 total test files pass, zero regressions.
@@ -115,7 +126,10 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 **Files created:** `docs/architecture/engine/prime-directive-architecture.md`
 
 **Scope:** ~300 lines new code (3 modules), ~170 lines modified, ~450 lines new tests across 5 test files.
-
+
+
+
+
 ### 2026-07-18: Issue #168 — Compound commands only execute first part
 
 **What shipped:** Two fixes so compound commands like "get candle, and light it" execute both parts. (1) Enhanced `split_commands` in preprocess.lua to handle `, and` and `and then` as compound separators, stripping leftover "and" prefixes from segments. (2) Added `split_compound` — a verb-aware ` and ` splitter that only splits when the word after "and" is a recognized verb. Prevents breaking multi-object commands like "get candle and matchbox".
