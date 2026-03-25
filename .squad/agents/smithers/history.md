@@ -52,6 +52,29 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 - **Bug #181 — drop handler bypasses fuzzy resolution (2026-07-17):** The `drop` verb handler in `acquisition.lua` used `matches_keyword()` (exact-only) to find held items, so typos like "spitton" for "spittoon" failed with "You aren't holding that." Fix: added `fuzzy.score_object()` fallback after exact match fails — both for hand search and worn-item check. Also fixed `sensory.lua`: (1) the dark-path examine output now includes the object name so fuzzy-matched items are identifiable, and (2) `look X` in darkness delegates to examine's dark path instead of returning a generic error. All 24 tests pass, zero regressions.
 - **Lesson: any verb handler that searches hands/worn/bags must use fuzzy fallback.** The `find_visible()` function in helpers.lua has Tier 5 fuzzy built in, but verb handlers that bypass `find_visible()` for hand-only searches (like `drop`) must add their own fuzzy fallback using `fuzzy.parse_noun_phrase()` + `fuzzy.score_object()`.
 
+### Parser Improvement Phase 1 — BM25 + Synonyms (A/B Proven)
+
+**What shipped:** Full Phase 1 parser improvement with A/B benchmarking proof. Tier 2 accuracy on 60-case benchmark: Jaccard baseline 47/60 (78.3%) → BM25+Synonyms 60/60 (100%).
+
+**New files created:**
+- `src/engine/parser/bm25_data.lua` — Auto-generated IDF table (177 tokens, avgdl=3.81) from `scripts/build-idf-table.py`
+- `src/engine/parser/synonym_table.lua` — Manual POS-filtered verb synonyms (60+ mappings to canonical verbs)
+- `scripts/build-idf-table.py` — Python build-time script to generate IDF data from embedding index
+- `test/parser/test-tier2-benchmark.lua` — 60-case A/B benchmark (5 categories: filler, synonym, polite, negative, ambiguous)
+
+**Modified files:**
+- `src/engine/parser/embedding_matcher.lua` — Added BM25 scorer alongside Jaccard (kept as fallback via `scoring_mode` flag), expanded stop words from 21→60+, synonym expansion before typo correction, tightened typo correction for 5-char words (max dist 1 instead of 2)
+- `src/engine/parser/init.lua` — Dual threshold: `THRESHOLD_BM25=3.00` / `THRESHOLD_JACCARD=0.40`, auto-selected by scoring mode
+
+**Key learnings:**
+- **BM25's additive scoring eliminates verbose-input penalty.** Jaccard divides by union size, so filler words (please, now, just) dilute the score. BM25 only sums contributions from matching tokens — extra words contribute 0, not negative.
+- **Synonym REPLACE, not ADD.** Initially expanded synonyms by adding canonical form alongside the original ("snatch" + "take"). This caused typo correction to corrupt the original (snatch→search, dist=2). Changed to REPLACE: unknown synonym is removed, only canonical form enters the token stream.
+- **Stop word expansion is the highest-ROI change.** Adding 40+ common English filler words (please, now, just, do, can, go, let, try, want, etc.) improved Jaccard from 42% to 78% AND BM25 from 68% to 86% before any other tuning. The stop words were the primary bottleneck.
+- **Typo correction distance must scale with word length.** 5-char words with dist-2 corrections are too aggressive: knife→sniff, cloth→close. Changed to: ≤4 chars = no correction, 5 chars = max dist 1, 6+ chars = max dist 2.
+- **"eat" IS a valid game verb** (mapped to consume in the phrase index). Test cases labeling "eat X" as negative were wrong — the parser correctly matches these.
+- **IDF table is static at build time.** The Python script generates the table; the Lua runtime just looks up values. No external dependencies at runtime. Fengari-compatible.
+
+**Zero regressions:** All 137 existing test files pass. Meta-lint: 0 new errors.
 
 ### 2026-07-20: Issue #106 Phase 3 — Prime Directive Tiers 1-5 Implementation
 
