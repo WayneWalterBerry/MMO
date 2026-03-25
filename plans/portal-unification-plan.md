@@ -310,7 +310,29 @@ Add portal validation rules to the meta-lint system:
 
 ---
 
-## 7. Who Does What
+## 7. Issue Tracker — One Issue Per Portal (TDD)
+
+Each portal has its own GitHub issue. All follow TDD: tests written FIRST, then implementation.
+
+| # | Portal | Rooms | Type | Phase |
+|---|--------|-------|------|-------|
+| #198 | Bedroom-Hallway Door | start-room ↔ hallway | door (4-state FSM) | **Phase 2** (proof of concept) |
+| #199 | Bedroom-Courtyard Window | start-room ↔ courtyard | window | Phase 3 |
+| #200 | Bedroom-Cellar Trapdoor | start-room ↔ cellar | trap_door (hidden→revealed→open) | Phase 3 |
+| #201 | Cellar-Storage Door | cellar ↔ storage-cellar | door (iron-bound) | Phase 3 |
+| #202 | Storage-Deep Cellar Door | storage ↔ deep-cellar | door (locked) | Phase 3 |
+| #203 | Deep Cellar-Hallway Stairway | deep-cellar ↔ hallway | stairway (wind effect) | Phase 3 |
+| #204 | Deep Cellar-Crypt Archway | deep-cellar ↔ crypt | archway (iron gate) | Phase 3 |
+| #205 | Hallway-Level2 Staircase | hallway → level-2 | stairway (boundary) | Phase 3 |
+| #206 | Hallway-West Door | hallway → manor-west | door (boundary, locked) | Phase 3 |
+| #207 | Hallway-East Door | hallway → manor-east | door (boundary, locked) | Phase 3 |
+| #208 | Courtyard-Kitchen Door | courtyard → manor-kitchen | door (boundary, breakable) | Phase 3 |
+
+**Execution order:** #198 first (Phase 2 proof of concept). Remaining (#199-#208) in Phase 3, parallelizable per room.
+
+---
+
+## 8. Who Does What
 
 | Agent | Phase 1 | Phase 2 | Phase 3 | Phase 4 |
 |-------|---------|---------|---------|---------|
