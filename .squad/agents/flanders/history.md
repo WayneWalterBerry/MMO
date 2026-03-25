@@ -27,9 +27,36 @@
 
 ---
 
-## Current Sprint: Effects Pipeline (EP1-EP10) ✅ COMPLETE
+## Current Sprint: Unconsciousness Trigger Objects (#162)
 
 ### Latest Work (2026-07-28)
+
+### #162: Build 4 Unconsciousness Trigger Objects — BUILT ✅
+
+**Task:** Create 4 environmental objects that cause unconsciousness via the concussion injury type, per CBG's design doc (`docs/design/injuries/unconsciousness-triggers.md`).
+
+**What was built (4 files in `src/meta/objects/`):**
+
+1. **`falling-rock-trap.lua`** — Tripwire-triggered boulder drop. Severe concussion, 10–15 turns KO. One-shot (armed → triggered → spent). Disarm path: cut wire with knife. Material: stone.
+2. **`unstable-ceiling.lua`** — Area-effect structural collapse triggered by noise/impact. MOST DANGEROUS: inflicts concussion + crushing-wound simultaneously (25 HP on impact + 2/turn bleed during KO). Permanent (unstable → collapsing → collapsed). Prevention: prop with structural support. Material: wood.
+3. **`poison-gas-vent.lua`** — Chemical sedation from cracked pipe. Minor concussion, 3–5 turns KO. RESETS after wake (active → leaking cycle). Creates room-escape puzzle. Plug with cloth to disable. Material: iron.
+4. **`falling-club-trap.lua`** — Spring-loaded mechanical club simulating "enemy blow" (no NPCs in V1). Moderate concussion, 6–10 turns KO. One-shot. Disarm with thin tool. Spent club detachable as weapon. Material: oak.
+
+**Each object declares:** GUID, template=furniture, id, name, keywords, causes_unconsciousness=true, injury_type=concussion, unconscious_severity, unconscious_duration, effects_pipeline=true, FSM states with per-state sensory descriptions, transitions with effect + pipeline_effects, self-infliction verbs, disarm/prevention paths, on_feel + on_smell + on_listen + on_taste, unconscious_narration (periodic + wake-up), rejection_messages pool, GOAP prerequisites with warns hints.
+
+**Engine verification findings:**
+- `injuries.tick()` runs unconditionally during unconsciousness ✅
+- Concussion injury has all required severity levels ✅
+- **GAP for Bart:** `causes_unconsciousness` in effect data is never processed by effects pipeline — needs after-effect interceptor
+- **GAP for Smithers:** Missing verb handlers: `breathe`, `trigger`, `step`
+
+**TDD results:** 32/39 tests pass. 7 remaining failures are all engine/verb integration — not object definitions. Zero regressions in full suite (3 → 2 failing test files; fixed material-audit by using registered materials: stone/wood instead of granite/timber).
+
+---
+
+## Previous Sprint: Effects Pipeline (EP1-EP10) ✅ COMPLETE
+
+### Previous Work (2026-07-28)
 
 ### Fix #153: Brass Bowl Keyword Collision — FIXED ✅
 
