@@ -34,6 +34,8 @@ local test_dirs = {
     repo_root .. SEP .. "test" .. SEP .. "objects",
     repo_root .. SEP .. "test" .. SEP .. "armor",
     repo_root .. SEP .. "test" .. SEP .. "wearables",
+    repo_root .. SEP .. "test" .. SEP .. "sensory",
+    repo_root .. SEP .. "test" .. SEP .. "fsm",
 }
 
 local is_windows = SEP == "\\"
