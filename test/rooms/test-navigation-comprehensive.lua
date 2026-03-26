@@ -69,7 +69,7 @@ load_portal("storage-deep-cellar-door-north.lua")
 load_portal("deep-cellar-storage-door-south.lua")
 load_portal("deep-cellar-hallway-stairs-up.lua")
 load_portal("deep-cellar-crypt-archway-west.lua")
-load_portal("crypt-deep-cellar-archway-west.lua")
+load_portal("crypt-deep-cellar-archway-east.lua")
 
 -- Resolve a portal exit to its portal object, or return the exit as-is
 local function resolve_exit(exit)
@@ -360,7 +360,7 @@ local EXPECTED_EXITS = {
     ["courtyard"]      = { "up", "east" },
     ["storage-cellar"] = { "south", "north" },
     ["deep-cellar"]    = { "south", "up", "west" },
-    ["crypt"]          = { "west" },
+    ["crypt"]          = { "east" },
 }
 
 for room_id, expected_dirs in pairs(EXPECTED_EXITS) do
@@ -403,7 +403,7 @@ local EXPECTED_TARGETS = {
     { room = "deep-cellar",    dir = "south",  target = "storage-cellar" },
     { room = "deep-cellar",    dir = "up",     target = "hallway" },
     { room = "deep-cellar",    dir = "west",   target = "crypt" },
-    { room = "crypt",          dir = "west",   target = "deep-cellar" },
+    { room = "crypt",          dir = "east",   target = "deep-cellar" },
 }
 
 for _, spec in ipairs(EXPECTED_TARGETS) do
@@ -510,7 +510,7 @@ local OPEN_EXITS = {
     { room = "storage-cellar", dir = "south",  name = "iron-bound door (from storage)" },
     { room = "deep-cellar",    dir = "south",  name = "iron door (from deep-cellar)" },
     { room = "deep-cellar",    dir = "up",     name = "stairway to hallway" },
-    { room = "crypt",          dir = "west",   name = "archway to deep-cellar" },
+    { room = "crypt",          dir = "east",   name = "archway to deep-cellar" },
 }
 
 -- Portal-aware "open" means: portal's initial state is traversable
@@ -806,8 +806,8 @@ local KEYWORD_TESTS = {
     { room = "deep-cellar",    dir = "west",   keyword = "archway",        should_match = true },
     { room = "deep-cellar",    dir = "west",   keyword = "gate",           should_match = true },
     { room = "deep-cellar",    dir = "west",   keyword = "iron gate",      should_match = true },
-    { room = "crypt",          dir = "west",   keyword = "archway",        should_match = true },
-    { room = "crypt",          dir = "west",   keyword = "way out",        should_match = true },
+    { room = "crypt",          dir = "east",   keyword = "archway",        should_match = true },
+    { room = "crypt",          dir = "east",   keyword = "way out",        should_match = true },
 }
 
 -- Local reimplementation of exit_matches for metadata-level testing
@@ -932,9 +932,9 @@ if handlers and handlers["go"] then
     end)
 
     -- Crypt → deep-cellar (open archway)
-    test(next_test() .. ". crypt/west moves player to deep-cellar", function()
+    test(next_test() .. ". crypt/east moves player to deep-cellar", function()
         local ctx = make_ctx("crypt")
-        capture(function() handlers["go"](ctx, "west") end)
+        capture(function() handlers["go"](ctx, "east") end)
         h.assert_eq("deep-cellar", ctx.player.location,
             "player must move to deep-cellar from crypt")
     end)
@@ -1250,8 +1250,8 @@ if handlers and handlers["go"] then
     test(next_test() .. ". crypt → deep-cellar → hallway chain", function()
         local ctx = make_ctx("crypt")
 
-        -- Step 1: crypt → deep-cellar (west)
-        capture(function() handlers["go"](ctx, "west") end)
+        -- Step 1: crypt → deep-cellar (east)
+        capture(function() handlers["go"](ctx, "east") end)
         h.assert_eq("deep-cellar", ctx.player.location, "step 1: crypt → deep-cellar")
 
         -- Step 2: deep-cellar → hallway (up, open stairway)
@@ -1332,7 +1332,7 @@ local EXIT_TYPES = {
     { room = "deep-cellar",    dir = "south",  expected_type = "door" },
     { room = "deep-cellar",    dir = "up",     expected_type = "stairway" },
     { room = "deep-cellar",    dir = "west",   expected_type = "archway" },
-    { room = "crypt",          dir = "west",   expected_type = "archway" },
+    { room = "crypt",          dir = "east",   expected_type = "archway" },
 }
 
 for _, spec in ipairs(EXIT_TYPES) do

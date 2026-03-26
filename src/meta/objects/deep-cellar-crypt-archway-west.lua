@@ -1,5 +1,5 @@
 -- deep-cellar-crypt-archway-west.lua — Portal object: deep cellar side of crypt archway
--- Paired with: crypt-deep-cellar-archway-west.lua (crypt side)
+-- Paired with: crypt-deep-cellar-archway-east.lua (crypt side)
 -- Replaces: deep-cellar.exits.west (inline exit)
 -- See: plans/portal-unification-plan.md (Phase 3), Issue #204
 return {
