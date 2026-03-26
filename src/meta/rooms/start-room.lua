@@ -99,103 +99,14 @@ return {
         { id = "chamber-pot", type = "Chamber Pot", type_id = "9a9ff109-93a0-4dcf-9d6e-0f0f4b83f4ba" },
         { id = "bedroom-door", type = "Bedroom Door", type_id = "e4a7f3b2-91d6-4c8e-b5a0-3f2d1e8c6a49", location = "room" },
         { id = "bedroom-hallway-door-north", type_id = "{25852832-6f19-48af-a118-20350ac8d243}" },
+        { id = "bedroom-courtyard-window-out", type_id = "bedroom-courtyard-window-out" },
+        { id = "bedroom-cellar-trapdoor-down", type_id = "bedroom-cellar-trapdoor-down" },
     },
 
     exits = {
         north = { portal = "bedroom-hallway-door-north" },
-
-        window = {
-            target = "courtyard",
-            type = "window",
-            passage_id = "bedroom-courtyard-window",
-            name = "the leaded glass window",
-            keywords = {"window", "glass", "leaded window", "pane"},
-            description = "A tall window of diamond-paned leaded glass, set deep in the stone wall. Through the warped glass you glimpse rooftops and a moonlit courtyard far below.",
-
-            max_carry_size = 2,
-            max_carry_weight = 10,
-            requires_hands_free = true,
-            player_max_size = 4,
-
-            open = false,
-            locked = true,
-            key_id = nil,
-            hidden = false,
-            broken = false,
-
-            one_way = false,
-            direction_hint = "down",
-            breakable = true,
-            break_difficulty = 2,
-
-            mutations = {
-                unlock = {
-                    becomes_exit = {
-                        locked = false,
-                        description = "The iron latch is open. The window could be pushed outward.",
-                    },
-                    message = "You slide the iron latch aside. It moves reluctantly, shedding flakes of rust.",
-                },
-                open = {
-                    condition = function(self) return not self.locked end,
-                    becomes_exit = {
-                        open = true,
-                        locked = false,
-                        description = "The window stands open. Cold night air drifts in, carrying the scent of rain and chimney smoke from the courtyard below.",
-                    },
-                    message = "You push the window open. Cold air rushes in, guttering the candle flame.",
-                },
-                close = {
-                    becomes_exit = {
-                        open = false,
-                        description = "The window is closed. Through the warped glass you glimpse rooftops and a moonlit courtyard.",
-                    },
-                    message = "You pull the window shut. The sounds of the night are muffled once more.",
-                },
-                ["break"] = {
-                    becomes_exit = {
-                        type = "hole in wall",
-                        name = "a shattered window frame",
-                        keywords = {"window", "broken window", "shattered window", "window frame"},
-                        description = "Jagged shards of leaded glass cling to the stone frame like broken teeth. Cold air howls through the gap. The courtyard is visible far below -- a dangerous drop.",
-                        open = true,
-                        locked = false,
-                        breakable = false,
-                        broken = true,
-                        requires_hands_free = true,
-                        max_carry_size = 3,
-                    },
-                    spawns = {"glass-shard", "glass-shard"},
-                    message = "The window explodes inward in a shower of glass! Shards skitter across the stone floor.",
-                },
-            },
-        },
-
-        down = {
-            target = "cellar",
-            type = "trap_door",
-            passage_id = "bedroom-cellar-trapdoor",
-            name = "the trap door",
-            keywords = {"trap door", "trapdoor", "hatch", "down", "stairway", "stairs"},
-            description = "A narrow stone stairway spirals down into darkness through the open trap door.",
-
-            max_carry_size = 3,
-            max_carry_weight = 30,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = false,
-            key_id = nil,
-            hidden = true,
-            broken = false,
-
-            one_way = false,
-            direction_hint = "down",
-            breakable = false,
-
-            mutations = {},
-        },
+        window = { portal = "bedroom-courtyard-window-out" },
+        down = { portal = "bedroom-cellar-trapdoor-down" },
     },
 
     -- No custom on_look: engine composes room view dynamically from
