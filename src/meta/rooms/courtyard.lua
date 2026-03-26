@@ -34,86 +34,13 @@ return {
         { id = "ivy",           type = "Ivy",                type_id = "18723096-bed0-46fa-bcf8-d79514f994ff" },
         { id = "cobblestone",   type = "Loose Cobblestone",  type_id = "4388e944-50e3-4382-9068-646421c0741f" },
         { id = "rain-barrel",   type = "Rain Barrel",        type_id = "ff526b60-83e1-4c82-9d5f-c303bac5bdf3" },
+        { id = "courtyard-bedroom-window-in", type_id = "courtyard-bedroom-window-in" },
+        { id = "courtyard-kitchen-door", type_id = "courtyard-kitchen-door" },
     },
 
     exits = {
-        up = {
-            target = "start-room",
-            type = "window",
-            passage_id = "bedroom-courtyard-window",
-            name = "the bedroom window high above",
-            keywords = {"window", "bedroom window", "up"},
-            description = "Far above, the bedroom window is visible — a dark rectangle high on the south wall. The drop was dangerous; climbing back would be harder still.",
-
-            max_carry_size = 2,
-            max_carry_weight = 10,
-            requires_hands_free = true,
-            player_max_size = 4,
-
-            open = false,
-            locked = false,
-            hidden = false,
-            broken = false,
-            one_way = false,
-            direction_hint = "up",
-        },
-
-        east = {
-            target = "manor-kitchen",
-            type = "door",
-            passage_id = "courtyard-kitchen-door",
-            name = "a stout wooden door",
-            keywords = {"door", "wooden door", "kitchen door", "east door"},
-            description = "A stout wooden door, warped with age and damp. The latch is rusted shut. Through the crack beneath it, you smell old cooking fires and grease.",
-            on_feel = "Swollen wood, rough and damp. The latch is a simple iron bar, seized with rust. The hinges are on the inside — you'd have to go through it, not around it. The gap beneath the door lets through a draft that smells of grease and cold ash.",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = true,
-            key_id = nil,
-            hidden = false,
-            broken = false,
-            one_way = false,
-            breakable = true,
-            break_difficulty = 3,
-
-            mutations = {
-                ["break"] = {
-                    becomes_exit = {
-                        type = "hole in wall",
-                        name = "a splintered doorway",
-                        keywords = {"doorway", "splintered doorway", "broken door"},
-                        description = "Where the wooden door once stood, only splintered planks and a twisted latch remain. The smell of old cooking grease drifts through the gap.",
-                        open = true,
-                        locked = false,
-                        breakable = false,
-                        broken = true,
-                        max_carry_size = 4,
-                        max_carry_weight = 50,
-                    },
-                    message = "The warped door gives way with a crack of splintering wood! The rusted latch tears free and clatters across the cobblestones.",
-                },
-                unlock = {
-                    becomes_exit = {
-                        locked = false,
-                        description = "The wooden door's latch has been forced aside, though the wood is still swollen in its frame.",
-                    },
-                    message = "With effort, you work the rusted latch free. It scrapes open with a grinding protest.",
-                },
-                open = {
-                    condition = function(self) return not self.locked end,
-                    becomes_exit = {
-                        open = true,
-                        description = "The wooden door stands open, revealing a dim kitchen passage beyond.",
-                    },
-                    message = "You put your shoulder to the swollen door and shove. It scrapes open, grudging every inch.",
-                },
-            },
-        },
+        up = { portal = "courtyard-bedroom-window-in" },
+        east = { portal = "courtyard-kitchen-door" },
     },
 
     on_enter = function(self)
