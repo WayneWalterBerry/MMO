@@ -51,6 +51,8 @@ local spawn_objects = H.spawn_objects
 local perform_mutation = H.perform_mutation
 local inventory_weight = H.inventory_weight
 local move_spatial_object = H.move_spatial_object
+local find_portal_by_keyword = H.find_portal_by_keyword
+local sync_bidirectional_portal = H.sync_bidirectional_portal
 
 local get_game_time = H.get_game_time
 local is_daytime = H.is_daytime
@@ -139,13 +141,19 @@ function M.register(handlers)
         -- Resolve direction alias
         local dir = DIRECTION_ALIASES[clean]
 
-        -- If not a known direction, search exits by keyword
+        -- If not a known direction, try portal keyword then exit keyword
         if not dir then
             local room = ctx.current_room
-            for d, exit in pairs(room.exits or {}) do
-                if type(exit) == "table" and exit_matches(exit, d, clean) then
-                    dir = d
-                    break
+            local portal = find_portal_by_keyword(ctx, clean)
+            if portal and portal.portal and portal.portal.direction_hint then
+                dir = portal.portal.direction_hint
+            end
+            if not dir then
+                for d, exit in pairs(room.exits or {}) do
+                    if type(exit) == "table" and exit_matches(exit, d, clean) then
+                        dir = d
+                        break
+                    end
                 end
             end
         end
@@ -156,6 +164,106 @@ function M.register(handlers)
 
         local room = ctx.current_room
         local exit = room.exits and room.exits[dir]
+
+        -----------------------------------------------------------------
+        -- Portal resolution path (D-PORTAL-ARCHITECTURE)
+        -- 1. Thin exit reference: exit.portal points to a portal object ID
+        -- 2. Direct search: find portal in room by direction_hint
+        -- Falls through to legacy exit handling if no portal found
+        -----------------------------------------------------------------
+        local portal_obj = nil
+
+        -- Thin reference: exit = { portal = "some-portal-id" }
+        if exit and type(exit) == "table" and exit.portal then
+            portal_obj = ctx.registry:get(exit.portal)
+        end
+
+        -- Fallback: search room for portal with matching direction_hint
+        if not portal_obj then
+            portal_obj = find_portal_by_keyword(ctx, dir)
+        end
+
+        if portal_obj and portal_obj.portal then
+            local state = portal_obj.states and portal_obj.states[portal_obj._state]
+            if not state or not state.traversable then
+                if state and state.blocked_message then
+                    print(state.blocked_message)
+                elseif portal_obj._state == "locked" then
+                    print((portal_obj.name or "The way") .. " is locked.")
+                elseif portal_obj._state == "closed" or portal_obj._state == "barred" then
+                    print((portal_obj.name or "The way") .. " is closed.")
+                else
+                    print((portal_obj.name or "The way") .. " blocks your path.")
+                end
+                return
+            end
+
+            local target_id = portal_obj.portal.target
+            local target_room = ctx.rooms and ctx.rooms[target_id]
+            if not target_room then
+                print("That way leads somewhere you cannot yet reach.")
+                return
+            end
+
+            -- Fire on_traverse effects from the portal object
+            if portal_obj.on_traverse then
+                traverse_effects.process(portal_obj, ctx)
+            end
+
+            -- on_exit_room hook
+            local old_room = ctx.current_room
+            if old_room.on_exit_room and type(old_room.on_exit_room) == "function" then
+                old_room.on_exit_room(old_room, ctx)
+            end
+            if old_room.event_output and old_room.event_output["on_exit_room"] then
+                print(old_room.event_output["on_exit_room"])
+                old_room.event_output["on_exit_room"] = nil
+            end
+
+            -- Record previous room for "go back"
+            if context_window and ctx.current_room then
+                context_window.set_previous_room(ctx.current_room.id)
+            end
+
+            -- Move player
+            ctx.player.location = target_id
+            ctx.current_room = target_room
+
+            ctx.player.visited_rooms = ctx.player.visited_rooms or {}
+            local first_visit = not ctx.player.visited_rooms[target_id]
+            ctx.player.visited_rooms[target_id] = true
+
+            -- on_enter_room hook
+            if target_room.on_enter_room and type(target_room.on_enter_room) == "function" then
+                target_room.on_enter_room(target_room, ctx)
+            end
+            if target_room.event_output and target_room.event_output["on_enter_room"] then
+                print(target_room.event_output["on_enter_room"])
+                target_room.event_output["on_enter_room"] = nil
+            end
+
+            -- Print arrival
+            print("")
+            if target_room.on_enter then
+                print(target_room.on_enter(target_room))
+            else
+                print("You arrive at " .. (target_room.name or "a new area") .. ".")
+            end
+
+            if first_visit then
+                ctx.verbs["look"](ctx, "")
+            else
+                print("**" .. (target_room.name or "Unnamed room") .. "**")
+                if target_room.short_description then
+                    print(target_room.short_description)
+                end
+            end
+            return
+        end
+
+        -----------------------------------------------------------------
+        -- Legacy exit-table path (backward compatible)
+        -----------------------------------------------------------------
         if not exit then
             print("You can't go that way.")
             return
