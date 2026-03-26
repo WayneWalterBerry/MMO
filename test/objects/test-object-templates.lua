@@ -46,6 +46,7 @@ table.sort(object_files)
 local VALID_TEMPLATES = {
     ["small-item"] = true,
     ["container"]  = true,
+    ["creature"]   = true,
     ["furniture"]  = true,
     ["sheet"]      = true,
     ["portal"]     = true,

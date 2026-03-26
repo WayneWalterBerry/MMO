@@ -27,10 +27,10 @@ local REQUIRED_PROPS = {
     "melting_point", "ignition_point",
 }
 
--- The exact 23 materials that must survive migration
+-- The exact 24 materials that must survive migration
 local EXPECTED_MATERIALS = {
     "bone", "brass", "burlap", "cardboard", "ceramic", "cotton",
-    "fabric", "glass", "hemp", "iron", "leather", "linen", "oak",
+    "fabric", "flesh", "glass", "hemp", "iron", "leather", "linen", "oak",
     "paper", "plant", "silver", "steel", "stone", "tallow",
     "velvet", "wax", "wood", "wool",
 }
@@ -70,15 +70,15 @@ test("3. materials.get('nonexistent') returns nil gracefully", function()
     h.assert_nil(materials.get(""), "empty string must return nil or table")
 end)
 
-test("4. materials.list or registry iteration returns all 23 materials", function()
+test("4. materials.list or registry iteration returns all 24 materials", function()
     local count = 0
     local found = {}
     for name, _ in pairs(materials.registry) do
         count = count + 1
         found[name] = true
     end
-    h.assert_eq(23, count,
-        "expected exactly 23 materials, found " .. count)
+    h.assert_eq(24, count,
+        "expected exactly 24 materials, found " .. count)
 end)
 
 test("5. Every material has all 11 required property keys", function()
@@ -292,11 +292,11 @@ test("11. If src/meta/materials/ exists, per-file materials load correctly", fun
     end
 end)
 
-test("12. Material count is exactly 23 (no materials lost)", function()
+test("12. Material count is exactly 24 (no materials lost)", function()
     local count = 0
     for _ in pairs(materials.registry) do count = count + 1 end
-    h.assert_eq(23, count,
-        "expected exactly 23 materials, found " .. count ..
+    h.assert_eq(24, count,
+        "expected exactly 24 materials, found " .. count ..
         " — materials may have been lost or duplicated during migration")
 end)
 
@@ -330,7 +330,7 @@ test("13. Specific value spot-checks for migration fidelity", function()
     h.assert_eq(0.7, wax.flammability, "wax.flammability must be 0.7")
 end)
 
-test("14. All 23 expected material names are present", function()
+test("14. All 24 expected material names are present", function()
     local missing = {}
     for _, name in ipairs(EXPECTED_MATERIALS) do
         if not materials.get(name) then
@@ -358,6 +358,6 @@ end)
 ---------------------------------------------------------------------------
 print("")
 print("Migration safety tests: 15 tests across 3 suites")
-print("Materials validated: 23")
+print("Materials validated: 24")
 local exit_code = h.summary()
 os.exit(exit_code == 0 and 0 or 1)
