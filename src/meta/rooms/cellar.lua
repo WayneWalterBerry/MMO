@@ -17,6 +17,7 @@ return {
         { id = "torch-bracket",  type = "Torch Bracket",  type_id = "d9f4a2b3-c5e8-4167-9d34-e8b2c7d6f513" },
         { id = "cellar-bedroom-trapdoor-up", type_id = "{c915adfa-df5c-40bb-987f-751be2cc7525}" },
         { id = "cellar-storage-door-north", type_id = "{cd7f2d60-8528-4a7f-9236-0bfaad8c399d}" },
+        { id = "cellar-rat", type_id = "{071e73f6-535e-42cb-b981-ebf85c27356f}" },
     },
 
     exits = {
