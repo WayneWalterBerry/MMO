@@ -76,17 +76,20 @@ function M.register(handlers)
                 return
             end
 
-            local light = get_light_level(ctx)
+            local l_ok, light = pcall(get_light_level, ctx)
+            if not l_ok then light = "dark" end
             if light == "dark" then
                 print("**" .. (ctx.current_room.name or "Unknown room") .. "**")
                 print("It is too dark to see. You need a light source. Try 'feel' to grope around in the darkness.")
-                local hour, minute = get_game_time(ctx)
-                local sky = ctx.current_room and ctx.current_room.sky_visible
-                local desc = time_of_day_desc(hour, sky)
-                if desc then
-                    print("\n" .. desc .. " It is " .. format_time(hour, minute) .. ".")
-                else
-                    print("\nIt is " .. format_time(hour, minute) .. ".")
+                local t_ok, hour, minute = pcall(get_game_time, ctx)
+                if t_ok then
+                    local sky = ctx.current_room and ctx.current_room.sky_visible
+                    local desc = time_of_day_desc(hour, sky)
+                    if desc then
+                        print("\n" .. desc .. " It is " .. format_time(hour, minute) .. ".")
+                    else
+                        print("\nIt is " .. format_time(hour, minute) .. ".")
+                    end
                 end
                 return
             end
@@ -132,6 +135,27 @@ function M.register(handlers)
                 parts[#parts + 1] = table.concat(presences, " ")
             end
 
+            -- Creature presences (WAVE-3: NPC room presence)
+            local cr_ok, cr_mod = pcall(require, "engine.creatures")
+            if cr_ok and cr_mod then
+                local room_creatures = cr_mod.get_creatures_in_room(ctx.registry, room.id)
+                local creature_presences = {}
+                for _, c in ipairs(room_creatures) do
+                    local st = c.states and c.states[c._state]
+                    local text = st and st.room_presence
+                    if not text then
+                        text = "There is " .. (c.name or c.id) .. " here."
+                    end
+                    if not seen_presences[text] then
+                        seen_presences[text] = true
+                        creature_presences[#creature_presences + 1] = text
+                    end
+                end
+                if #creature_presences > 0 then
+                    parts[#parts + 1] = table.concat(creature_presences, " ")
+                end
+            end
+
             -- Exits
             local exit_lines = {}
             for dir, exit in pairs(room.exits or {}) do
@@ -153,14 +177,16 @@ function M.register(handlers)
                 parts[#parts + 1] = "Exits:\n" .. table.concat(exit_lines, "\n")
             end
 
-            -- Time
-            local hour, minute = get_game_time(ctx)
-            local sky = room and room.sky_visible
-            local desc = time_of_day_desc(hour, sky)
-            if desc then
-                parts[#parts + 1] = desc .. " It is " .. format_time(hour, minute) .. "."
-            else
-                parts[#parts + 1] = "It is " .. format_time(hour, minute) .. "."
+            -- Time (pcall-guarded for headless/test contexts without game_start_time)
+            local t_ok, hour, minute = pcall(get_game_time, ctx)
+            if t_ok then
+                local sky = room and room.sky_visible
+                local desc = time_of_day_desc(hour, sky)
+                if desc then
+                    parts[#parts + 1] = desc .. " It is " .. format_time(hour, minute) .. "."
+                else
+                    parts[#parts + 1] = "It is " .. format_time(hour, minute) .. "."
+                end
             end
 
             print("**" .. (room.name or "Unnamed room") .. "**")
