@@ -54,6 +54,7 @@ The implementation plan document (`plans/{feature}-implementation-plan.md`) must
 - **WAVE-0** = Pre-flight (test runner registration, directory creation, linting setup)
 - Each wave is a batch of **parallel work** — all agents in a wave start simultaneously
 - **Hard rule:** No two agents in the same wave touch the same file
+- **Multiple instances OK:** The same team member CAN be spawned as multiple parallel instances in the same wave IF they're working on different files. E.g., two Nelson instances writing tests for different modules, or two Flanders instances building different objects. The coordinator labels them clearly (e.g., "Nelson (creature tests)" vs "Nelson (material tests)"). The only constraint is file-level: no two instances touch the same file.
 - Each wave has explicit: agent assignments, exact file paths, TDD requirements, scope estimate
 - **Commit/push after every gate passes**
 - **Checkpoint after every wave:** verify completion, update plan documentation
