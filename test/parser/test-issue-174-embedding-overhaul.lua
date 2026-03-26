@@ -83,7 +83,7 @@ assert_resolves("examine portrait",     "examine", "portrait",      "portrait re
 assert_resolves("get crowbar",          "get",     "crowbar",       "crowbar resolves")
 assert_resolves("get torch",            "get",     "torch",         "torch resolves")
 assert_resolves("examine barrel",       "examine", "barrel",        "barrel resolves")
-assert_resolves("examine oak door",      "examine", "bedroom-door",  "bedroom-door resolves")
+assert_resolves("examine oak door",      "examine", "bedroom-hallway-door-north",  "bedroom-hallway-door-north resolves")
 assert_resolves("get rope",             "get",     "rope-coil",     "rope-coil resolves")
 assert_resolves("examine cloth scraps", "examine", "cloth-scraps",  "cloth-scraps resolves")
 assert_resolves("wear trousers",        "don",     "trousers",      "trousers resolves")
