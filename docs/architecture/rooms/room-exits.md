@@ -1,444 +1,445 @@
-# Room Exit Architecture
+# Room Exit Architecture — Portal Objects
 
-**Author:** Bart (Architect)  
-**Date:** 2026-03-19  
-**Status:** Proposed — awaiting team review  
-**Related:** `../engine/containment-constraints.md`, `copilot-directive-exits-as-objects.md`, `copilot-directive-room-exits.md`
-
----
-
-## 1. The Problem
-
-Rooms currently connect with a flat map: `exits = { north = "hallway" }`. This says nothing about *how* you get there. A doorway, a window, a ladder, and a crawlspace are all "north" — but they impose radically different constraints on what can pass through them.
-
-Wayne's core example: a sack can leave the room through a door, but a bed cannot. Even if a bed were `portable = true`, it won't fit through a window. The exit itself must enforce physical constraints.
-
-This intersects with three existing systems:
-- **Containment** — size tiers, weight, the 4-layer validator
-- **Portability** — `portable = true | "heavy" | false`
-- **Mutations** — exits change state (doors break, passages are discovered)
+**Author:** Brockman (Documentation)  
+**Date:** 2026-03-26  
+**Status:** Current — reflects Phase 2 implementation  
+**Related:** `../objects/portal-pattern.md`, `dynamic-room-descriptions.md`, `../../design/verb-system.md`
 
 ---
 
-## 2. Core Design: Exits Are Mutable Objects
+## 1. Overview
 
-An exit is a **first-class object** embedded in the room's `exits` table. It follows the same self-describing pattern as every other object in the engine: it has properties, keywords, a description, and a mutations table that declares its own lifecycle.
+**As of Phase 2, all exits are portal objects.** The system moved from inline exit definitions to first-class portal objects with FSM state machines. This enables complex passage behavior (locked doors, barred gates, broken windows) through reusable portal semantics rather than special-case logic.
 
-### Why Inline, Not Separate Files
-
-Exits live inside the room definition, not as standalone registered objects. Rationale:
-
-1. **Self-describing rooms.** Reading `start-room.lua` tells you everything about that room — its contents, its exits, and their constraints. No chasing references.
-2. **Mutation scope.** When a door breaks, the room file gets rewritten. The mutation is on the room, not on a floating exit object. This is consistent with how surface contents work on furniture.
-3. **No orphans.** Exits without rooms are meaningless. Keeping them inline prevents orphaned exit objects in the registry.
-4. **Topology is readable.** A room's exit table IS the adjacency list. You can read the world graph from room files alone.
-
-### Backward Compatibility
-
-If an exit value is a **string**, it's shorthand for an unrestricted doorway:
-
-```lua
-exits = {
-    north = "hallway",           -- shorthand: doorway, no constraints
-    south = { target = "cellar", type = "trapdoor", ... },  -- rich exit
-}
-```
-
-The engine normalizes string exits to `{ target = "hallway", type = "doorway" }` at load time. No existing room files break.
+**Key principle:** Portals are **traversable passages** defined as `.lua` files in `src/meta/objects/` and referenced from rooms via thin `{ portal = "object-id" }` exit entries. They inherit from `portal.lua` template and declare their traversal rules via FSM `traversable` flags on each state.
 
 ---
 
-## 3. Exit Object Structure
+## 2. How Exits Are Defined Now: Thin References
 
-```lua
-{
-    target = "hallway",              -- room id this exit connects to
-    type = "door",                   -- exit type (see taxonomy below)
-    name = "a heavy oak door",       -- display name
-    keywords = {"door", "oak door"}, -- for parser matching
-    description = "A heavy oak door with iron hinges, standing slightly ajar.",
-
-    -- Passage constraints
-    max_carry_size = 4,              -- largest item size that fits through
-    max_carry_weight = 50,           -- heaviest single item allowed through
-    requires_hands_free = false,     -- must drop carried items to use?
-    player_max_size = 5,             -- largest player/creature size that fits
-
-    -- State
-    open = true,                     -- can be traversed right now?
-    locked = false,                  -- requires unlocking first?
-    key_id = nil,                    -- item id that unlocks (nil = no key)
-    hidden = false,                  -- invisible until discovered?
-    broken = false,                  -- has been destroyed/forced open?
-
-    -- Direction
-    one_way = false,                 -- can only traverse in this direction?
-    direction_hint = nil,            -- "up", "down" — for ladders, stairs, etc.
-
-    -- Durability
-    breakable = true,                -- can this exit be broken/forced?
-    break_difficulty = 3,            -- 1-5 scale, how hard to break
-
-    -- Self-describing mutations
-    mutations = {
-        break = {
-            becomes_exit = {
-                type = "hole in wall",
-                name = "a splintered doorframe",
-                description = "Where the oak door once stood, only splintered wood and twisted hinges remain.",
-                open = true,
-                locked = false,
-                breakable = false,
-                broken = true,
-                max_carry_size = 4,
-                max_carry_weight = 50,
-            },
-            spawns = {"wood-splinters"},
-            message = "The door bursts inward with a crack of splintering oak!",
-        },
-        lock = {
-            becomes_exit = {
-                open = false,
-                locked = true,
-                description = "The heavy oak door is shut tight. You hear the click of the lock.",
-            },
-            message = "You turn the key. The lock clicks shut.",
-        },
-        unlock = {
-            requires = "brass-key",
-            becomes_exit = {
-                open = false,
-                locked = false,
-                description = "The heavy oak door is closed but unlocked.",
-            },
-            message = "The key turns with a satisfying click.",
-        },
-        open = {
-            becomes_exit = {
-                open = true,
-                description = "The heavy oak door stands open, revealing the hallway beyond.",
-            },
-            message = "The door swings open on groaning hinges.",
-        },
-        close = {
-            becomes_exit = {
-                open = false,
-                description = "The heavy oak door is closed.",
-            },
-            message = "You push the door shut. It closes with a heavy thud.",
-        },
-    },
-}
-```
-
-### How Exit Mutations Work
-
-Exit mutations use `becomes_exit` instead of `becomes`. The value is a **partial table** — only the fields that change. The engine deep-merges the partial over the current exit state, then rewrites the room. This is a surgical mutation: changing `open = false` to `open = true` doesn't require restating the entire exit.
-
-This follows the same self-describing principle as object mutations: reading the exit tells you everything it can become.
-
-### What `becomes_exit` Does NOT Carry
-
-- `target` never changes (an exit doesn't relocate)
-- `mutations` carry forward unless explicitly overwritten in `becomes_exit`
-- If `becomes_exit` sets `breakable = false`, break mutations are removed
-
----
-
-## 4. Exit Type Taxonomy
-
-Exit types are **descriptive labels**, not enforcement categories. The LLM sets all physical properties directly (per Decision: LLM responsible for physical properties). The type name tells the parser and the player what kind of passage this is; the numeric properties enforce constraints.
-
-These are reference ranges, not lookup tables. The LLM should use judgment for each specific instance.
-
-| Exit Type | max_carry_size | max_carry_weight | requires_hands_free | breakable | Typical State |
-|---|---|---|---|---|---|
-| **doorway** | 5 | 100 | no | no | Always open, no door |
-| **door** | 4 | 50 | no | yes | Open/closed/locked |
-| **trapdoor** | 3 | 30 | no | yes | Closed, floor-level |
-| **window** | 2 | 10 | yes | yes (glass) | Closed/latched |
-| **stairs** | 4 | 50 | no | no | Always passable |
-| **ladder** | 2 | 15 | yes | no | Always passable |
-| **crawlspace** | 2 | 10 | no | no | Always open, very tight |
-| **rope** | 1 | 5 | yes | yes (cut) | Hanging, requires climb |
-| **grate/drain** | 1 | 2 | no | yes (pry) | Usually locked/barred |
-| **chimney** | 1 | 5 | yes | no | Narrow vertical shaft |
-| **balcony/ledge** | 3 | 30 | yes | no | Open, often one-way down |
-| **secret passage** | 3 | 30 | no | no | Hidden until discovered |
-| **hole in wall** | 3 | 20 | no | no | Created by destruction |
-| **bridge** | 4 | 50 | no | yes (collapse) | Spans a gap |
-| **portal/rift** | 5 | 100 | no | no | Magical, unrestricted |
-| **gate/portcullis** | 4 | 50 | no | yes | Open/closed/locked |
-
-### Size Tier Reference (from containment design)
-
-| Tier | Label | Examples |
-|---|---|---|
-| 1 | Tiny | Key, coin, shard, ring |
-| 2 | Small | Book, dagger, potion, sack |
-| 3 | Medium | Sword, shield, lantern, stool |
-| 4 | Large | Chair, chest, barrel |
-| 5 | Huge | Bed, wardrobe, desk |
-| 6 | Massive | Piano, statue, cart |
-
-A door with `max_carry_size = 4` lets you bring a chair through but not a bed. A window at `max_carry_size = 2` only allows small items. A crawlspace at `max_carry_size = 2` plus `player_max_size = 3` means only smaller creatures fit.
-
----
-
-## 5. Exit Traversal Validation
-
-When a player attempts to move through an exit, the engine runs a validation chain. This is analogous to the containment validator but operates on exits instead of containers.
-
-### Layer 1: Visibility
-
-```
-Is the exit hidden?
-  → "You don't see any way to go [direction]."
-```
-
-Hidden exits (`hidden = true`) are invisible to `look` and to movement. They become visible when a mutation sets `hidden = false` (e.g., discovering a secret passage).
-
-### Layer 2: Accessibility
-
-```
-Is the exit open?
-  → If locked: "The [name] is locked."
-  → If closed: "The [name] is closed."
-```
-
-Closed but unlocked exits can be opened (triggering the `open` mutation). Locked exits require the matching `key_id` item.
-
-### Layer 3: Player Fit
-
-```
-Does the player physically fit?
-  → player.size > exit.player_max_size: "You're too large to fit through the [name]."
-```
-
-Most exits allow any player. Crawlspaces, chimneys, and drains restrict by player/creature size.
-
-### Layer 4: Carry Constraints
-
-For each item the player is carrying:
-
-```
-item.size > exit.max_carry_size?
-  → "You can't bring [item.name] through the [exit.name] — it won't fit."
-
-item.weight > exit.max_carry_weight?
-  → "You can't bring [item.name] through the [exit.name] — it's too heavy to manage."
-
-exit.requires_hands_free and player is carrying items?
-  → "You need your hands free to climb the [exit.name]."
-```
-
-**Note on `requires_hands_free`:** This doesn't mean "drop everything." It means items must be in a container (sack, pack, belt) rather than held directly. A player with items in a sack slung over their shoulder can climb a ladder. A player clutching a sword in each hand cannot. This interacts with the inventory model (future design).
-
-### Layer 5: Direction
-
-```
-exit.one_way and player is going the wrong direction?
-  → Not shown in exits list for reverse direction.
-```
-
-One-way exits only appear from the declared side. A balcony drop is one-way down; the reverse direction simply doesn't list that exit.
-
-### Portability Tiers and Exits
-
-The three-tier portability system (`portable = false | "heavy" | true`) interacts with exits:
-
-| Portability | Meaning | Exit Interaction |
-|---|---|---|
-| `false` | Fixed in place | Cannot move through any exit |
-| `"heavy"` | Push/drag only | Only through exits where `requires_hands_free = false` AND large enough |
-| `true` | Carry in inventory | Normal exit constraint checks apply |
-
-A bed (`portable = "heavy"`, size 5) can be dragged through a doorway (max_carry_size 5) but not through a door (max_carry_size 4) — unless the door is wide enough (LLM sets this per-instance). It definitely can't go up a ladder (`requires_hands_free = true`).
-
----
-
-## 6. Bidirectionality
-
-### Rule: Both Sides Are Explicit
-
-If Room A has a door north to Room B, Room B **must** declare its own exit south to Room A. There is no automatic mirroring.
-
-### Why Explicit Over Automatic
-
-1. **Asymmetric exits are common.** A balcony lets you drop down but not climb back up. A trapdoor opens from above but is flush with the floor below. A secret passage is visible from one side but hidden from the other.
-2. **Different descriptions.** The door looks different from each side — "a heavy oak door" vs. "a battered door with deep scratches on this side."
-3. **Independent mutations.** Breaking down a door from Room A doesn't necessarily change how it looks from Room B (the debris falls toward A, B's side might look different).
-4. **Simplicity.** No implicit state sync between rooms. Each room is fully self-describing.
-
-### Consistency Convention
-
-By **convention** (enforced by the LLM at authoring time, not by the engine):
-- If Room A has a non-hidden, non-one-way exit north to Room B, Room B should have an exit south to Room A.
-- Both exits should reference the same logical passage (same type, compatible constraints).
-- The LLM should describe both sides when creating rooms.
-
-The engine does **not** enforce bidirectional consistency. A room with a north exit to "hallway" is valid even if "hallway" has no south exit back. This allows one-way passages, asymmetric secret doors, and in-progress world building.
-
-### Shared Exit Identity
-
-When both sides of a passage need to mutate together (breaking a door affects both rooms), the mutation handler should rewrite both room files. The exit's `target` field provides the link: the engine can find the other room and its corresponding exit.
-
-Convention: exits that share a physical passage should use a `passage_id` field:
+Room exit tables contain **thin portal references**:
 
 ```lua
 -- In start-room.lua
-north = { target = "hallway", passage_id = "bedroom-hallway-door", type = "door", ... }
-
--- In hallway.lua
-south = { target = "start-room", passage_id = "bedroom-hallway-door", type = "door", ... }
-```
-
-The `passage_id` lets the mutation engine find and rewrite the paired exit. It's optional — one-way exits and exits without shared mutation needs don't require it.
-
----
-
-## 7. Mutations on Exits
-
-Exit mutations follow the self-describing pattern. The exit's `mutations` table declares what can happen and what it becomes. When a mutation fires:
-
-1. The `becomes_exit` partial is deep-merged over the current exit state.
-2. Any `spawns` items are created in the room.
-3. The room definition is rewritten (standard mutation flow).
-4. If `passage_id` exists, the paired exit in the target room is also mutated.
-
-### Example: Breaking a Window
-
-```lua
-window_exit = {
-    target = "courtyard",
-    type = "window",
-    passage_id = "bedroom-courtyard-window",
-    name = "a leaded glass window",
-    description = "A tall window of diamond-paned glass. Through it you see a moonlit courtyard.",
-    max_carry_size = 2,
-    max_carry_weight = 10,
-    requires_hands_free = true,
-    open = false,
-    locked = true,
-    breakable = true,
-    break_difficulty = 2,
-
-    mutations = {
-        break = {
-            becomes_exit = {
-                type = "hole in wall",
-                name = "a shattered window frame",
-                description = "Jagged shards of glass cling to the window frame. Cold air rushes through.",
-                open = true,
-                locked = false,
-                breakable = false,
-                broken = true,
-                requires_hands_free = false,
-                max_carry_size = 3,
-            },
-            spawns = {"glass-shard", "glass-shard"},
-            message = "The window explodes inward in a shower of glass!",
-        },
-        open = {
-            condition = function(self) return not self.locked end,
-            becomes_exit = {
-                open = true,
-                description = "The window stands open. Cool night air drifts in.",
-            },
-            message = "You unlatch the window and push it open.",
-        },
-        unlock = {
-            -- No key required — just unlatch from inside
-            becomes_exit = {
-                locked = false,
-                description = "The window is unlatched but still closed.",
-            },
-            message = "You slide the iron latch aside.",
-        },
-    },
+exits = {
+    north = { portal = "bedroom-hallway-door-north" },
+    window = { portal = "bedroom-courtyard-window-out" },
+    down = { portal = "bedroom-cellar-trapdoor-down" },
 }
 ```
 
-### Exit Mutations vs. Object Mutations
+Each value is a table with a single `portal` key pointing to a registered object ID. The engine resolves this reference at runtime by looking up the object in the registry.
 
-| Aspect | Object Mutation | Exit Mutation |
-|---|---|---|
-| Where it lives | Object's `mutations` table | Exit's `mutations` table |
-| What changes | Entire object is replaced | Exit is partially updated (deep merge) |
-| Side effects | `spawns` items in room | `spawns` items in room |
-| Paired updates | N/A | Paired exit via `passage_id` |
-| Engine mechanism | `mutation.mutate()` rewrites object | Room rewriter updates exit in-place |
-
-Exit mutations use **partial merge** (not full replacement) because exits have many stable fields (target, passage_id, constraints) that shouldn't be restated for every state change. Object mutations use full replacement because the object's identity can change entirely (mirror → shattered mirror).
+**Why thin references?** They keep room files readable and immutable. The portal object lives in its own `.lua` file and can be mutated independently. Room files don't need rewriting every time a portal changes state.
 
 ---
 
-## 8. Room Template
+## 3. Movement Resolution Path
 
-Rooms share common boilerplate. A base room template reduces repetition:
+When a player types a direction command:
+
+1. **Direction normalization** → `north`, `south`, `up`, `down`, etc.
+2. **Exit lookup** → fetch `room.exits[direction]`
+3. **Portal reference resolution** → if `exit.portal` exists, look up the portal object from the registry
+4. **State check** → read portal's `_state` and check the FSM state's `traversable` flag
+5. **Traversal** → if `traversable = true`, move player; otherwise print blocked message
+
+### Code Example (from `src/engine/verbs/movement.lua`):
 
 ```lua
--- template: room
+-- Thin reference resolution
+if exit and type(exit) == "table" and exit.portal then
+    portal_obj = ctx.registry:get(exit.portal)
+end
+
+-- State check for traversability
+if portal_obj and portal_obj.portal then
+    local state = portal_obj.states and portal_obj.states[portal_obj._state]
+    if not state or not state.traversable then
+        print((portal_obj.name or "The way") .. " blocks your path.")
+        return
+    end
+    -- Proceed to traverse
+    local target_id = portal_obj.portal.target
+    ...
+end
+```
+
+---
+
+## 4. Portal Object Structure
+
+Each portal is a complete object inheriting from `src/meta/templates/portal.lua`:
+
+```lua
 return {
-    size = nil,
-    weight = nil,
-    portable = false,
-    categories = {"room"},
-    container = true,
-    capacity = 999,
-    contents = {},
-    location = nil,
-    exits = {},
+    guid = "{unique-guid}",
+    template = "portal",
+    
+    -- Object identity
+    id = "bedroom-hallway-door-north",
+    name = "a heavy oak door",
+    keywords = {"door", "oak door", "heavy oak door"},
+    
+    -- Portal metadata (engine-executed per Principle 8)
+    portal = {
+        target = "hallway",                    -- destination room ID
+        bidirectional_id = "{shared-guid}",   -- links to paired portal
+        direction_hint = "north",              -- for movement resolution
+    },
+    
+    -- Passage constraints
+    max_carry_size = 4,      -- largest carried item that fits
+    max_carry_weight = 50,   -- heaviest single item allowed
+    player_max_size = 5,     -- largest player size that fits (optional)
+    
+    -- FSM: defines all valid states and traversability
+    initial_state = "barred",
+    _state = "barred",
+    
+    states = {
+        barred = {
+            traversable = false,
+            description = "The door is barred from the other side.",
+            on_feel = "Rough oak, cold iron. Solid — no give.",
+        },
+        unbarred = {
+            traversable = false,
+            description = "The door is unbarred but closed.",
+            on_feel = "The door shifts slightly in its frame.",
+        },
+        open = {
+            traversable = true,
+            description = "The door stands open.",
+            on_feel = "Cool air drifts through the doorway.",
+        },
+        broken = {
+            traversable = true,
+            description = "The door is destroyed.",
+            on_feel = "Jagged splinters and bent iron.",
+        },
+    },
+    
+    transitions = {
+        { from = "barred", to = "unbarred", verb = "unbar" },
+        { from = "unbarred", to = "open", verb = "open", aliases = {"push"} },
+        { from = "open", to = "unbarred", verb = "close" },
+        { from = "barred", to = "broken", verb = "break" },
+    },
+    
+    -- Sensory properties (required per Principle 6)
+    on_feel = "Rough oak grain under your fingers, cold iron bands.",
+    on_smell = "Old oak and iron.",
+    on_listen = "Silence from beyond.",
+    on_taste = "Dry, gritty wood grain.",
+    
+    -- Passage-specific effects (optional)
+    on_traverse = {
+        wind_effect = {
+            strength = "draught",
+            extinguishes = { "candle" },
+            message_extinguish = "A cold draught snuffs your candle flame.",
+        },
+    },
+    
     mutations = {},
 }
 ```
 
-Room instances declare `template = "room"` and override what's unique (name, description, contents, exits). The template resolution is handled by the existing `loader.resolve_template()`.
+### Key Fields
+
+| Field | Type | Purpose | Example |
+|-------|------|---------|---------|
+| `portal.target` | string | Destination room ID | `"hallway"` |
+| `portal.bidirectional_id` | string | Shared ID for paired portal | `"{4bb381ad-...}"` |
+| `portal.direction_hint` | string | Direction for movement parsing | `"north"` |
+| `max_carry_size` | number | Size tier limit for carried items | `4` (Large items fit; Huge don't) |
+| `max_carry_weight` | number | Weight limit in game units | `50` |
+| `traversable` (state field) | boolean | Can player move through this state? | `true` or `false` |
 
 ---
 
-## 9. Integration with Existing Systems
+## 5. Bidirectional Portal Sync
 
-### Containment Validator
+Portals can be paired bidirectionally via `bidirectional_id`. When a paired portal is created correctly:
 
-The containment validator (`engine/containment/init.lua`) is **not** involved in exit traversal. Containment validates "can item X go inside container Y." Exit traversal validates "can the player bring item X through passage Z." These are orthogonal checks with different failure messages and different validation layers.
+```lua
+-- bedroom-hallway-door-north.lua
+portal = {
+    target = "hallway",
+    bidirectional_id = "{4bb381ad-2c9d-4926-8ebc-e55d8e48f4c4}",
+    direction_hint = "north",
+}
 
-A new `engine/traversal/init.lua` module should handle exit validation. It follows the same pattern: pure function, layered checks, returns `(bool, reason_string)`.
-
-### Parser Integration
-
-The parser needs to recognize exit keywords. When a player types "open door" or "break window," the parser should:
-1. Check if the current room has an exit matching those keywords.
-2. If yes, look up the mutation in the exit's `mutations` table.
-3. Dispatch to the room mutation handler.
-
-This is a parser concern, not an architecture concern, but the exit structure supports it by including `keywords` on every exit.
-
-### The `on_look` Function
-
-Room `on_look` is now handled dynamically by the engine (see `dynamic-room-descriptions.md`). The engine's `cmd_look` composes the room view from three sources: room description (permanent features), object `room_presence` fields (dynamic), and visible exits (auto-composed from exit data). Hidden exits are excluded automatically.
-
-Rooms should NOT define custom `on_look` for standard description — the engine handles it. Custom `on_look` is reserved for truly special rooms (magical visions, darkness, rooms that defy normal description). If a room defines `on_look`, the engine calls it instead of composing.
-
----
-
-## 10. File Layout
-
-No new folders needed. The design fits cleanly into existing structure:
-
-```
-src/meta/templates/room.lua          — base room template
-src/meta/rooms/start-room.lua        — updated with rich exits
-src/meta/rooms/*.lua                 — future rooms use same format
-src/engine/traversal/init.lua        — exit validation (future)
-docs/architecture/room-exits.md            — this document
+-- hallway.lua→bedroom-hallway-door-south.lua
+portal = {
+    target = "start-room",
+    bidirectional_id = "{4bb381ad-2c9d-4926-8ebc-e55d8e48f4c4}",
+    direction_hint = "south",
+}
 ```
 
+**Engine behavior (D-PORTAL-BIDIR-SYNC):**  
+When an FSM transition completes on one portal, the FSM engine automatically finds its paired portal (via `bidirectional_id`) in the registry and applies the same state change. This ensures breaking a door from either side keeps both sides in sync.
+
+**No verb handler involvement needed.** The FSM handles sync automatically. This is pure Principle 8 compliance: engine executes metadata.
+
 ---
 
-## 11. Open Questions
+## 6. Portal States and Traversability
 
-1. **Inventory model.** `requires_hands_free` needs an inventory system that distinguishes "held" from "stored in container." Not yet designed.
-2. **NPC traversal.** Do NPCs check exit constraints? Probably yes, but NPC movement isn't designed yet.
-3. **Vehicle traversal.** Can a player push a cart through a doorway? Needs `portable = "heavy"` + exit size check. The framework supports it.
-4. **Exit descriptions in `look`.** Now resolved: auto-generated from exit data by the engine's dynamic room composition system. See `dynamic-room-descriptions.md`.
+Each portal declares all its valid states and explicitly marks which are traversable:
+
+```lua
+states = {
+    locked = {
+        traversable = false,
+        blocked_message = "The door is locked.",
+        description = "A heavy oak door, locked tight.",
+    },
+    open = {
+        traversable = true,
+        description = "The door stands open.",
+    },
+    broken = {
+        traversable = true,
+        description = "Only splinters remain where the door stood.",
+    },
+}
+```
+
+When a player attempts to traverse, the engine checks:
+1. Is the portal object's `_state` in the `states` table?
+2. Does that state have `traversable = true`?
+3. If no to either: print blocked message and prevent movement.
+
+This replaces the old inline `open`, `locked`, `hidden` flags with a cleaner FSM model where all behavior is explicit in state definitions.
+
+---
+
+## 7. Example: The Bedroom-Hallway Door
+
+The bedroom-hallway oak door demonstrates the complete pattern:
+
+**File:** `src/meta/objects/bedroom-hallway-door-north.lua`
+
+Key features:
+- **4-state FSM:** barred → unbarred → open → broken (or barred → broken)
+- **Asymmetric description:** bedroom side sees a bar; hallway side sees iron brackets
+- **Bidirectional sync:** paired with `bedroom-hallway-door-south.lua` via shared `bidirectional_id`
+- **Passage effects:** wind effect when traversing (can snuff candles)
+- **Sensory richness:** on_feel, on_smell, on_listen, on_knock, on_push, on_pull all defined per state
+
+**Room reference** (in `start-room.lua`):
+
+```lua
+instances = {
+    { id = "bedroom-hallway-door-north", type_id = "{25852832-6f19-48af-a118-20350ac8d243}" },
+},
+
+exits = {
+    north = { portal = "bedroom-hallway-door-north" },
+}
+```
+
+**Traversal scenarios:**
+
+| Scenario | Portal State | `traversable` | Result |
+|----------|--------------|---------------|--------|
+| Player tries `north` | `barred` | `false` | "The way is barred." |
+| Player types `unbar` | Transition fires | → `unbarred` | Paired portal also transitions; state change persists |
+| Player tries `north` again | `unbarred` | `false` | "The way is closed." |
+| Player types `open` or `push` | Transition fires | → `open` | Player can now `north` through |
+| Player enters and types `north` | `open` | `true` | Player moves to hallway; traverse effects fire |
+
+---
+
+## 8. Passage Constraints and Containment
+
+Portals enforce size/weight constraints via `max_carry_size` and `max_carry_weight`. These are checked **before** traversal (validation left to verb handler or future `engine/traversal` module).
+
+The constraints are **static** across all portal states. A door that's `open` has the same carrying limit as when it's `closed` — the doorway geometry doesn't change, only its traversability.
+
+### Future: Traversal Validation Module
+
+A dedicated `src/engine/traversal/init.lua` module (not yet implemented) will validate:
+1. Player size fits through portal
+2. Each carried item fits size/weight constraints
+3. If portal requires hands-free, player can't carry items in hands
+
+For now, constraint checking is stub/future work.
+
+---
+
+## 9. Portal Mutations and FSM Transitions
+
+Portals use FSM transitions to change state, not object mutations. This is the key architectural difference from old-style objects:
+
+```lua
+transitions = {
+    {
+        from = "barred",
+        to = "unbarred",
+        verb = "unbar",
+        trigger = "exit_unbarred",
+        message = "You hear scraping iron as the bar is lifted from the other side.",
+    },
+    {
+        from = "barred",
+        to = "broken",
+        verb = "break",
+        requires_strength = 3,
+        message = "You slam into the door with everything you have. The oak cracks and splinters.",
+        spawns = {"wood-splinters"},
+    },
+}
+```
+
+FSM transitions can:
+- Change portal state
+- Emit messages
+- Spawn items in the room
+- Trigger effects
+- Sync bidirectional portals
+
+No object mutation happens (code rewrite). The portal object persists; only its `_state` changes in memory and gets persisted to save files.
+
+---
+
+## 10. Portal Template Defaults
+
+The `portal.lua` template provides sensible defaults:
+
+```lua
+return {
+    guid = "d902e90d-ec66-45df-8b93-a8dd35a6aaca",
+    template = "portal",
+    name = "a passage",
+    keywords = {},
+    description = "A passage between rooms.",
+    
+    size = 5,
+    weight = 100,
+    portable = false,
+    material = "wood",
+    
+    portal = {
+        target = nil,
+        bidirectional_id = nil,
+        direction_hint = nil,
+    },
+    
+    max_carry_size = nil,    -- nil = no limit
+    max_carry_weight = nil,
+    
+    initial_state = "open",
+    _state = "open",
+    states = {
+        open = {
+            traversable = true,
+            description = "An open passage.",
+        },
+    },
+    transitions = {},
+    
+    on_feel = "A passage.",
+    on_smell = nil,
+    on_listen = nil,
+    
+    container = false,
+    capacity = 0,
+    contents = {},
+    location = nil,
+    
+    categories = {"portal"},
+    mutations = {},
+}
+```
+
+Instances override `portal.target`, `portal.bidirectional_id`, `portal.direction_hint`, and add custom states/transitions as needed.
+
+---
+
+## 11. How the Old Inline Exit System Differs
+
+**Old (inline exits in rooms):**
+```lua
+exits = {
+    north = {
+        target = "hallway",
+        open = true,
+        locked = false,
+        type = "door",
+        description = "A heavy oak door...",
+        mutations = { break = { ... } },
+    }
+}
+```
+
+**New (portal objects referenced):**
+```lua
+exits = {
+    north = { portal = "bedroom-hallway-door-north" },
+}
+
+-- Portal object in src/meta/objects/bedroom-hallway-door-north.lua
+-- FSM states with traversable flags instead of open/locked booleans
+-- Bidirectional sync built into FSM engine
+```
+
+**Advantages of the new system:**
+1. **Reusable:** Portal templates can be instantiated multiple times across the world
+2. **Mutable via FSM:** State changes via transitions, not object rewrites
+3. **Sensory richness:** Each portal state has independent sensory descriptions
+4. **Bidirectional sync:** Engine-driven, not verb-handler-driven
+5. **Room files simpler:** Exit tables are declarative, not prescriptive
+6. **Principle 8 compliance:** Engine executes FSM metadata; no portal-specific verb handler logic needed
+
+---
+
+## 12. Room Integration Pattern
+
+A room declares its exits as portal references:
+
+```lua
+-- src/meta/rooms/start-room.lua
+return {
+    id = "start-room",
+    name = "The Bedroom",
+    description = "...", -- permanent features only
+    
+    instances = {
+        { id = "bed", type_id = "..." },
+        { id = "bedroom-hallway-door-north", type_id = "{25852832-...}" },
+    },
+    
+    exits = {
+        north = { portal = "bedroom-hallway-door-north" },
+        window = { portal = "bedroom-courtyard-window-out" },
+        down = { portal = "bedroom-cellar-trapdoor-down" },
+    },
+}
+```
+
+The room's `instances` list includes all portal objects. They're loaded when the room is loaded, ensuring the registry has them available for movement resolution.
+
+---
+
+## 13. Future Considerations
+
+1. **Traversal validation module** (`src/engine/traversal/init.lua`) — currently stub; will validate player/item size/weight constraints
+2. **Dynamic exit lists** — currently computed from `room.exits`; future: might auto-generate from portal instances
+3. **Portal descriptions in room output** — currently inline in `room.exits`; might migrate to portal object's `room_presence` field
+4. **One-way portals** — portals can exist in one room without reciprocal in target room (intentional; supports one-way passages)
+5. **Boundary portals** — portals that are always impassable or permanently blocked (future design)
+
+---
+
+## 14. Related Files
+
+- **Template:** `src/meta/templates/portal.lua`
+- **Example portals:** `src/meta/objects/bedroom-hallway-door-north.lua`, `bedroom-hallway-door-south.lua`, `bedroom-courtyard-window-out.lua`
+- **Room file example:** `src/meta/rooms/start-room.lua`
+- **Engine: movement handler** → `src/engine/verbs/movement.lua` (portal resolution, traversal)
+- **Engine: FSM** → `src/engine/fsm/init.lua` (state transitions, bidirectional sync)
+- **Documentation:** `portal-pattern.md` (how to create portals), `dynamic-room-descriptions.md` (room composition)
