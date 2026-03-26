@@ -5,6 +5,7 @@ return {
     id = "cellar",
     name = "The Cellar",
     level = { number = 1, name = "The Awakening" },
+    sky_visible = false,
     keywords = {"cellar", "basement", "underground", "cellar room"},
     description = "You stand at the foot of a narrow stone stairway in a low-ceilinged cellar. The walls are rough-hewn granite, slick with moisture that catches what little light there is. Water drips somewhere in the darkness, a slow and patient rhythm. The air is cold and heavy, thick with the smell of damp earth, old stone, and something faintly metallic. Cobwebs hang in thick curtains from the ceiling, swaying in a draft you cannot feel.",
     short_description = "A cold, damp cellar of rough stone and dripping water.",

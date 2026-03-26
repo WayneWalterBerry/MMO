@@ -5,6 +5,7 @@ return {
     id = "deep-cellar",
     name = "The Deep Cellar",
     level = { number = 1, name = "The Awakening" },
+    sky_visible = false,
     keywords = {"deep cellar", "cellar", "chamber", "deep", "vault", "underground"},
     description = "The architecture changes here. Where the cellars above were rough-hewn and practical, this chamber is built from massive limestone blocks, dry-stacked with a precision that speaks of older and more deliberate hands. The ceiling rises into a ribbed vault, its central boss carved into a face that stares downward with blank stone eyes. Iron sconces line the walls, unlit and cold. Against the south wall stands a stone altar, its surface inscribed with symbols you cannot read. The air is still and heavy with the smell of ancient dust, old wax, and something fainter — incense, or the memory of incense, burned decades or centuries ago. From the north wall, where stone steps ascend into shadow, a faint draught of warmer air descends — just enough to stir the dust motes and remind you that a world above still exists.",
     short_description = "A vaulted limestone chamber with a stone altar and the ghost of incense.",

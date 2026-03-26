@@ -693,16 +693,23 @@ function M.register(handlers)
         end
 
         -- Wake-up flavor text
+        local sky = room and room.sky_visible
         if candle_died then
             print("You drift off... When you wake, the candle has guttered out. Darkness surrounds you.")
-        elseif crossed_dawn and curtains_open then
+        elseif crossed_dawn and curtains_open and sky then
             print("You wake to pale morning light filtering through the window.")
-        elseif crossed_dawn then
+        elseif crossed_dawn and sky then
             print("You sense the world brightening beyond the curtains.")
         end
 
         -- Print time
-        print("It is now " .. format_time(after_h, after_m) .. ". " .. time_of_day_desc(after_h))
+        local sky = room and room.sky_visible
+        local desc = time_of_day_desc(after_h, sky)
+        if desc then
+            print("It is now " .. format_time(after_h, after_m) .. ". " .. desc)
+        else
+            print("It is now " .. format_time(after_h, after_m) .. ".")
+        end
 
         -- Update status bar
         if ctx.ui and ctx.ui.is_enabled() and ctx.update_status then

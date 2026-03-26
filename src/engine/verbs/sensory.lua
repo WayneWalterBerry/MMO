@@ -82,7 +82,13 @@ function M.register(handlers)
                 print("**" .. (ctx.current_room.name or "Unknown room") .. "**")
                 print("It is too dark to see. You need a light source. Try 'feel' to grope around in the darkness.")
                 local hour, minute = get_game_time(ctx)
-                print("\n" .. time_of_day_desc(hour) .. " It is " .. format_time(hour, minute) .. ".")
+                local sky = ctx.current_room and ctx.current_room.sky_visible
+                local desc = time_of_day_desc(hour, sky)
+                if desc then
+                    print("\n" .. desc .. " It is " .. format_time(hour, minute) .. ".")
+                else
+                    print("\nIt is " .. format_time(hour, minute) .. ".")
+                end
                 return
             end
 
@@ -150,8 +156,13 @@ function M.register(handlers)
 
             -- Time
             local hour, minute = get_game_time(ctx)
-            parts[#parts + 1] = time_of_day_desc(hour) ..
-                " It is " .. format_time(hour, minute) .. "."
+            local sky = room and room.sky_visible
+            local desc = time_of_day_desc(hour, sky)
+            if desc then
+                parts[#parts + 1] = desc .. " It is " .. format_time(hour, minute) .. "."
+            else
+                parts[#parts + 1] = "It is " .. format_time(hour, minute) .. "."
+            end
 
             print("**" .. (room.name or "Unnamed room") .. "**")
             print("")

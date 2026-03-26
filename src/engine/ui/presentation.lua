@@ -79,7 +79,10 @@ function presentation.format_time(hour, minute)
 end
 
 --- Returns a prose description of the time of day.
-function presentation.time_of_day_desc(hour)
+--- When sky_visible is false (underground/interior), returns nil — the
+--- player has no way to sense sky-based time cues.
+function presentation.time_of_day_desc(hour, sky_visible)
+    if sky_visible == false then return nil end
     if hour >= 5 and hour < 7 then return "Dawn breaks on the horizon."
     elseif hour >= 7 and hour < 10 then return "Morning light fills the sky."
     elseif hour >= 10 and hour < 14 then return "The sun stands high overhead."

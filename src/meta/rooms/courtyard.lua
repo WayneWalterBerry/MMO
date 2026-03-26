@@ -5,6 +5,7 @@ return {
     id = "courtyard",
     name = "The Inner Courtyard",
     level = { number = 1, name = "The Awakening" },
+    sky_visible = true,
     keywords = {"courtyard", "yard", "court", "outside", "exterior", "inner courtyard"},
     description = "You stand in a cobblestone courtyard enclosed by the manor's stone walls on all four sides. Above, the sky is open — stars scattered like ice chips across a deep black field, and a half-moon casting silver light over everything. A stone well stands at the center, its iron winch creaking faintly in the breeze. Ivy smothers the east wall in a dark, dense curtain. The air is cold and damp and smells of rain, wet stone, and chimney smoke from somewhere above. High on the south wall, far above your reach, you can see the bedroom window — a dark rectangle in the moonlight.",
     short_description = "A moonlit cobblestone courtyard with a stone well at its center.",

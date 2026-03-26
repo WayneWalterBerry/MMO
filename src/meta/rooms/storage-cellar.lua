@@ -5,6 +5,7 @@ return {
     id = "storage-cellar",
     name = "The Storage Cellar",
     level = { number = 1, name = "The Awakening" },
+    sky_visible = false,
     keywords = {"storage", "cellar", "vault", "pantry", "provisions", "storage cellar"},
     description = "A long, narrow vault stretches before you, its barrel-vaulted ceiling disappearing into shadow at both ends. Heavy oak shelves line both walls from floor to ceiling, most sagging under the weight of years. Dust covers everything — the flagstone floor, the collapsed crates, the remnants of rope and sacking scattered like shed skin. The air tastes of old wood, stale grain, and the sweet-sour tang of decay. Something scurries in the darkness beyond the reach of your light.",
     short_description = "A dusty storage vault with sagging shelves and the sound of rats.",

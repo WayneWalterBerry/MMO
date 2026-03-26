@@ -123,7 +123,9 @@ function M.register(handlers)
     ---------------------------------------------------------------------------
     handlers["time"] = function(ctx, noun)
         local hour, minute = get_game_time(ctx)
-        print(time_of_day_desc(hour))
+        local sky = ctx.current_room and ctx.current_room.sky_visible
+        local desc = time_of_day_desc(hour, sky)
+        if desc then print(desc) end
         print("It is " .. format_time(hour, minute) .. ".")
     end
 

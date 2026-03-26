@@ -5,6 +5,7 @@ return {
     id = "crypt",
     name = "The Crypt",
     level = { number = 1, name = "The Awakening" },
+    sky_visible = false,
     keywords = {"crypt", "tomb", "burial", "burial chamber", "vault", "catacomb"},
     description = "Five stone coffins line the walls of a narrow vault carved from the living rock. Their lids bear the carved likenesses of robed figures, hands folded over chests that will never rise again, faces worn smooth by time until they are almost featureless. Small niches are cut into the walls between the tombs, some holding candle stubs burned down to waxy puddles, others empty. The air is perfectly still, cold, and dry — the kind of stillness that comes from being sealed away from the world for centuries. Dust motes hang motionless in your light. Inscriptions cover every available surface — names, dates, prayers, and symbols that repeat like a chorus.",
     short_description = "A silent vault of five stone coffins and ancient inscriptions.",

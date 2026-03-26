@@ -8,6 +8,7 @@ return {
     name = "A room",
     keywords = {},
     description = "",
+    sky_visible = false,
     contents = {},
     exits = {},
     mutations = {},
