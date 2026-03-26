@@ -15,8 +15,8 @@ return {
     instances = {
         { id = "barrel",         type = "Barrel",         type_id = "c3e8f1a2-b4d7-4596-8e23-f9a1b6c5d402" },
         { id = "torch-bracket",  type = "Torch Bracket",  type_id = "d9f4a2b3-c5e8-4167-9d34-e8b2c7d6f513" },
-        { id = "cellar-bedroom-trapdoor-up", type_id = "cellar-bedroom-trapdoor-up" },
-        { id = "cellar-storage-door-north", type_id = "cellar-storage-door-north" },
+        { id = "cellar-bedroom-trapdoor-up", type_id = "{c915adfa-df5c-40bb-987f-751be2cc7525}" },
+        { id = "cellar-storage-door-north", type_id = "{cd7f2d60-8528-4a7f-9236-0bfaad8c399d}" },
     },
 
     exits = {

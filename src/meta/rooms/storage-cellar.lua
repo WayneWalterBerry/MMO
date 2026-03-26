@@ -50,8 +50,8 @@ return {
         { id = "crowbar",       type = "Crowbar",        type_id = "b30076fe-7931-4089-8ea2-2cac139b022c" },
         { id = "oil-flask",     type = "Oil Flask",      type_id = "ae5df831-7c42-4b19-8e60-f9a3c7d21b54" },
         { id = "brass-spittoon", type = "Brass Spittoon", type_id = "{b763fdf9-f7d2-4eac-8952-7c03771c5013}" },
-        { id = "storage-cellar-door-south", type_id = "storage-cellar-door-south" },
-        { id = "storage-deep-cellar-door-north", type_id = "storage-deep-cellar-door-north" },
+        { id = "storage-cellar-door-south", type_id = "{ed35641e-4106-421f-bcd4-2d6654c8ed1b}" },
+        { id = "storage-deep-cellar-door-north", type_id = "{f7c36726-24ef-427d-bcb5-267cab725982}" },
     },
 
     exits = {

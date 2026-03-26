@@ -61,7 +61,7 @@ return {
 
         -- Wall inscription (east wall, back of crypt)
         { id = "wall-inscription", type = "Wall Inscription",  type_id = "959a08fd-057e-4cf6-b80e-c419d184bcc1" },
-        { id = "crypt-deep-cellar-archway-west", type_id = "crypt-deep-cellar-archway-west" },
+        { id = "crypt-deep-cellar-archway-west", type_id = "{d9124959-350d-4172-9844-d6d390461dd5}" },
     },
 
     exits = {

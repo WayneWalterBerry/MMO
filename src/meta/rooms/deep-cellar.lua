@@ -43,9 +43,9 @@ return {
 
         -- === Room-level ===
         { id = "chain",              type = "Chain",             type_id = "5f18202e-220f-4a16-b75e-170595f22845" },
-        { id = "deep-cellar-storage-door-south", type_id = "deep-cellar-storage-door-south" },
-        { id = "deep-cellar-hallway-stairs-up", type_id = "deep-cellar-hallway-stairs-up" },
-        { id = "deep-cellar-crypt-archway-west", type_id = "deep-cellar-crypt-archway-west" },
+        { id = "deep-cellar-storage-door-south", type_id = "{3f4dbb18-131f-46f6-83d5-99aa5b4eb98f}" },
+        { id = "deep-cellar-hallway-stairs-up", type_id = "{cf6f88b2-ea66-4b9a-b28e-f01a4203d632}" },
+        { id = "deep-cellar-crypt-archway-west", type_id = "{8be0ec4e-f5a2-4538-8e9e-2893264a50c5}" },
     },
 
     exits = {

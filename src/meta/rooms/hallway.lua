@@ -45,10 +45,10 @@ return {
 
         -- === South portal (bedroom-hallway door, hallway side) ===
         { id = "bedroom-hallway-door-south", type_id = "{a47ce304-4425-4bd0-a9e9-224b7c8baa8c}" },
-        { id = "hallway-deep-cellar-stairs-down", type_id = "hallway-deep-cellar-stairs-down" },
-        { id = "hallway-level2-stairs-up", type_id = "hallway-level2-stairs-up" },
-        { id = "hallway-west-door", type_id = "hallway-west-door" },
-        { id = "hallway-east-door", type_id = "hallway-east-door" },
+        { id = "hallway-deep-cellar-stairs-down", type_id = "{becc667f-877b-49e7-bee0-32fc49d48af6}" },
+        { id = "hallway-level2-stairs-up", type_id = "{13cec4d5-cbff-4d71-a983-63752d7fe99a}" },
+        { id = "hallway-west-door", type_id = "{2c11b569-9d5d-481c-bed8-070c55ceba6c}" },
+        { id = "hallway-east-door", type_id = "{22f675a7-1827-4cf3-bbde-40ed2c109c3a}" },
     },
 
     exits = {

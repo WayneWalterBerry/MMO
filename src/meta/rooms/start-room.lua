@@ -99,8 +99,8 @@ return {
         { id = "chamber-pot", type = "Chamber Pot", type_id = "9a9ff109-93a0-4dcf-9d6e-0f0f4b83f4ba" },
         { id = "bedroom-door", type = "Bedroom Door", type_id = "e4a7f3b2-91d6-4c8e-b5a0-3f2d1e8c6a49", location = "room" },
         { id = "bedroom-hallway-door-north", type_id = "{25852832-6f19-48af-a118-20350ac8d243}" },
-        { id = "bedroom-courtyard-window-out", type_id = "bedroom-courtyard-window-out" },
-        { id = "bedroom-cellar-trapdoor-down", type_id = "bedroom-cellar-trapdoor-down" },
+        { id = "bedroom-courtyard-window-out", type_id = "{5a9a6d9f-f112-499e-8f1e-dae571675015}" },
+        { id = "bedroom-cellar-trapdoor-down", type_id = "{1b6fc3b4-e69e-4c09-aee9-02d718fb3052}" },
     },
 
     exits = {

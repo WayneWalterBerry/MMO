@@ -34,8 +34,8 @@ return {
         { id = "ivy",           type = "Ivy",                type_id = "18723096-bed0-46fa-bcf8-d79514f994ff" },
         { id = "cobblestone",   type = "Loose Cobblestone",  type_id = "4388e944-50e3-4382-9068-646421c0741f" },
         { id = "rain-barrel",   type = "Rain Barrel",        type_id = "ff526b60-83e1-4c82-9d5f-c303bac5bdf3" },
-        { id = "courtyard-bedroom-window-in", type_id = "courtyard-bedroom-window-in" },
-        { id = "courtyard-kitchen-door", type_id = "courtyard-kitchen-door" },
+        { id = "courtyard-bedroom-window-in", type_id = "{5d1c820d-679c-4c65-a114-2e921b59b835}" },
+        { id = "courtyard-kitchen-door", type_id = "{2c28ab89-693b-4612-b828-b8386f7ad090}" },
     },
 
     exits = {
