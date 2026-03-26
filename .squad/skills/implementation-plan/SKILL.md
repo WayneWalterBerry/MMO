@@ -128,6 +128,54 @@ When resolving blocking questions:
 - Capture each decision immediately to `.squad/decisions/inbox/`
 - Batch non-blocking questions: "approve all at recommendation?"
 
+### 11. Nelson Continuous LLM Testing (Walk-Away Assurance)
+
+For long-running autonomous execution without human intervention, Nelson runs LLM playthroughs **continuously**, not just at gates:
+- **After every wave:** Nelson runs a quick smoke-test walkthrough (~5 commands) to verify the game still boots and basic interaction works. This catches regressions BEFORE the gate.
+- **At every gate:** Nelson runs the full scenario suite (all scenarios defined for that gate). This is the formal pass/fail.
+- **Between waves (if idle):** Nelson runs exploratory LLM sessions — freeform play in `--headless` mode, trying edge cases, unusual verb combinations, dark-room interactions. Findings logged as issues.
+- **Frequency:** Coordinator decides when to spawn Nelson instances based on wave complexity. Simple data waves (WAVE-1, WAVE-4) get post-wave smoke only. Engine waves (WAVE-2, WAVE-5) get mid-wave checks too.
+- **All runs use `--headless` mode** with deterministic seeds for reproducibility.
+- **Nelson instances can run in parallel** with implementation agents (different files — tests vs engine code).
+
+### 12. Game Design Review at Gates (CBG)
+
+Beyond code tests, major gates include a **player experience check**:
+- CBG reviews: does it FEEL right? Is the gameplay arc discoverable? Does pacing work?
+- "Subjective pass/fail" scenarios: e.g., "light candle → examine room → pick up item should feel natural in <3 commands"
+- Design debt captured to `.squad/decisions/inbox/cbg-design-debt-WAVE-N.md` — doesn't block gates but feeds polish phase
+
+### 13. Architecture Safeguards (Bart)
+
+- **Interface contracts:** Each wave documents what public APIs it exposes for the next wave. Contracts freeze once dependent wave starts.
+- **Module size guard:** If any module exceeds 500 LOC mid-plan, trigger engine-code-review skill before it ships.
+- **Rollback strategy:** Git tag per gate. If wave N+2 reveals wave N was wrong, revert to tag, re-plan.
+- **Cross-cutting checklist:** Before each gate verify: consistent error handling, debug hooks present, performance baseline measured.
+
+### 14. Plan Lifecycle (Chalmers)
+
+- **Version tracking:** Plan increments version on each review fix pass (v1.0 → v1.1). Reviewers reference version.
+- **Status tracker:** Top of plan doc shows wave status at a glance: `WAVE-0: ✅ | WAVE-1: 🟡 | WAVE-2: ⏳`
+- **Session continuity:** If session dies mid-wave, next session checks plan status tracker, resumes from last completed wave.
+- **Post-mortem:** After all waves, add "Lessons" section: actual vs estimated, gate failures, new risks, candidate skills.
+
+### 15. Object & Implementation Standards (Flanders + Smithers)
+
+- **Object spec checklist:** Before wave kickoff, verify every object has: GUID (Windows format, unique), template, `on_feel`, keywords, name, description.
+- **GUID pre-assignment:** Architect reserves all GUIDs before wave starts in a decision inbox file. Prevents collisions during parallel authoring.
+- **Meta-lint mid-wave:** Run linter DURING waves (not just at gates) to catch object errors early.
+- **Parser integration matrix:** List new nouns, verb aliases, and embedding keywords per wave. Specify which wave updates `embedding-index.json`.
+- **Headless requirement:** Every new feature must pass `--headless` mode. Add to gate checklist.
+- **Error message registry:** Standardized user-facing error strings cataloged before implementation.
+
+### 16. Test Standards (Marge)
+
+- **Regression baseline snapshots:** Record exact test counts at start and end of each wave.
+- **Flaky test quarantine:** Non-deterministic tests use fixed seed OR are marked `@skip-ci` with issue link.
+- **Performance regression gates:** Every gate includes latency/memory budgets (e.g., creature tick <50ms).
+- **Test isolation:** Each wave's tests must NOT `require()` tests from other waves.
+- **LLM scenario logs:** Exact input sequences documented in `test/scenarios/{wave}_{scenario}.txt`.
+
 ## Examples
 
 Reference implementation: `plans/npc-combat-implementation-plan.md` (72KB, 1271 lines, 7 waves, 6 gates)
