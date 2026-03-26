@@ -45,109 +45,18 @@ return {
 
         -- === South portal (bedroom-hallway door, hallway side) ===
         { id = "bedroom-hallway-door-south", type_id = "{a47ce304-4425-4bd0-a9e9-224b7c8baa8c}" },
+        { id = "hallway-deep-cellar-stairs-down", type_id = "hallway-deep-cellar-stairs-down" },
+        { id = "hallway-level2-stairs-up", type_id = "hallway-level2-stairs-up" },
+        { id = "hallway-west-door", type_id = "hallway-west-door" },
+        { id = "hallway-east-door", type_id = "hallway-east-door" },
     },
 
     exits = {
         south = { portal = "bedroom-hallway-door-south" },
-
-        down = {
-            target = "deep-cellar",
-            type = "stairway",
-            passage_id = "deep-cellar-hallway-stairway",
-            name = "stone steps descending",
-            keywords = {"stairs", "stairway", "staircase", "down", "steps", "stone stairs", "descend", "cellar"},
-            description = "Stone steps descend through an archway in the floor, curving down into the cool darkness of the cellars below. A chill draught rises from the depths.",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = true,
-            locked = false,
-            hidden = false,
-            broken = false,
-            one_way = false,
-
-            on_traverse = {
-                wind_effect = {
-                    strength = "gust",
-                    extinguishes = { "candle" },
-                    spares = { wind_resistant = true },
-                    message_extinguish = "As you descend, a chill updraft gusts through the stairwell from the cellars below. Your candle flame flattens, sputters — and dies. Cold darkness rushes in.",
-                    message_spared = "A chill updraft gusts up from below as you descend. Your lantern flame shivers behind its glass but holds.",
-                    message_no_light = nil,
-                },
-            },
-        },
-
-        north = {
-            target = "level-2",
-            type = "stairway",
-            passage_id = "hallway-level2-staircase",
-            name = "a grand staircase",
-            keywords = {"staircase", "stairs", "grand staircase", "up", "north", "grand stairs", "bannister"},
-            description = "A grand staircase of polished oak ascends to the upper floors. The bannister is carved with the same symbols you saw in the deep cellar — familiar now, unsettling. The stairs curve upward out of sight.",
-
-            max_carry_size = 5,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = true,
-            locked = false,
-            hidden = false,
-            broken = false,
-            one_way = false,
-        },
-
-        west = {
-            target = "manor-west",
-            type = "door",
-            passage_id = "hallway-west-door",
-            name = "a heavy oak door",
-            keywords = {"door", "west door", "oak door", "locked door"},
-            description = "A heavy oak door, closed and locked. Through the keyhole, you glimpse a darkened room beyond — bookshelves? A study?",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = true,
-            key_id = nil,
-            hidden = false,
-            broken = false,
-            one_way = false,
-            breakable = false,
-
-            mutations = {},
-        },
-
-        east = {
-            target = "manor-east",
-            type = "door",
-            passage_id = "hallway-east-door",
-            name = "a lighter oak door",
-            keywords = {"door", "east door", "oak door", "kitchen door", "locked door"},
-            description = "A lighter oak door, closed and latched. A warm smell seeps from underneath — old cooking fires, herbs, grease. The kitchen, perhaps.",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = true,
-            key_id = nil,
-            hidden = false,
-            broken = false,
-            one_way = false,
-            breakable = false,
-
-            mutations = {},
-        },
+        down = { portal = "hallway-deep-cellar-stairs-down" },
+        north = { portal = "hallway-level2-stairs-up" },
+        west = { portal = "hallway-west-door" },
+        east = { portal = "hallway-east-door" },
     },
 
     on_enter = function(self)
