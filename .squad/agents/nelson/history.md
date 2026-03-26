@@ -1362,6 +1362,33 @@ Authored 116 comprehensive poison bottle regression tests as safety net for Effe
 - BUG-089: feel inside drawer scope bleed (PASSES — already fixed)
 - BUG-090: light candle hang (PASSES — safety limit catches it)
 - BUG-091: Spent match pickup priority (FAILS)
+
+### WAVE-1 TDD: NPC Foundation Tests (2026-03-26)
+
+**Task:** Write TDD test scaffolding for WAVE-1 NPC data layer (creature template, rat object, flesh material).
+
+**Files Created:**
+1. `test/creatures/test-creature-template.lua` — 21 tests
+2. `test/creatures/test-rat.lua` — 35 tests
+3. `test/creatures/test-flesh-material.lua` — 16 tests
+
+**Total:** 72 tests across 3 files.
+
+**Results (against current Flanders implementation):**
+
+| File | Pass | Fail | Notes |
+|------|------|------|-------|
+| test-creature-template.lua | 15 | 6 | FSM states missing from creature template (alive-idle, alive-wander, alive-flee, dead) |
+| test-rat.lua | 35 | 0 | ✅ ALL PASS — rat.lua fully compliant |
+| test-flesh-material.lua | 15 | 1 | flesh.lua has `value = 0`, spec requires [1, 100] |
+
+**Failures are legitimate TDD catches — Flanders needs to:**
+- Add FSM states to `src/meta/templates/creature.lua` (6 test failures)
+- Set `value` to a positive integer [1, 100] in `src/meta/materials/flesh.lua` (1 test failure)
+
+**Phase guard tests pass:** Both creature template and rat correctly have NO body_tree and NO combat fields (D-COMBAT-NPC-PHASE-SEQUENCING verified).
+
+**No regressions:** Pre-existing test failures (material-migration, material-properties, object-templates) are unrelated to WAVE-1 test additions.
 - BUG-092: Match counter decrement (PASSES at data level)
 
 **Key Learnings:**
