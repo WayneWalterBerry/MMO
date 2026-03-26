@@ -231,7 +231,7 @@ class TestCheckIntegration(unittest.TestCase):
     def test_xf03_category_keywords_filtered(self):
         """Category keywords like 'garment' shouldn't trigger XF-03."""
         self._write("src/meta/materials/wool.lua",
-                     'return { name = "wool", density = 1, hardness = 1, flexibility = 0.8, absorbency = 0.5, opacity = 1, flammability = 0.3, conductivity = 0.1, fragility = 0.2, value = 1, ignition_point = 300 }')
+                     'return { guid = "{a32c4964-22f4-4add-a3a9-b51a39db1498}", name = "wool", density = 1, hardness = 1, flexibility = 0.8, absorbency = 0.5, opacity = 1, flammability = 0.3, conductivity = 0.1, fragility = 0.2, value = 1, ignition_point = 300 }')
         self._write("src/meta/templates/small-item.lua",
                      'return { guid = "00000000-0000-0000-0000-000000000001", id = "small-item", name = "Small Item", keywords = {}, description = "test", size = 1, weight = 1, portable = true, material = "wool", container = false, capacity = 0, contents = {} }')
         self._write("src/meta/objects/cloak.lua",
@@ -248,7 +248,7 @@ class TestCheckIntegration(unittest.TestCase):
     def test_xf03_config_allowlist(self):
         """Keywords in the config allowlist shouldn't trigger XF-03."""
         self._write("src/meta/materials/iron.lua",
-                     'return { name = "iron", density = 7, hardness = 5, flexibility = 0.1, absorbency = 0, opacity = 1, flammability = 0, conductivity = 0.7, fragility = 0.2, value = 2 }')
+                     'return { guid = "{e02485b5-dbaa-41d3-a288-0fe9a307b8e4}", name = "iron", density = 7, hardness = 5, flexibility = 0.1, absorbency = 0, opacity = 1, flammability = 0, conductivity = 0.7, fragility = 0.2, value = 2 }')
         self._write("src/meta/templates/small-item.lua",
                      'return { guid = "00000000-0000-0000-0000-000000000001", id = "small-item", name = "Small Item", keywords = {}, description = "test", size = 1, weight = 1, portable = true, material = "iron", container = false, capacity = 0, contents = {} }')
         self._write("src/meta/objects/sword-a.lua",
@@ -265,7 +265,7 @@ class TestCheckIntegration(unittest.TestCase):
     def test_md19_detects_melting_before_ignition(self):
         """MD-19 should warn when melting_point <= ignition_point."""
         self._write("src/meta/materials/wax.lua",
-                     'return { name = "wax", density = 0.9, hardness = 1, flexibility = 0.5, absorbency = 0, opacity = 0.8, flammability = 0.6, conductivity = 0.01, fragility = 0.4, value = 1, melting_point = 60, ignition_point = 230 }')
+                     'return { guid = "{005f9e64-f6f1-41cc-8195-0aa783e7aafa}", name = "wax", density = 0.9, hardness = 1, flexibility = 0.5, absorbency = 0, opacity = 0.8, flammability = 0.6, conductivity = 0.01, fragility = 0.4, value = 1, melting_point = 60, ignition_point = 230 }')
         _, violations = self._run_check("src/meta/materials/")
         md19 = [v for v in violations if v["rule_id"] == "MD-19"]
         self.assertEqual(len(md19), 1)
@@ -277,7 +277,7 @@ class TestCheckIntegration(unittest.TestCase):
     def test_md19_info_when_ignition_below_melting(self):
         """MD-19 should be info when ignition_point < melting_point."""
         self._write("src/meta/materials/exotic.lua",
-                     'return { name = "exotic", density = 2, hardness = 3, flexibility = 0.1, absorbency = 0, opacity = 1, flammability = 0.9, conductivity = 0.5, fragility = 0.1, value = 5, melting_point = 500, ignition_point = 200 }')
+                     'return { guid = "{11111111-1111-1111-1111-111111111111}", name = "exotic", density = 2, hardness = 3, flexibility = 0.1, absorbency = 0, opacity = 1, flammability = 0.9, conductivity = 0.5, fragility = 0.1, value = 5, melting_point = 500, ignition_point = 200 }')
         _, violations = self._run_check("src/meta/materials/")
         md19 = [v for v in violations if v["rule_id"] == "MD-19"]
         self.assertEqual(len(md19), 1)
@@ -286,7 +286,7 @@ class TestCheckIntegration(unittest.TestCase):
     def test_config_disable_rule(self):
         """Disabled rules should produce no violations."""
         self._write("src/meta/materials/wax.lua",
-                     'return { name = "wax", density = 0.9, hardness = 1, flexibility = 0.5, absorbency = 0, opacity = 0.8, flammability = 0.6, conductivity = 0.01, fragility = 0.4, value = 1, melting_point = 60, ignition_point = 230 }')
+                     'return { guid = "{005f9e64-f6f1-41cc-8195-0aa783e7aafa}", name = "wax", density = 0.9, hardness = 1, flexibility = 0.5, absorbency = 0, opacity = 0.8, flammability = 0.6, conductivity = 0.01, fragility = 0.4, value = 1, melting_point = 60, ignition_point = 230 }')
         config = json.dumps({"rules": {"MD-19": {"enabled": False}}})
         _, violations = self._run_check("src/meta/materials/", config_json=config)
         md19 = [v for v in violations if v["rule_id"] == "MD-19"]
@@ -295,7 +295,7 @@ class TestCheckIntegration(unittest.TestCase):
     def test_config_severity_override(self):
         """Config severity override should change violation severity."""
         self._write("src/meta/materials/wax.lua",
-                     'return { name = "wax", density = 0.9, hardness = 1, flexibility = 0.5, absorbency = 0, opacity = 0.8, flammability = 0.6, conductivity = 0.01, fragility = 0.4, value = 1, melting_point = 60, ignition_point = 230 }')
+                     'return { guid = "{005f9e64-f6f1-41cc-8195-0aa783e7aafa}", name = "wax", density = 0.9, hardness = 1, flexibility = 0.5, absorbency = 0, opacity = 0.8, flammability = 0.6, conductivity = 0.01, fragility = 0.4, value = 1, melting_point = 60, ignition_point = 230 }')
         config = json.dumps({"rules": {"MD-19": {"severity": "error"}}})
         exit_code, violations = self._run_check("src/meta/materials/", config_json=config)
         md19 = [v for v in violations if v["rule_id"] == "MD-19"]
@@ -305,7 +305,7 @@ class TestCheckIntegration(unittest.TestCase):
     def test_json_output_includes_fix_metadata(self):
         """JSON output should include fixable and fix_safety fields."""
         self._write("src/meta/materials/iron.lua",
-                     'return { name = "iron", density = 7, hardness = 5, flexibility = 0.1, absorbency = 0, opacity = 1, flammability = 0, conductivity = 0.7, fragility = 0.2, value = 2 }')
+                     'return { guid = "{e02485b5-dbaa-41d3-a288-0fe9a307b8e4}", name = "iron", density = 7, hardness = 5, flexibility = 0.1, absorbency = 0, opacity = 1, flammability = 0, conductivity = 0.7, fragility = 0.2, value = 2 }')
         self._write("src/meta/templates/small-item.lua",
                      'return { guid = "00000000-0000-0000-0000-000000000001", id = "small-item", name = "Small Item", keywords = {}, description = "test", size = 1, weight = 1, portable = true, material = "iron", container = false, capacity = 0, contents = {} }')
         self._write("src/meta/objects/test-obj.lua",
@@ -319,7 +319,7 @@ class TestCheckIntegration(unittest.TestCase):
     def test_disable_category(self):
         """Disabling a category should suppress all rules in it."""
         self._write("src/meta/materials/wax.lua",
-                     'return { name = "wax", density = 0.9, hardness = 1, flexibility = 0.5, absorbency = 0, opacity = 0.8, flammability = 0.6, conductivity = 0.01, fragility = 0.4, value = 1, melting_point = 60, ignition_point = 230 }')
+                     'return { guid = "{005f9e64-f6f1-41cc-8195-0aa783e7aafa}", name = "wax", density = 0.9, hardness = 1, flexibility = 0.5, absorbency = 0, opacity = 0.8, flammability = 0.6, conductivity = 0.01, fragility = 0.4, value = 1, melting_point = 60, ignition_point = 230 }')
         config = json.dumps({"categories": {"material": {"enabled": False}}})
         _, violations = self._run_check("src/meta/materials/", config_json=config)
         material_rules = [v for v in violations if v["rule_id"].startswith("MD-")]

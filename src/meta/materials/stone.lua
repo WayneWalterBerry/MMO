@@ -1,4 +1,5 @@
 return {
+    guid = "{7725be55-9e3d-4960-805e-deb476b7f2d7}",
     name = "stone",
     density = 2600,
     melting_point = 1200,

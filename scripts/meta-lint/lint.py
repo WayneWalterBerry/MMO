@@ -396,7 +396,7 @@ KNOWN_INJURY_FIELDS = {
     "healing_interactions", "causes_unconsciousness", "unconscious_duration",
 }
 KNOWN_MATERIAL_FIELDS = {
-    "name", "density", "melting_point", "ignition_point", "hardness",
+    "guid", "name", "density", "melting_point", "ignition_point", "hardness",
     "flexibility", "absorbency", "opacity", "flammability", "conductivity",
     "fragility", "value", "rust_susceptibility",
 }
@@ -1349,10 +1349,14 @@ def _validate_material(parsed: ParsedFile, violations: List[Violation]) -> None:
             _add_violation(violations, path, _line_for(parsed, "name"), "error", "MD-03",
                            f"Material name '{mat_name}' must match filename '{file_id}'")
 
-    # MD-04: No guid field (INFO)
-    if fields.get("guid") is not None:
-        _add_violation(violations, path, _line_for(parsed, "guid"), "info", "MD-04",
-                       "Materials should not have a guid field")
+    # MD-04: Material must have a guid field (braced format)
+    mat_guid = _as_string(fields.get("guid"))
+    if mat_guid is None:
+        _add_violation(violations, path, 1, "error", "MD-04",
+                       "Material missing guid field")
+    elif not GUID_RE_BRACED.match(mat_guid):
+        _add_violation(violations, path, _line_for(parsed, "guid"), "error", "MD-04",
+                       f"Material guid must be braced format, got '{mat_guid}'")
 
     # MD-05: No id field (INFO)
     if fields.get("id") is not None:
@@ -1811,7 +1815,7 @@ def _validate_level(parsed: ParsedFile, room_ids: set, object_ids: set,
                                    f"restricted object '{ro_str}' not found in object files")
 
 
-def _validate_file(parsed: ParsedFile, materials: set, violations: List[Violation]) -> None:
+def _validate_file(parsed: ParsedFile, materials: Dict[str, object], violations: List[Violation]) -> None:
     path = parsed.path
     fields = parsed.fields
 
@@ -1887,8 +1891,19 @@ def _validate_file(parsed: ParsedFile, materials: set, violations: List[Violatio
 
         if parsed.material is None:
             _add_violation(violations, path, 1, "warning", "MAT-01", "Missing material field")
-        elif parsed.material not in materials:
-            _add_violation(violations, path, _line_for(parsed, "material"), "error", "MAT-02", f"Unknown material '{parsed.material}'")
+        else:
+            mat_names = materials.get("names", set())
+            mat_guid_to_name = materials.get("guid_to_name", {})
+            mat_value = parsed.material
+            mat_bare = mat_value.strip("{}")
+            if mat_value in mat_names:
+                _add_violation(violations, path, _line_for(parsed, "material"), "warning", "MAT-03",
+                               f"Material '{mat_value}' referenced by name - prefer GUID for consistency")
+            elif mat_bare in mat_guid_to_name:
+                pass  # GUID reference - valid, no warning
+            else:
+                _add_violation(violations, path, _line_for(parsed, "material"), "error", "MAT-02",
+                               f"Unknown material '{mat_value}'")
 
     if parsed.template == "room":
         description = fields.get("description")
@@ -1919,11 +1934,28 @@ def _validate_file(parsed: ParsedFile, materials: set, violations: List[Violatio
                     _add_violation(violations, path, _line_for(parsed, "transitions"), "error", "TR-02", f"Transition to '{to_state}' not in states")
 
 
-def _load_materials(project_root: Path) -> set:
+def _load_materials(project_root: Path) -> Dict[str, object]:
+    """Load material names and GUIDs from src/meta/materials/*.lua."""
     materials_dir = project_root / "src" / "meta" / "materials"
     if not materials_dir.exists():
-        return set()
-    return {f.stem for f in materials_dir.iterdir() if f.suffix == ".lua"}
+        return {"names": set(), "guid_to_name": {}}
+    names: set = set()
+    guid_to_name: Dict[str, str] = {}
+    guid_re = re.compile(r'guid\s*=\s*"([^"]+)"')
+    for f in materials_dir.iterdir():
+        if f.suffix != ".lua":
+            continue
+        name = f.stem
+        names.add(name)
+        try:
+            mat_content = f.read_text(encoding="utf-8")
+            m = guid_re.search(mat_content)
+            if m:
+                bare = m.group(1).strip("{}")
+                guid_to_name[bare] = name
+        except OSError:
+            pass
+    return {"names": names, "guid_to_name": guid_to_name}
 
 
 def _collect_lua_files(path: Path) -> List[Path]:
@@ -2266,7 +2298,7 @@ def main() -> int:
             if tid:
                 template_ids.add(tid)
             mat = _as_string(parsed.fields.get("material"))
-            if mat and mat == "generic" and mat not in materials:
+            if mat and mat == "generic" and mat not in materials.get("names", set()):
                 generic_templates.add(tid or "")
                 _add_violation(violations, parsed.path,
                                _line_for(parsed, "material"),

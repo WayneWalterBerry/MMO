@@ -1,4 +1,5 @@
 return {
+    guid = "{d6acdefc-d790-419a-98c5-b011e8ee7f99}",
     name = "cardboard",
     density = 650,
     melting_point = nil,

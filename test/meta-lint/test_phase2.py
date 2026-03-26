@@ -117,7 +117,7 @@ class TestPhase2Integration(unittest.TestCase):
 
     def _setup_base_files(self):
         self._write("src/meta/materials/wood.lua",
-            'return { name = "wood", density = 0.6, hardness = 4, flexibility = 0.3, '
+            'return { guid = "{be03ddf1-2bb1-48e7-bf67-5fcc6e2a79cf}", name = "wood", density = 0.6, hardness = 4, flexibility = 0.3, '
             'absorbency = 0.4, opacity = 1, flammability = 0.7, conductivity = 0.1, '
             'fragility = 0.3, value = 2, ignition_point = 300 }')
         self._write("src/meta/templates/small-item.lua",
