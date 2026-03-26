@@ -167,6 +167,33 @@ function M.register(handlers)
         return tool
     end
 
+    -- #260: Find name of an unlit fire source the player has, for helpful hints.
+    local function find_unlit_source_name(ctx)
+        local function is_unlit_and_lightable(obj)
+            if not obj then return false end
+            if provides_capability(obj, "fire_source") then return false end
+            if obj._state and obj.states and obj.states[obj._state]
+                and obj.states[obj._state].terminal then return false end
+            return has_capable_state(obj, "fire_source") ~= nil
+        end
+        if ctx.tool_noun then
+            local tool_obj = find_in_inventory(ctx, ctx.tool_noun)
+            if tool_obj and is_unlit_and_lightable(tool_obj) then
+                return tool_obj.id or ctx.tool_noun
+            end
+        end
+        for i = 1, 2 do
+            local hand = ctx.player.hands[i]
+            if hand then
+                local hand_obj = _hobj(hand, ctx.registry)
+                if hand_obj and is_unlit_and_lightable(hand_obj) then
+                    return hand_obj.id
+                end
+            end
+        end
+        return nil
+    end
+
     ---------------------------------------------------------------------------
     -- LIGHT
     ---------------------------------------------------------------------------
@@ -249,7 +276,16 @@ function M.register(handlers)
                         -- #169: Find fire_source tool (explicit tool, hand scan, inventory)
                         local tool = find_fire_source(ctx, found_trans.requires_tool, obj)
                         if not tool then
-                            print(found_trans.fail_message or "You have nothing to light it with.")
+                            if found_trans.fail_message then
+                                print(found_trans.fail_message)
+                            else
+                                local hint = find_unlit_source_name(ctx)
+                                if hint then
+                                    print("The " .. hint .. " isn't lit. Try 'light " .. hint .. "' first.")
+                                else
+                                    print("You'll need a flame to light that.")
+                                end
+                            end
                             return
                         end
 
@@ -307,7 +343,16 @@ function M.register(handlers)
             -- #169: Find fire_source tool (explicit tool, hand scan, inventory)
             local tool = find_fire_source(ctx, mut_data.requires_tool, obj)
             if not tool then
-                print(mut_data.fail_message or "You have nothing to light it with.")
+                if mut_data.fail_message then
+                    print(mut_data.fail_message)
+                else
+                    local hint = find_unlit_source_name(ctx)
+                    if hint then
+                        print("The " .. hint .. " isn't lit. Try 'light " .. hint .. "' first.")
+                    else
+                        print("You'll need a flame to light that.")
+                    end
+                end
                 return
             end
             if tool.on_tool_use and tool.on_tool_use.use_message then
@@ -590,8 +635,12 @@ function M.register(handlers)
         local has_fire = (ctx.player.state.has_flame and ctx.player.state.has_flame > 0)
             or find_tool_in_inventory(ctx, "fire_source") ~= nil
         if not has_fire then
-            local verb_word = ctx.current_verb or "burn"
-            print("You have no flame to " .. verb_word .. " anything with.")
+            local hint = find_unlit_source_name(ctx)
+            if hint then
+                print("The " .. hint .. " isn't lit. Try 'light " .. hint .. "' first.")
+            else
+                print("You'll need a flame. You could light a match, if you had one.")
+            end
             return
         end
 
