@@ -58,7 +58,7 @@ base_force = weapon_material.density × SIZE_MODIFIERS[attacker.size] × weapon.
 
 ```lua
 FORCE_SCALE = 0.1              -- Tuning factor (0.1 reduces density to manageable scale)
-THICKNESS = 1000              -- Hardness factor for penetration resistance
+THICKNESS = 200               -- Hardness factor for penetration resistance
 
 SIZE_MODIFIERS = {
     tiny = 0.5,
@@ -421,7 +421,7 @@ The injury type is passed to `injuries.inflict()` to apply injury effects (movem
 | Constant | Value | Used For |
 |----------|-------|----------|
 | `FORCE_SCALE` | 0.1 | Base force scaling |
-| `THICKNESS` | 1000 | Layer penetration resistance |
+| `THICKNESS` | 200 | Layer penetration resistance |
 | Dodge success | 40% | Evasion chance |
 | Weapon force ≥ 7 threshold | 7 | Accuracy bonus |
 | Energy decay (blunt) | 0.8 | Force dissipation per layer |

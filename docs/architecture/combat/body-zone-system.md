@@ -310,7 +310,7 @@ body_tree = {
 
 | Constant | Value | Purpose |
 |----------|-------|---------|
-| `THICKNESS` | 1000 | Hardness factor for layer penetration calculation |
+| `THICKNESS` | 200 | Hardness factor for layer penetration calculation |
 | `FORCE_SCALE` | 0.1 | Scaling factor for base force calculation |
 | Default accuracy | 0.6 | 60% chance to hit aimed zone |
 | Weapon force ≥ 7 threshold | 7 | High-force weapons achieve 100% accuracy |

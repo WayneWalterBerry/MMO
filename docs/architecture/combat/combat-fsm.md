@@ -474,7 +474,7 @@ end
 | Constant | Value | Purpose |
 |----------|-------|---------|
 | `FORCE_SCALE` | 0.1 | Base force tuning factor |
-| `THICKNESS` | 1000 | Hardness factor for penetration |
+| `THICKNESS` | 200 | Hardness factor for penetration |
 | Default accuracy | 0.6 | 60% chance to hit aimed zone |
 | Dodge success rate | 0.4 | 40% chance dodge succeeds |
 | Deflect streak threshold | 2 | Interrupts after 2 consecutive misses |
