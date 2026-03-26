@@ -40,7 +40,10 @@ local STANCE_MODIFIERS = {
 }
 
 local FORCE_SCALE = 0.1
-local THICKNESS = 1000
+-- Tissue-layer penetration resistance. Tuned so unarmed blunt (force=2, bone)
+-- can penetrate soft tissue (hide/flesh) at GRAZE level while bone/organ stay
+-- protected.  See #275 — old value of 1000 made fists deal zero damage.
+local THICKNESS = 200
 
 local function ensure_material_defaults()
     if not materials or not materials.registry then return end
