@@ -275,19 +275,474 @@ The `body_tree` does NOT replace `health` / `max_health` on creatures. Health re
 
 ## 4. Combat Phases (MTG-Inspired)
 
-<!-- STUB — to be filled -->
+### 4.1 Overview (D-COMBAT-2)
+
+Wayne's directive: **MTG combat phases embedded as engine-driven FSM/metadata, NOT player-operated turns.** This means the phase progression is an FSM managed by the engine — the player doesn't manually advance through "declare attackers," "declare blockers," etc. The engine drives the phase sequence; the player makes choices at designated decision points within that sequence.
+
+Think of it this way: MTG's 5-step combat phase happens every turn regardless of what the player does. The player's agency exists WITHIN the phase structure, not over it. Our combat FSM advances automatically; the player fills in the decision blanks.
+
+### 4.2 The Combat Exchange FSM
+
+Each combat exchange (one attack-response cycle) follows this 6-phase FSM:
+
+```
+┌─────────────┐
+│ 1. INITIATE │ ── engine determines turn order (speed-based)
+└──────┬──────┘
+       ↓
+┌─────────────┐
+│ 2. DECLARE  │ ── attacker commits to an action (attack, grapple, ability)
+└──────┬──────┘    For NPCs: engine reads combat.behavior metadata
+       │           For player (on their turn): player chooses action + target zone
+       ↓
+┌─────────────┐
+│ 3. RESPOND  │ ── defender reacts (block, dodge, counter, flee, use item)
+└──────┬──────┘    For NPCs: engine reads combat.behavior.defense metadata
+       │           For player (when attacked): player chooses response
+       ↓
+┌─────────────┐
+│ 4. RESOLVE  │ ── engine calculates material interaction
+└──────┬──────┘    weapon material × force vs. armor + tissue layers
+       │           result = severity (miss/deflect/graze/hit/critical)
+       │           zone = targeted or random-weighted from body_tree
+       ↓
+┌─────────────┐
+│ 5. NARRATE  │ ── engine generates text from structured result
+└──────┬──────┘    template: "{actor} {verb} {target}'s {zone}, {result_description}"
+       │           severity scales vocabulary
+       ↓
+┌─────────────┐
+│ 6. UPDATE   │ ── apply injuries, check morale, check death, trigger mutations
+└─────────────┘    injury → body zone debuffs
+                   death → creature mutation (alive → dead)
+                   morale check → possible flee transition
+```
+
+### 4.3 Phase Details
+
+#### Phase 1: INITIATE
+
+**What happens:** The engine determines who acts first this exchange.
+
+**Resolution:** Compare combatant `combat.speed` values. Faster creature acts first. On ties, smaller creature acts first (rats are quicker than humans). If still tied, the player acts first (home-field advantage in a text adventure).
+
+**MTG parallel:** This is the "beginning of combat" step. Both combatants are committed to fighting — the question is who strikes first.
+
+**Engine FSM state:** `combat_state = "initiate"`
+
+**Player input:** None. The engine resolves initiative and narrates: *"The rat is faster — it lunges first!"* or *"You have the reach advantage — you strike first."*
+
+#### Phase 2: DECLARE (Attacker's Action)
+
+**What happens:** The attacker commits to an action and (optionally) a target zone.
+
+**If attacker is NPC:** The engine reads `combat.behavior.attack_pattern` metadata to select an action. A rat with `attack_pattern = "bite"` always bites. A wolf with `attack_pattern = { "bite", "lunge", "claw" }` selects based on current state and target condition. No NPC-specific code — the engine evaluates the pattern metadata generically.
+
+**If attacker is player:** The engine prompts:
+
+```
+The rat backs against the wall, hissing. What do you do?
+> attack rat            (swing weapon at random zone)
+> attack rat head       (target specific zone — harder to hit)
+> throw flask at rat    (ranged attack with held item)
+> flee north            (attempt to disengage and leave)
+```
+
+**MTG parallel:** This is "declare attackers." The attacker commits resources — in our case, the action and target. Once declared, it can't be changed (the swing is in motion).
+
+**Engine FSM state:** `combat_state = "declare"`
+
+#### Phase 3: RESPOND (Defender's Reaction)
+
+**What happens:** After the attacker commits, the defender chooses a response. This is the critical player agency moment.
+
+**If defender is NPC:** The engine reads `combat.behavior.defense` metadata. A rat's defense is `"dodge"` (small, fast). A wolf's defense might be `"counter"` (aggressive). A turtle's defense is `"shell"` (natural armor). Resolved entirely from metadata.
+
+**If defender is player (being attacked):** The engine prompts:
+
+```
+The rat lunges at your hand, teeth bared!
+> block          (requires shield/armor in hand — reduces damage)
+> dodge          (agility check — avoid entirely, lose next attack)
+> counter        (requires weapon — take the hit, strike simultaneously)
+> use flask      (use held item — throw, apply, deploy)
+> flee south     (attempt escape — may fail, takes full damage)
+```
+
+**MTG parallel:** This is "declare blockers" + the response window for combat tricks. The defender sees the attack and reacts. This is where combat tricks (items-as-instants) live.
+
+**Engine FSM state:** `combat_state = "respond"`
+
+**Key design:** The player ALWAYS gets a response choice, even when attacked. This ensures agency in every exchange, even when the creature has initiative.
+
+#### Phase 4: RESOLVE (Material Calculation)
+
+**What happens:** The engine compares attacker's weapon material + force against defender's armor material + tissue layers.
+
+**Inputs:**
+- `weapon`: material properties (hardness, density, edge quality) + weapon type (edged, blunt, pierce)
+- `force`: base force from creature size × attack quality modifier from player choice
+- `target_zone`: player-chosen or random-weighted from `body_tree` sizes
+- `armor`: worn armor on target zone (if any) — material + coverage + fit
+- `tissue`: tissue layers from `body_tree[zone].tissue` array
+- `defense_modifier`: defender's response choice modifies incoming damage
+
+**Resolution algorithm:**
+
+```
+1. Zone selection:
+   - If player targeted specific zone: hit probability = 60% (general) or zone-specific
+   - If random: weight by body_tree zone sizes, select randomly
+   
+2. Coverage check (armor):
+   - Roll against armor.coverage (0.0–1.0)
+   - If hit lands on covered area: armor material absorbs first
+   - If hit lands on gap: skip armor, go straight to tissue
+
+3. Layer penetration (Dwarf Fortress model):
+   - For each layer (armor → natural_armor → tissue[1] → tissue[2] → ...):
+     - Compare attack force × weapon shear/impact vs. layer material resistance
+     - If attack exceeds resistance: penetrate, reduce force, continue inward
+     - If attack doesn't exceed: stopped at this layer
+   
+4. Severity determination:
+   - No penetration beyond armor: DEFLECT ("The blade glances off your steel helm.")
+   - Skin only: GRAZE ("A shallow scratch across your forearm.")
+   - Flesh: HIT ("The blade cuts deep into your shoulder muscle.")
+   - Bone: SEVERE ("A sickening crack — the bone fractures.")
+   - Organ: CRITICAL ("The blade pierces your gut. Blood everywhere.")
+
+5. Defense modifier application:
+   - Block: damage × 0.3 (shield absorbs 70%, but shield takes degradation)
+   - Dodge (success): damage × 0.0 (avoided entirely)
+   - Dodge (failure): damage × 1.0 (full hit — dodging is all-or-nothing)
+   - Counter: damage × 1.0 (take full hit, but attacker also takes your hit)
+   - Flee (success): damage × 0.5 (glancing blow as you turn to run)
+   - Flee (failure): damage × 1.2 (caught off-balance, worse than standing)
+```
+
+**Engine FSM state:** `combat_state = "resolve"`
+
+#### Phase 5: NARRATE (Text Generation)
+
+**What happens:** The structured resolution result is formatted into prose.
+
+**Narration template:**
+
+```
+{attacker_name} {action_verb} {target_name}'s {body_zone}, {result_description}!
+```
+
+**Severity-scaled vocabulary:**
+
+| Severity | Edged Verbs | Blunt Verbs | Result Templates |
+|----------|-------------|-------------|------------------|
+| DEFLECT | glances off | bounces off | "{armor_material} holds. No damage." |
+| GRAZE | nicks, scratches | grazes, brushes | "a thin red line across the {tissue}" |
+| HIT | cuts, slashes, stabs | cracks, strikes, pounds | "cutting into the {tissue}, drawing blood" |
+| SEVERE | tears through, hacks | shatters, crushes, smashes | "fracturing the {bone}, {limb_effect}" |
+| CRITICAL | severs, eviscerates | pulverizes, destroys | "a fatal wound to the {organ}" |
+
+**Examples:**
+
+- DEFLECT: *"You swing the dagger at the rat's body — the blade catches a rib and deflects. The rat squeals but is unharmed."*
+- GRAZE: *"Your dagger grazes the rat's flank, parting the fur and drawing a thin line of blood."*
+- HIT: *"The dagger sinks into the rat's body, cutting through hide and into the flesh beneath. The rat shrieks."*
+- CRITICAL: *"Your dagger plunges into the rat's body and finds something vital. The rat spasms, goes rigid, and collapses."*
+
+**Engine FSM state:** `combat_state = "narrate"`
+
+#### Phase 6: UPDATE (State Changes)
+
+**What happens:** The engine applies all state changes from the resolution.
+
+**Actions:**
+1. **Inflict injury** on the target via `injuries.inflict()` — type determined by severity + zone + damage type (bleeding, bruised, crushing-wound, concussion, etc.)
+2. **Apply zone debuffs** from `body_tree[zone].on_damage` — weapon drop (arms), reduced movement (legs), etc.
+3. **Check morale** — compare cumulative damage to `combat.behavior.flee_threshold`. If exceeded, NPC transitions to fleeing state.
+4. **Check death** — `injuries.compute_health(target)` ≤ 0 AND vital zone hit → death. Trigger creature mutation (alive → dead).
+5. **Degrade equipment** — attacked armor gets fragility check. Shield used to block gets fragility check. Weapon used to attack gets fragility check (future Phase 3).
+6. **Emit stimuli** — `creature_attacked`, `creature_injured`, `creature_died` stimuli for nearby creatures to react to.
+
+**Engine FSM state:** `combat_state = "update"` → transitions back to `"initiate"` for next exchange, or to `"ended"` if combat is over.
+
+### 4.4 Combat FSM Metadata Format
+
+The combat state machine is declared as engine-level metadata, not per-creature. This is a single FSM definition that the engine uses for ALL combat:
+
+```lua
+-- engine/combat/phases.lua (metadata, not handler code)
+return {
+    id = "combat-exchange",
+    initial_state = "initiate",
+    states = {
+        initiate = { next = "declare", auto = true },
+        declare  = { next = "respond", requires_input = "attacker" },
+        respond  = { next = "resolve", requires_input = "defender" },
+        resolve  = { next = "narrate", auto = true },
+        narrate  = { next = "update",  auto = true },
+        update   = { next = "initiate", auto = true, 
+                     exit_condition = "combat_over" },
+    },
+    exit_states = { "ended", "fled", "dead" },
+}
+```
+
+The engine drives this FSM. At `declare` and `respond`, it checks whether the relevant combatant is the player (prompt for input) or an NPC (read metadata). All other phases are automatic. This is D-COMBAT-2: **MTG phases as engine-driven FSM.**
+
+### 4.5 Multi-Exchange Combat Flow
+
+A full combat encounter is a series of exchanges:
+
+```
+COMBAT START
+  ↓
+Exchange 1: rat attacks (initiative: rat is faster)
+  INITIATE → DECLARE (rat bites hand) → RESPOND (player: dodge?) 
+  → RESOLVE → NARRATE → UPDATE
+  ↓
+Exchange 2: player attacks (player's turn)
+  INITIATE → DECLARE (player: attack rat body) → RESPOND (rat: dodge)
+  → RESOLVE → NARRATE → UPDATE
+  ↓
+Exchange 3: rat attacks (rat still alive, still aggressive)
+  ... (repeat until combat ends)
+  ↓
+COMBAT END (rat flees / rat dies / player flees / player dies)
+```
+
+Each exchange is one cycle of the 6-phase FSM. The engine loops until an exit condition triggers: combatant death, successful flee, morale break, or external interruption.
+
+### 4.6 Speed and Pacing
+
+**Exchanges per round:** Each round consists of one exchange per combatant, in initiative order. A player vs. rat round = 2 exchanges (rat attacks, then player attacks, or vice versa based on speed).
+
+**Text pacing:** Each exchange produces 2–4 sentences of narration. A round takes ~10–15 seconds to read. This creates the "implicit pacing" advantage of text IF — dramatic tension through reading time, not artificial timers.
+
+**Round limit:** Combat encounters should not exceed 5–8 rounds against a single creature. If combat drags past this, something is wrong with the balance. The material physics should ensure that wielded weapons resolve fights quickly against appropriately-sized targets.
 
 ---
 
 ## 5. Damage & Materials
 
-<!-- STUB — to be filled -->
+### 5.1 Material Combat Properties
+
+Our existing material registry has 11 properties per material. Combat requires extending 4 of these with combat-specific semantics and adding 2 new properties:
+
+| Property | Existing? | Combat Use |
+|----------|-----------|------------|
+| `hardness` | ✅ Yes | Resistance to deformation. Higher hardness = harder to cut through (shear resistance). Steel 9, ceramic 7, wood 4, flesh 1. |
+| `density` | ✅ Yes | Mass per volume. Affects weapon momentum (heavier = more blunt force). Lead 11340, steel 7800, wood 500, flesh 1050. |
+| `fragility` | ✅ Yes | Likelihood of structural failure on impact. Ceramic 0.7 (cracks easily), brass 0.1 (dents, never breaks), steel 0.15. |
+| `flexibility` | ✅ Yes | Ability to bend without breaking. Leather 0.9 (absorbs blunt force by flexing), steel 0.1, ceramic 0.0. |
+| `shear_yield` | 🆕 New | Force required to begin cutting. Materials with high shear_yield resist edged weapons. Derived from hardness for Phase 1. |
+| `max_edge` | 🆕 New | Maximum sharpness achievable. Obsidian 10 (sharper than steel), steel 8, copper 5, wood 1, bone 3. Determines edged weapon effectiveness. |
+
+**Phase 1 simplification:** For Phase 1, `shear_yield` can be derived from `hardness` (shear_yield ≈ hardness × 1000). The explicit property exists for Phase 2+ when nuanced material interactions matter (e.g., obsidian has low hardness but extreme edge quality).
+
+### 5.2 Weapon Types and Damage Modes
+
+Weapons don't declare "slashing damage" as an abstract type. The weapon's physical shape determines how force is applied:
+
+| Weapon Type | Force Application | Effective Against | Weak Against |
+|-------------|-------------------|-------------------|--------------|
+| **Edged** (sword, dagger, axe) | Concentrated force on thin edge; shears material | Unarmored flesh, leather, hide | Hard armor (metal, stone) |
+| **Blunt** (mace, club, hammer) | Distributed force over broad area; transfers momentum | Hard armor (force passes through), bone | Flexible armor (leather absorbs) |
+| **Pierce** (spear, arrow, fang) | Concentrated force on point; penetrates layers | Gaps in armor, chain mail links | Solid plate armor, thick bone |
+
+**How this works in practice:**
+
+- **Steel dagger (edged) vs. bare rat:** Dagger's max_edge (8) × force vs. hide's shear_yield (low) → cuts through easily. Flesh offers less resistance. High severity.
+- **Wooden club (blunt) vs. armored player:** Wood's density (500) × velocity → moderate momentum. Ceramic pot's hardness (7) absorbs the edge force, but momentum transfers through → bruising beneath armor. The pot doesn't crack (blunt, not edged).
+- **Rat bite (pierce) vs. leather glove:** Tooth enamel's max_edge (moderate) vs. leather's hardness (3) → teeth struggle to penetrate. Bite is partially blocked. Shallow wound.
+
+### 5.3 The Damage Resolution Formula
+
+```
+FORCE = weapon_density × attack_size_modifier × quality_modifier
+   where:
+     attack_size_modifier = attacker creature size (tiny=0.5, small=1, medium=2, large=4, huge=8)
+     quality_modifier = player choice (aggressive=1.3, standard=1.0, cautious=0.7)
+
+For each layer from outer to inner (armor → natural_armor → tissue[0] → tissue[1] → ...):
+  
+  IF weapon is edged or pierce:
+    penetration = (FORCE × weapon.max_edge) - (layer.hardness × layer_thickness)
+    IF penetration > 0:
+      FORCE = penetration  -- reduced force continues inward
+    ELSE:
+      STOP -- weapon cannot cut this layer
+      
+  IF weapon is blunt:
+    transfer = FORCE × (1.0 - layer.flexibility)
+    layer_damage = transfer - (layer.hardness × layer_thickness × 0.5)
+    FORCE = transfer × 0.8  -- blunt force transfers through at 80%
+    -- Blunt weapons don't "stop" — force propagates through all layers
+    -- But each layer absorbs some energy
+
+SEVERITY = map force_remaining to severity tiers:
+  0         → DEFLECT (no penetration)
+  1-20%     → GRAZE  (superficial)
+  21-50%    → HIT    (meaningful wound)
+  51-80%    → SEVERE (structural damage: fracture, deep cut)
+  81-100%+  → CRITICAL (organ damage, potential death)
+```
+
+### 5.4 Material Interaction Examples
+
+**Steel sword vs. unarmored rat (edged):**
+```
+FORCE = 7800 (steel density) × 0.5 (tiny attacker... no, PLAYER is attacking)
+       Actually: FORCE = 7800 × 2.0 (medium player) × 1.0 (standard) = 15600
+Layer 1: hide (hardness ~2, shear_yield ~2000): 15600 × 8 (max_edge) - 2000 = 122800. Penetrate.
+Layer 2: flesh (hardness 1, shear_yield ~1000): trivially penetrated.
+Layer 3: bone (hardness 6, shear_yield ~6000): 15600 × 8 - 6000 = substantial. Penetrate.
+Layer 4: organ: penetrated. CRITICAL.
+Result: The rat dies in one hit. Steel sword vs. tiny unarmored creature = instant kill.
+```
+
+**Rat bite vs. player's bare hand (pierce):**
+```
+FORCE = 1050 (tooth enamel density) × 0.5 (tiny rat) × 1.0 = 525
+Layer 1: skin (hardness 1, shear_yield ~1000): 525 × 4 (tooth edge) - 1000 = 1100. Penetrate.
+Layer 2: flesh: penetrated.
+Layer 3: bone: 525 × 4 - 6000 = negative. STOPPED at bone.
+Severity: HIT (penetrated skin and flesh, stopped at bone).
+Result: "The rat sinks its teeth into your hand, piercing skin and drawing blood."
+Injury: minor-cut or bleeding (location: hand/arms zone).
+```
+
+**Wooden club vs. ceramic pot on head (blunt):**
+```
+FORCE = 500 (wood density) × 2.0 (medium player) × 1.0 = 1000
+Layer 1: ceramic pot (hardness 7, flexibility 0.0): 
+  transfer = 1000 × (1.0 - 0.0) = 1000 (ceramic is rigid, full transfer)
+  fragility check: ceramic fragility 0.7 vs. force → HIGH probability of cracking
+  pot cracks (FSM: intact → cracked)
+  FORCE continues at 800 (80% transfer)
+Layer 2: skin: blunt impact → bruise
+Layer 3: bone (skull): 800 × 0.8 - (6 × thick × 0.5) → possible concussion
+Result: "The club crashes against the pot — CRACK — ceramic shards fly. Your head rings."
+Injuries: concussion (head zone), pot mutation (intact → cracked).
+```
+
+### 5.5 Size Asymmetry
+
+Creature size dramatically affects combat outcomes through the force calculation:
+
+| Size | Force Modifier | Examples | Combat Implications |
+|------|---------------|----------|---------------------|
+| tiny | 0.5 | rat, spider, bat | Can barely damage armored targets; overwhelmed by larger creatures |
+| small | 1.0 | cat, dog, child | Meaningful damage to unarmored; struggles against heavy armor |
+| medium | 2.0 | human, wolf, deer | Standard combatant; equipment is the differentiator |
+| large | 4.0 | bear, horse, ogre | Devastating force; can damage through heavy armor |
+| huge | 8.0 | elephant, dragon | One-hit potential against anything smaller; nearly unstoppable |
+
+**The equipment equalizer:** A naked human vs. a wolf is a losing fight (wolf has natural weapons + speed). A human with a steel spear and leather armor vs. a wolf is an even fight. A human with a steel sword and iron breastplate vs. a wolf wins decisively. **This reinforces the 2-hand inventory system's strategic importance** — what you carry into combat determines whether you live.
+
+### 5.6 Natural Weapons
+
+Creatures declare natural weapons in their `combat` metadata. Natural weapons are resolved using the same material system as crafted weapons:
+
+| Natural Weapon | Material | Type | Typical Force | Found On |
+|----------------|----------|------|---------------|----------|
+| bite (rodent) | tooth_enamel | pierce | Very low | Rat, mouse |
+| bite (canine) | tooth_enamel | pierce | Medium | Wolf, dog |
+| claw (small) | keratin | slash | Low | Cat, rat |
+| claw (large) | keratin | slash | High | Bear, wolf |
+| hoof/kick | bone | blunt | High | Horse, deer |
+| sting | chitin | pierce | Low | Spider, scorpion |
+| constrict | flesh | blunt | Variable (size-dependent) | Snake |
+
+The engine doesn't know about "bite" or "claw" as special categories. It knows: this attack uses `tooth_enamel` material with `pierce` type at force level X. The material system resolves the rest.
 
 ---
 
 ## 6. Injury Integration
 
-<!-- STUB — to be filled -->
+### 6.1 How Combat Feeds the Existing Injury System
+
+The injury system (`src/engine/injuries.lua`) already handles:
+- Infliction with body location (`injuries.inflict(player, type, source, location)`)
+- Per-turn ticking with damage accumulation
+- FSM state progression (active → worsened → critical → fatal)
+- Healing via treatment objects (bandages, poultices)
+- Health as derived value (`max_health - sum(injury.damage)`)
+
+**Combat plugs directly into this system.** The Phase 4 (RESOLVE) output maps to an `injuries.inflict()` call:
+
+```lua
+-- In the combat resolution engine:
+local severity = resolve_exchange(attacker, defender, weapon, zone)
+
+if severity >= SEVERITY.GRAZE then
+    local injury_type = map_severity_to_injury(severity, weapon_type, zone)
+    local damage = calculate_injury_damage(severity, force_remaining)
+    injuries.inflict(target, injury_type, weapon.id, zone.id, damage)
+end
+```
+
+### 6.2 Severity → Injury Type Mapping
+
+| Severity | Edged Weapon | Blunt Weapon | Pierce Weapon |
+|----------|-------------|-------------|---------------|
+| GRAZE | minor-cut | bruised | minor-cut |
+| HIT | bleeding | bruised | bleeding |
+| SEVERE | bleeding (high damage) | crushing-wound | bleeding (high damage) |
+| CRITICAL (non-vital) | bleeding (critical) | crushing-wound (critical) | bleeding (critical) |
+| CRITICAL (vital: head) | concussion → death | concussion → death | concussion → death |
+| CRITICAL (vital: torso) | bleeding (fatal) | crushing-wound (fatal) | bleeding (fatal) |
+
+All 7 existing injury types are already defined in `src/meta/injuries/`:
+
+| Injury Type | Combat Source | Notes |
+|-------------|--------------|-------|
+| `bleeding` | Edged/pierce wounds | Over-time damage; needs bandage treatment |
+| `bruised` | Blunt impacts, falls | Instant damage; auto-heals over time |
+| `burn` | Fire sources (torch, oil) | Not typical combat, but possible with fire weapons |
+| `concussion` | Head zone blunt/severe hits | Impairs vision, causes confusion |
+| `crushing-wound` | Blunt weapons at high force | Structural damage; slow healing |
+| `minor-cut` | Grazing edged/pierce hits | Low damage; auto-heals quickly |
+| `poisoned-nightshade` | Poison weapons (future) | See Section 10: Disease & Status Effects |
+
+### 6.3 Zone-Specific Injury Effects
+
+Body zone debuffs are applied alongside the injury when `body_tree[zone].on_damage` is defined:
+
+| Zone | Debuff | Mechanical Effect |
+|------|--------|-------------------|
+| **head** (SEVERE+) | `concussion` | Impaired accuracy, disorientation narration, possible unconsciousness |
+| **arms** (HIT+) | `weapon_drop` | Chance to drop held weapon; reduced attack force until healed |
+| **arms** (SEVERE+) | `reduced_attack` | Attack force halved; cannot use two-handed weapons |
+| **legs** (HIT+) | `reduced_movement` | Cannot run; flee attempts auto-fail |
+| **legs** (SEVERE+) | `prone` | Knocked down; must spend an action to stand; all attacks against you hit more easily |
+| **tail** (HIT+) | `balance_loss` | NPC only: reduced dodge chance |
+
+These debuffs are implemented as **effects** processed by the existing effects pipeline (`src/engine/effects.lua`). No new subsystem needed — the combat engine emits effect events that the effects pipeline handles.
+
+### 6.4 Death and Mutation
+
+**Player death:** When `injuries.compute_health(player) ≤ 0` and at least one injury was from an external source (not self-inflicted), the player dies. The existing injury tick already checks this. Combat simply generates the injuries; the injury system handles the death check.
+
+**Creature death:** When a creature's health reaches 0 from combat damage:
+
+1. The creature's FSM transitions to `dead` state (existing FSM engine handles this via the `{ from = "*", to = "dead", condition = "health_zero" }` transition already defined in the rat spec).
+2. The creature object **mutates** (D-14): `rat.lua` metadata is rewritten to `dead` state, setting `animate = false`, `portable = true`, updating all sensory descriptions to dead variants.
+3. The creature emits a `creature_died` stimulus for nearby creatures to react to.
+
+**No new death system is needed.** The existing FSM transition + mutation + injury health-check chain handles creature death. Combat is just the input that triggers the chain.
+
+### 6.5 Injury Stacking from Combat
+
+Multiple combat exchanges can stack injuries:
+
+- Exchange 1: rat bites player's hand → `minor-cut` on arms zone
+- Exchange 2: rat bites again → `bleeding` on arms zone (second, more serious wound)
+- Exchange 3: player fails to block → `bruised` on torso zone
+
+Each injury is a separate instance with its own damage, FSM state, and tick behavior. The player accumulates damage from multiple wounds simultaneously. This creates the natural "attrition clock" — even winning a fight has costs.
+
+Treatment after combat becomes a puzzle: multiple wounds competing for limited healing resources (bandages, poultices). The injury system's existing `resolve_target()` function already handles player targeting of specific injuries. Combat doesn't change this — it just creates more injuries to manage.
 
 ---
 
