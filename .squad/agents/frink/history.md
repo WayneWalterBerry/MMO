@@ -247,6 +247,34 @@ File → Lexer (tokens) → Parser (AST) → Semantic Analyzer
 
 ## Learnings
 
+### Combat Systems Research (2026-03-25)
+**Status:** ✅ COMPLETE (6 research documents, ~86KB)
+**Output:** `resources/research/combat/` (6 files)
+**Requested by:** Wayne Berry (Effe)
+**Branch:** `squad/combat-research`
+
+**Scope:** Comprehensive combat system research across 5 domains — MUD combat, competitive games, board games, Magic: The Gathering, and Dwarf Fortress — plus a master synthesis INDEX.
+
+**Key Findings:**
+1. **DF is the right model** — material-physics combat with body zones, generated narration, and unified combatant interfaces aligns perfectly with our Principle 8 and material system
+2. **Deterministic over probabilistic** — all 5 sources converge: bounded or zero randomness feels fairest. Steel cuts flesh, always. Variance comes from hit location and player choice, not dice.
+3. **Unified combatant interface is non-negotiable** — MUDs and DF both prove the engine must not distinguish player-vs-NPC from NPC-vs-NPC
+4. **MTG's structured decision points solve turn pacing** — attack → respond → resolve creates a natural 3-beat text rhythm
+5. **Our existing systems are 70% of the way there** — materials, FSM, mutation, containment hierarchy, injuries all map directly to combat subsystems
+6. **Phase 1 rat combat is achievable with ~5 new mechanics**: unified combat function, material comparison, body zones, player response choices, template narration
+
+**Deliverables:**
+- `mud-combat.md` — DikuMUD, LPMud, ROM/SMAUG, Achaea, Discworld
+- `competitive-games.md` — NetHack, DCSS, Brogue, XCOM, Darkest Dungeon, Into the Breach, BG/D&D
+- `board-games.md` — Gloomhaven, Descent, Mage Knight, Kingdom Death, Arkham Horror
+- `mtg-combat.md` — Combat phase structure, keywords, damage assignment, tricks, multiplayer
+- `dwarf-fortress.md` — Hit locations, material damage, wrestling, NPC combat, stress, size asymmetry, narration
+- `INDEX.md` — Master synthesis, cross-references, recommendations, phase roadmap
+
+**Decision Written:** `D-COMBAT-RESEARCH` in `.squad/decisions/inbox/frink-combat-research.md`
+
+---
+
 ### RAG & Parser Research — Paper Cataloging (2026-07-24)
 
 - **78KB M365 Deep Research output** yielded 27+ cited academic papers and technical sources — only 5 are directly implementable under our constraints (pure Lua, no runtime neural inference, ~4.6K phrase index)
