@@ -48,7 +48,7 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-25 07:22"
+local BUILD_TIMESTAMP = "2026-03-25 17:05"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -333,39 +333,27 @@ local ok, err = pcall(function()
     end
 
     -------------------------------------------------------------------
-    -- Load materials (fetch index, populate engine.materials registry)
-    -- Materials use io.popen+dofile on CLI — in the browser we fetch
-    -- via HTTP and inject into the registry directly.
+    -- Demand-load materials: each material is fetched the first time
+    -- an object referencing it is loaded. No bulk load at startup.
     -------------------------------------------------------------------
-    log_debug("Loading Materials...")
     local materials_mod = require("engine.materials")
-    local index_src, index_cached, index_err = fetch_text("meta/_index.lua")
-    local mat_count = 0
-    if not index_src then
-        log_debug("  WARNING: meta/_index.lua fetch failed" ..
-            (index_err and (": " .. index_err) or " (nil response)"))
-    end
-    if index_src then
-        local index, idx_err = loader.load_source(index_src)
-        if not index then
-            log_debug("  WARNING: _index.lua parse failed: " .. tostring(idx_err))
-        end
-        if index and index.materials then
-            for _, name in ipairs(index.materials) do
-                local mat_src = fetch_text("meta/materials/" .. name .. ".lua")
-                if mat_src then
-                    local mat = loader.load_source(mat_src)
-                    if mat and mat.name then
-                        local mname = mat.name
-                        mat.name = nil
-                        materials_mod.registry[mname] = mat
-                        mat_count = mat_count + 1
-                    end
-                end
+
+    local function ensure_material_loaded(name)
+        if not name or materials_mod.registry[name] then return end
+        local mat_src, was_cached = fetch_text("meta/materials/" .. name .. ".lua")
+        if not mat_src then return end
+        local mat = loader.load_source(mat_src)
+        if mat and mat.name then
+            local mname = mat.name
+            mat.name = nil
+            materials_mod.registry[mname] = mat
+            if was_cached then
+                log_debug("Loading Material: " .. name .. "... (cached)")
+            else
+                log_debug("Loading Material: " .. name .. "... (" .. format_size(#mat_src) .. ")")
             end
         end
     end
-    log_debug("  Loaded " .. mat_count .. " materials")
 
     -------------------------------------------------------------------
     -- JIT loader: fetch and load a single object by GUID
@@ -385,6 +373,10 @@ local ok, err = pcall(function()
         if def and def.guid then
             base_classes[normalize_guid(def.guid)] = def
             if def.id then object_sources[def.id] = source end
+        end
+        -- Demand-load material on first use
+        if def and def.material then
+            ensure_material_loaded(def.material)
         end
         return def, was_cached, content_len
     end
