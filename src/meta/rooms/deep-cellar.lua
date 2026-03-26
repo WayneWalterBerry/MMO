@@ -43,125 +43,15 @@ return {
 
         -- === Room-level ===
         { id = "chain",              type = "Chain",             type_id = "5f18202e-220f-4a16-b75e-170595f22845" },
+        { id = "deep-cellar-storage-door-south", type_id = "deep-cellar-storage-door-south" },
+        { id = "deep-cellar-hallway-stairs-up", type_id = "deep-cellar-hallway-stairs-up" },
+        { id = "deep-cellar-crypt-archway-west", type_id = "deep-cellar-crypt-archway-west" },
     },
 
     exits = {
-        south = {
-            target = "storage-cellar",
-            type = "door",
-            passage_id = "storage-deep-door",
-            name = "the iron door",
-            keywords = {"door", "iron door", "south door", "iron-bound door"},
-            description = "The iron door stands open behind you, leading back to the narrow storage vault.",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = true,
-            locked = false,
-            hidden = false,
-            broken = false,
-            one_way = false,
-
-            mutations = {
-                close = {
-                    becomes_exit = {
-                        open = false,
-                        description = "The iron door is shut, cutting off the storage vault behind you.",
-                    },
-                    message = "You push the heavy door shut. It booms closed, and the echoes take a long time to die in this vaulted space.",
-                },
-                open = {
-                    becomes_exit = {
-                        open = true,
-                        description = "The iron door stands open, leading back to the narrow storage vault.",
-                    },
-                    message = "The door groans open, and a faint draught of warmer air drifts in from the storage vault.",
-                },
-            },
-        },
-
-        up = {
-            target = "hallway",
-            type = "stairway",
-            passage_id = "deep-cellar-hallway-stairway",
-            name = "a wide stone stairway",
-            keywords = {"stairs", "stairway", "staircase", "up", "steps", "stone stairs", "stone stairway"},
-            description = "Wide stone steps ascend through the north wall, curving upward toward a faint warmth and the suggestion of light. The stairway is older than the cellars above — carved from the living rock, worn smooth by centuries of passage. A draught of warmer air gusts intermittently down the stairwell.",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = true,
-            locked = false,
-            hidden = false,
-            broken = false,
-            one_way = false,
-
-            on_traverse = {
-                wind_effect = {
-                    strength = "gust",
-                    extinguishes = { "candle" },
-                    spares = { wind_resistant = true },
-                    message_extinguish = "Halfway up the stairway, a gust of warm air rushes down from above. Your candle flame gutters, flickers wildly — and goes out. Darkness swallows the stairwell.",
-                    message_spared = "A gust of warm air rushes down the stairway. Your lantern flame dances behind its glass chimney but holds steady.",
-                    message_no_light = nil,
-                },
-            },
-        },
-
-        west = {
-            target = "crypt",
-            type = "archway",
-            passage_id = "deep-cellar-crypt-archway",
-            name = "a stone archway with an iron gate",
-            keywords = {"archway", "arch", "gate", "iron gate", "west", "crypt", "passage"},
-            description = "A stone archway is set into the west wall, its rounded top carved with symbols that match those on the altar. An iron gate blocks the passage, secured with a silver padlock that gleams dully in the light. Beyond the gate, stone steps descend into darkness.",
-            on_feel = "Iron bars, closely spaced, cold to the touch. A padlock — small, silver, finely made, unlike the crude iron locks above. The bars are solid; this gate was built to last. Through the gaps, you feel colder air and smell something older — dust and dry stone.",
-
-            max_carry_size = 3,
-            max_carry_weight = 30,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = true,
-            key_id = "silver-key",
-            hidden = false,
-            broken = false,
-            one_way = false,
-            breakable = false,
-
-            mutations = {
-                unlock = {
-                    requires = "silver-key",
-                    becomes_exit = {
-                        locked = false,
-                        description = "The stone archway stands open, its iron gate unlocked. The silver padlock hangs loose from the hasp. Beyond, worn stone steps descend into darkness.",
-                    },
-                    message = "The silver key slips into the padlock with a precise click. The mechanism turns smoothly — finely made, even after centuries. The padlock falls open.",
-                },
-                open = {
-                    condition = function(self) return not self.locked end,
-                    becomes_exit = {
-                        open = true,
-                        description = "The iron gate stands open in the stone archway. Beyond it, worn stone steps descend into a narrow passage that leads west into profound darkness.",
-                    },
-                    message = "The gate swings open on silent hinges — oiled once, long ago, and preserved by the dry air. A breath of cold, ancient stillness washes over you from the passage beyond.",
-                },
-                close = {
-                    becomes_exit = {
-                        open = false,
-                        description = "The iron gate is closed in the stone archway, though the silver padlock hangs open.",
-                    },
-                    message = "You push the gate shut. It closes with a soft, precise click.",
-                },
-            },
-        },
+        south = { portal = "deep-cellar-storage-door-south" },
+        up = { portal = "deep-cellar-hallway-stairs-up" },
+        west = { portal = "deep-cellar-crypt-archway-west" },
     },
 
     on_enter = function(self)
