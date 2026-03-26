@@ -485,10 +485,41 @@ function M.register(handlers)
             end
         end
 
+        -- #267: Fuzzy fallback when exact keyword match fails on hands
+        if not item and fuzzy then
+            local parsed = fuzzy.parse_noun_phrase(kw)
+            for i = 1, 2 do
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local candidate = _hobj(hand, ctx.registry)
+                    if candidate then
+                        local score = fuzzy.score_object(candidate, parsed)
+                        if score > 0 then
+                            item = candidate
+                            item_hand = i
+                            break
+                        end
+                    end
+                end
+            end
+        end
+
         if not item then
             local found = find_visible(ctx, item_word)
             if found then
-                print("You need to be holding that to put it somewhere.")
+                -- #267: Check if the item is already inside the target container
+                local target_check = find_visible(ctx, target_word)
+                if target_check and target_check.contents then
+                    for _, cid in ipairs(target_check.contents) do
+                        if cid == found.id then
+                            print((found.name or item_word) .. " is already in "
+                                .. (target_check.name or target_word) .. ".")
+                            return
+                        end
+                    end
+                end
+                print("You need to be holding " .. (found.name or item_word)
+                    .. " to put it somewhere.")
                 return
             end
             print("You don't have " .. item_word .. ".")
