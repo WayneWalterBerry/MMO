@@ -1,6 +1,10 @@
 local materials = require("engine.materials")
 local narration = require("engine.combat.narration")
 local presentation_ok, presentation = pcall(require, "engine.ui.presentation")
+local injuries_ok, injuries = pcall(require, "engine.injuries")
+if not injuries_ok then injuries = nil end
+local creatures_ok, creatures_mod = pcall(require, "engine.creatures")
+if not creatures_ok then creatures_mod = nil end
 
 local M = {}
 
@@ -345,6 +349,36 @@ function M.narrate(result, light)
     return ""
 end
 
+-- C11: Map combat severity to injury type for the injury subsystem
+local SEVERITY_INJURY_MAP = {
+    edged = {
+        [1] = "minor-cut",       -- GRAZE
+        [2] = "bleeding",        -- HIT
+        [3] = "bleeding",        -- SEVERE
+        [4] = "bleeding",        -- CRITICAL
+    },
+    pierce = {
+        [1] = "minor-cut",
+        [2] = "bleeding",
+        [3] = "bleeding",
+        [4] = "bleeding",
+    },
+    blunt = {
+        [1] = "bruised",
+        [2] = "bruised",
+        [3] = "crushing-wound",
+        [4] = "crushing-wound",
+    },
+}
+
+local function map_severity_to_injury(severity, weapon_type)
+    if not severity or severity <= 0 then return nil end
+    local wtype = weapon_type or "blunt"
+    if wtype == "slash" then wtype = "edged" end
+    local map = SEVERITY_INJURY_MAP[wtype] or SEVERITY_INJURY_MAP.blunt
+    return map[severity] or "bruised"
+end
+
 function M.update(result, _opts)
     local defender = result.defender
     if not defender or not defender.health then return result end
@@ -361,12 +395,40 @@ function M.update(result, _opts)
     result.damage = damage
     result.target_health = defender.health
 
+    -- C11: Inflict injury via the injury subsystem when damage lands
+    if injuries and damage > 0 and defender.injuries then
+        local weapon = result.weapon
+        local weapon_type = weapon and weapon.combat and weapon.combat.type or "blunt"
+        local injury_type = map_severity_to_injury(result.severity, weapon_type)
+        if injury_type then
+            local source = weapon and weapon.id or "unknown"
+            local zone = result.zone
+            pcall(injuries.inflict, defender, injury_type, source, zone, damage)
+            result.injury_type = injury_type
+        end
+    end
+
+    -- C12: Creature death mutation
     if defender.health <= 0 then
         defender._state = "dead"
         defender.animate = false
         defender.portable = true
         defender.alive = false
         result.defender_dead = true
+
+        -- Pull death description from creature's dead state definition
+        local dead_state = defender.states and defender.states.dead
+        if dead_state then
+            if dead_state.room_presence then
+                defender.room_presence = dead_state.room_presence
+            end
+            result.death_narration = dead_state.description
+                or (defender.name and (defender.name .. " is dead."))
+                or "The creature is dead."
+        else
+            result.death_narration = (defender.name and (defender.name .. " is dead."))
+                or "The creature is dead."
+        end
     end
 
     return result
@@ -389,12 +451,37 @@ end
 
 function M.run_combat(context, attacker, defender)
     local light = true
-    if context and presentation_ok and presentation and presentation.get_light_level then
+    if context and context.player and presentation_ok and presentation and presentation.get_light_level then
         light = presentation.get_light_level(context) ~= "dark"
     end
+
+    -- C14: Signal combat mode to the game loop
+    if context then context.combat_active = true end
+
     local stance = context and context.combat_stance or "balanced"
     local weapon = pick_weapon(attacker)
-    return M.resolve_exchange(attacker, defender, weapon, nil, nil, { light = light, stance = stance })
+    local result = M.resolve_exchange(attacker, defender, weapon, nil, nil, { light = light, stance = stance })
+
+    -- C12: Emit creature_died stimulus and capture death narration
+    if result.defender_dead then
+        if creatures_mod and creatures_mod.emit_stimulus then
+            local room_id = defender.location
+                or (context and context.current_room and context.current_room.id)
+            if room_id then
+                creatures_mod.emit_stimulus(room_id, "creature_died", {
+                    creature_id = defender.id or defender.guid,
+                    creature_name = defender.name,
+                })
+            end
+        end
+    end
+
+    -- C14: Clear combat mode when combat resolves
+    if result.defender_dead or result.fled or result.combat_over then
+        if context then context.combat_active = nil end
+    end
+
+    return result
 end
 
 return M

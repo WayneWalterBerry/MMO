@@ -633,6 +633,8 @@ function loop.run(context)
     end
 
     -- Creature tick: evaluate behavior for all animate objects
+    -- C14: During combat_active, creature tick still runs but wander is suppressed
+    -- (suppression handled inside creatures.score_actions via context.combat_active)
     local creature_ok, creature_mod = pcall(require, "engine.creatures")
     if creature_ok and creature_mod then
       local creature_msgs = creature_mod.tick(context)

@@ -261,19 +261,22 @@ end
 -- Behavior selection (utility scoring)
 ---------------------------------------------------------------------------
 
--- score_actions(creature) -> sorted array of { action, score }
-local function score_actions(creature)
+-- score_actions(creature, context) -> sorted array of { action, score }
+local function score_actions(creature, context)
     local behavior = creature.behavior or {}
     local drives = creature.drives or {}
     local scores = {}
 
     scores[#scores + 1] = { action = "idle", score = 10 }
 
+    -- C14: Suppress wander during active combat
     local wander_score = 0
-    if drives.curiosity then
-        wander_score = wander_score + (drives.curiosity.value or 0) * 0.3
+    if not (context and context.combat_active) then
+        if drives.curiosity then
+            wander_score = wander_score + (drives.curiosity.value or 0) * 0.3
+        end
+        wander_score = wander_score + (behavior.wander_chance or 0) * 0.2
     end
-    wander_score = wander_score + (behavior.wander_chance or 0) * 0.2
     scores[#scores + 1] = { action = "wander", score = wander_score }
 
     local fear_val = drives.fear and drives.fear.value or 0
@@ -436,7 +439,7 @@ function M.creature_tick(context, creature)
     end
 
     -- 3. Score and select best action
-    local actions = score_actions(creature)
+    local actions = score_actions(creature, context)
     local best = actions[1]
     if best then
         local action_msgs = execute_action(context, creature, best.action)
