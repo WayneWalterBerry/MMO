@@ -11,5 +11,5 @@ return {
     flammability = 0.2,
     conductivity = 0.1,
     fragility = 0.7,
-    value = 0,
+    value = 5,
 }

@@ -33,7 +33,22 @@ return {
     -- FSM: creatures use the same FSM engine as objects
     initial_state = "alive-idle",
     _state = "alive-idle",
-    states = {},
+    states = {
+        ["alive-idle"] = {
+            description = "Standing still, alert.",
+        },
+        ["alive-wander"] = {
+            description = "Wandering aimlessly.",
+        },
+        ["alive-flee"] = {
+            description = "Fleeing in panic.",
+        },
+        ["dead"] = {
+            description = "Lying motionless on the ground.",
+            animate = false,
+            portable = true,
+        },
+    },
     transitions = {},
 
     -- Behavior metadata (engine evaluates generically)
