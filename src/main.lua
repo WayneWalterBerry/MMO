@@ -321,6 +321,25 @@ local player = {
         has_flame = 0,       -- ticks remaining for a struck match (0 = no flame)
     },
     visited_rooms = { [start_room_id] = true },  -- canonical visited-rooms tracking (#104)
+    -- Body zones (WAVE-4: combat data layer)
+    body_tree = {
+        head  = { size = 1, vital = true,  tissue = { "skin", "flesh", "bone" } },
+        torso = { size = 4, vital = true,  tissue = { "skin", "flesh", "bone", "organ" } },
+        arms  = { size = 2, vital = false, tissue = { "skin", "flesh", "bone" }, on_damage = { "weapon_drop", "reduced_attack" } },
+        hands = { size = 1, vital = false, tissue = { "skin", "flesh", "bone" }, on_damage = { "weapon_drop" } },
+        legs  = { size = 2, vital = false, tissue = { "skin", "flesh", "bone" }, on_damage = { "reduced_movement", "prone" } },
+        feet  = { size = 1, vital = false, tissue = { "skin", "flesh", "bone" }, on_damage = { "reduced_movement" } },
+    },
+    -- Combat metadata (WAVE-4)
+    combat = {
+        size = "medium",
+        speed = 4,
+        natural_weapons = {
+            { id = "punch", type = "blunt", material = "bone", zone = "arms", force = 2, message = "punches" },
+            { id = "kick", type = "blunt", material = "bone", zone = "legs", force = 3, message = "kicks" },
+        },
+        natural_armor = nil,
+    },
 }
 
 ---------------------------------------------------------------------------

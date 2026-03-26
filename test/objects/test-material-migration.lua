@@ -27,11 +27,12 @@ local REQUIRED_PROPS = {
     "melting_point", "ignition_point",
 }
 
--- The exact 24 materials that must survive migration
+-- The exact 29 materials that must survive migration
 local EXPECTED_MATERIALS = {
     "bone", "brass", "burlap", "cardboard", "ceramic", "cotton",
-    "fabric", "flesh", "glass", "hemp", "iron", "leather", "linen", "oak",
-    "paper", "plant", "silver", "steel", "stone", "tallow",
+    "fabric", "flesh", "glass", "hemp", "hide", "iron", "keratin",
+    "leather", "linen", "oak", "organ", "paper", "plant", "silver",
+    "skin", "steel", "stone", "tallow", "tooth-enamel",
     "velvet", "wax", "wood", "wool",
 }
 
@@ -70,15 +71,15 @@ test("3. materials.get('nonexistent') returns nil gracefully", function()
     h.assert_nil(materials.get(""), "empty string must return nil or table")
 end)
 
-test("4. materials.list or registry iteration returns all 24 materials", function()
+test("4. materials.list or registry iteration returns all 29 materials", function()
     local count = 0
     local found = {}
     for name, _ in pairs(materials.registry) do
         count = count + 1
         found[name] = true
     end
-    h.assert_eq(24, count,
-        "expected exactly 24 materials, found " .. count)
+    h.assert_eq(29, count,
+        "expected exactly 29 materials, found " .. count)
 end)
 
 test("5. Every material has all 11 required property keys", function()
@@ -292,11 +293,11 @@ test("11. If src/meta/materials/ exists, per-file materials load correctly", fun
     end
 end)
 
-test("12. Material count is exactly 24 (no materials lost)", function()
+test("12. Material count is exactly 29 (no materials lost)", function()
     local count = 0
     for _ in pairs(materials.registry) do count = count + 1 end
-    h.assert_eq(24, count,
-        "expected exactly 24 materials, found " .. count ..
+    h.assert_eq(29, count,
+        "expected exactly 29 materials, found " .. count ..
         " — materials may have been lost or duplicated during migration")
 end)
 

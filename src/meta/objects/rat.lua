@@ -137,4 +137,31 @@ return {
     health = 5,
     max_health = 5,
     alive = true,
+
+    -- Body zones (WAVE-4: combat data layer)
+    body_tree = {
+        head = { size = 1, vital = true, tissue = { "hide", "flesh", "bone" } },
+        body = { size = 3, vital = true, tissue = { "hide", "flesh", "bone", "organ" } },
+        legs = { size = 2, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" } },
+        tail = { size = 1, vital = false, tissue = { "hide", "flesh" }, on_damage = { "balance_loss" } },
+    },
+
+    -- Combat metadata (WAVE-4)
+    combat = {
+        size = "tiny",
+        speed = 6,
+        natural_weapons = {
+            { id = "bite", type = "pierce", material = "tooth-enamel", zone = "head", force = 2, target_pref = "arms", message = "sinks its teeth into" },
+            { id = "claw", type = "slash", material = "keratin", zone = "legs", force = 1, message = "rakes its claws across" },
+        },
+        natural_armor = nil,
+        behavior = {
+            aggression = "on_provoke",
+            flee_threshold = 0.3,
+            attack_pattern = "random",
+            defense = "dodge",
+            target_priority = "threatening",
+            pack_size = 1,
+        },
+    },
 }

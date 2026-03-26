@@ -75,5 +75,13 @@ return {
         return self.description .. "\n\nThe edge catches the light. It could cut almost anything -- including you, if you were desperate enough."
     end,
 
+    -- Combat metadata (WAVE-4)
+    combat = {
+        type = "edged",
+        force = 4,
+        message = "cuts",
+        two_handed = false,
+    },
+
     mutations = {},
 }

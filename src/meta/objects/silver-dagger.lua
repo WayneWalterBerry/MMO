@@ -80,5 +80,13 @@ return {
         return self.description
     end,
 
+    -- Combat metadata (WAVE-4)
+    combat = {
+        type = "edged",
+        force = 5,
+        message = "slashes",
+        two_handed = false,
+    },
+
     mutations = {},
 }

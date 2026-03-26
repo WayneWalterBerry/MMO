@@ -236,17 +236,17 @@ test("33. movement.can_climb is true", function()
     h.assert_eq(true, rat.movement.can_climb, "rats can climb")
 end)
 
--- Phase sequencing guard
-test("34. NO body_tree field (WAVE-4)", function()
+-- Phase sequencing guard — WAVE-4 delivered: body_tree and combat now present
+test("34. body_tree field exists (WAVE-4)", function()
     h.assert_truthy(rat, "rat not loaded")
-    h.assert_nil(rat.body_tree,
-        "body_tree must NOT exist in WAVE-1 (deferred to WAVE-4)")
+    h.assert_truthy(rat.body_tree,
+        "body_tree must exist after WAVE-4 delivery")
 end)
 
-test("35. NO combat field (WAVE-4)", function()
+test("35. combat field exists (WAVE-4)", function()
     h.assert_truthy(rat, "rat not loaded")
-    h.assert_nil(rat.combat,
-        "combat must NOT exist in WAVE-1 (deferred to WAVE-4)")
+    h.assert_truthy(rat.combat,
+        "combat must exist after WAVE-4 delivery")
 end)
 
 ---------------------------------------------------------------------------

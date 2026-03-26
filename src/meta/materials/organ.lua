@@ -1,0 +1,15 @@
+return {
+    guid = "{79d86429-6b02-4923-9777-9666d9a0ad8c}",
+    name = "organ",
+    density = 1050,
+    melting_point = nil,
+    ignition_point = 300,
+    hardness = 1,
+    flexibility = 0.9,
+    absorbency = 0.7,
+    opacity = 1.0,
+    flammability = 0.3,
+    conductivity = 0.1,
+    fragility = 0.8,
+    value = 1,
+}

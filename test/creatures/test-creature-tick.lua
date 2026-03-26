@@ -566,22 +566,22 @@ test("22. tick does NOT produce combat actions", function()
         "creature must NOT enter combat state in Phase 1, got: " .. rat._state)
 end)
 
-test("23. real rat.lua has no combat field (D-COMBAT-NPC-PHASE-SEQUENCING)", function()
+test("23. real rat.lua has combat field (WAVE-4 delivered)", function()
     local SEP = package.config:sub(1, 1)
     local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "rat.lua"
     local ok_rat, rat_obj = pcall(dofile, rat_path)
     h.assert_truthy(ok_rat, "rat.lua must load")
-    h.assert_nil(rat_obj.combat,
-        "combat field must NOT exist in Phase 1 creatures")
+    h.assert_truthy(rat_obj.combat,
+        "combat field must exist after WAVE-4 delivery")
 end)
 
-test("24. real rat.lua has no body_tree field (D-COMBAT-NPC-PHASE-SEQUENCING)", function()
+test("24. real rat.lua has body_tree field (WAVE-4 delivered)", function()
     local SEP = package.config:sub(1, 1)
     local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "rat.lua"
     local ok_rat, rat_obj = pcall(dofile, rat_path)
     h.assert_truthy(ok_rat, "rat.lua must load")
-    h.assert_nil(rat_obj.body_tree,
-        "body_tree must NOT exist in Phase 1 creatures")
+    h.assert_truthy(rat_obj.body_tree,
+        "body_tree must exist after WAVE-4 delivery")
 end)
 
 ---------------------------------------------------------------------------

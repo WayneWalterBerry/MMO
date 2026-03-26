@@ -1,0 +1,15 @@
+return {
+    guid = "{f1247b12-707f-4c23-b88e-af2c598e2448}",
+    name = "skin",
+    density = 1050,
+    melting_point = nil,
+    ignition_point = 300,
+    hardness = 1,
+    flexibility = 0.7,
+    absorbency = 0.3,
+    opacity = 1.0,
+    flammability = 0.3,
+    conductivity = 0.1,
+    fragility = 0.6,
+    value = 3,
+}
