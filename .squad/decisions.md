@@ -1,6 +1,6 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-26T01:33:00Z  
+**Last Updated:** 2026-03-26T15:30:00Z  
 **Last Deep Clean:** 2026-03-25T18:21:05Z  
 **Scribe:** Session Logger & Memory Manager
 
@@ -38,6 +38,8 @@ Quick-reference table of ALL decisions (active + archived).
 | D-TESTFIRST: Test-First Directive for Bug Fixes | Testing | 🟢 Active | See full entry | Active |
 | D-V2-ACCEPTANCE-CRITERIA: P0-C V2 Acceptance Criteria Complete | Testing | 🟢 Active | See full entry | Active |
 | D-WAYNE-REGRESSION-TESTS: Every Bug Fix Must Include Regression T | Testing | 🟢 Active | See full entry | Active |
+| D-NPC-COMBAT-ALIGNMENT: NPC Plan ↔ Combat Plan Alignment (13 fixes) | Design | 🟢 Active | All 13 alignment fixes applied to NPC system plan | Active |
+| D-COMBAT-NPC-PHASE-SEQUENCING: NPC Phase 1 Uses Simple injuries.inflict() | Design | 🟢 Active | No combat FSM, body_tree, or combat metadata in Phase 1 | Active |
 | Architecture Notes | Architecture | 📦 Archived | See full entry | Archive |
 | D-104: PLAYER-CANONICAL-STATE (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
 | D-105: OBJECT-INSTANCING-FACTORY (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
@@ -264,5 +266,75 @@ Room files now encode exits as **direction → portal object ID** references. Th
 ### D-WAYNE-REGRESSION-TESTS: Every Bug Fix Must Include Regression Test
 
 **Author:** Wayne "Effe" Berry (User Directive)
+
+---
+
+### D-NPC-COMBAT-ALIGNMENT: NPC Plan ↔ Combat Plan Alignment
+
+**Author:** Comic Book Guy (Creative Director)  
+**Date:** 2026-03-26  
+**Status:** 🟢 Active  
+**Category:** Design
+
+**Decision:** Applied all 13 alignment fixes to `plans/npc-system-plan.md`. Both NPC and Combat system plans are now coordinated.
+
+**Critical Fixes:**
+1. Body tree phasing moved from NPC Phase 4 → Phase 1 (required by Combat Phase 1)
+2. Rat combat metadata added with complete body_tree (4 zones: head, body, legs, tail)
+3. Creature-to-creature combat shifted from NPC Phase 3 → Phase 2 (enabled by Combat Phase 1 unified interface)
+
+**High-Priority Fixes:**
+4. Creature template updated with `body_tree` and `combat` field stubs (Phase 1+ markers)
+5. Tissue materials coordination clarified (NPC: flesh.lua Phase 1; Combat: extends Phase 1)
+6. Creature tick ↔ Combat FSM handoff documented (Phase 1 creatures defer `attack` action to Phase 2+)
+
+**Medium-Priority Fixes:**
+7. Combat stimulus types added (creature_attacked, creature_injured, creature_died)
+8. injuries.inflict() signature updated per Wayne's decision (Phase 1: simple call; Phase 2+: full signature)
+9. Size field type standardized to string enum ("tiny", etc.)
+10. Combat stimulus emission locations documented (src/engine/combat/init.lua)
+11. Phase integration note added to Section 12
+12. Weapon combat metadata coordination note (Phase 1 no impact)
+
+**Low-Priority Fixes:**
+13. Material naming clarification (flesh distinct from skin/hide)
+
+**Tagging:** All changes marked `[COMBAT ALIGNMENT]` in npc-system-plan.md for easy identification.
+
+**Impact:**
+- **Flanders:** Extends rat.lua + creature.lua with body_tree + combat during Combat Phase 1
+- **Bart:** Creature tick handles deferred attack action; Combat FSM integration in Phase 2
+- **Smithers:** No immediate impact; attack verb unchanged until Phase 2
+- **Nelson:** Phase 1 tests verify simple rat bite on grab
+- **CBG:** Plans aligned; ready for Phase 1 implementation
+
+**Verification:** `git diff plans/npc-system-plan.md` shows all 13 changes. Combat plan is reference-only (unchanged).
+
+---
+
+### D-COMBAT-NPC-PHASE-SEQUENCING: NPC Phase 1 Uses Simple injuries.inflict()
+
+**Author:** Wayne Berry (via Copilot Coordinator)  
+**Date:** 2026-03-26T15:29Z  
+**Status:** 🟢 Active  
+**Category:** Design
+
+**Decision:** NPC Phase 1 focuses on creature autonomy (behavior, drives, movement). Combat mechanics are deferred to Combat Phase 1.
+
+**Phase 1 Rule:**
+- Rats use simple `injuries.inflict()` on grab → no combat FSM, no body_tree, no combat metadata table
+- Rat's Phase 1 job: exist, move, react, bite (injury mechanics only)
+- Combat Phase 1 retrofits body_tree + full combat table onto creatures later
+
+**Rationale:**
+- Principle 8 (engine executes metadata) — dead combat metadata violates principle. Combat metadata only makes sense when Combat Phase 1 engine is ready.
+- Sequencing: NPC Phase 1 first establishes creature autonomy; Combat Phase 1 adds combat systems to those creatures
+- Keeps Phase 1 focused and shippable
+
+**Affected:**
+- **Flanders:** Rat and creature objects are Phase 1 simple; Phase 2 gets combat fields
+- **Bart:** Creature tick system handles creature autonomy; Combat FSM waits for Phase 2
+- **Nelson:** Phase 1 tests verify injury infliction only
+- **CBG:** Maintains design intent while respecting phasing
 
 ---

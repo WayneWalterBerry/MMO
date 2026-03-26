@@ -274,6 +274,41 @@
 
 ## Learnings
 
+### 2026-03-26: NPC ↔ Combat System Plan Alignment (13 Fixes)
+**Status:** ✅ ALIGNMENT COMPLETE
+
+**Task:** Align NPC system plan with combat system plan per Wayne's 13 identified conflicts/gaps.
+
+**What was done:**
+- Applied all 13 alignment fixes to `plans/npc-system-plan.md` (combat plan unchanged)
+- **Critical (3):** body_tree moved from Phase 4 to Phase 1; rat.lua gained complete combat metadata; NPC-vs-NPC combat moved from Phase 3 to Phase 2
+- **High (3):** Creature template gained combat field stubs; tissue materials clarified (flesh + 9 more in Combat Phase 1); creature tick → combat FSM handoff documented
+- **Medium (5):** Added 3 combat stimuli; updated injuries.inflict() signature; size field changed to string enum; combat stimulus emission locations; phase integration note
+- **Low (2):** Weapon combat metadata coordination note; material naming clarification (flesh = muscle/fat, distinct from skin/hide)
+- Tagged all changes with `[COMBAT ALIGNMENT]` for visibility
+
+**Key Design Decisions:**
+- **body_tree phasing:** Combat D-COMBAT-4/5 requires 4-6 zone body_tree on every creature from Phase 1 (not Phase 4). Full 200-part DF simulation remains Phase 4.
+- **Rat combat metadata:** Added `body_tree` (4 zones: head, body, legs, tail) and `combat` table (size, speed, natural_weapons, natural_armor, behavior) to rat.lua, sourced from combat-system-plan.md lines 824-862.
+- **Creature-to-creature combat:** Moved from Phase 3 to Phase 2. Combat Phase 1 unified combatant interface enables it earlier.
+- **Phase 1 grab mechanic:** Wayne's decision: "Simple injuries.inflict() on grab — no combat FSM needed." Rat bite on grab uses `injuries.inflict(player, "bite", "rat", "arms", minor_damage)` in Phase 1. Full combat FSM in Phase 2+.
+- **Size field type:** Changed from number (`size = 1`) to string enum (`size = "tiny"`) for combat integration.
+- **Tissue materials:** NPC Phase 1 creates flesh.lua. Combat Phase 1 adds 9 more materials (skin, hide, bone, organ, tooth_enamel, keratin, etc.).
+- **Attack action deferral:** NPC Phase 1 creatures can only flee, wander, idle, hide, vocalize. Attack action deferred to Phase 2+ (after Combat Phase 1 combat FSM).
+
+**Implementation Impact:**
+- **Flanders:** Extends rat.lua + creature.lua with body_tree/combat during Combat Phase 1. Creates 9 tissue materials.
+- **Bart:** Creature tick handles deferred attack (fallback to flee in Phase 1). Combat FSM integration in Phase 2.
+- **Smithers:** No immediate impact. Attack verb unchanged until Phase 2.
+- **Nelson:** Phase 1 tests verify simple rat bite on grab. Combat FSM tests start Phase 2.
+
+**Timeline:**
+- NPC Phase 1 → Combat Phase 1 → NPC Phase 2 → NPC Phase 3 (ecology) → NPC Phase 4 (humanoids)
+
+**Decision filed:** `.squad/decisions/inbox/comic-book-guy-npc-combat-alignment.md`
+
+**Affected Plans:** `plans/npc-system-plan.md` (updated), `plans/combat-system-plan.md` (reference only, unchanged)
+
 ### 2026-07-27: Door/Portal/Exit Architecture — Game Design Analysis
 **Status:** ✅ ANALYSIS COMPLETE
 

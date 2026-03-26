@@ -1476,3 +1476,18 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - unbarred state now prints 'is closed.' (was falling through to generic 'blocks your path')
 
 **Key architectural decision:** Bidirectional sync belongs in the FSM engine, not in individual verb handlers. This ensures consistency regardless of which verb triggers the transition.
+
+---
+
+## 2026-03-26T15:30Z: NPC Plan Combat Alignment Complete — CBG Coordination
+
+**What:** Comic Book Guy applied 13 alignment fixes to `plans/npc-system-plan.md`. Coordination completed with combat system plan. All conflicts resolved.
+
+**Your Work Ahead:**
+- **Creature tick system:** Handle deferred `attack` action (fallback to flee in Phase 1; Combat FSM integration in Phase 2)
+- **Combat FSM integration:** Phase 2+ after Combat Phase 1 engine is ready
+- **Portal Phase 2 Room Wiring:** Already complete (2026-07-28 session) — reference for room/exit pattern
+
+**Decision Filed:** D-NPC-COMBAT-ALIGNMENT, D-COMBAT-NPC-PHASE-SEQUENCING — decisions.md updated.
+
+**Impact:** NPC system plan 100% aligned with combat plan. Creature autonomy focus in Phase 1. Combat systems deferred to Phase 2+.

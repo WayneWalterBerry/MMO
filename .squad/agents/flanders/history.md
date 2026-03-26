@@ -608,3 +608,18 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 
 **Result:** 118/118 test files pass. Zero regressions. Both Lua files parse clean.
 
+---
+
+## 2026-03-26T15:30Z: NPC Plan Combat Alignment Complete — CBG Coordination
+
+**What:** Comic Book Guy applied 13 alignment fixes to `plans/npc-system-plan.md` to align with combat system plan. NPC Phase 1 focus shifts from concurrent combat metadata to creature autonomy focus. Combat systems (body_tree, combat table, tissue materials, full combat FSM) deferred to Combat Phase 1.
+
+**Your Work Ahead:**
+- **Phase 1+:** Extend rat.lua + creature.lua template with `body_tree` and `combat` field stubs (marked Phase 1+)
+- **Combat Phase 1:** Full combat metadata implementation after Combat Phase 1 engine is ready
+- **Tissue Materials:** Coordinate with Combat Phase 1 for extended material set (skin, hide, bone, organ, etc.)
+
+**Decision Filed:** D-NPC-COMBAT-ALIGNMENT, D-COMBAT-NPC-PHASE-SEQUENCING — decisions.md updated.
+
+**Impact:** NPC system plan now 100% aligned with combat plan. No conflicts remain.
+
