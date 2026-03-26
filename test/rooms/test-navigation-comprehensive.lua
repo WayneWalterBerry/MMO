@@ -45,6 +45,29 @@ local ALL_ROOMS = {
     ["crypt"]          = crypt,
 }
 
+-- Load portal objects (Portal Phase 2 — thin refs in start-room/hallway)
+local objects_dir = script_dir .. "/../../src/meta/objects/"
+local PORTAL_OBJECTS = {}
+local function load_portal(filename)
+    local ok, obj = pcall(dofile, objects_dir .. filename)
+    if ok and obj then PORTAL_OBJECTS[obj.id] = obj end
+end
+load_portal("bedroom-hallway-door-north.lua")
+load_portal("bedroom-hallway-door-south.lua")
+
+-- Resolve a portal exit to its portal object, or return the exit as-is
+local function resolve_exit(exit)
+    if type(exit) == "table" and exit.portal then
+        return PORTAL_OBJECTS[exit.portal]
+    end
+    return exit
+end
+
+-- Check if an exit is a portal reference
+local function is_portal_ref(exit)
+    return type(exit) == "table" and exit.portal ~= nil
+end
+
 -- All Level 1 room IDs
 local L1_ROOM_IDS = {}
 for id in pairs(ALL_ROOMS) do L1_ROOM_IDS[id] = true end
@@ -149,24 +172,36 @@ end
 for room_id, room in pairs(ALL_ROOMS) do
     for dir, exit in pairs(room.exits or {}) do
         if type(exit) == "table" then
-            test(next_test() .. ". " .. room_id .. "/" .. dir .. " has required fields", function()
-                for _, field in ipairs(REQUIRED_EXIT_FIELDS) do
-                    h.assert_truthy(exit[field] ~= nil,
-                        room_id .. "/" .. dir .. " missing required field: " .. field)
-                end
-            end)
+            if is_portal_ref(exit) then
+                -- Portal exits: verify portal ref resolves and object has required fields
+                test(next_test() .. ". " .. room_id .. "/" .. dir .. " portal ref resolves", function()
+                    local portal = resolve_exit(exit)
+                    h.assert_truthy(portal, room_id .. "/" .. dir .. " portal '" .. exit.portal .. "' must resolve to an object")
+                    h.assert_truthy(portal.portal and portal.portal.target,
+                        room_id .. "/" .. dir .. " portal must have portal.target")
+                    h.assert_truthy(portal.keywords and #portal.keywords > 0,
+                        room_id .. "/" .. dir .. " portal must have keywords")
+                end)
+            else
+                test(next_test() .. ". " .. room_id .. "/" .. dir .. " has required fields", function()
+                    for _, field in ipairs(REQUIRED_EXIT_FIELDS) do
+                        h.assert_truthy(exit[field] ~= nil,
+                            room_id .. "/" .. dir .. " missing required field: " .. field)
+                    end
+                end)
 
-            test(next_test() .. ". " .. room_id .. "/" .. dir .. " target is string", function()
-                h.assert_eq("string", type(exit.target),
-                    room_id .. "/" .. dir .. " target must be a string")
-            end)
+                test(next_test() .. ". " .. room_id .. "/" .. dir .. " target is string", function()
+                    h.assert_eq("string", type(exit.target),
+                        room_id .. "/" .. dir .. " target must be a string")
+                end)
 
-            test(next_test() .. ". " .. room_id .. "/" .. dir .. " keywords is non-empty table", function()
-                h.assert_eq("table", type(exit.keywords),
-                    room_id .. "/" .. dir .. " keywords must be a table")
-                h.assert_truthy(#exit.keywords > 0,
-                    room_id .. "/" .. dir .. " keywords must not be empty")
-            end)
+                test(next_test() .. ". " .. room_id .. "/" .. dir .. " keywords is non-empty table", function()
+                    h.assert_eq("table", type(exit.keywords),
+                        room_id .. "/" .. dir .. " keywords must be a table")
+                    h.assert_truthy(#exit.keywords > 0,
+                        room_id .. "/" .. dir .. " keywords must not be empty")
+                end)
+            end
         end
     end
 end
@@ -181,11 +216,21 @@ suite("EXIT RECIPROCITY: bidirectional exit verification")
 local reciprocal_pairs = {}
 for room_id, room in pairs(ALL_ROOMS) do
     for dir, exit in pairs(room.exits or {}) do
-        if type(exit) == "table" and L1_ROOM_IDS[exit.target] then
-            reciprocal_pairs[#reciprocal_pairs + 1] = {
-                from = room_id, dir = dir, to = exit.target,
-                passage_id = exit.passage_id, one_way = exit.one_way,
-            }
+        if type(exit) == "table" then
+            local target
+            if is_portal_ref(exit) then
+                local portal = resolve_exit(exit)
+                target = portal and portal.portal and portal.portal.target
+            else
+                target = exit.target
+            end
+            if target and L1_ROOM_IDS[target] then
+                reciprocal_pairs[#reciprocal_pairs + 1] = {
+                    from = room_id, dir = dir, to = target,
+                    passage_id = exit.passage_id, one_way = exit.one_way,
+                    is_portal = is_portal_ref(exit),
+                }
+            end
         end
     end
 end
@@ -197,24 +242,43 @@ for _, pair in ipairs(reciprocal_pairs) do
             h.assert_truthy(target_room, pair.to .. " must exist")
             local found = false
             for dir, exit in pairs(target_room.exits or {}) do
-                if type(exit) == "table" and exit.target == pair.from then
-                    found = true
-                    break
+                if type(exit) == "table" then
+                    local exit_target
+                    if is_portal_ref(exit) then
+                        local p = resolve_exit(exit)
+                        exit_target = p and p.portal and p.portal.target
+                    else
+                        exit_target = exit.target
+                    end
+                    if exit_target == pair.from then
+                        found = true
+                        break
+                    end
                 end
             end
             h.assert_truthy(found,
                 pair.to .. " must have an exit back to " .. pair.from)
         end)
 
-        test(next_test() .. ". " .. pair.from .. " → " .. pair.to .. " passage_id matches return", function()
+        test(next_test() .. ". " .. pair.from .. " → " .. pair.to .. " passage sync verified", function()
+            if pair.is_portal then return end  -- portals sync via bidirectional_id, not passage_id
             if not pair.passage_id then return end
             local target_room = ALL_ROOMS[pair.to]
             local match = false
             for dir, exit in pairs(target_room.exits or {}) do
-                if type(exit) == "table" and exit.target == pair.from then
-                    if exit.passage_id == pair.passage_id then
-                        match = true
-                        break
+                if type(exit) == "table" then
+                    local exit_target
+                    if is_portal_ref(exit) then
+                        local p = resolve_exit(exit)
+                        exit_target = p and p.portal and p.portal.target
+                    else
+                        exit_target = exit.target
+                    end
+                    if exit_target == pair.from then
+                        if is_portal_ref(exit) or exit.passage_id == pair.passage_id then
+                            match = true
+                            break
+                        end
                     end
                 end
             end
@@ -288,7 +352,15 @@ for _, spec in ipairs(EXPECTED_TARGETS) do
     test(next_test() .. ". " .. spec.room .. "/" .. spec.dir .. " → " .. spec.target, function()
         local exit = ALL_ROOMS[spec.room].exits[spec.dir]
         h.assert_truthy(exit, spec.room .. " must have exit " .. spec.dir)
-        local actual_target = type(exit) == "table" and exit.target or exit
+        local actual_target
+        if is_portal_ref(exit) then
+            local portal = resolve_exit(exit)
+            actual_target = portal and portal.portal and portal.portal.target
+        elseif type(exit) == "table" then
+            actual_target = exit.target
+        else
+            actual_target = exit
+        end
         h.assert_eq(spec.target, actual_target,
             spec.room .. "/" .. spec.dir .. " target")
     end)
@@ -314,21 +386,42 @@ local LOCKED_EXITS = {
 for _, spec in ipairs(LOCKED_EXITS) do
     test(next_test() .. ". " .. spec.room .. "/" .. spec.dir .. " locked=" .. tostring(spec.locked), function()
         local exit = ALL_ROOMS[spec.room].exits[spec.dir]
-        h.assert_eq(spec.locked, exit.locked,
-            spec.name .. " lock state")
+        if is_portal_ref(exit) then
+            local portal = resolve_exit(exit)
+            -- Portal "locked" means non-traversable initial state (barred)
+            local state = portal.states[portal._state]
+            local is_locked = state and not state.traversable
+            h.assert_eq(spec.locked, is_locked,
+                spec.name .. " lock state (via portal traversable)")
+        else
+            h.assert_eq(spec.locked, exit.locked,
+                spec.name .. " lock state")
+        end
     end)
 
     if spec.key_id then
         test(next_test() .. ". " .. spec.room .. "/" .. spec.dir .. " key_id='" .. spec.key_id .. "'", function()
             local exit = ALL_ROOMS[spec.room].exits[spec.dir]
-            h.assert_eq(spec.key_id, exit.key_id,
-                spec.name .. " key_id")
+            if is_portal_ref(exit) then
+                local portal = resolve_exit(exit)
+                h.assert_eq(spec.key_id, portal.key_id,
+                    spec.name .. " key_id")
+            else
+                h.assert_eq(spec.key_id, exit.key_id,
+                    spec.name .. " key_id")
+            end
         end)
     else
         test(next_test() .. ". " .. spec.room .. "/" .. spec.dir .. " key_id is nil", function()
             local exit = ALL_ROOMS[spec.room].exits[spec.dir]
-            h.assert_nil(exit.key_id,
-                spec.name .. " key_id must be nil")
+            if is_portal_ref(exit) then
+                local portal = resolve_exit(exit)
+                h.assert_nil(portal.key_id,
+                    spec.name .. " key_id must be nil")
+            else
+                h.assert_nil(exit.key_id,
+                    spec.name .. " key_id must be nil")
+            end
         end)
     end
 end
@@ -540,10 +633,12 @@ local KEYWORD_TESTS = {
 local function exit_matches(exit, dir, keyword)
     local kw = keyword:lower()
     if dir:lower() == kw then return true end
-    if type(exit) ~= "table" then return false end
-    if exit.name and exit.name:lower():find(kw, 1, true) then return true end
-    if exit.keywords then
-        for _, k in ipairs(exit.keywords) do
+    -- Resolve portal refs for keyword matching
+    local resolved = resolve_exit(exit)
+    if not resolved or type(resolved) ~= "table" then return false end
+    if resolved.name and resolved.name:lower():find(kw, 1, true) then return true end
+    if resolved.keywords then
+        for _, k in ipairs(resolved.keywords) do
             if k:lower() == kw or k:lower():find(kw, 1, true) then return true end
         end
     end
@@ -569,7 +664,8 @@ for room_id, room in pairs(ALL_ROOMS) do
     for dir, exit in pairs(room.exits or {}) do
         if type(exit) == "table" then
             test(next_test() .. ". " .. room_id .. "/" .. dir .. " has max_carry_size", function()
-                h.assert_truthy(exit.max_carry_size ~= nil,
+                local resolved = resolve_exit(exit)
+                h.assert_truthy(resolved.max_carry_size ~= nil,
                     room_id .. "/" .. dir .. " must have max_carry_size")
             end)
         end
@@ -1038,8 +1134,23 @@ local EXIT_TYPES = {
 for _, spec in ipairs(EXIT_TYPES) do
     test(next_test() .. ". " .. spec.room .. "/" .. spec.dir .. " type='" .. spec.expected_type .. "'", function()
         local exit = ALL_ROOMS[spec.room].exits[spec.dir]
-        h.assert_eq(spec.expected_type, exit.type,
-            spec.room .. "/" .. spec.dir .. " exit type")
+        if is_portal_ref(exit) then
+            -- Portal exits: verify via portal template + categories
+            local portal = resolve_exit(exit)
+            h.assert_truthy(portal, spec.room .. "/" .. spec.dir .. " portal must resolve")
+            h.assert_eq("portal", portal.template,
+                spec.room .. "/" .. spec.dir .. " portal template")
+            -- The original type ("door") is implied by the portal's architecture category
+            local has_arch = false
+            for _, c in ipairs(portal.categories or {}) do
+                if c == "architecture" then has_arch = true; break end
+            end
+            h.assert_truthy(has_arch,
+                spec.room .. "/" .. spec.dir .. " portal must have 'architecture' category")
+        else
+            h.assert_eq(spec.expected_type, exit.type,
+                spec.room .. "/" .. spec.dir .. " exit type")
+        end
     end)
 end
 

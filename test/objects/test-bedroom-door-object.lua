@@ -251,11 +251,13 @@ test("68. Has linked_passage_id", function()
     h.assert_eq("bedroom-hallway-door", door.linked_passage_id, "linked_passage_id")
 end)
 
-test("69. Passage ID matches north exit passage_id in start-room", function()
+test("69. North exit uses portal ref (replaces inline passage_id)", function()
     local north = room.exits and room.exits.north
     h.assert_truthy(north, "north exit must exist in room")
-    h.assert_eq(door.linked_passage_id, north.passage_id,
-        "door linked_passage_id must match exit passage_id")
+    h.assert_truthy(north.portal,
+        "north exit must use portal reference (portal architecture)")
+    h.assert_eq("bedroom-hallway-door-north", north.portal,
+        "north exit portal must reference the bedroom-hallway portal object")
 end)
 
 ---------------------------------------------------------------------------

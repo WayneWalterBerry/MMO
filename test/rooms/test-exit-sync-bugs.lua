@@ -57,6 +57,7 @@ end
 -- Load room and object metadata directly
 local room_meta = dofile(script_dir .. "/../../src/meta/rooms/start-room.lua")
 local door_meta = dofile(script_dir .. "/../../src/meta/objects/bedroom-door.lua")
+local portal_meta = dofile(script_dir .. "/../../src/meta/objects/bedroom-hallway-door-north.lua")
 local window_meta = dofile(script_dir .. "/../../src/meta/objects/window.lua")
 
 ---------------------------------------------------------------------------
@@ -85,12 +86,12 @@ local function make_ctx(overrides)
     overrides = overrides or {}
 
     local room = deep_copy(room_meta)
-    local door_obj = deep_copy(door_meta)
+    local portal_obj = deep_copy(portal_meta)
     local win_obj = deep_copy(window_meta)
 
-    -- Registry that stores and returns our objects
+    -- Registry includes portal (replaces bedroom-door for north exit) and window
     local reg_store = {
-        ["bedroom-door"] = door_obj,
+        ["bedroom-hallway-door-north"] = portal_obj,
         ["window"] = win_obj,
     }
     local registry = {
@@ -107,11 +108,16 @@ local function make_ctx(overrides)
         end,
         register = function(self, id, obj) reg_store[id] = obj end,
         all = function(self) return reg_store end,
+        list = function(self)
+            local result = {}
+            for _, obj in pairs(reg_store) do result[#result + 1] = obj end
+            return result
+        end,
     }
 
-    -- Room contents include the door and window objects
+    -- Room contents include the portal and window objects
     room.contents = room.contents or {}
-    table.insert(room.contents, "bedroom-door")
+    table.insert(room.contents, "bedroom-hallway-door-north")
     table.insert(room.contents, "window")
 
     local ctx = {
@@ -124,6 +130,7 @@ local function make_ctx(overrides)
             visited_rooms = {},
         },
         rooms = {
+            ["start-room"] = room,
             hallway = { id = "hallway", name = "Hallway", exits = {}, contents = {} },
             courtyard = { id = "courtyard", name = "Courtyard", exits = {}, contents = {} },
         },
@@ -138,19 +145,14 @@ local function make_ctx(overrides)
         verbs = handlers,
     }
 
-    -- Apply overrides to exit states
-    if overrides.north then
-        for k, v in pairs(overrides.north) do
-            ctx.current_room.exits.north[k] = v
-        end
-    end
+    -- Apply overrides to exit states (window still inline)
     if overrides.window_exit then
         for k, v in pairs(overrides.window_exit) do
             ctx.current_room.exits.window[k] = v
         end
     end
 
-    return ctx, door_obj, win_obj
+    return ctx, portal_obj, win_obj
 end
 
 ---------------------------------------------------------------------------
@@ -159,38 +161,36 @@ end
 suite("BUG #216: break door must sync exit to open+unlocked")
 
 test("#216-1: break door FSM transition succeeds (barred → broken)", function()
-    local ctx, door = make_ctx()
-    h.assert_eq("barred", door._state, "door starts barred")
+    local ctx, portal = make_ctx()
+    h.assert_eq("barred", portal._state, "portal starts barred")
     local out = capture(function() handlers["break"](ctx, "door") end)
-    h.assert_eq("broken", door._state, "door must transition to broken state")
+    h.assert_eq("broken", portal._state, "portal must transition to broken state")
 end)
 
-test("#216-2: after break door, north exit.open must be true", function()
-    local ctx, door = make_ctx()
+test("#216-2: after break door, portal is traversable", function()
+    local ctx, portal = make_ctx()
     local out = capture(function() handlers["break"](ctx, "door") end)
-    local exit = ctx.current_room.exits.north
-    h.assert_eq(true, exit.open,
-        "north exit must be open after breaking door — got: " .. tostring(exit.open))
+    local state = portal.states[portal._state]
+    h.assert_truthy(state and state.traversable,
+        "portal must be traversable after break — state: " .. tostring(portal._state))
 end)
 
-test("#216-3: after break door, north exit.locked must be false", function()
-    local ctx, door = make_ctx()
+test("#216-3: after break door, portal is no longer barred", function()
+    local ctx, portal = make_ctx()
     capture(function() handlers["break"](ctx, "door") end)
-    local exit = ctx.current_room.exits.north
-    h.assert_eq(false, exit.locked,
-        "north exit must be unlocked after breaking door — got: " .. tostring(exit.locked))
+    h.assert_truthy(portal._state ~= "barred",
+        "portal must not be barred after break — got: " .. tostring(portal._state))
 end)
 
-test("#216-4: after break door, north exit.broken must be true", function()
-    local ctx, door = make_ctx()
+test("#216-4: after break door, portal state is broken", function()
+    local ctx, portal = make_ctx()
     capture(function() handlers["break"](ctx, "door") end)
-    local exit = ctx.current_room.exits.north
-    h.assert_eq(true, exit.broken,
-        "north exit must be flagged broken — got: " .. tostring(exit.broken))
+    h.assert_eq("broken", portal._state,
+        "portal must be in broken state — got: " .. tostring(portal._state))
 end)
 
 test("#216-5: after break door, 'go north' must succeed (player moves to hallway)", function()
-    local ctx, door = make_ctx()
+    local ctx, portal = make_ctx()
     capture(function() handlers["break"](ctx, "door") end)
     capture(function() handlers["go"](ctx, "north") end)
     h.assert_eq("hallway", ctx.player.location,
@@ -313,25 +313,22 @@ end)
 suite("EXIT SYNC: door unbar then open syncs exit correctly")
 
 test("door unbar → open → go north succeeds", function()
-    local ctx, door = make_ctx()
-    -- Simulate unbar first
+    local ctx, portal = make_ctx()
+    -- Simulate unbar first: manually transition portal barred → unbarred
     capture(function()
-        -- Manually transition door: barred → unbarred
-        door._state = "unbarred"
-        if door.states and door.states.unbarred then
-            for k, v in pairs(door.states.unbarred) do
-                if type(v) ~= "function" then door[k] = v end
+        portal._state = "unbarred"
+        if portal.states and portal.states.unbarred then
+            for k, v in pairs(portal.states.unbarred) do
+                if type(v) ~= "function" then portal[k] = v end
             end
         end
     end)
     -- Now open the door via verb handler
     capture(function() handlers["open"](ctx, "door") end)
-    h.assert_eq("open", door._state, "door should be open after open verb")
-    local exit = ctx.current_room.exits.north
-    h.assert_eq(true, exit.open,
-        "north exit must be open after opening unbarred door")
-    h.assert_eq(false, exit.locked,
-        "north exit must be unlocked after opening door")
+    h.assert_eq("open", portal._state, "portal should be open after open verb")
+    local state = portal.states[portal._state]
+    h.assert_truthy(state and state.traversable,
+        "portal must be traversable after opening")
     -- Movement must succeed
     capture(function() handlers["go"](ctx, "north") end)
     h.assert_eq("hallway", ctx.player.location,
@@ -343,23 +340,23 @@ end)
 ---------------------------------------------------------------------------
 suite("REGRESSION: exit-only mutations still work")
 
-test("exit-only open (no FSM object) still works", function()
+test("exit-only open (window, inline exit) still works", function()
     -- Reset context window to prevent object cache leakage from prior tests
     local cw_ok, cw = pcall(require, "engine.parser.context")
     if cw_ok and cw and cw.reset then cw.reset() end
-    -- Create ctx with only the exit, no door object in contents
+    -- Create ctx with only the exit, no window object in contents
     local ctx = make_ctx()
-    -- Remove door from registry and contents
+    -- Remove all objects from registry and contents (exit-only test)
     ctx.registry = {
         get = function(self, id) return nil end,
         find_by_keyword = function(self, kw) return nil end,
     }
     ctx.current_room.contents = {}
-    -- Set door exit to unlocked so open condition passes
-    ctx.current_room.exits.north.locked = false
-    capture(function() handlers["open"](ctx, "door") end)
-    h.assert_eq(true, ctx.current_room.exits.north.open,
-        "exit-only open should still work")
+    -- Set window exit to unlocked so open condition passes
+    ctx.current_room.exits.window.locked = false
+    capture(function() handlers["open"](ctx, "window") end)
+    h.assert_eq(true, ctx.current_room.exits.window.open,
+        "exit-only open on inline window exit should still work")
 end)
 
 ---------------------------------------------------------------------------

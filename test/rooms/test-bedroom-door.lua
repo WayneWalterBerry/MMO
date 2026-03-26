@@ -30,6 +30,9 @@ local north = room.exits and room.exits.north
 local window = room.exits and room.exits.window
 local down = room.exits and room.exits.down
 
+-- Load the portal object that replaced inline north exit metadata (Portal Phase 2)
+local portal = dofile(script_dir .. "/../../src/meta/objects/bedroom-hallway-door-north.lua")
+
 -- Capture print output from a function call
 local function capture(fn)
     local captured = {}
@@ -97,123 +100,149 @@ test("1. North exit exists and is a table", function()
     h.assert_eq("table", type(north), "north exit must be a table")
 end)
 
-test("2. North exit type is 'door'", function()
-    h.assert_eq("door", north.type, "north exit type")
+test("2. North exit is a portal reference", function()
+    h.assert_truthy(north.portal, "north exit must be a portal reference")
+    h.assert_eq("bedroom-hallway-door-north", north.portal, "portal id")
 end)
 
-test("3. Door starts locked", function()
-    h.assert_eq(true, north.locked, "door must start locked")
+test("3. Portal starts non-traversable (barred)", function()
+    h.assert_eq("barred", portal._state, "portal must start barred")
+    h.assert_eq(false, portal.states.barred.traversable, "barred state must not be traversable")
 end)
 
-test("4. Door has no key_id (bar mechanism, not key lock)", function()
-    h.assert_nil(north.key_id, "key_id must be nil — door is barred, not keyed")
+test("4. Portal has no key_id (bar mechanism, not key lock)", function()
+    h.assert_nil(portal.key_id, "key_id must be nil — door is barred, not keyed")
 end)
 
-test("5. Door is breakable", function()
-    h.assert_eq(true, north.breakable, "door must be breakable")
+test("5. Portal is breakable (has break transition)", function()
+    local has_break = false
+    for _, t in ipairs(portal.transitions) do
+        if t.verb == "break" then has_break = true; break end
+    end
+    h.assert_truthy(has_break, "portal must have a break transition")
 end)
 
-test("6. Break difficulty is 3", function()
-    h.assert_eq(3, north.break_difficulty, "break_difficulty must be 3")
+test("6. Break transition requires_strength is 3", function()
+    local brk
+    for _, t in ipairs(portal.transitions) do
+        if t.verb == "break" and t.from == "barred" then brk = t; break end
+    end
+    h.assert_truthy(brk, "break transition must exist")
+    h.assert_eq(3, brk.requires_strength, "requires_strength must be 3")
 end)
 
-test("7. Door name is 'a heavy oak door'", function()
-    h.assert_eq("a heavy oak door", north.name, "door name")
+test("7. Portal name is 'a heavy oak door'", function()
+    h.assert_eq("a heavy oak door", portal.name, "portal name")
 end)
 
-test("8. Door starts closed (open = false)", function()
-    h.assert_eq(false, north.open, "door must start closed")
+test("8. Portal starts non-traversable (barred = closed+locked)", function()
+    h.assert_eq(false, portal.states[portal._state].traversable,
+        "portal must start non-traversable")
 end)
 
-test("9. Door is not hidden", function()
-    h.assert_eq(false, north.hidden, "door must not be hidden")
+test("9. Portal is not hidden", function()
+    h.assert_nil(portal.hidden, "portal must not be hidden")
 end)
 
-test("10. Door is not broken initially", function()
-    h.assert_eq(false, north.broken, "door must not start broken")
+test("10. Portal is not broken initially", function()
+    h.assert_truthy(portal._state ~= "broken", "portal must not start broken")
 end)
 
-test("11. Door target is 'hallway'", function()
-    h.assert_eq("hallway", north.target, "north exit target room")
+test("11. Portal target is 'hallway'", function()
+    h.assert_eq("hallway", portal.portal.target, "portal target room")
 end)
 
-test("12. Door has passage_id 'bedroom-hallway-door'", function()
-    h.assert_eq("bedroom-hallway-door", north.passage_id, "passage_id")
+test("12. Portal has bidirectional_id (replaces passage_id)", function()
+    h.assert_truthy(portal.portal.bidirectional_id,
+        "portal must have bidirectional_id for paired sync")
 end)
 
 ---------------------------------------------------------------------------
 -- MUTATION STRUCTURE TESTS
 ---------------------------------------------------------------------------
-suite("DOOR MUTATIONS: structure verification")
+suite("PORTAL FSM: transition structure verification")
 
-test("13. Mutations table exists", function()
-    h.assert_truthy(north.mutations, "mutations table must exist")
+-- Helper to find a transition by from/to
+local function find_portal_transition(from, to)
+    for _, t in ipairs(portal.transitions) do
+        if t.from == from and t.to == to then return t end
+    end
+    return nil
+end
+
+test("13. Transitions table exists and is non-empty", function()
+    h.assert_truthy(portal.transitions, "transitions table must exist")
+    h.assert_truthy(#portal.transitions > 0, "transitions must not be empty")
 end)
 
-test("14. Has 'close' mutation", function()
-    h.assert_truthy(north.mutations.close, "close mutation must exist")
+test("14. Has 'close' transition (open → unbarred)", function()
+    h.assert_truthy(find_portal_transition("open", "unbarred"),
+        "close transition must exist")
 end)
 
-test("15. Has 'open' mutation", function()
-    h.assert_truthy(north.mutations.open, "open mutation must exist")
+test("15. Has 'open' transition (unbarred → open)", function()
+    h.assert_truthy(find_portal_transition("unbarred", "open"),
+        "open transition must exist")
 end)
 
-test("16. Has 'break' mutation", function()
-    h.assert_truthy(north.mutations["break"], "break mutation must exist")
+test("16. Has 'break' transition (barred → broken)", function()
+    h.assert_truthy(find_portal_transition("barred", "broken"),
+        "break transition must exist")
 end)
 
-test("17. Open mutation has a condition function", function()
-    h.assert_eq("function", type(north.mutations.open.condition),
-        "open mutation condition must be a function")
+test("17. Open requires unbarred state (no barred → open path)", function()
+    local direct = find_portal_transition("barred", "open")
+    h.assert_nil(direct, "no direct barred → open transition should exist")
 end)
 
-test("18. Open condition rejects when locked", function()
-    local locked_exit = copy_exit(north)
-    locked_exit.locked = true
-    local result = north.mutations.open.condition(locked_exit)
-    h.assert_truthy(not result, "open condition must fail when door is locked")
+test("18. Cannot open from barred state", function()
+    local open_t = find_portal_transition("barred", "open")
+    h.assert_nil(open_t, "open from barred must not exist — must unbar first")
 end)
 
-test("19. Open condition allows when unlocked", function()
-    local unlocked_exit = copy_exit(north)
-    unlocked_exit.locked = false
-    local result = north.mutations.open.condition(unlocked_exit)
-    h.assert_truthy(result, "open condition must pass when door is unlocked")
+test("19. Can open from unbarred state", function()
+    local open_t = find_portal_transition("unbarred", "open")
+    h.assert_truthy(open_t, "open from unbarred must exist")
+    h.assert_eq("open", open_t.verb, "transition verb must be 'open'")
 end)
 
-test("20. Close mutation sets open = false", function()
-    local becomes = north.mutations.close.becomes_exit
-    h.assert_truthy(becomes, "close mutation must have becomes_exit")
-    h.assert_eq(false, becomes.open, "close becomes_exit must set open = false")
+test("20. Close transition leads to non-traversable state", function()
+    local close_t = find_portal_transition("open", "unbarred")
+    h.assert_truthy(close_t, "close transition must exist")
+    h.assert_eq(false, portal.states.unbarred.traversable,
+        "unbarred state must not be traversable (door is closed)")
 end)
 
-test("21. Open mutation sets open = true", function()
-    local becomes = north.mutations.open.becomes_exit
-    h.assert_truthy(becomes, "open mutation must have becomes_exit")
-    h.assert_eq(true, becomes.open, "open becomes_exit must set open = true")
+test("21. Open transition leads to traversable state", function()
+    local open_t = find_portal_transition("unbarred", "open")
+    h.assert_truthy(open_t, "open transition must exist")
+    h.assert_eq(true, portal.states.open.traversable,
+        "open state must be traversable")
 end)
 
-test("22. Break mutation sets broken = true and open = true", function()
-    local becomes = north.mutations["break"].becomes_exit
-    h.assert_truthy(becomes, "break mutation must have becomes_exit")
-    h.assert_eq(true, becomes.broken, "break becomes_exit must set broken = true")
-    h.assert_eq(true, becomes.open, "break becomes_exit must set open = true")
+test("22. Break transition leads to traversable state", function()
+    local brk = find_portal_transition("barred", "broken")
+    h.assert_truthy(brk, "break transition must exist")
+    h.assert_eq(true, portal.states.broken.traversable,
+        "broken state must be traversable")
 end)
 
-test("23. Break mutation sets locked = false", function()
-    local becomes = north.mutations["break"].becomes_exit
-    h.assert_eq(false, becomes.locked, "break becomes_exit must unlock the door")
+test("23. Broken state is traversable (replaces locked=false)", function()
+    h.assert_eq(true, portal.states.broken.traversable,
+        "broken state must be traversable — door is destroyed")
 end)
 
-test("24. Break mutation changes type to 'hole in wall'", function()
-    local becomes = north.mutations["break"].becomes_exit
-    h.assert_eq("hole in wall", becomes.type, "broken door type")
+test("24. Broken state has distinct name", function()
+    h.assert_truthy(portal.states.broken.name, "broken state must have a name")
+    h.assert_truthy(portal.states.broken.name ~= portal.name,
+        "broken state name must differ from initial name")
 end)
 
-test("25. Break mutation spawns wood-splinters", function()
-    local spawns = north.mutations["break"].spawns
-    h.assert_truthy(spawns, "break mutation must have spawns")
-    h.assert_eq("wood-splinters", spawns[1], "first spawn must be wood-splinters")
+test("25. Break transition spawns wood-splinters", function()
+    local brk = find_portal_transition("barred", "broken")
+    h.assert_truthy(brk, "break transition must exist")
+    h.assert_truthy(brk.spawns, "break transition must have spawns")
+    h.assert_eq("wood-splinters", brk.spawns[1], "first spawn must be wood-splinters")
 end)
 
 ---------------------------------------------------------------------------
@@ -380,14 +409,14 @@ end)
 ---------------------------------------------------------------------------
 suite("DOOR KEYWORDS: exit matching")
 
-test("44. North exit has keywords array", function()
-    h.assert_truthy(north.keywords, "keywords must exist")
-    h.assert_truthy(#north.keywords > 0, "keywords must not be empty")
+test("44. Portal has keywords array", function()
+    h.assert_truthy(portal.keywords, "keywords must exist")
+    h.assert_truthy(#portal.keywords > 0, "keywords must not be empty")
 end)
 
 test("45. Keywords include 'door'", function()
     local found = false
-    for _, kw in ipairs(north.keywords) do
+    for _, kw in ipairs(portal.keywords) do
         if kw:lower():find("door") then found = true; break end
     end
     h.assert_truthy(found, "keywords must include a 'door' keyword")
@@ -395,7 +424,7 @@ end)
 
 test("46. Keywords include 'barred door'", function()
     local found = false
-    for _, kw in ipairs(north.keywords) do
+    for _, kw in ipairs(portal.keywords) do
         if kw == "barred door" then found = true; break end
     end
     h.assert_truthy(found, "keywords must include 'barred door'")
@@ -407,19 +436,19 @@ end)
 suite("DOOR CONSTRAINTS: passage limits")
 
 test("47. max_carry_size is 4", function()
-    h.assert_eq(4, north.max_carry_size, "max_carry_size")
+    h.assert_eq(4, portal.max_carry_size, "max_carry_size")
 end)
 
 test("48. max_carry_weight is 50", function()
-    h.assert_eq(50, north.max_carry_weight, "max_carry_weight")
+    h.assert_eq(50, portal.max_carry_weight, "max_carry_weight")
 end)
 
 test("49. player_max_size is 5", function()
-    h.assert_eq(5, north.player_max_size, "player_max_size")
+    h.assert_eq(5, portal.player_max_size, "player_max_size")
 end)
 
 test("50. requires_hands_free is false", function()
-    h.assert_eq(false, north.requires_hands_free, "requires_hands_free")
+    h.assert_eq(false, portal.requires_hands_free, "requires_hands_free")
 end)
 
 ---------------------------------------------------------------------------
@@ -427,29 +456,32 @@ end)
 ---------------------------------------------------------------------------
 suite("DOOR DESCRIPTIONS: narrative text")
 
-test("51. Door description mentions 'barred' or 'bar'", function()
-    h.assert_truthy(north.description:lower():find("bar"),
+test("51. Portal description mentions 'barred' or 'bar'", function()
+    h.assert_truthy(portal.description:lower():find("bar"),
         "description must mention the bar mechanism")
 end)
 
-test("52. Door description mentions no keyhole", function()
-    h.assert_truthy(north.description:lower():find("no keyhole"),
-        "description must state there is no keyhole on this side")
+test("52. Portal on_examine mentions no keyhole", function()
+    h.assert_truthy(portal.on_examine:lower():find("no keyhole"),
+        "on_examine must state there is no keyhole on this side")
 end)
 
-test("53. Close mutation has a message", function()
-    h.assert_truthy(north.mutations.close.message,
-        "close mutation must have a message")
+test("53. Close transition has a message", function()
+    local close_t = find_portal_transition("open", "unbarred")
+    h.assert_truthy(close_t, "close transition must exist")
+    h.assert_truthy(close_t.message, "close transition must have a message")
 end)
 
-test("54. Open mutation has a message", function()
-    h.assert_truthy(north.mutations.open.message,
-        "open mutation must have a message")
+test("54. Open transition has a message", function()
+    local open_t = find_portal_transition("unbarred", "open")
+    h.assert_truthy(open_t, "open transition must exist")
+    h.assert_truthy(open_t.message, "open transition must have a message")
 end)
 
-test("55. Break mutation has a message", function()
-    h.assert_truthy(north.mutations["break"].message,
-        "break mutation must have a message")
+test("55. Break transition has a message", function()
+    local brk = find_portal_transition("barred", "broken")
+    h.assert_truthy(brk, "break transition must exist")
+    h.assert_truthy(brk.message, "break transition must have a message")
 end)
 
 ---------------------------------------------------------------------------
@@ -462,8 +494,9 @@ test("56. Door has no 'see_through' property", function()
         "door must not have see_through — it's solid oak")
 end)
 
-test("57. Door is not one-way", function()
-    h.assert_eq(false, north.one_way, "door must not be one-way")
+test("57. Portal is bidirectional (not one-way)", function()
+    h.assert_truthy(portal.portal.bidirectional_id,
+        "portal must have bidirectional_id — not one-way")
 end)
 
 ---------------------------------------------------------------------------
