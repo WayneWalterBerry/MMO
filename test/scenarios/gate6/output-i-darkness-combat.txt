@@ -1,0 +1,26 @@
+You wake with a start. The darkness is absolute.
+You can feel rough linen beneath your fingers.
+
+---END---
+A trap door is hidden. It won't budge.
+---END---
+a trap door blocks your path.
+---END---
+You reach out in the darkness, feeling around you...
+  a large four-poster bed
+  a small nightstand
+  an oak vanity
+  a heavy wardrobe
+  a threadbare rug
+  a leaded glass window
+  heavy velvet curtains
+  a ceramic chamber pot
+  a heavy oak door
+  a leaded glass window
+  a trap door
+---END---
+You don't see that here to attack.
+---END---
+You can't feel anything like that nearby. Try 'feel' to explore what's
+around you.
+---END---

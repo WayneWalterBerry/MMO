@@ -1,0 +1,53 @@
+You wake with a start. The darkness is absolute.
+You can feel rough linen beneath your fingers.
+
+---END---
+You pull the small drawer open. It slides out with a soft wooden scrape.
+---END---
+You begin searching...
+---END---
+On top of the small nightstand, you feel: a brass candle holder, a small
+glass bottle.
+You open the small drawer.
+You check inside the small drawer. Inside you feel a small matchbox.
+You open the small matchbox.
+You check inside the small matchbox. Inside you feel several wooden matches.
+You finish searching the area. Nothing interesting.
+You take a small matchbox from a small drawer.
+---END---
+You take a wooden match from a small matchbox.
+---END---
+You drop a small matchbox.
+---END---
+You drag the match head across the striker strip. It sputters once, twice --
+then catches with a sharp hiss and a curl of sulphur smoke. A tiny
+flame dances at the tip.
+The match flame reaches your fingers and dies. You drop the blackened stub.
+---END---
+You take a brass candle holder.
+---END---
+You can't light a brass candle holder.
+---END---
+A trap door is hidden. It won't budge.
+---END---
+a trap door blocks your path.
+---END---
+**The Bedroom**
+It is too dark to see. You need a light source. Try 'feel' to grope around
+in the darkness.
+
+It is 2:04 AM.
+---END---
+You can only hit yourself right now. (Try: hit head)
+---END---
+You can only hit yourself right now. (Try: hit head)
+---END---
+You can only hit yourself right now. (Try: hit head)
+---END---
+You can only hit yourself right now. (Try: hit head)
+---END---
+You can only hit yourself right now. (Try: hit head)
+---END---
+You can't find anything like that in the darkness. Try 'feel' to explore
+by touch.
+---END---

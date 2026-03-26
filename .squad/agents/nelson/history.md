@@ -1849,3 +1849,29 @@ Player said "light" but error says "burn".
 **Test Results:** All tests pass (only pre-existing #275 unarmed failure)
 
 **Commit:** 2b3e426
+
+### Gate6 Combat Scenario Results (2026-03-26)
+
+**Status:** ❌ ALL 4 SCENARIOS FAIL — combat untestable due to trapdoor blocker
+
+**What was tested:**
+- Scenario F: Armed combat (get knife, go to cellar, attack rat)
+- Scenario G: Flee from combat
+- Scenario H: Unarmed combat (punch rat)
+- Scenario I: Darkness combat (no light)
+- Freeform playthrough (manual exploration, 24 commands)
+
+**CRITICAL BUG FOUND: Duplicate Trapdoor**
+When `pull rug` is executed, the engine spawns a NEW trapdoor object but leaves the original hidden trapdoor in place. Two trapdoors coexist in the room. `pull iron ring` successfully opens the revealed trapdoor ("The trap door swings open...") but `down` still says "a trap door blocks your path" because the exit check resolves to the OLD hidden copy. Player is permanently trapped in the bedroom. ALL cellar scenarios blocked.
+
+**Additional findings:**
+- Scenario scripts (F, G, H) use `take candle holder` — should be `take candle` (holder vs candle confusion)
+- Scenario scripts missing required `move bed → pull rug → pull iron ring` sequence
+- "punch rat" when no rat in scope → "You can only hit yourself right now. (Try: hit head)" — confusing
+- `light candle` auto-action works when holding tallow candle (not holder)
+- `move bed` and `pull rug` work correctly as puzzle steps
+- Brass key discovered under rug — purpose unclear, possibly for north door
+
+**Output files:** `test/scenarios/gate6/output-{f,g,h,i}-*.txt`, `output-freeform-playthrough.txt`
+**Report:** `test/scenarios/gate6/GATE6-RESULTS.md`
+**Decision filed:** `.squad/decisions/inbox/nelson-gate6-bugs.md`
