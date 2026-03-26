@@ -3,7 +3,7 @@ name: "implementation-plan"
 description: "How to write, review, and execute a multi-wave implementation plan with TDD, gates, docs, and autonomous execution"
 domain: "planning, execution, coordination"
 confidence: "high"
-source: "earned — NPC+Combat Phase 1 implementation plan (2026-03-26), refined through 7-reviewer team review cycle"
+source: "earned — NPC+Combat Phase 1 implementation plan (2026-03-26), refined through 7-reviewer team review cycle + Phase 2 chunked writing lesson (2026-03-26)"
 ---
 
 ## Context
@@ -48,6 +48,38 @@ The implementation plan document (`plans/{feature}-implementation-plan.md`) must
 | Gate Failure Protocol | Escalation rules (1x → issue, 2x → Wayne) |
 | Wave Checkpoint Protocol | After each wave: verify completion, update plan |
 | Documentation Deliverables | Brockman's docs listed per gate |
+
+### 2a. Chunked Plan Writing (CRITICAL — Do NOT Write All at Once)
+
+**Problem:** Full implementation plans are 50-80KB+ documents (1000+ lines). Writing the entire plan in a single agent call causes timeouts, connection drops, and context exhaustion. Phase 2's first attempt crashed opus after 43 minutes.
+
+**Solution:** The coordinator breaks the plan into chunks and assigns them sequentially or in parallel to the architect. Each chunk writes to its own temp file, then a final assembly step merges them.
+
+**Chunk breakdown (5 chunks):**
+
+| Chunk | Sections | Agent | Approx Size |
+|-------|----------|-------|-------------|
+| **Chunk 1: Skeleton** | Executive Summary, Quick Reference Table, Dependency Graph (ASCII) | Architect (sync) | ~5KB |
+| **Chunk 2: Waves** | All Implementation Waves (WAVE-0 through WAVE-N) with agent assignments, file ownership, TDD requirements | Architect | ~20KB |
+| **Chunk 3: Gates + Testing** | Testing Gates, Nelson LLM Scenarios, TDD Test File Map | Architect or Nelson | ~10KB |
+| **Chunk 4: Systems** | Feature Breakdown per system, Cross-System Integration Points | Architect | ~15KB |
+| **Chunk 5: Operations** | Risk Register, Autonomous Execution Protocol, Gate Failure Protocol, Wave Checkpoint Protocol, Documentation Deliverables | Architect | ~10KB |
+
+**Assembly order:**
+1. Chunk 1 runs first (sync) — establishes wave count and structure
+2. Chunks 2-5 can run in parallel (all reference Chunk 1's skeleton)
+3. Final assembly: coordinator or architect concatenates chunks into the plan file
+4. Git commit the assembled plan
+
+**Coordinator prompt pattern for each chunk:**
+```
+Write ONLY {sections} for the Phase 2 plan.
+The skeleton (Chunk 1) established {N} waves: {wave names}.
+Write to: plans/{feature}-phase2-chunk-{N}.md
+Do NOT write the full plan — just these sections.
+```
+
+**Fallback:** If the plan is small enough (<30KB estimated), a single agent call is acceptable. Use chunking for any plan expected to exceed 40KB.
 
 ### 3. Wave Design Rules
 
@@ -187,6 +219,7 @@ Cross-reference analysis that preceded the plan: 13 alignment fixes identified a
 ## Anti-Patterns
 
 - **Don't write the plan with open questions** — resolve them ALL first
+- **Don't write the entire plan in one agent call** — chunk it (Pattern 2a). Phase 2 opus crashed at 43 min writing 70KB+ monolithically. Sonnet retry took 20+ min. Chunk into 5 pieces, assemble after.
 - **Don't skip team review** — every reviewer catches different things (CBG found hybrid stance gap, Marge found 4 test blockers, Wayne found docs gap, Chalmers found player file ambiguity)
 - **Don't serialize the review** — all reviewers read in parallel
 - **Don't treat docs as optional** — Wayne considers missing docs a blocker
