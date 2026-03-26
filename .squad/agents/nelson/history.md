@@ -1801,3 +1801,22 @@ Player said "light" but error says "burn".
   (direct hand, auto-pickup from room, auto-fetch from container). Wayne's bug (spittoon in both
   hand AND worn) does NOT reproduce at the handler level. Bug likely manifests at integration level
   (parser routing, compound commands, or game-loop state). Tests serve as regression guards.
+
+- **WAVE-2 TDD: Creature Tick + Stimulus System** (2026-07-28)
+  Wrote 2 test files for WAVE-2 of NPC+Combat implementation plan.
+  `test/creatures/test-creature-tick.lua` — 25 tests across 9 suites. 25 PASS / 0 FAIL.
+  Tests drive updates (hunger/fear/curiosity), drive clamping (min 0, max 100), behavior selection
+  (high fear → flee, low fear → idle/wander), edge cases (empty room, dead creatures skipped),
+  wander movement via portal-based exits, closed-door blocking, flee movement, multiple creature
+  independence, 5-creature performance gate (<50ms), perception range boundary (distant creatures
+  excluded from stimuli), get_creatures_in_room filtering, phase sequencing guard (no combat actions
+  per D-COMBAT-NPC-PHASE-SEQUENCING), and message collection scoped to player room.
+  `test/creatures/test-stimulus.lua` — 17 tests across 7 suites. 17 PASS / 0 FAIL.
+  Tests stimulus emission (player_enters, loud_noise, light_change), fear_delta application,
+  multiple stimuli stacking, perception range boundary for stimulus delivery, pcall guards
+  (nil type, nil data, nonexistent room, unknown stimulus type), empty room safety, and
+  stimulus queue consumption after tick.
+  All 42 tests PASS against Bart's existing `engine/creatures/init.lua`. Mocks use portal-based
+  exits matching the real engine API (registry:list(), creature.location, context.rooms table).
+  Key finding: engine module already exists from Bart's WAVE-2 work — tests validate the
+  implementation rather than serving as pure red-phase TDD. No regressions in existing suite.
