@@ -61,6 +61,14 @@ local get_light_level = H.get_light_level
 local has_some_light = H.has_some_light
 local vision_blocked_by_worn = H.vision_blocked_by_worn
 
+-- Creature stimulus emission (guarded — module may not be loaded)
+local function emit_player_enters(room_id)
+    local ok, creatures = pcall(require, "engine.creatures")
+    if ok and creatures and creatures.emit_stimulus then
+        creatures.emit_stimulus(room_id, "player_enters", { source = "player" })
+    end
+end
+
 local M = {}
 
 function M.register(handlers)
@@ -128,6 +136,7 @@ function M.register(handlers)
                 print(prev_room.event_output["on_enter_room"])
                 prev_room.event_output["on_enter_room"] = nil
             end
+            emit_player_enters(prev_id)
             print("")
             print("You retrace your steps.")
             print("**" .. (prev_room.name or "Unnamed room") .. "**")
@@ -234,6 +243,8 @@ function M.register(handlers)
                 print(target_room.event_output["on_enter_room"])
                 target_room.event_output["on_enter_room"] = nil
             end
+
+            emit_player_enters(target_id)
 
             -- Print arrival
             print("")

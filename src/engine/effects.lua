@@ -132,6 +132,21 @@ function effects.process(raw, ctx)
             end
             -- Phase 3: after_effect interceptors (cleanup, narration, achievements)
             effects._run_interceptors("after", effect, ctx)
+
+            -- Phase 4: emit loud_noise stimulus for creature reactions
+            if effect.loud then
+                local room_id = ctx.room_id
+                    or (ctx.current_room and ctx.current_room.id)
+                    or (ctx.player and ctx.player.location)
+                if room_id then
+                    local cok, creatures = pcall(require, "engine.creatures")
+                    if cok and creatures and creatures.emit_stimulus then
+                        creatures.emit_stimulus(room_id, "loud_noise", {
+                            source = effect.source or ctx.source_id or "unknown",
+                        })
+                    end
+                end
+            end
         end
     end
 

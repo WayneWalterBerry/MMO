@@ -202,6 +202,8 @@ function fsm.transition(registry, obj_id, target_state, context, verb_hint)
         return nil, "guard_failed", trans
     end
 
+    -- Snapshot casts_light before transition for stimulus detection
+    local old_casts_light = obj.casts_light
     local old_state = obj._state
     -- Stop timer for the old state (extinguish, etc.)
     fsm.stop_timer(obj_id)
@@ -213,6 +215,19 @@ function fsm.transition(registry, obj_id, target_state, context, verb_hint)
 
     -- Bidirectional portal sync: propagate state to paired portal
     sync_bidirectional(registry, obj)
+
+    -- Emit light_change stimulus when casts_light changes
+    if obj.casts_light ~= old_casts_light then
+        local room_id = obj.location
+            or (context and context.current_room and context.current_room.id)
+            or (context and context.player and context.player.location)
+        if room_id then
+            local cok, creatures = pcall(require, "engine.creatures")
+            if cok and creatures and creatures.emit_stimulus then
+                creatures.emit_stimulus(room_id, "light_change", { source = obj_id })
+            end
+        end
+    end
 
     return trans
 end

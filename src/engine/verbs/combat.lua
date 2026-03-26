@@ -62,6 +62,20 @@ local get_light_level = H.get_light_level
 local has_some_light = H.has_some_light
 local vision_blocked_by_worn = H.vision_blocked_by_worn
 
+-- Creature stimulus emission (guarded — module may not be loaded)
+local function emit_player_attacks(ctx, target_id)
+    local room_id = ctx.current_room and ctx.current_room.id
+        or ctx.player and ctx.player.location
+    if not room_id then return end
+    local ok, creatures = pcall(require, "engine.creatures")
+    if ok and creatures and creatures.emit_stimulus then
+        creatures.emit_stimulus(room_id, "player_attacks", {
+            source = "player",
+            target = target_id,
+        })
+    end
+end
+
 local M = {}
 
 function M.register(handlers)
@@ -72,7 +86,10 @@ function M.register(handlers)
     -- STAB {target} WITH {tool}  /  STAB SELF
     ---------------------------------------------------------------------------
     handlers["stab"] = function(ctx, noun)
-        if handle_self_infliction(ctx, noun, "stab", "on_stab") then return end
+        if handle_self_infliction(ctx, noun, "stab", "on_stab") then
+            emit_player_attacks(ctx, "self")
+            return
+        end
         -- Stab is only for self-infliction — there are no world objects to stab
         print("You can only stab yourself. (Try: stab self with <weapon>)")
     end
@@ -153,6 +170,8 @@ function M.register(handlers)
             ctx.player.consciousness.cause = "blow-to-head"
             ctx.player.consciousness.unconscious_since = ctx.time_offset or 0
 
+            emit_player_attacks(ctx, "self")
+
             if helmet then
                 if final_duration <= 1 then
                     print("You punch your helmeted head. It clangs metallically. Your ears ring, but the helmet took most of the impact.")
@@ -180,6 +199,8 @@ function M.register(handlers)
             print("You punch yourself, but it doesn't seem to have much effect.")
             return
         end
+
+        emit_player_attacks(ctx, "self")
 
         -- Narration by body area
         local narrations = {
@@ -216,7 +237,10 @@ function M.register(handlers)
         end
 
         -- Try self-infliction first
-        if handle_self_infliction(ctx, noun, "cut", "on_cut") then return end
+        if handle_self_infliction(ctx, noun, "cut", "on_cut") then
+            emit_player_attacks(ctx, "self")
+            return
+        end
 
         -- CUT {object} — world object cutting (existing logic)
         local target_word, tool_word = noun:match("^(.+)%s+with%s+(.+)$")
@@ -276,7 +300,10 @@ function M.register(handlers)
         end
 
         -- Try self-infliction first
-        if handle_self_infliction(ctx, noun, "slash", "on_slash") then return end
+        if handle_self_infliction(ctx, noun, "slash", "on_slash") then
+            emit_player_attacks(ctx, "self")
+            return
+        end
 
         -- Fall through to cut logic for world objects
         handlers["cut"](ctx, noun)
@@ -322,6 +349,7 @@ function M.register(handlers)
             ctx.player.state = ctx.player.state or {}
             ctx.player.state.bloody = true
             ctx.player.state.bleed_ticks = 8
+            emit_player_attacks(ctx, "self")
             print("You prick your finger with " .. (tool.name or "the sharp point") .. ". A bead of blood forms.")
             print("Your hands are now bloody.")
             return
