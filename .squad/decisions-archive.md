@@ -538,3 +538,895 @@ Register "burn" as a GOAP synonym for "light" via a `VERB_SYNONYMS` table in `go
 **Total Archived:** 40+ game design and architecture decisions  
 **Archive Date:** 2026-03-21  
 **Reason:** Consolidation to keep decisions.md focused on squad process only
+
+---
+
+## Archive Batch: 2026-03-25T18:21:05Z (Deep Clean)
+
+**Archived Count:** 147  
+**Reason:** Implemented, completed, or older than 2 weeks  
+**Scribe:** Automated deep clean per Wayne directive
+
+
+### Architecture Notes
+
+
+
+---
+
+### D-104: PLAYER-CANONICAL-STATE (Wave 9 — Burndown)
+
+**Author:** Bart (Architecture Lead)
+
+---
+
+### D-105: OBJECT-INSTANCING-FACTORY (Wave 9 — Burndown)
+
+**Author:** Bart (Architecture Lead)
+
+---
+
+### D-123: MATERIAL-MIGRATION (Wave 9 — Burndown)
+
+**Author:** Smithers (UI/Parser Engineer)
+
+---
+
+### D-167: P0C-META-CHECK-V2 (Wave 9 — Burndown)
+
+**Author:** Smithers (UI/Parser Engineer)
+
+---
+
+### D-168: COMPOUND-COMMAND-SPLITTING (Wave 9 — Burndown)
+
+**Author:** Smithers (UI/Parser Engineer)
+
+---
+
+### D-169: AUTO-IGNITE-PATTERN (Wave 9 — Burndown)
+
+**Author:** Smithers (UI/Parser Engineer)
+
+---
+
+### D-170: DOOR-FSM-ERROR-ROUTING (Wave 9 — Burndown)
+
+**Author:** Smithers (UI/Parser Engineer)
+
+---
+
+### D-3: Engine Conventions from Pass-002 Bugfixes (2026-03-22)
+
+**Author:** Bart (Architect)
+
+---
+
+### D-42: Movement Handler Architecture
+
+**Author:** Bart (Architect)
+
+---
+
+### D-45: FSM Tick Scope
+
+**Author:** Bart (Architect)
+
+---
+
+### D-ALREADY-LIT: FSM State Detection for Already-Lit Objects
+
+**Author:** Smithers (UI Engineer)
+
+---
+
+### D-APP-STATELESS: Appearance subsystem is stateless
+
+**Author:** Smithers (Engine Engineer)
+
+---
+
+### D-APP001: Appearance is an Engine Subsystem
+
+**Author:** Bart (Architect)
+
+---
+
+### D-BRASS-BOWL-KEYWORD-REMOVAL
+
+**Author:** Flanders (Object & Injury Systems Engineer)
+
+---
+
+### D-BROCKMAN001: Design vs Architecture Documentation Separation
+
+**Author:** Brockman (Documentation)
+
+---
+
+### D-BUG017: Save containment before FSM cleanup
+
+**Author:** Bart (Architect)
+
+---
+
+### D-CONDITIONAL: Conditional Clauses Detected in Loop, Not Parser
+
+**Author:** Smithers (UI Engineer)
+
+---
+
+### D-CONSC-GATE: Consciousness gate before input reading
+
+**Author:** Smithers (Engine Engineer)
+
+---
+
+### D-CONTAINER-SENSORY-GATING
+
+**Author:** Smithers (UI Engineer)
+
+---
+
+### D-ENGINE-HOOKS-USE-EAT-DRINK
+
+**Author:** Smithers (UI Engineer)
+
+---
+
+### D-FIRE-PROPAGATION-ARCHITECTURE
+
+**Author:** Bart (Architecture Lead)
+
+---
+
+### D-GOAP-NARRATE: GOAP Steps Narrate via Verb-Keyed Table
+
+**Author:** Smithers (UI Engineer)
+
+---
+
+### D-HIT001: Hit verb is self-only in V1
+
+**Author:** Smithers (Engine Engineer)
+
+---
+
+### D-HIT002: Strike disambiguates body areas vs fire-making
+
+**Author:** Smithers (Engine Engineer)
+
+---
+
+### D-HIT003: Smash NOT aliased to hit
+
+**Author:** Smithers (Engine Engineer)
+
+---
+
+### D-MATCH-TERMINAL-STATE
+
+**Author:** Smithers (UI Engineer)
+
+---
+
+### D-MODSTRIP: Noun Modifier Stripping is a Separate Pipeline Stage
+
+**Author:** Smithers (UI Engineer)
+
+---
+
+### D-MUTATE-PROPOSAL: Generic `mutate` Field on FSM Transitions
+
+**Author:** Bart (Architect)
+
+---
+
+### D-OBJ004: Wall clock uses 24-state cyclic FSM
+
+**Author:** Bart (Architect)
+
+---
+
+### D-OBJECT-INSTANCING-FACTORY
+
+**Author:** Bart (Architecture Lead)
+
+---
+
+### D-P1-PARSER-CLUSTER
+
+**Author:** Smithers (UI/Parser Engineer)
+
+---
+
+### D-PEEK: Read-Only Search Peek for Containers
+
+**Author:** Smithers (Engine Engineer)
+
+---
+
+### D-PLAYER-CANONICAL-STATE
+
+**Author:** Bart (Architecture Lead)
+
+---
+
+### D-PUSH-LIFT-SLIDE-VERBS
+
+**Author:** Smithers (UI Engineer)
+
+---
+
+### D-SEARCH-OPENS: Search Opens Containers (supersedes #24)
+
+**Author:** Smithers (UI Engineer)
+
+---
+
+### D-SLEEP-INJURY: Sleep now ticks injuries (bug fix)
+
+**Author:** Smithers (Engine Engineer)
+
+---
+
+### D-SPATIAL-ARCH: Spatial Relationships — Engine Architecture
+
+**Author:** Bart (Architect)
+
+---
+
+### D-TIMER001: Timed Events Engine — FSM Timer Tracking and Lifecycle
+
+**Author:** Bart (Architect)
+
+---
+
+### D-UI-1 to D-UI-5: Split-Screen Terminal UI Architecture (2026-07-18)
+
+**Author:** Bart (Architect)
+
+---
+
+### D-WASH-VERB-FSM
+
+**Author:** Smithers (UI Engineer)
+
+---
+
+### D-WEB-BUG13: Bug Report Transcript in Web Bridge Layer
+
+**Author:** Gil (Web Engineer)
+
+---
+
+### D-WINDOW-FSM: Window & Wardrobe FSM Consolidation (2026-03-20)
+
+**Author:** Bart (Architect)
+
+---
+
+### DIRECTIVE: Core Principles Are Inviolable
+
+**Author:** Brockman (Documentation) / Wayne Berry (User)
+
+---
+
+### DIRECTIVE: User Reference — Dwarf Fortress Architecture Model
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### UD-2026-03-20T21-54Z: No special-case objects; clock as 24-state FSM
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Merge wardrobe into single FSM file (2026-03-20T21-13Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Merge window into single FSM file (2026-03-20T21-11Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### Affected Team Members
+
+
+
+---
+
+### D-17: Universe Templates (Build-Time LLM + Procedural Variation)
+
+**Author:** Bart (Architect)
+
+---
+
+### D-37 to D-41: Sensory Verb Convention & Tool Resolution
+
+**Author:** Bart (Architect)
+
+---
+
+### D-43: Multi-Room Loading at Startup
+
+**Author:** Bart (Architect)
+
+---
+
+### D-44: Per-Room Contents, Shared Registry
+
+**Author:** Bart (Architect)
+
+---
+
+### D-46: Cellar as Room 2
+
+**Author:** Bart (Architect)
+
+---
+
+### D-47: Exit Display Name Convention
+
+**Author:** Bart (Architect)
+
+---
+
+### D-5: Spatial Relationships Implementation (2026-03-26)
+
+**Author:** Bart (Architect)
+
+---
+
+### D-APP002: Layered Head-to-Toe Rendering
+
+**Author:** Bart (Architect)
+
+---
+
+### D-APP003: Nil Layers Silently Skipped
+
+**Author:** Bart (Architect)
+
+---
+
+### D-APP004: Appearance Generic Over Player State
+
+**Author:** Bart (Architect)
+
+---
+
+### D-APP005: Injury Phrases via 4-Stage Pipeline
+
+**Author:** Bart (Architect)
+
+---
+
+### D-ARMOR-INTERCEPTOR: Armor Protection Formula Weights
+
+
+
+---
+
+### D-BROCKMAN002: Directive Sweep to Permanent Docs (Wall Clock Misset)
+
+**Author:** Brockman (Documentation)
+
+---
+
+### D-BUG018: No fuzzy correction on short words
+
+**Author:** Bart (Architect)
+
+---
+
+### D-BUG019: No internal state in display names
+
+**Author:** Bart (Architect)
+
+---
+
+### D-BUG020: Containment messages are specific and capitalized
+
+**Author:** Bart (Architect)
+
+---
+
+### D-BUG021: Debug output gated at construction
+
+**Author:** Bart (Architect)
+
+---
+
+### D-BUG022: No false affordances
+
+**Author:** Bart (Architect)
+
+---
+
+### D-BURNABILITY-MATERIAL-DERIVED
+
+**Author:** Bart (Architect)
+
+---
+
+### D-CLOCK001: Wall Clock Misset Puzzle Support — Instance-Level Configuration
+
+**Author:** Bart (Architect)
+
+---
+
+### D-CONSC001: Consciousness is Player-Level Field
+
+**Author:** Bart (Architect)
+
+---
+
+### D-CONSC002: Binary Conscious/Unconscious Only
+
+**Author:** Bart (Architect)
+
+---
+
+### D-CONSC003: Game Loop Uses Simple If/Else
+
+**Author:** Bart (Architect)
+
+---
+
+### D-CONSC004: Injury System Unchanged
+
+**Author:** Bart (Architect)
+
+---
+
+### D-CONSC005: Sleep and Unconsciousness Share Ticking Model
+
+**Author:** Bart (Architect)
+
+---
+
+### D-CONSC006: Death Check Before Wake Timer
+
+**Author:** Bart (Architect)
+
+---
+
+### D-CONSC007: Missing Consciousness Field = Conscious
+
+**Author:** Bart (Architect)
+
+---
+
+### D-CONSC008: Wake Timer is Turn-Based
+
+**Author:** Bart (Architect)
+
+---
+
+### D-EFFECTS-PIPELINE: Unified Effect Processing Pipeline
+
+
+
+---
+
+### D-EFFECTS-PIPELINE: Unified Effect Processing Pipeline for Injuries
+
+
+
+---
+
+### D-EMBEDDED-PRESENCES
+
+**Author:** Bart (Architect)
+
+---
+
+### D-EQUIP-HOOKS: Equipment Event Hooks (on_wear / on_remove_worn)
+
+
+
+---
+
+### D-EVENT-OUTPUT: Instance-Level One-Shot Flavor Text System
+
+
+
+---
+
+### D-OPEN-CLOSE-HOOKS
+
+**Author:** Bart (Architect)
+
+---
+
+### D-READ001: READ Verb Skill-Granting Protocol
+
+**Author:** Bart (Architect)
+
+---
+
+### D-SEARCH-SLOW-REVEAL-TIMING: Search Slow-Reveal Timing × 3
+
+
+
+---
+
+### D-SELF-INFLICT-CEILING: Self-Infliction Damage Can Never Kill
+
+
+
+---
+
+### D-SKILL-01 to D-SKILL-08: Player Skills System + Gap Fixes (2026-03-26)
+
+**Author:** Bart (Architect)
+
+---
+
+### D-SPATIAL-HIDE: Spatial Relationships — Hiding vs On-Top-Of
+
+**Author:** Comic Book Guy (Creative Director)
+
+---
+
+### DIRECTIVE: Daily Edition Requirements (Comic Strip + Op-Ed)
+
+**Author:** Brockman (Documentation)
+
+---
+
+### DIRECTIVE: Documentation Maintenance
+
+**Author:** Brockman (Documentation)
+
+---
+
+### DIRECTIVE: Process — Resolved Questions Are Deleted
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### DIRECTIVE: Puzzle Documentation
+
+**Author:** Brockman (Documentation)
+
+---
+
+### Decision
+
+
+
+---
+
+### Design Review Needed
+
+- Multi-tool crafting prerequisites
+
+---
+
+### Previous Session Decisions (Before 2026-03-20)
+
+[Summarized from earlier sessions; see decisions-archive-*.md for full history]
+
+---
+
+### UD-2026-03-20T21-57Z: Wall clock supports misset time for puzzles
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### UD-2026-03-20T22:20Z: Three-Way Classification of User Directives (Squad Process)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### UD-2026-03-24T20-35Z: Mirror Design Directive
+
+**Author:** Wayne "Effe" Berry (via Copilot)
+
+---
+
+### D-PLANT-MATERIAL: New "plant" Material in Registry
+
+
+
+---
+
+### UD-2026-03-24T19-56-23Z: Material Web Loader Directive
+
+**Author:** Wayne "Effe" Berry (via Copilot)
+
+---
+
+### D-171: SACK-CAPACITY-PREPOSITIONS (Wave 9 — Burndown)
+
+**Author:** Flanders (Object Designer)
+
+---
+
+### D-173: MIRROR-SEPARATE-OBJECT (Wave 9 — Burndown)
+
+**Author:** Flanders (Object Designer)
+
+---
+
+### D-2: Composite & Detachable Object System (2026-03-25)
+
+**Author:** Comic Book Guy (Game Designer)
+
+---
+
+### D-APP006: Object Appearance Metadata Optional
+
+**Author:** Bart (Architect)
+
+---
+
+### D-AUDIT-OBJECTS: Effects Pipeline Compatibility Audit
+
+**Author:** Bart (Architect)
+
+---
+
+### D-CHEST-DESIGN: Chest Object Design Conventions
+
+**Author:** Comic Book Guy (Creative Director)
+
+---
+
+### D-INJURY-HOOKS: Injury-Causing Object Hook Categories & Taxonomy
+
+
+
+---
+
+### D-META-VALIDATION: Compile-Time Safety for Meta Objects (Research Priority)
+
+
+
+---
+
+### D-NEW-OBJECTS-PUZZLES: Objects Needed for Real-World Puzzles 020–031
+
+**Author:** Sideshow Bob (Puzzle Master)
+
+---
+
+### D-OBJ001: timed_events replaces on_tick for timer-driven objects
+
+**Author:** Bart (Architect)
+
+---
+
+### D-OBJ002: Candle uses remaining_burn for pause/resume timer
+
+**Author:** Bart (Architect)
+
+---
+
+### D-OBJ003: Match extinguish goes to spent, not unlit
+
+**Author:** Bart (Architect)
+
+---
+
+### D-OBJ005: Candle holder uses parts pattern for detachable candle
+
+**Author:** Bart (Architect)
+
+---
+
+### D-OBJ006: consumable flag on terminal spent states
+
+**Author:** Bart (Architect)
+
+---
+
+### D-SALVE-ANTIDOTE-OBJECTS
+
+**Author:** Flanders (Object Designer)
+
+---
+
+### D-SEARCH-ACCESSIBLE: Search Container Open Must Set Accessible Flag
+
+
+
+---
+
+### D-BUG031: Compound "and" + GOAP Clean Output
+
+**Author:** Bart (Architect)
+
+---
+
+### D-BUG032: "burn" as GOAP Synonym for "light"
+
+**Author:** Bart (Architect)
+
+---
+
+### D-GOAP-1: Tier 3 Goal-Oriented Parser Implementation
+
+**Author:** Bart (Architect)
+
+---
+
+### D-GOAP-MINOR-BUGS: Two Minor GOAP Coverage Gaps (2026-03-20)
+
+**Author:** Nelson (Tester)
+
+---
+
+### D-GOAP-MINOR-BUGS: Two Minor GOAP Coverage Gaps (2026-03-20)
+
+
+
+---
+
+### In Flight
+
+- Nelson: Pass-007 test execution (GOAP with goals)
+
+---
+
+### Ready to Implement
+
+- ✅ GOAP Tier 3 (complete, tested with UNLOCK door)
+
+---
+
+### D-WAYNE-METACOMPILER-COMPILER-LINTER (2026-03-24T08-52-50Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Bradley Squad Operating Directives (2026-03-20T20-44Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Burnable objects as universal property (2026-03-20T21-08Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Candle extinguish + partial consumption + timer integration (2026-03-20T20-57Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Candle holder as composite object (2026-03-20T21-00Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Intelligent natural language input (2026-03-20T20-03Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Match timer + no relight after extinguish (2026-03-20T21-01Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Newspaper editions in separate files (2026-03-20T03-40Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Read verb for skill granting + burnable manuals (2026-03-20T21-13Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Room layout and movable furniture (2026-03-20T03-43Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Sleep as clock advance mechanic (2026-03-20T17:35Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### USER-DIRECTIVE: Timed event objects (2026-03-20T19:05Z)
+
+**Author:** Wayne Berry (via Copilot)
+
+---
+
+### Content Gap (Not a Bug)
+
+- **Candle holder** object exists in code but is not placed in any room
+
+---
+
+### D-META-CHECK-V1-APPROVAL
+
+**Author:** Lisa (Object Testing Specialist)
+
+---
+
+### D-NELSON-COVERAGE-GAPS: Pre-Refactoring Test Coverage Audit
+
+
+
+---
+
+### D-PIPE-TESTS: Per-Stage Pipeline Unit Tests
+
+**Author:** Nelson (Tester)
+
+---
+
+### Fixed Bugs Verified
+
+- **BUG-031:** ✅ FIXED — compound `and` commands produce clean output
+
+---
+
+### Nelson — Pass-003 Bug Report
+
+**Date:** 2026-03-20
+
+---
+
+### Nelson — Pass-004 Bug Report
+
+**Date:** 2026-03-20
+
+---
+
+### Nelson — Pass-005 Bug Report
+
+**Critical Issues:**
+
+---
+
+### Nelson — Pass-006 Bug Report
+
+**Date:** 2026-03-20
+
+---
+
+### Nelson — Pass-008 Test Report
+
+**Date:** 2026-03-20T22:40Z
+
+---
+
+### New Bugs Discovered
+
+
+
+---
+
+### UD-2026-03-24T18-42Z: Log All Bugs as GitHub Issues First
+
+**Author:** Wayne "Effe" Berry (via Copilot)
+
+---
+
