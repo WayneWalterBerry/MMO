@@ -2,25 +2,39 @@ You wake with a start. The darkness is absolute.
 You can feel rough linen beneath your fingers.
 
 ---END---
-A trap door is hidden. It won't budge.
+You move a large four-poster bed aside.
 ---END---
-a trap door blocks your path.
+You grab the edge of the threadbare rug and pull it aside, bunching it
+against the wall.
+Something clatters to the floor -- a small brass key!
+---END---
+You grip the iron ring and heave. The trap door comes up with a groan of old
+hinges, releasing a breath of cold, damp air from below. Stone steps
+spiral down into darkness.
+A rat scurries along the baseboard.
+---END---
+
+You descend the narrow stone stairway, each step taking you deeper into cold,
+damp air. The smell of earth and old stone grows stronger with every step.
+**The Cellar**
+It is too dark to see. You need a light source. Try 'feel' to grope around
+in the darkness.
+
+It is 2:00 AM.
+A rat scurries along the baseboard.
 ---END---
 You reach out in the darkness, feeling around you...
-  a large four-poster bed
-  a small nightstand
-  an oak vanity
-  a heavy wardrobe
-  a threadbare rug
-  a leaded glass window
-  heavy velvet curtains
-  a ceramic chamber pot
-  a heavy oak door
-  a leaded glass window
-  a trap door
+  an old barrel
+  an iron torch bracket
+  an open trap door and stone stairway
+  a heavy iron-bound door
+  a brown rat
+A brown rat scurries up.
 ---END---
 You don't see that here to attack.
+A rat scurries along the baseboard.
 ---END---
-You can't feel anything like that nearby. Try 'feel' to explore what's
-around you.
+Coarse, greasy fur over a warm, squirming body. A thick tail whips against
+your fingers. It bites.
+A brown rat scurries up.
 ---END---

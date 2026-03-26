@@ -24,27 +24,92 @@ then catches with a sharp hiss and a curl of sulphur smoke. A tiny
 flame dances at the tip.
 The match flame reaches your fingers and dies. You drop the blackened stub.
 ---END---
-You take a brass candle holder.
+You take a tallow candle from a brass candle holder.
 ---END---
-You can't light a brass candle holder.
+
+You'll need to prepare first...
+
+You look for match from matchbox...
+You take a wooden match from a small matchbox.
+You drag the match head across the striker strip. It sputters once, twice --
+then catches with a sharp hiss and a curl of sulphur smoke. A tiny
+flame dances at the tip.
+
+The wick catches the flame and curls to life, throwing a warm amber glow
+across the room. Shadows retreat to the corners like startled cats.
+(Hint: You can extinguish flames with 'extinguish' or 'blow out'.)
+(Hint: You can burn flammable objects with 'burn [item]' while holding
+a flame.)
+The match flame reaches your fingers and dies. You drop the blackened stub.
 ---END---
 Your fingers find underneath a large four-poster bed:
   a small knife
 ---END---
 You take a small knife.
 ---END---
-A trap door is hidden. It won't budge.
+You move a large four-poster bed aside.
 ---END---
-a trap door blocks your path.
+You grab the edge of the threadbare rug and pull it aside, bunching it
+against the wall.
+Something clatters to the floor -- a small brass key!
 ---END---
-**The Bedroom**
-It is too dark to see. You need a light source. Try 'feel' to grope around
-in the darkness.
+You grip the iron ring and heave. The trap door comes up with a groan of old
+hinges, releasing a breath of cold, damp air from below. Stone steps
+spiral down into darkness.
+A rat scurries along the baseboard.
+---END---
+
+You descend the narrow stone stairway, each step taking you deeper into cold,
+damp air. The smell of earth and old stone grows stronger with every step.
+**The Cellar**
+
+You stand at the foot of a narrow stone stairway in a low-ceilinged cellar.
+The walls are rough-hewn granite, slick with moisture that catches what little
+light there is. Water drips somewhere in the darkness, a slow and patient
+rhythm. The air is cold and heavy, thick with the smell of damp earth, old
+stone, and something faintly metallic. Cobwebs hang in thick curtains from the
+ceiling, swaying in a draft you cannot feel.
+
+An old barrel sits against the wall, its iron hoops flaking with rust. An
+empty iron torch bracket juts from the wall. A narrow stone stairway spirals
+upward through the open trap door to the bedroom above. A heavy iron-bound
+door stands against the far wall, secured with a massive padlock.
+
+Exits:
+  up: up
+  north: north
 
 It is 2:04 AM.
+A rat scurries along the baseboard.
+---END---
+**The Cellar**
+
+You stand at the foot of a narrow stone stairway in a low-ceilinged cellar.
+The walls are rough-hewn granite, slick with moisture that catches what little
+light there is. Water drips somewhere in the darkness, a slow and patient
+rhythm. The air is cold and heavy, thick with the smell of damp earth, old
+stone, and something faintly metallic. Cobwebs hang in thick curtains from the
+ceiling, swaying in a draft you cannot feel.
+
+An old barrel sits against the wall, its iron hoops flaking with rust. An
+empty iron torch bracket juts from the wall. A narrow stone stairway spirals
+upward through the open trap door to the bedroom above. A heavy iron-bound
+door stands against the far wall, secured with a massive padlock. There is
+a brown rat here.
+
+A rat scurries along the baseboard.
+
+Exits:
+  up: up
+  north: north
+
+It is 2:04 AM.
+A brown rat scurries up.
 ---END---
 You don't see that here to attack.
+A rat scurries along the baseboard.
 ---END---
-You can't find anything like that in the darkness. Try 'feel' to explore
-by touch.
+A plump brown rat with matted fur and a long, naked tail. Its beady black eyes
+dart nervously, and its whiskers twitch with constant, anxious energy.
+A brown rat scurries up.
 ---END---

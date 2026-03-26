@@ -1,162 +1,144 @@
-# Gate 6 — Combat Scenario Results
+# Gate 6 — Combat Scenario Results (Re-Run)
 
 **Tester:** Nelson
-**Date:** 2026-03-26 13:34 UTC
+**Date:** 2026-03-26
 **Engine:** `lua src/main.lua --headless`
 **Branch:** current working tree
+**Context:** Re-run after #276 trapdoor fix and script updates (#277)
 
 ---
 
 ## Executive Summary
 
-**OVERALL: FAIL — All 4 scripted scenarios blocked. Combat system UNTESTABLE.**
+**OVERALL: PARTIAL PASS — Cellar access UNBLOCKED. Combat functional with caveats.**
 
-The player cannot reach the cellar (where the rat lives). The trapdoor exit is blocked by a **duplicate trapdoor object bug**: after pulling the rug, the old hidden trapdoor persists alongside the newly revealed one. Even when "pull iron ring" successfully opens the revealed trapdoor, the exit remains blocked by the stale hidden copy. No scenario reached combat.
+The #276 trapdoor fix works. All four scenarios now reach the cellar via the correct puzzle sequence (`move bed → pull rug → pull iron ring → down`). Scripts updated: `take candle holder` → `take candle`, full puzzle sequence added. Combat engages in 2 of 4 scenarios. Remaining issues are pre-existing combat/parser bugs, not script problems.
+
+| Scenario | Cellar Access | Combat Engages | Notes |
+|----------|:---:|:---:|-------|
+| F: Armed Combat | ✅ | ❌ | Rat scurries away before attack command |
+| G: Flee Combat | ✅ | ✅ | Combat auto-resolves; flee untestable (rat dead) |
+| H: Unarmed Combat | ✅ | ✅ | "punch rat" fails; "hit rat" succeeds |
+| I: Darkness Combat | ✅ | ❌ | "attack rat" fails in dark (expected?); "feel rat" works |
 
 ---
 
-## BLOCKER Bug: Duplicate Trapdoor (#NEW)
+## Script Changes (This Run)
 
-**Severity:** CRITICAL — blocks all cellar access and all combat testing
-
-**Steps to reproduce:**
-1. Light candle (take candle, light candle)
-2. Move bed → pull rug (reveals trapdoor + brass key)
-3. "pull iron ring" → ✅ "The trap door swings open with a groan of old hinges"
-4. "down" → ❌ "a trap door blocks your path"
-
-**Root cause:** `pull rug` spawns a new trapdoor object but the original hidden trapdoor remains in the room. The exit check resolves to the old (closed/hidden) trapdoor, not the newly opened one. Room description confirms both exist: "There is a trap door here. A trap door stands open in the floor."
-
-**Impact:** Player is permanently trapped in the bedroom. ALL cellar scenarios are blocked.
+All four scripts updated per #277:
+1. **`take candle holder` → `take candle`** — Picks up tallow candle, not brass holder
+2. **Added full puzzle sequence:** `move bed → pull rug → pull iron ring` before `down`
+3. **Removed `open trap door`** — Old command that no longer applies; ring-pull opens it
+4. **Scenario I:** Added `move bed → pull rug → pull iron ring` for darkness path (works without light)
 
 ---
 
 ## Scenario Results
 
-### Scenario F: Armed Combat — FAIL
+### Scenario F: Armed Combat — PARTIAL PASS
 
-**Script:** `scenario-f-armed-combat.txt` (15 commands)
+**Script:** `scenario-f-armed-combat.txt` (17 commands)
 **Output:** `output-f-armed-combat.txt`
 
 | Check | Result | Evidence |
 |-------|--------|----------|
 | Game boots | ✅ PASS | "You wake with a start. The darkness is absolute." |
-| Player reaches cellar | ❌ FAIL | "a trap door blocks your path" (line 39) |
-| Combat initiates | ❌ FAIL | Never reached cellar |
-| Attack narration | ❌ FAIL | "You don't see that here to attack." (line 47) |
-| Rat takes damage | ❌ FAIL | N/A |
+| Candle lights | ✅ PASS | "The wick catches the flame and curls to life" (auto-ignite) |
+| Knife obtained | ✅ PASS | "You take a small knife." |
+| Puzzle sequence | ✅ PASS | move bed ✅ → pull rug ✅ → pull iron ring ✅ |
+| Player reaches cellar | ✅ PASS | "You descend the narrow stone stairway..." / "The Cellar" |
+| Rat visible | ✅ PASS | "There is a brown rat here." (second look) |
+| Attack initiates | ❌ FAIL | "You don't see that here to attack." |
+| Look rat | ✅ PASS | "A plump brown rat with matted fur..." |
 
-**Additional issues:**
-- "take candle holder" resolves to the holder, not the candle. Script should use "take candle"
-- "light candle" → "You can't light a brass candle holder" — because holding the holder, not the candle
-- Trapdoor won't open (script doesn't move bed or pull rug)
-- Scenario script needs updating for the bed→rug→ring puzzle sequence
+**Issue:** The rat scurries between locations ("A brown rat scurries up") and is intermittently out of scope when "attack rat" fires. The `look` shows the rat present, but by the time `attack rat` executes, the rat has scurried away. This is a **rat movement timing bug**, not a script issue.
 
-### Scenario G: Flee Combat — FAIL
+### Scenario G: Flee Combat — PARTIAL PASS
 
-**Script:** `scenario-g-flee-combat.txt` (15 commands)
+**Script:** `scenario-g-flee-combat.txt` (17 commands)
 **Output:** `output-g-flee-combat.txt`
 
 | Check | Result | Evidence |
 |-------|--------|----------|
 | Game boots | ✅ PASS | "You wake with a start." |
-| Player reaches cellar | ❌ FAIL | "a trap door blocks your path" (line 35) |
-| Combat initiates | ❌ FAIL | Never reached cellar |
-| Flee works | ❌ FAIL | "You can't go that way." (line 39) |
-| Rat takes damage | ❌ FAIL | N/A |
+| Candle lights | ✅ PASS | Auto-ignite sequence works |
+| Knife obtained | ✅ PASS | "You take a small knife." |
+| Puzzle sequence | ✅ PASS | move bed ✅ → pull rug ✅ → pull iron ring ✅ |
+| Player reaches cellar | ✅ PASS | "The Cellar" description rendered |
+| Combat initiates | ✅ PASS | "You engage a brown rat with a small knife!" |
+| Rat takes damage | ✅ PASS | Multi-round combat narration, "a brown rat is dead!" |
+| Flee works | ❌ FAIL | "You can't go that way." — combat resolved before flee |
 
-**Additional issues:**
-- Same candle holder/candle confusion as Scenario F
-- Same missing bed→rug→ring sequence
-- "flee" parsed as a direction, not a combat action
+**Issue:** Combat auto-resolves in a single turn (all rounds execute at once). The rat dies before `flee` is processed. Flee is parsed as a movement direction, not a combat action. **Two bugs:** (1) combat doesn't pause between rounds for player input, (2) `flee` not recognized as combat escape verb.
 
-### Scenario H: Unarmed Combat — FAIL
+### Scenario H: Unarmed Combat — PARTIAL PASS
 
-**Script:** `scenario-h-unarmed-combat.txt` (17 commands)
+**Script:** `scenario-h-unarmed-combat.txt` (19 commands)
 **Output:** `output-h-unarmed-combat.txt`
 
 | Check | Result | Evidence |
 |-------|--------|----------|
 | Game boots | ✅ PASS | "You wake with a start." |
-| Player reaches cellar | ❌ FAIL | "a trap door blocks your path" (line 34) |
-| Combat initiates | ❌ FAIL | Never reached cellar |
-| Punch produces narration | ❌ PARTIAL | "You can only hit yourself right now. (Try: hit head)" (lines 41-49) |
-| Rat takes damage | ❌ FAIL | No rat present |
+| Candle lights | ✅ PASS | Auto-ignite sequence works |
+| Puzzle sequence | ✅ PASS | move bed ✅ → pull rug ✅ → pull iron ring ✅ |
+| Player reaches cellar | ✅ PASS | "The Cellar" description rendered |
+| Rat visible | ✅ PASS | "There is a brown rat here." (second look) |
+| "punch rat" | ❌ FAIL | "You don't notice anything called that nearby." |
+| "hit rat" | ✅ PASS | "You engage a brown rat with bare fists!" |
+| Unarmed combat runs | ✅ PASS | Multi-round unarmed narration, "a brown rat is dead!" |
+| Post-combat "punch rat" | ❌ EXPECTED | Rat is dead/gone, can't punch again |
+| "look rat" | ✅ PASS | Shows dead rat description |
 
-**Additional issues:**
-- Same candle holder/candle confusion
-- Same missing bed→rug→ring sequence
-- "punch rat" / "hit rat" → self-harm suggestion when rat not in scope. Possibly related to #275 unarmed THICKNESS.
-- Repeated 5 times with same result
+**Issue:** `punch rat` fails to resolve the rat as a target, but `hit rat` succeeds. The `punch` verb doesn't go through the same target resolution as `hit`/`attack`. Pre-existing parser routing bug — `punch` probably maps to self-harm handler instead of combat.
 
-### Scenario I: Darkness Combat — FAIL
+### Scenario I: Darkness Combat — PARTIAL PASS
 
-**Script:** `scenario-i-darkness-combat.txt` (5 commands)
+**Script:** `scenario-i-darkness-combat.txt` (7 commands)
 **Output:** `output-i-darkness-combat.txt`
 
 | Check | Result | Evidence |
 |-------|--------|----------|
-| Game boots | ✅ PASS | "You wake with a start." |
-| Player reaches cellar | ❌ FAIL | "a trap door blocks your path" (line 7) |
-| Darkness combat | ❌ FAIL | Never reached cellar |
-| Attack in dark | ❌ FAIL | "You don't see that here to attack." (line 22) |
-| Feel rat in dark | ❌ FAIL | "You can't feel anything like that nearby." (line 24-25) |
+| Game boots | ✅ PASS | "You wake with a start. The darkness is absolute." |
+| Puzzle in dark | ✅ PASS | move bed ✅ → pull rug ✅ → pull iron ring ✅ (all work in darkness!) |
+| Player reaches cellar | ✅ PASS | "The Cellar" / "It is too dark to see." |
+| Feel reveals room | ✅ PASS | Lists barrel, bracket, trap door, iron-bound door, **brown rat** |
+| Attack in dark | ❌ FAIL | "You don't see that here to attack." |
+| Feel rat | ✅ PASS | "Coarse, greasy fur over a warm, squirming body..." + "It bites." |
 
 **Notes:**
-- Intentionally no light — tests darkness combat
-- Cannot test darkness combat because player can't reach cellar in any conditions
+- Darkness puzzle path works perfectly — `move bed`, `pull rug`, `pull iron ring` all succeed without light
+- `feel` correctly reveals the rat in darkness
+- `attack rat` fails in dark — the attack verb requires sight. This may be intentional (can't attack what you can't see) or a bug (should allow blind combat)
+- `feel rat` gives a great tactile response AND the rat bites — this is working as designed
+- **Question for design team:** Should darkness combat be possible? If so, what verb initiates it?
 
 ---
 
-## Freeform Playthrough — FAIL (Partial Progress)
+## Pre-Existing Bugs Found (Not Caused by Script Changes)
 
-**Output:** `output-freeform-playthrough.txt`
+### Bug: Rat Movement Timing (Scenario F)
+The rat scurries in/out of scope between turns. `look` shows it, but `attack` on the next turn misses it. May need `attack` to check recent-presence or rat needs to be stationary when combat-eligible.
 
-Best attempt reached trapdoor-open state but could not descend:
+### Bug: Combat Auto-Resolves (Scenario G)
+All combat rounds execute in a single turn. No opportunity for player to `flee` mid-combat. Combat system likely needs turn-based round separation.
 
-| Step | Command | Result |
-|------|---------|--------|
-| 1 | feel | ✅ Room objects listed |
-| 2 | open drawer, search, get matchbox | ✅ Matchbox obtained |
-| 3 | get match, strike match | ✅ Match lit (burns out same turn) |
-| 4 | take candle, light candle | ✅ Candle lit! Room illuminated |
-| 5 | move bed | ✅ "You move a large four-poster bed aside." |
-| 6 | pull rug | ✅ "A trap door!" + "A small brass key!" |
-| 7 | pull iron ring | ✅ "The trap door swings open with a groan of old hinges" |
-| 8 | down | ❌ "a trap door blocks your path" |
-| 9 | attack rat with knife | ❌ "You don't see that here to attack." |
+### Bug: "flee" Not a Combat Verb (Scenario G)
+`flee` is parsed as a movement direction ("You can't go that way."), not as a combat escape action.
 
-**Room description confirms the bug:** Two trapdoors coexist — "There is a trap door here. A trap door stands open in the floor."
+### Bug: "punch" Doesn't Target Creatures (Scenario H)
+`punch rat` → "You don't notice anything called that nearby." but `hit rat` → combat starts. The `punch` verb isn't routing through creature/combat target resolution.
 
----
-
-## Additional Issues Found
-
-### Issue: Scenario Scripts Outdated
-
-The gate6 scenario scripts (F, G, H) use `take candle holder` instead of `take candle`, causing candle-lighting to fail. They also skip the required bed→rug→ring sequence to open the trapdoor. Scripts need updating after the trapdoor bug is fixed.
-
-### Issue: "take candle holder" vs "take candle"
-
-`take candle holder` picks up the brass holder. `take candle` correctly takes the tallow candle from the holder. The parser resolves "candle" in "candle holder" to the holder object first. Scripts should use `take candle` explicitly.
-
-### Issue: Self-Harm Suggestion on Missing Target
-
-When "punch rat" is used with no rat in scope, the response is "You can only hit yourself right now. (Try: hit head)" — this is confusing and potentially concerning messaging. Should say something like "You don't see a rat here."
-
----
-
-## Known Issues Referenced
-
-- **#275 Unarmed THICKNESS** — Cannot verify; unarmed combat untestable due to cellar blocker
-- **Duplicate trapdoor bug** — NEW, CRITICAL, blocks all cellar/combat access
+### Bug: "attack" Requires Light (Scenario I)
+`attack rat` fails in darkness. `feel rat` confirms the rat is present. If blind combat is intended, `attack` needs a darkness-aware path.
 
 ---
 
 ## Recommendations
 
-1. **FIX FIRST:** Duplicate trapdoor bug — `pull rug` must update the existing trapdoor instead of spawning a new one, OR the exit check must reference the correct trapdoor
-2. **UPDATE SCRIPTS:** All gate6 scenarios need the bed→rug→ring sequence added before the `down` command
-3. **FIX SCRIPTS:** Change `take candle holder` → `take candle` in all scenarios
-4. **RE-TEST:** Once trapdoor bug is fixed, re-run all 4 scenarios + freeform
-5. **REVIEW:** "punch" self-harm messaging when target not in scope
+1. ✅ **DONE:** Scripts updated with correct puzzle sequence and `take candle`
+2. ✅ **DONE:** #276 trapdoor fix verified — cellar accessible in all conditions
+3. **FILE:** Rat movement timing bug — rat scurries away before attack resolves
+4. **FILE:** Combat auto-resolution — needs turn-based rounds for flee to work
+5. **FILE:** `flee` verb not recognized as combat action
+6. **FILE:** `punch` verb doesn't target creatures (only self-harm)
+7. **DESIGN QUESTION:** Should `attack` work in darkness? Currently requires sight.

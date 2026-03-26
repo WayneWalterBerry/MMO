@@ -4,9 +4,11 @@ get matchbox from drawer
 get match from matchbox
 drop matchbox
 light match
-take candle holder
+take candle
 light candle
-open trap door
+move bed
+pull rug
+pull iron ring
 down
 look
 punch rat

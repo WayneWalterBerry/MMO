@@ -1,4 +1,6 @@
-open trap door
+move bed
+pull rug
+pull iron ring
 down
 feel
 attack rat
