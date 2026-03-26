@@ -273,14 +273,19 @@ function M.register(handlers)
         end
 
         -- Apply alternate slot if requested and available
-        if slot_override and obj.wear_alternate and obj.wear_alternate[slot_override] then
-            local alt = obj.wear_alternate[slot_override]
-            wear = {}
-            for k, v in pairs(obj.wear) do wear[k] = v end
-            for k, v in pairs(alt) do wear[k] = v end
-        elseif slot_override and not (obj.wear_alternate and obj.wear_alternate[slot_override]) then
-            print("You can't wear " .. (obj.name or "that") .. " on your " .. slot_override .. ".")
-            return
+        if slot_override then
+            local default_slot = wear and wear.slot or "torso"
+            if slot_override == default_slot then
+                -- Player specified the object's default slot — no override needed
+            elseif obj.wear_alternate and obj.wear_alternate[slot_override] then
+                local alt = obj.wear_alternate[slot_override]
+                wear = {}
+                for k, v in pairs(obj.wear) do wear[k] = v end
+                for k, v in pairs(alt) do wear[k] = v end
+            else
+                print("You can't wear " .. (obj.name or "that") .. " on your " .. slot_override .. ".")
+                return
+            end
         end
 
         local slot = wear.slot or "torso"
