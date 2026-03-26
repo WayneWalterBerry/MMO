@@ -46,7 +46,6 @@ local consume_tool_charge = H.consume_tool_charge
 local remove_from_location = H.remove_from_location
 local container_contents_accessible = H.container_contents_accessible
 local find_mutation = H.find_mutation
-local exit_matches = H.exit_matches
 local spawn_objects = H.spawn_objects
 local perform_mutation = H.perform_mutation
 local inventory_weight = H.inventory_weight
