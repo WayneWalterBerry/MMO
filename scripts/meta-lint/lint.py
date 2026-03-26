@@ -1842,7 +1842,7 @@ def _validate_file(parsed: ParsedFile, materials: Dict[str, object], violations:
     if template is None:
         _add_violation(violations, path, 1, "error", "S-07", "Missing template field")
     else:
-        allowed = {"small-item", "container", "furniture", "room", "sheet", "level"}
+        allowed = {"small-item", "container", "furniture", "room", "sheet", "level", "portal"}
         if template not in allowed:
             _add_violation(violations, path, _line_for(parsed, "template"), "error", "S-07", f"Unknown template '{template}'")
 
@@ -2483,6 +2483,212 @@ def main() -> int:
                                                f"Exit '{direction}' goes to '{target}' "
                                                f"but '{target}' has no exit back to "
                                                f"'{room_id}'")
+
+    # -----------------------------------------------------------------
+    # Phase 4: Portal Validation (EXIT-01 through EXIT-07, XR-07)
+    # -----------------------------------------------------------------
+
+    # Build portal object index: id → ParsedFile
+    portal_objects: Dict[str, ParsedFile] = {}
+    for parsed in parsed_files:
+        if parsed.kind == "object":
+            tmpl = _as_string(parsed.fields.get("template"))
+            if tmpl == "portal":
+                obj_id = _as_string(parsed.fields.get("id"))
+                if obj_id:
+                    portal_objects[obj_id] = parsed
+
+    # Build room exit → portal ID mapping (thin references)
+    # Structure: { room_id: { direction: portal_id } }
+    room_portal_refs: Dict[str, Dict[str, str]] = {}
+    for parsed in parsed_files:
+        if parsed.kind == "room":
+            rid = _as_string(parsed.fields.get("id"))
+            exits_v = parsed.fields.get("exits")
+            exits_t = _as_table(exits_v)
+            if rid and exits_t:
+                refs: Dict[str, str] = {}
+                for direction, exit_val in exits_t.fields.items():
+                    if exit_val.kind == "table":
+                        portal_id = _as_string(exit_val.value.fields.get("portal"))
+                        if portal_id:
+                            refs[direction] = portal_id
+                if refs:
+                    room_portal_refs[rid] = refs
+
+    # EXIT-01: Portal must have portal.target defined and non-nil
+    for obj_id, parsed in portal_objects.items():
+        portal_v = parsed.fields.get("portal")
+        portal_t = _as_table(portal_v)
+        if portal_t is None:
+            _add_violation(violations, parsed.path,
+                           _line_for(parsed, "portal") or 1,
+                           "error", "EXIT-01",
+                           f"Portal '{obj_id}' missing portal table")
+        else:
+            target_v = portal_t.fields.get("target")
+            if target_v is None or target_v.kind == "nil":
+                _add_violation(violations, parsed.path,
+                               _line_for(parsed, "portal"),
+                               "error", "EXIT-01",
+                               f"Portal '{obj_id}' has no portal.target defined")
+            elif _as_string(target_v) is None:
+                _add_violation(violations, parsed.path,
+                               _line_for(parsed, "portal"),
+                               "error", "EXIT-01",
+                               f"Portal '{obj_id}' portal.target must be a string")
+
+    # EXIT-02: Every portal FSM state must declare traversable = true/false
+    for obj_id, parsed in portal_objects.items():
+        states_v = parsed.fields.get("states")
+        states_t = _as_table(states_v)
+        if states_t is not None:
+            for state_name, state_val in states_t.fields.items():
+                st = _as_table(state_val)
+                if st is None:
+                    continue
+                trav_v = st.fields.get("traversable")
+                if trav_v is None:
+                    _add_violation(violations, parsed.path,
+                                   _line_for(parsed, "states"),
+                                   "error", "EXIT-02",
+                                   f"Portal '{obj_id}' state '{state_name}' "
+                                   f"missing traversable declaration")
+                elif _value_kind(trav_v) != "boolean":
+                    _add_violation(violations, parsed.path,
+                                   _line_for(parsed, "states"),
+                                   "error", "EXIT-02",
+                                   f"Portal '{obj_id}' state '{state_name}' "
+                                   f"traversable must be boolean")
+
+    # EXIT-03: Every bidirectional_id must have exactly ONE matching partner
+    bidir_map: Dict[str, List[str]] = {}
+    for obj_id, parsed in portal_objects.items():
+        portal_v = parsed.fields.get("portal")
+        portal_t = _as_table(portal_v)
+        if portal_t is not None:
+            bidir_v = portal_t.fields.get("bidirectional_id")
+            if bidir_v is not None and bidir_v.kind != "nil":
+                bidir_id = _as_string(bidir_v)
+                if bidir_id:
+                    bidir_map.setdefault(bidir_id, []).append(obj_id)
+
+    for bidir_id, obj_ids in bidir_map.items():
+        if len(obj_ids) == 1:
+            parsed = portal_objects[obj_ids[0]]
+            _add_violation(violations, parsed.path,
+                           _line_for(parsed, "portal"),
+                           "error", "EXIT-03",
+                           f"Portal '{obj_ids[0]}' bidirectional_id '{bidir_id}' "
+                           f"has no matching partner")
+        elif len(obj_ids) > 2:
+            for oid in obj_ids:
+                parsed = portal_objects[oid]
+                _add_violation(violations, parsed.path,
+                               _line_for(parsed, "portal"),
+                               "error", "EXIT-03",
+                               f"Portal '{oid}' bidirectional_id '{bidir_id}' "
+                               f"has {len(obj_ids) - 1} partners (expected exactly 1)")
+
+    # EXIT-04: Portal direction_hint should match the room exit direction key
+    # Build reverse map: portal_id → [(room_id, direction)]
+    portal_to_room_dirs: Dict[str, List[Tuple[str, str]]] = {}
+    for room_id, refs in room_portal_refs.items():
+        for direction, portal_id in refs.items():
+            portal_to_room_dirs.setdefault(portal_id, []).append((room_id, direction))
+
+    for obj_id, parsed in portal_objects.items():
+        portal_v = parsed.fields.get("portal")
+        portal_t = _as_table(portal_v)
+        if portal_t is not None:
+            hint_v = portal_t.fields.get("direction_hint")
+            hint = _as_string(hint_v)
+            if hint and obj_id in portal_to_room_dirs:
+                for room_id, direction in portal_to_room_dirs[obj_id]:
+                    if hint != direction:
+                        _add_violation(violations, parsed.path,
+                                       _line_for(parsed, "portal"),
+                                       "warning", "EXIT-04",
+                                       f"Portal '{obj_id}' direction_hint '{hint}' "
+                                       f"doesn't match room '{room_id}' exit "
+                                       f"direction '{direction}'")
+
+    # EXIT-05: Thin exit reference must point to an object with template="portal"
+    for room_id, refs in room_portal_refs.items():
+        room_parsed = None
+        for p in parsed_files:
+            if p.kind == "room" and _as_string(p.fields.get("id")) == room_id:
+                room_parsed = p
+                break
+        if room_parsed is None:
+            continue
+        for direction, portal_id in refs.items():
+            if portal_id in portal_objects:
+                pass  # Valid portal reference
+            elif portal_id in object_ids:
+                # Object exists but is not a portal
+                _add_violation(violations, room_parsed.path,
+                               _line_for(room_parsed, "exits"),
+                               "warning", "EXIT-05",
+                               f"Exit '{direction}' portal '{portal_id}' "
+                               f"references object that is not template='portal'")
+
+    # EXIT-06: No inline exit state allowed — exit tables must not have
+    # open, locked, hidden, broken, mutations, keywords fields
+    BANNED_EXIT_FIELDS = {"open", "locked", "hidden", "broken", "mutations", "keywords"}
+    for parsed in parsed_files:
+        if parsed.kind == "room":
+            exits_v = parsed.fields.get("exits")
+            exits_t = _as_table(exits_v)
+            if exits_t is not None:
+                for direction, exit_val in exits_t.fields.items():
+                    if exit_val.kind != "table":
+                        continue
+                    exit_fields = exit_val.value.fields
+                    for banned in BANNED_EXIT_FIELDS:
+                        if banned in exit_fields:
+                            _add_violation(violations, parsed.path,
+                                           _line_for(parsed, "exits"),
+                                           "error", "EXIT-06",
+                                           f"Exit '{direction}' has inline field "
+                                           f"'{banned}' — use portal object instead")
+
+    # EXIT-07: Portal object should have on_feel (P6 darkness requirement)
+    for obj_id, parsed in portal_objects.items():
+        on_feel = parsed.fields.get("on_feel")
+        if on_feel is None:
+            # Check per-state on_feel
+            states_v = parsed.fields.get("states")
+            states_t = _as_table(states_v)
+            has_state_on_feel = False
+            if states_t is not None:
+                for state_val in states_t.fields.values():
+                    st = _as_table(state_val)
+                    if st and st.fields.get("on_feel") is not None:
+                        has_state_on_feel = True
+                        break
+            if not has_state_on_feel:
+                _add_violation(violations, parsed.path, 1,
+                               "warning", "EXIT-07",
+                               f"Portal '{obj_id}' missing on_feel "
+                               f"(required for darkness navigation)")
+
+    # XR-07: Thin exit portal field must resolve to a valid object ID
+    for room_id, refs in room_portal_refs.items():
+        room_parsed = None
+        for p in parsed_files:
+            if p.kind == "room" and _as_string(p.fields.get("id")) == room_id:
+                room_parsed = p
+                break
+        if room_parsed is None:
+            continue
+        for direction, portal_id in refs.items():
+            if portal_id not in object_ids:
+                _add_violation(violations, room_parsed.path,
+                               _line_for(room_parsed, "exits"),
+                               "warning", "XR-07",
+                               f"Exit '{direction}' portal '{portal_id}' "
+                               f"does not match any object ID")
 
     # LV-40: number uniqueness across levels
     level_numbers: Dict[int, List[ParsedFile]] = {}

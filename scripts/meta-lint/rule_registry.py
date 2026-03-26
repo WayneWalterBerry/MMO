@@ -252,9 +252,21 @@ _r("GUID-01",  "error",   "guid-xref",  "Room instance type_id must reference a 
 _r("GUID-02",  "warning", "guid-xref",  "Orphan object — GUID not referenced by any room instance")
 _r("GUID-03",  "error",   "guid-xref",  "Duplicate instance id within same room")
 
-# ── EXIT Portal Validation (Phase 2) ────────────────────────────────────────
-_r("EXIT-01",  "error",   "exit",       "Exit target must reference a valid room")
-_r("EXIT-02",  "warning", "exit",       "Bidirectional exit mismatch — target room has no return exit")
+# ── EXIT Legacy Inline Validation ────────────────────────────────────────────
+_r("EXIT-R01", "error",   "exit",        "Inline exit target must reference a valid room")
+_r("EXIT-R02", "warning", "exit",        "Bidirectional inline exit mismatch — no return exit")
+
+# ── EXIT Portal Validation (Phase 4) ────────────────────────────────────────
+_r("EXIT-01",  "error",   "exit-portal", "Portal must have portal.target defined and non-nil")
+_r("EXIT-02",  "error",   "exit-portal", "Portal FSM state must declare traversable = true or false")
+_r("EXIT-03",  "error",   "exit-portal", "bidirectional_id must have exactly one matching partner")
+_r("EXIT-04",  "warning", "exit-portal", "Portal direction_hint should match room exit direction key")
+_r("EXIT-05",  "warning", "exit-portal", "Thin exit reference must point to portal template object")
+_r("EXIT-06",  "error",   "exit-portal", "No inline exit state allowed on exit tables")
+_r("EXIT-07",  "warning", "exit-portal", "Portal should have on_feel (P6 darkness requirement)")
+
+# ── Cross-Reference (Portal) ────────────────────────────────────────────────
+_r("XR-07",    "warning", "cross-ref",   "Thin exit portal field must resolve to valid object ID")
 
 
 def get_rule(rule_id: str) -> Optional[RuleMeta]:
