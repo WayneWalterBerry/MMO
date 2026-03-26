@@ -131,6 +131,18 @@
 
 ## Learnings
 
+### NPC+Combat Implementation Plan Structure (2026-07-28)
+- Unified plan merges NPC Phase 1 and Combat Phase 1 into 6 waves with 6 gates
+- Wave/gate pattern: each wave is a batch of parallel agent work, each gate is a binary pass/fail checkpoint
+- File ownership map prevents conflicts: no two agents touch the same file in any wave
+- NPC Phase 1 (WAVE-1→3) must ship BEFORE Combat Phase 1 (WAVE-4→6) — creature autonomy first, then physical combat
+- Key integration seam: `creatures.get_creatures_in_room()` and `creatures.emit_stimulus()` are the two functions Combat Phase 1 consumes from NPC Phase 1
+- Creature tick slots into game loop after fire propagation and before injury tick (line ~633 in current loop/init.lua)
+- injuries.inflict() already supports body location parameter — Combat Phase 1 uses it directly
+- Material registry auto-discovers .lua files — no registration code needed for new tissue materials
+- Test runner needs `test/creatures/` and `test/combat/` directories added to its scan list
+- Stimulus emission uses pcall-guarded optional require — zero coupling when creatures module absent
+
 ### Hook Pattern is Fully Stabilized (2026-03-29)
 - The `on_X(obj, ctx)` + `event_output["on_X"]` pattern is now proven across 6 hook types: wear, remove_worn, open, close, pickup, drop — plus 2 room hooks (enter_room, exit_room)
 - Room hooks use same signature `(room, ctx)` instead of `(obj, ctx)` but identical dispatch mechanics
@@ -165,6 +177,16 @@
 - The root contents path was invisible to `get`/`take` because `_fv_surfaces` had `not obj.surfaces` guard on the non-surface container branch
 - Fix: recursive `_search_accessible_chain` traverses root contents following `accessible` flag, matching search system's depth (3 levels)
 - Lesson: any function that resolves visible/reachable objects must mirror the containment model depth
+
+### Plan Review Fixes: 16 Issues Resolved (2026-07-28)
+- Team review of `plans/npc-combat-implementation-plan.md` surfaced 8 blockers + 8 concerns — Wayne treated all 16 as blockers
+- Key architecture decisions embedded in fixes: hybrid stance combat (auto-resolve + interrupts), required combat/narration.lua split, WAVE-0 pre-flight for test runner registration
+- Player table confirmed at `src/main.lua` lines ~305-324 — this is where body_tree goes in WAVE-4
+- Documentation as gate requirement: "No phase ships without its docs" — Brockman writes 9 docs total across WAVE-3 and WAVE-6
+- Phase 1 escalation policy: 1x gate failure → escalate to Wayne (not 2x) because first implementation + parallel agents = harder diagnosis
+- Gate failure protocol now formalized: re-gate tests only failed items, lockout policy prevents same agent thrashing on same bug
+- Combat sub-loop runs inside main game loop, not as separate loop — verb handler calls io.read() for stance, combat.run_combat() returns control after resolution
+- Decision filed: `.squad/decisions/inbox/bart-plan-review-fixes.md`
 
 ### Material Consistency Principle (2026-03-27)
 - The material registry `src/engine/materials/init.lua` already exists as a complete property-bag system, making Material Consistency a natural fit as a core principle

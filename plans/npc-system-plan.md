@@ -164,7 +164,7 @@ return {
     description = "A living creature.",
 
     -- Object properties (inherited from object system)
-    size = 1,
+    size = "small",         -- [COMBAT ALIGNMENT] string enum per combat plan
     weight = 1.0,
     portable = false,       -- live creatures resist being carried
     material = "flesh",
@@ -235,6 +235,32 @@ return {
     health = 10,
     max_health = 10,
     alive = true,
+
+    -- [COMBAT ALIGNMENT] Combat metadata (Phase 1+)
+    -- Body zones for combat targeting and armor integration (D-COMBAT-3, D-COMBAT-4)
+    -- body_tree = {
+    --     head  = { size_weight = 0.10, vital = true, tissue_layers = {...} },
+    --     torso = { size_weight = 0.40, vital = true, tissue_layers = {...} },
+    --     arms  = { size_weight = 0.20, vital = false, tissue_layers = {...} },
+    --     legs  = { size_weight = 0.20, vital = false, tissue_layers = {...} },
+    --     tail  = { size_weight = 0.10, vital = false, tissue_layers = {...} }, -- if applicable
+    -- },
+
+    -- Combat behavior and physical attributes (Phase 1+)
+    -- combat = {
+    --     size = "small",                  -- string enum: "tiny", "small", "medium", "large", "huge"
+    --     speed = 5,                       -- initiative/reaction speed (1-10)
+    --     natural_weapons = {},            -- creature attacks (bite, claw, etc.)
+    --     natural_armor = nil,             -- inherent protection (scales, chitin)
+    --     behavior = {
+    --         aggression = "defensive",    -- "passive", "defensive", "aggressive", "on_provoke"
+    --         flee_threshold = 0.5,        -- flee when health < this fraction
+    --         attack_pattern = "strongest",-- "strongest", "random", "weakest_zone"
+    --         defense = "dodge",           -- "dodge", "block", "parry", "none"
+    --         target_priority = "closest", -- targeting logic
+    --         pack_size = 1,               -- solo or pack behavior
+    --     },
+    -- },
 }
 ```
 
@@ -389,10 +415,20 @@ Actions are the verbs of the creature world — what a creature *does* during it
 | `flee` | Pick the exit farthest from threat; move immediately | Rat bolts through doorway |
 | `hide` | Reduce visibility; become harder to target | Rat squeezes under furniture |
 | `approach` | Move toward target (food, curiosity source) | Rat edges toward crumbs |
-| `attack` | Apply damage to target via effects pipeline | (Phase 3+: aggressive creatures) |
+| `attack` | **[COMBAT ALIGNMENT] Deferred to Phase 2+.** Enters combat FSM via `combat_exchange(attacker, defender)` | (Phase 3+: aggressive creatures) |
 | `vocalize` | Emit a sound in the room | Rat squeaks |
 
 Each action is a **generic engine function** that reads the creature's metadata to determine specifics. The `flee` action doesn't know it's a rat — it reads `movement.speed`, checks available exits, and picks the best one based on threat direction.
+
+**[COMBAT ALIGNMENT] Attack Action Integration (Phase 2+):**
+
+In NPC Phase 1, creatures can only perform non-combat actions: `flee`, `wander`, `idle`, `hide`, `approach`, and `vocalize`. The `attack` action is **deferred to Phase 2+** (after Combat Phase 1 completes).
+
+When creature_tick() evaluates behavior and would select `attack` as the optimal action:
+- **Phase 1 behavior:** Fall back to `flee` (creatures can't fight yet)
+- **Phase 2+ behavior:** Enter the combat FSM via `combat_exchange(attacker, defender)` from `src/engine/combat/init.lua`
+
+This allows NPC Phase 1 to ship creatures with full autonomous behavior (movement, reactions, drives) without requiring combat implementation. Combat integration happens cleanly in Phase 2 by adding the combat FSM entry point to the action dispatch table.
 
 ---
 
@@ -476,6 +512,9 @@ The engine needs to emit stimulus events that creatures can react to. These are 
 | `creature_enters` | Another creature enters the room | Creature tick (movement) |
 | `creature_dies` | A creature in the room dies | Health/damage system |
 | `food_available` | Food object placed in room or on surface | Containment system |
+| **[COMBAT ALIGNMENT]** `creature_attacked` | Creature is attacked (player or NPC) | Combat FSM Phase 6 (UPDATE) |
+| **[COMBAT ALIGNMENT]** `creature_injured` | Creature takes damage | Combat FSM Phase 6 (UPDATE) |
+| **[COMBAT ALIGNMENT]** `creature_died` | Creature health reaches zero | Combat FSM Phase 6 (UPDATE) |
 
 ---
 
@@ -495,7 +534,7 @@ return {
     description = "A plump brown rat with matted fur and a long, naked tail. Its beady black eyes dart nervously, and its whiskers twitch with constant, anxious energy.",
 
     -- Physical properties
-    size = 1,
+    size = "tiny",            -- [COMBAT ALIGNMENT] string enum per combat plan
     weight = 0.3,
     portable = false,         -- can't pick up a live rat
     material = "flesh",
@@ -625,6 +664,51 @@ return {
     health = 5,
     max_health = 5,
     alive = true,
+
+    -- [COMBAT ALIGNMENT] Combat metadata (added per combat-system-plan.md lines 824-862)
+    body_tree = {
+        head = { size_weight = 0.15, vital = true, tissue_layers = {"hide", "flesh", "bone"} },
+        body = { size_weight = 0.50, vital = true, tissue_layers = {"hide", "flesh", "bone"} },
+        legs = { size_weight = 0.25, vital = false, tissue_layers = {"hide", "flesh", "bone"} },
+        tail = { size_weight = 0.10, vital = false, tissue_layers = {"hide", "flesh"} },
+    },
+
+    combat = {
+        size = "tiny",
+        speed = 6,                  -- fast for their size (rats are quick)
+        
+        natural_weapons = {
+            {
+                id = "bite",
+                type = "pierce",
+                material = "tooth_enamel",
+                zone = "head",
+                force = 2,
+                target_pref = "arms",       -- rats go for hands/fingers
+                message = "sinks its teeth into",
+            },
+            {
+                id = "claw",
+                type = "slash",
+                material = "keratin",
+                zone = "legs",
+                force = 1,
+                target_pref = nil,
+                message = "rakes its claws across",
+            },
+        },
+        
+        natural_armor = nil,                -- rats have no natural armor
+        
+        behavior = {
+            aggression = "on_provoke",      -- rat only fights when attacked first
+            flee_threshold = 0.3,           -- flees at 30% health (cowardly)
+            attack_pattern = "random",
+            defense = "dodge",              -- rats dodge, not block
+            target_priority = "threatening",-- attacks whoever attacked it
+            pack_size = 1,
+        },
+    },
 }
 ```
 
@@ -727,6 +811,19 @@ return {
 }
 ```
 
+**[COMBAT ALIGNMENT] Additional Tissue Materials (Combat Phase 1):**
+
+The NPC system Phase 1 creates the `flesh.lua` material for organic creatures. The Combat system Phase 1 extends the material registry with additional tissue materials required for combat resolution. Per `combat-system-plan.md` Section 7.5, Flanders (Object Engineer) will create these materials during Combat Phase 1:
+
+- `skin.lua` — Human skin tissue (outer layer, thin)
+- `hide.lua` — Animal hide (outer layer, thicker/tougher than human skin)
+- `bone.lua` — Skeletal tissue (inner layer, high hardness)
+- `organ.lua` — Internal organs (vital tissue)
+- `tooth_enamel.lua` — Natural weapon material (bite attacks)
+- `keratin.lua` — Natural weapon material (claw/talon/horn attacks)
+
+**Material Naming Clarification:** The `flesh` material created in NPC Phase 1 represents muscle and fat tissue (inner body layer). This is distinct from `skin` (human outer layer) and `hide` (animal outer layer), which are separate materials created in Combat Phase 1. The `body_tree` tissue layer ordering will be: outer (`hide` or `skin`) → middle (`flesh`) → inner (`bone`, `organ`).
+
 ### 7.4 New Template: `src/meta/templates/creature.lua`
 
 As specified in Section 3 above.
@@ -741,6 +838,7 @@ Several existing engine points need to emit stimulus events for creature reactio
 | Attack verb handler | After player attacks a creature | `player_attacks` for the target creature |
 | Effects pipeline | After loud effects (break, slam) | `loud_noise` for creatures in same room |
 | FSM transition (light change) | After light source lit/extinguished | `light_change` for creatures in same room |
+| **[COMBAT ALIGNMENT]** Combat FSM Phase 6 | During combat resolution (Phase 2+) | `creature_attacked`, `creature_injured`, `creature_died` from `src/engine/combat/init.lua` |
 
 These are **generic event emissions**, not creature-specific code. The stimulus system is a simple event bus:
 
@@ -781,6 +879,10 @@ A rat crouches in the shadows near the wall.
 
 Exits: north (stairs up), east (passage)
 ```
+
+**[COMBAT ALIGNMENT] Weapon Combat Metadata:**
+
+This is coordination only, not a conflict. Combat Phase 1 adds `combat` metadata to weapon objects (not creatures). Weapons gain fields: `type` (slash/pierce/blunt), `force` (impact strength), `message` (narration template), `two_handed` (requires both hand slots). See `combat-system-plan.md` Section 7.5 for full weapon metadata specification. This does NOT affect the NPC plan but is noted here for cross-plan visibility.
 
 ---
 
@@ -870,10 +972,11 @@ end
 - Creature-to-creature reactions (cat sees rat → chase)
 - Territorial behavior (dog defends room)
 - Creature-created objects (spider web as a new object spawned by creature tick)
+- **[COMBAT ALIGNMENT] Creature-to-creature combat (moved to Phase 2)** — enabled by Combat Phase 1's unified combatant interface
 
 ### Phase 3: Creature Ecology (Emergent Interactions)
 
-**Scope:** Creatures interact with each other, creating emergent ecosystems.
+**Scope:** Creatures interact with each other, creating emergent ecosystems. **[COMBAT ALIGNMENT]** Creature-to-creature combat is now Phase 2. Phase 3 focuses on complex ecology: food chains, territory, pack tactics, spawned objects.
 
 | Interaction | Rules Involved | Emergent Result |
 |-------------|---------------|----------------|
@@ -923,7 +1026,7 @@ end
 | **Personality facets** | Per-creature behavior tuning (aggression, flee_threshold) | 1 |
 | **Thought system** | Stimulus → reaction → drive delta → action | 1 |
 | **Spatial optimization** | Tick fidelity based on distance from player | 1 |
-| **Creature-to-creature interaction** | Prey/predator metadata + generic stimulus | 3 |
+| **Creature-to-creature interaction** | Prey/predator metadata + generic stimulus. **[COMBAT ALIGNMENT] Phase 2** (moved from Phase 3) | 2 |
 | **Mood/emotion state** | Fear as primary emotional drive, expandable | 1–2 |
 | **Autonomous goal pursuit** | Drive satisfaction as goal (hunger → seek food) | 2+ |
 
@@ -931,7 +1034,7 @@ end
 
 | DF Feature | Why We Skip It | When to Reconsider |
 |------------|---------------|-------------------|
-| **Body part simulation** | Our combat system is simpler; creature health is a single number | Phase 4 (humanoids may need body parts) |
+| **Body part simulation** | Combat Phase 1 requires 4-6 zone `body_tree` on every creature. FULL 200-part DF simulation remains Phase 4 | [COMBAT ALIGNMENT] Phase 1: 4-6 zone body_tree. Phase 4: Full DF 200-part system |
 | **30+ personality facets** | Overkill for animals; 3–5 behavior tuning values suffice | Phase 4 (humanoid NPCs with personality) |
 | **Social contagion** | Requires group dynamics we don't have yet | Phase 4+ |
 | **Strange moods** | Narrative system for dwarves; animals don't have creative drives | Phase 4+ |
@@ -1002,7 +1105,7 @@ Linter rule prefix: **`CREATURE-`** (following the pattern of OBJ-*, ROOM-*, MAT
 
 | Rule ID | Severity | Check | Message |
 |---------|----------|-------|---------|
-| **CREATURE-011** | Error | `size` is one of: `tiny`, `small`, `medium`, `large`, `huge` | `size` must be one of: tiny, small, medium, large, huge |
+| **CREATURE-011** | Error | `size` is one of: `tiny`, `small`, `medium`, `large`, `huge` | **[COMBAT ALIGNMENT]** `size` must be string enum, not number (e.g., "tiny" not 1) |
 | **CREATURE-012** | Error | `speed` is a positive number, typically 1–10 | `speed` must be a positive number (typical range: 1–10) |
 | **CREATURE-013** | Error | `senses` table exists with at least `sight_range` (number) | `senses` table missing or incomplete; must have `sight_range` field |
 
@@ -1078,6 +1181,10 @@ The linter should auto-detect creature files by:
 
 **Files created:** 5 new files, 3 modified files
 
+**[COMBAT ALIGNMENT] Phase Integration Note:**
+
+NPC Phase 1 focuses on creature autonomy (behavior, drives, reactions, movement). Combat Phase 1 extends the same creatures with physical conflict systems. The `creature` template and `rat.lua` will be extended during Combat Phase 1 with `body_tree` and `combat` metadata. Implementation order: NPC Phase 1 first, then Combat Phase 1 adds combat-specific fields.
+
 ### Phase 2: Creature Variety
 
 **Estimated effort:** 2 sessions per creature.
@@ -1135,7 +1242,7 @@ These questions should be resolved before or during Phase 1 implementation:
 
 3. **Creature inventory:** Can the rat carry objects (e.g., steal a shiny key)? Recommendation: defer to Phase 2. Rat in Phase 1 has no inventory.
 
-4. **Creature-to-player combat:** If the rat bites back when grabbed (`on_feel` implies it does), how does that work mechanically? Recommendation: minor damage via the existing injury/effects pipeline. Effect type: `bite`, injury severity: `minor`.
+4. **Creature-to-player combat:** If the rat bites back when grabbed (`on_feel` implies it does), how does that work mechanically? **[COMBAT ALIGNMENT] Wayne's approved decision:** "Phase 1: Simple injuries.inflict() on grab — no combat FSM needed." In Phase 1, grabbing a live rat triggers a simple direct call: `injuries.inflict(player, "bite", "rat", "arms", minor_damage)`. The full Combat Phase 1 signature is `injuries.inflict(target, type, source_id, zone_id, damage)` which includes body zone targeting. The Phase 1 simple version uses a fixed zone ("arms") and minor damage value. Full combat FSM integration happens in Phase 2 when creatures can initiate attacks autonomously.
 
 5. **Creature noise as parser input:** If a rat squeaks, can the player `listen` to the squeak from an adjacent room? Recommendation: yes, creatures with `awareness.sound_range > 0` emit audible events to adjacent rooms.
 
