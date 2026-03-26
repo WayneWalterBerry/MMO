@@ -15,59 +15,13 @@ return {
     instances = {
         { id = "barrel",         type = "Barrel",         type_id = "c3e8f1a2-b4d7-4596-8e23-f9a1b6c5d402" },
         { id = "torch-bracket",  type = "Torch Bracket",  type_id = "d9f4a2b3-c5e8-4167-9d34-e8b2c7d6f513" },
+        { id = "cellar-bedroom-trapdoor-up", type_id = "cellar-bedroom-trapdoor-up" },
+        { id = "cellar-storage-door-north", type_id = "cellar-storage-door-north" },
     },
 
     exits = {
-        up = {
-            target = "start-room",
-            type = "stairway",
-            passage_id = "bedroom-cellar-trapdoor",
-            name = "a narrow stone stairway",
-            keywords = {"stairs", "stairway", "staircase", "up", "steps", "stone stairs"},
-            description = "A narrow stone stairway spirals upward through the open trap door, back to the bedroom above.",
-
-            max_carry_size = 3,
-            max_carry_weight = 30,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = true,
-            locked = false,
-            hidden = false,
-            broken = false,
-            one_way = false,
-        },
-        north = {
-            target = "storage-cellar",
-            type = "door",
-            passage_id = "cellar-storage-door",
-            name = "a heavy iron-bound door",
-            keywords = {"door", "iron door", "heavy door", "north door", "iron-bound door"},
-            description = "A heavy door of black iron-bound oak stands against the north wall. A massive padlock secures it shut. Whatever lies beyond, someone went to great lengths to keep it sealed.",
-            description_unlocked = "A heavy door of black iron-bound oak stands against the north wall. The padlock hangs open, its hasp pulled aside. The door is closed but no longer secured.",
-            description_open = "The heavy iron-bound door stands open, revealing a dark passage leading north into deeper darkness.",
-            on_feel = "Your hands find cold iron bands wrapped around heavy oak planks. A massive padlock hangs from a thick hasp -- the keyhole is small, meant for a brass key. The door does not budge.",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = true,
-            key_id = "brass-key",
-            hidden = false,
-            broken = false,
-            one_way = false,
-            breakable = false,
-
-            mutations = {
-                open = {
-                    becomes_exit = { open = true },
-                    message = "You push the heavy door. It swings open with a long, low groan of iron hinges, revealing darkness beyond.",
-                },
-            },
-        },
+        up = { portal = "cellar-bedroom-trapdoor-up" },
+        north = { portal = "cellar-storage-door-north" },
     },
 
     on_enter = function(self)
