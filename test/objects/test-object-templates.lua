@@ -48,6 +48,7 @@ local VALID_TEMPLATES = {
     ["container"]  = true,
     ["furniture"]  = true,
     ["sheet"]      = true,
+    ["portal"]     = true,
 }
 
 ---------------------------------------------------------------------------
