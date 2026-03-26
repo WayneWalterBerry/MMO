@@ -45,6 +45,8 @@ body_tree = {
 
 ### Zone Examples
 
+Rat combat anatomy lives in `src/meta/creatures/rat.lua` (body_tree field).
+
 #### Head (Rat)
 - **Size:** 1 (small target)
 - **Vital:** true (brain/eyes)

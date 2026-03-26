@@ -3,7 +3,7 @@
 **Location:** `src/engine/creatures/init.lua`  
 **Owner:** Bart (Architecture Lead)  
 **Stage:** Phase 1 (NPC autonomy, no combat integration yet)  
-**First Implementation:** Rat (brown rat, 5 HP)
+**First Implementation:** Rat (brown rat, 5 HP, `src/meta/creatures/rat.lua`)
 
 ---
 

@@ -30,7 +30,7 @@ creature (base template) ← defines all required creature properties
   └── guard-dog (creature instance) ← territorial, higher aggression
 ```
 
-Creature instances are defined in room `.lua` files (same as furniture and items), but use `template = "creature"` to inherit creature-specific defaults.
+Creature instances are defined in room `.lua` files (same as furniture and items), but use `template = "creature"` to inherit creature-specific defaults. Creature definitions live in `src/meta/creatures/` (e.g., `src/meta/creatures/rat.lua`).
 
 ---
 

@@ -148,12 +148,12 @@ repo_root .. SEP .. "test" .. SEP .. "combat",
 | Task | Agent | Files Created/Modified | TDD Test File | Scope |
 |------|-------|----------------------|---------------|-------|
 | Creature template | Flanders | **CREATE** `src/meta/templates/creature.lua` | `test/creatures/test-creature-template.lua` (Nelson) | Small |
-| Rat object definition | Flanders | **CREATE** `src/meta/objects/rat.lua` | `test/creatures/test-rat-definition.lua` (Nelson) | Medium |
+| Rat object definition | Flanders | **CREATE** `src/meta/creatures/rat.lua` | `test/creatures/test-rat-definition.lua` (Nelson) | Medium |
 | Flesh material | Flanders | **CREATE** `src/meta/materials/flesh.lua` | `test/creatures/test-flesh-material.lua` (Nelson) | Small |
 | Test directory + helpers | Nelson | **CREATE** `test/creatures/test-creature-template.lua`, `test/creatures/test-rat-definition.lua`, `test/creatures/test-flesh-material.lua` | — | Medium |
 
 **File ownership (no overlap):**
-- Flanders: `src/meta/templates/creature.lua`, `src/meta/objects/rat.lua`, `src/meta/materials/flesh.lua`
+- Flanders: `src/meta/templates/creature.lua`, `src/meta/creatures/rat.lua`, `src/meta/materials/flesh.lua`
 - Nelson: `test/creatures/test-creature-template.lua`, `test/creatures/test-rat-definition.lua`, `test/creatures/test-flesh-material.lua`
 
 **Flanders instructions — creature.lua template:**
@@ -418,7 +418,7 @@ Brockman runs in parallel with Nelson's LLM testing — no file conflicts (docs/
 
 | Task | Agent | Files Created/Modified | TDD Test File | Scope |
 |------|-------|----------------------|---------------|-------|
-| body_tree on rat | Flanders | **MODIFY** `src/meta/objects/rat.lua` | `test/combat/test-body-tree.lua` (Nelson) | Small |
+| body_tree on rat | Flanders | **MODIFY** `src/meta/creatures/rat.lua` | `test/combat/test-body-tree.lua` (Nelson) | Small |
 | body_tree on player | Flanders | **MODIFY** `src/main.lua` (player table, lines ~305-324) | `test/combat/test-player-body.lua` (Nelson) | Small |
 | skin.lua material | Flanders | **CREATE** `src/meta/materials/skin.lua` | `test/combat/test-tissue-materials.lua` (Nelson) | Small |
 | hide.lua material | Flanders | **CREATE** `src/meta/materials/hide.lua` | (same test file) | Small |
@@ -430,7 +430,7 @@ Brockman runs in parallel with Nelson's LLM testing — no file conflicts (docs/
 | Combat test scaffolding | Nelson | **CREATE** `test/combat/test-body-tree.lua`, `test/combat/test-player-body.lua`, `test/combat/test-tissue-materials.lua`, `test/combat/test-weapon-metadata.lua` | — | Medium |
 
 **File ownership (no overlap):**
-- Flanders: `src/meta/objects/rat.lua`, `src/main.lua` (player table only), 6 material files, weapon object files
+- Flanders: `src/meta/creatures/rat.lua`, `src/main.lua` (player table only), 6 material files, weapon object files
 - Nelson: all files in `test/combat/`
 
 **Flanders instructions — body_tree on rat.lua:**
@@ -927,7 +927,7 @@ Scenario: "Flee from combat"
 | # | Task | Owner | Files | Depends On | Wave |
 |---|------|-------|-------|-----------|------|
 | N1 | Creature template | Flanders | `src/meta/templates/creature.lua` | — | WAVE-1 |
-| N2 | Rat object definition | Flanders | `src/meta/objects/rat.lua` | — | WAVE-1 |
+| N2 | Rat object definition | Flanders | `src/meta/creatures/rat.lua` | — | WAVE-1 |
 | N3 | Flesh material | Flanders | `src/meta/materials/flesh.lua` | — | WAVE-1 |
 | N4 | Creature tick engine | Bart | `src/engine/creatures/init.lua` | N1 (template defines API) | WAVE-2 |
 | N5 | Game loop integration | Bart | `src/engine/loop/init.lua` (modify) | N4 | WAVE-2 |
@@ -946,7 +946,7 @@ Scenario: "Flee from combat"
 
 | # | Task | Owner | Files | Depends On | Wave |
 |---|------|-------|-------|-----------|------|
-| C1 | body_tree on rat | Flanders | `src/meta/objects/rat.lua` (modify) | GATE-3 (NPC complete) | WAVE-4 |
+| C1 | body_tree on rat | Flanders | `src/meta/creatures/rat.lua` (modify) | GATE-3 (NPC complete) | WAVE-4 |
 | C2 | body_tree on player | Flanders | `src/main.lua` (player table, lines ~305-324) (modify) | — | WAVE-4 |
 | C3 | Tissue materials (6) | Flanders | `src/meta/materials/{skin,hide,bone,organ,tooth_enamel,keratin}.lua` | — | WAVE-4 |
 | C4 | Weapon combat metadata | Flanders | `src/meta/objects/{silver-dagger,knife}.lua` (modify) | — | WAVE-4 |
@@ -1099,7 +1099,7 @@ Every new engine module has its test file written FIRST (or alongside). Tests us
 | Engine Module | Test File | Written In | Key Assertions |
 |---------------|-----------|-----------|----------------|
 | `src/meta/templates/creature.lua` | `test/creatures/test-creature-template.lua` | WAVE-1 | Fields exist, types correct, `animate == true` |
-| `src/meta/objects/rat.lua` | `test/creatures/test-rat-definition.lua` | WAVE-1 | All drives, reactions, states defined; size is string |
+| `src/meta/creatures/rat.lua` | `test/creatures/test-rat-definition.lua` | WAVE-1 | All drives, reactions, states defined; size is string |
 | `src/meta/materials/flesh.lua` | `test/creatures/test-flesh-material.lua` | WAVE-1 | Material resolves, density/hardness are numbers |
 | `src/engine/creatures/init.lua` | `test/creatures/test-creature-tick.lua` | WAVE-2 | 12+ test cases: drives, stimuli, actions, movement |
 | Stimulus emission points | `test/creatures/test-stimulus.lua` | WAVE-3 | 5+ test cases: each stimulus type fires correctly |

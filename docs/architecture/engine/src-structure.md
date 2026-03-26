@@ -12,7 +12,7 @@
 The `src/` tree is organized around the five concerns of this engine:
 
 1. **Engine** — loads, runs, and mutates live Lua code
-2. **Meta** — canonical world templates (rooms, objects, mutations)
+2. **Meta** — canonical world templates (rooms, objects, creatures, mutations)
 3. **Parser** — command interpretation (verb dispatch, synonym mapping)
 4. **Multiverse** — universe lifecycle, ghost mechanics, fog of war
 5. **Persistence** — cloud serialization of live universe state
@@ -34,7 +34,8 @@ src/
 │
 ├── meta/
 │   ├── world/        — room graph: canonical room definitions (1 bedroom with 7 surfaces)
-│   ├── objects/      — canonical object definitions (45+ objects: bed, window, curtains, vanity, mirror, wardrobe, nightstand, desk, lamp, candle, match, matchbox, paper, pen, pencil, knife, needle, thread, pin, cloth, rag, blanket, pillow, chamber-pot, poison-bottle, glass-shard, bandage, terrible-jacket, wool-cloak, sack, rug, and variants)
+│   ├── objects/      — canonical inanimate object definitions (45+ objects: bed, window, curtains, vanity, mirror, wardrobe, nightstand, desk, lamp, candle, match, matchbox, paper, pen, pencil, knife, needle, thread, pin, cloth, rag, blanket, pillow, chamber-pot, poison-bottle, glass-shard, bandage, terrible-jacket, wool-cloak, sack, rug, and variants)
+│   ├── creatures/    — canonical creature definitions (animate beings like rats)
 │   ├── templates/    — base object templates for inheritance (sheet, furniture, container, small-item)
 │   └── npcs/         — NPC definitions (future use)
 │
@@ -71,7 +72,8 @@ The machine that makes code-IS-state possible. Five sub-concerns kept deliberate
 The canonical authored world — the source of truth before any player touches it. This is **not** runtime state; it is the template that gets cloned per-player universe.
 
 - **world/** — room graph lives here. Each room is a Lua table with `name`, `description`, `exits`, and `on_enter` hooks. Room `description` must contain ONLY permanent features (walls, floor, ceiling, atmosphere, light, smell). Movable objects are NEVER referenced in room descriptions — the engine composes them dynamically from object `room_presence` fields at runtime. See `dynamic-room-descriptions.md`.
-- **objects/** — per-object `.lua` files containing the canonical definition plus self-describing mutations. Each object defines a `room_presence` field — a complete prose sentence describing how the object appears at a glance when standing in the room. Objects use `description` for detailed examine text. `room_presence` must NOT reference other movable objects (only walls, corners, floor — permanent features).
+- **objects/** — per-object `.lua` files containing canonical inanimate definitions plus self-describing mutations. Each object defines a `room_presence` field — a complete prose sentence describing how the object appears at a glance when standing in the room. Objects use `description` for detailed examine text. `room_presence` must NOT reference other movable objects (only walls, corners, floor — permanent features).
+- **creatures/** — per-creature `.lua` files for animate beings. Creatures use the `creature` template and participate in the creature tick (drives, reactions, movement).
 - **templates/** — base object templates for inheritance. Templates define shared properties that multiple objects can reference. Common templates: `sheet`, `furniture`, `container`, `small-item`. Objects reference a template via `template = "sheet"` and the engine merges the template properties with the object's own definition.
 - **npcs/** — behavioural definitions, separated from static objects because they tick on every loop turn.
 

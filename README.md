@@ -34,7 +34,8 @@ MMO/
 │   │   ├── ui/                          # UI presentation layer (status bar, text formatting)
 │   │   └── loop/                       # Game loop, environment context
 │   └── meta/
-│       ├── objects/                     # 74+ object .lua definitions
+│       ├── objects/                     # 74+ inanimate object .lua definitions
+│       ├── creatures/                   # Creature .lua definitions (animate)
 │       ├── world/                       # 7 room .lua definitions (Level 1 complete)
 │       ├── levels/                      # Level .lua definitions (level-01.lua)
 │       └── templates/                   # Base templates (room template)
@@ -84,6 +85,7 @@ MMO/
 |--------|---------|
 | `src/` | Game source code — engine, objects, rooms, levels, templates |
 | `src/meta/levels/` | Level definitions (level-01.lua) |
+| `src/meta/creatures/` | Creature definitions (animate, ticked every turn) |
 | `web/` | Fengari browser wrapper for web-based beta testing |
 | `blog/` | 📝 Blog post drafts and source files (not game docs) |
 | `docs/architecture/` | Architectural decisions, core principles, engine specs |

@@ -216,7 +216,7 @@ This engine operates on a fundamental architectural principle: **all game object
 ### The Pattern: Code → Live Instances → Mutations
 
 #### Load Phase
-At startup, the engine reads all `.lua` object files from disk exactly once. For each object file (e.g., `src/meta/rooms/candle.lua`):
+At startup, the engine reads all `.lua` object files from disk exactly once (objects in `src/meta/objects/`, creatures in `src/meta/creatures/`). For each object file (e.g., `src/meta/objects/candle.lua`):
 
 1. **Store as string:** The entire source code is stored in memory as a Lua string
 2. **Parse into table:** The source string is parsed (via `load()`) into a live Lua table and registered in the object registry
@@ -294,7 +294,7 @@ The game world architecture is built on a two-tier object model: **immutable bas
 
 Base objects are immutable templates that exist in the **source code**. Each base object:
 
-- **Is an authored artifact:** Designed by game developers, stored as `.lua` files in `src/meta/objects/`
+- **Is an authored artifact:** Designed by game developers, stored as `.lua` files in `src/meta/objects/` (and `src/meta/creatures/` for animate beings)
 - **Has a unique GUID:** Enables future downloading from a web service and caching
 - **Defines identity:** Answers the question "what is this thing?" (e.g., "this is a candle")
 - **Is NOT mutable at runtime:** The `.lua` file is read once at load time and defines the permanent blueprint
@@ -353,7 +353,7 @@ Every object in the world is a **finite state machine (FSM)**. Base objects defi
 
 #### Base Objects: The FSM Blueprint
 
-Base objects authored in `src/meta/objects/*.lua` define the complete FSM for a class of objects:
+Base objects authored in `src/meta/objects/*.lua` (and creatures in `src/meta/creatures/*.lua`) define the complete FSM for a class of objects:
 
 ```lua
 -- src/meta/objects/candle.lua (FSM blueprint)

@@ -1551,3 +1551,8 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 **Key files:**
 - src/engine/creatures/init.lua — creature behavior engine (NEW)
 - src/engine/loop/init.lua — game loop integration (+9 lines)
+### Creatures directory split (2026-08)
+- Added `src/meta/creatures/` and moved `src/meta/objects/rat.lua` → `src/meta/creatures/rat.lua`.
+- Loader now scans `meta/objects/` then `meta/creatures/` before room resolution; both feed `base_classes` and `object_sources`.
+- Updated paths in tests, plans/docs, and meta-lint detection so creature files get object-grade validation (template, GUID, keywords, senses).
+

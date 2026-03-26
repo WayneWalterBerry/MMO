@@ -29,7 +29,7 @@ end
 -- Load rat for lethality / creature tests
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
-local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "rat.lua"
+local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "rat.lua"
 local ok_rat, rat = pcall(dofile, rat_path)
 if not ok_rat then
     print("WARNING: rat.lua failed to load — " .. tostring(rat))

@@ -568,7 +568,7 @@ end)
 
 test("23. real rat.lua has combat field (WAVE-4 delivered)", function()
     local SEP = package.config:sub(1, 1)
-    local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "rat.lua"
+    local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "rat.lua"
     local ok_rat, rat_obj = pcall(dofile, rat_path)
     h.assert_truthy(ok_rat, "rat.lua must load")
     h.assert_truthy(rat_obj.combat,
@@ -577,7 +577,7 @@ end)
 
 test("24. real rat.lua has body_tree field (WAVE-4 delivered)", function()
     local SEP = package.config:sub(1, 1)
-    local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "rat.lua"
+    local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "rat.lua"
     local ok_rat, rat_obj = pcall(dofile, rat_path)
     h.assert_truthy(ok_rat, "rat.lua must load")
     h.assert_truthy(rat_obj.body_tree,

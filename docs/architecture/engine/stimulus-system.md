@@ -3,7 +3,7 @@
 **Location:** `src/engine/creatures/init.lua` (stimulus_queue and emit_stimulus)  
 **Owner:** Bart (Architecture Lead)  
 **Stage:** Phase 1 (Creature reactions to environmental events)  
-**Related:** Creature behavior engine (creature-system.md)
+**Related:** Creature behavior engine (creature-system.md), example creature in `src/meta/creatures/rat.lua`
 
 ---
 

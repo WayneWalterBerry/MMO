@@ -522,7 +522,7 @@ The engine needs to emit stimulus events that creatures can react to. These are 
 
 ### 6.1 Creature Definition
 
-File: `src/meta/objects/rat.lua`
+File: `src/meta/creatures/rat.lua`
 
 ```lua
 return {
@@ -1164,7 +1164,7 @@ The linter should auto-detect creature files by:
 | Design creature template | CBG (done — this doc) | — | — | — |
 | Implement `creature.lua` template | Flanders | `src/meta/templates/creature.lua` | ~50 | Template loads, fields validate |
 | Implement `flesh.lua` material | Flanders | `src/meta/materials/flesh.lua` | ~15 | Material properties resolve |
-| Implement `rat.lua` definition | Flanders | `src/meta/objects/rat.lua` | ~120 | Object loads, all fields valid, FSM states resolve |
+| Implement `rat.lua` definition | Flanders | `src/meta/creatures/rat.lua` | ~120 | Object loads, all fields valid, FSM states resolve |
 | Build `engine/creatures/init.lua` | Bart | `src/engine/creatures/init.lua` | ~250 | Drive update, stimulus matching, action selection, movement, tick integration |
 | Game loop integration | Bart | `src/engine/loop/init.lua` | ~6 | Creature tick fires post-command |
 | Stimulus emission points | Bart | `src/engine/verbs/init.lua`, `src/engine/fsm/init.lua` | ~20 | Stimuli emitted on room enter, attack, noise, light change |

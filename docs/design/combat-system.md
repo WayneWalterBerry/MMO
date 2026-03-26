@@ -303,6 +303,8 @@ Injuries trigger consequences like:
 
 ### Example 1: Player vs Rat (Light, Silver Dagger)
 
+Rat combat stats are sourced from `src/meta/creatures/rat.lua`.
+
 ```
 1. INITIATE: Player (speed 4) vs Rat (speed 6) → Rat acts first
 2. DECLARE: Rat chooses bite (pierce, force 2), targets arms

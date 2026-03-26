@@ -40,7 +40,7 @@ end
 -- Load rat object definition directly
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
-local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "rat.lua"
+local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "rat.lua"
 local ok_rat, rat_def = pcall(dofile, rat_path)
 if not ok_rat then
     print("WARNING: rat.lua not found — rat tests will fail (TDD: expected)")

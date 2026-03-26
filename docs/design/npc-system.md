@@ -17,6 +17,8 @@
 
 The player cannot pick up a living creature. But if a creature dies, it becomes a corpse — inanimate, moveable, and part of the world state.
 
+Creature definitions live in `src/meta/creatures/` (for example, `src/meta/creatures/rat.lua`).
+
 ---
 
 ## How Creatures Behave

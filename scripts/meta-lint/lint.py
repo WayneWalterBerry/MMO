@@ -527,6 +527,8 @@ def _detect_kind(path: Path) -> str:
     lower = str(path).lower()
     if os.sep + "src" + os.sep + "meta" + os.sep + "objects" + os.sep in lower:
         return "object"
+    if os.sep + "src" + os.sep + "meta" + os.sep + "creatures" + os.sep in lower:
+        return "creature"
     if os.sep + "src" + os.sep + "meta" + os.sep + "world" + os.sep in lower:
         return "room"
     if os.sep + "src" + os.sep + "meta" + os.sep + "rooms" + os.sep in lower:
@@ -1842,7 +1844,7 @@ def _validate_file(parsed: ParsedFile, materials: Dict[str, object], violations:
     if template is None:
         _add_violation(violations, path, 1, "error", "S-07", "Missing template field")
     else:
-        allowed = {"small-item", "container", "furniture", "room", "sheet", "level", "portal"}
+        allowed = {"small-item", "container", "furniture", "room", "sheet", "level", "portal", "creature"}
         if template not in allowed:
             _add_violation(violations, path, _line_for(parsed, "template"), "error", "S-07", f"Unknown template '{template}'")
 
@@ -1851,7 +1853,7 @@ def _validate_file(parsed: ParsedFile, materials: Dict[str, object], violations:
     if _as_string(fields.get("name")) is None:
         _add_violation(violations, path, 1, "error", "S-06", "Missing name field")
 
-    if parsed.kind == "object":
+    if parsed.kind in ("object", "creature"):
         keywords_value = fields.get("keywords")
         keywords_table = _as_table(keywords_value)
         if keywords_table is None:
@@ -2160,7 +2162,7 @@ def main() -> int:
     for parsed in parsed_files:
         if parsed.guid:
             guid_map.setdefault(parsed.guid, []).append(parsed)
-        if parsed.kind == "object":
+        if parsed.kind in ("object", "creature"):
             for keyword in parsed.keywords:
                 keyword_map.setdefault(keyword.lower(), []).append(parsed)
 
@@ -2192,7 +2194,7 @@ def main() -> int:
         obj_id = _as_string(p.fields.get("id"))
         if p.kind == "room" and obj_id:
             room_ids.add(obj_id)
-        elif p.kind == "object" and obj_id:
+        elif p.kind in ("object", "creature") and obj_id:
             object_ids.add(obj_id)
         elif p.kind == "injury" and obj_id:
             injury_ids.add(obj_id)
@@ -2276,7 +2278,7 @@ def main() -> int:
     # XR-02: Objects with on_use.cures reference valid injury IDs
     if injury_ids:
         for parsed in parsed_files:
-            if parsed.kind == "object":
+            if parsed.kind in ("object", "creature"):
                 on_use_v = parsed.fields.get("on_use")
                 if on_use_v is not None:
                     on_use_t = _as_table(on_use_v)
@@ -2308,7 +2310,7 @@ def main() -> int:
     # XR-05b: Objects inheriting a generic-material template without override
     if generic_templates:
         for parsed in parsed_files:
-            if parsed.kind == "object":
+            if parsed.kind in ("object", "creature"):
                 tmpl = _as_string(parsed.fields.get("template"))
                 if tmpl and tmpl in generic_templates:
                     obj_mat = _as_string(parsed.fields.get("material"))
@@ -2322,7 +2324,7 @@ def main() -> int:
     # XR-06: Every template value on objects resolves to a template file
     if template_ids:
         for parsed in parsed_files:
-            if parsed.kind == "object" or parsed.kind == "room":
+            if parsed.kind in ("object", "creature", "room"):
                 tmpl = _as_string(parsed.fields.get("template"))
                 if tmpl and tmpl not in template_ids and tmpl != "level":
                     _add_violation(violations, parsed.path,
@@ -2371,7 +2373,7 @@ def main() -> int:
     # Build bare GUID → object path map for cross-reference
     obj_guid_bare: Dict[str, ParsedFile] = {}
     for parsed in parsed_files:
-        if parsed.kind == "object" and parsed.guid:
+        if parsed.kind in ("object", "creature") and parsed.guid:
             bare = parsed.guid.strip("{}")
             obj_guid_bare[bare] = parsed
 
@@ -2431,7 +2433,7 @@ def main() -> int:
     has_rooms = any(p.kind == "room" for p in parsed_files)
     if has_rooms:
         for parsed in parsed_files:
-            if parsed.kind == "object" and parsed.guid:
+            if parsed.kind in ("object", "creature") and parsed.guid:
                 bare = parsed.guid.strip("{}")
                 if bare not in all_referenced_guids:
                     _add_violation(violations, parsed.path,
@@ -2491,7 +2493,7 @@ def main() -> int:
     # Build portal object index: id → ParsedFile
     portal_objects: Dict[str, ParsedFile] = {}
     for parsed in parsed_files:
-        if parsed.kind == "object":
+        if parsed.kind in ("object", "creature"):
             tmpl = _as_string(parsed.fields.get("template"))
             if tmpl == "portal":
                 obj_id = _as_string(parsed.fields.get("id"))

@@ -158,6 +158,35 @@ for _, fname in ipairs(object_files) do
     end
 end
 
+local creatures_dir = meta_root .. SEP .. "creatures"
+local creature_files = list_lua_files(creatures_dir)
+for _, fname in ipairs(creature_files) do
+    local path = creatures_dir .. SEP .. fname
+    local source = read_file(path)
+    if source then
+        local def, err = loader.load_source(source)
+        if def then
+            -- Resolve template so base classes are fully materialized
+            if def.template then
+                def, err = loader.resolve_template(def, templates)
+                if not def then
+                    io.stderr:write("Warning: failed to resolve template for " .. fname .. ": " .. tostring(err) .. "\n")
+                end
+            end
+            if def then
+                if def.guid then
+                    base_classes[normalize_guid(def.guid)] = def
+                end
+                if def.id then
+                    object_sources[def.id] = source
+                end
+            end
+        else
+            io.stderr:write("Warning: failed to load creature " .. fname .. ": " .. tostring(err) .. "\n")
+        end
+    end
+end
+
 ---------------------------------------------------------------------------
 -- Load all rooms from meta/rooms/
 ---------------------------------------------------------------------------
