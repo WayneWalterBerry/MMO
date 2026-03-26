@@ -338,3 +338,544 @@ Room files now encode exits as **direction → portal object ID** references. Th
 - **CBG:** Maintains design intent while respecting phasing
 
 ---
+
+### D-COMBAT-PHASE1-BLOCKING-RESOLUTIONS: Combat Phase 1 — 5 Blocking Questions Resolved
+
+**Author:** Wayne Berry (via Copilot)  
+**Date:** 2026-03-26T15:45Z  
+**Status:** ✅ Approved  
+**Category:** Design
+
+**Q1 — Hit zones:** Random weighted, 60% targeted accuracy. DF-style emergent narrative.
+
+**Q2 — Lethality:** DF-realistic. Steel sword one-shots a rat. Combat is fast and decisive when well-equipped, dangerous when not.
+
+**Q3 — Room scope:** Room-local. Fleeing ends combat. Creature can follow and re-initiate later (if hunt behavior, Phase 2+).
+
+**Q5 — Unarmed combat:** Viable but at a disadvantage. Player can always fight, just poorly. Fists work but barely. "Find a weapon" is strategic advantage, not hard gate.
+
+**Q7 — Combat input model:** HYBRID STANCE-BASED. Player sets stance (aggressive/defensive/balanced) and rounds auto-resolve. BUT the system INTERRUPTS and re-prompts when:
+- A weapon breaks
+- Armor fails
+- The current stance is ineffective after a few auto-resolved rounds
+- Any significant state change occurs
+
+This keeps combat flowing but gives player agency at decision points. Not pure per-exchange, not pure auto-resolve.
+
+**Impact:**
+- **Bart:** Implement hybrid stance model in combat FSM (WAVE-5.5)
+- **Smithers:** Implement combat response prompts with stance interrupts (WAVE-6)
+
+---
+
+### D-NPC-PHASE1-APPROVAL-BATCH: NPC Phase 1 — 7 Questions Resolved
+
+**Author:** Wayne Berry (via Copilot)  
+**Date:** 2026-03-26T15:48Z  
+**Status:** ✅ Approved  
+**Category:** Design
+
+**NPC Q1 — Respawning:** Permanent death in Phase 1. Killed creatures stay dead. Respawn system deferred to Phase 2 if needed.
+
+**NPC Q2 — Multiple creatures per room:** Yes. Support N creatures per room from day one.
+
+**NPC Q3 — Rat inventory:** Deferred to Phase 2. Rat in Phase 1 has no inventory, cannot carry or steal objects.
+
+**NPC Q4 — Rat bite mechanics:** ALREADY RESOLVED — simple injuries.inflict() on grab, no combat FSM. (See D-COMBAT-NPC-PHASE-SEQUENCING.)
+
+**NPC Q5 — Sound across rooms:** Yes. Creatures with sound_range > 0 emit audible events to adjacent rooms.
+
+**NPC Q6 — Save/load persistence:** Registry-driven. Creatures are objects in the registry; existing save/load handles them identically.
+
+**NPC Q7 — Hear rat in darkness:** Yes — this is a FEATURE. Player hears "skittering claws" before they can see anything. Rat's on_listen provides audio-only presence in darkness.
+
+**Impact:**
+- **Flanders:** Rat design finalized; no inventory, permanent death, multi-room sound support
+- **Bart:** Creature tick implementation in WAVE-2
+- **Nelson:** Test framework covers all 7 resolved areas
+
+---
+
+### D-DOOR-ARCHITECTURE: Door/Exit Architecture Direction
+
+**Author:** Bart (Architect)  
+**Date:** 2026-07-28  
+**Status:** Proposed — awaiting Wayne's decision  
+**Category:** Architecture  
+**Analysis:** `plans/door-architecture-analysis.md`
+
+**Summary:** After deep analysis of the current hybrid door/exit system against all 11 Core Principles, recommend **Option B: Doors become first-class objects** using a `passage` template and the existing object system (FSM, mutation, sensory, materials).
+
+**Key Finding:** The current exit system is a **parallel object system** — ~322 lines of exit-specific engine code across 8 files duplicating capabilities the object system already provides (FSM, mutation, keyword matching, sensory, effects). Exits satisfy **0 of 11** Core Principles. Full unification satisfies **11 of 11**.
+
+**Proposed Approach:**
+1. Create `passage` template for traversable objects
+2. Room `exits` tables become thin direction → passage-object-ID references
+3. Door state managed by standard FSM (`traversable` flag per state)
+4. Door mutations use standard `becomes` code rewrite (D-14 compliant)
+5. Remove `becomes_exit`, `exit_matches()`, and exit-specific verb paths
+6. Incremental migration: one door at a time, backward-compatible
+
+**Impact:**
+- **Net -177 lines** of engine code (remove 252 exit-specific, add 75 passage support)
+- Unlocks: multi-step mechanisms, composite doors, material-derived behavior, timed passages, reusable templates
+- **4–6 sessions** estimated for full migration
+
+**Decision Points for Wayne:**
+1. Go/No-Go on unification
+2. Template name: `passage` (recommended) vs `portal` vs `exit`
+3. Bidirectional strategy: paired objects (recommended) vs single shared object
+4. Migration start: bedroom-hallway door (recommended first candidate)
+
+**Who Should Know:**
+- **Flanders** — door object definitions will migrate to passage template pattern
+- **Moe** — room exit tables simplify to thin references
+- **Smithers** — exit-specific parser/verb code paths will be removed
+- **Nelson** — ~15–20 test files need mock context updates during migration
+- **Comic Book Guy** — new game design possibilities (drawbridges, mechanisms, magical wards)
+
+---
+
+### D-DOOR-FIRST-CLASS-OBJECTS: Doors Should Be First-Class Objects
+
+**Author:** Comic Book Guy (Creative Director)  
+**Date:** 2026-07-27  
+**Status:** PROPOSED — Awaiting Wayne's review  
+**Category:** Design  
+**Analysis:** `plans/door-design-analysis.md`
+
+**Decision:** Doors, windows, gates, portcullises, and all passage-gating constructs should be **first-class objects** (.lua files with templates, FSM, sensory properties, material inheritance) rather than inline exit-construct tables.
+
+Room exit tables should become thin routing references:
+```lua
+exits = {
+    north = { target = "hallway", door_id = "bedroom-door" }
+}
+```
+
+All door behavior (state, transitions, mutations, sensory descriptions, material properties) lives in the door object file, not the exit table.
+
+**Rationale:**
+1. **Genre precedent:** Zork, Inform 6/7, Hugo all model doors as objects. TADS 3's exit-construct approach is its most criticized design.
+2. **Principle alignment:** Door-objects align with Principles 1, 3, 4, 6, 7, 8, 9, and D-14. Exit-constructs violate all of them.
+3. **Sensory system:** Game starts at 2 AM in darkness. Players FEEL doors. Exit-constructs don't participate in sensory space.
+4. **Scenario coverage:** Door-objects handle all 10 tested scenarios. Exit-constructs fail on 3 (talking doors, remote mechanisms, timed drawbridges).
+5. **Designer ergonomics:** Template inheritance + thin exits = less boilerplate than 150-line inline exit definitions.
+
+**Migration Path:**
+- **Phase 1 (Now):** Keep existing exits. Document door-object pattern.
+- **Phase 2 (Post-playtest):** Create `door` template. Migrate bedroom-door to thin-exit pattern.
+- **Phase 3:** Migrate remaining exits. Remove inline mutation code.
+- **Phase 4:** All doors are objects. Exits are thin references.
+
+**Affects:**
+- **Bart:** Movement handler reads door object state; exit table schema change
+- **Flanders:** Creates door template and door object definitions
+- **Moe:** Room files simplified — thin exit references replace inline door logic
+- **Smithers:** Verb dispatch routes to door objects
+- **Nelson:** Regression tests for all door interactions during migration
+
+**Risk:** Primary risk is sync bugs between door object state and exit traversability. Mitigation: door object is SOLE source of truth — exit tables contain only `target` and `door_id`, zero state.
+
+---
+
+### D-LINTER-AUDIT-BASELINE: Meta-lint Audit Baseline Established
+
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-25  
+**Status:** 🟢 Active  
+**Category:** Architecture  
+**Scope:** All squad members
+
+**Decision:** The meta-lint system baseline is established:
+- **0 errors** across all 182 rules
+- **152 warnings** (143 are XF-03 keyword collisions)
+- **6 info** findings
+
+**Implications:**
+1. **Flanders:** 4 new issues assigned (#245–#248) — injury sensory gaps, trap-door description, and 4 missing healing item objects.
+2. **All members:** New meta file additions should pass `python scripts/meta-lint/lint.py` with zero new findings before PR.
+3. **XF-03 is the dominant issue.** 90% of all findings are keyword collisions. Smithers and Flanders should coordinate on disambiguation (#190).
+
+**Affected Issues:**
+- #245, #246, #247, #248 (new)
+- #190, #195, #196 (existing, unchanged)
+
+---
+
+### D-LINTER-PHASE1: Meta-Check Rule Registry & Configuration
+
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-30  
+**Status:** Implemented  
+**Category:** Architecture  
+**Branch:** squad/linter-improvements
+
+**Decision:** Meta-check now has three new architectural layers:
+
+**1. Rule Registry** (`scripts/meta-check/rule_registry.py`)
+Every rule the linter can emit is registered with metadata:
+- `severity`: default error/warning/info level
+- `fixable`: whether the violation can be auto-fixed
+- `fix_safety`: "safe" (idempotent) or "unsafe" (needs human review)
+- `category`: grouping key for bulk enable/disable
+- `description`: human-readable description
+
+**110+ rules registered** across 13 categories.
+
+**2. Per-Rule Configuration** (`.meta-check.json`)
+Teams can customize which rules run via JSON config file with rule overrides and category disables.
+
+**3. Safe/Unsafe Fix Classification**
+JSON output includes `fixable` and `fix_safety` fields per violation, plus summary counts.
+
+**4. Rule Gap Fixes**
+- **XF-03:** Smart keyword collision filtering
+- **MD-19:** Upgraded to conflict detection with actual values
+- **XR-05b:** New rule — warns when objects inherit generic material without override
+
+**Who Should Know:**
+- **Nelson/Lisa (QA):** New test file at `test/meta-check/test_phase1.py` (29 tests)
+- **Flanders (Objects):** XR-05b may flag objects missing material overrides
+- **Gil (CI):** JSON output format bumped to v2.0 with `fixable`/`fix_safety` fields
+- **All:** Use `--list-rules` to see all rules, `--init-config` to generate default config
+
+---
+
+### D-LINTER-PHASE2: GUID/EXIT Validation
+
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-07-29  
+**Status:** Active  
+**Category:** Architecture
+
+**What Changed:** Added 5 new lint rules in Phase 2:
+
+| Rule | Severity | Category | Description |
+|------|----------|----------|-------------|
+| GUID-01 | error | guid-xref | Room instance type_id must reference a known object GUID |
+| GUID-02 | warning | guid-xref | Orphan object not referenced by any room instance |
+| GUID-03 | error | guid-xref | Duplicate instance id within same room |
+| EXIT-01 | error | exit | Exit target must reference a valid room |
+| EXIT-02 | warning | exit | Bidirectional exit mismatch |
+
+**Bug Fix:** `_detect_kind()` now recognizes `src/meta/rooms/` directory (was only checking `src/meta/world/`).
+
+**Who This Affects:**
+- **Moe:** GUID-02 reports 21 orphan objects. Review which are intentional (mutation targets) vs need placement.
+- **Flanders:** GUID-01 validates every type_id in room instances.
+- **Nelson:** 20 new tests in `test/meta-check/test_phase2.py`
+- **All content authors:** EXIT-01 flags exits to non-existent rooms; can suppress via config if intentional.
+
+---
+
+### D-LINTER-PHASE3: Squad Routing & Incremental Caching
+
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-07-29  
+**Status:** Active  
+**Category:** Architecture  
+**Branch:** squad/linter-phase3
+
+**What Changed:**
+
+**Squad Routing:** Every linter violation now includes an `owner` field identifying which squad member should fix it. Default routing table:
+
+| Pattern | Owner |
+|---------|-------|
+| S-*, PARSE-*, G-*, FSM-*, TR-*, SN-*, TD-*, GUID-* | Bart |
+| INJ-*, MD-*, MAT-*, CREATURE-* | Flanders |
+| RM-* | Moe |
+| LV-* | Comic Book Guy |
+| XF-*, XR-* | Smithers |
+| EXIT-* | Sideshow Bob |
+
+Overridable via `squad_routing` section in `.meta-check.json`.
+
+**Incremental Caching:** The linter caches per-file violations keyed by SHA-256 hash. Cross-file rules (XF/XR/GUID/EXIT/LV-40) always re-run. Use `--no-cache` for full re-scan.
+
+**Who Needs to Know:**
+- **Coordinator:** Use `--format json` output to auto-route violations via `owner` field
+- **Smithers:** Owns 151/183 violations (143 XF-03 collisions) — review keyword allowlist
+- **Sideshow Bob:** Owns 4 EXIT-01 errors
+- **All agents:** Text output shows `[owner]` per violation; use `--by-owner` for grouped view
+- **Gil:** Cache file `.meta-lint-cache.json` is gitignored
+
+**Version:** meta_check_version bumped from 2.0 → 3.0.
+
+---
+
+### D-NPC-COMBAT-IMPL-PLAN: Unified NPC+Combat Implementation Plan
+
+**Author:** Bart (Architect)  
+**Date:** 2026-07-28  
+**Status:** 🟢 Active  
+**Category:** Architecture
+
+**Decision:** Created unified implementation plan at `plans/npc-combat-implementation-plan.md` merging NPC Phase 1 and Combat Phase 1 into a 6-wave, 6-gate execution pipeline with explicit file ownership and TDD gates.
+
+**Key Architectural Decisions:**
+1. **NPC Phase 1 ships before Combat Phase 1** — creature autonomy proven before adding combat complexity
+2. **Creature tick integration point:** After fire propagation, before injury tick in `loop/init.lua`
+3. **Stimulus system:** Simple event queue in `engine/creatures/init.lua`, consumed by creature tick
+4. **Combat engine:** Single `resolve_exchange()` function handles all combatants generically
+5. **No file conflicts:** Explicit ownership map per wave
+6. **Test runner expansion:** `test/creatures/` and `test/combat/` directories added incrementally
+
+**Impact:**
+- **Flanders:** Creates creature template, rat, flesh material (WAVE-1); retrofits body_tree + tissue materials (WAVE-4)
+- **Bart:** Builds creature tick engine (WAVE-2), stimulus emission (WAVE-3), combat FSM (WAVE-5), combat integration (WAVE-6)
+- **Smithers:** Implements catch/chase/attack verbs (WAVE-3), combat verb extensions (WAVE-6)
+- **Moe:** Places rat in room (WAVE-3)
+- **Nelson:** TDD test suite at every wave; LLM walkthroughs at GATE-3 and GATE-6
+- **Coordinator:** Autonomous wave→gate→wave execution loop; Wayne check-in at GATE-3 and GATE-6 only
+
+---
+
+### D-PLAN-REVIEW-FIXES: NPC+Combat Plan Review — All 16 Issues Fixed
+
+**Author:** Bart (Architect)  
+**Date:** 2026-07-28  
+**Status:** 🟢 Active  
+**Category:** Process
+
+**Decision:** Applied all 8 blockers and 8 concerns from team review to `plans/npc-combat-implementation-plan.md`.
+
+**Blockers Applied:**
+- B1: Hybrid stance combat added (WAVE-5.5)
+- B2: Documentation deliverables added (Brockman, WAVE-3 & WAVE-6)
+- B3: Player model file path verified (src/main.lua lines ~305–324)
+- B4: Test dirs registered in run-tests.lua (WAVE-0)
+- B5: Creature tick perf budget added (<50ms, 5 creatures)
+- B6: Material registry test clarified (explicit engine.materials.get() call)
+- B7: Distant-room stimulus boundary test added (WAVE-2 test case #13)
+- B8: NPC docs assigned to Brockman
+
+**Concerns Applied:**
+- C1: Gate failure protocol added (Section 12)
+- C2: Commit/push points specified (after every gate)
+- C3: Combat sub-loop input clarified (headless auto-selects balanced)
+- C4: verbs/combat.lua ownership clarified
+- C5: Rat spawn location specified (cellar, top-level)
+- C6: LLM determinism via seeding (math.randomseed(42))
+- C7: Narration variety assertion added (WAVE-5 test)
+- C8: Escalation threshold set to 1x failure for Phase 1
+
+**Additional Changes:**
+- **combat/narration.lua split:** Changed from optional to REQUIRED
+- **Nelson as gate signer:** Added to GATE-3 and GATE-6 reviewer lists
+
+**Impact:** All agents — plan is now single source of truth. Re-read before starting work.
+
+---
+
+### D-SWIMLANE-SQUAD-ARCHITECTURE: Swimlanes as Enforceable Queues
+
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-25T15:00:00Z  
+**Status:** Implemented  
+**Category:** Process
+
+**Decision:** Swimlanes are the Squad's operational contract — **enforceable queues, not visualizations**. Each swimlane is owned by exactly one agent, maps to a `squad:{member}` label, and drives work autonomously.
+
+**D-BLOCKED-SWIMLANE:** Issues that cannot proceed without human action move to "Blocked / Needs Human" lane with mandatory status emission:
+1. Agent identifies blocker
+2. Agent moves issue to blocked lane
+3. Agent emits status: what is blocked, why, what is needed, who acts
+4. Agent does NOT continue work until blocker is resolved
+
+**D-RALPH-PULL-INTEGRATION:** Ralph (work monitor) watches for stalled work but respects autonomy:
+1. Monitor: Ralph detects issues in Ready > N days without pickup
+2. Spawn: Ralph can spawn agent to review swimlane
+3. Respect: Ralph checks for active PRs before spawning
+4. No double-spawn: If agent has work in progress, Ralph does not spawn
+5. Escalate: If no response after spawn, Ralph flags for Lead review
+
+**D-HUMAN-BOARD-BOUNDARIES:**
+- **Human responsibilities:** Define swimlane structure, set review criteria, triage issues, unblock agents, close decision loops
+- **Squad responsibilities:** Move cards between lanes, pull work, open PRs, emit status, move to Done
+
+**Anti-patterns to prevent:**
+- ❌ Humans manually dragging cards (except triage/review)
+- ❌ Squad agents bypassing swimlane protocol
+- ❌ Swimlanes used as passive visualization
+- ❌ "Pending" states without clarity
+
+---
+
+### D-WEAR-HAND-DEFENSIVE-SWEEP: Wear Handler Defensive Sweep
+
+**Author:** Bart (Architect)  
+**Date:** 2026-03-31  
+**Status:** Implemented  
+**Category:** Bugfix  
+**Issue:** #180
+
+**Decision:** When moving an item from hand to worn, the wear handler now clears **all** hand slots holding that item (by ID match), not just the single `hand_slot` discovered. The take handler now blocks picking up worn items (checking `ctx.player.worn`).
+
+**Rationale:** Wayne's playtest showed a spittoon in both left hand AND worn simultaneously. The defensive sweep is O(2) — zero performance cost, maximal safety. The take handler's Bug #53 guard only checked hands for duplicates, not the worn list.
+
+**Pattern:** **Defensive sweep over targeted clear** — when mutating player state (hands ↔ worn ↔ bags), always sweep all related slots by ID rather than relying on a single index.
+
+**Impact:**
+- **Smithers:** No parser changes. Fix is in verb handlers.
+- **Nelson:** 7 new integration tests in `test/integration/test-wear-hand-integration.lua`
+- **Flanders:** No object changes. Wear table contract unchanged.
+- **Gil:** Web adapter uses same verb handlers — fix applies to both paths.
+
+---
+
+### D-PARSER-BM25-PHASE1: BM25 Scoring & Synonym Expansion for Tier 2
+
+**Author:** Smithers (Parser/UI Engineer)  
+**Date:** 2026-07-20  
+**Status:** Implemented  
+**Category:** Parser  
+**Branch:** squad/parser-bm25-phase1
+
+**Decision:** Replaced Jaccard similarity with BM25 (Okapi) scoring as the default Tier 2 matching algorithm. Added synonym expansion table and expanded stop word list. All changes A/B-proven.
+
+**What Changed:**
+1. **Scoring mode flag:** `embedding_matcher.scoring_mode` defaults to `"bm25"`. Set to `"jaccard"` to revert.
+2. **BM25 scoring:** IDF-weighted term frequency (k1=1.2, b=0.5). IDF table precomputed at build time.
+3. **Synonym expansion:** 60+ verb synonyms map player words to canonical verbs before matching.
+4. **Stop words expanded:** 21 → 60+ common English filler words removed before matching.
+5. **Dual threshold:** `THRESHOLD_BM25 = 3.00` / `THRESHOLD_JACCARD = 0.40`
+6. **Typo correction tightened:** 5-char words now require distance ≤1 (was ≤2)
+
+**A/B Results:**
+
+| Algorithm | Correct | Accuracy | False Positives | False Negatives |
+|-----------|---------|----------|-----------------|-----------------|
+| Jaccard (baseline) | 47/60 | 78.3% | 0 | 13 |
+| BM25 + Synonyms | 60/60 | 100.0% | 0 | 0 |
+| **Delta** | **+13** | **+21.7pp** | **0** | **-13** |
+
+**Files Created/Modified:**
+- `src/engine/parser/bm25_data.lua` (new, auto-generated)
+- `src/engine/parser/synonym_table.lua` (new)
+- `src/engine/parser/embedding_matcher.lua` (modified)
+- `src/engine/parser/init.lua` (modified)
+- `scripts/build-idf-table.py` (new)
+- `test/parser/test-tier2-benchmark.lua` (new)
+
+**Impact on Other Agents:**
+- **Nelson (QA):** New benchmark at `test/parser/test-tier2-benchmark.lua`. All 137 existing tests pass.
+- **Gil (Web):** `bm25_data.lua` and `synonym_table.lua` are pure Lua — Fengari compatible. Web build needs regeneration.
+- **Bart (Architecture):** No engine architecture changes. BM25/synonyms localized to embedding_matcher.
+- **Frink (Research):** Phase 1 complete. Phase 2 (soft cosine, inverted index) can build on this foundation.
+
+---
+
+### D-AUTO-IGNITE-TIMER-AUDIT: Direct State Assignment Timer Audit
+
+**Author:** Nelson (QA)  
+**Date:** 2026-07-27  
+**Status:** Proposed  
+**Category:** Architecture  
+**Issue:** #178
+
+**Decision:** Any code path that changes an object's `_state` field directly (bypassing `fsm.transition()`) MUST also call `fsm.start_timer(registry, obj_id)` if the new state has `timed_events`.
+
+**Context:** Bug #178 (lit match never burns out) — `auto_ignite()` in `src/engine/verbs/fire.lua` sets `_state = "lit"` directly without starting the FSM timer.
+
+**Known Direct State Assignments:**
+1. **`fire.lua` — `auto_ignite()`** — confirmed bug, no timer started
+2. **`meta.lua` — `set` handler** — clock puzzles, may not need timers
+3. **`helpers.lua` — `detach_part()` / `reattach_part()`** — composite parts
+
+**Who Should Know:**
+- **Bart:** FSM architecture owner. Should review whether `apply_state()` should auto-call `start_timer()`
+- **Smithers:** Owns verb handlers where direct assignments exist
+- **Flanders:** Any objects with timed states affected by these paths
+
+---
+
+### D-COMBAT-RESEARCH: Combat System Research Complete
+
+**Author:** Frink (Research Scientist)  
+**Date:** 2026-03-25  
+**Status:** Research Complete — awaiting design decisions  
+**Category:** Research
+
+**Summary:** Completed comprehensive combat research across 5 domains (MUDs, competitive games, board games, MTG, Dwarf Fortress). All findings in `resources/research/combat/` (6 documents, ~86KB).
+
+**Key Recommendations:**
+1. **Adopt DF's material-physics model** for damage resolution. Our 17+ material registry needs 4 combat properties (shear resistance, impact resistance, density, max edge). Damage emerges from material interaction.
+2. **Deterministic combat with bounded variance.** Steel cuts flesh. Always. Variance comes from hit location (random, weighted) and player choice.
+3. **Unified combatant interface.** One `resolve_combat()` function for all. No combatant-type-specific code (Principle 8).
+4. **Creatures declare combat as metadata.** Natural weapons, body zones, armor, behavior — all in creature's `.lua` file.
+5. **MTG-inspired turn structure.** Initiative → attacker acts → defender responds → resolve → narrate. Player always gets response choice.
+
+**Who Should Know:**
+- **Bart:** Design combat resolution module (`src/engine/combat/`)
+- **Flanders:** Creature objects need `combat` metadata with natural weapons, body zones, behavior
+- **Moe:** Rooms may need combat-relevant spatial properties
+- **Smithers:** Combat verbs needed (attack, block, dodge, flee) + combat-state response prompts
+- **Comic Book Guy:** Design decisions needed on Phase 1 scope
+- **Nelson:** Combat test framework; DF-style material interactions are highly testable
+
+**Open Decisions for Wayne/Team:**
+1. **Deterministic or probabilistic?** (Research recommends: primarily deterministic)
+2. **DF detail level?** (Research recommends: 4–6 body zones, not 200 parts)
+3. **Phase 1 scope?** (Research recommends: single rat combat with material comparison, body zones)
+
+---
+
+### D-PRIME-DIRECTIVE-TIERS-1-5: Prime Directive Tiers 1–5 Design Spec
+
+**Author:** Comic Book Guy (Creative Director)  
+**Date:** 2026-03-25  
+**Issue:** #106  
+**Status:** Design Complete  
+**Category:** Design  
+**Deliverable:** `docs/design/prime-directive-tiers.md`
+
+**Summary:** Designed the 5-tier parser Prime Directive system from the player's perspective. This is the governing design document for all parser work.
+
+**Priority Order:** Tier 2 (Error Messages) > Tier 5 (Fuzzy) > Tier 4 (Context) > Tier 1 (Questions) > Tier 3 (Idioms)
+
+Error messages are #1 because they're the safety net. Every player will hit error messages; good ones teach, bad ones frustrate.
+
+**Error Message Categories:** Five distinct categories with own response strategy:
+1. Unknown verb — narrator bemused but helpful
+2. Unknown noun — context-aware, never reveals hidden objects
+3. Impossible action — explain why using material properties
+4. Missing prerequisite — hint without solving puzzles
+5. Ambiguous target — use location and properties to disambiguate
+
+**Fuzzy Confidence Tiers:**
+- Score ≥5: Execute immediately
+- Score 3–4: Execute with narration "(Taking the *brass key*...)"
+- Score 2: Confirm "Did you mean the *candle*?"
+- Score ≤1: Fall through to error
+
+**Idiom Library Cap:** Target 80–120 entries. Beyond that, invest in Tier 2 embedding matching.
+
+**"OOPS" Command:** When parser fails on unrecognized noun, store the input. If player types "oops {word}", replace and re-parse. ~20 lines Lua, enormous UX value.
+
+**Disambiguation Memory:** After asking "Which do you mean?", store option list for 3 commands.
+
+**Who Should Know:**
+- **Smithers:** Implementation roadmap. Start with Tier 2 (error messages).
+- **Nelson:** Test coverage for each tier. Error message regression tests.
+- **Flanders:** Objects need good `keywords` (including color terms) for Tier 5 fuzzy matching
+- **Moe:** Room descriptions use consistent object naming for Tier 5 partial matching
+- **Brockman:** Update parser architecture docs to reference this design spec
+
+---
+
+### D-DOCS-REFLECT-CURRENT-STATE: Documentation Reflects Current System State
+
+**Author:** Wayne Berry (via Copilot)  
+**Date:** 2026-03-25T12:35:00Z  
+**Status:** 🟢 Active  
+**Category:** Process
+
+**Decision:** Documentation files represent the CURRENT state of the system, not historical analysis snapshots. Analysis files should be cleaned up and converted into living documentation. Phase plans (like the portal plan) should include a phase for converting analysis files into authoritative docs.
+
+**Why:** Docs are authoritative current-state references, not historical analysis artifacts.
+
+**Impact:** When writing plans or analysis documents, earmark conversion-to-docs as a phase task.
+
+---

@@ -623,3 +623,38 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 
 **Impact:** NPC system plan now 100% aligned with combat plan. No conflicts remain.
 
+---
+
+### WAVE-1: NPC Foundation (Data Layer) — BUILT ✅
+
+**Date:** 2026-07-28
+**Requested by:** Wayne Berry
+**Commit:** WAVE-1: creature template, rat object, flesh material
+
+**3 files created:**
+
+1. **`src/meta/templates/creature.lua`** — Base template for all animate beings.
+   - GUID: `{bf9f9d4d-7b6d-4f99-801d-f6921a2687cd}`
+   - `animate = true`, FSM states (alive-idle/wander/flee/dead)
+   - Behavior, drives, reactions, movement, awareness tables with defaults
+   - `health = 10`, `max_health = 10`, `size = "small"` default
+   - `on_feel = "Warm, alive."` (mandatory dark sense)
+   - NO body_tree, NO combat table (D-COMBAT-NPC-PHASE-SEQUENCING)
+
+2. **`src/meta/objects/rat.lua`** — First creature definition.
+   - GUID: `{071e73f6-535e-42cb-b981-ebf85c27356f}`
+   - Template: creature, size: tiny, weight: 0.3, material: flesh
+   - 3 drives: hunger (50, +2/tick), fear (0, -10/tick), curiosity (30, +1/tick)
+   - 4 reactions: player_enters, player_attacks, loud_noise, light_change
+   - 4 FSM states with full sensory descriptions; dead state sets portable=true, animate=false
+   - NO body_tree, NO combat table (WAVE-4)
+
+3. **`src/meta/materials/flesh.lua`** — Organic tissue material (muscle/fat).
+   - GUID: `{48834c08-5cff-447d-bdcd-aada93a792fe}`
+   - density=1050, hardness=1, flexibility=0.8, fragility=0.7
+
+**Verification:** All 3 files load via `dofile()`. Game boots cleanly with `--headless`. No errors.
+
+**Decisions respected:** D-COMBAT-NPC-PHASE-SEQUENCING (no combat metadata), D-14 (code mutation), D-INANIMATE override for creatures.
+
+**Next:** WAVE-2 (Bart: creature tick engine), WAVE-4 (Flanders: body_tree + combat metadata retrofit).
