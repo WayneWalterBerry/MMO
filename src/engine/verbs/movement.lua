@@ -190,7 +190,9 @@ function M.register(handlers)
                     print(state.blocked_message)
                 elseif portal_obj._state == "locked" then
                     print((portal_obj.name or "The way") .. " is locked.")
-                elseif portal_obj._state == "closed" or portal_obj._state == "barred" then
+                elseif portal_obj._state == "barred" then
+                    print((portal_obj.name or "The way") .. " is barred.")
+                elseif portal_obj._state == "closed" or portal_obj._state == "unbarred" then
                     print((portal_obj.name or "The way") .. " is closed.")
                 else
                     print((portal_obj.name or "The way") .. " blocks your path.")

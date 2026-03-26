@@ -130,6 +130,28 @@ end
 -- Transition an object to target_state. Returns transition table on success,
 -- or nil + error code on failure. Optional context table for guard checks.
 -- verb_hint narrows transition search when multiple transitions share a target.
+
+-- After a portal FSM transition, sync the paired portal (same bidirectional_id)
+-- to the same state. Generic: reads portal metadata, no object-specific logic.
+local function sync_bidirectional(registry, obj)
+    if not obj or not obj.portal then return end
+    local bid = obj.portal.bidirectional_id
+    if not bid then return end
+    local new_state = obj._state
+    if not new_state then return end
+
+    for _, other in ipairs(registry:list()) do
+        if other ~= obj and other.portal
+           and other.portal.bidirectional_id == bid then
+            if other.states and other.states[new_state] and other._state ~= new_state then
+                local old = other._state
+                apply_state(other, new_state, old)
+            end
+            return
+        end
+    end
+end
+
 function fsm.transition(registry, obj_id, target_state, context, verb_hint)
     local obj = registry:get(obj_id)
     if not obj or not obj.states or not obj._state then
@@ -188,6 +210,10 @@ function fsm.transition(registry, obj_id, target_state, context, verb_hint)
     if trans.on_transition then trans.on_transition(obj, context) end
     -- Start timer for the new state if it has timed_events
     fsm.start_timer(registry, obj_id)
+
+    -- Bidirectional portal sync: propagate state to paired portal
+    sync_bidirectional(registry, obj)
+
     return trans
 end
 
