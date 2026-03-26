@@ -61,28 +61,11 @@ return {
 
         -- Wall inscription (east wall, back of crypt)
         { id = "wall-inscription", type = "Wall Inscription",  type_id = "959a08fd-057e-4cf6-b80e-c419d184bcc1" },
+        { id = "crypt-deep-cellar-archway-west", type_id = "crypt-deep-cellar-archway-west" },
     },
 
     exits = {
-        west = {
-            target = "deep-cellar",
-            type = "archway",
-            passage_id = "deep-cellar-crypt-archway",
-            name = "the stone archway",
-            keywords = {"archway", "arch", "gate", "exit", "west", "passage", "way out"},
-            description = "The stone archway leads back to the deep cellar. The iron gate stands open, its silver padlock hanging loose. Beyond it, the vaulted chamber with its altar and stairway waits.",
-
-            max_carry_size = 3,
-            max_carry_weight = 30,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = true,
-            locked = false,
-            hidden = false,
-            broken = false,
-            one_way = false,
-        },
+        west = { portal = "crypt-deep-cellar-archway-west" },
     },
 
     on_enter = function(self)
