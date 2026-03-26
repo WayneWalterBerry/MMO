@@ -41,64 +41,13 @@ return {
                 { id = "vase",                    type = "Vase",          type_id = "1ae1f401-2c06-421c-8530-eb339c061a9f" },
             },
         },
+
+        -- === South portal (bedroom-hallway door, hallway side) ===
+        { id = "bedroom-hallway-door-south", type_id = "{a47ce304-4425-4bd0-a9e9-224b7c8baa8c}" },
     },
 
     exits = {
-        south = {
-            target = "start-room",
-            type = "door",
-            passage_id = "bedroom-hallway-door",
-            name = "a heavy oak door",
-            keywords = {"door", "oak door", "heavy door", "south door", "bedroom door", "barred door"},
-            description = "A heavy oak door with iron hinges. A thick iron bar rests in brackets across it, holding it shut. Through the gap beneath the door, cold air seeps from the dark room beyond.",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = true,
-            key_id = nil,
-            hidden = false,
-            broken = false,
-            one_way = false,
-            breakable = true,
-            break_difficulty = 3,
-
-            mutations = {
-                close = {
-                    becomes_exit = {
-                        open = false,
-                        description = "A heavy oak door with iron hinges, shut tight.",
-                    },
-                    message = "You push the door shut. It closes with a heavy thud.",
-                },
-                open = {
-                    condition = function(self) return not self.locked end,
-                    becomes_exit = {
-                        open = true,
-                        description = "The heavy oak door stands open, revealing the dim bedchamber beyond.",
-                    },
-                    message = "The door swings open on groaning iron hinges.",
-                },
-                lock = {
-                    becomes_exit = {
-                        open = false,
-                        locked = true,
-                        description = "A heavy oak door with iron hinges. The iron bar is back in its brackets, holding the door shut.",
-                    },
-                    message = "You heave the iron bar back into its brackets. The door is barred once more.",
-                },
-                unlock = {
-                    becomes_exit = {
-                        locked = false,
-                        description = "A heavy oak door with iron hinges. The iron bar has been lifted from its brackets and leans against the wall.",
-                    },
-                    message = "You lift the heavy iron bar from its brackets. It comes free with a groan of metal on metal, and you lean it against the wall.",
-                },
-            },
-        },
+        south = { portal = "bedroom-hallway-door-south" },
 
         down = {
             target = "deep-cellar",

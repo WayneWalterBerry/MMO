@@ -97,67 +97,11 @@ return {
         { id = "curtains", type = "Curtains", type_id = "cc981807-a74e-4ecc-8d52-903cc4fc5bd6" },
         { id = "chamber-pot", type = "Chamber Pot", type_id = "9a9ff109-93a0-4dcf-9d6e-0f0f4b83f4ba" },
         { id = "bedroom-door", type = "Bedroom Door", type_id = "e4a7f3b2-91d6-4c8e-b5a0-3f2d1e8c6a49", location = "room" },
+        { id = "bedroom-hallway-door-north", type_id = "{25852832-6f19-48af-a118-20350ac8d243}" },
     },
 
     exits = {
-        north = {
-            target = "hallway",
-            type = "door",
-            passage_id = "bedroom-hallway-door",
-            name = "a heavy oak door",
-            keywords = {"door", "oak door", "heavy door", "north door", "barred door"},
-            description = "A heavy oak door with iron hinges, shut fast against its frame. There is no keyhole on this side — only smooth oak and cold iron bands. From beyond the door comes the faint creak of a heavy bar resting in its brackets. Someone has barred it from the corridor.",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = true,
-            key_id = nil,
-            hidden = false,
-            broken = false,
-
-            one_way = false,
-            breakable = true,
-            break_difficulty = 3,
-
-            mutations = {
-                close = {
-                    becomes_exit = {
-                        open = false,
-                        description = "A heavy oak door with iron hinges, shut tight against its frame.",
-                    },
-                    message = "You push the door shut. It closes with a heavy thud that echoes down the corridor.",
-                },
-                open = {
-                    condition = function(self) return not self.locked end,
-                    becomes_exit = {
-                        open = true,
-                        locked = false,
-                        description = "A heavy oak door with iron hinges, standing open to the corridor beyond.",
-                    },
-                    message = "The door swings open on groaning iron hinges.",
-                },
-                ["break"] = {
-                    becomes_exit = {
-                        type = "hole in wall",
-                        name = "a splintered doorframe",
-                        keywords = {"doorframe", "splintered doorframe", "broken door"},
-                        description = "Where the oak door once stood, only splintered wood and twisted iron hinges remain. Splinters litter the floor.",
-                        open = true,
-                        locked = false,
-                        breakable = false,
-                        broken = true,
-                        max_carry_size = 4,
-                        max_carry_weight = 50,
-                    },
-                    spawns = {"wood-splinters"},
-                    message = "The door bursts inward with a crack of splintering oak! Fragments scatter across the stone floor.",
-                },
-            },
-        },
+        north = { portal = "bedroom-hallway-door-north" },
 
         window = {
             target = "courtyard",
