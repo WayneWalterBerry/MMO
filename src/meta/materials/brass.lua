@@ -1,4 +1,5 @@
 return {
+    guid = "{d09453c4-af50-4c26-b1da-a689cffd1d77}",
     name = "brass",
     density = 8500,
     melting_point = 930,

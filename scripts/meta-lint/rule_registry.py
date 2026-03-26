@@ -150,7 +150,7 @@ _r("INJ-69",   "info",    "injury",    "Unknown top-level fields")
 # ── Material ─────────────────────────────────────────────────────────────────
 _r("MD-02",    "error",   "material",  "Material name exists as string")
 _r("MD-03",    "error",   "material",  "Material name matches filename", fixable=True, fix_safety="safe")
-_r("MD-04",    "info",    "material",  "No guid field on material")
+_r("MD-04",    "error",   "material",  "Material guid exists (braced format)")
 _r("MD-05",    "info",    "material",  "No id field on material")
 _r("MD-06",    "error",   "material",  "density > 0")
 _r("MD-07",    "error",   "material",  "hardness in [0, 10]")
@@ -227,6 +227,7 @@ _r("TR-02",    "error",   "transition", "Transition to state in states")
 # ── Material Reference ───────────────────────────────────────────────────────
 _r("MAT-01",   "warning", "material-ref", "Object should declare material")
 _r("MAT-02",   "error",   "material-ref", "Material references known material file")
+_r("MAT-03",   "warning", "material-ref", "Material reference uses string name (prefer GUID)")
 
 # ── Room ─────────────────────────────────────────────────────────────────────
 _r("RM-01",    "warning", "room",      "Room should have description")

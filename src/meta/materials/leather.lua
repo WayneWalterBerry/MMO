@@ -1,4 +1,5 @@
 return {
+    guid = "{b2ff9e86-e40a-43f0-95d0-3ee9c55d78ec}",
     name = "leather",
     density = 850,
     melting_point = nil,

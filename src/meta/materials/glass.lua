@@ -1,4 +1,5 @@
 return {
+    guid = "{35de84ce-1285-406f-a09a-6e4e53a762ed}",
     name = "glass",
     density = 2500,
     melting_point = 1400,

@@ -1,4 +1,5 @@
 return {
+    guid = "{2ed1350d-6549-4251-9bef-8f724e37615e}",
     name = "plant",
     density = 500,
     melting_point = nil,

@@ -1,4 +1,5 @@
 return {
+    guid = "{cf4f949f-981a-4ff8-a089-9bca495bc344}",
     name = "bone",
     density = 1900,
     melting_point = nil,

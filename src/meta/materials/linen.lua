@@ -1,4 +1,5 @@
 return {
+    guid = "{174ba4c1-0514-49a9-b859-e90113b856fd}",
     name = "linen",
     density = 400,
     melting_point = nil,
