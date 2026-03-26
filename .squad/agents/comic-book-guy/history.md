@@ -19,6 +19,36 @@
 
 ## Recent Updates
 
+### Session Update: Combat System Design Plan (2026-07-28)
+**Status:** ✅ DESIGN COMPLETE
+
+**Deliverable:** `plans/combat-system-plan.md` — ~86 KB, 1291 lines, 13 sections.
+
+**What was done:**
+- Wrote the authoritative combat system design plan per Wayne's 5 combat directives (D-COMBAT-1 through D-COMBAT-5)
+- Synthesized research from 5 combat systems (Dwarf Fortress, MTG, MUD tradition, competitive games, board games)
+- Defined body zone system: 4–6 zones, unified with armor slots, `body_tree` metadata format
+- Designed MTG-inspired 6-phase combat exchange FSM (engine-driven, not player-operated)
+- Specified material-based damage resolution: weapon material × force vs. armor + tissue layers
+- Integrated with existing injury system (7 injury types + new stress type)
+- Defined creature combat metadata format with complete rat, wolf, spider examples
+- Designed player combat interface: verbs, 2-hand constraint, darkness rules, flee mechanics
+- Specified NPC-vs-NPC combat: unified combatant interface, predator-prey triggers
+- Designed disease delivery: rabies, lycanthropy, spider venom via `on_hit` mechanism
+- Created 4-phase implementation roadmap with agent assignments
+- Identified 8 open questions for Wayne's decision
+
+**Key Design Decisions:**
+- Steel cuts flesh. Always. Material physics, not abstract stats (Principle 9 applied to combat)
+- One `resolve_exchange()` function for ALL combat — player, NPC, creature-vs-creature (Principle 8)
+- Deterministic core with bounded variance (zone selection random, damage deterministic)
+- Combat narration generated from structured results, never scripted per-creature
+- `body_tree` required on ALL creatures from Phase 1 (overrides NPC plan's Phase 4 deferral)
+- Stress injury type (shaken → panicked → shell-shocked) for psychological combat consequences
+- Disease delivery via generic `on_hit` field on natural weapons
+
+**Decision filed:** `.squad/decisions/inbox/cbg-combat-plan.md`
+
 ### Session Update: Brass Spittoon Object Design Document (2026-03-24)
 **Status:** ✅ DESIGN COMPLETE
 
