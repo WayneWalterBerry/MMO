@@ -1,0 +1,17 @@
+open drawer
+search drawer
+get matchbox from drawer
+get match from matchbox
+drop matchbox
+light match
+take candle holder
+light candle
+open trap door
+down
+look
+punch rat
+hit rat
+punch rat
+punch rat
+punch rat
+look rat

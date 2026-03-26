@@ -1,0 +1,5 @@
+open trap door
+down
+feel
+attack rat
+feel rat
