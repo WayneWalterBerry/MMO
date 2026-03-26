@@ -493,6 +493,52 @@ test("carve routes to slash handler", function()
 end)
 
 ---------------------------------------------------------------------------
+-- HIT/PUNCH — #278 regression: unresolved noun → not-found (not self-harm)
+---------------------------------------------------------------------------
+suite("hit — #278: unresolved noun prints not-found")
+
+test("hit rat with no rat present prints not-found, not self-harm suggestion", function()
+    setup_injuries()
+    local ctx = make_ctx({ verb = "hit" })
+    local output = capture_output(function() handlers["hit"](ctx, "rat") end)
+    h.assert_truthy(output:find("don't notice anything") or output:find("don't see"),
+        "Should print not-found, got: " .. output)
+    h.assert_nil(output:find("only hit yourself"),
+        "Must NOT suggest self-harm for unresolved noun")
+end)
+
+test("punch table with no table present prints not-found", function()
+    setup_injuries()
+    local ctx = make_ctx({ verb = "punch" })
+    local output = capture_output(function() handlers["punch"](ctx, "table") end)
+    h.assert_truthy(output:find("don't notice anything") or output:find("don't see"),
+        "Should print not-found, got: " .. output)
+end)
+
+test("hit with no noun still prints 'Hit what?'", function()
+    setup_injuries()
+    local ctx = make_ctx({ verb = "hit" })
+    local output = capture_output(function() handlers["hit"](ctx, "") end)
+    h.assert_truthy(output:find("Hit what"), "Empty noun should prompt, got: " .. output)
+end)
+
+test("hit self still triggers self-infliction", function()
+    setup_injuries()
+    local ctx = make_ctx({ verb = "hit" })
+    local output = capture_output(function() handlers["hit"](ctx, "self") end)
+    h.assert_truthy(output:find("punch") or output:find("hit") or #ctx.player.injuries > 0,
+        "hit self should still work")
+end)
+
+test("hit head still triggers self-infliction", function()
+    setup_injuries()
+    local ctx = make_ctx({ verb = "hit" })
+    local output = capture_output(function() handlers["hit"](ctx, "head") end)
+    h.assert_truthy(output:find("hit your head") or output:find("punch") or #ctx.player.injuries > 0,
+        "hit head should still work")
+end)
+
+---------------------------------------------------------------------------
 -- Summary
 ---------------------------------------------------------------------------
 local exit_code = h.summary()

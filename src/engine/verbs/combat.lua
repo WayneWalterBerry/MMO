@@ -109,8 +109,8 @@ function M.register(handlers)
 
         local is_self, body_area, tool_word = parse_self_infliction(noun)
         if not is_self then
-            -- Not self — in V1, hit is self-only
-            print("You can only hit yourself right now. (Try: hit head)")
+            -- Noun provided but doesn't target self/body — not-found (#278)
+            err_not_found(ctx)
             return
         end
 
