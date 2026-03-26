@@ -1,12 +1,12 @@
--- crypt-deep-cellar-archway-north.lua — Portal object: crypt side of deep cellar archway
--- Paired with: deep-cellar-crypt-archway-south.lua (deep cellar side)
+-- crypt-deep-cellar-archway-west.lua — Portal object: crypt side of deep cellar archway
+-- Paired with: deep-cellar-crypt-archway-west.lua (deep cellar side)
 -- Replaces: crypt.exits.west (inline exit)
 -- See: plans/portal-unification-plan.md (Phase 3), Issue #204
 return {
     guid = "{d9124959-350d-4172-9844-d6d390461dd5}",
     template = "portal",
 
-    id = "crypt-deep-cellar-archway-north",
+    id = "crypt-deep-cellar-archway-west",
     name = "the stone archway",
     material = "iron",
     keywords = {"archway", "arch", "gate", "exit", "passage",
@@ -19,7 +19,7 @@ return {
     portal = {
         target = "deep-cellar",
         bidirectional_id = "{42345886-9154-4147-8306-2a71c19cf102}",
-        direction_hint = "north",
+        direction_hint = "west",
     },
 
     max_carry_size = 3,

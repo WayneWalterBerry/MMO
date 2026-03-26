@@ -1,12 +1,12 @@
--- storage-cellar-door-west.lua — Portal object: storage side of iron-bound cellar door
--- Paired with: cellar-storage-door-east.lua (cellar side)
+-- storage-cellar-door-south.lua — Portal object: storage side of iron-bound cellar door
+-- Paired with: cellar-storage-door-north.lua (cellar side)
 -- Replaces: storage-cellar.exits.south (inline exit)
 -- See: plans/portal-unification-plan.md (Phase 3), Issue #201
 return {
     guid = "{ed35641e-4106-421f-bcd4-2d6654c8ed1b}",
     template = "portal",
 
-    id = "storage-cellar-door-west",
+    id = "storage-cellar-door-south",
     name = "the iron-bound door",
     material = "iron",
     keywords = {"door", "iron door", "iron-bound door", "south door",
@@ -19,7 +19,7 @@ return {
     portal = {
         target = "cellar",
         bidirectional_id = "{8e968d70-4e29-4eb6-acf5-2bc8b45bd853}",
-        direction_hint = "west",
+        direction_hint = "south",
     },
 
     max_carry_size = 4,

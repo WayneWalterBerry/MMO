@@ -1,12 +1,12 @@
--- storage-deep-cellar-door-down.lua — Portal object: storage side of deep cellar door
--- Paired with: deep-cellar-storage-door-up.lua (deep cellar side)
+-- storage-deep-cellar-door-north.lua — Portal object: storage side of deep cellar door
+-- Paired with: deep-cellar-storage-door-south.lua (deep cellar side)
 -- Replaces: storage-cellar.exits.north (inline exit)
 -- See: plans/portal-unification-plan.md (Phase 3), Issue #202
 return {
     guid = "{f7c36726-24ef-427d-bcb5-267cab725982}",
     template = "portal",
 
-    id = "storage-deep-cellar-door-down",
+    id = "storage-deep-cellar-door-north",
     name = "a second iron-bound door",
     material = "iron",
     keywords = {"door", "iron door", "heavy door", "second door",
@@ -19,7 +19,7 @@ return {
     portal = {
         target = "deep-cellar",
         bidirectional_id = "{00214e5f-c743-4fcb-8fef-a00ba4c0a444}",
-        direction_hint = "down",
+        direction_hint = "north",
     },
 
     max_carry_size = 4,
