@@ -748,19 +748,431 @@ Treatment after combat becomes a puzzle: multiple wounds competing for limited h
 
 ## 7. Creature Combat Metadata
 
-<!-- STUB — to be filled -->
+### 7.1 The `combat` Table
+
+Every creature that can participate in combat declares a `combat` table in its `.lua` metadata. This is the single source of truth for all combat behavior — the engine reads it generically (Principle 8).
+
+```lua
+combat = {
+    -- Core stats
+    size = "tiny",              -- force multiplier (tiny/small/medium/large/huge)
+    speed = 6,                  -- initiative value (1=slow, 10=fastest)
+    
+    -- Natural weapons
+    natural_weapons = {
+        {
+            id = "bite",
+            type = "pierce",            -- edged | blunt | pierce
+            material = "tooth_enamel",  -- material registry lookup
+            zone = "head",              -- which body zone the weapon is on
+            force = 2,                  -- base force (before size modifier)
+            target_pref = "arms",       -- preferred target zone (or nil for random)
+            message = "bites",          -- narration verb
+        },
+        {
+            id = "claw",
+            type = "slash",
+            material = "keratin",
+            zone = "legs",
+            force = 1,
+            target_pref = nil,
+            message = "claws at",
+        },
+    },
+    
+    -- Natural armor (chitin, scales, thick hide — or nil for none)
+    natural_armor = nil,
+    
+    -- Behavior in combat (engine evaluates this, not creature-specific code)
+    behavior = {
+        aggression = "on_provoke",      -- when to initiate combat:
+                                        --   "on_sight" = attacks immediately
+                                        --   "on_provoke" = attacks when attacked
+                                        --   "never" = flees, never fights back
+                                        --   "territorial" = attacks if in home room
+        
+        flee_threshold = 0.3,           -- flee when health drops below 30% of max
+        
+        attack_pattern = "random",      -- how to select from natural_weapons:
+                                        --   "random" = pick randomly each exchange
+                                        --   "cycle" = use weapons in order
+                                        --   "strongest" = always use highest force
+                                        --   specific weapon id = always use that weapon
+        
+        defense = "dodge",              -- default defensive response:
+                                        --   "dodge" = attempt to evade (small/fast)
+                                        --   "block" = stand ground (large/armored)
+                                        --   "counter" = hit back (aggressive)
+                                        --   "flee" = always try to run
+        
+        target_priority = "random",     -- who to attack when multiple targets:
+                                        --   "random" = pick randomly
+                                        --   "closest" = nearest target
+                                        --   "weakest" = most injured target
+                                        --   "threatening" = whoever attacked last
+        
+        pack_size = 1,                  -- how many of this creature fight together
+                                        --   (Phase 2+: pack tactics)
+    },
+},
+```
+
+### 7.2 Rat Combat Metadata (Complete)
+
+Combining the rat's existing NPC spec with combat data:
+
+```lua
+-- Rat combat metadata (added to existing rat.lua definition)
+combat = {
+    size = "tiny",
+    speed = 6,                  -- fast for their size (rats are quick)
+    
+    natural_weapons = {
+        {
+            id = "bite",
+            type = "pierce",
+            material = "tooth_enamel",
+            zone = "head",
+            force = 2,
+            target_pref = "arms",       -- rats go for hands/fingers
+            message = "sinks its teeth into",
+        },
+        {
+            id = "claw",
+            type = "slash",
+            material = "keratin",
+            zone = "legs",
+            force = 1,
+            target_pref = nil,
+            message = "rakes its claws across",
+        },
+    },
+    
+    natural_armor = nil,                -- rats have no natural armor
+    
+    behavior = {
+        aggression = "on_provoke",      -- rat only fights when attacked first
+        flee_threshold = 0.3,           -- flees at 30% health (cowardly)
+        attack_pattern = "random",
+        defense = "dodge",              -- rats dodge, not block
+        target_priority = "threatening",-- attacks whoever attacked it
+        pack_size = 1,
+    },
+},
+```
+
+### 7.3 Additional Creature Examples
+
+**Wolf (Phase 2 creature):**
+
+```lua
+combat = {
+    size = "small",
+    speed = 7,
+    natural_weapons = {
+        {
+            id = "bite",
+            type = "pierce",
+            material = "tooth_enamel",
+            zone = "head",
+            force = 6,
+            target_pref = "arms",       -- go for limbs to bring down prey
+            message = "lunges and clamps its jaws on",
+        },
+        {
+            id = "claw",
+            type = "slash",
+            material = "keratin",
+            zone = "legs",
+            force = 3,
+            target_pref = "legs",
+            message = "rakes",
+        },
+    },
+    natural_armor = nil,
+    behavior = {
+        aggression = "on_sight",        -- wolves are aggressive predators
+        flee_threshold = 0.2,           -- wolves are braver than rats
+        attack_pattern = "cycle",       -- bite, then claw, then bite...
+        defense = "counter",            -- wolves fight back, don't dodge
+        target_priority = "weakest",    -- pack mentality: target the wounded
+        pack_size = 3,                  -- wolves hunt in packs
+    },
+},
+```
+
+**Giant Spider (Phase 2 creature):**
+
+```lua
+combat = {
+    size = "small",
+    speed = 4,                          -- spiders are ambush predators, not fast
+    natural_weapons = {
+        {
+            id = "bite",
+            type = "pierce",
+            material = "chitin",        -- chelicerae (spider fangs)
+            zone = "head",
+            force = 3,
+            target_pref = nil,
+            message = "strikes with fanged mandibles at",
+            on_hit = { inflict = "spider-venom" },  -- poison delivery
+        },
+    },
+    natural_armor = "chitin",           -- exoskeleton provides armor
+    behavior = {
+        aggression = "territorial",     -- attacks in its web/lair
+        flee_threshold = 0.5,           -- flees when half-dead
+        attack_pattern = "strongest",
+        defense = "dodge",
+        target_priority = "closest",
+        pack_size = 1,
+    },
+},
+```
+
+### 7.4 Player Combat Metadata
+
+The player also has combat metadata — declared in the player model, not in a creature file:
+
+```lua
+-- Player combat metadata (in player model)
+combat = {
+    size = "medium",
+    speed = 4,                          -- human baseline
+    natural_weapons = {
+        {
+            id = "punch",
+            type = "blunt",
+            material = "bone",          -- fist = knuckle bones
+            zone = "arms",
+            force = 2,
+            target_pref = nil,
+            message = "punches",
+        },
+        {
+            id = "kick",
+            type = "blunt",
+            material = "bone",
+            zone = "legs",
+            force = 3,
+            target_pref = nil,
+            message = "kicks",
+        },
+    },
+    natural_armor = nil,
+    -- Player combat behavior is driven by player input, not metadata
+    -- The engine presents choices rather than evaluating behavior tables
+},
+```
+
+When the player holds a weapon, the weapon's combat properties override natural weapons. When unarmed, the player fights with `punch` and `kick`. **The 2-hand inventory system determines available weapons.**
+
+### 7.5 Weapon Object Combat Metadata
+
+Crafted/found weapons add combat properties to their object definition:
+
+```lua
+-- Example: a dagger
+return {
+    id = "iron-dagger",
+    material = "iron",
+    -- ... standard object fields ...
+    
+    combat = {
+        type = "edged",                 -- edged | blunt | pierce
+        force = 5,                      -- base force
+        -- material comes from the object's existing material field
+        -- max_edge comes from the material registry
+        -- density comes from the material registry
+        message = "slashes",            -- narration verb
+        two_handed = false,             -- requires one hand or two?
+    },
+}
+```
+
+**No `attack_power` property.** The weapon's combat effectiveness is derived from its material (hardness, density, max_edge) + its type (edged/blunt/pierce) + its force value. The same iron dagger is equally effective whether it's in a drawer or in the player's hand — the material doesn't change. What changes is that holding it enables combat use.
 
 ---
 
 ## 8. Player Combat
 
-<!-- STUB — to be filled -->
+### 8.1 Entering Combat
+
+Combat begins through one of these triggers:
+
+| Trigger | Example | Who Acts First |
+|---------|---------|----------------|
+| **Player attacks creature** | `attack rat`, `hit rat with dagger`, `throw rock at rat` | Player (they initiated) |
+| **Creature aggression** | Wolf has `aggression = "on_sight"`, player enters room | Creature (they detected player) |
+| **Provocation** | Player kicks rat, rat's `reactions.player_attacks` triggers fight | Player started it, but rat may be faster (speed check) |
+| **Territorial defense** | Player enters spider's lair, spider has `aggression = "territorial"` | Creature (home advantage) |
+
+**The transition into combat is seamless.** There's no "combat mode" that changes the game interface. The player types `attack rat` just like `look rat` or `take candle`. The parser resolves the verb, the verb handler initiates the combat exchange FSM, and the engine runs the phases. When combat ends, normal play resumes. This is text IF, not a JRPG with a battle screen transition.
+
+### 8.2 Player Verb Interface
+
+Combat uses existing and new verbs. The parser resolves these through the same 5-tier pipeline as all other commands:
+
+| Verb | Syntax | Effect |
+|------|--------|--------|
+| `attack` / `hit` / `strike` / `swing` | `attack rat`, `hit rat with dagger` | Initiate melee attack; weapon inferred from held items |
+| `attack [zone]` | `attack rat head`, `strike rat legs` | Targeted attack at specific body zone (reduced hit probability) |
+| `throw` | `throw rock at rat`, `throw flask at spider` | Ranged attack; consumes the thrown object |
+| `block` | `block` (during RESPOND phase) | Defensive response; requires shield/armor in hand |
+| `dodge` | `dodge` (during RESPOND phase) | Defensive response; agility check, lose next attack |
+| `counter` | `counter` (during RESPOND phase) | Defensive response; take hit, deliver simultaneous strike |
+| `flee` | `flee`, `flee north`, `run` | Attempt to disengage and leave; may fail; costs defense |
+| `use [item]` | `use flask`, `throw sand` | Combat trick; use held item during combat |
+
+### 8.3 The Two-Hand Constraint in Combat
+
+The player has exactly 2 hand slots. What you're carrying determines your combat options:
+
+| Left Hand | Right Hand | Combat Options |
+|-----------|------------|----------------|
+| Sword | Shield | Attack (sword), Block (shield), Dodge, Flee |
+| Sword | Dagger | Attack (sword OR dagger), Counter (dual wield), Dodge, Flee |
+| Torch | Sword | Attack (sword), Use torch (light/fire), Dodge, Flee — no block |
+| Nothing | Nothing | Punch, Kick, Dodge, Flee — no block, low damage |
+| Flask of oil | Dagger | Attack (dagger), Throw flask (ranged, fire source), Dodge, Flee |
+| Bandage | Sword | Attack (sword), Use bandage (heal mid-combat), Dodge, Flee |
+
+**Strategic pre-combat preparation:** Before entering a dangerous room, the player should consider what to hold. Carrying a torch provides light (can see the enemy) but occupies a hand slot. Carrying a shield provides defense but can't hold a second weapon. This is the 2-hand inventory system earning its design weight — every combat encounter is partially decided by the player's pre-fight loadout.
+
+**Mid-combat item switching:** Picking up or dropping items during combat costs an action. You can't attack AND swap weapons in the same exchange. If a rat bites your arm and you drop your weapon (`on_damage: weapon_drop`), retrieving it costs your next attack. This creates real consequences for zone-targeted injuries.
+
+### 8.4 Targeted vs. Random Attacks
+
+The player can attack with or without targeting a specific body zone:
+
+**Random targeting:** `attack rat` — the engine selects a zone weighted by `body_tree` size values. Torso (largest) is most likely. No accuracy penalty.
+
+**Targeted attack:** `attack rat head` — the player aims for a specific zone. This has a reduced hit probability (60% instead of 100% for random). On miss (40%), the attack hits a random adjacent zone instead. The tradeoff: targeting the head can cause a concussion/instant kill, but you might miss and hit the body instead.
+
+**Why targeting matters:**
+- Targeting a vital zone (head) is high-risk, high-reward — possible instant kill
+- Targeting legs can cripple the creature's ability to flee
+- Targeting arms (on humanoids) can cause weapon drop
+- Random is reliable but less strategic
+
+### 8.5 Combat in Darkness
+
+The game starts at 2 AM — total darkness. Combat in darkness has special rules:
+
+| Condition | Effect |
+|-----------|--------|
+| **No light source** | Player cannot target specific zones; all attacks are random. Cannot see creature state. Narration uses sound/feel: *"You hear scrabbling claws and swing blindly."* |
+| **Player has light** | Normal combat; can see and target. Light source occupies a hand slot (torch = 1 hand). |
+| **Creature has no eyes** | (Future: blind creatures) Not affected by darkness. |
+
+**Darkness as tactical element:** A rat in a dark room is harder to fight — you can't target, you can't see its injuries, you don't know if it's flanking you. Lighting a candle before combat is a strategic choice: it reveals the battlefield but consumes a match and occupies a hand or surface.
+
+**Sensory narration in darkness:** Combat narration shifts from visual to auditory/tactile:
+- Light: *"You slash the rat across its flank — blood spatters the flagstones."*
+- Dark: *"Your blade connects with something — a wet impact, a shrill squeal. You feel warm blood on your fingers."*
+
+This directly leverages the existing multi-sensory system (Principle 6). The `on_feel` and `on_listen` descriptions on creature states inform dark-mode combat narration.
+
+### 8.6 Flee Mechanics
+
+Fleeing is a genuine risk/reward decision, never a free escape:
+
+1. **Player declares flee** during RESPOND phase (when being attacked) or DECLARE phase (on their turn).
+2. **Direction:** If the player specifies (`flee north`), they attempt that exit. If not (`flee`), the engine picks the most accessible exit.
+3. **Success check:** Based on player speed vs. creature speed, modified by leg injuries. Healthy player vs. rat: ~80% success. Injured legs: 40%. Rat is faster: -20%.
+4. **On success:** Player takes a glancing blow (50% damage) and moves to the adjacent room. Combat ends. Creature may pursue (if `hunt` behavior, Phase 2+).
+5. **On failure:** Player takes full damage (caught off-balance, 120% modifier) and remains in the room. They do NOT get a defensive action this exchange.
+6. **Narration:** Success: *"You turn and bolt through the doorway — the rat's teeth graze your ankle as you flee."* Failure: *"You stumble toward the exit — the rat lunges, catching your calf. You're not getting away that easily."*
+
+**MUD lesson applied:** Every MUD makes fleeing unreliable and costly. This prevents flee-spam as a dominant strategy and makes the decision to stand and fight meaningful.
 
 ---
 
 ## 9. NPC-vs-NPC Combat
 
-<!-- STUB — to be filled -->
+### 9.1 Unified Combatant Interface
+
+The combat resolution function makes **no distinction** between player and NPC. The same `resolve_exchange(attacker, defender, weapon, target_zone)` handles:
+
+- Player attacks rat
+- Rat attacks player
+- Cat attacks rat
+- Wolf attacks deer
+- Guard attacks thief
+
+The only difference is the input source: player combatants present choices to the human; NPC combatants read from their `combat.behavior` metadata. The resolution math, narration templates, injury system, and mutation pipeline are identical.
+
+### 9.2 When NPCs Fight
+
+NPC-vs-NPC combat triggers automatically when predator-prey metadata matches:
+
+```lua
+-- Cat's combat metadata includes:
+combat = {
+    behavior = {
+        aggression = "on_sight",
+        prey = { "rat", "mouse", "bird" },
+    },
+}
+
+-- Engine check (in creature tick):
+-- For each creature pair in the same room:
+--   If creature_A.combat.behavior.prey contains creature_B.id:
+--     Initiate combat between A and B
+```
+
+**No scripted interactions.** The engine doesn't have a `cat_sees_rat()` function. It has a generic prey-check that evaluates combat metadata. A cat that encounters a rat starts fighting because its metadata says rats are prey. A wolf that encounters a cat starts fighting for the same reason. The engine doesn't know or care what species are involved.
+
+### 9.3 NPC-vs-NPC Resolution
+
+The combat exchange FSM runs identically for NPC-vs-NPC:
+
+1. **INITIATE:** Compare speeds. Cat (speed 7) vs. rat (speed 6) → cat acts first.
+2. **DECLARE:** Cat's `attack_pattern = "strongest"` → selects bite (force 5, pierce).
+3. **RESPOND:** Rat's `defense = "dodge"` → dodge attempt. Rat speed 6 vs. cat speed 7 → dodge fails.
+4. **RESOLVE:** Cat bite (tooth_enamel, pierce, force 5 × small size 1.0 = 5) vs. rat head (hide → flesh → bone). Tooth_enamel max_edge vs. rat hide = penetrate. Result: CRITICAL hit to rat head.
+5. **NARRATE:** *"The cat pounces and catches the rat by the skull. A wet crunch."*
+6. **UPDATE:** Rat health → 0. FSM transition: alive → dead. Mutation: rat becomes dead-rat.
+
+**Total: 1–2 exchanges.** A cat killing a rat is fast — because physically, a cat always beats a rat. The material system guarantees this. No need for scripted "cat wins" logic; the physics produces the correct outcome.
+
+### 9.4 Player as Witness
+
+When NPC-vs-NPC combat occurs in the player's room, the player witnesses it through the narration system:
+
+**With light:** Full visual narration. *"The cat springs from behind the barrel, landing on the rat. Claws flash — the rat squeals — then silence. The cat sits back, licking blood from its paw. A dead rat lies at its feet."*
+
+**In darkness:** Audio-only narration. *"A sudden scrabbling of claws. A shrill squeak — then a wet crunch. Something just killed something in the dark."*
+
+**Adjacent room:** Distant sound only. *"From the cellar below, you hear a brief commotion — claws on stone, a high-pitched shriek, then silence."*
+
+This uses the existing sensory system (Principle 6) and the perception range system from the NPC plan. No combat-specific narration code — the narration templates produce room-appropriate output based on light level and distance.
+
+### 9.5 Player Intervention
+
+The player can intervene in NPC-vs-NPC combat:
+
+- **Attack one combatant:** `attack cat` — player enters the fight as a third combatant. Turn order now includes all three participants.
+- **Throw something:** `throw rock at wolf` — ranged attack that interrupts the current exchange.
+- **Separate combatants:** `kick cat` — may cause the cat to flee, ending its attack on the rat.
+- **Environmental interaction:** `slam door` — loud noise that triggers flee reactions in both combatants.
+
+The engine handles multi-combatant fights by running the exchange FSM for each combatant pair. In a 3-way fight (player, cat, rat), each round produces 3 exchange cycles based on each combatant's `target_priority` metadata.
+
+### 9.6 Ecosystem Implications (Phase 2+)
+
+When multiple creature types coexist in the world, the combat system creates emergent ecology:
+
+| Interaction | Outcome | Emergent Effect |
+|-------------|---------|-----------------|
+| Cat hunts rat | Cat kills rat (usually) | Rat population controlled |
+| Wolf hunts deer | Wolf kills deer | Food chain established |
+| Player kills wolf | Wolf dies | Deer population unchecked |
+| Spider ambushes rat | Spider bites rat (venom) | Territorial denial zones |
+| Two wolves vs. bear | Wolves may flee (bear is large) | Size hierarchy respected |
+
+None of these outcomes are scripted. They emerge from material physics (cat claws > rat hide), size asymmetry (wolf < bear), and behavior metadata (flee thresholds, aggression types). **This is the Dwarf Fortress philosophy: author the rules, not the behaviors.**
 
 ---
 
