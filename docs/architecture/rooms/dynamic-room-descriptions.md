@@ -143,17 +143,80 @@ Objects with `hidden = true` do not contribute their `room_presence` to the room
 
 ## 5. Part 3: Exit Rendering
 
-Exits are auto-composed from the room's `exits` table. This is already partially implemented in `start-room.lua` and documented in `room-exits.md`.
+As of Phase 2, all exits are portal objects. The engine iterates `room.exits`, resolves thin portal references to portal objects, and renders each with its current FSM state.
 
-The engine iterates `room.exits`, skips hidden exits, and renders each visible exit with its current state (open, closed, locked).
+### How Portals Affect Exit Rendering
+
+Each exit entry in `room.exits` is now a thin reference:
+
+```lua
+exits = {
+    north = { portal = "bedroom-hallway-door-north" },
+    window = { portal = "bedroom-courtyard-window-out" },
+    down = { portal = "bedroom-cellar-trapdoor-down" },
+}
+```
+
+When rendering `look` output, the engine:
+
+1. Iterates each direction in `room.exits`
+2. Resolves the `portal` reference to the actual portal object from the registry
+3. Reads the portal's current FSM state
+4. Uses the portal object's `name` and `description` from that state
+5. Appends traversability status based on the state's `traversable` flag
+
+**Example output:**
 
 ```
 Exits:
-  north: a heavy oak door (closed)
+  north: a heavy oak door (barred)
   window: the leaded glass window (locked)
+  down: a narrow trapdoor (open)
 ```
 
-No changes to exit rendering are required. The existing design is compatible with dynamic composition.
+The state name comes from the portal's current `_state`, and the display uses the portal's state-specific `name` or `description`.
+
+### Portal Objects and Room Composition
+
+Portal objects are **first-class room contents** — they appear in the room's `instances` list:
+
+```lua
+instances = {
+    { id = "bed", type_id = "{...}" },
+    { id = "nightstand", type_id = "{...}" },
+    { id = "bedroom-hallway-door-north", type_id = "{25852832-...}" },  -- Portal instance
+},
+```
+
+Each portal instance is loaded when the room loads. Portals do NOT contribute to the room view via `room_presence` (unlike furniture and objects). Instead, they are rendered separately via the `exits` table and FSM state display.
+
+### Difference from Inline Objects
+
+**Before (Phase 1):** Exits were inline tables in the room definition:
+
+```lua
+exits = {
+    north = {
+        target = "hallway",
+        name = "a heavy oak door",
+        open = true,
+        locked = false,
+        description = "A door...",
+    }
+}
+```
+
+**Now (Phase 2):** Exits reference portal objects:
+
+```lua
+exits = {
+    north = { portal = "bedroom-hallway-door-north" }
+}
+-- Portal object lives in src/meta/objects/bedroom-hallway-door-north.lua
+-- with full FSM, sensory properties, and state-dependent descriptions
+```
+
+**Key difference:** Portal objects are **mutable via FSM** rather than being inline, static data. When a door opens, the portal object's `_state` changes from `closed` to `open`. The next `look` call automatically picks up the new state without rewriting the room file.
 
 ---
 
