@@ -1178,22 +1178,479 @@ None of these outcomes are scripted. They emerge from material physics (cat claw
 
 ## 10. Disease & Status Effects
 
-<!-- STUB — to be filled -->
+### 10.1 Overview
+
+Combat doesn't just produce wounds — it produces **conditions**. Stress from witnessing violence, diseases transmitted through bites, cursed injuries from supernatural creatures. These effects extend the existing injury system with new injury types that have behavioral and narrative consequences beyond HP damage.
+
+Three feature issues inform this section:
+- **#261 — Stress as Injury:** Psychological damage as a first-class injury type
+- **#262 — Lycanthropy:** Supernatural disease transmitted through combat (werewolf bite)
+- **#263 — Rabies:** Biological disease transmitted through animal bites
+
+### 10.2 Stress as Injury (#261)
+
+**Inspired by:** Darkest Dungeon's stress system, Dwarf Fortress's stress/trauma model.
+
+Stress is a **new injury type** that follows the same FSM pattern as physical injuries. It's inflicted by combat events, not by weapon damage:
+
+```lua
+-- src/meta/injuries/stress.lua (new)
+return {
+    id = "stress",
+    name = "Combat Stress",
+    category = "psychological",
+    damage_type = "over_time",
+    initial_state = "shaken",
+    
+    on_inflict = {
+        initial_damage = 0,         -- stress doesn't cause HP damage directly
+        damage_per_tick = 0,
+        message = "Your hands tremble. Your breath comes fast.",
+    },
+    
+    states = {
+        shaken = {
+            name = "shaken",
+            description = "You're rattled. Your hands won't stop trembling.",
+            restricts = { precise_actions = true },  -- can't pick locks, thread needles
+            auto_heal_turns = 10,    -- calms down after 10 turns of safety
+        },
+        panicked = {
+            name = "panicked",
+            description = "Panic grips your chest. The walls are closing in.",
+            restricts = { 
+                precise_actions = true,
+                attack = true,       -- too panicked to attack
+            },
+            -- Must flee or wait it out
+            auto_heal_turns = 20,
+        },
+        shell_shocked = {
+            name = "shell-shocked",
+            description = "You stare blankly. The world sounds far away.",
+            restricts = {
+                precise_actions = true,
+                attack = true,
+                movement = true,     -- frozen in place
+            },
+            auto_heal_turns = 30,
+        },
+        recovered = {
+            name = "recovered",
+            description = "The trembling stops. You take a deep breath.",
+            terminal = true,
+        },
+    },
+    
+    transitions = {
+        { from = "shaken", to = "panicked", trigger = "auto", 
+          condition = "additional_stress" },
+        { from = "panicked", to = "shell_shocked", trigger = "auto",
+          condition = "additional_stress" },
+        { from = "shaken", to = "recovered", trigger = "auto",
+          condition = "timer_expired" },
+        { from = "panicked", to = "shaken", trigger = "auto",
+          condition = "timer_expired" },
+    },
+}
+```
+
+**Stress triggers in combat:**
+
+| Event | Stress Level | Notes |
+|-------|-------------|-------|
+| First time witnessing creature death | Medium (shaken) | Educational — teaches player about combat consequences |
+| Killing a creature yourself | Low (brief) | Builds with repetition (desensitization curve) |
+| Being critically wounded | High (panicked if already shaken) | Pain + fear compound |
+| Witnessing gore (severed limb, evisceration) | Medium | DF-inspired: gore exposure causes stress |
+| Prolonged combat (>5 rounds) | Low per round | Combat fatigue accumulates |
+| Near-death experience (health < 10%) | High | Survival instinct panic |
+
+**Design intent:** Stress makes combat have psychological consequences, not just physical ones. A player who kills 5 rats in quick succession should feel the weight of that — through narration, restricted actions, and the need to find a safe place to calm down. This is NOT a punishment mechanic — it's a **narrative texture mechanic** that makes the world feel real.
+
+### 10.3 Lycanthropy (#262)
+
+**Supernatural disease transmitted through werewolf bites.** This is a future-phase design (requires humanoid NPCs) but the combat system must support it architecturally.
+
+```lua
+-- Combat delivery mechanism:
+-- Werewolf natural weapon:
+{
+    id = "bite",
+    type = "pierce",
+    material = "tooth_enamel",
+    force = 8,
+    on_hit = { inflict = "lycanthropy" },  -- disease delivery
+}
+```
+
+**Lycanthropy as injury type:**
+
+```lua
+-- src/meta/injuries/lycanthropy.lua (future)
+return {
+    id = "lycanthropy",
+    name = "Lycanthropy",
+    category = "supernatural",
+    damage_type = "degenerative",
+    initial_state = "infected",
+    
+    states = {
+        infected = {
+            name = "strange bite wound",
+            description = "The bite wound pulses with an unsettling warmth.",
+            -- No immediate effects; slow progression
+        },
+        progressing = {
+            name = "moon sickness",
+            description = "Your skin itches. Your nails feel wrong. You hear things.",
+            restricts = { sleep = true },  -- can't sleep; nightmares
+        },
+        transformed = {
+            name = "lycanthrope",
+            description = "You are no longer entirely human.",
+            -- Massive gameplay changes — future design doc
+        },
+    },
+}
+```
+
+**Architecture requirement:** The `on_hit` field on natural weapons must support disease delivery. When a weapon with `on_hit = { inflict = "lycanthropy" }` connects, the combat engine calls `injuries.inflict()` with the disease type, separate from the wound damage. This is a generic mechanism — any natural weapon can deliver any disease — not a werewolf-specific feature.
+
+### 10.4 Rabies (#263)
+
+**Biological disease transmitted through animal bites.** Unlike lycanthropy, rabies is realistic and fits Phase 1–2.
+
+```lua
+-- src/meta/injuries/rabies.lua (Phase 2)
+return {
+    id = "rabies",
+    name = "Rabies",
+    category = "disease",
+    damage_type = "degenerative",
+    initial_state = "incubating",
+    
+    degenerative = {
+        base_damage = 0,
+        increment = 1,              -- damage increases each tick
+        max_damage = 10,
+    },
+    
+    on_inflict = {
+        initial_damage = 0,
+        message = "The bite wound throbs strangely.",
+    },
+    
+    states = {
+        incubating = {
+            name = "animal bite",
+            description = "A bite wound from a wild animal. It looks clean enough.",
+            auto_heal_turns = nil,   -- does NOT auto-heal
+            -- No symptoms for 15 turns (incubation period)
+        },
+        prodromal = {
+            name = "fever and malaise",
+            description = "You feel feverish. The old bite wound itches terribly.",
+            damage_per_tick = 2,
+            restricts = { precise_actions = true },
+        },
+        furious = {
+            name = "hydrophobia",
+            description = "You can't drink water. The thought of it makes you gag. You're aggressive, confused.",
+            damage_per_tick = 5,
+            restricts = { drink = true, precise_actions = true },
+            -- Cannot drink water (classic rabies symptom)
+        },
+        fatal = {
+            name = "terminal rabies",
+            description = "Seizures. Paralysis. The end comes mercifully.",
+            terminal = true,
+            death_message = "The disease has run its course. You slip into darkness.",
+        },
+    },
+    
+    transitions = {
+        { from = "incubating", to = "prodromal", trigger = "auto",
+          condition = "timer_expired" },  -- 15 turns incubation
+        { from = "prodromal", to = "furious", trigger = "auto",
+          condition = "timer_expired" },  -- 10 turns
+        { from = "furious", to = "fatal", trigger = "auto",
+          condition = "timer_expired" },  -- 5 turns
+    },
+    
+    healing_interactions = {
+        ["healing-poultice"] = {
+            transitions_to = "cured",
+            from_states = { "incubating", "prodromal" },
+            -- Can only cure in early stages
+        },
+    },
+}
+```
+
+**Delivery mechanism:** Rats and other wild animals can carry rabies. Not all bites transmit it — there's a probability:
+
+```lua
+-- On a rat's natural weapon:
+{
+    id = "bite",
+    type = "pierce",
+    material = "tooth_enamel",
+    on_hit = { 
+        inflict = "rabies",
+        probability = 0.15,          -- 15% chance per bite
+    },
+}
+```
+
+The engine rolls against this probability on each successful bite. The player doesn't know immediately whether they've been infected — the incubation period hides the initial infection. This creates a **discovery horror moment** 15 turns later when symptoms appear.
+
+### 10.5 Poison Delivery Through Combat
+
+The existing poison system (taste-based: `poisoned-nightshade`) extends to combat through envenomation:
+
+```lua
+-- Spider's bite weapon:
+{
+    id = "bite",
+    type = "pierce",
+    material = "chitin",
+    on_hit = { inflict = "spider-venom" },  -- 100% delivery on hit
+}
+
+-- Poisoned weapon (player-applied):
+-- Player dips dagger in nightshade juice → dagger gains:
+combat = {
+    type = "edged",
+    on_hit = { inflict = "poisoned-nightshade", uses = 3 },  -- 3 uses before poison dries
+}
+```
+
+**Architecture requirement:** The `on_hit` system is generic — it supports any injury type delivery with optional probability and use limits. This covers:
+- Venomous bites (spider, snake) — automatic delivery
+- Rabies transmission — probabilistic delivery  
+- Poison weapons — player-applied, limited uses
+- Lycanthropy — supernatural delivery
+- Cursed weapons — future phase
+
+### 10.6 Status Effect Summary
+
+| Effect | Category | Delivery | Cure | Phase |
+|--------|----------|----------|------|-------|
+| Stress (shaken/panicked) | Psychological | Combat events | Rest, safe space | Phase 1 |
+| Bleeding | Physical | Edged/pierce wounds | Bandage, poultice | Existing |
+| Bruised | Physical | Blunt impacts | Auto-heals | Existing |
+| Concussion | Physical | Head zone hits | Rest | Existing |
+| Rabies | Disease | Animal bite (15% chance) | Poultice (early only) | Phase 2 |
+| Spider venom | Poison | Spider bite (100%) | Antidote (future) | Phase 2 |
+| Lycanthropy | Supernatural | Werewolf bite | Holy water (future) | Phase 3+ |
+| Weapon poison | Poison | Poisoned weapon hit | Antidote (future) | Phase 2 |
+
+All of these use the **same injury system** — `injuries.inflict()` with FSM state progression, per-turn ticking, and healing interactions. Combat is just another delivery mechanism for injuries the system already knows how to manage.
 
 ---
 
 ## 11. Implementation Phases
 
-<!-- STUB — to be filled -->
+### Phase 1: Rat Combat (Minimum Viable Combat)
+
+**Goal:** Player can fight a single rat using held weapons. This is the proof-of-concept that validates the entire combat architecture.
+
+**Prerequisites:** NPC system Phase 1 (creature template, rat definition, creature tick) must be operational.
+
+| Deliverable | Description | Dependencies |
+|-------------|-------------|--------------|
+| **body_tree on player** | Add `body_tree` to player model: head, torso, arms, legs | None |
+| **body_tree on rat** | Add `body_tree` to rat definition: head, body, legs, tail | NPC Phase 1 |
+| **Combat tissue materials** | New materials: skin, hide, flesh, bone, organ, tooth_enamel, keratin | Material registry |
+| **Combat exchange FSM** | 6-phase FSM (initiate → declare → respond → resolve → narrate → update) | FSM engine |
+| **Material damage resolution** | `resolve_exchange()` function: weapon material × force vs. armor + tissue | Material registry |
+| **Combat narration templates** | Severity-scaled text generation from structured results | UI/presentation |
+| **Attack verb extension** | Extend `attack`/`hit`/`strike` to target creatures, trigger combat FSM | Verb system |
+| **Defensive response prompts** | Player choice during RESPOND phase: block, dodge, counter, flee | UI/loop |
+| **Flee mechanic** | Success/failure check, partial damage, room transition | Movement system |
+| **Combat → injury integration** | Map severity + zone + weapon type → `injuries.inflict()` call | Injury system |
+| **Creature death mutation** | Rat FSM alive → dead transition triggers mutation pipeline | Mutation system |
+| **Combat in darkness** | No zone targeting; sound-only narration; accuracy penalty | Sensory system |
+| **Stress injury type** | New injury: `stress.lua` with shaken/panicked/recovered states | Injury system |
+| **Weapon combat metadata** | Add `combat = { type, force }` to existing weapon objects (dagger, etc.) | Object definitions |
+
+**What we learn:** Does material physics produce satisfying combat? Is the narration varied enough? Does the 6-phase FSM feel right in text? Does the injury integration work smoothly?
+
+**Exit criteria:** Player can encounter the rat, fight it with a held weapon, take damage from rat bites, kill or be killed, flee successfully and unsuccessfully, and experience combat in both light and darkness.
+
+### Phase 2: Creature Variety + Disease
+
+**Goal:** Prove the system generalizes to multiple creature types with different combat profiles, and add disease transmission.
+
+| Deliverable | Description | Dependencies |
+|-------------|-------------|--------------|
+| **Wolf combat profile** | Aggressive predator with pack_size > 1, counter defense | Creature variety |
+| **Spider combat profile** | Ambush predator with venom delivery (`on_hit`) | Creature variety |
+| **Cat combat profile** | Predator with prey = {"rat"} for NPC-vs-NPC | NPC-vs-NPC |
+| **NPC-vs-NPC combat** | Unified combatant interface handles creature-vs-creature | Combat FSM |
+| **Predator-prey trigger** | Engine checks prey metadata when creatures share a room | Creature tick |
+| **Combat witness narration** | Player sees/hears NPC fights (light-dependent) | Sensory system |
+| **Multi-combatant turns** | Turn order with 3+ participants in one fight | Combat FSM |
+| **on_hit disease delivery** | Generic mechanism for combat-transmitted diseases | Injury system |
+| **Rabies injury type** | New injury with incubation → symptoms → death progression | Injury system |
+| **Spider venom injury type** | New poison injury type delivered via spider bite | Injury system |
+| **Creature morale/flee** | NPC flee threshold triggers mid-combat retreat | Creature behavior |
+| **Player intervention** | Player can join/disrupt NPC-vs-NPC combat | Combat FSM |
+
+**Exit criteria:** Cat kills rat automatically. Wolf attacks player on sight. Spider delivers venom. Rat bite can transmit rabies. Player can witness NPC combat. Multiple creatures can fight simultaneously.
+
+### Phase 3: Advanced Combat + Environmental Interaction
+
+**Goal:** Full-featured combat with wrestling, environmental tricks, weapon degradation, and status effects.
+
+| Deliverable | Description | Dependencies |
+|-------------|-------------|--------------|
+| **Wrestling/grapple system** | Grab → lock → throw sequence as FSM states | Combat FSM |
+| **Environmental combat verbs** | `push barrel at rat`, `slam door on tail`, `throw sand` | Verb system |
+| **Weapon degradation** | Fragility checks on weapons during combat; mutation on break | Material system |
+| **Armor damage** | Armor fragility checks when blocking; FSM transitions (cracked, broken) | Armor system |
+| **Targeted zone accuracy** | 60% base hit rate for targeted attacks; miss redirects to adjacent zone | Combat resolution |
+| **Pack tactics** | Multiple wolves coordinate: flank, surround, focus-fire | Creature AI |
+| **Wound severity progression** | Repeated hits to same zone escalate: scratch → cut → gash | Injury stacking |
+| **Size asymmetry combat** | Huge vs. tiny: damage thresholds, can't-hurt mechanics | Combat resolution |
+| **Combat sound propagation** | Combat noises attract creatures from adjacent rooms | Stimulus system |
+| **Lycanthropy (framework)** | Supernatural disease delivery architecture for future use | Injury system |
+
+**Exit criteria:** Player can grapple and throw a rat. Environmental interactions work in combat. Weapons break after sustained use. Pack of wolves coordinates attacks. Combat sounds alert nearby creatures.
+
+### Phase 4: Humanoid NPC Combat
+
+**Goal:** Guards, bandits, and other humanoid NPCs that fight with weapons and armor.
+
+| Deliverable | Description | Dependencies |
+|-------------|-------------|--------------|
+| **Humanoid body_tree** | head, torso, arms, legs — same as player, with equipped armor | NPC Phase 4 |
+| **NPC weapon/armor** | Humanoid NPCs hold weapons, wear armor (same systems as player) | NPC inventory |
+| **NPC combat AI** | Tactical decisions: target weak zone, block when outmatched, flee when losing | Creature AI |
+| **NPC combat dialogue** | Pre/mid/post-combat barks: "Halt!", "Yield!", "Mercy!" | Dialogue system |
+| **Surrender mechanic** | NPCs and player can yield; winner's choice to accept | Combat FSM |
+| **Disarm mechanic** | Target arms zone to force weapon drop; grab dropped weapon | Zone debuffs |
+| **Multi-NPC faction fights** | Guards vs. bandits; player can ally with either side | NPC relationships |
+| **Lycanthropy full implementation** | Werewolf NPC, transformation, player infection progression | Supernatural system |
+
+**Exit criteria:** Player can fight an armed guard. Guard uses shield to block. Disarming works through zone targeting. NPCs surrender when outmatched. Faction combat resolves without player involvement.
 
 ---
 
 ## 12. Who Does What
 
-<!-- STUB — to be filled -->
+### Phase 1 Assignments
+
+| Agent | Role | Deliverables |
+|-------|------|-------------|
+| **Comic Book Guy** (Creative Director) | Design lead, combat narration templates, stress injury design | This plan; narration template spec; stress.lua injury definition |
+| **Bart** (Architect) | Combat engine: exchange FSM, material damage resolution, creature tick integration | `src/engine/combat/init.lua`, `resolve_exchange()`, combat FSM integration into game loop |
+| **Flanders** (Object Engineer) | body_tree on creatures, combat tissue materials, weapon combat metadata | `body_tree` tables on rat + player; skin, hide, bone, organ, tooth_enamel, keratin material definitions; `combat` table on weapon objects |
+| **Smithers** (Parser/UI) | Attack verb extension, defensive response prompts, combat narration rendering | Verb handler updates for attack/block/dodge/flee during combat; text formatting for combat output |
+| **Moe** (World Builder) | No combat deliverables in Phase 1 | (Phase 2: room-specific combat environmental features) |
+| **Nelson** (QA) | Test suite: combat resolution, injury integration, creature death, flee mechanics | `test/combat/` test directory; material interaction tests; combat FSM state tests |
+| **Brockman** (Documentation) | Combat system player-facing documentation | `docs/design/combat-system.md` player-facing reference |
+
+### Phase 2 Assignments
+
+| Agent | Deliverables |
+|-------|-------------|
+| **Comic Book Guy** | Creature combat profiles (wolf, spider, cat); rabies/venom injury designs; NPC-vs-NPC narration templates |
+| **Bart** | NPC-vs-NPC combat resolution; predator-prey trigger system; multi-combatant turn order; `on_hit` disease delivery mechanism |
+| **Flanders** | Wolf, spider, cat creature definitions with body_tree + combat metadata; rabies.lua, spider-venom.lua injury definitions |
+| **Smithers** | Combat witness narration (player sees/hears NPC fights); multi-target disambiguation |
+| **Moe** | Room creature placement for ecosystem interactions (cat + rat in same room) |
+| **Nelson** | NPC-vs-NPC combat tests; disease transmission tests; multi-combatant tests |
+
+### Phase 3 Assignments
+
+| Agent | Deliverables |
+|-------|-------------|
+| **Comic Book Guy** | Wrestling/grapple design; environmental combat verb design; weapon degradation narration |
+| **Bart** | Grapple FSM states; weapon/armor degradation checks; pack tactics AI; combat sound propagation |
+| **Flanders** | Weapon fragility combat interactions; armor damage FSM states |
+| **Smithers** | Environmental combat verb handlers (push, throw at, slam); grapple prompts |
+| **Sideshow Bob** (Puzzles) | Combat puzzles: "use environment to defeat stronger enemy" scenarios |
+| **Nelson** | Grapple system tests; environmental combat tests; degradation tests |
+
+### Decision Authority
+
+| Decision Type | Authority |
+|---------------|-----------|
+| Combat design, balance, narration tone | **Comic Book Guy** (this plan is authoritative) |
+| Engine architecture, FSM design, module structure | **Bart** (implements per this spec) |
+| Object metadata format, creature definitions | **Flanders** (follows `body_tree` and `combat` table specs above) |
+| Parser integration, text output formatting | **Smithers** |
+| Test coverage requirements | **Nelson** |
+| Final approval on all combat features | **Wayne** |
 
 ---
 
 ## 13. Open Questions
 
-<!-- STUB — to be filled -->
+These are decisions Wayne needs to make before or during implementation. They're architectural forks, not design gaps — the plan is complete either way.
+
+### Q1: Deterministic or Probabilistic Hit Zones?
+
+**Option A (Recommended):** Hit zone selection is random, weighted by zone size. Player can target a specific zone at 60% accuracy. Simple, fast, narrative-friendly.
+
+**Option B:** All combat is fully deterministic (Into the Breach model). Player always chooses the exact zone. No randomness anywhere. Purest tactical experience, but removes surprise and limits narration variety.
+
+**Wayne's call:** How much randomness do you want? The plan assumes Option A.
+
+### Q2: How Lethal Should Phase 1 Combat Be?
+
+**Option A (Recommended):** Steel weapon vs. rat = instant kill. Rat bite vs. bare hand = minor-cut. Combat is fast and decisive when you're well-equipped, dangerous when you're not. DF realism.
+
+**Option B:** All combats last 3–5 exchanges minimum. Tune down lethality for pacing. More rounds = more player choices = more narration. But risks "hp sponge" feel.
+
+**Wayne's call:** Do you want DF-realistic lethality (a steel sword one-shots a rat) or gamified balance (every fight lasts multiple rounds)?
+
+### Q3: Can Combat Span Multiple Rooms?
+
+**Option A (Recommended for Phase 1):** No. Combat is room-local. Fleeing ends combat. If a creature has `hunt` behavior (Phase 2+), it can follow the player and re-initiate combat in the next room.
+
+**Option B:** Combat can continue across room transitions. The player flees, the rat follows, combat continues. More immersive but significantly more complex for the engine.
+
+**Wayne's call:** Room-local combat for Phase 1?
+
+### Q4: Weapon Type Effectiveness Matrix
+
+Should we formalize that edged weapons are better against unarmored targets and blunt weapons are better against armored targets? The material system already creates this naturally (edged weapons use max_edge, blunt weapons use density), but should we make it explicit in player-facing documentation?
+
+**Wayne's call:** Is the emergent material behavior sufficient, or do players need explicit weapon type guidance ("use maces against armored foes")?
+
+### Q5: Unarmed Combat Viability
+
+Is punching/kicking a meaningful combat option, or is it purely a "better than nothing" fallback? Currently, player natural weapons (fist: bone material, blunt, force 2) are weak against anything with hide or armor. This is physically realistic — a bare fist can't kill a rat easily — but it means the player MUST find a weapon to fight effectively.
+
+**Wayne's call:** Is "find a weapon before you can fight" an intentional gameplay constraint, or should unarmed combat be viable (at a disadvantage)?
+
+### Q6: Armor Coverage Granularity
+
+The armor system uses `coverage` (0.0–1.0) per slot. Should coverage vary per armor piece within a slot (leather cap covers 0.6 of head, iron helm covers 0.95), or should coverage be binary (wearing anything on head = head is armored)?
+
+**Recommendation:** Keep coverage as-is (per the existing armor system doc). It's already designed and doesn't need combat-specific changes.
+
+### Q7: Combat Pacing — Input Per Exchange or Per Round?
+
+**Option A (Recommended):** Player makes ONE choice per exchange they participate in. On their attack turn: choose action. On the enemy's attack turn: choose response. This is 2 inputs per round (one as attacker, one as defender).
+
+**Option B:** Player makes one choice per round (stance: aggressive/defensive/balanced), then all exchanges in the round auto-resolve. Faster pacing, less per-turn agency.
+
+**Wayne's call:** How much input do you want per combat round? The plan assumes Option A (input per exchange).
+
+### Q8: Should the Player See Exact Numbers?
+
+**Option A (Recommended):** No numbers. The player sees narrative descriptions of severity: *"a shallow scratch"* vs. *"a deep, bleeding gash."* Material reasoning is explained in narration: *"Your dagger finds a gap in the hide"* tells the player edged-vs-unarmored works without showing damage values.
+
+**Option B:** Show numbers in parentheses for transparency: *"Your dagger cuts the rat's flank (3 damage to body zone)."* More transparent but breaks immersion.
+
+**Wayne's call:** Pure narrative or numbers-in-parentheses?
+
+---
+
+*This plan synthesizes research from 5 combat systems (Dwarf Fortress, MTG, MUD tradition, competitive games, board games), respects all 9 core engine principles, and implements Wayne's 5 combat directives. The architecture is designed to be implemented incrementally — Phase 1 is a complete, playable combat system; each subsequent phase adds capabilities without refactoring the core. The material system does the heavy lifting, the FSM manages state, and the text output system makes it all feel like a story.*
+
+*Worst. Combat system design. Ever. ...Actually, no. Best one.*
