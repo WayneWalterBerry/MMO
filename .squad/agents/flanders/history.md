@@ -658,3 +658,26 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 **Decisions respected:** D-COMBAT-NPC-PHASE-SEQUENCING (no combat metadata), D-14 (code mutation), D-INANIMATE override for creatures.
 
 **Next:** WAVE-2 (Bart: creature tick engine), WAVE-4 (Flanders: body_tree + combat metadata retrofit).
+
+---
+
+## Latest: Creatures Directory Structure (2026-03-26)
+
+### D-CREATURES-DIRECTORY: Dedicated Directory for Animate Beings ✅ IMPLEMENTED
+
+**Date:** 2026-03-26T20:30Z  
+**By:** Bart (Architecture)
+
+**What Changed:**
+- Created `src/meta/creatures/` directory
+- Moved `src/meta/objects/rat.lua` → `src/meta/creatures/rat.lua`
+- **Loader:** Now scans `meta/creatures/` after `meta/objects/`; both feed `base_classes` and `object_sources`
+- **Meta-lint:** `_detect_kind()` validates creature files with same rigor as objects (templates, GUIDs, keywords, sensory)
+
+**What This Means for Flanders:**
+- Food object templates coming next (via Frink's research)
+- Creature object templates now officially separated from inanimate objects
+- Can define creature-specific templates if needed for Phase 2+
+- Cellar rat location unchanged — room instances still reference rat by GUID (auto-resolve)
+
+**Commit:** 2b3e426 (all tests pass; only pre-existing #275 unarmed failure)

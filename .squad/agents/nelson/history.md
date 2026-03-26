@@ -1820,3 +1820,32 @@ Player said "light" but error says "burn".
   exits matching the real engine API (registry:list(), creature.location, context.rooms table).
   Key finding: engine module already exists from Bart's WAVE-2 work — tests validate the
   implementation rather than serving as pure red-phase TDD. No regressions in existing suite.
+
+---
+
+## Latest: Creatures Directory Structure (2026-03-26)
+
+### D-CREATURES-DIRECTORY: Test Paths Updated ✅ IMPLEMENTED
+
+**Date:** 2026-03-26T20:30Z  
+**By:** Bart (Architecture)
+
+**What Changed:**
+- Created `src/meta/creatures/` directory
+- Moved `src/meta/objects/rat.lua` → `src/meta/creatures/rat.lua`
+- **7 test files updated** for new directory structure:
+  - Loader tests (test/loader/*) — creature loading paths
+  - Meta-lint tests (test/meta-lint/*) — creatures validation rules
+  - Search tests (test/search/*) — rat discovery tests
+  - Inventory tests (test/inventory/*) — rat containment tests
+
+**What This Means for Nelson:**
+- Test discovery auto-mirrors new creature structure
+- Loader scans both `meta/objects/` and `meta/creatures/` before room resolution
+- Meta-lint treats creatures with same rigor as objects (GUIDs, keywords, sensory)
+- All rat tests still pass in new location
+- Creature-specific validation rules now apply (vs. inanimate object rules)
+
+**Test Results:** All tests pass (only pre-existing #275 unarmed failure)
+
+**Commit:** 2b3e426

@@ -419,6 +419,27 @@ Built all 5 new room .lua files in `src/meta/world/`:
 
 ---
 
+## Latest: Creatures Directory Structure (2026-03-26)
+
+### D-CREATURES-DIRECTORY: Cellar Rat Location Unchanged ✅ VERIFIED
+
+**Date:** 2026-03-26T20:30Z  
+**By:** Bart (Architecture)
+
+**What Changed:**
+- Created `src/meta/creatures/` directory
+- Moved `src/meta/objects/rat.lua` → `src/meta/creatures/rat.lua`
+- Loader updated to scan both `meta/objects/` and `meta/creatures/`
+
+**Impact on Moe (World Builder):**
+- **Cellar rat location:** Cellar.lua instances still reference rat by GUID — no room file changes needed
+- **Directory change is internal:** Room definitions stay the same; GUID references auto-resolve from new creature directory
+- **No action required:** Rat presence in cellar-stairway is structurally unchanged
+
+**Commit:** 2b3e426
+
+---
+
 ## Archives
 
 - `history-archive-2026-03-20T22-40Z-moe.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): world builder onboarding, room architecture, map design, level 1 expansion

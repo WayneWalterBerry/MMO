@@ -40,6 +40,9 @@ Quick-reference table of ALL decisions (active + archived).
 | D-WAYNE-REGRESSION-TESTS: Every Bug Fix Must Include Regression T | Testing | 🟢 Active | See full entry | Active |
 | D-NPC-COMBAT-ALIGNMENT: NPC Plan ↔ Combat Plan Alignment (13 fixes) | Design | 🟢 Active | All 13 alignment fixes applied to NPC system plan | Active |
 | D-COMBAT-NPC-PHASE-SEQUENCING: NPC Phase 1 Uses Simple injuries.inflict() | Design | 🟢 Active | No combat FSM, body_tree, or combat metadata in Phase 1 | Active |
+| D-CREATURES-DIRECTORY: Dedicated Directory for Animate Beings | Architecture | ✅ Implemented | rat.lua moved to src/meta/creatures/; loader updated; tests pass | Active |
+| D-FOOD-SYSTEMS-RESEARCH: Food Systems Research Complete | Research | ✅ Complete | 4 documents (127 KB), 15+ games analyzed, 80% engine ready | Active |
+| D-CHECKPOINT-AFTER-WAVE: Checkpoint After Every Wave | Process | 🟢 Active | Verify wave completion, update plan documentation as living doc | Active |
 | Architecture Notes | Architecture | 📦 Archived | See full entry | Archive |
 | D-104: PLAYER-CANONICAL-STATE (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
 | D-105: OBJECT-INSTANCING-FACTORY (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
@@ -393,6 +396,109 @@ This keeps combat flowing but gives player agency at decision points. Not pure p
 - **Flanders:** Rat design finalized; no inventory, permanent death, multi-room sound support
 - **Bart:** Creature tick implementation in WAVE-2
 - **Nelson:** Test framework covers all 7 resolved areas
+
+---
+
+### D-CREATURES-DIRECTORY: Dedicated Directory for Animate Beings
+
+**Author:** Bart (Architect)  
+**Date:** 2026-03-26T20:30Z  
+**Status:** ✅ Implemented  
+**Category:** Architecture
+
+**Decision:** Create dedicated `src/meta/creatures/` directory for animate beings. Creature definitions live alongside (but separate from) inanimate objects in `src/meta/objects/`.
+
+**Rationale:**
+Creatures are not inanimate objects. Separating their definitions clarifies ownership, validation rules, and loader behavior while keeping shared template resolution intact.
+
+**Implementation:**
+- Loader scans `meta/objects/` then `meta/creatures/` before room resolution; both feed `base_classes` and `object_sources`
+- Meta-lint treats `creatures/` files like objects for template resolution, GUID uniqueness, keywords, and sensory checks
+- `rat.lua` moved to `src/meta/creatures/rat.lua`; all path references updated
+
+**Changes:**
+- `src/engine/loader/init.lua` — added creatures directory scan
+- `meta-lint _detect_kind()` — recognizes creatures vs objects
+- 7 test files updated (loader, lint, search, inventory)
+- Documentation updated (loader.md, object-design-patterns.md)
+
+**Impact:**
+- **Flanders:** Template system now supports creature subtypes; can define creature-specific templates
+- **Nelson:** Test paths updated; all test discovery mirrors new structure
+- **Moe:** Cellar rat instance unchanged (GUID references auto-resolve)
+
+**Commit:** 2b3e426 (all tests pass)
+
+---
+
+### D-FOOD-SYSTEMS-RESEARCH: Food Systems Research Complete
+
+**Author:** Frink (Researcher)  
+**Date:** 2026-03-26T20:30Z  
+**Status:** ✅ Complete  
+**Category:** Research
+
+**Decision:** Comprehensive food systems research complete. Engine is 80% ready for food systems. Hybrid design model validated across 15+ games.
+
+**Deliverables:**
+1. **food-systems-research.md** (92 KB) — 15+ games + real-world food science
+2. **food-mechanics-comparison.md** (19 KB) — side-by-side game mechanics matrix
+3. **food-design-patterns.md** (37 KB) — 15 software patterns with implementation guide
+4. **food-integration-notes.md** (37 KB) — system-by-system integration roadmap
+
+**Key Findings:**
+- ✅ FSM engine ready (food states: fresh → spoiling → spoiled)
+- ✅ Mutation system (D-14) supports cooking (raw-meat.lua → cooked-meat.lua)
+- ✅ Sensory properties (smell, taste, feel) perfect for identification
+- ✅ Material system extends to food materials
+- ✅ Tool capability system gates cooking (fire_source)
+- ✅ Containment system handles preservation (containers slow spoilage)
+- ✅ Rat creature already has hunger drive
+
+**Hybrid Design Model:**
+- **Valheim:** Food as buff/empowerment (not punishment)
+- **Dwarf Fortress:** Emotional system, cooking as preservation
+- **NetHack:** Risk/reward sensory testing (taste risky)
+- **MUDs:** Non-intrusive, optional engagement
+- **Text IF:** Sensory richness, puzzle integration
+
+**Effort Estimate:**
+- Phase 1 (Basic Consumables): 8 hours
+- Phase 2 (Cooking): 10 hours
+- Phase 3 (Spoilage): 14 hours
+- Phase 4 (Preservation): 10 hours
+- Phase 5 (Recipes + Creatures): 12 hours
+- **Total:** 32–46 hours (5 sprints)
+
+**Impact:**
+- **Comic Book Guy:** Use research to create food mechanics design document
+- **Bart:** Review integration notes, validate FSM/material extensions
+- **Flanders:** Food object templates, state definitions
+- **Sideshow Bob:** Food-based puzzles (bait, creature feeding, cooking challenges)
+
+**Research files:** `resources/research/food/`
+
+---
+
+### D-CHECKPOINT-AFTER-WAVE: Checkpoint After Every Wave
+
+**Author:** Wayne Berry (via Copilot Coordinator)  
+**Date:** 2026-03-26T16:30Z  
+**Status:** 🟢 Active  
+**Category:** Process
+
+**Decision:** After every wave completes, checkpoint: verify the wave was completed fully and update plan documentation to reflect completion status.
+
+**Requirements:**
+1. Mark completed waves in planning documents
+2. Note any deviations from plan
+3. Update plan as living document (not static)
+4. Provide audit trail for walk-away execution
+
+**Impact:**
+- **All agents:** Plan documentation stays current and reflects reality
+- **Wayne:** Clear visibility into progress and deviations
+- **Scribe:** Maintains session logs + orchestration logs per spawn
 
 ---
 
