@@ -46,7 +46,6 @@ local consume_tool_charge = H.consume_tool_charge
 local remove_from_location = H.remove_from_location
 local container_contents_accessible = H.container_contents_accessible
 local find_mutation = H.find_mutation
-local exit_matches = H.exit_matches
 local spawn_objects = H.spawn_objects
 local perform_mutation = H.perform_mutation
 local inventory_weight = H.inventory_weight
@@ -184,25 +183,6 @@ function M.register(handlers)
             end
             local obj = find_visible(ctx, target)
             if not obj then
-                -- BUG-029: check exits (iron door, etc.)
-                local room = ctx.current_room
-                for dir, exit in pairs(room.exits or {}) do
-                    if type(exit) == "table" and not exit.hidden
-                        and exit_matches(exit, dir, target) then
-                        local desc
-                        if exit.locked then
-                            desc = exit.description or ("A " .. (exit.name or "passage") .. ".")
-                        elseif not exit.open and exit.description_unlocked then
-                            desc = exit.description_unlocked
-                        elseif exit.open and exit.description_open then
-                            desc = exit.description_open
-                        else
-                            desc = exit.description or ("A " .. (exit.name or "passage") .. ".")
-                        end
-                        print(desc)
-                        return
-                    end
-                end
                 err_not_found(ctx)
                 return
             end
@@ -373,25 +353,6 @@ function M.register(handlers)
         end
         local obj = find_visible(ctx, noun)
         if not obj then
-            -- BUG-029: check exits
-            local room = ctx.current_room
-            for dir, exit in pairs(room.exits or {}) do
-                if type(exit) == "table" and not exit.hidden
-                    and exit_matches(exit, dir, noun) then
-                    local desc
-                    if exit.locked then
-                        desc = exit.description or ("A " .. (exit.name or "passage") .. ".")
-                    elseif not exit.open and exit.description_unlocked then
-                        desc = exit.description_unlocked
-                    elseif exit.open and exit.description_open then
-                        desc = exit.description_open
-                    else
-                        desc = exit.description or ("A " .. (exit.name or "passage") .. ".")
-                    end
-                    print(desc)
-                    return
-                end
-            end
             err_not_found(ctx)
             return
         end
@@ -453,21 +414,6 @@ function M.register(handlers)
             -- Dark: fall back to feel description
             local obj, loc_type, parent_obj, surface_key = find_visible(ctx, noun)
             if not obj then
-                -- BUG-029: check exits by feel in darkness
-                local room = ctx.current_room
-                for dir, exit in pairs(room.exits or {}) do
-                    if type(exit) == "table" and not exit.hidden
-                        and exit_matches(exit, dir, noun) then
-                        if exit.on_feel then
-                            local feel = type(exit.on_feel) == "function"
-                                and exit.on_feel(exit) or exit.on_feel
-                            print("It's too dark to see, but you feel: " .. feel)
-                        else
-                            print("You sense " .. (exit.name or "a passage") .. " leading " .. dir .. ".")
-                        end
-                        return
-                    end
-                end
                 print("You can't find anything like that in the darkness. Try 'feel' to explore by touch.")
                 return
             end
@@ -783,21 +729,6 @@ function M.register(handlers)
 
         local obj, loc_type, parent_obj, surface_key = find_visible(ctx, noun)
         if not obj then
-            -- BUG-029: check exits by touch (iron door, etc.)
-            local room = ctx.current_room
-            for dir, exit in pairs(room.exits or {}) do
-                if type(exit) == "table" and not exit.hidden
-                    and exit_matches(exit, dir, noun) then
-                    if exit.on_feel then
-                        local feel = type(exit.on_feel) == "function"
-                            and exit.on_feel(exit) or exit.on_feel
-                        print(feel)
-                    else
-                        print("You feel " .. (exit.name or "a passage") .. ". It leads " .. dir .. ".")
-                    end
-                    return
-                end
-            end
             print("You can't feel anything like that nearby. Try 'feel' to explore what's around you.")
             return
         end

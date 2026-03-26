@@ -399,8 +399,15 @@ end)
 suite("FEEL — exit/door feel in darkness")
 
 test("feel door in dark returns on_feel for exit", function()
-    local exits = make_door_exit()
-    local ctx = make_ctx({ exits = exits, time_offset = 0 })
+    local door_obj = {
+        id = "test-door",
+        name = "a wooden door",
+        keywords = {"door", "wooden door"},
+        on_feel = "Rough oak planks, iron-banded. A keyhole on the right.",
+        categories = {"portal"},
+    }
+    local ctx = make_ctx({ room_contents = {"test-door"}, time_offset = 0 })
+    ctx.registry:register("test-door", door_obj)
     local output = capture_output(function()
         handlers["feel"](ctx, "door")
     end)

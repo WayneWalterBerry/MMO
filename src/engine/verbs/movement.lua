@@ -46,7 +46,6 @@ local consume_tool_charge = H.consume_tool_charge
 local remove_from_location = H.remove_from_location
 local container_contents_accessible = H.container_contents_accessible
 local find_mutation = H.find_mutation
-local exit_matches = H.exit_matches
 local spawn_objects = H.spawn_objects
 local perform_mutation = H.perform_mutation
 local inventory_weight = H.inventory_weight
@@ -141,20 +140,12 @@ function M.register(handlers)
         -- Resolve direction alias
         local dir = DIRECTION_ALIASES[clean]
 
-        -- If not a known direction, try portal keyword then exit keyword
+        -- If not a known direction, try portal keyword
         if not dir then
             local room = ctx.current_room
             local portal = find_portal_by_keyword(ctx, clean)
             if portal and portal.portal and portal.portal.direction_hint then
                 dir = portal.portal.direction_hint
-            end
-            if not dir then
-                for d, exit in pairs(room.exits or {}) do
-                    if type(exit) == "table" and exit_matches(exit, d, clean) then
-                        dir = d
-                        break
-                    end
-                end
             end
         end
         if not dir then
@@ -263,91 +254,8 @@ function M.register(handlers)
             return
         end
 
-        -----------------------------------------------------------------
-        -- Legacy exit-table path (backward compatible)
-        -----------------------------------------------------------------
-        if not exit then
-            print("You can't go that way.")
-            return
-        end
-
-        if type(exit) == "table" then
-            if exit.hidden then
-                print("You can't go that way.")
-                return
-            end
-            if not exit.open then
-                if exit.locked then
-                    print((exit.name or "The way") .. " is locked.")
-                else
-                    print((exit.name or "The exit") .. " is closed.")
-                end
-                return
-            end
-        end
-
-        local target_id = type(exit) == "table" and exit.target or exit
-        local target_room = ctx.rooms and ctx.rooms[target_id]
-        if not target_room then
-            print("That way leads somewhere you cannot yet reach.")
-            return
-        end
-
-        -- Fire on_traverse exit effects BEFORE moving the player
-        traverse_effects.process(exit, ctx)
-
-        -- on_exit_room hook: fire callback if current room declares one
-        local old_room = ctx.current_room
-        if old_room.on_exit_room and type(old_room.on_exit_room) == "function" then
-            old_room.on_exit_room(old_room, ctx)
-        end
-        -- event_output: one-shot flavor text for on_exit_room
-        if old_room.event_output and old_room.event_output["on_exit_room"] then
-            print(old_room.event_output["on_exit_room"])
-            old_room.event_output["on_exit_room"] = nil
-        end
-
-        -- Tier 4: record current room before moving (for "go back")
-        if context_window and ctx.current_room then
-            context_window.set_previous_room(ctx.current_room.id)
-        end
-
-        -- Move player
-        ctx.player.location = target_id
-        ctx.current_room = target_room
-
-        -- Track visited rooms for short-description-on-revisit
-        ctx.player.visited_rooms = ctx.player.visited_rooms or {}
-        local first_visit = not ctx.player.visited_rooms[target_id]
-        ctx.player.visited_rooms[target_id] = true
-
-        -- on_enter_room hook: fire callback if target room declares one
-        if target_room.on_enter_room and type(target_room.on_enter_room) == "function" then
-            target_room.on_enter_room(target_room, ctx)
-        end
-        -- event_output: one-shot flavor text for on_enter_room
-        if target_room.event_output and target_room.event_output["on_enter_room"] then
-            print(target_room.event_output["on_enter_room"])
-            target_room.event_output["on_enter_room"] = nil
-        end
-
-        -- Print arrival
-        print("")
-        if target_room.on_enter then
-            print(target_room.on_enter(target_room))
-        else
-            print("You arrive at " .. (target_room.name or "a new area") .. ".")
-        end
-
-        -- First visit: full auto-look; revisit: short description only
-        if first_visit then
-            ctx.verbs["look"](ctx, "")
-        else
-            print("**" .. (target_room.name or "Unnamed room") .. "**")
-            if target_room.short_description then
-                print(target_room.short_description)
-            end
-        end
+        -- No portal found for this direction
+        print("You can't go that way.")
     end
 
     -- Cardinal and vertical directions

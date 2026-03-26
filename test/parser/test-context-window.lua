@@ -500,21 +500,43 @@ end)
 
 test("'go back' after room transition returns to previous room", function()
     fresh()
-    -- Set up two rooms with exits
+    -- Portal object for north exit in Room A → Room B
+    local portal_north = {
+        id = "portal-a-north",
+        template = "portal",
+        name = "a doorway",
+        keywords = {"door"},
+        categories = {"portal"},
+        portal = {
+            target = "room_b",
+            direction_hint = "north",
+        },
+        initial_state = "open",
+        _state = "open",
+        states = {
+            open = { traversable = true },
+        },
+        transitions = {},
+    }
+
+    -- Set up two rooms with portal-based exits
     local room_a = {
         id = "room_a", name = "Room A",
         description = "Room A.", short_description = "Room A.",
-        contents = {}, light_level = 1,
-        exits = { north = { target = "room_b", open = true } },
+        contents = { "portal-a-north" }, light_level = 1,
+        exits = { north = { portal = "portal-a-north" } },
     }
     local room_b = {
         id = "room_b", name = "Room B",
         description = "Room B.", short_description = "Room B.",
         contents = {}, light_level = 1,
-        exits = { south = { target = "room_a", open = true } },
+        exits = {},
     }
 
-    local registry_store = { room_a = room_a, room_b = room_b }
+    local registry_store = {
+        room_a = room_a, room_b = room_b,
+        ["portal-a-north"] = portal_north,
+    }
     local registry = {
         get = function(self, id) return registry_store[id] end,
         set = function(self, id, obj) registry_store[id] = obj end,

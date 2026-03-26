@@ -46,8 +46,6 @@ local consume_tool_charge = H.consume_tool_charge
 local remove_from_location = H.remove_from_location
 local container_contents_accessible = H.container_contents_accessible
 local find_mutation = H.find_mutation
-local exit_matches = H.exit_matches
-local sync_linked_exit = H.sync_linked_exit
 local spawn_objects = H.spawn_objects
 local perform_mutation = H.perform_mutation
 local inventory_weight = H.inventory_weight
@@ -97,16 +95,6 @@ function M.register(handlers)
                     if trans then
                         print(trans.message or ("You open " .. (obj.name or obj.id) .. "."))
                         if trans.spawns then spawn_objects(ctx, trans.spawns) end
-                        -- #217: sync linked exit after FSM open transition
-                        sync_linked_exit(ctx, obj, "open")
-                        -- Reveal exits when opening spatial objects (e.g., trap door)
-                        if obj.reveals_exit then
-                            local room = ctx.current_room
-                            if room.exits and room.exits[obj.reveals_exit] then
-                                room.exits[obj.reveals_exit].hidden = false
-                                room.exits[obj.reveals_exit].open = true
-                            end
-                        end
                         -- on_open hook: fire callback if object declares one
                         if obj.on_open and type(obj.on_open) == "function" then
                             obj.on_open(obj, ctx)
@@ -155,58 +143,6 @@ function M.register(handlers)
             end
         end
 
-        -- Check exits (doors, etc.)
-        local room = ctx.current_room
-        for dir, exit in pairs(room.exits or {}) do
-            if type(exit) == "table" and exit_matches(exit, dir, noun) then
-                if not exit.mutations or not exit.mutations.open then
-                    -- Already open or not openable
-                    if exit.open then
-                        print("It is already open.")
-                    else
-                        print("You can't open that.")
-                    end
-                    return
-                end
-                if exit.open then
-                    print("It is already open.")
-                    return
-                end
-                -- BUG-049: if locked and player specified a tool, try unlock first
-                if exit.locked and ctx.tool_noun then
-                    local key_obj = find_in_inventory(ctx, ctx.tool_noun)
-                    if key_obj and exit.key_id and key_obj.id == exit.key_id then
-                        exit.locked = false
-                        local door_name = exit.name or "The door"
-                        local nice_name = door_name:sub(1,1):upper() .. door_name:sub(2)
-                        print("You insert " .. (key_obj.name or "the key")
-                            .. " into the lock. *click* " .. nice_name .. " unlocks.")
-                    elseif key_obj and exit.key_id then
-                        print("That doesn't fit this lock.")
-                        return
-                    else
-                        print("It is locked.")
-                        return
-                    end
-                elseif exit.locked then
-                    print("It is locked.")
-                    return
-                end
-                local mut = exit.mutations.open
-                if mut.condition and not mut.condition(exit) then
-                    print("You can't open that right now.")
-                    return
-                end
-                if mut.becomes_exit then
-                    for k, v in pairs(mut.becomes_exit) do
-                        exit[k] = v
-                    end
-                end
-                print(mut.message or "You open it.")
-                return
-            end
-        end
-
         if obj then
             print("You can't open " .. (obj.name or "that") .. ".")
         else
@@ -249,8 +185,6 @@ function M.register(handlers)
                     if trans then
                         print(trans.message or ("You close " .. (obj.name or obj.id) .. "."))
                         if trans.spawns then spawn_objects(ctx, trans.spawns) end
-                        -- #217: sync linked exit after FSM close transition
-                        sync_linked_exit(ctx, obj, "close")
                         -- on_close hook: fire callback if object declares one
                         if obj.on_close and type(obj.on_close) == "function" then
                             obj.on_close(obj, ctx)
@@ -286,33 +220,6 @@ function M.register(handlers)
             end
         end
 
-        -- Check exits
-        local room = ctx.current_room
-        for dir, exit in pairs(room.exits or {}) do
-            if type(exit) == "table" and exit_matches(exit, dir, noun) then
-                if not exit.mutations or not exit.mutations.close then
-                    if exit.open == false then
-                        print("It is already closed.")
-                    else
-                        print("You can't close that.")
-                    end
-                    return
-                end
-                if exit.open == false then
-                    print("It is already closed.")
-                    return
-                end
-                local mut = exit.mutations.close
-                if mut.becomes_exit then
-                    for k, v in pairs(mut.becomes_exit) do
-                        exit[k] = v
-                    end
-                end
-                print(mut.message or "You close it.")
-                return
-            end
-        end
-
         if obj then
             print("You can't close " .. (obj.name or "that") .. ".")
         else
@@ -323,60 +230,13 @@ function M.register(handlers)
     handlers["shut"] = handlers["close"]
 
     ---------------------------------------------------------------------------
-    -- UNLOCK — unlock a locked exit (door) with the correct key (BUG-030)
+    -- UNLOCK
     ---------------------------------------------------------------------------
     handlers["unlock"] = function(ctx, noun)
         if noun == "" then print("Unlock what?") return end
 
-        -- Parse "unlock X with Y"
-        local target_word, key_word = noun:match("^(.+)%s+with%s+(.+)$")
-        if not target_word then target_word = noun end
-
-        -- Search exits for a matching locked door
-        local room = ctx.current_room
-        for dir, exit in pairs(room.exits or {}) do
-            if type(exit) == "table" and exit_matches(exit, dir, target_word) then
-                if not exit.locked then
-                    if exit.open then
-                        print("It is already open.")
-                    else
-                        print("It isn't locked.")
-                    end
-                    return
-                end
-                if not exit.key_id then
-                    print((exit.name or "The lock") .. " has no visible keyhole.")
-                    return
-                end
-
-                -- Find the key
-                local key_obj
-                if key_word then
-                    key_obj = find_in_inventory(ctx, key_word)
-                else
-                    key_obj = find_in_inventory(ctx, "key")
-                end
-                if not key_obj then
-                    print("You don't have a key for that.")
-                    return
-                end
-                if key_obj.id ~= exit.key_id then
-                    print("That key doesn't fit this lock.")
-                    return
-                end
-
-                -- Unlock
-                exit.locked = false
-                local door_name = exit.name or "The door"
-                local nice_name = door_name:sub(1,1):upper() .. door_name:sub(2)
-                print("You insert " .. (key_obj.name or "the key")
-                    .. " into the lock. *click* " .. nice_name .. " unlocks.")
-                return
-            end
-        end
-
-        -- Check objects (future: locked chests)
-        local obj = find_visible(ctx, target_word)
+        -- Check objects (FSM-managed locks, e.g. portal objects)
+        local obj = find_visible(ctx, noun)
         if obj then
             print("You can't unlock " .. (obj.name or "that") .. ".")
         else
@@ -385,73 +245,13 @@ function M.register(handlers)
     end
 
     ---------------------------------------------------------------------------
-    -- LOCK — lock an exit door with the correct key (#170)
+    -- LOCK
     ---------------------------------------------------------------------------
     handlers["lock"] = function(ctx, noun)
         if noun == "" then print("Lock what?") return end
 
-        -- Parse "lock X with Y"
-        local target_word, key_word = noun:match("^(.+)%s+with%s+(.+)$")
-        if not target_word then target_word = noun end
-
-        -- Search exits for a matching door
-        local room = ctx.current_room
-        for dir, exit in pairs(room.exits or {}) do
-            if type(exit) == "table" and exit_matches(exit, dir, target_word) then
-                if exit.locked then
-                    print("It is already locked.")
-                    return
-                end
-                if not exit.key_id then
-                    print((exit.name or "That") .. " has no lock.")
-                    return
-                end
-
-                -- Close the door first if open
-                if exit.open then
-                    if exit.mutations and exit.mutations.close then
-                        local mut = exit.mutations.close
-                        if mut.becomes_exit then
-                            for k, v in pairs(mut.becomes_exit) do
-                                exit[k] = v
-                            end
-                        end
-                        print(mut.message or "You close it first.")
-                    else
-                        exit.open = false
-                    end
-                end
-
-                -- Find the key
-                local key_obj
-                if key_word then
-                    key_obj = find_in_inventory(ctx, key_word)
-                elseif ctx.tool_noun then
-                    key_obj = find_in_inventory(ctx, ctx.tool_noun)
-                else
-                    key_obj = find_in_inventory(ctx, "key")
-                end
-                if not key_obj then
-                    print("You don't have a key for that.")
-                    return
-                end
-                if key_obj.id ~= exit.key_id then
-                    print("That key doesn't fit this lock.")
-                    return
-                end
-
-                -- Lock
-                exit.locked = true
-                local door_name = exit.name or "The door"
-                local nice_name = door_name:sub(1,1):upper() .. door_name:sub(2)
-                print("You turn " .. (key_obj.name or "the key")
-                    .. " in the lock. *click* " .. nice_name .. " is locked.")
-                return
-            end
-        end
-
-        -- Check objects (future: lockable chests)
-        local obj = find_visible(ctx, target_word)
+        -- Check objects (FSM-managed locks, e.g. portal objects)
+        local obj = find_visible(ctx, noun)
         if obj then
             print("You can't lock " .. (obj.name or "that") .. ".")
         else

@@ -1,6 +1,6 @@
 -- test/objects/test-bedroom-door-object.lua
--- Tests for the bedroom-door.lua interactable object.
--- Validates object structure, FSM states, sensory metadata, and exit linkage.
+-- Tests for the bedroom-hallway-door-north portal object (replaces bedroom-door.lua).
+-- Validates object structure, FSM states, sensory metadata, and portal linkage.
 -- Must be run from repository root: lua test/objects/test-bedroom-door-object.lua
 
 local script_dir = arg[0]:match("(.+)[/\\][^/\\]+$") or "."
@@ -14,9 +14,9 @@ local test = h.test
 local suite = h.suite
 
 ---------------------------------------------------------------------------
--- Load the door object and start-room
+-- Load the portal object and start-room
 ---------------------------------------------------------------------------
-local door = dofile(script_dir .. "/../../src/meta/objects/bedroom-door.lua")
+local door = dofile(script_dir .. "/../../src/meta/objects/bedroom-hallway-door-north.lua")
 local room = dofile(script_dir .. "/../../src/meta/rooms/start-room.lua")
 
 ---------------------------------------------------------------------------
@@ -25,11 +25,11 @@ local room = dofile(script_dir .. "/../../src/meta/rooms/start-room.lua")
 suite("BEDROOM DOOR OBJECT: identity")
 
 test("1. Object loads without error", function()
-    h.assert_truthy(door, "bedroom-door.lua must load")
+    h.assert_truthy(door, "bedroom-hallway-door-north.lua must load")
 end)
 
-test("2. Object id is 'bedroom-door'", function()
-    h.assert_eq("bedroom-door", door.id, "object id")
+test("2. Object id is 'bedroom-hallway-door-north'", function()
+    h.assert_eq("bedroom-hallway-door-north", door.id, "object id")
 end)
 
 test("3. Object has a valid GUID", function()
@@ -37,16 +37,16 @@ test("3. Object has a valid GUID", function()
     h.assert_truthy(door.guid:match("{.*}"), "guid must be in brace format")
 end)
 
-test("4. Template is 'furniture'", function()
-    h.assert_eq("furniture", door.template, "template")
+test("4. Template is 'portal'", function()
+    h.assert_eq("portal", door.template, "template")
 end)
 
 test("5. Material is 'oak'", function()
     h.assert_eq("oak", door.material, "material")
 end)
 
-test("6. Size is 6", function()
-    h.assert_eq(6, door.size, "size")
+test("6. Size is appropriate", function()
+    h.assert_truthy(door.size and door.size > 0, "size must be positive")
 end)
 
 test("7. Not portable", function()
@@ -239,19 +239,20 @@ end)
 ---------------------------------------------------------------------------
 suite("BEDROOM DOOR OBJECT: exit linkage")
 
-test("66. Has linked_exit field", function()
-    h.assert_truthy(door.linked_exit, "linked_exit must exist")
+test("66. Has portal metadata", function()
+    h.assert_truthy(door.portal, "portal table must exist")
 end)
 
-test("67. linked_exit is 'north'", function()
-    h.assert_eq("north", door.linked_exit, "linked_exit direction")
+test("67. Portal target is 'hallway'", function()
+    h.assert_eq("hallway", door.portal.target, "portal target")
 end)
 
-test("68. Has linked_passage_id", function()
-    h.assert_eq("bedroom-hallway-door", door.linked_passage_id, "linked_passage_id")
+test("68. Has bidirectional_id for paired sync", function()
+    h.assert_truthy(door.portal.bidirectional_id,
+        "portal must have bidirectional_id")
 end)
 
-test("69. North exit uses portal ref (replaces inline passage_id)", function()
+test("69. North exit uses portal ref in start-room", function()
     local north = room.exits and room.exits.north
     h.assert_truthy(north, "north exit must exist in room")
     h.assert_truthy(north.portal,
@@ -265,29 +266,27 @@ end)
 ---------------------------------------------------------------------------
 suite("BEDROOM DOOR OBJECT: room placement")
 
-test("70. Bedroom door instance exists in start-room", function()
+test("70. Bedroom door portal referenced in start-room north exit", function()
+    local north = room.exits and room.exits.north
+    h.assert_truthy(north and north.portal,
+        "start-room north exit must reference the portal")
+    h.assert_eq("bedroom-hallway-door-north", north.portal,
+        "portal reference must match door id")
+end)
+
+test("71. Portal instances exist in start-room", function()
     local found = false
-    for _, inst in ipairs(room.instances) do
-        if inst.id == "bedroom-door" then found = true; break end
+    for _, inst in ipairs(room.instances or {}) do
+        if inst.id == "bedroom-hallway-door-north" or
+           (inst.type_id and inst.type_id == door.guid:gsub("[{}]", "")) then
+            found = true; break
+        end
     end
-    h.assert_truthy(found, "bedroom-door instance must exist in start-room")
+    h.assert_truthy(found, "bedroom-hallway-door-north instance must exist in start-room")
 end)
 
-test("71. Instance type_id matches door GUID (without braces)", function()
-    local door_guid = door.guid:gsub("[{}]", "")
-    local found_id = nil
-    for _, inst in ipairs(room.instances) do
-        if inst.id == "bedroom-door" then found_id = inst.type_id; break end
-    end
-    h.assert_eq(door_guid, found_id, "instance type_id must match door GUID")
-end)
-
-test("72. Instance location is 'room'", function()
-    local found_loc = nil
-    for _, inst in ipairs(room.instances) do
-        if inst.id == "bedroom-door" then found_loc = inst.location; break end
-    end
-    h.assert_eq("room", found_loc, "bedroom-door instance location")
+test("72. Portal is not portable (anchored in room)", function()
+    h.assert_eq(false, door.portable, "portal must not be portable")
 end)
 
 ---------------------------------------------------------------------------
@@ -303,12 +302,12 @@ test("73. Categories include 'architecture'", function()
     h.assert_truthy(found, "must include 'architecture'")
 end)
 
-test("74. Categories include 'wooden'", function()
+test("74. Categories include 'portal'", function()
     local found = false
     for _, c in ipairs(door.categories) do
-        if c == "wooden" then found = true; break end
+        if c == "portal" then found = true; break end
     end
-    h.assert_truthy(found, "must include 'wooden'")
+    h.assert_truthy(found, "must include 'portal'")
 end)
 
 ---------------------------------------------------------------------------

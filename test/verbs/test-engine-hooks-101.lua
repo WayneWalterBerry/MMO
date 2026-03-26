@@ -80,6 +80,26 @@ local function make_ctx(objects, room_contents, room_overrides)
     }
 end
 
+local function make_north_portal()
+    return {
+        id = "test-portal-north",
+        template = "portal",
+        name = "a doorway",
+        keywords = {"door", "doorway"},
+        categories = {"portal"},
+        portal = {
+            target = "hallway",
+            direction_hint = "north",
+        },
+        initial_state = "open",
+        _state = "open",
+        states = {
+            open = { traversable = true },
+        },
+        transitions = {},
+    }
+end
+
 ---------------------------------------------------------------------------
 -- Suite 1: on_pickup callback
 ---------------------------------------------------------------------------
@@ -264,6 +284,7 @@ h.suite("on_enter_room hook: callback fires on room entry")
 
 test("on_enter_room fires when player enters room", function()
     local hook_fired = false
+    local portal = make_north_portal()
     local target_room = {
         id = "hallway", name = "Hallway",
         description = "A long hallway.",
@@ -276,14 +297,15 @@ test("on_enter_room fires when player enters room", function()
     local start_room = {
         id = "bedroom", name = "Bedroom",
         description = "A small bedroom.",
-        contents = {},
+        contents = {"test-portal-north"},
         exits = {
-            north = { target = "hallway", open = true, name = "a doorway" },
+            north = { portal = "test-portal-north" },
         },
     }
     local objects = {
         ["bedroom"] = start_room,
         ["hallway"] = target_room,
+        ["test-portal-north"] = portal,
     }
     local reg = make_registry(objects)
     local ctx = {
@@ -310,6 +332,7 @@ end)
 
 test("on_enter_room receives correct room and context", function()
     local received_room, received_ctx
+    local portal = make_north_portal()
     local target_room = {
         id = "hallway", name = "Hallway",
         description = "A long hallway.",
@@ -323,14 +346,15 @@ test("on_enter_room receives correct room and context", function()
     local start_room = {
         id = "bedroom", name = "Bedroom",
         description = "A small bedroom.",
-        contents = {},
+        contents = {"test-portal-north"},
         exits = {
-            north = { target = "hallway", open = true, name = "a doorway" },
+            north = { portal = "test-portal-north" },
         },
     }
     local objects = {
         ["bedroom"] = start_room,
         ["hallway"] = target_room,
+        ["test-portal-north"] = portal,
     }
     local reg = make_registry(objects)
     local ctx = {
@@ -356,6 +380,7 @@ test("on_enter_room receives correct room and context", function()
 end)
 
 test("room WITHOUT on_enter_room works without error", function()
+    local portal = make_north_portal()
     local target_room = {
         id = "hallway", name = "Hallway",
         description = "A long hallway.",
@@ -365,14 +390,15 @@ test("room WITHOUT on_enter_room works without error", function()
     local start_room = {
         id = "bedroom", name = "Bedroom",
         description = "A small bedroom.",
-        contents = {},
+        contents = {"test-portal-north"},
         exits = {
-            north = { target = "hallway", open = true, name = "a doorway" },
+            north = { portal = "test-portal-north" },
         },
     }
     local objects = {
         ["bedroom"] = start_room,
         ["hallway"] = target_room,
+        ["test-portal-north"] = portal,
     }
     local reg = make_registry(objects)
     local ctx = {
@@ -398,6 +424,7 @@ test("room WITHOUT on_enter_room works without error", function()
 end)
 
 test("event_output.on_enter_room fires one-shot", function()
+    local portal = make_north_portal()
     local target_room = {
         id = "hallway", name = "Hallway",
         description = "A long hallway.",
@@ -410,14 +437,15 @@ test("event_output.on_enter_room fires one-shot", function()
     local start_room = {
         id = "bedroom", name = "Bedroom",
         description = "A small bedroom.",
-        contents = {},
+        contents = {"test-portal-north"},
         exits = {
-            north = { target = "hallway", open = true, name = "a doorway" },
+            north = { portal = "test-portal-north" },
         },
     }
     local objects = {
         ["bedroom"] = start_room,
         ["hallway"] = target_room,
+        ["test-portal-north"] = portal,
     }
     local reg = make_registry(objects)
     local ctx = {
@@ -451,6 +479,7 @@ h.suite("on_exit_room hook: callback fires on room exit")
 
 test("on_exit_room fires when player leaves room", function()
     local hook_fired = false
+    local portal = make_north_portal()
     local target_room = {
         id = "hallway", name = "Hallway",
         description = "A long hallway.",
@@ -460,9 +489,9 @@ test("on_exit_room fires when player leaves room", function()
     local start_room = {
         id = "bedroom", name = "Bedroom",
         description = "A small bedroom.",
-        contents = {},
+        contents = {"test-portal-north"},
         exits = {
-            north = { target = "hallway", open = true, name = "a doorway" },
+            north = { portal = "test-portal-north" },
         },
         on_exit_room = function(room, ctx)
             hook_fired = true
@@ -471,6 +500,7 @@ test("on_exit_room fires when player leaves room", function()
     local objects = {
         ["bedroom"] = start_room,
         ["hallway"] = target_room,
+        ["test-portal-north"] = portal,
     }
     local reg = make_registry(objects)
     local ctx = {
@@ -496,6 +526,7 @@ end)
 
 test("on_exit_room receives correct room and context", function()
     local received_room, received_ctx
+    local portal = make_north_portal()
     local target_room = {
         id = "hallway", name = "Hallway",
         description = "A long hallway.",
@@ -505,9 +536,9 @@ test("on_exit_room receives correct room and context", function()
     local start_room = {
         id = "bedroom", name = "Bedroom",
         description = "A small bedroom.",
-        contents = {},
+        contents = {"test-portal-north"},
         exits = {
-            north = { target = "hallway", open = true, name = "a doorway" },
+            north = { portal = "test-portal-north" },
         },
         on_exit_room = function(room, ctx)
             received_room = room
@@ -517,6 +548,7 @@ test("on_exit_room receives correct room and context", function()
     local objects = {
         ["bedroom"] = start_room,
         ["hallway"] = target_room,
+        ["test-portal-north"] = portal,
     }
     local reg = make_registry(objects)
     local ctx = {
@@ -542,6 +574,7 @@ test("on_exit_room receives correct room and context", function()
 end)
 
 test("event_output.on_exit_room fires one-shot", function()
+    local portal = make_north_portal()
     local target_room = {
         id = "hallway", name = "Hallway",
         description = "A long hallway.",
@@ -551,9 +584,9 @@ test("event_output.on_exit_room fires one-shot", function()
     local start_room = {
         id = "bedroom", name = "Bedroom",
         description = "A small bedroom.",
-        contents = {},
+        contents = {"test-portal-north"},
         exits = {
-            north = { target = "hallway", open = true, name = "a doorway" },
+            north = { portal = "test-portal-north" },
         },
         event_output = {
             on_exit_room = "You feel a pang of regret leaving.",
@@ -562,6 +595,7 @@ test("event_output.on_exit_room fires one-shot", function()
     local objects = {
         ["bedroom"] = start_room,
         ["hallway"] = target_room,
+        ["test-portal-north"] = portal,
     }
     local reg = make_registry(objects)
     local ctx = {
@@ -595,6 +629,7 @@ h.suite("Hook ordering: on_exit_room fires before on_enter_room")
 
 test("on_exit_room fires before on_enter_room during movement", function()
     local order = {}
+    local portal = make_north_portal()
     local target_room = {
         id = "hallway", name = "Hallway",
         description = "A long hallway.",
@@ -607,9 +642,9 @@ test("on_exit_room fires before on_enter_room during movement", function()
     local start_room = {
         id = "bedroom", name = "Bedroom",
         description = "A small bedroom.",
-        contents = {},
+        contents = {"test-portal-north"},
         exits = {
-            north = { target = "hallway", open = true, name = "a doorway" },
+            north = { portal = "test-portal-north" },
         },
         on_exit_room = function(room, ctx)
             order[#order + 1] = "exit"
@@ -618,6 +653,7 @@ test("on_exit_room fires before on_enter_room during movement", function()
     local objects = {
         ["bedroom"] = start_room,
         ["hallway"] = target_room,
+        ["test-portal-north"] = portal,
     }
     local reg = make_registry(objects)
     local ctx = {

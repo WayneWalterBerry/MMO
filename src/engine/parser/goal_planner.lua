@@ -607,33 +607,6 @@ local function plan_for_light(ctx, visited, depth)
 end
 
 ---------------------------------------------------------------------------
--- Tier 6: Plan to find and retrieve a specific key (by key_id)
----------------------------------------------------------------------------
-local function plan_for_key(key_id, ctx, visited, depth)
-    if depth > MAX_DEPTH then return nil end
-    local vkey = "key:" .. key_id
-    if visited[vkey] then return nil end
-    visited[vkey] = true
-
-    -- Already held?
-    for i = 1, 2 do
-        local hand = ctx.player.hands[i]
-        if hand then
-            local obj = _gp_hobj(hand, ctx.registry)
-            if obj and obj.id == key_id then return {} end
-        end
-    end
-
-    local entries = find_by_id(ctx, key_id)
-    for _, entry in ipairs(entries) do
-        if entry.where == "hand" then return {} end
-        return plan_retrieval(entry)
-    end
-
-    return nil
-end
-
----------------------------------------------------------------------------
 -- Tier 6: Generic tool resolution — find any object providing the
 -- requested capability, plan retrieval if needed
 ---------------------------------------------------------------------------
@@ -725,30 +698,6 @@ local function plan_for_tool(capability, ctx, visited, depth)
 end
 
 ---------------------------------------------------------------------------
--- Tier 6: Find locked exit matching noun, return key_id if locked
----------------------------------------------------------------------------
-local function find_locked_exit(ctx, noun)
-    local room = ctx.current_room
-    if not room or not room.exits then return nil end
-    local kw = strip_articles(noun)
-    for dir, exit in pairs(room.exits) do
-        if type(exit) == "table" and exit.locked and exit.key_id then
-            -- Match against direction, name, keywords
-            if dir:lower() == kw then return exit end
-            if exit.name and exit.name:lower():find(kw, 1, true) then return exit end
-            if exit.keywords then
-                for _, k in ipairs(exit.keywords) do
-                    if k:lower() == kw or k:lower():find(kw, 1, true) then
-                        return exit
-                    end
-                end
-            end
-        end
-    end
-    return nil
-end
-
----------------------------------------------------------------------------
 -- Resolve target object from noun string
 ---------------------------------------------------------------------------
 local function resolve_target(ctx, noun)
@@ -800,16 +749,6 @@ function goal_planner.plan(verb, noun, ctx)
         if presentation and presentation.has_some_light
             and not presentation.has_some_light(ctx) then
             local steps = plan_for_light(ctx, {}, 0)
-            if steps and #steps > 0 then return steps end
-        end
-    end
-
-    -- Tier 6: Verb-level requirement — unlock needs key
-    if canonical == "unlock" then
-        local target_word = noun:match("^(.+)%s+with%s+") or noun
-        local exit = find_locked_exit(ctx, target_word)
-        if exit and exit.key_id then
-            local steps = plan_for_key(exit.key_id, ctx, {}, 0)
             if steps and #steps > 0 then return steps end
         end
     end
@@ -892,9 +831,6 @@ end
 --- Tier 6: Expose internals for testing
 goal_planner._plan_for_light = function(ctx, visited, depth)
     return plan_for_light(ctx, visited or {}, depth or 0)
-end
-goal_planner._plan_for_key = function(key_id, ctx, visited, depth)
-    return plan_for_key(key_id, ctx, visited or {}, depth or 0)
 end
 goal_planner._plan_for_tool = function(cap, ctx, visited, depth)
     return plan_for_tool(cap, ctx, visited or {}, depth or 0)

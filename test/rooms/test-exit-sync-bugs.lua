@@ -56,9 +56,8 @@ end
 
 -- Load room and object metadata directly
 local room_meta = dofile(script_dir .. "/../../src/meta/rooms/start-room.lua")
-local door_meta = dofile(script_dir .. "/../../src/meta/objects/bedroom-door.lua")
 local portal_meta = dofile(script_dir .. "/../../src/meta/objects/bedroom-hallway-door-north.lua")
-local window_meta = dofile(script_dir .. "/../../src/meta/objects/window.lua")
+local window_portal_meta = dofile(script_dir .. "/../../src/meta/objects/bedroom-courtyard-window-out.lua")
 
 ---------------------------------------------------------------------------
 -- Load verb handlers
@@ -87,12 +86,15 @@ local function make_ctx(overrides)
 
     local room = deep_copy(room_meta)
     local portal_obj = deep_copy(portal_meta)
-    local win_obj = deep_copy(window_meta)
+    local win_portal = deep_copy(window_portal_meta)
+    -- Start portal from "closed" to match old window.lua test behavior
+    -- (the latch is already unlocked; open transition works)
+    win_portal._state = "closed"
 
-    -- Registry includes portal (replaces bedroom-door for north exit) and window
+    -- Registry includes portal (replaces bedroom-door for north exit) and window portal
     local reg_store = {
         ["bedroom-hallway-door-north"] = portal_obj,
-        ["window"] = win_obj,
+        ["bedroom-courtyard-window-out"] = win_portal,
     }
     local registry = {
         get = function(self, id) return reg_store[id] end,
@@ -115,10 +117,10 @@ local function make_ctx(overrides)
         end,
     }
 
-    -- Room contents include the portal and window objects
+    -- Room contents include the portal and window portal objects
     room.contents = room.contents or {}
     table.insert(room.contents, "bedroom-hallway-door-north")
-    table.insert(room.contents, "window")
+    table.insert(room.contents, "bedroom-courtyard-window-out")
 
     local ctx = {
         current_room = room,
@@ -145,14 +147,16 @@ local function make_ctx(overrides)
         verbs = handlers,
     }
 
-    -- Apply overrides to exit states (window still inline)
+    -- Apply overrides to exit states (window exit is now a portal ref)
     if overrides.window_exit then
         for k, v in pairs(overrides.window_exit) do
-            ctx.current_room.exits.window[k] = v
+            if type(win_portal) == "table" then
+                win_portal[k] = v
+            end
         end
     end
 
-    return ctx, portal_obj, win_obj
+    return ctx, portal_obj, win_portal
 end
 
 ---------------------------------------------------------------------------
@@ -210,44 +214,44 @@ end)
 suite("BUG #217: open window must sync exit to open+unlocked")
 
 test("#217-1: open window FSM transition succeeds (closed → open)", function()
-    local ctx, _, win = make_ctx()
-    h.assert_eq("closed", win._state, "window starts closed")
+    local ctx, _, win_portal = make_ctx()
+    h.assert_eq("closed", win_portal._state, "window portal starts closed")
     local out = capture(function() handlers["open"](ctx, "window") end)
-    h.assert_eq("open", win._state, "window must transition to open state")
+    h.assert_eq("open", win_portal._state, "window portal must transition to open state")
 end)
 
-test("#217-2: after open window, window exit.open must be true", function()
-    local ctx = make_ctx()
+test("#217-2: after open window, window portal is traversable", function()
+    local ctx, _, win_portal = make_ctx()
     capture(function() handlers["open"](ctx, "window") end)
-    local exit = ctx.current_room.exits.window
-    h.assert_eq(true, exit.open,
-        "window exit must be open after opening window — got: " .. tostring(exit.open))
+    local state = win_portal.states[win_portal._state]
+    h.assert_truthy(state and state.traversable,
+        "window portal must be traversable after open — state: " .. tostring(win_portal._state))
 end)
 
-test("#217-3: after open window, window exit.locked must be false", function()
-    local ctx = make_ctx()
+test("#217-3: after open window, window portal state is 'open'", function()
+    local ctx, _, win_portal = make_ctx()
     capture(function() handlers["open"](ctx, "window") end)
-    local exit = ctx.current_room.exits.window
-    h.assert_eq(false, exit.locked,
-        "window exit must be unlocked after opening window — got: " .. tostring(exit.locked))
+    h.assert_eq("open", win_portal._state,
+        "window portal must be in open state — got: " .. tostring(win_portal._state))
 end)
 
 test("#217-4: after open window, 'go window' must succeed (player moves to courtyard)", function()
-    local ctx = make_ctx()
+    local ctx, _, win_portal = make_ctx()
     capture(function() handlers["open"](ctx, "window") end)
     capture(function() handlers["go"](ctx, "window") end)
     h.assert_eq("courtyard", ctx.player.location,
         "player must reach courtyard after opening window — at: " .. tostring(ctx.player.location))
 end)
 
-test("#217-5: close window after opening syncs exit back to closed", function()
-    local ctx, _, win = make_ctx()
+test("#217-5: close window after opening transitions portal back to closed", function()
+    local ctx, _, win_portal = make_ctx()
     capture(function() handlers["open"](ctx, "window") end)
-    h.assert_eq(true, ctx.current_room.exits.window.open, "exit should be open")
+    h.assert_eq("open", win_portal._state, "portal should be open")
     capture(function() handlers["close"](ctx, "window") end)
-    h.assert_eq("closed", win._state, "window FSM should be closed")
-    h.assert_eq(false, ctx.current_room.exits.window.open,
-        "window exit must be closed after closing window")
+    h.assert_eq("closed", win_portal._state, "window portal FSM should be closed")
+    local state = win_portal.states[win_portal._state]
+    h.assert_truthy(state and not state.traversable,
+        "window portal must not be traversable after closing")
 end)
 
 test("#217-6: open message prints correctly", function()
@@ -262,16 +266,14 @@ end)
 ---------------------------------------------------------------------------
 suite("BUG #214: exit/go window after break must be traversable")
 
-test("#214-1: break window applies becomes_exit to window exit", function()
-    local ctx = make_ctx()
+test("#214-1: break window transitions portal to broken (traversable)", function()
+    local ctx, _, win_portal = make_ctx()
     capture(function() handlers["break"](ctx, "window") end)
-    local exit = ctx.current_room.exits.window
-    h.assert_eq(true, exit.open,
-        "window exit must be open after break — got: " .. tostring(exit.open))
-    h.assert_eq(false, exit.locked,
-        "window exit must be unlocked after break — got: " .. tostring(exit.locked))
-    h.assert_eq(true, exit.broken,
-        "window exit must be flagged broken after break — got: " .. tostring(exit.broken))
+    h.assert_eq("broken", win_portal._state,
+        "window portal must be in broken state — got: " .. tostring(win_portal._state))
+    local state = win_portal.states[win_portal._state]
+    h.assert_truthy(state and state.traversable,
+        "window portal must be traversable after break")
 end)
 
 test("#214-2: after break window, 'go window' reaches courtyard", function()
@@ -290,13 +292,12 @@ test("#214-3: after break window, 'enter window' reaches courtyard", function()
         "player must reach courtyard via enter — at: " .. tostring(ctx.player.location))
 end)
 
-test("#214-4: broken window exit keeps 'window' in keywords", function()
-    local ctx = make_ctx()
+test("#214-4: broken window portal keeps 'window' in keywords", function()
+    local ctx, _, win_portal = make_ctx()
     capture(function() handlers["break"](ctx, "window") end)
-    local exit = ctx.current_room.exits.window
     local has_window = false
-    if exit.keywords then
-        for _, k in ipairs(exit.keywords) do
+    if win_portal.keywords then
+        for _, k in ipairs(win_portal.keywords) do
             if k:lower():find("window", 1, true) then
                 has_window = true
                 break
@@ -304,7 +305,7 @@ test("#214-4: broken window exit keeps 'window' in keywords", function()
         end
     end
     h.assert_truthy(has_window,
-        "broken window exit must still have 'window' in keywords")
+        "broken window portal must still have 'window' in keywords")
 end)
 
 ---------------------------------------------------------------------------
@@ -338,25 +339,22 @@ end)
 ---------------------------------------------------------------------------
 -- Regression: existing exit-only path still works
 ---------------------------------------------------------------------------
-suite("REGRESSION: exit-only mutations still work")
+suite("REGRESSION: portal-based exits work")
 
-test("exit-only open (window, inline exit) still works", function()
-    -- Reset context window to prevent object cache leakage from prior tests
+test("portal ref resolves correctly for window exit", function()
     local cw_ok, cw = pcall(require, "engine.parser.context")
     if cw_ok and cw and cw.reset then cw.reset() end
-    -- Create ctx with only the exit, no window object in contents
-    local ctx = make_ctx()
-    -- Remove all objects from registry and contents (exit-only test)
-    ctx.registry = {
-        get = function(self, id) return nil end,
-        find_by_keyword = function(self, kw) return nil end,
-    }
-    ctx.current_room.contents = {}
-    -- Set window exit to unlocked so open condition passes
-    ctx.current_room.exits.window.locked = false
-    capture(function() handlers["open"](ctx, "window") end)
-    h.assert_eq(true, ctx.current_room.exits.window.open,
-        "exit-only open on inline window exit should still work")
+    local ctx, _, win_portal = make_ctx()
+    -- Verify the exit is a portal reference
+    local exit = ctx.current_room.exits.window
+    h.assert_truthy(exit and exit.portal,
+        "window exit must be a portal reference")
+    -- Verify portal resolves from registry
+    local resolved = ctx.registry:get(exit.portal)
+    h.assert_truthy(resolved,
+        "portal ref must resolve from registry")
+    h.assert_truthy(resolved.portal and resolved.portal.target,
+        "resolved portal must have target")
 end)
 
 ---------------------------------------------------------------------------

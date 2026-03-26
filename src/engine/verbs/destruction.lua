@@ -46,8 +46,6 @@ local consume_tool_charge = H.consume_tool_charge
 local remove_from_location = H.remove_from_location
 local container_contents_accessible = H.container_contents_accessible
 local find_mutation = H.find_mutation
-local exit_matches = H.exit_matches
-local sync_linked_exit = H.sync_linked_exit
 local spawn_objects = H.spawn_objects
 local perform_mutation = H.perform_mutation
 local inventory_weight = H.inventory_weight
@@ -91,8 +89,6 @@ function M.register(handlers)
                     if trans then
                         print(trans.message or ("You break " .. (obj.name or obj.id) .. "."))
                         if trans.spawns then spawn_objects(ctx, trans.spawns) end
-                        -- #216: sync linked exit after FSM break transition
-                        sync_linked_exit(ctx, obj, "break")
                     else
                         print("You can't break " .. (obj.name or "that") .. ".")
                     end
@@ -111,50 +107,6 @@ function M.register(handlers)
                     print(mut_data.message
                         or ("You break " .. (obj.name or obj.id) .. "."))
                 end
-                return
-            end
-        end
-
-        -- Check exits
-        local room = ctx.current_room
-        for dir, exit in pairs(room.exits or {}) do
-            if type(exit) == "table" and exit_matches(exit, dir, noun) then
-                if exit.broken then
-                    print("It is already broken.")
-                    return
-                end
-                if not exit.breakable then
-                    print("You can't break that.")
-                    return
-                end
-                if not exit.mutations or not exit.mutations["break"] then
-                    print("You can't break that.")
-                    return
-                end
-                local mut = exit.mutations["break"]
-                if mut.becomes_exit then
-                    for k, v in pairs(mut.becomes_exit) do
-                        exit[k] = v
-                    end
-                end
-                -- Sync the room object so "look at" reflects the broken state
-                for _, obj_id in ipairs(room.contents or {}) do
-                    if exit_matches(exit, dir, obj_id) then
-                        local robj = ctx.registry:get(obj_id)
-                        if robj then
-                            if mut.becomes_exit.name then robj.name = mut.becomes_exit.name end
-                            if mut.becomes_exit.description then robj.description = mut.becomes_exit.description end
-                            if mut.becomes_exit.keywords then robj.keywords = mut.becomes_exit.keywords end
-                            if mut.becomes_exit.room_presence then robj.room_presence = mut.becomes_exit.room_presence end
-                            robj.on_look = function(self) return self.description end
-                        end
-                        break
-                    end
-                end
-                if mut.spawns then
-                    spawn_objects(ctx, mut.spawns)
-                end
-                print(mut.message or "You break it.")
                 return
             end
         end

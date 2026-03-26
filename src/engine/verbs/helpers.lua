@@ -1161,48 +1161,7 @@ local function find_mutation(obj, verb)
     return nil
 end
 
----------------------------------------------------------------------------
--- Helper: match an exit by keyword
----------------------------------------------------------------------------
-local function exit_matches(exit, dir, keyword)
-    local kw = keyword:lower()
-    if dir:lower() == kw then return true end
-    if type(exit) ~= "table" then return false end
-    if exit.name and exit.name:lower():find(kw, 1, true) then return true end
-    if exit.keywords then
-        for _, k in ipairs(exit.keywords) do
-            if k:lower() == kw or k:lower():find(kw, 1, true) then return true end
-        end
-    end
-    return false
-end
 
----------------------------------------------------------------------------
--- Helper: sync a linked exit after an FSM object transition.
--- When an FSM object (e.g. door, window) transitions state, the
--- corresponding exit in the room must be updated to match.
--- The verb name maps to the exit's mutations[verb].becomes_exit table.
--- #216, #217: fixes exit-sync bugs where FSM objects intercept verbs
--- before the exit-only path can apply becomes_exit.
----------------------------------------------------------------------------
-local function sync_linked_exit(ctx, obj, verb)
-    if not obj or not obj.linked_exit then return end
-    local room = ctx.current_room
-    if not room or not room.exits then return end
-    local exit = room.exits[obj.linked_exit]
-    if not exit or type(exit) ~= "table" then return end
-    if obj.linked_passage_id and exit.passage_id
-       and obj.linked_passage_id ~= exit.passage_id then
-        return
-    end
-    -- Apply the exit's becomes_exit for the matching verb
-    if exit.mutations and exit.mutations[verb]
-       and exit.mutations[verb].becomes_exit then
-        for k, v in pairs(exit.mutations[verb].becomes_exit) do
-            exit[k] = v
-        end
-    end
-end
 
 ---------------------------------------------------------------------------
 -- Helper: spawn objects from a mutation's spawns list
@@ -1687,8 +1646,6 @@ H.consume_tool_charge = consume_tool_charge
 H.remove_from_location = remove_from_location
 H.container_contents_accessible = container_contents_accessible
 H.find_mutation = find_mutation
-H.exit_matches = exit_matches
-H.sync_linked_exit = sync_linked_exit
 H.spawn_objects = spawn_objects
 H.perform_mutation = perform_mutation
 H.inventory_weight = inventory_weight
@@ -1704,29 +1661,7 @@ H.get_light_level = get_light_level
 H.has_some_light = has_some_light
 H.vision_blocked_by_worn = vision_blocked_by_worn
 
--- Sync a linked exit after an FSM transition on an object with linked_exit.
--- When an object declares linked_exit and linked_passage_id, state changes
--- (open, close, unlock, break) should propagate to the corresponding exit.
-local function sync_linked_exit(ctx, obj, verb)
-    if not obj.linked_exit then return end
-    local room = ctx.current_room
-    if not room or not room.exits then return end
-    local exit = room.exits[obj.linked_exit]
-    if not exit then return end
-    if obj.linked_passage_id and exit.passage_id ~= obj.linked_passage_id then return end
-    local muts = exit.mutations
-    if not muts or not muts[verb] then return end
-    local mut = muts[verb]
-    if mut.becomes_exit then
-        for k, v in pairs(mut.becomes_exit) do
-            exit[k] = v
-        end
-    end
-    if mut.spawns then
-        H.spawn_objects(ctx, mut.spawns)
-    end
-end
-H.sync_linked_exit = sync_linked_exit
+
 
 ---------------------------------------------------------------------------
 -- Helper: find a portal object in the current room by keyword or direction.

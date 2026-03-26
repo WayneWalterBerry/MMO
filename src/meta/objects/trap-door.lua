@@ -19,9 +19,6 @@ return {
 
     location = nil,
 
-    -- When opened, unhide the "down" exit in the room
-    reveals_exit = "down",
-
     -- FSM
     initial_state = "hidden",
     _state = "hidden",

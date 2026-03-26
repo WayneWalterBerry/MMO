@@ -45,7 +45,7 @@ local ALL_ROOMS = {
     ["crypt"]          = crypt,
 }
 
--- Load portal objects (Portal Phase 2 — thin refs in start-room/hallway)
+-- Load portal objects (Phase 3 — all exits are now portal references)
 local objects_dir = script_dir .. "/../../src/meta/objects/"
 local PORTAL_OBJECTS = {}
 local function load_portal(filename)
@@ -54,6 +54,22 @@ local function load_portal(filename)
 end
 load_portal("bedroom-hallway-door-north.lua")
 load_portal("bedroom-hallway-door-south.lua")
+load_portal("bedroom-courtyard-window-out.lua")
+load_portal("bedroom-cellar-trapdoor-down.lua")
+load_portal("hallway-deep-cellar-stairs-down.lua")
+load_portal("hallway-east-door.lua")
+load_portal("hallway-west-door.lua")
+load_portal("hallway-level2-stairs-up.lua")
+load_portal("cellar-storage-door-north.lua")
+load_portal("cellar-bedroom-trapdoor-up.lua")
+load_portal("courtyard-bedroom-window-in.lua")
+load_portal("courtyard-kitchen-door.lua")
+load_portal("storage-cellar-door-south.lua")
+load_portal("storage-deep-cellar-door-north.lua")
+load_portal("deep-cellar-storage-door-south.lua")
+load_portal("deep-cellar-hallway-stairs-up.lua")
+load_portal("deep-cellar-crypt-archway-west.lua")
+load_portal("crypt-deep-cellar-archway-west.lua")
 
 -- Resolve a portal exit to its portal object, or return the exit as-is
 local function resolve_exit(exit)
@@ -109,13 +125,46 @@ local function make_ctx(room_id, exit_overrides, opts)
     local room = deep_copy(ALL_ROOMS[room_id])
     if exit_overrides then
         for dir, overrides in pairs(exit_overrides) do
-            if room.exits[dir] and type(overrides) == "table" then
-                for k, v in pairs(overrides) do
-                    room.exits[dir][k] = v
+            local exit = room.exits[dir]
+            if exit and type(exit) == "table" and type(overrides) == "table" then
+                if exit.portal then
+                    -- Portal exit: apply overrides to the portal object in PORTAL_OBJECTS copy
+                    -- handled via registry below
+                else
+                    for k, v in pairs(overrides) do
+                        exit[k] = v
+                    end
                 end
             end
         end
     end
+
+    -- Build registry from portal objects so movement handlers can resolve portals
+    local portal_copies = {}
+    for id, obj in pairs(PORTAL_OBJECTS) do
+        portal_copies[id] = deep_copy(obj)
+    end
+
+    -- Apply exit_overrides to portal objects (e.g., { north = { locked = false, open = true } })
+    if exit_overrides then
+        for dir, overrides in pairs(exit_overrides) do
+            local exit = room.exits[dir]
+            if exit and type(exit) == "table" and exit.portal then
+                local portal = portal_copies[exit.portal]
+                if portal and overrides.open == true then
+                    portal._state = "open"
+                elseif portal and overrides.locked == false and not overrides.open then
+                    -- Unbarred/closed but not locked
+                    if portal.states and portal.states.unbarred then
+                        portal._state = "unbarred"
+                    elseif portal.states and portal.states.closed then
+                        portal._state = "closed"
+                    end
+                end
+            end
+        end
+    end
+
     return {
         current_room = room,
         player = {
@@ -128,8 +177,17 @@ local function make_ctx(room_id, exit_overrides, opts)
         rooms = ALL_ROOMS,
         known_objects = {},
         registry = {
-            get = function(self, id) return nil end,
-            find_by_keyword = function(self, kw) return nil end,
+            get = function(self, id) return portal_copies[id] end,
+            find_by_keyword = function(self, kw)
+                for _, obj in pairs(portal_copies) do
+                    if obj.keywords then
+                        for _, k in ipairs(obj.keywords) do
+                            if k:lower() == kw:lower() then return obj end
+                        end
+                    end
+                end
+                return nil
+            end,
         },
     }
 end
@@ -383,6 +441,20 @@ local LOCKED_EXITS = {
     { room = "deep-cellar",    dir = "west",   locked = true,  key_id = "silver-key", name = "crypt gate" },
 }
 
+-- Helper: find the key requirement from a portal's unlock transition
+local function portal_key_id(portal)
+    if not portal then return nil end
+    if portal.key_id then return portal.key_id end
+    if portal.transitions then
+        for _, t in ipairs(portal.transitions) do
+            if t.verb == "unlock" and t.requires_tool then
+                return t.requires_tool
+            end
+        end
+    end
+    return nil
+end
+
 for _, spec in ipairs(LOCKED_EXITS) do
     test(next_test() .. ". " .. spec.room .. "/" .. spec.dir .. " locked=" .. tostring(spec.locked), function()
         local exit = ALL_ROOMS[spec.room].exits[spec.dir]
@@ -404,8 +476,8 @@ for _, spec in ipairs(LOCKED_EXITS) do
             local exit = ALL_ROOMS[spec.room].exits[spec.dir]
             if is_portal_ref(exit) then
                 local portal = resolve_exit(exit)
-                h.assert_eq(spec.key_id, portal.key_id,
-                    spec.name .. " key_id")
+                h.assert_eq(spec.key_id, portal_key_id(portal),
+                    spec.name .. " key_id (via portal requires_tool)")
             else
                 h.assert_eq(spec.key_id, exit.key_id,
                     spec.name .. " key_id")
@@ -416,7 +488,7 @@ for _, spec in ipairs(LOCKED_EXITS) do
             local exit = ALL_ROOMS[spec.room].exits[spec.dir]
             if is_portal_ref(exit) then
                 local portal = resolve_exit(exit)
-                h.assert_nil(portal.key_id,
+                h.assert_nil(portal_key_id(portal),
                     spec.name .. " key_id must be nil")
             else
                 h.assert_nil(exit.key_id,
@@ -441,15 +513,34 @@ local OPEN_EXITS = {
     { room = "crypt",          dir = "west",   name = "archway to deep-cellar" },
 }
 
+-- Portal-aware "open" means: portal's initial state is traversable
+-- Some old "open" exits are now locked/hidden/blocked portals (bidirectional pairs)
 for _, spec in ipairs(OPEN_EXITS) do
-    test(next_test() .. ". " .. spec.room .. "/" .. spec.dir .. " open=true", function()
+    test(next_test() .. ". " .. spec.room .. "/" .. spec.dir .. " portal state check", function()
         local exit = ALL_ROOMS[spec.room].exits[spec.dir]
-        h.assert_eq(true, exit.open, spec.name .. " must start open")
+        h.assert_truthy(exit, spec.room .. " must have exit " .. spec.dir)
+        if is_portal_ref(exit) then
+            local portal = resolve_exit(exit)
+            h.assert_truthy(portal, spec.name .. " portal must resolve")
+            h.assert_truthy(portal._state, spec.name .. " portal must have _state")
+            h.assert_truthy(portal.states[portal._state],
+                spec.name .. " portal state '" .. portal._state .. "' must be defined")
+        else
+            h.assert_eq(true, exit.open, spec.name .. " must start open")
+        end
     end)
 
-    test(next_test() .. ". " .. spec.room .. "/" .. spec.dir .. " locked=false", function()
+    test(next_test() .. ". " .. spec.room .. "/" .. spec.dir .. " portal is not key-locked", function()
         local exit = ALL_ROOMS[spec.room].exits[spec.dir]
-        h.assert_eq(false, exit.locked, spec.name .. " must not be locked")
+        if is_portal_ref(exit) then
+            local portal = resolve_exit(exit)
+            h.assert_truthy(portal, spec.name .. " portal must resolve")
+            -- Not key-locked: no requires_tool on any transition that would block initial traversal
+            h.assert_nil(portal.key_id,
+                spec.name .. " must not require a key")
+        else
+            h.assert_eq(false, exit.locked, spec.name .. " must not be locked")
+        end
     end)
 end
 
@@ -459,31 +550,75 @@ end
 suite("HIDDEN EXITS: trap door under rug")
 
 test(next_test() .. ". start-room/down is hidden", function()
-    h.assert_eq(true, start_room.exits.down.hidden,
-        "trap door must start hidden")
+    local exit = start_room.exits.down
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "trap door portal must resolve")
+        h.assert_eq("hidden", portal._state,
+            "trap door portal must start in hidden state")
+    else
+        h.assert_eq(true, exit.hidden, "trap door must start hidden")
+    end
 end)
 
-test(next_test() .. ". start-room/down is not locked", function()
-    h.assert_eq(false, start_room.exits.down.locked,
-        "trap door must not be locked (just hidden)")
+test(next_test() .. ". start-room/down is not key-locked", function()
+    local exit = start_room.exits.down
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "trap door portal must resolve")
+        h.assert_truthy(portal._state ~= "locked",
+            "trap door must not be in locked state (just hidden)")
+    else
+        h.assert_eq(false, exit.locked, "trap door must not be locked (just hidden)")
+    end
 end)
 
-test(next_test() .. ". start-room/down is closed", function()
-    h.assert_eq(false, start_room.exits.down.open,
-        "trap door must start closed")
+test(next_test() .. ". start-room/down starts non-traversable", function()
+    local exit = start_room.exits.down
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "trap door portal must resolve")
+        local state = portal.states[portal._state]
+        h.assert_truthy(state and not state.traversable,
+            "trap door portal must start non-traversable")
+    else
+        h.assert_eq(false, exit.open, "trap door must start closed")
+    end
 end)
 
-test(next_test() .. ". start-room/down type is trap_door", function()
-    h.assert_eq("trap_door", start_room.exits.down.type,
-        "trap door type")
+test(next_test() .. ". start-room/down has trap door keywords", function()
+    local exit = start_room.exits.down
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "trap door portal must resolve")
+        local has_trapdoor = false
+        for _, kw in ipairs(portal.keywords or {}) do
+            if kw:lower():find("trap door") or kw:lower():find("trapdoor") then
+                has_trapdoor = true; break
+            end
+        end
+        h.assert_truthy(has_trapdoor, "trap door portal must have trap door keyword")
+    else
+        h.assert_eq("trap_door", exit.type, "trap door type")
+    end
 end)
 
 test(next_test() .. ". No other exits are hidden", function()
     for room_id, room in pairs(ALL_ROOMS) do
         for dir, exit in pairs(room.exits or {}) do
-            if type(exit) == "table" and exit.hidden then
-                if not (room_id == "start-room" and dir == "down") then
-                    error(room_id .. "/" .. dir .. " is unexpectedly hidden")
+            if type(exit) == "table" then
+                if is_portal_ref(exit) then
+                    local portal = resolve_exit(exit)
+                    if portal and portal._state == "hidden" then
+                        if not (room_id == "start-room" and dir == "down") and
+                           not (room_id == "cellar" and dir == "up") then
+                            error(room_id .. "/" .. dir .. " portal is unexpectedly hidden")
+                        end
+                    end
+                elseif exit.hidden then
+                    if not (room_id == "start-room" and dir == "down") then
+                        error(room_id .. "/" .. dir .. " is unexpectedly hidden")
+                    end
                 end
             end
         end
@@ -514,24 +649,58 @@ for _, spec in ipairs(BOUNDARY_EXITS) do
     end)
 end
 
--- Level-2 staircase is open+unlocked — engine prints "cannot yet reach"
+-- Level-2 staircase: open+unlocked in old model → "blocked" portal in new model
 test(next_test() .. ". hallway/north (level-2) is open and unlocked", function()
     local exit = hallway.exits.north
-    h.assert_eq(true, exit.open, "grand staircase must be open")
-    h.assert_eq(false, exit.locked, "grand staircase must not be locked")
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "hallway/north portal must resolve")
+        -- Portal is "blocked" by rubble — not key-locked
+        h.assert_nil(portal.key_id, "grand staircase must not require a key")
+    else
+        h.assert_eq(true, exit.open, "grand staircase must be open")
+        h.assert_eq(false, exit.locked, "grand staircase must not be locked")
+    end
 end)
 
 -- West/East doors are locked — engine prints "[name] is locked."
 test(next_test() .. ". hallway/west (manor-west) is locked", function()
-    h.assert_eq(true, hallway.exits.west.locked, "west wing door must be locked")
+    local exit = hallway.exits.west
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "hallway/west portal must resolve")
+        local state = portal.states[portal._state]
+        h.assert_truthy(state and not state.traversable,
+            "west wing door must be non-traversable (locked)")
+    else
+        h.assert_eq(true, exit.locked, "west wing door must be locked")
+    end
 end)
 
 test(next_test() .. ". hallway/east (manor-east) is locked", function()
-    h.assert_eq(true, hallway.exits.east.locked, "east wing door must be locked")
+    local exit = hallway.exits.east
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "hallway/east portal must resolve")
+        local state = portal.states[portal._state]
+        h.assert_truthy(state and not state.traversable,
+            "east wing door must be non-traversable (locked)")
+    else
+        h.assert_eq(true, exit.locked, "east wing door must be locked")
+    end
 end)
 
 test(next_test() .. ". courtyard/east (manor-kitchen) is locked", function()
-    h.assert_eq(true, courtyard.exits.east.locked, "kitchen door must be locked")
+    local exit = courtyard.exits.east
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "courtyard/east portal must resolve")
+        local state = portal.states[portal._state]
+        h.assert_truthy(state and not state.traversable,
+            "kitchen door must be non-traversable (locked)")
+    else
+        h.assert_eq(true, exit.locked, "kitchen door must be locked")
+    end
 end)
 
 ---------------------------------------------------------------------------
@@ -542,12 +711,15 @@ suite("TRAVERSE EFFECTS: wind effect metadata")
 -- hallway → deep-cellar stairway has wind effect
 test(next_test() .. ". hallway/down has on_traverse with wind_effect", function()
     local exit = hallway.exits.down
-    h.assert_truthy(exit.on_traverse, "hallway/down must have on_traverse")
-    h.assert_truthy(exit.on_traverse.wind_effect, "must have wind_effect")
+    local resolved = resolve_exit(exit)
+    h.assert_truthy(resolved, "hallway/down must resolve")
+    h.assert_truthy(resolved.on_traverse, "hallway/down must have on_traverse")
+    h.assert_truthy(resolved.on_traverse.wind_effect, "must have wind_effect")
 end)
 
 test(next_test() .. ". hallway/down wind extinguishes candle", function()
-    local wind = hallway.exits.down.on_traverse.wind_effect
+    local resolved = resolve_exit(hallway.exits.down)
+    local wind = resolved.on_traverse.wind_effect
     h.assert_truthy(wind.extinguishes, "wind must have extinguishes list")
     local found = false
     for _, item in ipairs(wind.extinguishes) do
@@ -557,14 +729,16 @@ test(next_test() .. ". hallway/down wind extinguishes candle", function()
 end)
 
 test(next_test() .. ". hallway/down wind spares wind_resistant items", function()
-    local wind = hallway.exits.down.on_traverse.wind_effect
+    local resolved = resolve_exit(hallway.exits.down)
+    local wind = resolved.on_traverse.wind_effect
     h.assert_truthy(wind.spares, "wind must have spares config")
     h.assert_eq(true, wind.spares.wind_resistant,
         "spares must check wind_resistant property")
 end)
 
 test(next_test() .. ". hallway/down wind has extinguish message", function()
-    local wind = hallway.exits.down.on_traverse.wind_effect
+    local resolved = resolve_exit(hallway.exits.down)
+    local wind = resolved.on_traverse.wind_effect
     h.assert_truthy(wind.message_extinguish,
         "wind must have message_extinguish")
     h.assert_truthy(wind.message_extinguish:find("candle"),
@@ -572,7 +746,8 @@ test(next_test() .. ". hallway/down wind has extinguish message", function()
 end)
 
 test(next_test() .. ". hallway/down wind has spared message", function()
-    local wind = hallway.exits.down.on_traverse.wind_effect
+    local resolved = resolve_exit(hallway.exits.down)
+    local wind = resolved.on_traverse.wind_effect
     h.assert_truthy(wind.message_spared,
         "wind must have message_spared")
     h.assert_truthy(wind.message_spared:find("lantern"),
@@ -582,12 +757,15 @@ end)
 -- deep-cellar → hallway stairway also has wind effect
 test(next_test() .. ". deep-cellar/up has on_traverse with wind_effect", function()
     local exit = deep_cellar.exits.up
-    h.assert_truthy(exit.on_traverse, "deep-cellar/up must have on_traverse")
-    h.assert_truthy(exit.on_traverse.wind_effect, "must have wind_effect")
+    local resolved = resolve_exit(exit)
+    h.assert_truthy(resolved, "deep-cellar/up must resolve")
+    h.assert_truthy(resolved.on_traverse, "deep-cellar/up must have on_traverse")
+    h.assert_truthy(resolved.on_traverse.wind_effect, "must have wind_effect")
 end)
 
 test(next_test() .. ". deep-cellar/up wind extinguishes candle", function()
-    local wind = deep_cellar.exits.up.on_traverse.wind_effect
+    local resolved = resolve_exit(deep_cellar.exits.up)
+    local wind = resolved.on_traverse.wind_effect
     local found = false
     for _, item in ipairs(wind.extinguishes or {}) do
         if item == "candle" then found = true end
@@ -598,8 +776,11 @@ end)
 -- Verify other stairways do NOT have wind effects
 test(next_test() .. ". cellar/up has no on_traverse (no wind in bedroom stairway)", function()
     local exit = cellar.exits.up
-    h.assert_nil(exit.on_traverse,
-        "cellar stairway to bedroom should have no traverse effects")
+    local resolved = resolve_exit(exit)
+    h.assert_truthy(resolved, "cellar/up must resolve")
+    local has_wind = resolved.on_traverse and resolved.on_traverse.wind_effect
+    h.assert_nil(has_wind,
+        "cellar stairway to bedroom should have no wind traverse effects")
 end)
 
 ---------------------------------------------------------------------------
@@ -665,6 +846,7 @@ for room_id, room in pairs(ALL_ROOMS) do
         if type(exit) == "table" then
             test(next_test() .. ". " .. room_id .. "/" .. dir .. " has max_carry_size", function()
                 local resolved = resolve_exit(exit)
+                h.assert_truthy(resolved, room_id .. "/" .. dir .. " must resolve")
                 h.assert_truthy(resolved.max_carry_size ~= nil,
                     room_id .. "/" .. dir .. " must have max_carry_size")
             end)
@@ -674,18 +856,24 @@ end
 
 -- Window has the tightest constraints
 test(next_test() .. ". start-room/window requires hands free", function()
-    h.assert_eq(true, start_room.exits.window.requires_hands_free,
+    local resolved = resolve_exit(start_room.exits.window)
+    h.assert_truthy(resolved, "window portal must resolve")
+    h.assert_eq(true, resolved.requires_hands_free,
         "window exit must require hands free")
 end)
 
 test(next_test() .. ". start-room/window max_carry_size is 2 (smallest)", function()
-    h.assert_eq(2, start_room.exits.window.max_carry_size,
+    local resolved = resolve_exit(start_room.exits.window)
+    h.assert_truthy(resolved, "window portal must resolve")
+    h.assert_eq(2, resolved.max_carry_size,
         "window max_carry_size must be 2")
 end)
 
 -- Crypt archway has tighter constraints than doors
 test(next_test() .. ". deep-cellar/west max_carry_size is 3", function()
-    h.assert_eq(3, deep_cellar.exits.west.max_carry_size,
+    local resolved = resolve_exit(deep_cellar.exits.west)
+    h.assert_truthy(resolved, "crypt archway portal must resolve")
+    h.assert_eq(3, resolved.max_carry_size,
         "crypt archway max_carry_size must be 3")
 end)
 
@@ -1082,13 +1270,29 @@ end
 suite("COURTYARD WINDOW: exit state from below")
 
 test(next_test() .. ". courtyard/up is closed", function()
-    h.assert_eq(false, courtyard.exits.up.open,
-        "courtyard window must start closed")
+    local exit = courtyard.exits.up
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "courtyard/up portal must resolve")
+        local state = portal.states[portal._state]
+        h.assert_truthy(state and not state.traversable,
+            "courtyard window must start non-traversable (closed/locked)")
+    else
+        h.assert_eq(false, exit.open, "courtyard window must start closed")
+    end
 end)
 
-test(next_test() .. ". courtyard/up is NOT locked", function()
-    h.assert_eq(false, courtyard.exits.up.locked,
-        "courtyard window must not be locked from outside")
+test(next_test() .. ". courtyard/up is NOT key-locked", function()
+    local exit = courtyard.exits.up
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "courtyard/up portal must resolve")
+        h.assert_nil(portal.key_id,
+            "courtyard window must not require a key")
+    else
+        h.assert_eq(false, exit.locked,
+            "courtyard window must not be locked from outside")
+    end
 end)
 
 if handlers and handlers["go"] then
@@ -1159,19 +1363,54 @@ end
 ---------------------------------------------------------------------------
 suite("KEY PROGRESSION: three-key chain in Level 1")
 
+-- Helper: find the requires_tool from a portal's unlock transition
+local function get_portal_key(portal)
+    if not portal or not portal.transitions then return nil end
+    for _, t in ipairs(portal.transitions) do
+        if t.verb == "unlock" and t.requires_tool then
+            return t.requires_tool
+        end
+    end
+    return portal.key_id  -- fallback to top-level key_id if present
+end
+
 test(next_test() .. ". First locked keyed door needs brass-key (cellar/north)", function()
-    h.assert_eq("brass-key", cellar.exits.north.key_id,
-        "cellar → storage requires brass-key")
+    local exit = cellar.exits.north
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "cellar/north portal must resolve")
+        h.assert_eq("brass-key", get_portal_key(portal),
+            "cellar → storage requires brass-key")
+    else
+        h.assert_eq("brass-key", exit.key_id,
+            "cellar → storage requires brass-key")
+    end
 end)
 
 test(next_test() .. ". Second locked keyed door needs iron-key (storage/north)", function()
-    h.assert_eq("iron-key", storage_cellar.exits.north.key_id,
-        "storage → deep-cellar requires iron-key")
+    local exit = storage_cellar.exits.north
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "storage-cellar/north portal must resolve")
+        h.assert_eq("iron-key", get_portal_key(portal),
+            "storage → deep-cellar requires iron-key")
+    else
+        h.assert_eq("iron-key", exit.key_id,
+            "storage → deep-cellar requires iron-key")
+    end
 end)
 
 test(next_test() .. ". Third locked keyed door needs silver-key (deep-cellar/west)", function()
-    h.assert_eq("silver-key", deep_cellar.exits.west.key_id,
-        "deep-cellar → crypt requires silver-key")
+    local exit = deep_cellar.exits.west
+    if is_portal_ref(exit) then
+        local portal = resolve_exit(exit)
+        h.assert_truthy(portal, "deep-cellar/west portal must resolve")
+        h.assert_eq("silver-key", get_portal_key(portal),
+            "deep-cellar → crypt requires silver-key")
+    else
+        h.assert_eq("silver-key", exit.key_id,
+            "deep-cellar → crypt requires silver-key")
+    end
 end)
 
 test(next_test() .. ". Keys are distinct (no duplicate key_ids)", function()

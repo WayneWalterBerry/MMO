@@ -30,8 +30,10 @@ local north = room.exits and room.exits.north
 local window = room.exits and room.exits.window
 local down = room.exits and room.exits.down
 
--- Load the portal object that replaced inline north exit metadata (Portal Phase 2)
+-- Load portal objects that replaced inline exit metadata (Portal Phase 3)
 local portal = dofile(script_dir .. "/../../src/meta/objects/bedroom-hallway-door-north.lua")
+local window_portal = dofile(script_dir .. "/../../src/meta/objects/bedroom-courtyard-window-out.lua")
+local trapdoor_portal = dofile(script_dir .. "/../../src/meta/objects/bedroom-cellar-trapdoor-down.lua")
 
 -- Capture print output from a function call
 local function capture(fn)
@@ -380,28 +382,39 @@ test("37. Down exit exists", function()
     h.assert_truthy(room.exits.down, "down exit must exist")
 end)
 
-test("38. Window starts locked", function()
-    h.assert_eq(true, window.locked, "window must start locked")
+test("38. Window starts non-traversable (locked latch)", function()
+    local state = window_portal.states[window_portal._state]
+    h.assert_truthy(state and not state.traversable,
+        "window portal must start non-traversable (locked)")
 end)
 
 test("39. Window target is 'courtyard'", function()
-    h.assert_eq("courtyard", window.target, "window target")
+    h.assert_eq("courtyard", window_portal.portal.target, "window portal target")
 end)
 
 test("40. Down exit starts hidden", function()
-    h.assert_eq(true, down.hidden, "trap door must start hidden")
+    h.assert_eq("hidden", trapdoor_portal._state,
+        "trap door portal must start in hidden state")
 end)
 
 test("41. Down exit target is 'cellar'", function()
-    h.assert_eq("cellar", down.target, "trap door target")
+    h.assert_eq("cellar", trapdoor_portal.portal.target, "trap door portal target")
 end)
 
-test("42. Down exit is not locked", function()
-    h.assert_eq(false, down.locked, "trap door must not be locked")
+test("42. Down exit is not locked (hidden, not keyed)", function()
+    h.assert_truthy(trapdoor_portal._state ~= "locked",
+        "trap door must be hidden, not locked")
 end)
 
-test("43. Down exit type is 'trap_door'", function()
-    h.assert_eq("trap_door", down.type, "trap door type")
+test("43. Down exit portal has trap door keywords", function()
+    local has_trapdoor = false
+    for _, kw in ipairs(trapdoor_portal.keywords or {}) do
+        if kw:lower():find("trap door") or kw:lower():find("trapdoor") then
+            has_trapdoor = true; break
+        end
+    end
+    h.assert_truthy(has_trapdoor,
+        "trap door portal must have trap door keyword")
 end)
 
 ---------------------------------------------------------------------------
