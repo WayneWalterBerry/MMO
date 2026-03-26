@@ -1332,14 +1332,20 @@ local function move_spatial_object(ctx, obj, verb)
     if obj.covering then
         for _, covered_id in ipairs(obj.covering) do
             local covered = reg:get(covered_id)
-            if covered and covered.hidden then
+            local is_hidden = covered and (covered.hidden or (covered.states and covered._state == "hidden"))
+            if is_hidden then
                 -- FSM reveal transition
                 if covered.states and covered._state == "hidden" then
+                    local transitioned = false
                     for _, t in ipairs(covered.transitions or {}) do
-                        if t.from == "hidden" and t.to == "revealed" then
-                            fsm_mod.transition(reg, covered_id, "revealed", {})
+                        if t.from == "hidden" then
+                            fsm_mod.transition(reg, covered_id, t.to, {})
+                            transitioned = true
                             break
                         end
+                    end
+                    if not transitioned then
+                        covered.hidden = false
                     end
                 else
                     covered.hidden = false

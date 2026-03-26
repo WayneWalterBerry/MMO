@@ -34,6 +34,7 @@ local down = room.exits and room.exits.down
 local portal = dofile(script_dir .. "/../../src/meta/objects/bedroom-hallway-door-north.lua")
 local window_portal = dofile(script_dir .. "/../../src/meta/objects/bedroom-courtyard-window-out.lua")
 local trapdoor_portal = dofile(script_dir .. "/../../src/meta/objects/bedroom-cellar-trapdoor-down.lua")
+local rug_obj = dofile(script_dir .. "/../../src/meta/objects/rug.lua")
 
 -- Capture print output from a function call
 local function capture(fn)
@@ -61,6 +62,22 @@ local function copy_exit(ex)
         end
     end
     return t
+end
+
+local function walk_instances(instances, fn)
+    for _, inst in ipairs(instances or {}) do
+        fn(inst)
+        for _, key in ipairs({ "on_top", "underneath", "nested", "contents" }) do
+            local children = inst[key]
+            if type(children) == "table" then
+                for _, child in ipairs(children) do
+                    if type(child) == "table" then
+                        walk_instances({ child }, fn)
+                    end
+                end
+            end
+        end
+    end
 end
 
 -- Build a minimal ctx with a room whose north exit is a fresh copy
@@ -510,6 +527,36 @@ end)
 test("57. Portal is bidirectional (not one-way)", function()
     h.assert_truthy(portal.portal.bidirectional_id,
         "portal must have bidirectional_id — not one-way")
+end)
+
+---------------------------------------------------------------------------
+-- TRAPDOOR DATA: rug reveal wiring
+---------------------------------------------------------------------------
+suite("TRAPDOOR DATA: rug reveals portal")
+
+test("TD-1 Rug covers the portal trapdoor", function()
+    h.assert_truthy(rug_obj.covering, "rug.covering must exist")
+    local found = false
+    for _, id in ipairs(rug_obj.covering or {}) do
+        if id == "bedroom-cellar-trapdoor-down" then found = true; break end
+    end
+    h.assert_truthy(found, "rug must cover bedroom-cellar-trapdoor-down portal")
+end)
+
+test("TD-2 Start-room has no standalone trap-door instance", function()
+    local found = false
+    walk_instances(room.instances, function(inst)
+        if inst.id == "trap-door" then found = true end
+    end)
+    h.assert_eq(false, found, "trap-door instance should not be placed under rug")
+end)
+
+test("TD-3 Trapdoor portal keywords include iron ring", function()
+    local found = false
+    for _, kw in ipairs(trapdoor_portal.keywords or {}) do
+        if kw:lower():find("iron ring") then found = true; break end
+    end
+    h.assert_truthy(found, "trap door portal must include 'iron ring' keyword")
 end)
 
 ---------------------------------------------------------------------------

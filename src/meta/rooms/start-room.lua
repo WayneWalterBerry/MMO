@@ -89,7 +89,6 @@ return {
         { id = "rug", type = "Rug", type_id = "7275e1d9-5837-4f39-b3be-d64ee6d667c9",
             underneath = {
                 { id = "brass-key", type = "Brass Key", type_id = "4586b2cd-3240-46de-8fb8-5216ad9d4830" },
-                { id = "trap-door", type = "Trap Door", type_id = "a3f8c7d1-e592-4b6a-8d3e-f1c7a4b92e05", hidden = true },
             },
         },
 

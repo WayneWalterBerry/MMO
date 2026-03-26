@@ -19,7 +19,7 @@ return {
     -- Spatial properties
     movable = true,
     moved = false,
-    covering = {"trap-door"},
+    covering = {"bedroom-cellar-trapdoor-down"},
     move_message = "You grab the edge of the threadbare rug and pull it aside, bunching it against the wall.",
     moved_room_presence = "The threadbare rug lies bunched against the wall, its faded crimson and gold pattern crumpled.",
     moved_description = "The threadbare rug has been pulled aside and lies bunched against the wall. Its crimson and gold pattern is crumpled and folded.",
