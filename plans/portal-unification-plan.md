@@ -257,15 +257,29 @@ Remove from all files:
 - `becomes_exit` (in mutation tables)
 - `key_id` on exit tables (key requirements move to FSM transition `requires_tool`)
 
-### 6.2 Test updates
+### 6.2 Test updates — Migrate Stale Exit Tests to Portal Architecture
 
-- Update `test/rooms/test-bedroom-door.lua` — verify portal-based door interactions
-- Update `test/verbs/test-door-resolution.lua` — verify portal keyword resolution
-- Update `test/objects/test-bedroom-door-object.lua` — verify portal object structure
+Nelson's Phase 2 QA report identified **64 stale test failures** across 4 test files that check the old inline-exit format. These tests must be rewritten to test against the new thin-exit + portal-object API. The new `test/rooms/test-portal-system.lua` (71 tests) already covers the equivalent portal functionality — these old tests need to be updated to match.
+
+**Files to migrate (64 failures):**
+
+| Test File | Failures | What to Change |
+|-----------|----------|----------------|
+| `test/rooms/test-bedroom-door.lua` | 40 | Rewrite to test portal objects instead of inline exit fields (`locked`, `mutations`, `keywords`). Use `find_portal_by_keyword()` and check portal FSM states instead of exit boolean flags. |
+| `test/rooms/test-navigation-comprehensive.lua` | 17 | Update assertions that check inline exit properties (`type`, `keywords`, `locked`, `max_carry_size`) — these now live on portal objects, not exit tables. |
+| `test/rooms/test-exit-sync-bugs.lua` | 6 | Rewrite exit-mutation sync tests to test FSM bidirectional sync via `sync_bidirectional_portal()`. The old `becomes_exit` pattern is replaced by portal FSM transitions. |
+| `test/objects/test-bedroom-door-object.lua` | 1 | Remove `passage_id` assertion (test 69) — door-link fields changed in portal refactor. |
+
+**Also pre-existing (not portal-related):**
+| `test/injuries/test-injuries-comprehensive.lua` | 1 | Silver dagger stab damage value mismatch (8 vs expected). Not portal-related — separate fix. |
+
+**Additional test work:**
 - Add new tests for bidirectional sync
 - Add new tests for `traversable` flag blocking/allowing movement
 - Add regression tests for all converted exits
 - Run full suite: `lua test/run-tests.lua`
+
+**Owner:** Nelson (test migration), with Bart reviewing any engine-side test helpers needed.
 
 ### 6.3 Documentation updates
 
@@ -278,9 +292,13 @@ Remove from all files:
 
 The living docs describe HOW the portal system works NOW — not the analysis that led to the decision. The analysis files are deleted once the docs are written (research served its purpose).
 
+**Room exit architecture doc — REWRITE REQUIRED:**
+- `docs/architecture/rooms/room-exits.md` — this doc describes the OLD inline exit system. It must be **rewritten** to document the new thin-exit + portal-object pattern. The old inline format (with `locked`, `mutations`, `keywords` on exit tables) is being replaced by thin references (`{ portal = "object-id" }`) pointing to portal objects. This is the most important doc update — it's the canonical reference for how exits work.
+
 **Other doc updates:**
 - Update `docs/objects/bedroom-door.md` and `docs/objects/trap-door.md`
 - Update `docs/architecture/objects/deep-nesting-syntax.md` (exit encoding changes)
+- Update `docs/architecture/rooms/dynamic-room-descriptions.md` (portal objects affect room descriptions differently than inline exits)
 - Update `docs/design/design-directives.md` (add D-PORTAL-ARCHITECTURE reference)
 - Update `docs/architecture/engine/effects-pipeline.md` (traverse effects now on portal objects)
 - Add `docs/architecture/objects/portal-pattern.md` — the canonical portal object reference
@@ -305,8 +323,42 @@ Add portal validation rules to the meta-lint system:
 - [ ] All tests pass
 - [ ] Documentation updated
 - [ ] EXIT-01 through EXIT-07 meta-lint rules implemented
+- [ ] Linter run clean: `python scripts/meta-lint/lint.py` passes with 0 errors on portal rules
 - [ ] Full `lua test/run-tests.lua` green
 - [ ] `.\test\run-before-deploy.ps1` passes
+
+### 6.5 Linter Update + Validation Run
+
+**The linter must be updated to understand the portal system AND run clean before Phase 4 ships.**
+
+#### New Linter Rules (Lisa implements):
+
+| Rule | Severity | Check |
+|------|----------|-------|
+| EXIT-01 | 🔴 Error | Every portal object must have `portal.target` defined and non-nil |
+| EXIT-02 | 🔴 Error | Every portal FSM state must declare `traversable = true/false` |
+| EXIT-03 | 🔴 Error | Every `bidirectional_id` must have exactly ONE matching partner across all objects |
+| EXIT-04 | 🟡 Warning | Portal `direction_hint` should match the room exit direction key that references it |
+| EXIT-05 | 🟡 Warning | Thin exit reference must point to an object with `template = "portal"` |
+| EXIT-06 | 🔴 Error | No inline exit state allowed — exit tables must not have `open`, `locked`, `hidden`, `broken`, `mutations`, `keywords` |
+| EXIT-07 | 🟡 Warning | Portal object should have `on_feel` (P6 darkness requirement) |
+
+#### Existing Rules to Update:
+
+| Rule | Change |
+|------|--------|
+| GUID-02 (orphan objects) | Portal objects referenced only via thin exits must not be flagged as orphans |
+| XR-05 (cross-reference) | Thin exit `portal` field must resolve to a valid object ID |
+| EXIT-01 (existing) | May need to coexist with new portal EXIT-01 — rename old EXIT-01 if there's a collision |
+
+#### Validation Run (required before Phase 4 ships):
+```
+python scripts/meta-lint/lint.py
+```
+- Must pass with **0 errors** on all EXIT-* rules
+- Warnings are acceptable but should be reviewed
+- Run AFTER all Phase 3 portal objects and room files are committed
+- **Owner:** Lisa runs the linter; Bart fixes any engine-side issues; Flanders/Moe fix object/room issues
 
 ---
 

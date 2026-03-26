@@ -1538,6 +1538,43 @@ All of these use the **same injury system** — `injuries.inflict()` with FSM st
 
 ---
 
+### Cross-Cutting: Documentation + Unit Tests (Every Phase)
+
+**Every phase must include these deliverables alongside the implementation:**
+
+#### Architecture Documentation (`docs/architecture/combat/`)
+
+| Doc | Phase | Description |
+|-----|-------|-------------|
+| `body-zone-system.md` | 1 | 4-6 body zones, body_tree format, zone → armor slot mapping |
+| `combat-fsm.md` | 1 | 6-phase combat exchange FSM, state transitions, data flow |
+| `damage-resolution.md` | 1 | Material physics pipeline: weapon × force vs. armor + tissue |
+| `combat-narration.md` | 1 | How structured results become text; severity scaling |
+| `npc-vs-npc.md` | 2 | Unified combatant interface, predator-prey trigger, witness narration |
+| `disease-delivery.md` | 2 | on_hit disease mechanism, rabies/venom progression |
+| `environmental-combat.md` | 3 | Push/throw/slam environmental verbs, size asymmetry |
+| `humanoid-combat-ai.md` | 4 | NPC tactical decisions, surrender, disarm, factions |
+
+**Rule:** Brockman writes docs from Bart's implementation notes. No phase ships without its docs.
+
+#### Unit Tests (`test/combat/`)
+
+| Test File | Phase | Coverage |
+|-----------|-------|----------|
+| `test-body-zones.lua` | 1 | body_tree validation, zone lookup, zone → slot mapping |
+| `test-combat-fsm.lua` | 1 | 6-phase FSM transitions, state data, edge cases |
+| `test-damage-resolution.lua` | 1 | Material × force calculations, armor mitigation, tissue damage |
+| `test-combat-narration.lua` | 1 | Severity → text mapping, darkness narration, variety |
+| `test-combat-integration.lua` | 1 | Full rat fight end-to-end: attack → resolve → injure → die |
+| `test-creature-combat.lua` | 2 | Wolf/spider/cat profiles, on_hit disease, multi-combatant |
+| `test-npc-vs-npc.lua` | 2 | Predator-prey auto-combat, witness narration |
+| `test-environmental-combat.lua` | 3 | Push/throw/slam verbs, weapon/armor degradation |
+| `test-humanoid-combat.lua` | 4 | NPC AI, surrender, disarm, faction fights |
+
+**Rule:** Nelson writes tests from the combat plan BEFORE implementation begins (TDD). Tests are the Phase 1 gate — implementation doesn't start until tests exist.
+
+---
+
 ## 12. Who Does What
 
 ### Phase 1 Assignments
