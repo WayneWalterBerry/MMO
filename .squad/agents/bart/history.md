@@ -1513,3 +1513,41 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 **Decision Filed:** D-NPC-COMBAT-ALIGNMENT, D-COMBAT-NPC-PHASE-SEQUENCING — decisions.md updated.
 
 **Impact:** NPC system plan 100% aligned with combat plan. Creature autonomy focus in Phase 1. Combat systems deferred to Phase 2+.
+
+---
+
+## 2026-07-30T00:00Z: WAVE-2 — Creature Engine + Game Loop Integration
+
+**Status:** ✅ COMPLETE
+**Branch:** main (direct commit)
+
+**What was built:**
+
+1. **src/engine/creatures/init.lua (418 LOC)** — The creature behavior engine module.
+   - **emit_stimulus()** — Queues stimuli (player_enters, loud_noise, light_change, etc.) for creatures to process on next tick.
+   - **get_creatures_in_room()** — Returns all animate creatures at a given room location.
+   - **creature_tick()** — Per-creature evaluation: drives → reactions → utility-scored behavior → action execution.
+   - **tick()** — Master tick iterating all animate objects, pcall-guarded per creature.
+   - **Drive system:** Updates hunger (+decay_rate), fear (decay toward 0), curiosity (+decay_rate), all clamped to [min, max].
+   - **Reaction system:** BFS-based perception range. Same-room = full reaction, adjacent = 50% scaled, 2+ rooms = skip.
+   - **Behavior selection:** Utility-scored from drives: idle (base 10), wander (curiosity + wander_chance), flee (fear > threshold), vocalize (moderate fear/curiosity). Random jitter breaks ties.
+   - **Movement:** Portal-aware exit traversal. Validates traversable state and can_open_doors. Updates both room.contents and obj.location.
+   - **FSM transitions:** alive-idle ↔ alive-wander ↔ alive-flee → dead. State set directly in tick.
+   - **Attack action:** Explicitly a no-op (D-COMBAT-NPC-PHASE-SEQUENCING).
+   - **Registry abstraction:** Compatible with both real registry (:list/:get) and test mocks (:all/get_location) for seamless testing.
+
+2. **src/engine/loop/init.lua (+9 lines)** — Creature tick wired after fire propagation, before injury tick. pcall-guarded: if creatures module fails, game continues.
+
+**Architecture decisions:**
+- Creature tick is generic (Principle 8) — knows about nimate, drives, reactions, behavior tables. Does NOT know about rats.
+- Simple exit format ({ target, open }) and portal format ({ portal = id }) both supported for test/production flexibility.
+- BFS room distance bounded at depth 10 to prevent pathological map traversal.
+- Stimulus queue drained after ALL creatures process (not per-creature) — ensures consistent stimulus delivery.
+
+**Test results:** 25/25 creature tick tests pass, 17/17 stimulus tests pass. 3 pre-existing failures in unrelated files (weapon pipeline, material migration, object templates). Game boots cleanly in --headless mode.
+
+**Performance:** 5-creature tick completes in <50ms (GATE-2 requirement met).
+
+**Key files:**
+- src/engine/creatures/init.lua — creature behavior engine (NEW)
+- src/engine/loop/init.lua — game loop integration (+9 lines)
