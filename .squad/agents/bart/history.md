@@ -1458,3 +1458,21 @@ Authored unified Effects Pipeline architecture document (`docs/architecture/engi
 - test/meta-check/test_phase3.py — 31 tests
 
 **Test results:** 31/31 Phase 3 tests pass, 153/153 Lua tests unaffected.
+
+## Learnings
+
+### Portal Phase 2: Bidirectional FSM Sync (2026-07)
+
+**Problem:** Portal objects support bidirectional_id for paired doors (bedroom/hallway), but fsm.transition() never propagated state changes to the partner portal. Also, movement error messages for barred and unbarred states did not match expected patterns.
+
+**Fix 1 -- Bidirectional sync in FSM engine (fsm/init.lua):**
+- Added sync_bidirectional(registry, obj) as a local function in the FSM module
+- After every successful fsm.transition(), if the object has portal.bidirectional_id, scans registry:list() for the partner and applies the same state via apply_state()
+- This is generic -- reads portal metadata only, no object-specific logic (Principle 8)
+- Lives in FSM engine, not in verb handlers -- so ANY verb that triggers an FSM transition automatically syncs
+
+**Fix 2 -- Portal blocked-movement messages (movement.lua):**
+- barred state now prints 'is barred.' (was incorrectly grouped with closed)
+- unbarred state now prints 'is closed.' (was falling through to generic 'blocks your path')
+
+**Key architectural decision:** Bidirectional sync belongs in the FSM engine, not in individual verb handlers. This ensures consistency regardless of which verb triggers the transition.

@@ -1,6 +1,6 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-25T18:21:05Z  
+**Last Updated:** 2026-03-26T01:33:00Z  
 **Last Deep Clean:** 2026-03-25T18:21:05Z  
 **Scribe:** Session Logger & Memory Manager
 
@@ -26,6 +26,8 @@ Quick-reference table of ALL decisions (active + archived).
 | D-VERBS-REFACTOR-2026-03-24 | General | 🟢 Active | See full entry | Active |
 | D-LARK-GRAMMAR: Lark-Based Lua Object Parser | Parser | 🟢 Active | See full entry | Active |
 | D-META-CHECK-BUILD-2026-03-24 | Parser | 🟢 Active | See full entry | Active |
+| D-PORTAL-BIDIR-SYNC: Bidirectional Portal Sync in FSM Engine | Architecture | ✅ Implemented | Portal sync is engine-driven, not verb-handler-driven | Active |
+| D-PORTAL-PHASE-2-ROOM-WIRING: Portal Phase 2 Room Wiring Complete | Architecture | ✅ Implemented | Thin portal references in start-room & hallway | Active |
 | D-WAYNE-BATCH-2026-03-24: Design Decisions Batch (Wayne) | Process | 🟢 Active | See full entry | Active |
 | D-WAYNE-CODE-REVIEW-DIRECTIVE (2026-03-24T07-28-58Z) | Process | 🟢 Active | See full entry | Active |
 | D-WAYNE-COMMIT-CHECK: Check Commits Before Push (Quality Gate) | Process | 🟢 Active | See full entry | Active |
@@ -147,6 +149,55 @@ These are decisions agents need to know about RIGHT NOW.
 ### D-LARK-GRAMMAR: Lark-Based Lua Object Parser
 
 
+
+---
+
+### D-PORTAL-BIDIR-SYNC: Bidirectional Portal Sync Lives in FSM Engine
+
+**Author:** Bart (Architect)  
+**Date:** 2026-07  
+**Status:** ✅ Implemented
+
+Bidirectional portal synchronization is implemented in `src/engine/fsm/init.lua`, not in individual verb handlers.
+
+When `fsm.transition()` completes successfully, if the transitioned object has `portal.bidirectional_id`, the engine scans the registry for the paired portal and applies the same state change automatically.
+
+**Rationale:**
+- **Principle 8 compliance:** Engine executes metadata; no object-specific logic in handlers.
+- **Consistency:** Any verb that triggers an FSM transition (open, close, break, unbar, lock) automatically syncs the pair. No risk of forgetting to add sync calls to new verbs.
+- **Simplicity:** One sync point instead of N verb handlers each calling sync.
+
+**Impact:**
+- **Flanders:** Portal objects only need `portal.bidirectional_id` set to the same value on both sides. No special sync metadata needed.
+- **Moe:** Room files don't need any sync logic. Portals sync through the registry automatically.
+- **Smithers:** Verb handlers don't need to call `sync_bidirectional_portal()` manually. It happens in FSM.
+- **Nelson:** Tests can verify sync by calling `fsm.transition()` directly on a flat registry -- no room context needed.
+
+---
+
+### D-PORTAL-PHASE-2-ROOM-WIRING: Portal Phase 2 Room Wiring Complete
+
+**Author:** Moe (World Builder)  
+**Date:** 2026-07-28  
+**Category:** Architecture  
+**Status:** ✅ Implemented
+
+`start-room.lua` and `hallway.lua` now use thin portal references instead of inline exit tables for the bedroom-hallway oak door.
+
+**What Changed:**
+- `exits.north` in start-room → `{ portal = "bedroom-hallway-door-north" }`
+- `exits.south` in hallway → `{ portal = "bedroom-hallway-door-south" }`
+- Portal objects added to each room's `instances` list
+- All other exits (window, trap door, hallway down/north/west/east) remain inline for backward compatibility
+
+**Decision:**
+Room files now encode exits as **direction → portal object ID** references. This is the pattern for all future exit definitions (Phase 3 migration). The old inline exit format is deprecated but coexists during migration.
+
+**Impact:**
+- **Bart:** Engine must resolve `exits[dir].portal` → registry lookup (now complete via Phase 1 FSM work).
+- **Nelson:** Room/door tests need updates to verify portal objects instead of inline fields.
+- **Flanders:** Portal object files are referenced by room instances. Do not modify GUIDs without coordination.
+- **Smithers:** Verb handlers should already resolve portal objects via registry if Bart's Phase 1 engine work is in.
 
 ---
 

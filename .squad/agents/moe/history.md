@@ -390,6 +390,20 @@ Built all 5 new room .lua files in `src/meta/world/`:
 
 **Design principle learned:** When gating a door, consider whether a bar or a lock is more appropriate. A bar is one-directional by nature (accessible from one side only) and doesn't require a key item to exist in the world. A lock creates a key-finding puzzle. Choose based on narrative intent: bars for imprisonment, locks for restricted access.
 
+### Portal Phase 2 — Room Wiring (2026-07-28)
+
+**Task:** Wire portal objects into bedroom (start-room.lua) and hallway (hallway.lua) exits as part of Portal Phase 2 (Issue #198).
+
+**Changes:**
+- **start-room.lua:** Replaced ~58 lines of inline `exits.north` (door type, state flags, keywords, mutations with `becomes_exit`) with thin portal reference: `north = { portal = "bedroom-hallway-door-north" }`. Added portal instance to room instances list with GUID `{25852832-6f19-48af-a118-20350ac8d243}`.
+- **hallway.lua:** Replaced ~55 lines of inline `exits.south` with thin portal reference: `south = { portal = "bedroom-hallway-door-south" }`. Added portal instance to room instances list with GUID `{a47ce304-4425-4bd0-a9e9-224b7c8baa8c}`.
+- **Kept intact:** All other exits (window, trap door, hallway down/north/west/east) remain inline — they'll be migrated in Phase 3.
+- **Kept intact:** Old `bedroom-door.lua` object stays until Phase 4 cleanup.
+
+**Test impact:** 60 test failures in room/door test files (`test-bedroom-door.lua`, `test-navigation-comprehensive.lua`, `test-exit-sync-bugs.lua`, `test-bedroom-door-object.lua`) — all expected. These tests check inline exit fields that now live on portal objects. Nelson updates them in Phase 4.
+
+**Design principle learned:** Thin portal references (`{ portal = "object-id" }`) are the new exit pattern. The room file only declares direction → portal ID. All door state, sensory text, FSM, and mutations live on the portal object. This cleanly separates spatial topology (Moe's domain) from object behavior (Flanders's domain).
+
 ### Puzzle 015 Wind Effect Metadata (2026-07-22)
 
 **Task:** Added on_traverse wind effect metadata to the deep-cellar / hallway stairway for Puzzle 015 (Draft Extinguish).
