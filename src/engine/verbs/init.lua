@@ -150,6 +150,400 @@ function verbs.create()
         handlers["snatch"] = handlers["catch"]
     end
 
+    ---------------------------------------------------------------------------
+    -- WAVE-6: ATTACK verb → combat FSM trigger + stance prompt + flee
+    -- Wires combat engine (Bart's src/engine/combat/init.lua) into verb layer.
+    ---------------------------------------------------------------------------
+    do
+        local combat_ok, combat_mod = pcall(require, "engine.combat")
+        local cr_ok, cr_mod = pcall(require, "engine.creatures")
+        local inj_ok, injury_mod = pcall(require, "engine.injuries")
+        local pres_ok, pres_mod = pcall(require, "engine.ui.presentation")
+
+        local function kw_match(obj, kw)
+            if obj.id and obj.id:lower() == kw then return true end
+            if type(obj.keywords) == "table" then
+                for _, k in ipairs(obj.keywords) do
+                    if k:lower() == kw then return true end
+                end
+            end
+            if obj.name then
+                local padded = " " .. obj.name:lower() .. " "
+                if padded:find(" " .. kw .. " ", 1, true) then return true end
+            end
+            return false
+        end
+
+        local function find_creature(ctx, keyword)
+            if not cr_ok or not cr_mod then return nil end
+            local kw = keyword:lower()
+                :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+            local room_id = type(ctx.current_room) == "table"
+                and ctx.current_room.id or ctx.current_room
+            local creatures = cr_mod.get_creatures_in_room(ctx.registry, room_id)
+            for _, c in ipairs(creatures) do
+                if kw_match(c, kw) then return c end
+            end
+            return nil
+        end
+
+        local function emit_combat_stimulus(ctx, target_id)
+            local room_id = ctx.current_room and ctx.current_room.id
+                or ctx.player and ctx.player.location
+            if not room_id then return end
+            if cr_ok and cr_mod and cr_mod.emit_stimulus then
+                cr_mod.emit_stimulus(room_id, "player_attacks", {
+                    source = "player", target = target_id,
+                })
+            end
+        end
+
+        local function find_held_weapon(ctx)
+            if not ctx.player or not ctx.player.hands then return nil end
+            for i = 1, 2 do
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local obj = type(hand) == "table" and hand
+                        or (ctx.registry and ctx.registry.get and ctx.registry:get(hand))
+                    if obj and obj.combat then return obj end
+                end
+            end
+            return nil
+        end
+
+        local function get_traversable_exits(ctx)
+            local exits = {}
+            local room = ctx.current_room
+            if not room or not room.exits then return exits end
+            for dir, exit_data in pairs(room.exits) do
+                local portal_obj = nil
+                if type(exit_data) == "table" and exit_data.portal then
+                    portal_obj = ctx.registry:get(exit_data.portal)
+                end
+                if portal_obj and portal_obj.portal then
+                    local state = portal_obj.states and portal_obj.states[portal_obj._state]
+                    if state and state.traversable then
+                        exits[#exits + 1] = dir
+                    end
+                else
+                    exits[#exits + 1] = dir
+                end
+            end
+            return exits
+        end
+
+        local function has_light(ctx)
+            if pres_ok and pres_mod and pres_mod.has_some_light then
+                return pres_mod.has_some_light(ctx)
+            end
+            return true
+        end
+
+        local INTERRUPT_MSG = {
+            weapon_break = "Your weapon cracks!",
+            armor_fail = "Your armor fails!",
+            stance_ineffective = "Your stance isn't working!",
+        }
+
+        local function prompt_stance(ctx, is_interrupt, interrupt_reason)
+            if ctx.headless then return "balanced" end
+            if is_interrupt and interrupt_reason then
+                print("[INTERRUPT: " .. (INTERRUPT_MSG[interrupt_reason] or interrupt_reason) .. "]")
+            end
+            if is_interrupt then
+                io.write("Combat stance? > aggressive | defensive | balanced | flee\n> ")
+            else
+                io.write("Combat stance? > aggressive | defensive | balanced\n> ")
+            end
+            io.flush()
+            local input = io.read()
+            if not input then return "balanced" end
+            input = input:lower():gsub("^%s+", ""):gsub("%s+$", "")
+            if input == "aggressive" or input == "defensive" or input == "balanced" then
+                return input
+            end
+            if input == "flee" or input:match("^flee") or input == "run" then
+                return "flee"
+            end
+            return "balanced"
+        end
+
+        -- Forward declarations
+        local attempt_flee, run_combat_encounter
+
+        attempt_flee = function(ctx, creature, light)
+            local player = ctx.player
+            local player_speed = player.combat and player.combat.speed or 3
+            local creature_speed = creature.combat and creature.combat.speed or 3
+
+            -- Leg injury modifier
+            if player.injuries then
+                for _, inj in ipairs(player.injuries) do
+                    local z = inj.location or inj.zone or ""
+                    if z:match("leg") or z:match("feet") or z:match("ankle") then
+                        player_speed = player_speed * 0.7
+                        break
+                    end
+                end
+            end
+
+            local flee_chance = player_speed / (player_speed + creature_speed)
+            if math.random() <= flee_chance then
+                -- Success: partial damage (GRAZE via "flee" response)
+                if combat_ok and combat_mod then
+                    local graze = combat_mod.resolve_exchange(
+                        creature, player, nil, nil, "flee",
+                        { light = light, stance = "balanced" }
+                    )
+                    if graze.narration and graze.narration ~= "" then
+                        print(graze.narration)
+                    end
+                end
+                local exits = get_traversable_exits(ctx)
+                if #exits > 0 then
+                    local dir = exits[math.random(#exits)]
+                    print("You break free and run " .. dir .. "!")
+                    handlers["go"](ctx, dir)
+                else
+                    print("You break free but there's nowhere to run!")
+                end
+                return true
+            else
+                print("You try to flee but " .. (creature.name or "the creature") .. " blocks your escape!")
+                return false
+            end
+        end
+
+        run_combat_encounter = function(ctx, creature, target_zone)
+            if not combat_ok or not combat_mod then
+                print("Something goes wrong.")
+                return
+            end
+
+            local player = ctx.player
+            local light = has_light(ctx)
+
+            if not light then
+                print("You can't see well — attacks will be less accurate.")
+            end
+
+            local weapon = find_held_weapon(ctx)
+            local weapon_name = weapon and (weapon.name or weapon.id) or "bare fists"
+            print("You engage " .. (creature.name or "the creature") .. " with " .. weapon_name .. "!")
+
+            local stance = prompt_stance(ctx, false, nil)
+            if stance == "flee" then
+                attempt_flee(ctx, creature, light)
+                return
+            end
+
+            local combat_state = { deflect_streak = 0 }
+            local MAX_ROUNDS = 20
+
+            for round = 1, MAX_ROUNDS do
+                -- Re-check weapon each round (may have broken)
+                local round_weapon = find_held_weapon(ctx) or weapon
+
+                -- Creature defensive behavior
+                local creature_response = "dodge"
+                if creature.combat and creature.combat.defense then
+                    creature_response = creature.combat.defense
+                end
+
+                -- Player attacks creature
+                local result = combat_mod.resolve_exchange(
+                    player, creature, round_weapon, target_zone,
+                    creature_response,
+                    { light = light, stance = stance }
+                )
+
+                if result.narration and result.narration ~= "" then
+                    print(result.narration)
+                end
+
+                -- Creature death
+                if result.defender_dead or (creature.health and creature.health <= 0) then
+                    creature._state = "dead"
+                    creature.animate = false
+                    creature.portable = true
+                    creature.alive = false
+                    print((creature.name or "The creature") .. " is dead!")
+                    return
+                end
+
+                -- Creature counter-attack
+                if creature.combat and creature.combat.natural_weapons then
+                    local player_response = "dodge"
+                    if stance == "defensive" then
+                        player_response = "block"
+                    end
+
+                    local counter = combat_mod.resolve_exchange(
+                        creature, player, nil, nil, player_response,
+                        { light = light, stance = stance }
+                    )
+                    if counter.narration and counter.narration ~= "" then
+                        print(counter.narration)
+                    end
+
+                    if player.health and player.health <= 0 then
+                        print("You collapse from your wounds!")
+                        return
+                    end
+                end
+
+                -- Interrupt check (headless: never interrupt, run to completion)
+                if not ctx.headless then
+                    local interrupt = combat_mod.interrupt_check(result, combat_state)
+                    if interrupt then
+                        stance = prompt_stance(ctx, true, interrupt)
+                        if stance == "flee" then
+                            if attempt_flee(ctx, creature, light) then return end
+                            print("You fail to escape! The creature presses its attack!")
+                            stance = "balanced"
+                        end
+                        combat_state.deflect_streak = 0
+                    end
+                end
+
+                -- Creature morale break / flee threshold
+                if creature.combat and creature.combat.flee_threshold then
+                    local max_hp = creature.combat.max_health or creature.health or 10
+                    local hp_pct = (creature.health or 10) / max_hp
+                    if hp_pct <= creature.combat.flee_threshold then
+                        print((creature.name or "The creature") .. " turns and flees!")
+                        creature._state = "fled"
+                        if cr_ok and cr_mod and cr_mod.emit_stimulus then
+                            local room_id = type(ctx.current_room) == "table"
+                                and ctx.current_room.id or ctx.current_room
+                            cr_mod.emit_stimulus(room_id, "creature_fled", {
+                                creature = creature.id,
+                            })
+                        end
+                        return
+                    end
+                end
+            end
+
+            print("The combat reaches a stalemate. Both combatants back off, wary.")
+        end
+
+        -- Save original hit handler (self-infliction from combat.lua)
+        local original_hit = handlers["hit"]
+
+        handlers["attack"] = function(ctx, noun)
+            if noun == "" then
+                print("Attack what?")
+                return
+            end
+
+            -- Parse "attack <creature> <zone>"
+            local words = {}
+            for w in noun:gmatch("%S+") do words[#words + 1] = w end
+
+            local creature_word = words[1]
+            local target_zone = words[2]
+
+            local creature = find_creature(ctx, creature_word)
+            if not creature then
+                -- Try full noun as creature name (multi-word: "giant rat")
+                creature = find_creature(ctx, noun)
+                target_zone = nil
+            end
+
+            if creature then
+                if creature._state == "dead" or creature.alive == false then
+                    print("It's already dead.")
+                    return
+                end
+                emit_combat_stimulus(ctx, creature.id)
+                run_combat_encounter(ctx, creature, target_zone)
+                return
+            end
+
+            print("You don't see that here to attack.")
+        end
+        handlers["fight"] = handlers["attack"]
+
+        -- Extend hit/strike/swing: try creature combat first, fall through
+        handlers["hit"] = function(ctx, noun)
+            if noun ~= "" then
+                local first_word = noun:match("^(%S+)")
+                local creature = find_creature(ctx, first_word)
+                if creature and creature.alive ~= false and creature._state ~= "dead" then
+                    return handlers["attack"](ctx, noun)
+                end
+            end
+            if original_hit then return original_hit(ctx, noun) end
+            print("Hit what?")
+        end
+        -- Re-sync aliases set by combat.lua so identity checks pass
+        handlers["punch"]    = handlers["hit"]
+        handlers["bash"]     = handlers["hit"]
+        handlers["bonk"]     = handlers["hit"]
+        handlers["thump"]    = handlers["hit"]
+        handlers["smack"]    = handlers["hit"]
+        handlers["bang"]     = handlers["hit"]
+        handlers["slap"]     = handlers["hit"]
+        handlers["whack"]    = handlers["hit"]
+        handlers["headbutt"] = handlers["hit"]
+
+        -- strike: preserve fire.lua match-striking, add creature combat fallback
+        local original_strike = handlers["strike"]
+        handlers["strike"] = function(ctx, noun)
+            if noun ~= "" then
+                local first_word = noun:match("^(%S+)")
+                local creature = find_creature(ctx, first_word)
+                if creature and creature.alive ~= false and creature._state ~= "dead" then
+                    return handlers["attack"](ctx, noun)
+                end
+            end
+            if original_strike then return original_strike(ctx, noun) end
+            print("Strike what?")
+        end
+
+        handlers["swing"] = function(ctx, noun)
+            if noun ~= "" then
+                local first_word = noun:match("^(%S+)")
+                local creature = find_creature(ctx, first_word)
+                if creature and creature.alive ~= false and creature._state ~= "dead" then
+                    return handlers["attack"](ctx, noun)
+                end
+            end
+            print("Swing at what?")
+        end
+
+        -- FLEE verb (standalone — works in and out of combat)
+        handlers["flee"] = function(ctx, noun)
+            if not cr_ok or not cr_mod then
+                print("There's nothing to flee from.")
+                return
+            end
+            local room_id = type(ctx.current_room) == "table"
+                and ctx.current_room.id or ctx.current_room
+            local room_creatures = cr_mod.get_creatures_in_room(ctx.registry, room_id)
+            local threat = nil
+            for _, c in ipairs(room_creatures) do
+                if c.alive ~= false and c._state ~= "dead" and c._state ~= "fled" then
+                    threat = c
+                    break
+                end
+            end
+            if not threat then
+                if noun ~= "" then
+                    handlers["go"](ctx, noun)
+                else
+                    print("There's nothing to flee from.")
+                end
+                return
+            end
+            local light = has_light(ctx)
+            if not attempt_flee(ctx, threat, light) then
+                print("You're still here, facing " .. (threat.name or "the creature") .. ".")
+            end
+        end
+    end
+
     -- Consciousness gate: block all verbs while the player is unconscious.
     -- Cache wrappers by original function to preserve alias identity
     -- (e.g., handlers["i"] == handlers["inventory"]).
