@@ -632,6 +632,15 @@ function loop.run(context)
       end
     end
 
+    -- Creature tick: evaluate behavior for all animate objects
+    local creature_ok, creature_mod = pcall(require, "engine.creatures")
+    if creature_ok and creature_mod then
+      local creature_msgs = creature_mod.tick(context)
+      for _, msg in ipairs(creature_msgs or {}) do
+        print(msg)
+      end
+    end
+
     -- Injury tick: advance injury FSMs, accumulate damage, check death
     -- Issue #29: Skip if game_over already set (e.g., sleep bleedout death)
     if not context.game_over
