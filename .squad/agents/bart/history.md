@@ -29,7 +29,22 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
-### Recent Work: #104 Engine Pass 3: player.lua as canonical state (2026-03-30)
+### Recent Work: WAVE-0 — Module Splits & Architecture Prep (2026-03-27)
+
+**WAVE-0 Completion — Bart's Module Splits + Mutation Architecture:**
+- Extracted `src/engine/creatures/stimulus.lua` (67 LOC) — queue management for creature behavior
+- Created `src/engine/creatures/predator-prey.lua` (38 LOC) stub — ready for WAVE-1 predator-prey mechanics
+- Created `src/engine/combat/npc-behavior.lua` (39 LOC) stub — ready for WAVE-1 NPC combat AI
+- Registered `test/food/` in test runner — ready for WAVE-1 food system tests
+- Audited tissue materials: all 5 needed (hide, flesh, bone, tooth-enamel, keratin) exist
+- Comprehensive mutation audit: 23 top-level + ~150 FSM entries documented
+- Mutation graph linter plan written: 357 lines, 4-phase implementation roadmap
+- Q&A with Wayne on D-14 mutation architecture clarified; 1 bug found (poison-gas-vent-plugged.lua missing)
+- **Test suite:** 176 → 178 tests pass (+2 new food tests)
+- **Branch:** squad/phase2-wave0-splits
+- **Decisions filed:** D-STIMULUS-MODULE, D-PREDATOR-PREY-STUB, D-NPC-BEHAVIOR-STUB, D-TEST-FOOD-DIR, D-TISSUE-MATERIALS-AUDIT, D-MUTATION-GRAPH-LINTER
+
+### Prior Work: #104 Engine Pass 3: player.lua as canonical state (2026-03-30)
 
 **#104 — visited_rooms migrated to player model:**
 - Moved `visited_rooms` from `ctx` root to `ctx.player.visited_rooms` — player model is now the single canonical source for all player state

@@ -24,7 +24,19 @@
 - 60 unique bugs discovered (8 CRITICAL/HIGH, 20 MEDIUM+MAJOR, 4 LOW, 28 MINOR/COSMETIC)
 - Phase 3 features (hit/unconsciousness/appearance/mirror): engine solid, parser gaps identified
 
-### Effects Pipeline (EP1-EP10) ✅ COMPLETE (2026-03-23)
+### Recent Work: WAVE-0 — Lint Fixes & Portal TDD (2026-03-27)
+
+**WAVE-0 Completion — Nelson's Parallel Lint Fixes + Portal TDD:**
+- Fixed #249 (EXIT-01): Exit validation now catches non-existent rooms at lint time
+- Fixed #250 (GUID-02): Orphan allowlist support added to .meta-check.json (28 categorized suppressions)
+- Portal TDD #203: 61 tests (deep nesting, bidirectional sync, traversal)
+- Portal TDD #204: 75 tests (edge cases, boundary gates, non-existent targets)
+- Total: 136 new portal tests written
+- Files changed: scripts/meta-lint/config.py, scripts/meta-lint/lint.py, .meta-check.json
+- **Test suite:** 178 test files pass (0 regressions)
+- **Decisions filed:** D-ORPHAN-ALLOWLIST, D-EXIT01-LINT-GAP, D-KITCHEN-DOOR-TRAVERSAL
+
+### Recent Work: Effects Pipeline (EP1-EP10) ✅ COMPLETE (2026-03-23)
 - **EP4:** Independently verified poison-bottle.lua refactor — 116/116 pass
 - **EP9-EP10:** Authored 168 comprehensive bear-trap tests — 168/168 pass
 - **Status:** Flanders' pipeline refactors validated, full coverage established

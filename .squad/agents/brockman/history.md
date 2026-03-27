@@ -1,6 +1,19 @@
 # Brockman — History (Summarized)
 
-## Project Context
+## Recent Work: WAVE-0 — Testing Framework Documentation (2026-03-27)
+
+**WAVE-0 Completion — Brockman's Testing Documentation:**
+- Created `docs/testing/README.md` — test framework overview, running tests, CI/CD gates
+- Created `docs/testing/framework.md` — pure Lua test helper API, assertions, summary reporting
+- Created `docs/testing/patterns.md` — common testing patterns, fixtures, test data strategies
+- Created `docs/testing/directory-structure.md` — test directory organization, coverage by area
+- Total: 30 KB comprehensive testing documentation
+- Documented headless mode (`--headless` CLI flag for CI/LLM automation)
+- Documented pre-deploy gate sequence (`test/run-before-deploy.ps1`)
+- Purpose: Enable WAVE-1 agents with complete reference material for consistent test patterns
+- Decisions documented: D-HEADLESS, D-TESTFIRST
+
+## Prior Context
 
 - **Owner:** Wayne "Effe" Berry
 - **Project:** MMO

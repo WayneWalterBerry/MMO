@@ -1,6 +1,6 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-26T15:30:00Z  
+**Last Updated:** 2026-03-27T13:30:00Z  
 **Last Deep Clean:** 2026-03-25T18:21:05Z  
 **Scribe:** Session Logger & Memory Manager
 
@@ -43,6 +43,15 @@ Quick-reference table of ALL decisions (active + archived).
 | D-CREATURES-DIRECTORY: Dedicated Directory for Animate Beings | Architecture | ✅ Implemented | rat.lua moved to src/meta/creatures/; loader updated; tests pass | Active |
 | D-FOOD-SYSTEMS-RESEARCH: Food Systems Research Complete | Research | ✅ Complete | 4 documents (127 KB), 15+ games analyzed, 80% engine ready | Active |
 | D-CHECKPOINT-AFTER-WAVE: Checkpoint After Every Wave | Process | 🟢 Active | Verify wave completion, update plan documentation as living doc | Active |
+| D-STIMULUS-MODULE | Architecture | ✅ Implemented | Stimulus queue management extracted to src/engine/creatures/stimulus.lua | Active |
+| D-PREDATOR-PREY-STUB | Architecture | 🟡 In Progress | Predator-prey module stub (src/engine/creatures/predator-prey.lua) ready for WAVE-1 | Active |
+| D-NPC-BEHAVIOR-STUB | Architecture | 🟡 In Progress | NPC behavior module stub (src/engine/combat/npc-behavior.lua) ready for WAVE-1 | Active |
+| D-TEST-FOOD-DIR | Testing | 🟢 Active | test/food/ registered in test runner for WAVE-1 food system tests | Active |
+| D-TISSUE-MATERIALS-AUDIT | Architecture | ✅ Complete | All 5 tissue materials exist: hide, flesh, bone, tooth-enamel, keratin | Active |
+| D-ORPHAN-ALLOWLIST | Testing/Tooling | ✅ Implemented | 28 orphan suppressions categorized in .meta-check.json; GUID-02 rule supports allowlisting | Active |
+| D-EXIT01-LINT-GAP | Testing/Tooling | ✅ Implemented | EXIT-01 now validates portal targets; boundary portal handling documented | Active |
+| D-KITCHEN-DOOR-TRAVERSAL | Architecture | ✅ Implemented | courtyard-kitchen-door blocked until manor-kitchen exists in Level 2 | Active |
+| D-MUTATION-GRAPH-LINTER | Testing | 🟡 In Progress | Comprehensive linter plan written; dynamic discovery of all .lua files under src/meta/ | Active |
 | Architecture Notes | Architecture | 📦 Archived | See full entry | Archive |
 | D-104: PLAYER-CANONICAL-STATE (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
 | D-105: OBJECT-INSTANCING-FACTORY (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
@@ -499,6 +508,174 @@ Creatures are not inanimate objects. Separating their definitions clarifies owne
 - **All agents:** Plan documentation stays current and reflects reality
 - **Wayne:** Clear visibility into progress and deviations
 - **Scribe:** Maintains session logs + orchestration logs per spawn
+
+---
+
+### D-STIMULUS-MODULE
+
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-27T13:30Z  
+**Status:** ✅ Implemented  
+**Category:** Architecture
+
+**Decision:** Stimulus queue management extracted to `src/engine/creatures/stimulus.lua` (67 LOC). The module owns queue state and exposes `emit`, `clear`, `process`. Helper functions (get_location, get_room_distance) injected via helpers table — not duplicated.
+
+**Impact:**
+- Public API unchanged (`creatures.emit_stimulus()`, `creatures.clear_stimuli()`)
+- Internal consumers now call `stimulus.process()`
+- Phase 2+ NPC behavior system can build on clean stimulus abstraction
+
+---
+
+### D-PREDATOR-PREY-STUB
+
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-27T13:30Z  
+**Status:** 🟡 In Progress  
+**Category:** Architecture
+
+**Decision:** `src/engine/creatures/predator-prey.lua` created as stub (38 LOC). No predator-prey code existed in Phase 1. WAVE-1 will populate `detect_prey`, `evaluate_source_filter`, `predator_reaction`.
+
+**Impact:**
+- **Flanders:** Creature definitions needing diet/prey_tags ready for Phase 1
+- **Comic Book Guy:** Predator-prey mechanics framework ready for Phase 1 design
+- Safe defaults prevent side effects while waiting for Phase 1
+
+---
+
+### D-NPC-BEHAVIOR-STUB
+
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-27T13:30Z  
+**Status:** 🟡 In Progress  
+**Category:** Architecture
+
+**Decision:** `src/engine/combat/npc-behavior.lua` created as stub (39 LOC). No NPC-specific combat decision code existed in Phase 1. WAVE-1 will populate `select_response`, `select_stance`, `select_target_zone`.
+
+**Impact:**
+- Safe defaults (nil/balanced) prevent side effects
+- Ready for Phase 1 Combat system integration
+- NPC combat AI scaffolding in place
+
+---
+
+### D-TEST-FOOD-DIR
+
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-27T13:30Z  
+**Status:** 🟢 Active  
+**Category:** Testing
+
+**Decision:** `test/food/` registered in `test/run-tests.lua`. Directory exists with .gitkeep. Ready for WAVE-1 food/consumption tests.
+
+**Impact:**
+- **Nelson:** QA can write food system tests without directory setup
+- **All agents:** test/food/ tests run automatically in test suite
+
+---
+
+### D-TISSUE-MATERIALS-AUDIT
+
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-27T13:30Z  
+**Status:** ✅ Complete  
+**Category:** Architecture
+
+**Decision:** All 5 tissue materials needed for WAVE-1 body_tree exist: hide, flesh, bone, tooth-enamel, keratin. No creation needed. Material name is "tooth-enamel" (hyphenated, matching filename).
+
+**Impact:**
+- **Flanders:** Creature body_tree tissue layer definitions can proceed in WAVE-1
+- No material creation blockers
+- Material naming convention clarified
+
+---
+
+### D-ORPHAN-ALLOWLIST
+
+**Author:** Nelson (QA Engineer)  
+**Date:** 2026-03-27T13:30Z  
+**Status:** ✅ Implemented  
+**Category:** Testing/Tooling
+
+**Decision:** Added `orphan_allowlist` support to meta-lint config system. The `.meta-check.json` file now supports a `"orphan_allowlist"` dictionary mapping object IDs to reason strings. Objects in the allowlist are skipped by GUID-02 rule.
+
+**Files Changed:**
+- `scripts/meta-lint/config.py` — added `orphan_allowlist` field, parsing in `parse_config()`
+- `scripts/meta-lint/lint.py` — GUID-02 check calls `_active_config.is_orphan_allowed()`
+- `.meta-check.json` — 28 categorized orphan suppressions documented
+
+**Impact:**
+- **Flanders:** Safe to defer orphan object creation; lint won't fail
+- **Bart:** Config system now supports suppressions for all checks
+- Lint pipeline flexibility for deferred content
+
+---
+
+### D-EXIT01-LINT-GAP
+
+**Author:** Nelson (QA Engineer)  
+**Date:** 2026-03-27T13:30Z  
+**Status:** ✅ Implemented  
+**Category:** Testing/Tooling
+
+**Decision:** EXIT-01 lint rule now validates portal targets against room IDs. The Phase 2 inline EXIT-01 check was completed with portal migration; rooms now use `portal` references. Boundary portal handling documented.
+
+**Key Rule:** Portal `target` must reference an existing room OR be nil for boundary portals with `bidirectional_id = nil`.
+
+**Impact:**
+- **Moe:** Room creation now gated by EXIT-01 validation; no crashes from broken exits
+- **Nelson:** Portal target validation comprehensive
+- **Flanders:** Safe to create portal objects; lint validates references
+
+---
+
+### D-KITCHEN-DOOR-TRAVERSAL
+
+**Author:** Nelson (QA Engineer)  
+**Date:** 2026-03-27T13:30Z  
+**Status:** ✅ Implemented  
+**Category:** Architecture
+
+**Decision:** The `courtyard-kitchen-door.lua` portal had `traversable = true` in its `open` and `broken` states, targeting non-existent `manor-kitchen` room. This would cause runtime crash if player opened door and tried to walk through.
+
+**Fix Applied:** Set `traversable = false` with `blocked_message` in both states (collapsed masonry narrative). When `manor-kitchen` is created for Level 2, these states should be restored to `traversable = true`.
+
+**Impact:**
+- **Moe:** Room creation for Level 2 triggers portal state restoration
+- **Flanders:** Object updates coordinated with Level 2 release
+- Safety gate prevents navigation crashes
+
+---
+
+### D-MUTATION-GRAPH-LINTER
+
+**Author:** Bart (Architecture Lead) + Wayne Berry (User Directive)  
+**Date:** 2026-03-27T13:30Z  
+**Status:** 🟡 In Progress  
+**Category:** Testing
+
+**Decision:** Mutation graph linter will be added as pure-Lua test at `test/meta/test-mutation-graph.lua`. It walks all `.lua` files in `src/meta/objects/`, `src/meta/creatures/`, `src/meta/injuries/`, and all subdirectories, extracts all mutation edges (6 mechanisms), builds directed graph, validates every link.
+
+**Key Points:**
+1. **Dynamic discovery:** Linter must scan all .lua files recursively under src/meta/ and subdirectories (not hardcoded list) — future-proofs against content growth
+2. **Dynamic mutations (`dynamic = true`) flagged but never followed** — only paper.lua currently uses
+3. **`becomes = nil` intentional destruction** — not error, not broken edge
+4. **Cycles reported but not failures** — toggle patterns (matchbox ↔ matchbox-open) valid game mechanics
+5. **Template inheritance deferred** — all current instances redeclare; merging Phase 2 enhancement
+6. **4 known broken edges** will generate GitHub issues assigned to Flanders: poison-gas-vent-plugged, wood-splinters ×3
+
+**Implementation Plan:** 4 phases documented in `plans/mutation-graph-linter-plan.md` (357 lines)
+1. Documentation (this decision)
+2. Implementation (Nelson writes test/meta/test-mutation-graph.lua)
+3. Skill building (team learns linter patterns)
+4. Execution (run linter, file GitHub issues)
+
+**Impact:**
+- **Nelson:** Implements test file; dynamic file discovery prevents future gaps
+- **Flanders:** Will receive GitHub issues for missing object files
+- **Brockman:** Writes `docs/testing/mutation-graph-linting.md`
+- **Bart:** Designs graph library functions
+- **Wayne:** Dynamic discovery addresses user directive (2026-03-27T13-17-36Z)
 
 ---
 
