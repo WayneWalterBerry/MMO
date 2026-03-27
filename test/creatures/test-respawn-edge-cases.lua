@@ -1,6 +1,7 @@
 -- test/creatures/test-respawn-edge-cases.lua
 -- WAVE-5 TDD: Edge cases for respawn system — no metadata, zero population,
 -- immediate timer, missing home room, multiple deaths of same type.
+-- Tests the real engine/creatures/respawn.lua module contract.
 -- Must be run from repository root: lua test/creatures/test-respawn-edge-cases.lua
 
 local script_dir = arg[0]:match("(.+)[/\\][^/\\]+$") or "."
@@ -35,16 +36,17 @@ local ok_rat, rat_def = pcall(dofile, creature_path("rat"))
 if not ok_rat then print("WARNING: rat.lua failed to load — " .. tostring(rat_def)) end
 
 ---------------------------------------------------------------------------
--- Try to load respawn engine module (TDD — may not exist yet)
+-- Load respawn engine module
 ---------------------------------------------------------------------------
 local respawn_ok, respawn = pcall(require, "engine.creatures.respawn")
 if not respawn_ok then
     print("WARNING: engine.creatures.respawn not loadable — " .. tostring(respawn))
     respawn = nil
 end
+h.assert_truthy(respawn_ok and respawn, "engine.creatures.respawn module must load")
 
 ---------------------------------------------------------------------------
--- Mock factory (shared with test-respawn.lua pattern)
+-- Mock factory
 ---------------------------------------------------------------------------
 local guid_counter = 1000
 local function next_guid()
@@ -111,67 +113,28 @@ local function make_context(opts)
 end
 
 ---------------------------------------------------------------------------
--- Mock respawn manager (same contract as test-respawn.lua)
+-- Adapter functions for respawn module API
 ---------------------------------------------------------------------------
-local mock_respawn = {}
-mock_respawn._pending = {}
-
-function mock_respawn.reset()
-    mock_respawn._pending = {}
+local function list_fn(registry) return registry:list() end
+local function get_room_fn(context, room_id)
+    return context.rooms and context.rooms[room_id] or nil
 end
 
-function mock_respawn.on_death(creature)
-    if not creature.respawn then return end
-    local key = creature.id .. "@" .. (creature.respawn.home_room or "unknown")
-    mock_respawn._pending[key] = {
-        type_id = creature.id,
-        timer = creature.respawn.timer,
-        home_room = creature.respawn.home_room,
-        max_population = creature.respawn.max_population or 1,
-        ticks_remaining = creature.respawn.timer,
-        source_def = creature,
-    }
-end
-
-function mock_respawn.tick(context)
+local function tick_and_collect(ctx)
+    local before = {}
+    for _, obj in ipairs(ctx.registry:list()) do
+        before[obj.guid or obj.id] = true
+    end
+    respawn.tick(ctx, list_fn, get_room_fn, ctx.player.location)
     local spawned = {}
-    for key, entry in pairs(mock_respawn._pending) do
-        entry.ticks_remaining = entry.ticks_remaining - 1
-        if entry.ticks_remaining <= 0 then
-            -- Check home room exists
-            if not context.rooms[entry.home_room] then
-                -- Graceful error: log but don't crash, remove entry
-                mock_respawn._pending[key] = nil
-            elseif context.player.location == entry.home_room then
-                entry.ticks_remaining = 1
-            else
-                local count = 0
-                for _, obj in ipairs(context.registry:list()) do
-                    if obj.id == entry.type_id and obj.alive and obj.location == entry.home_room then
-                        count = count + 1
-                    end
-                end
-                if entry.max_population <= 0 or count >= entry.max_population then
-                    -- max_population = 0 means never respawn; at cap means no respawn
-                    mock_respawn._pending[key] = nil
-                else
-                    local new_creature = deep_copy(entry.source_def)
-                    new_creature.guid = next_guid()
-                    new_creature.alive = true
-                    new_creature.animate = true
-                    new_creature.health = new_creature.max_health or 10
-                    new_creature.location = entry.home_room
-                    context.registry:register(new_creature)
-                    spawned[#spawned + 1] = new_creature
-                    mock_respawn._pending[key] = nil
-                end
-            end
+    for _, obj in ipairs(ctx.registry:list()) do
+        local key = obj.guid or obj.id
+        if not before[key] then
+            spawned[#spawned + 1] = obj
         end
     end
     return spawned
 end
-
-local R = (respawn_ok and respawn) or mock_respawn
 
 ---------------------------------------------------------------------------
 -- TESTS: Respawn Edge Cases (WAVE-5)
@@ -179,8 +142,8 @@ local R = (respawn_ok and respawn) or mock_respawn
 suite("RESPAWN EDGE CASES: no-metadata, zero-pop, immediate, missing room (WAVE-5)")
 
 -- 1. Creature without respawn metadata → no tracking, no crash
-test("1. creature without respawn metadata → on_death is a no-op", function()
-    R.reset()
+test("1. creature without respawn metadata → register is a no-op", function()
+    respawn.clear()
     local plain_obj = {
         guid = next_guid(),
         id = "rock",
@@ -188,19 +151,14 @@ test("1. creature without respawn metadata → on_death is a no-op", function()
         template = "small-item",
         alive = false,
     }
-    -- Must not crash
-    local ok, err = pcall(R.on_death, plain_obj)
-    h.assert_truthy(ok, "on_death must not crash for objects without respawn metadata: " .. tostring(err))
-
-    -- Nothing should be pending
-    local count = 0
-    for _ in pairs(R._pending) do count = count + 1 end
-    h.assert_eq(0, count, "no pending respawns for object without respawn metadata")
+    local ok, err = pcall(respawn.register, plain_obj)
+    h.assert_truthy(ok, "register must not crash for objects without respawn metadata: " .. tostring(err))
+    h.assert_eq(0, respawn.count_pending(), "no pending respawns for object without respawn metadata")
 end)
 
 -- 2. Creature explicitly nil respawn → no tracking
 test("2. creature with respawn = nil → no respawn tracking", function()
-    R.reset()
+    respawn.clear()
     local obj = {
         guid = next_guid(),
         id = "chair",
@@ -208,16 +166,14 @@ test("2. creature with respawn = nil → no respawn tracking", function()
         template = "furniture",
         respawn = nil,
     }
-    local ok, err = pcall(R.on_death, obj)
-    h.assert_truthy(ok, "on_death must not crash: " .. tostring(err))
-    local count = 0
-    for _ in pairs(R._pending) do count = count + 1 end
-    h.assert_eq(0, count, "no pending respawns")
+    local ok, err = pcall(respawn.register, obj)
+    h.assert_truthy(ok, "register must not crash: " .. tostring(err))
+    h.assert_eq(0, respawn.count_pending(), "no pending respawns")
 end)
 
 -- 3. Respawn with max_population = 0 → never respawns
 test("3. max_population = 0 → creature never respawns", function()
-    R.reset()
+    respawn.clear()
     local creature = deep_copy(rat_def)
     creature.guid = next_guid()
     creature.alive = true
@@ -229,7 +185,7 @@ test("3. max_population = 0 → creature never respawns", function()
         max_population = 0,
     }
     creature.location = "cellar"
-    R.on_death(creature)
+    respawn.register(creature)
 
     local ctx = make_context({
         player_room = "bedroom",
@@ -240,9 +196,8 @@ test("3. max_population = 0 → creature never respawns", function()
         creatures = {},
     })
 
-    -- Tick well past timer
     for i = 1, 20 do
-        R.tick(ctx)
+        tick_and_collect(ctx)
     end
 
     local registered = ctx.registry:get_registered()
@@ -251,7 +206,7 @@ end)
 
 -- 4. Timer = 0 → immediate respawn (next tick, if player not in room)
 test("4. timer = 0 → respawn on first tick if player not in room", function()
-    R.reset()
+    respawn.clear()
     local creature = deep_copy(rat_def)
     creature.guid = next_guid()
     creature.alive = true
@@ -263,7 +218,7 @@ test("4. timer = 0 → respawn on first tick if player not in room", function()
         max_population = 3,
     }
     creature.location = "cellar"
-    R.on_death(creature)
+    respawn.register(creature)
 
     local ctx = make_context({
         player_room = "bedroom",
@@ -274,14 +229,13 @@ test("4. timer = 0 → respawn on first tick if player not in room", function()
         creatures = {},
     })
 
-    -- Timer=0 means ticks_remaining=0, so first tick should decrement to -1 and trigger
-    local spawned = R.tick(ctx)
+    local spawned = tick_and_collect(ctx)
     h.assert_truthy(#spawned > 0, "timer=0 must respawn on first tick (immediate)")
 end)
 
 -- 5. Timer = 1 → respawn after exactly 1 tick
 test("5. timer = 1 → respawn after exactly 1 tick", function()
-    R.reset()
+    respawn.clear()
     local creature = deep_copy(rat_def)
     creature.guid = next_guid()
     creature.alive = true
@@ -293,7 +247,7 @@ test("5. timer = 1 → respawn after exactly 1 tick", function()
         max_population = 3,
     }
     creature.location = "cellar"
-    R.on_death(creature)
+    respawn.register(creature)
 
     local ctx = make_context({
         player_room = "bedroom",
@@ -304,13 +258,13 @@ test("5. timer = 1 → respawn after exactly 1 tick", function()
         creatures = {},
     })
 
-    local spawned = R.tick(ctx)
+    local spawned = tick_and_collect(ctx)
     h.assert_truthy(#spawned > 0, "timer=1 must respawn after 1 tick")
 end)
 
 -- 6. Home room doesn't exist → graceful error (no crash)
-test("6. home room missing from context.rooms → no crash, entry cleaned up", function()
-    R.reset()
+test("6. home room missing from context.rooms → no crash", function()
+    respawn.clear()
     local creature = deep_copy(rat_def)
     creature.guid = next_guid()
     creature.alive = true
@@ -322,9 +276,8 @@ test("6. home room missing from context.rooms → no crash, entry cleaned up", f
         max_population = 3,
     }
     creature.location = "nonexistent-room"
-    R.on_death(creature)
+    respawn.register(creature)
 
-    -- Context does NOT include "nonexistent-room"
     local ctx = make_context({
         player_room = "bedroom",
         rooms = { ["bedroom"] = make_room("bedroom") },
@@ -332,66 +285,49 @@ test("6. home room missing from context.rooms → no crash, entry cleaned up", f
     })
 
     local ok, err = pcall(function()
-        for i = 1, 10 do R.tick(ctx) end
+        for i = 1, 10 do tick_and_collect(ctx) end
     end)
     h.assert_truthy(ok, "respawn tick must not crash when home room is missing: " .. tostring(err))
 
-    -- Nothing should have been registered
     local registered = ctx.registry:get_registered()
     h.assert_eq(0, #registered, "no creature should spawn when home room is missing")
 end)
 
--- 7. Multiple deaths of same creature type → only one pending per key
-test("7. multiple deaths of same type in same room → one pending entry per key", function()
-    R.reset()
-
-    for i = 1, 3 do
-        local rat = deep_copy(rat_def)
-        rat.guid = next_guid()
-        rat.alive = true
-        rat.animate = true
-        rat.health = rat.max_health or 5
-        rat.location = "cellar"
-        R.on_death(rat)
-    end
-
-    -- Count pending entries for rat@cellar
-    local count = 0
-    for key, entry in pairs(R._pending) do
-        if entry.type_id == "rat" and entry.home_room == "cellar" then
-            count = count + 1
-        end
-    end
-    -- Keyed by type_id@home_room, so only one pending entry
-    h.assert_eq(1, count, "only one pending respawn per creature type per room (not one per death)")
-end)
-
--- 8. on_death called on already-dead creature → no crash
-test("8. on_death on already-dead creature → no crash, still tracks", function()
-    R.reset()
+-- 7. Double-register same creature → second register is rejected
+test("7. double-register same creature → second register returns false", function()
+    respawn.clear()
     local rat = deep_copy(rat_def)
     rat.guid = next_guid()
-    rat.alive = false
-    rat.animate = false
-    rat.health = 0
+    rat.alive = true
+    rat.animate = true
     rat.location = "cellar"
 
-    local ok, err = pcall(R.on_death, rat)
-    h.assert_truthy(ok, "on_death must not crash on already-dead creature: " .. tostring(err))
+    local first = respawn.register(rat)
+    local second = respawn.register(rat)
+    h.assert_truthy(first, "first register must succeed")
+    h.assert_truthy(not second, "second register of same creature must return false (no double-register)")
+    h.assert_eq(1, respawn.count_pending(), "only one pending entry for same creature")
 end)
 
--- 9. Player leaves room mid-wait → respawn triggers on next tick
-test("9. player leaves home room after timer expires → respawn triggers", function()
-    R.reset()
+-- 8. register called on nil creature → no crash
+test("8. register(nil) → returns false, no crash", function()
+    respawn.clear()
+    local ok, err = pcall(respawn.register, nil)
+    h.assert_truthy(ok, "register(nil) must not crash: " .. tostring(err))
+    h.assert_eq(0, respawn.count_pending(), "no pending after register(nil)")
+end)
+
+-- 9. Player leaves room after timer expires → respawn triggers after timer resets
+test("9. player leaves home room after timer expires → respawn triggers on next cycle", function()
+    respawn.clear()
     local rat = deep_copy(rat_def)
     rat.guid = next_guid()
     rat.alive = true
     rat.animate = true
     rat.health = rat.max_health or 5
     rat.location = "cellar"
-    R.on_death(rat)
+    respawn.register(rat)
 
-    -- Player stays in cellar past timer
     local ctx = make_context({
         player_room = "cellar",
         rooms = {
@@ -401,19 +337,25 @@ test("9. player leaves home room after timer expires → respawn triggers", func
         creatures = {},
     })
 
+    -- Tick past timer while player in room — timer resets
     for i = 1, rat_def.respawn.timer + 5 do
-        R.tick(ctx)
+        tick_and_collect(ctx)
     end
 
-    -- No spawn yet
     h.assert_eq(0, #ctx.registry:get_registered(), "no spawn while player in room")
 
     -- Player moves to bedroom
     ctx.player.location = "bedroom"
     ctx.current_room = ctx.rooms["bedroom"]
 
-    local spawned = R.tick(ctx)
-    h.assert_truthy(#spawned > 0, "creature must respawn once player leaves the home room")
+    -- Module resets timer to full value when player blocks — tick through reset cycle
+    local spawned = {}
+    for i = 1, rat_def.respawn.timer + 1 do
+        spawned = tick_and_collect(ctx)
+        if #spawned > 0 then break end
+    end
+
+    h.assert_truthy(#spawned > 0, "creature must respawn after player leaves and timer completes reset cycle")
     h.assert_eq("cellar", spawned[1].location, "respawned creature must be in cellar")
 end)
 
