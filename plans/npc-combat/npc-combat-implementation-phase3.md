@@ -18,7 +18,7 @@
 |------|------|--------|------|-------|
 | WAVE-0 | Pre-Flight (Audit + Module Splits + Architecture Docs) | ✅ PASSED | GATE-0 | 191 |
 | WAVE-1 | Death Consequences (In-Place Reshape) | ✅ PASSED | GATE-1 | 194 |
-| WAVE-2 | Creature Inventory + Loot Drops | ⏳ Not Started | GATE-2 | — |
+| WAVE-2 | Creature Inventory + Loot Drops | ✅ PASSED | GATE-2 | 198 |
 | WAVE-3 | Full Food System + Cooking | ⏳ Not Started | GATE-3 | — |
 | WAVE-4 | Combat Polish + Cure System | ⏳ Not Started | GATE-4 | — |
 | WAVE-5 | Respawning + Design Docs + Polish | ⏳ Not Started | GATE-5 | — |
@@ -542,14 +542,14 @@ Add creature inventory validation rules:
 
 #### GATE-2 Criteria
 
-- [ ] Wolf dies → gnawed-bone appears on room floor
-- [ ] Spider dies → silk-bundle appears on room floor
-- [ ] Creature with empty inventory → nothing drops (no crash)
-- [ ] Meta-lint INV-01 through INV-04 pass
-- [ ] Items are independent room objects post-drop (take, examine work)
-- [ ] Reshaped corpse and dropped items coexist in room correctly
-- [ ] All existing tests pass (zero regressions)
-- [ ] **Committed + tagged**
+- [x] Wolf dies → gnawed-bone appears on room floor
+- [x] Spider dies → silk-bundle appears on room floor
+- [x] Creature with empty inventory → nothing drops (no crash)
+- [x] Meta-lint INV-01 through INV-04 pass
+- [x] Items are independent room objects post-drop (take, examine work)
+- [x] Reshaped corpse and dropped items coexist in room correctly
+- [x] All existing tests pass (zero regressions)
+- [x] **Committed + tagged**
 
 ---
 
