@@ -69,20 +69,14 @@ local function get_player_room_id(context)
 end
 
 ---------------------------------------------------------------------------
--- emit_stimulus / clear_stimuli — delegated to stimulus module
+-- Stimulus / creatures API
 ---------------------------------------------------------------------------
 function M.emit_stimulus(room_id, stimulus_type, data)
     stimulus.emit(room_id, stimulus_type, data)
 end
 
-function M.clear_stimuli()
-    stimulus.clear()
-end
+function M.clear_stimuli() stimulus.clear() end
 
----------------------------------------------------------------------------
--- get_creatures_in_room(registry, room_id) -> creature[]
--- Returns all animate creatures located in the given room.
----------------------------------------------------------------------------
 function M.get_creatures_in_room(registry, room_id)
     local result = {}
     for _, obj in ipairs(list_objects(registry)) do
@@ -96,12 +90,7 @@ function M.get_creatures_in_room(registry, room_id)
     return result
 end
 
----------------------------------------------------------------------------
--- Drive system
----------------------------------------------------------------------------
-
--- update_drives(creature)
--- Advances each drive by its decay_rate, clamped to [min, max].
+-- Drive system: update_drives(creature)
 local function update_drives(creature)
     if type(creature.drives) ~= "table" then return end
     for _, drive in pairs(creature.drives) do
@@ -121,48 +110,21 @@ end
 ---------------------------------------------------------------------------
 
 -- Navigation helpers delegated to navigation module
-local function get_exit_target(context, exit)
-    return navigation.get_exit_target(context, exit)
-end
-
 local function get_room_distance(context, from_id, to_id)
     return navigation.get_room_distance(context, from_id, to_id, get_room)
-end
-
-local function is_exit_passable(context, exit, creature)
-    return navigation.is_exit_passable(context, exit, creature)
 end
 
 local function get_valid_exits(context, room_id, creature)
     return navigation.get_valid_exits(context, room_id, creature, get_room)
 end
 
--- Stimulus helpers table — passed to stimulus.process() so it can resolve
--- room distances without duplicating the navigation code.
 local stimulus_helpers = {
     get_location = get_location,
     get_room_distance = get_room_distance,
 }
 
--- process_stimuli(context, creature) -> messages[]
--- Delegated to stimulus module.
 local function process_stimuli(context, creature)
     return stimulus.process(context, creature, stimulus_helpers)
-end
-
----------------------------------------------------------------------------
--- Morale system (Track 3B): delegates to morale module
----------------------------------------------------------------------------
-
-local morale_helpers = {
-    get_location = get_location,
-    get_valid_exits = get_valid_exits,
-    get_player_room_id = get_player_room_id,
-    move_creature = move_creature,
-}
-
-local function check_morale(context, creature, combat_result)
-    return morale.check(context, creature, combat_result, morale_helpers)
 end
 
 ---------------------------------------------------------------------------
@@ -253,6 +215,18 @@ local function move_creature(context, creature, target_room_id)
 
     -- Update location (both obj.location and mock registry tracker)
     set_location(context.registry, creature, target_room_id)
+end
+
+-- Morale helpers: built after all navigation/movement functions are defined
+local morale_helpers = {
+    get_location = get_location,
+    get_valid_exits = get_valid_exits,
+    get_player_room_id = get_player_room_id,
+    move_creature = move_creature,
+}
+
+local function check_morale(context, creature, combat_result)
+    return morale.check(context, creature, combat_result, morale_helpers)
 end
 
 -- execute_action(context, creature, action) -> messages[]
@@ -378,20 +352,20 @@ local function execute_action(context, creature, action)
 
             -- Track 3B: Morale check on the DEFENDER after combat resolves
             if result and not result.defender_dead then
-                local morale = check_morale(context, target, result)
+                local morale_result = M.attempt_flee(context, target)
                 if target._morale_message then
                     messages[#messages + 1] = target._morale_message
                     target._morale_message = nil
                 end
                 -- If defender fled, remove from any active fight
-                if morale == "flee" and combat.find_fight_for_combatant then
+                if morale_result == "flee" and combat.find_fight_for_combatant then
                     local fight = combat.find_fight_for_combatant(target)
                     if fight then combat.remove_combatant(fight, target) end
                 end
             end
 
             -- Track 3B: Morale check on the ATTACKER too
-            local attacker_morale = check_morale(context, creature, result)
+            M.attempt_flee(context, creature)
             if creature._morale_message then
                 messages[#messages + 1] = creature._morale_message
                 creature._morale_message = nil
@@ -490,6 +464,33 @@ end
 
 M.score_actions = score_actions
 M.execute_action = execute_action
-M.check_morale = check_morale
+
+-- Simple morale threshold check (no context needed)
+-- check_morale(creature) -> true if health/max_health < flee_threshold
+function M.check_morale(creature)
+    if not creature then return nil end
+    local health = creature.health
+    local max_health = creature.max_health
+    if not health or not max_health or max_health <= 0 then return nil end
+    -- Read from combat.behavior.flee_threshold (decimal ratio)
+    local threshold = creature.combat and creature.combat.behavior
+        and creature.combat.behavior.flee_threshold
+    -- Fallback to behavior.flee_threshold, normalizing integer to ratio
+    if not threshold then
+        local raw = creature.behavior and creature.behavior.flee_threshold
+        if raw and raw > 1 then
+            threshold = raw / 100
+        else
+            threshold = raw
+        end
+    end
+    if not threshold then return nil end
+    return (health / max_health) < threshold
+end
+
+-- attempt_flee(context, creature) -> result table { fled, cornered, morale_message }
+function M.attempt_flee(context, creature)
+    return morale.check(context, creature, nil, morale_helpers)
+end
 
 return M

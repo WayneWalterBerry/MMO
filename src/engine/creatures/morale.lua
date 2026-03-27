@@ -24,7 +24,18 @@ function M.check(context, creature, combat_result, helpers)
     local max_health = creature.max_health
     if not health or not max_health or max_health <= 0 then return nil end
 
-    local threshold = creature.behavior and creature.behavior.flee_threshold
+    -- Read from combat.behavior.flee_threshold (decimal ratio 0.0-1.0)
+    local threshold = creature.combat and creature.combat.behavior
+        and creature.combat.behavior.flee_threshold
+    -- Fallback to behavior.flee_threshold, normalizing integer to ratio
+    if not threshold then
+        local raw = creature.behavior and creature.behavior.flee_threshold
+        if raw and raw > 1 then
+            threshold = raw / 100
+        else
+            threshold = raw
+        end
+    end
     if not threshold then return nil end
 
     local health_ratio = health / max_health

@@ -691,6 +691,32 @@ function M.reset_fights()
     fight_counter = 0
 end
 
+-- Context-aware target selection: finds same-room creatures via registry
+function M.select_target(context, attacker)
+    if not context or not attacker then return nil end
+    local attacker_loc = attacker.location
+    if not attacker_loc then return nil end
+    -- Build combatants list from registry (all animate creatures in same room)
+    local combatants = {}
+    if creatures_mod and creatures_mod.get_creatures_in_room then
+        combatants = creatures_mod.get_creatures_in_room(context.registry, attacker_loc)
+    else
+        -- Fallback: scan registry directly
+        local all = {}
+        if context.registry and type(context.registry.list) == "function" then
+            all = context.registry:list()
+        elseif context.registry and type(context.registry.all) == "function" then
+            all = context.registry:all()
+        end
+        for _, obj in ipairs(all) do
+            if obj.animate and obj.location == attacker_loc then
+                combatants[#combatants + 1] = obj
+            end
+        end
+    end
+    return M.select_npc_target(attacker, combatants)
+end
+
 function M.run_combat(context, attacker, defender)
     local light = true
     if context and context.player and presentation_ok and presentation and presentation.get_light_level then
