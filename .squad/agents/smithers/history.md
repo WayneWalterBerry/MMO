@@ -601,3 +601,27 @@ ew_budget(cap) / create_budget(cap) factory returns {count, cap, overflow_emitte
 **Files changed:** `src/engine/verbs/cooking.lua` (+71 LOC), `src/engine/verbs/consumption.lua` (+59 LOC net), `src/engine/effects.lua` (+31 LOC)
 
 **Tests:** All 43 food tests pass (15 cook-verb, 8 cookable-gating, 12 eat-effects, 8 eat-drink baseline). 0 new regressions. Pre-existing failures: 2 test files (creature-combat #346, injuries-comprehensive order-dependent).
+
+### 2026-03-27: Phase 3 WAVE-4 — Kick verb + combat sound narration API
+
+**What shipped:** Kick verb alias in verbs/init.lua and combat sound propagation narration API in combat/narration.lua.
+
+**Kick verb alias (verbs/init.lua, +1 LOC):**
+- Added handlers["kick"] = handlers["hit"] alongside existing aliases (punch, bash, bonk, etc.)
+- Routes kick rat through existing combat pipeline — no new handler logic needed
+
+**Combat sound narration API (combat/narration.lua, +44 LOC):**
+- mit_combat_sound(room, intensity, witness_text, opts) — player-perspective sound narration by distance:
+  - Same room: returns nil (combat narration already covers it)
+  - Adjacent room (1 exit away): "You hear violent sounds from the [direction]. Something crashes." — direction resolved from exit graph via existing ind_direction() helper
+  - 2+ exits away: returns nil (sound doesn't propagate that far)
+  - Reuses existing M.proximity() and local ind_direction() — zero duplication
+- creature_flee_sound(creature_name, light) — fleeing creature narration, visible only: "[name] skitters away from the noise."
+- creature_investigate_sound(creature_name, light) — investigating predator narration, visible only: "[name] perks up, drawn toward the sounds."
+- All three functions return nil when player can't see (dark), matching spec
+
+**Integration surface:** Bart calls mit_combat_sound() from combat/init.lua after NARRATE phase. Stimulus pipeline triggers creature reactions; these narration functions provide the player-facing text.
+
+**Tests:** 0 new regressions. Pre-existing failures (12 movement/exit/lock tests in 1 file) unrelated to these changes.
+
+**Commit:** 6eb1978 — "Phase 3 WAVE-4: kick verb + combat sound narration"

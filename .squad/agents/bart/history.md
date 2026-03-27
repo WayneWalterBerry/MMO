@@ -1005,6 +1005,29 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 
 **Key design decisions:**
 - Inventory drop happens in `handle_creature_death()`, not `reshape_instance()`. Reshape stays pure WAVE-1 (template switch + identity rewrite). Drop is a WAVE-2 concern orchestrated at the handler level.
+
+## Learnings (WAVE-4: Cure Mechanics + Combat Sound Propagation)
+
+**Task:** Implement metadata-driven cure mechanics in `cure.lua` and combat sound propagation in `combat/init.lua` for Phase 3 WAVE-4.
+
+**Implementation:**
+
+1. **Cure mechanics** — `cure.apply_healing_interaction()` (47 LOC added to `src/engine/injuries/cure.lua`, now 352 LOC total). Scans all player injuries for `healing_interactions` match by healing object ID. Checks `from_states` for cure eligibility; transitions to `transitions_to` on success, rejects with message when past the curable window. Removes fully cured/healed injuries from the array. Delegated from `injuries/init.lua` via standard pattern.
+
+2. **Combat sound propagation** — 15 LOC added to `src/engine/combat/init.lua` (now 410 LOC). After `resolve_exchange()` returns in `run_combat()`, emits `loud_noise` stimulus via existing `creatures_mod.emit_stimulus()`. Intensity: unarmed=3, weapon=6, creature-death=8. Single stimulus emission to combat room — the existing `stimulus.process()` distance check (dist ≤ 1) handles adjacent room reactions automatically.
+
+3. **Delegation** — 1 LOC in `injuries/init.lua`: `injuries.apply_healing_interaction = cure.apply_healing_interaction`.
+
+**LOC counts (GATE-4):**
+- injuries/cure.lua: 352 (was 305, +47)
+- combat/init.lua: 410 (was 395, +15)
+- injuries/init.lua: 362 (was 361, +1)
+
+**Key design decisions:**
+- `apply_healing_interaction()` is item-driven (scans injuries for matching healing_interactions), unlike `try_heal()` which is verb-driven (uses healing object's on_verb.cures). Both paths coexist — `try_heal` for bandage-style verb flows, `apply_healing_interaction` for pure metadata-driven cures (poultice, antidote).
+- Combat sound uses single-point emission (combat room only). The stimulus system's built-in distance calculation handles adjacent room creature reactions. No need to iterate exits and emit multiple stimuli.
+- Intensity determined by weapon type: `weapon.id == "fist"` → 3 (unarmed), else → 6 (armed), `result.defender_dead` → 8 (death override). This keeps the intensity logic engine-side while creature reactions remain metadata-driven on the creature definition.
+- All 204 test files pass. Zero regressions from WAVE-4 engine changes.
 - `drop_on_death()` uses same pattern as byproducts: adds item ID to `room.contents` array + sets `item.location`. No `register_as_room_object()` method on real registry.
 - Inventory is cleared (`creature.inventory = nil`) after drop — corpse has no residual inventory reference.
 - `pcall(require, ...)` in death.lua for backward compat if inventory module is missing.
