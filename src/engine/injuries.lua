@@ -6,6 +6,8 @@
 
 local injuries = {}
 
+local SECONDS_PER_TICK = 360
+
 ---------------------------------------------------------------------------
 -- Injury definition loader
 ---------------------------------------------------------------------------
@@ -56,6 +58,22 @@ function injuries.reset_id_counter()
 end
 
 ---------------------------------------------------------------------------
+-- Compute initial state_turns_remaining from definition state metadata.
+-- Supports both `duration` (direct turn count) and `timed_events` (seconds).
+---------------------------------------------------------------------------
+local function compute_state_turns(state_def)
+    if not state_def then return nil end
+    if state_def.duration then return state_def.duration end
+    if state_def.timed_events and state_def.timed_events[1] then
+        local delay = state_def.timed_events[1].delay
+        if delay and delay > 0 then
+            return math.ceil(delay / SECONDS_PER_TICK)
+        end
+    end
+    return nil
+end
+
+---------------------------------------------------------------------------
 -- Inflict an injury on the player
 -- @param player table
 -- @param injury_type string
@@ -86,6 +104,17 @@ function injuries.inflict(player, injury_type, source, location, override_damage
     -- Copy degenerative config if present
     if def.degenerative then
         instance.damage_per_tick = def.degenerative.base_damage or instance.damage_per_tick
+    end
+
+    -- Disease-specific initialization
+    if def.category == "disease" then
+        instance.category = "disease"
+        if def.hidden_until_state then
+            instance._hidden = true
+            instance.hidden_until_state = def.hidden_until_state
+        end
+        local init_state_def = def.states and def.states[instance._state]
+        instance.state_turns_remaining = compute_state_turns(init_state_def)
     end
 
     -- Self-infliction damage ceiling: never reduce health below 1
@@ -156,6 +185,50 @@ function injuries.tick(player)
 
         -- Advance turn counter
         injury.turns_active = (injury.turns_active or 0) + 1
+
+        -- Disease progression: decrement state_turns_remaining, transition
+        if injury.category == "disease" and injury.state_turns_remaining then
+            injury.state_turns_remaining = injury.state_turns_remaining - 1
+            if injury.state_turns_remaining <= 0 then
+                local transitioned = false
+                for _, t in ipairs(def.transitions or {}) do
+                    if t.from == injury._state and t.trigger == "auto"
+                       and (t.condition == "duration_expired"
+                            or t.condition == "timer_expired") then
+                        injury._state = t.to
+                        injury.turns_active = 0
+                        -- Apply mutations from transition
+                        if t.mutate then
+                            for k, v in pairs(t.mutate) do
+                                injury[k] = v
+                            end
+                        end
+                        -- Check hidden_until_state visibility
+                        local show_msg = true
+                        if injury._hidden then
+                            if injury._state == injury.hidden_until_state then
+                                injury._hidden = false
+                            else
+                                show_msg = false
+                            end
+                        end
+                        if show_msg and t.message then
+                            messages[#messages + 1] = t.message
+                        end
+                        -- Initialize state_turns_remaining for new state
+                        local new_state_def = def.states and def.states[injury._state]
+                        injury.state_turns_remaining = compute_state_turns(new_state_def)
+                        -- Refresh state_def for subsequent checks this tick
+                        state_def = new_state_def
+                        transitioned = true
+                        break
+                    end
+                end
+                if not transitioned then
+                    injury.state_turns_remaining = nil
+                end
+            end
+        end
 
         -- Accumulate per-turn damage (over-time injuries)
         if injury.damage_per_tick and injury.damage_per_tick > 0 then
@@ -234,8 +307,22 @@ function injuries.try_heal(player, healing_object, verb)
         return false
     end
 
-    -- Validate via injury definition's healing_interactions
+    -- Disease curable_in guard: reject healing if current state is outside
+    -- the allowed cure window
     local def = injuries.load_definition(injury.type)
+    if def and def.curable_in then
+        local in_window = false
+        for _, s in ipairs(def.curable_in) do
+            if s == injury._state then in_window = true; break end
+        end
+        if not in_window then
+            print("The treatment has no effect.")
+            return false
+        end
+    end
+
+    -- Validate via injury definition's healing_interactions
+    if not def then def = injuries.load_definition(injury.type) end
     if def and def.healing_interactions then
         local interaction = def.healing_interactions[healing_object.id]
         if interaction and interaction.from_states then
@@ -280,6 +367,9 @@ function injuries.list(player)
 
     print("You examine yourself:")
     for _, injury in ipairs(player.injuries) do
+        -- Skip hidden diseases (not yet symptomatic)
+        if injury._hidden then goto continue_list end
+
         local def = injuries.load_definition(injury.type)
         local state_def = def and def.states and def.states[injury._state]
 
@@ -299,6 +389,8 @@ function injuries.list(player)
             line = line .. " [treated]"
         end
         print(line)
+
+        ::continue_list::
     end
 end
 
@@ -485,6 +577,57 @@ function injuries.remove_treatment(player, treatment_obj)
     treatment_obj._state = "soiled"
 
     return true
+end
+
+---------------------------------------------------------------------------
+-- Direct disease healing: check curable_in before allowing cure
+-- @param player table
+-- @param injury_type string
+-- @return true if healed, false otherwise
+---------------------------------------------------------------------------
+function injuries.heal(player, injury_type)
+    local injury, index = injuries.find_by_type(player, injury_type)
+    if not injury then
+        print("You don't have that affliction.")
+        return false
+    end
+
+    local def = injuries.load_definition(injury.type)
+    if def and def.curable_in then
+        local in_window = false
+        for _, s in ipairs(def.curable_in) do
+            if s == injury._state then in_window = true; break end
+        end
+        if not in_window then
+            print("The treatment has no effect.")
+            return false
+        end
+    end
+
+    -- Cure: transition to healed and remove
+    injury._state = "healed"
+    injury.damage_per_tick = 0
+    table.remove(player.injuries, index)
+    return true
+end
+
+---------------------------------------------------------------------------
+-- Get merged restriction set from all active injuries
+-- @param player table
+-- @return table — keys are restriction names, values are true
+---------------------------------------------------------------------------
+function injuries.get_restrictions(player)
+    local restrictions = {}
+    for _, injury in ipairs(player.injuries or {}) do
+        local def = injuries.load_definition(injury.type)
+        local state_def = def and def.states and def.states[injury._state]
+        if state_def and state_def.restricts then
+            for k, v in pairs(state_def.restricts) do
+                if v then restrictions[k] = true end
+            end
+        end
+    end
+    return restrictions
 end
 
 return injuries

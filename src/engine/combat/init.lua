@@ -98,6 +98,7 @@ local function normalize_weapon(weapon)
                 message = weapon.message or "hits",
                 two_handed = weapon.two_handed or false,
             },
+            on_hit = weapon.on_hit,
             _natural_weapon = true,
         }
     end
@@ -433,6 +434,22 @@ function M.update(result, _opts)
             local zone = result.zone
             pcall(injuries.inflict, defender, injury_type, source, zone, damage)
             result.injury_type = injury_type
+        end
+    end
+
+    -- Track 4C: on_hit disease delivery — severity >= HIT triggers weapon's
+    -- on_hit effect (e.g. venom, rabies). Fully generic: no creature-specific
+    -- code (Principle 8). Symmetric for player-vs-NPC and NPC-vs-NPC.
+    if injuries and (result.severity or 0) >= M.SEVERITY.HIT then
+        local weapon = result.weapon
+        local on_hit = weapon and weapon.on_hit
+        if on_hit and on_hit.inflict and on_hit.probability then
+            if math.random() <= on_hit.probability then
+                local source = weapon.id or "unknown"
+                local zone = result.zone
+                pcall(injuries.inflict, defender, on_hit.inflict, source, zone)
+                result.disease_inflicted = on_hit.inflict
+            end
         end
     end
 
