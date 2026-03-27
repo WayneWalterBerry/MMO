@@ -516,3 +516,34 @@ After the deep nesting refactor, `nested` objects (like the drawer in the nights
 **Files changed:** `src/engine/materials/init.lua` (rewritten), 23 new files in `src/meta/materials/`
 
 **Tests:** All 121 test files pass. Material audit (#163): 86/86 objects validated. Material properties (#123): 23 materials × 11 properties validated. meta-check clean. 0 regressions.
+
+
+### 2026-07-27: WAVE-3 Track 3C — Combat Witness Narration
+
+**What shipped:** Witness narration system for NPC-vs-NPC combat, implementing proximity-based text output with narration budget protocol. All 16 witness narration tests pass, 186 total test files, zero regressions.
+
+**Four narration tiers:**
+1. **Same room + light:** Third-person visual templates via describe_exchange(result, opts). Five severity tiers (DEFLECT→CRITICAL) with 3 templates each. Uses ctor_name() for third-person framing ("The cat strikes the rat").
+2. **Same room + dark:** Audio-only templates keyed to severity. GRAZE→scuffle sounds, HIT→yelps/thuds, CRITICAL→shrieks/silence. No visual detail — pure audio narration.
+3. **Adjacent room:** Distant audio with direction label. 1 line max via describe_adjacent(direction).
+4. **Out of range:** Nothing emitted (nil return).
+
+**Narration budget protocol:**
+- 
+ew_budget(cap) / create_budget(cap) factory returns {count, cap, overflow_emitted} table.
+- mit(result, budget, opts) — budget-aware dispatch. Generates text via describe_exchange then applies budget rules.
+- Non-critical (GRAZE/DEFLECT) suppressed when count >= cap. Critical (HIT/SEVERE/CRITICAL) always passes even over budget.
+- Player combat exempt via opts.player_combat = true — never counted against cap.
+- overflow_text(budget) available as separate method for deferred "[The melee continues...]" indicator.
+- Morale break narration via mit_morale_break(name, direction, light) counts toward budget.
+
+**Dual calling convention:** mit() detects whether first arg is table (budget-aware path) or string (simple/legacy path for mit_witness integration). This lets Bart's mit_witness() use the simple path with module-level budget while tests use the explicit budget object.
+
+**Key learnings:**
+- Lua string.find("glancing", "glance") returns nil! "glancing" = g-l-a-n-c-**i**-n-g vs "glance" = g-l-a-n-c-**e**. The 6th character differs. Must audit ALL templates against test keyword lists for literal substring matches.
+- Template audio keywords must match the test's exact keyword list (hear, sound, thud, crack, squeal, hiss, scrape, crunch, shriek, yelp, whimper, impact, wet, etc.). "cry" and "echoes" are NOT in the list.
+- Budget overflow marker "[The melee continues...]" counts as a visible output line. Tests expect ≤cap total visible outputs, so the marker must either replace the last normal line or be deferred to a separate overflow_text() call. Chose the deferred approach to keep budget arithmetic clean.
+
+**Files changed:** src/engine/combat/narration.lua (355 lines added — witness templates, budget system, proximity logic)
+
+**Tests:** 16/16 witness narration tests pass. 186 test files total, 0 new regressions.
