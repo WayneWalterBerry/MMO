@@ -979,3 +979,25 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 - Loader now scans `meta/objects/` then `meta/creatures/` before room resolution; both feed `base_classes` and `object_sources`.
 - Updated paths in tests, plans/docs, and meta-lint detection so creature files get object-grade validation (template, GUID, keywords, senses).
 
+## Learnings
+
+### Phase 2 WAVE-0: Module Splits + Pre-Flight (2026-08)
+
+**Status:** ✅ COMPLETE
+**Branch:** squad/phase2-wave0-splits
+
+**What was done:**
+
+1. **Extracted `src/engine/creatures/stimulus.lua`** — Moved stimulus queue, emit, clear, and process_stimuli logic (~80 LOC) into dedicated module. `creatures/init.lua` delegates via `require("engine.creatures.stimulus")`. Helper functions (get_location, get_room_distance) passed as a helpers table to avoid duplicating navigation code.
+
+2. **Created `src/engine/creatures/predator-prey.lua` (stub)** — No predator-prey code exists in Phase 1 monolith. Created stub with `detect_prey`, `evaluate_source_filter`, `predator_reaction` functions that return safe defaults. Documented what WAVE-2 will populate. Required by creatures/init.lua.
+
+3. **Created `src/engine/combat/npc-behavior.lua` (stub)** — No NPC-specific combat decision code exists in Phase 1. Created stub with `select_response`, `select_stance`, `select_target_zone` functions. Required by combat/init.lua.
+
+4. **Registered `test/food/` in test runner** — Added to `test_dirs` in `test/run-tests.lua`. Directory created with .gitkeep.
+
+5. **Tissue material audit: ALL 5 materials exist** — hide.lua, flesh.lua, bone.lua, tooth-enamel.lua (name: "tooth-enamel"), keratin.lua all present in `src/meta/materials/`. No gaps for WAVE-1 body_tree tissue layers.
+
+6. **Performance baseline:** 176 test files, 1 pre-existing failure (injuries/test-injuries-comprehensive.lua). Zero regressions from module splits.
+
+**Key architectural pattern:** When extracting code that depends on local helper functions, pass helpers as a table parameter rather than duplicating them in the new module. Keeps the dependency graph clean and testable.

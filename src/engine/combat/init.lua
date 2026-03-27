@@ -5,6 +5,8 @@ local injuries_ok, injuries = pcall(require, "engine.injuries")
 if not injuries_ok then injuries = nil end
 local creatures_ok, creatures_mod = pcall(require, "engine.creatures")
 if not creatures_ok then creatures_mod = nil end
+local npc_behavior_ok, npc_behavior = pcall(require, "engine.combat.npc-behavior")
+if not npc_behavior_ok then npc_behavior = nil end
 
 local M = {}
 

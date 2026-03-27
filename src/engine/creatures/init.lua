@@ -6,8 +6,8 @@
 
 local M = {}
 
--- Stimulus queue: array of { room_id, stimulus_type, data }
-local stimulus_queue = {}
+local stimulus = require("engine.creatures.stimulus")
+local predator_prey = require("engine.creatures.predator-prey")
 
 ---------------------------------------------------------------------------
 -- Registry abstraction: works with both real registry (:list) and test mocks (:all)
@@ -65,23 +65,14 @@ local function get_player_room_id(context)
 end
 
 ---------------------------------------------------------------------------
--- emit_stimulus(room_id, stimulus_type, data)
--- Queues a stimulus for creatures to process on the next tick.
+-- emit_stimulus / clear_stimuli — delegated to stimulus module
 ---------------------------------------------------------------------------
 function M.emit_stimulus(room_id, stimulus_type, data)
-    stimulus_queue[#stimulus_queue + 1] = {
-        room_id = room_id,
-        stimulus_type = stimulus_type,
-        data = data or {},
-    }
+    stimulus.emit(room_id, stimulus_type, data)
 end
 
----------------------------------------------------------------------------
--- clear_stimuli()
--- Drains the stimulus queue (called after tick processes all stimuli).
----------------------------------------------------------------------------
 function M.clear_stimuli()
-    stimulus_queue = {}
+    stimulus.clear()
 end
 
 ---------------------------------------------------------------------------
@@ -219,42 +210,17 @@ local function get_valid_exits(context, room_id, creature)
     return valid
 end
 
+-- Stimulus helpers table — passed to stimulus.process() so it can resolve
+-- room distances without duplicating the navigation code.
+local stimulus_helpers = {
+    get_location = get_location,
+    get_room_distance = get_room_distance,
+}
+
 -- process_stimuli(context, creature) -> messages[]
--- Matches queued stimuli against creature's reactions table, applies drive deltas.
+-- Delegated to stimulus module.
 local function process_stimuli(context, creature)
-    local messages = {}
-    if type(creature.reactions) ~= "table" then return messages end
-    local creature_loc = get_location(context.registry, creature)
-
-    for _, stimulus in ipairs(stimulus_queue) do
-        local dist = 999
-        if creature_loc == stimulus.room_id then
-            dist = 0
-        else
-            dist = get_room_distance(context, creature_loc, stimulus.room_id)
-        end
-
-        -- Only same-room and adjacent creatures react
-        if dist <= 1 then
-            local reaction = creature.reactions[stimulus.stimulus_type]
-            if reaction then
-                if reaction.fear_delta and creature.drives and creature.drives.fear then
-                    local scale = dist == 0 and 1.0 or 0.5
-                    local delta = reaction.fear_delta * scale
-                    local fear = creature.drives.fear
-                    fear.value = (fear.value or 0) + delta
-                    local max_val = fear.max or 100
-                    local min_val = fear.min or 0
-                    if fear.value > max_val then fear.value = max_val end
-                    if fear.value < min_val then fear.value = min_val end
-                end
-                if dist == 0 and reaction.message then
-                    messages[#messages + 1] = reaction.message
-                end
-            end
-        end
-    end
-    return messages
+    return stimulus.process(context, creature, stimulus_helpers)
 end
 
 ---------------------------------------------------------------------------
