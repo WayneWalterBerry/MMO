@@ -49,6 +49,7 @@ return {
         { id = "hallway-level2-stairs-up", type_id = "{13cec4d5-cbff-4d71-a983-63752d7fe99a}" },
         { id = "hallway-west-door", type_id = "{2c11b569-9d5d-481c-bed8-070c55ceba6c}" },
         { id = "hallway-east-door", type_id = "{22f675a7-1827-4cf3-bbde-40ed2c109c3a}" },
+        { id = "hallway-wolf", type_id = "{e69fc5e8-ce63-4b26-b5b2-faa2ff85d12c}" },
     },
 
     exits = {

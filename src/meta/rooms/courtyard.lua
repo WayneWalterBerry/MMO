@@ -36,6 +36,7 @@ return {
         { id = "rain-barrel",   type = "Rain Barrel",        type_id = "ff526b60-83e1-4c82-9d5f-c303bac5bdf3" },
         { id = "courtyard-bedroom-window-in", type_id = "{5d1c820d-679c-4c65-a114-2e921b59b835}" },
         { id = "courtyard-kitchen-door", type_id = "{2c28ab89-693b-4612-b828-b8386f7ad090}" },
+        { id = "courtyard-cat", type_id = "{46c2583c-2cec-4842-bfd3-5d56c737996d}" },
     },
 
     exits = {
