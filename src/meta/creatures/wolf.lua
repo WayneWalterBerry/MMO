@@ -194,6 +194,13 @@ return {
         carried = { "{b8db1d83-9c05-401c-ae7b-67c31b98d6fc}" },
     },
 
+    -- Respawn metadata (WAVE-5)
+    respawn = {
+        timer = 200,
+        home_room = "hallway",
+        max_population = 1,
+    },
+
     -- Death reshape (WAVE-1)
     death_state = {
         template = "furniture",

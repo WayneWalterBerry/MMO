@@ -165,6 +165,13 @@ return {
         },
     },
 
+    -- Respawn metadata (WAVE-5)
+    respawn = {
+        timer = 60,
+        home_room = "cellar",
+        max_population = 3,
+    },
+
     -- Death reshape (WAVE-1)
     death_state = {
         template = "small-item",

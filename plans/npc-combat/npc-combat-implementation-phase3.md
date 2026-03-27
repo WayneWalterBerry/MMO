@@ -20,7 +20,7 @@
 | WAVE-1 | Death Consequences (In-Place Reshape) | ✅ PASSED | GATE-1 | 194 |
 | WAVE-2 | Creature Inventory + Loot Drops | ✅ PASSED | GATE-2 | 198 |
 | WAVE-3 | Full Food System + Cooking | ✅ PASSED | GATE-3 | ~201+ |
-| WAVE-4 | Combat Polish + Cure System | ⏳ Not Started | GATE-4 | — |
+| WAVE-4 | Combat Polish + Cure System | ✅ PASSED | GATE-4 | ~204 |
 | WAVE-5 | Respawning + Design Docs + Polish | ⏳ Not Started | GATE-5 | — |
 
 ---
@@ -757,14 +757,14 @@ Uses existing stimulus infrastructure from `creatures/stimulus.lua`. Sound propa
 
 #### GATE-4 Criteria
 
-- [ ] `kick rat` resolves through combat pipeline
-- [ ] Healing poultice cures rabies in incubating/prodromal states
-- [ ] Healing poultice FAILS to cure rabies in furious state
-- [ ] Antidote cures spider venom
-- [ ] Combat sounds attract/repel creatures in adjacent rooms
-- [ ] `emit_combat_sound()` narration API implemented — player in adjacent room hears combat text
-- [ ] All existing tests pass (zero regressions)
-- [ ] **Committed + tagged**
+- [x] `kick rat` resolves through combat pipeline
+- [x] Healing poultice cures rabies in incubating/prodromal states
+- [x] Healing poultice FAILS to cure rabies in furious state
+- [x] Antidote cures spider venom
+- [x] Combat sounds attract/repel creatures in adjacent rooms
+- [x] `emit_combat_sound()` narration API implemented — player in adjacent room hears combat text
+- [x] All existing tests pass (zero regressions)
+- [x] **Committed + tagged**
 
 ---
 
