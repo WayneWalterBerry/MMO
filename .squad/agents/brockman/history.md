@@ -1,6 +1,42 @@
 # Brockman — History (Summarized)
 
-## Recent Work: WAVE-0 — Testing Framework Documentation (2026-03-27)
+## Recent Work: WAVE-0 — Phase 3 Architecture Docs (2026-08-16)
+
+**Phase 3 WAVE-0 Documentation Delivery:**
+- Created `docs/architecture/engine/creature-death-reshape.md` (19.7 KB, ~500 words)
+  - D-14 in-place reshape pattern: code IS state, creature instances transform without file swap
+  - `reshape_instance()` function API (template switch, property overlay, deregister from tick system)
+  - `death_state` metadata block format: template selection, sensory properties, food/crafting/container/spoilage FSM
+  - Template switching: creature→small-item (rat, cat, spider, bat) or creature→furniture (wolf)
+  - GUID preservation & backward compatibility (creatures without death_state keep FSM dead state)
+  - Distinction from `mutation.mutate()` (file-swap) vs. reshape (in-place instance transform)
+  - Narration API: optional `reshape_narration`, optional byproducts (spider silk)
+  - Testing strategy: kill creature → reshape, sensory text correct, GUID preserved, deregister from tick
+  
+- Created `docs/architecture/engine/creature-inventory.md` (14.3 KB, ~300 words)
+  - Inventory metadata format: `hands` (max 2), `worn` (5 slots), `carried` (loose items)
+  - Death drop instantiation pipeline: reshape → iterate inventory → create room-floor objects
+  - Containment reuse: reshaped corpse inherits `death_state.container` capacity
+  - Meta-lint validation: INV-01 (hands max 2), INV-02 (worn slots valid), INV-03 (GUIDs resolve), INV-04 (size constraints)
+  - Phase 3 assignments: wolf carries `gnawed-bone-01`, spider silk is byproduct not inventory
+  - Gnawed bone object creation path for WAVE-2
+  - Testing strategy: wolf dies → bone drops, container works, meta-lint passes
+  
+- Committed: `Phase 3 WAVE-0: architecture docs for death reshape + creature inventory`
+- Key decisions documented:
+  - D-CREATURE-DEATH-RESHAPE (in-place reshape, not file swap)
+  - D-CREATURE-INVENTORY (direct GUIDs in Phase 3, loot tables deferred to Phase 4)
+  - Backward compat guaranteed (creatures without death_state work as-is)
+  - Direct GUID references for Phase 3 (Option A from creature-inventory-plan.md)
+
+**Learnings:**
+- Both docs align with existing architecture style (problem statement → architecture → implementation checklist)
+- Heavy cross-referencing to core principles (D-14), phase plan, and related systems
+- Code examples essential for engineer clarity (reshape_instance pseudocode, death_state block template)
+- Meta-lint rules keep inventory data well-formed and debuggable
+- Distinction between inventory drop (what creature carries before death) vs. corpse container (empty space for future items) prevents confusion
+
+## Previous Work: WAVE-0 — Testing Framework Documentation (2026-03-27)
 
 **WAVE-0 Completion — Brockman's Testing Documentation:**
 - Created `docs/testing/README.md` — test framework overview, running tests, CI/CD gates

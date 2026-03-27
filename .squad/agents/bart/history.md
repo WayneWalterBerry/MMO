@@ -29,7 +29,20 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
-### Recent Work: Phase 3 NPC+Combat Implementation Plan (2026-08-16)
+### Recent Work: Phase 3 Plan v1.3 — Death Reshape Architecture (2026-08-16)
+
+**Revised `plans/npc-combat/npc-combat-implementation-phase3.md` per Wayne directive:**
+- **Fundamental architecture change:** Creature death no longer file-swaps to separate dead-creature .lua files. Instead, creatures declare `death_state` metadata block inline, and engine reshapes instances in-place on death.
+- **Eliminated 5 object files:** dead-rat.lua, dead-cat.lua, dead-wolf.lua, dead-spider.lua, dead-bat.lua removed from plan entirely. Estimated new files reduced from ~30-35 to ~25-30.
+- **New engine function `reshape_instance()`:** Transforms creature instance in-place — switches template (creature→small-item/furniture), overwrites sensory/descriptive properties from death_state, deregisters from creature tick, registers as room object, preserves GUID.
+- **WAVE-1 completely rewritten:** Engine changes now center on reshape_instance() instead of mutation.mutate(). Flanders adds death_state blocks to creature files instead of creating separate object files. Test names updated.
+- **WAVE-2 updated:** Inventory drops scatter alongside reshaped corpse instance (not a separate object).
+- **WAVE-3 updated:** Cook verb targets reshaped creature instances. Crafting metadata lives in death_state.crafting block. Cooked meat objects remain separate .lua files (legitimate file-swap mutation).
+- **WAVE-0 GUIDs reduced:** From ~15 to ~10 (5 dead-creature GUIDs eliminated).
+- **All gates, TDD map, file ownership, conflict prevention, risk register, GUID table, parser matrix updated.**
+- **Decision filed:** D-DEATH-RESHAPE-ARCHITECTURE (bart-death-reshape-architecture.md)
+
+### Recent Work: Phase 3 Plan v1.2 — Wayne's Decisions (2026-08-16)
 
 **Wrote `plans/npc-combat/npc-combat-implementation-phase3.md` — 6-wave plan:**
 - Comprehensive gap analysis: read all 3 design plans (combat, NPC, creature-inventory) + food system plan + Phase 2 implementation plan
@@ -98,6 +111,9 @@
 
 ## Learnings
 
+- **In-place creature death reshape vs. file-swap mutation:** Wayne directive (2026-03-27) established that creatures must NOT have separate dead-creature files. The `death_state` metadata block lives inside the creature file itself. On death, `reshape_instance()` transforms the instance in-place — switches template, overwrites properties, deregisters from creature tick, registers as room object. This is stronger D-14 than file-swap mutation: the creature code declares ALL its possible shapes (living + dead). `mutation.mutate()` is reserved for genuine file-swap scenarios (e.g., cooking dead-rat → cooked-rat-meat.lua, where the cooked meat is a truly different object type).
+- **Template switching pattern: creature → small-item/furniture on death:** The `death_state.template` field controls what the creature becomes. Small creatures (rat, cat, spider, bat) become "small-item" (portable). Large creatures (wolf) become "furniture" (not portable). The engine doesn't hardcode sizes — the creature file declares the target template. This is Principle 8: objects declare behavior, engine executes.
+- **`reshape_instance()` engine function design:** Different from `mutation.mutate()` in three key ways: (1) no new file loaded — same instance transforms via metadata overlay, (2) must explicitly nil creature-only fields (behavior, drives, reactions, combat, body_tree) to prevent stale data leaking into the reshaped object, (3) must deregister from creature tick AND register as room object — the instance changes category, not just properties. GUID is preserved — the reshaped instance IS the same object, just in a different shape.
 - **Territorial dual-path needed:** Tests call `score_actions()` in isolation (not through `creature_tick()`), so territorial aggression boost must be in `score_actions` directly, not just in `creature_tick`. Fear reduction can stay in `creature_tick` since it affects subsequent ticks.
 - **Stimulus routing matters for testability:** Tests monkey-patch `creatures.emit_stimulus` to track emissions. Using `stimulus.emit_creature_attacked()` directly bypasses the intercept. Always route through the module's public `emit_stimulus` function.
 - **attack_pattern ≠ stance:** Creature metadata uses `combat.behavior.attack_pattern` (opportunistic/sustained/ambush/hit_and_run/random), not `stance`. The `npc-behavior` module maps these to engine stances (aggressive/defensive/balanced) via `PATTERN_TO_STANCE` table.
@@ -1216,3 +1232,37 @@ Updated all plan files to reflect Phase 2 NPC+Combat completion:
 
 **mutation-graph-linter-plan.md:**
 - Verified: already says PLAN ONLY — no changes needed
+
+## Learnings
+
+### Phase 3 Plan v1.4 — 6-Reviewer Blocker Fixes (2026-08)
+
+**What happened:** All 6 reviewers (CBG, Chalmers, Flanders, Smithers, Moe, Marge) gave conditional approve on v1.3 with blockers. Wayne directed me to fix all blockers and bump to v1.4.
+
+**Blockers fixed:**
+1. **WAVE-0 docs gate (ALL 6):** Moved Brockman architecture docs from WAVE-5 to WAVE-0. Added GATE-0 doc checkboxes. Added Bart architecture review step. Wayne directive: docs before code.
+2. **Smithers — reshape narration:** Added `reshape_narration` optional field to death_state. Clarified silent-by-default behavior with opt-in per creature.
+3. **Smithers — combat sound API:** Defined `emit_combat_sound(room, intensity, witness_text)` with 3 distance tiers.
+4. **Moe — brazier timing:** Assigned cellar-brazier.lua to Flanders WAVE-3, cellar.lua room update to Moe WAVE-3.
+5. **Moe — home room verification:** Added pre-flight task for Moe to verify all 5 home_room IDs before WAVE-5.
+6. **Marge — Bart doc review:** Added Bart as reviewer of Brockman's docs in WAVE-0.
+7. **Stress references cleaned:** Removed stale stress.lua references from dependency graph and conflict matrix (deferred to Phase 4 per Q5).
+
+**Key learning:** When 6 reviewers all flag the same blocker (docs timing), it means the plan has a structural gap, not a cosmetic one. The Wayne directive was explicit and should have been caught in v1.3 drafting. Multi-reviewer consensus on a single issue = high-confidence fix.
+
+**Pattern:** Architecture docs before implementation is now a standard pre-flight pattern for future phases. Document the pattern → implement against it → verify code matches docs.
+
+### Phase 3 WAVE-0 — Module Splits + GUID Pre-assignment (2026-08)
+**What happened:** Executed WAVE-0 pre-flight: 4 module splits to resolve LOC violations, plus GUID pre-assignment for 11 Phase 3 objects.
+
+**Splits completed:**
+1. **Combat split:** combat/init.lua 785→395, new combat/resolution.lua 427 LOC. Resolution gets resolve_damage(), layer penetration, severity mapping, update(), interrupt_check(). Init retains FSM orchestration + fight management.
+2. **Survival split:** survival.lua 784→302, new consumption.lua 206 LOC (eat/drink), new rest.lua 283 LOC (sleep/rest/nap). Survival retains pour/dump/wash.
+3. **Crafting split:** crafting.lua 688→184, new cooking.lua 191 LOC (write/inscribe + future cook target), new placement.lua 322 LOC (put/place). Crafting retains sew/stitch/mend.
+4. **Injuries split:** injuries.lua 633→init.lua 361, new cure.lua 305 LOC. Cure gets try_heal, resolve_target, apply_treatment, remove_treatment, heal, get_restrictions. Init retains infliction, FSM tick, health computation.
+
+**Architecture pattern:** Parent module requires child, re-exports via delegation (injuries.try_heal = cure.try_heal). All existing equire() paths continue to work unchanged. Zero behavior changes — pure refactor. All 191 test files passed with zero regressions.
+
+**Key learning:** The plan's LOC estimates were based on stale line counts (e.g., combat was 695 in plan vs 785 actual). Always verify actual LOC before splitting. Also: the crafting put handler (300 LOC) forced an unplanned placement.lua split to meet the ≤450 gate. Splitting into more smaller files is preferable to one file barely under the limit.
+
+**GUID pre-assignment:** 11 GUIDs written to .squad/decisions/inbox/bart-phase3-guids.md.

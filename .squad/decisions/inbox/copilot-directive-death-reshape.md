@@ -1,0 +1,5 @@
+### 2026-03-27T12-19-22Z: User directive — In-place creature death mutation
+**By:** Wayne Berry (via Copilot)
+**What:** Creatures must NOT have separate dead-creature object files (no dead-rat.lua, dead-cat.lua, etc.). Instead, the death state lives INSIDE the creature file itself (e.g., creature/rat.lua). When a creature dies, the engine reshapes the instance in-place — switching its template from "creature" to "small-item" (or "furniture" for large creatures like wolf). All dead-state properties (sensory text, cookability, portability, container capacity, spoilage FSM) are declared inside the creature .lua file. This is more aligned with D-14 (code IS state) — the creature code literally transforms.
+**Why:** User request — eliminates file bloat (5 fewer object files), keeps all creature lifecycle data in one place, stronger D-14 alignment.
+**Impact:** Phase 3 WAVE-1 needs major revision. Eliminates dead-rat.lua through dead-bat.lua. Engine must support template switching on mutation. Creature files get death-state metadata blocks.

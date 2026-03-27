@@ -890,3 +890,55 @@ Wayne requested 8-12 puzzle concepts using real-world objects in realistic ways 
 - **The glass-shard is the most versatile object in the game.** It's a cutting tool (027), a mirror (024), causes injury on contact (Effects Pipeline), and was originally just "a broken piece of mirror." Emergent utility from good object design.
 - **Ethical puzzles (026) need multiple solutions by definition.** You can't force a player to poison someone — there must always be a non-lethal path. The difficulty gap between lethal (easy) and non-lethal (hard) is the moral weight.
 - **The README was outdated.** It referenced legacy puzzle files (001-005) that had moved to level folders, had broken cross-references, and didn't mention the Effects Pipeline. Rewrote it completely.
+
+---
+
+## Combat-Loot Puzzles (2026-07-29)
+
+### Task
+Wayne introduced a new puzzle mechanic pattern: **Combat-loot puzzles**. Killing creatures to obtain items required for puzzle solutions is now an approved design direction.
+
+### Key Concept
+Fighting isn't purely survival — it can be **problem-solving**. When a player kills a creature and obtains its loot, they are solving a puzzle by choosing combat as their solution path.
+
+### Integration
+- Ties into Phase 3 creature systems (inventory, death, corpses)
+- Creates combat-puzzle hybrid gameplay
+- Non-combat solutions must exist where narratively sensible
+
+### Puzzle Seeds (Future Brainstorms)
+
+1. **Spider Fang Antidote** (Deep Cellar/Crypt)
+   - Spider carries/drops a fang with venom traces
+   - Grinding the fang creates antidote to poison trap deeper in crypt
+   - Loot requirement: spider fang (from creature combat)
+   - Non-combat path: slow alchemy from environment reagents or find pre-made antidote in hidden alcove
+
+2. **Wolf Tooth Key** (Courtyard)
+   - Alpha wolf wears a key on a cord around its neck (or drops it on death)
+   - Key unlocks the armory or storage room
+   - Loot requirement: ornate key from wolf corpse
+   - Non-combat path: locksmith puzzle (find spare key in blacksmith's shop, requires negotiation or separate puzzle)
+
+3. **Bat Wing Luminescent Torch** (Deep Cellar/Caverns)
+   - Rare bat species in deep caverns sheds wing on death
+   - Bat wing + oil + wick creates self-luminous torch (safer than candles in deep places)
+   - Loot requirement: intact bat wing from creature corpse
+   - Non-combat path: craft from alternative phosphorescent reagents (glowworms, phosphorus)
+
+### Design Principles Respected
+- **Principle 0:** Creatures have agency and inventory; player doesn't pick up living creatures
+- **Principle 8:** Creature definitions declare loot; engine executes via drop mechanics
+- **Principle 9:** Material consistency (fang antidotes, wing properties map to real world)
+
+### Handoffs
+- **Flanders:** Add inventory field to creature definitions with drops_on_death metadata
+- **Bart:** Engine support for creature death → inventory drop into room contents
+- **CBG:** Advise on encounter pacing so combat loot doesn't trivialize puzzles
+- **Nelson:** Test corpse loot access, multi-item drops, player inventory limits
+
+### Learnings
+- **Combat extends puzzle vocabulary.** It's no longer just "hit or die" — combat becomes a tool in the puzzle-solving toolkit.
+- **Loot-gating is time-gating in disguise.** Killing a creature takes time (turns). This naturally paces puzzle progression without artificial delays.
+- **Multiple paths maintain player agency.** Every combat loot should have a non-combat equivalent so players choose, not grind.
+- **Creature inventory is a design surface.** What a creature carries tells a story about its nature (wandering wolf has travel items; spider has nest materials).
