@@ -831,3 +831,40 @@ Created two food object definitions for the Food PoC system:
 - Cotton is the proxy material for silk until a silk material is added.
 
 **Commit:** 436fed7
+
+---
+
+## Phase 3 WAVE-3: Food Objects + Food-Poisoning Injury + Cellar Brazier
+
+**Date:** 2026-08
+**Task:** Execute WAVE-3 — create 5 food objects, 1 injury type, 1 furniture fire source.
+**Requested by:** Wayne Berry
+
+**Files Created (7 total, all with pre-assigned GUIDs from bart-phase3-guids.md):**
+
+1. `src/meta/objects/cooked-rat-meat.lua` — template: small-item, GUID {971e819c-8ad2-4f6e-934c-48236d7c5660}. Material: meat. Edible, nutrition=15, heal=3. Keywords: cooked rat, rat meat, cooked meat, meat.
+2. `src/meta/objects/cooked-cat-meat.lua` — template: small-item, GUID {91d7e699-edd7-4fd5-9fcd-7a9df9871571}. Material: meat. Edible, nutrition=20, heal=4. Keywords: cooked cat, cat meat, cooked meat, meat.
+3. `src/meta/objects/cooked-bat-meat.lua` — template: small-item, GUID {59f5622f-c3aa-4471-8137-b04f20a9c46d}. Material: meat. Edible, nutrition=10, heal=2. food.risk="food-poisoning" (10% chance even cooked). Keywords: cooked bat, bat meat, cooked meat, meat.
+4. `src/meta/objects/grain-handful.lua` — template: small-item, GUID {3717e78a-d653-48fe-a12e-8440aae8efaa}. Material: plant. Edible=false, cookable=true. crafting.cook becomes "flatbread" with fire_source. Keywords: grain, handful of grain, barley, raw grain.
+5. `src/meta/objects/flatbread.lua` — template: small-item, GUID {b20bf751-88f9-44c2-97bf-e2d73cb3aa94}. Material: wax (matches bread.lua convention). Edible, nutrition=10, heal=1. Keywords: flatbread, bread, flat bread, cooked grain.
+6. `src/meta/injuries/food-poisoning.lua` — injury type, GUID {103e07e1-0610-474a-b63d-29f7d660a2a8}. Category: disease, severity: moderate. FSM: onset (3 ticks) → nausea (12 ticks, 1 HP/tick DOT, restricts eat + precise_actions) → recovery (5 ticks) → cleared. 20 ticks total. No cure — must run its course. healing_interactions left empty for future WAVE-4 antidote-vial.
+7. `src/meta/objects/cellar-brazier.lua` — template: furniture, GUID {22b77e90-8407-427a-a272-6b88277ba1fc}. Material: iron. provides_tool="fire_source", capabilities={"fire_source"}, casts_light=true, light_radius=2. Portable=false (bolted to floor). initial_state="lit" (permanent in Level 1). Keywords: brazier, iron brazier, fire, coals.
+
+**Material fix (this session):**
+- grain-handful.lua: changed `material = "grain"` → `material = "plant"` (grain not in material registry; plant is valid proxy).
+- flatbread.lua: changed `material = "grain"` → `material = "wax"` (matches bread.lua convention).
+- Fix resolved test-material-audit.lua and test-material-migration.lua regressions.
+
+**All 7 objects have full sensory text:** on_feel (mandatory), on_smell, on_listen, on_taste. Food-poisoning injury has on_feel per state.
+
+**Tests:** Material audit and migration tests now pass (were failing due to unregistered "grain" material). Pre-existing failures unchanged (creature-combat test 8, injuries-comprehensive silver dagger stab).
+
+**Patterns learned:**
+- Food objects follow bread.lua/cheese.lua pattern: food={edible, nutrition, effects=[{type, amount/message}]}.
+- food.risk + food.risk_chance is the pattern for probabilistic food-poisoning (bat meat).
+- grain-handful uses crafting.cook with becomes/requires_tool/message (same as death_state.crafting.cook on creatures).
+- Food-poisoning injury uses 4-state FSM with auto-transitions only (no verb-triggered cures). Simpler than rabies/nightshade.
+- Cellar brazier is the first always-lit furniture fire source — provides_tool="fire_source" matches torch pattern.
+- "wax" is the conventional proxy material for baked goods (bread.lua precedent). "plant" works for raw grain.
+
+**Commit:** 82ef2d5 (material fix), bba0d95 (original object creation)
