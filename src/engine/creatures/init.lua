@@ -10,6 +10,7 @@ local stimulus = require("engine.creatures.stimulus")
 local predator_prey = require("engine.creatures.predator-prey")
 local morale = require("engine.creatures.morale")
 local navigation = require("engine.creatures.navigation")
+local death = require("engine.creatures.death")
 local combat_ok, combat = pcall(require, "engine.combat")
 if not combat_ok then combat = nil end
 
@@ -357,11 +358,14 @@ local function execute_action(context, creature, action)
                     defender_name = target.name,
                 })
             end
-            -- Emit creature_died if target was killed
+            -- Creature death: reshape if death_state present, then emit stimulus
             if result and result.defender_dead and room_id then
+                local dead_name = target.name
+                local death_room = get_room(context, room_id)
+                M.handle_creature_death(target, context, death_room)
                 M.emit_stimulus(room_id, "creature_died", {
                     creature_id = target.id or target.guid,
-                    creature_name = target.name,
+                    creature_name = dead_name,
                     killer_id = creature.id or creature.guid,
                     killer_name = creature.name,
                 })
@@ -487,43 +491,36 @@ end
 ---------------------------------------------------------------------------
 -- Public API: expose internal functions for testing and cross-module use
 ---------------------------------------------------------------------------
-function M.has_prey_in_room(creature, context)
-    return predator_prey.has_prey_in_room(creature, context, M.get_creatures_in_room, get_location)
-end
-
-function M.select_prey_target(context, creature)
-    return predator_prey.select_prey_target(context, creature, M.get_creatures_in_room, get_location)
-end
+function M.has_prey_in_room(c, ctx) return predator_prey.has_prey_in_room(c, ctx, M.get_creatures_in_room, get_location) end
+function M.select_prey_target(ctx, c) return predator_prey.select_prey_target(ctx, c, M.get_creatures_in_room, get_location) end
 
 M.score_actions = score_actions
 M.execute_action = execute_action
 
--- Simple morale threshold check (no context needed)
 -- check_morale(creature) -> true if health/max_health < flee_threshold
 function M.check_morale(creature)
     if not creature then return nil end
     local health = creature.health
     local max_health = creature.max_health
     if not health or not max_health or max_health <= 0 then return nil end
-    -- Read from combat.behavior.flee_threshold (decimal ratio)
     local threshold = creature.combat and creature.combat.behavior
         and creature.combat.behavior.flee_threshold
-    -- Fallback to behavior.flee_threshold, normalizing integer to ratio
     if not threshold then
         local raw = creature.behavior and creature.behavior.flee_threshold
-        if raw and raw > 1 then
-            threshold = raw / 100
-        else
-            threshold = raw
-        end
+        if raw and raw > 1 then threshold = raw / 100 else threshold = raw end
     end
     if not threshold then return nil end
     return (health / max_health) < threshold
 end
 
--- attempt_flee(context, creature) -> result table { fled, cornered, morale_message }
 function M.attempt_flee(context, creature)
     return morale.check(context, creature, nil, morale_helpers)
 end
+
+---------------------------------------------------------------------------
+-- Death reshape API (delegated to engine/creatures/death.lua)
+---------------------------------------------------------------------------
+M.reshape_instance = death.reshape_instance
+M.handle_creature_death = death.handle_creature_death
 
 return M

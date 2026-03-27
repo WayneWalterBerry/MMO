@@ -363,11 +363,17 @@ function verbs.create()
 
                 -- Creature death
                 if result.defender_dead or (creature.health and creature.health <= 0) then
-                    creature._state = "dead"
-                    creature.animate = false
-                    creature.portable = true
-                    creature.alive = false
-                    print((creature.name or "The creature") .. " is dead!")
+                    local death_name = creature.name or "The creature"
+                    local cr_ok2, cr_mod = pcall(require, "engine.creatures")
+                    local room = type(ctx.current_room) == "table" and ctx.current_room or nil
+                    if not (cr_ok2 and cr_mod.handle_creature_death
+                            and cr_mod.handle_creature_death(creature, ctx, room)) then
+                        creature._state = "dead"
+                        creature.animate = false
+                        creature.portable = true
+                        creature.alive = false
+                    end
+                    print(death_name .. " is dead!")
                     return
                 end
 
