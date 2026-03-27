@@ -7,6 +7,9 @@
 
 local M = {}
 
+local inventory_ok, inventory = pcall(require, "engine.creatures.inventory")
+if not inventory_ok then inventory = nil end
+
 -- reshape_instance(instance, death_state, registry, room)
 -- Transforms a live creature instance into a dead object instance in-place.
 -- The creature table is modified directly: template switches, sensory/identity
@@ -84,6 +87,11 @@ function M.handle_creature_death(creature, context, room)
                 room.contents[#room.contents + 1] = bp_id
             end
         end
+    end
+
+    -- WAVE-2: drop inventory items to room floor
+    if inventory then
+        inventory.drop_on_death(creature, room, context and context.registry)
     end
 
     -- Reshape narration (printed after combat death text)

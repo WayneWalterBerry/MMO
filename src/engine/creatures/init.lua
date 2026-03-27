@@ -11,6 +11,7 @@ local predator_prey = require("engine.creatures.predator-prey")
 local morale = require("engine.creatures.morale")
 local navigation = require("engine.creatures.navigation")
 local death = require("engine.creatures.death")
+local creature_inventory = require("engine.creatures.inventory")
 local combat_ok, combat = pcall(require, "engine.combat")
 if not combat_ok then combat = nil end
 
@@ -522,5 +523,12 @@ end
 ---------------------------------------------------------------------------
 M.reshape_instance = death.reshape_instance
 M.handle_creature_death = death.handle_creature_death
+
+---------------------------------------------------------------------------
+-- Inventory API (delegated to engine/creatures/inventory.lua)
+---------------------------------------------------------------------------
+M.validate_inventory = creature_inventory.validate
+M.drop_inventory_on_death = creature_inventory.drop_on_death
+M.inventory_presence_hint = creature_inventory.presence_hint
 
 return M
