@@ -742,3 +742,42 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 **TDD:** All 186 existing test files pass, zero regressions.
 
 **Commit:** 3746b17
+
+---
+
+## WAVE-5 Track 5A: Food Objects (cheese + bread)
+
+**Date:** 2026-07-30
+**Requested by:** Wayne "Effe" Berry
+**Plan:** `plans/npc-combat-implementation-phase2.md` — WAVE-5, Track 5A
+
+### What Was Done
+
+Created two food object definitions for the Food PoC system:
+
+1. **`src/meta/objects/cheese.lua`** — A wedge of hard yellow cheese
+   - Template: `small-item`, material: `wax` (proxy — no food material in registry)
+   - Keywords: `{"cheese", "wedge", "food"}`
+   - Food metadata: `nutrition=20, bait_value=3, bait_targets={"rat","bat"}`
+   - FSM: `fresh` (30 ticks / 10800s) → `stale` (20 ticks / 7200s) → `spoiled` (terminal)
+   - All sensory fields: `on_feel`, `on_smell`, `on_listen`, `on_taste`
+   - Spoilage mutates keywords (adds "moldy" on spoiled)
+
+2. **`src/meta/objects/bread.lua`** — A hard crust of dark rye bread
+   - Template: `small-item`, material: `wax` (proxy)
+   - Keywords: `{"bread", "crust", "food"}`
+   - Food metadata: `nutrition=15, bait_value=2, bait_targets={"rat"}`
+   - FSM: `fresh` (20 ticks / 7200s) → `stale` (terminal)
+   - All sensory fields: `on_feel`, `on_smell`, `on_listen`, `on_taste`
+   - Staleness mutates keywords (adds "stale")
+
+### Design Decisions
+- Used `wax` as material proxy — cheese has a waxy rind and oily texture, making it the best existing material match. Bread also gets `wax` for consistency; a dedicated `organic` or `food` material is future work.
+- Timer delays use seconds (10800/7200) matching the existing FSM convention (candle uses 7200). The 30t/20t spec translates to 30×360=10800s and 20×360=7200s per the tick-to-seconds conversion.
+- Spoiled cheese is `terminal = true` — once spoiled, it cannot be restored. Stale bread is also terminal per the 2-state FSM in the spec.
+- Both objects follow the `food = { ... }` metadata pattern from the plan (D.1), keeping `edible`, `nutrition`, `bait_value`, and `bait_targets` grouped under a single `food` table for engine consumption by Track 5B/5C.
+- Each FSM state has full sensory overrides so the engine can present state-appropriate descriptions in any light condition.
+
+**TDD:** All 189 existing tests pass, zero regressions. Pre-existing food test failures (`test/food/test-eat-drink.lua`, `test/food/test-bait.lua`) are from other WAVE-5 tracks (5B/5C/5D), not caused by these objects.
+
+**Commit:** 7569dc3
