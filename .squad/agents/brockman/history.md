@@ -1,6 +1,50 @@
 # Brockman — History (Summarized)
 
-## Recent Work: WAVE-0 — Phase 3 Architecture Docs (2026-08-16)
+## Recent Work: WAVE-5 — Phase 3 Design Documentation (2026-08-16)
+
+**Phase 3 WAVE-5 Design Docs Delivery:**
+- **Completed `docs/design/food-system.md`** (2,432 words, ~10 KB)
+  - Cook verb mechanics: aliases (roast/bake/grill), fire_source requirement, recipe structure, mutation flow
+  - Edibility tiers: Tier 1 (cooked, safe), Tier 2 (raw meat, conditional), Tier 3 (non-meat raw, rejected)
+  - Mutation chain: creature death → corpse → cooked via D-14 code rewrite
+  - Spoilage FSM: fresh→bloated→rotten→bones with timed transitions
+  - Food effects pipeline: heal, narrate, inflict_injury with probability gating
+  - Food economy: positive-sum balance, nutrition rates (rest -0.5, walk -1.0, combat -2.0)
+  - Raw meat consequences: food-poisoning injury with onset/nausea/recovery/cleared states (20 tick total)
+  - Cooked rat meat object pattern example with full sensory (on_feel, on_smell, on_taste)
+  
+- **Created `docs/design/cure-system.md`** (1,721 words, ~14 KB)
+  - Healing interactions metadata format: transitions_to, from_states, success/fail messages
+  - Cure window gating: early (curable), late (incurable), never via state array
+  - Antidote pattern: object ID → healing_interactions key matching
+  - Rabies example: incubating/prodromal curable, furious/fatal incurable
+  - Food-poisoning example: no healing_interactions (incurable, must run course)
+  - Interactive cure API: try_heal(), apply_healing_interaction(), resolve_target()
+  - Injury targeting priority: exact ID, display name, location, type, ordinal index
+  - Per-antidote cure windows: multiple antidotes can have different from_states arrays
+  - State-based success/fail narration with customizable messages
+  - Rabies injury definition example with healing-poultice cure and full state tree
+
+- **Committed:** `Phase 3 WAVE-5: food-system + cure-system design docs` (db0c0fe)
+- Implementation cross-reference verified: cooking.lua, consumption.lua, cure.lua, cooked-rat-meat.lua, food-poisoning.lua, rabies.lua
+
+**Key Principles Documented:**
+- D-14 (Code Mutation IS State Change): cook verb rewrites raw-meat.lua → cooked-meat.lua at runtime
+- Principle 8 (Engine executes metadata): food.effects array, healing_interactions metadata
+- Zero disease-specific engine code: disease definitions declare cures; engine applies them
+- Positive-sum economy: players accumulate nutrition faster than depletion (survival phase → abundance)
+- Cure windows as resource puzzles: find antidote before disease escalates beyond cure window
+
+**Learnings:**
+- Food system bridges creature death (WAVE-1) and combat loop (WAVE-2, WAVE-3): corpse→cooked food
+- Raw meat gate creates strategic tension: immediate nutrition risk vs. cooking discovery time
+- Food-poisoning is both injury consequence AND tutorial: teaches cooking importance
+- Rabies cure window (incubating + prodromal only) encourages early exploration for antidotes
+- Metadata-driven cures scale: add new disease → add healing_interactions block → no engine changes
+
+---
+
+## Previous Work: WAVE-0 — Phase 3 Architecture Docs (2026-08-16)
 
 **Phase 3 WAVE-0 Documentation Delivery:**
 - Created `docs/architecture/engine/creature-death-reshape.md` (19.7 KB, ~500 words)
