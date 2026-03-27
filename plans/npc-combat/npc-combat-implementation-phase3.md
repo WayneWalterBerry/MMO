@@ -2,8 +2,8 @@
 
 **Author:** Bart (Architecture Lead)
 **Date:** 2026-08-16
-**Version:** v1.1 (post-review — 9 blockers resolved)
-**Status:** 📋 DRAFT — Awaiting Wayne approval
+**Version:** v1.2 (Wayne's decisions recorded — all 6 questions RESOLVED)
+**Status:** ✅ APPROVED — Ready for implementation
 **Requested By:** Wayne "Effe" Berry
 **Governs:** Phase 3: Death Consequences → Creature Inventory → Full Food System → Combat Polish → Cure System → Respawning
 **Predecessor:** `plans/npc-combat/npc-combat-implementation-phase2.md` (Phase 2 — ✅ COMPLETE, 191 tests)
@@ -479,9 +479,9 @@ Expected: Rat dies → dead rat appears → player takes it → cooks over fire 
 
 ### WAVE-4 — Combat Polish + Cure System
 
-**Goal:** Wire remaining combat verbs, add psychological injury type, make diseases curable, propagate combat sounds to attract creatures.
+**Goal:** Wire remaining combat verbs, make diseases curable, propagate combat sounds to attract creatures. ⚠️ Stress injury deferred to Phase 4 per Q5 decision.
 
-**Design Sources:** `plans/npc-combat/combat-system-plan.md` §8.2 (verbs), §10.2 (stress), §10.4 (rabies cure); `plans/npc-combat/npc-system-plan.md` §5.4 (stimuli)
+**Design Sources:** `plans/npc-combat/combat-system-plan.md` §8.2 (verbs), §10.4 (rabies cure); `plans/npc-combat/npc-system-plan.md` §5.4 (stimuli)
 
 #### Kick Verb (Smithers)
 
@@ -493,19 +493,6 @@ handlers["kick"] = handlers["hit"]
 ```
 
 This routes `kick rat` through the existing combat pipeline. The player's natural weapon selection in combat already resolves based on what's in the player's hands.
-
-#### Stress Injury (Flanders)
-
-**File:** `src/meta/injuries/stress.lua`
-
-Simplified 2-tier model for Phase 3 (full 3-tier in Phase 4):
-
-| State | Description | Restricts | Auto-Heal |
-|-------|-------------|-----------|-----------|
-| shaken | Hands tremble, breath fast | precise_actions | 10 turns safety |
-| recovered | Trembling stops | — | terminal |
-
-**Stress triggers:** First creature kill (medium), being critically wounded (high), prolonged combat >5 rounds (low per round). Inflicted through existing `injuries.inflict()` by combat engine.
 
 #### Cure Mechanics (Bart)
 
@@ -552,15 +539,12 @@ Uses existing stimulus infrastructure from `creatures/stimulus.lua`. Sound propa
 | Test File | Coverage | Est. Tests |
 |-----------|----------|------------|
 | `test/verbs/test-kick-combat.lua` | kick rat → combat resolves, kick aliases work | ~5 |
-| `test/injuries/test-stress.lua` | Stress infliction, shaken state, auto-recovery | ~10 |
 | `test/injuries/test-cure-mechanics.lua` | Poultice cures rabies (early), rejects late rabies, antidote cures venom | ~15 |
 | `test/combat/test-combat-sound.lua` | Combat emits loud_noise, adjacent creatures react | ~8 |
 
 #### GATE-4 Criteria
 
 - [ ] `kick rat` resolves through combat pipeline
-- [ ] Stress injury inflicts on first creature kill
-- [ ] Stress auto-heals after 10 turns of safety
 - [ ] Healing poultice cures rabies in incubating/prodromal states
 - [ ] Healing poultice FAILS to cure rabies in furious state
 - [ ] Antidote cures spider venom
@@ -700,7 +684,6 @@ Full Phase 3 gameplay loop in `--headless` mode:
 | `test/food/test-cookable-gating.lua` | 3 | eat handler cookable check | 8 |
 | `test/food/test-food-poisoning.lua` | 3 | food-poisoning injury | 10 |
 | `test/verbs/test-kick-combat.lua` | 4 | verbs/init.lua kick alias | 5 |
-| `test/injuries/test-stress.lua` | 4 | stress.lua injury | 10 |
 | `test/injuries/test-cure-mechanics.lua` | 4 | injuries.lua cure path | 15 |
 | `test/combat/test-combat-sound.lua` | 4 | combat sound propagation | 8 |
 | `test/creatures/test-respawn.lua` | 5 | creatures/respawn.lua | 15 |
@@ -716,7 +699,7 @@ Following the Phase 2 pattern (`test-wave1-2-compat.lua`, `test-wave2-3-compat.l
 | `test/creatures/test-p3-wave1-2-compat.lua` | GATE-1 | Corpse objects from W1 are valid containers for W2 inventory drops; dead creatures with `container=true` pass containment validation | 10 |
 | `test/food/test-p3-wave2-3-compat.lua` | GATE-2 | Dead creature objects carry `crafting.cook` metadata needed by W3 cook verb; dead-rat/dead-cat/dead-bat all have `food.cook_to` pointing to valid target objects | 10 |
 | `test/injuries/test-p3-wave3-4-compat.lua` | GATE-3 | Food-poisoning injury compatible with W4 cure mechanics pipeline; `healing_interactions` table structure matches cure engine expectations | 10 |
-| `test/creatures/test-p3-wave4-5-compat.lua` | GATE-4 | Cured/stressed creatures can be targets for W5 respawn tracking; combat sound emission doesn't interfere with respawn timers | 10 |
+| `test/creatures/test-p3-wave4-5-compat.lua` | GATE-4 | Cured creatures can be targets for W5 respawn tracking; combat sound emission doesn't interfere with respawn timers | 10 |
 
 ---
 
@@ -746,7 +729,6 @@ Following the Phase 2 pattern (`test-wave1-2-compat.lua`, `test-wave2-3-compat.l
 | `src/meta/objects/grain-handful.lua` | Flanders | 3 | Object |
 | `src/meta/objects/flatbread.lua` | Flanders | 3 | Object |
 | `src/meta/injuries/food-poisoning.lua` | Flanders | 3 | Injury |
-| `src/meta/injuries/stress.lua` | Flanders | 4 | Injury |
 | `src/meta/objects/antidote-vial.lua` | Flanders | 4 | Object |
 
 ### Modified Files
@@ -846,7 +828,9 @@ These questions need Wayne's input before or during implementation.
 | **B: Corpse as container** | Richer gameplay (loot corpse), cleaner room, enables grave-robbing | More engine work (corpse becomes searchable container), adds commands |
 | **C: Hybrid** | Small items scatter, large items stay with corpse | Most realistic, but complex implementation |
 
-**Recommendation:** Option B (corpse as container). Phase 3 corpse objects already set `container = true` with capacity. The `search` verb already exists. Player types `search dead wolf` → sees inventory. `take sword from dead wolf` → gets it. Minimal engine work on top of WAVE-1 corpse objects.
+**✅ RESOLVED — Wayne's Answer: Option B**
+
+Player searches corpse to find items. Phase 3 corpse objects already set `container = true` with capacity. The `search` verb already exists. Player types `search dead wolf` → sees inventory. `take sword from dead wolf` → gets it. Minimal engine work on top of WAVE-1 corpse objects.
 
 ---
 
@@ -861,7 +845,19 @@ These questions need Wayne's input before or during implementation.
 | **B: Event-based** | Respawn triggered by player leaving the area for N rooms/turns | More natural feeling | Harder to test, harder to predict |
 | **C: Off-screen only** | Respawn only happens when player hasn't visited room in N turns | Most natural, prevents farming | May cause permanent extinction in frequently-visited areas |
 
-**Recommendation:** Option A (timer-based) with the "player not in room" guard. Simplest, most testable. The timer values are tunable per-creature. If it feels mechanical during playtesting, upgrade to Option C in Phase 4.
+**✅ RESOLVED — Wayne's Answer: CUSTOM**
+
+**Respawning is per-creature metadata declared in the room .lua file.** Some creatures (like rats) respawn on a timer. Boss monsters are one-of-a-kind — once defeated, they don't reappear. This is NOT a global system. Each creature instance in the room file has a meta setting controlling whether it respawns.
+
+- Rats (abundant): `respawn: { timer = 60, home_room = "cellar", max_population = 3 }`
+- Wolf (territorial, solitary): `respawn: { timer = 200, home_room = "hallway", max_population = 1 }`
+- Spider (web-builder): `respawn: { timer = 80, home_room = "deep-cellar", max_population = 2 }`
+- Bat (colony): `respawn: { timer = 60, home_room = "crypt", max_population = 3 }`
+- Cat (solitary predator): `respawn: { timer = 120, home_room = "courtyard", max_population = 1 }`
+
+This design honors creature ecology (some reproduce, some are unique) while keeping implementation simple: each respawn is independent, tied to the creature instance metadata, not a global "respawn manager" decision.
+
+**Implementation note:** Respawn respects the "player not in room" guard. If the player is currently in the creature's home room, respawn waits. This prevents "spawn in your face" moments and forces the player to leave and return.
 
 ---
 
@@ -876,7 +872,11 @@ These questions need Wayne's input before or during implementation.
 | **B: Cellar brazier** | New object: a small iron brazier in the cellar | Thematic (medieval), justifiable location | One more object to create |
 | **C: Courtyard fire pit** | New object: outdoor fire pit or cooking fire | Outdoor cooking makes sense | Needs a room that supports it |
 
-**Recommendation:** Option B (cellar brazier). The cellar is a natural location for a fire source, and it's already a creature-dense room. Creates interesting gameplay: cook your rat kill right where you found it.
+**✅ RESOLVED — Wayne's Answer: Option B**
+
+New iron brazier object in the cellar. The cellar is a natural location for a fire source, and it's already a creature-dense room. Creates interesting gameplay: cook your rat kill right where you found it.
+
+**Implementation:** `src/meta/objects/cellar-brazier.lua` (furniture, fire_source=true, emits light, warm to touch). The brazier is a room-level object, not inventory-able (too heavy).
 
 ---
 
@@ -891,7 +891,14 @@ These questions need Wayne's input before or during implementation.
 | **B: Furniture (not portable)** | Realistic, forces in-place butchering | Requires butcher verb (Phase 4) to get meat, can't move |
 | **C: Portable with encumbrance** | Carry but can't do anything else (both hands, movement penalty) | Most realistic but complex |
 
-**Recommendation:** Option B (furniture, not portable). Wolf corpse stays where it died. Player can `search` it for inventory items. Cooking/butchering wolf meat deferred to Phase 4 with the `butcher` verb. Dead rat/cat/bat/spider are small → portable (`small-item` template). Dead wolf is too large → stays in-place (`furniture` template).
+**✅ RESOLVED — Wayne's Answer: Option B**
+
+Dead wolf is furniture (not portable). Stays where it died. Small creatures (rat/cat/bat/spider) are portable.
+
+**Implementation Detail:**
+- Dead rat/cat/bat: `small-item` template, portable=true (can pick up and carry)
+- Dead wolf: `furniture` template, portable=false (stays in place, searchable on the ground)
+- Dead spider: `small-item` template, portable=true (small creature)
 
 ---
 
@@ -906,7 +913,17 @@ These questions need Wayne's input before or during implementation.
 | **B: Full (3-tier)** | shaken → panicked → shell-shocked → recovered | precise + attack + movement | Medium — richer gameplay |
 | **C: Deferred** | No stress in Phase 3 | — | Zero — ship it in Phase 4 |
 
-**Recommendation:** Option A (minimal 2-tier). Ship the foundation. Stress adds texture but the 3-tier model has cascading restrictions (can't attack, can't move) that need extensive playtesting. Start simple, expand in Phase 4.
+**✅ RESOLVED — Wayne's Answer: Option C**
+
+**Stress injury is DEFERRED to Phase 4. Remove stress from Phase 3 scope entirely.**
+
+This decision simplifies WAVE-4 (Combat Polish) to focus on:
+- `kick` verb wiring to combat
+- Cure mechanics for rabies + spider venom
+- Combat sound propagation (attracts creatures)
+- Weapon combat metadata
+
+Stress adds significant complexity with state restrictions (can't attack, can't move) that require extensive playtesting. Ship Phase 3 without it; expand in Phase 4 after live feedback.
 
 ---
 
@@ -920,7 +937,9 @@ These questions need Wayne's input before or during implementation.
 | **A: Fixed only** | Creatures carry exact items declared in metadata | Simple, deterministic, testable | Less variety — every wolf drops the same bone |
 | **B: Fixed + simple loot table** | Add `loot_table.on_death` with weighted probability | Adds variety without full system | More implementation work |
 
-**Recommendation:** Option A (fixed only for Phase 3). Fixed inventory is sufficient for 5 creatures. Loot tables add value when we have 20+ creature types and randomized dungeons — that's Phase 4 territory.
+**✅ RESOLVED — Wayne's Answer: Option A**
+
+Fixed inventory only. No loot tables in Phase 3. Fixed inventory is sufficient for 5 creatures. Loot tables add value when we have 20+ creature types and randomized dungeons — that's Phase 4 territory.
 
 ---
 
@@ -940,6 +959,7 @@ These questions need Wayne's input before or during implementation.
 | **Multi-ingredient cooking** | Requires recipe system beyond single-item mutation | food-system-plan.md §16 Phase 3 |
 | **Food preservation** (salting, smoking, drying) | Players will ask "how do I preserve food?" after discovering spoilage — explicitly deferred to Phase 4 to prevent scope creep | — |
 | **Creature-to-creature looting** | Requires creature AI to evaluate loot value | creature-inventory-plan.md §8 Phase 3 |
+| **Stress injury** | Complex cascading restrictions (can't attack, can't move) need extensive playtesting | Phase 4 — deferred per Q5 decision |
 
 ---
 
@@ -975,9 +995,8 @@ To be filled during WAVE-0 by Bart:
 | grain-handful.lua | TBD | — |
 | flatbread.lua | TBD | — |
 | food-poisoning.lua | TBD | — |
-| stress.lua | TBD | — |
 | antidote-vial.lua | TBD | — |
-| cellar-brazier.lua (if Q3=B) | TBD | — |
+| cellar-brazier.lua | TBD | — |
 
 ---
 
