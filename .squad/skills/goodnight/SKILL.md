@@ -61,14 +61,19 @@ Write a session checkpoint to the session state folder. Include:
 
 Signal to the platform that context should be compacted. This preserves the checkpoint while freeing context window for the next session.
 
-### Step 5 — Scribe Deep Clean
+### Step 5 — Scribe Deep Clean (MANDATORY — never skip)
 
-Spawn Scribe to:
-1. **decisions.md cleanup** — If over 20KB, archive implemented/completed decisions older than 2 weeks to `decisions-archive.md`. Build a compact Decision Index at the top.
+**⚠️ This step MUST complete before Step 6. Wait for Scribe to finish (read_agent wait: true, timeout: 300). Do NOT skip this step even if the session is closing — the decision inbox MUST be merged every night or the next session starts with stale team memory.**
+
+Spawn Scribe (background) and **WAIT for completion**:
+1. **decisions.md cleanup** — Merge ALL inbox files into decisions.md. If over 20KB after merge, archive implemented/completed decisions older than 2 weeks to `decisions-archive.md`. Build a compact Decision Index at the top.
 2. **history.md summarization** — For any agent history.md over 12KB, compress old entries into a `## Core Context` section. Move raw entries to `history-archive.md`.
 3. **Orchestration log archive** — Move orchestration log entries older than 7 days to `.squad/orchestration-log/_archive/`.
-4. Commit cleanup: `git add .squad/ && git commit -m "chore(.squad): goodnight cleanup — archive decisions, compress histories"`
-5. Push.
+4. **Stale file cleanup** — Delete any temp files left by crashed agents (e.g., `plans/_write_food_plan.py`).
+5. Commit cleanup: `git add -A && git commit -m "chore(.squad): goodnight cleanup — archive decisions, compress histories"`
+6. Push.
+
+**Collect Scribe result before proceeding to Step 6.** If Scribe times out after 5 minutes, report what was lost but still proceed to Step 6.
 
 ### Step 6 — Ralph Board Snapshot
 
