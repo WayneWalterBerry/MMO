@@ -133,6 +133,18 @@
 
 ## Learnings
 
+### Mutation Graph Analysis (2026-07-28)
+- 6 distinct mutation mechanisms in the codebase: file-swap (becomes), FSM in-place (mutate), spawns (from mutations and transitions), crafting (becomes), tool depletion (when_depleted), and dynamic (runtime-generated)
+- `becomes = nil` is intentional destruction, NOT a broken link — must be excluded from edge extraction
+- 4 known broken edges found: poison-gas-vent-plugged (missing), wood-splinters ×3 (missing)
+- Only 1 dynamic mutation exists: paper.lua's write verb — unbounded (player input generates code)
+- Template inheritance (e.g., sheet.lua → blanket.lua) means mutations can be inherited — but current objects all redeclare inherited mutations explicitly, so template merging can be deferred
+- matchbox ↔ matchbox-open is a valid toggle cycle (not a bug)
+- No `when_depleted` fields exist yet — pen/pencil/needle/knife all have `consumes_charge = false`
+- sandbox loading must handle objects with embedded Lua functions (on_look, etc.) — use loadfile + restricted env with setfenv
+- Graph linter belongs in test/meta/ (new directory), registered in test_dirs alongside parser/inventory/etc.
+- Plan delivered to plans/mutation-graph-linter-plan.md — ~240-260 estimated tests across 7 suites
+
 ### NPC+Combat Implementation Plan Structure (2026-07-28)
 - Unified plan merges NPC Phase 1 and Combat Phase 1 into 6 waves with 6 gates
 - Wave/gate pattern: each wave is a batch of parallel agent work, each gate is a binary pass/fail checkpoint
