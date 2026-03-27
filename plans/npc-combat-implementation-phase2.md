@@ -27,8 +27,8 @@
 | WAVE-1 | ✅ PASSED (182 tests) |
 | WAVE-2 | ✅ PASSED (184 tests) |
 | WAVE-3 | ✅ PASSED (186 tests) |
-| WAVE-4 | ⏳ |
-| WAVE-5 | ⏳ |
+| WAVE-4 | ✅ PASSED (189 tests) |
+| WAVE-5 | 🔄 IN PROGRESS |
 
 ---
 
