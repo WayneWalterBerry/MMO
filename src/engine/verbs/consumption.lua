@@ -1,7 +1,8 @@
 -- engine/verbs/consumption.lua
 -- Eat/drink handlers, split from survival.lua in Phase 3 WAVE-0.
+-- WAVE-3: raw meat consequences, cookable gating, food effects pipeline.
 --
--- Ownership: Bart (Architect)
+-- Ownership: Smithers (UI Engineer) — eat extensions; Bart (Architect) — drink handler
 
 local H = require("engine.verbs.helpers")
 
@@ -23,7 +24,8 @@ function M.register(handlers)
     local inj_ok, injury_mod = pcall(require, "engine.injuries")
 
     ---------------------------------------------------------------------------
-    -- EAT -- consume food items (WAVE-5: food.edible + nutrition + restrictions)
+    -- EAT -- consume food items
+    -- WAVE-3: raw meat consequences, cookable gating, food effects pipeline
     ---------------------------------------------------------------------------
     handlers["eat"] = function(ctx, noun)
         if noun == "" then
@@ -46,14 +48,6 @@ function M.register(handlers)
             return
         end
 
-        -- Check edibility: food.edible (WAVE-5 food table) or legacy obj.edible
-        local food = obj.food
-        local is_edible = (food and food.edible) or obj.edible
-        if not is_edible then
-            print("You can't eat " .. (obj.name or "that") .. ".")
-            return
-        end
-
         -- Check injury restrictions (e.g. jaw injuries could block eating)
         if inj_ok and injury_mod then
             local restricts = injury_mod.get_restrictions(ctx.player)
@@ -61,6 +55,49 @@ function M.register(handlers)
                 print("Your injuries prevent you from eating.")
                 return
             end
+        end
+
+        local food = obj.food
+
+        -- WAVE-3: Raw meat with consequences — edible=false but raw=true and cookable
+        if food and food.raw == true and food.cookable == true then
+            if food.edible ~= true then
+                -- Category-based gating: only meat can be force-eaten raw
+                if food.category == "meat" then
+                    -- Raw meat: allow eating but with food-poisoning consequence
+                    print(obj.on_taste or "The raw flesh tastes foul.")
+                    print("You choke it down. Your stomach rebels almost immediately.")
+                    -- Inflict food-poisoning injury
+                    if inj_ok and injury_mod then
+                        injury_mod.inflict(ctx.player, "food-poisoning", obj.id or "raw meat", nil, nil)
+                    end
+                    -- Apply nutrition (reduced benefit from raw food)
+                    if food.nutrition then
+                        ctx.player.nutrition = (ctx.player.nutrition or 0) + food.nutrition
+                    end
+                    show_hint(ctx, "cook", "Cooking raw meat makes it safe to eat and more nourishing.")
+                    remove_from_location(ctx, obj)
+                    ctx.registry:remove(obj.id)
+                    return
+                else
+                    -- Non-meat raw cookable (grain, vegetables, etc.) — reject
+                    print(obj.on_eat_reject or "You can't eat that raw. Try cooking it first.")
+                    return
+                end
+            end
+        end
+
+        -- WAVE-3: Non-raw cookable rejection (e.g., items needing cooking but not flagged raw)
+        if food and food.cookable == true and food.raw ~= true and food.edible ~= true then
+            print(obj.on_eat_reject or "You can't eat that raw. Try cooking it first.")
+            return
+        end
+
+        -- Check edibility: food.edible (WAVE-5 food table) or legacy obj.edible
+        local is_edible = (food and food.edible) or obj.edible
+        if not is_edible then
+            print("You can't eat " .. (obj.name or "that") .. ".")
+            return
         end
 
         -- Spoiled food warning
@@ -92,6 +129,18 @@ function M.register(handlers)
             print(obj.event_output["on_eat"])
             obj.event_output["on_eat"] = nil
         end
+
+        -- WAVE-3: Food effects pipeline — process obj.food.effects array
+        if food and food.effects then
+            effects.process(food.effects, {
+                player = ctx.player,
+                registry = ctx.registry,
+                source = obj,
+                source_id = obj.id or obj.guid,
+                game_over = false,
+            })
+        end
+
         show_hint(ctx, "eat", "Careful what you eat — not everything is safe to consume.")
         remove_from_location(ctx, obj)
         ctx.registry:remove(obj.id)

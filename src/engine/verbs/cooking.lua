@@ -1,8 +1,8 @@
 -- engine/verbs/cooking.lua
--- Write handler (extracted from crafting.lua) + future cook handlers (WAVE-3 target).
+-- Write handler (extracted from crafting.lua) + cook verb handler (WAVE-3).
 -- Split from crafting.lua in Phase 3 WAVE-0.
 --
--- Ownership: Bart (Architect)
+-- Ownership: Smithers (UI Engineer) — cook verb; Bart (Architect) — write verb
 
 local H = require("engine.verbs.helpers")
 
@@ -12,12 +12,81 @@ local find_in_inventory = H.find_in_inventory
 local find_tool_in_inventory = H.find_tool_in_inventory
 local provides_capability = H.provides_capability
 local consume_tool_charge = H.consume_tool_charge
+local find_visible_tool = H.find_visible_tool
+local perform_mutation = H.perform_mutation
 local find_mutation = H.find_mutation
 local has_some_light = H.has_some_light
+local show_hint = H.show_hint
 
 local M = {}
 
 function M.register(handlers)
+    ---------------------------------------------------------------------------
+    -- COOK {food} -- transforms raw food into cooked food via D-14 mutation
+    -- Requires a fire_source tool in inventory or visible scope.
+    -- Recipe declared on food object as obj.crafting.cook (Principle 8).
+    ---------------------------------------------------------------------------
+    handlers["cook"] = function(ctx, noun)
+        if noun == "" then
+            print("Cook what? Try 'cook [food]' near a fire source.")
+            return
+        end
+
+        -- Find food in inventory first, then visible scope
+        local obj = find_in_inventory(ctx, noun)
+        if not obj then
+            obj = find_visible(ctx, noun)
+        end
+        if not obj then
+            err_not_found(ctx)
+            return
+        end
+
+        -- Must be holding it to cook
+        if not find_in_inventory(ctx, noun) then
+            print("You'll need to pick that up first.")
+            return
+        end
+
+        -- Check crafting.cook recipe on the object
+        if not obj.crafting or not obj.crafting.cook then
+            print("You can't cook " .. (obj.name or "that") .. ".")
+            return
+        end
+
+        local recipe = obj.crafting.cook
+
+        -- Find fire_source: inventory first, then visible room objects
+        local tool = find_tool_in_inventory(ctx, recipe.requires_tool or "fire_source")
+        if not tool then
+            tool = find_visible_tool(ctx, recipe.requires_tool or "fire_source")
+        end
+        if not tool then
+            print(recipe.fail_message_no_tool or "You need a fire source to cook this.")
+            return
+        end
+
+        -- Perform mutation: raw → cooked via recipe.becomes
+        if not recipe.becomes then
+            print("You hold it over the flames, but nothing useful happens.")
+            return
+        end
+
+        if not perform_mutation(ctx, obj, recipe) then
+            return
+        end
+
+        -- Consume tool charge on fire source if applicable
+        consume_tool_charge(ctx, tool)
+
+        -- Success
+        print(recipe.message or ("You cook " .. (obj.name or "it") .. " over the flames."))
+        show_hint(ctx, "cook", "Cooking raw meat makes it safe to eat and more nourishing.")
+    end
+
+    handlers["roast"] = handlers["cook"]
+    handlers["bake"] = handlers["cook"]
+    handlers["grill"] = handlers["cook"]
     ---------------------------------------------------------------------------
     -- WRITE {text} ON {target} WITH {tool} -- inscription verb
     ---------------------------------------------------------------------------

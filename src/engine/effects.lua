@@ -261,4 +261,35 @@ effects.register("mutate", function(effect, ctx)
     end
 end)
 
+---------------------------------------------------------------------------
+-- Built-in handler: heal
+-- Restores player health by reducing injury damage or adding health.
+---------------------------------------------------------------------------
+effects.register("heal", function(effect, ctx)
+    if not ctx.player then return end
+    local amount = effect.amount or 0
+    if amount > 0 then
+        -- Reduce accumulated injury damage (healing)
+        local inj_ok, injury_mod = pcall(require, "engine.injuries")
+        if inj_ok and injury_mod and ctx.player.injuries then
+            local healed = 0
+            for _, inj in ipairs(ctx.player.injuries) do
+                if healed >= amount then break end
+                if inj.damage and inj.damage > 0 then
+                    local reduce = math.min(inj.damage, amount - healed)
+                    inj.damage = inj.damage - reduce
+                    healed = healed + reduce
+                end
+            end
+        end
+        -- Also boost nutrition as a general health benefit
+        if effect.nutrition then
+            ctx.player.nutrition = (ctx.player.nutrition or 0) + effect.nutrition
+        end
+    end
+    if effect.message then
+        print(effect.message)
+    end
+end)
+
 return effects
