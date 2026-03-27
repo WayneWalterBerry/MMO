@@ -825,3 +825,24 @@ Created TDD validation tests for 4 new creatures (cat, wolf, spider, bat):
   flag in the spoilage FSM bones state, with explicit `inst.food = nil` in the tick simulator.
 - **Pre-existing test failures don't block commit:** The `test-creature-combat.lua` file (WAVE-2 TDD)
   has pre-existing failures unrelated to WAVE-1. Full suite: 194 files, 1 pre-existing failure.
+
+### WAVE-2 — Inventory + Death Drop TDD Tests (2026-03-28)
+
+**Task:** Write TDD tests for creature inventory metadata, death drop mechanics, and edge cases.
+
+**Files Created:**
+- `test/creatures/test-creature-inventory.lua` — 15 tests
+- `test/creatures/test-death-drops.lua` — 15 tests
+- `test/creatures/test-inventory-edge-cases.lua` — 10 tests
+
+**Total: 40 tests, 40 passed, 0 failed.**
+
+**Coverage:**
+- **Inventory metadata:** Wolf has inventory with gnawed-bone GUID in `carried`. Rat/cat/bat/spider have no inventory. Spider silk is death_state byproduct, not inventory.
+- **Validation rules:** INV-01 (hands max 2), INV-02 (worn slots: head/torso/arms/legs/feet only), INV-03 (carried GUIDs must resolve in registry).
+- **Death drops:** Kill wolf → gnawed-bone scatters to room floor. Kill spider → silk-bundle via byproduct path. Kill rat/cat/bat (no inventory) → only corpse, no crash. Dropped items are independent room objects, portable, correct GUIDs, coexist with reshaped corpse.
+- **Edge cases:** Over-hand-limit, invalid worn slots, unresolvable GUIDs, empty inventory, nil inventory, nil creature, multiple violations reported together, partial inventory (hands-only).
+
+**Regression check:** Full suite run — 2 pre-existing failures (`test-creature-combat.lua`, `test-injuries-comprehensive.lua`), both unrelated to WAVE-2. All 3 new test files pass clean.
+
+**Commit:** `887f8fa` — "Phase 3 WAVE-2: inventory + death drop TDD tests (40 tests)"

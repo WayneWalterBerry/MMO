@@ -807,3 +807,27 @@ Created two food object definitions for the Food PoC system:
 - Spider is unique: no food, no container, no spoilage — but has byproducts and reshape_narration for silk drop.
 
 **Commit:** 7c067c9
+
+---
+
+## Phase 3 WAVE-2: Loot Objects + Wolf Inventory
+
+**Date:** 2026-08
+**Task:** Create gnawed-bone and silk-bundle loot objects; add inventory metadata to wolf.lua.
+**Requested by:** Wayne Berry
+
+**Files Created:**
+1. `src/meta/objects/gnawed-bone.lua` — template: small-item, GUID {b8db1d83-9c05-401c-ae7b-67c31b98d6fc} (from bart-phase3-guids.md). Material: bone. Size: tiny, weight: 0.1. Wolf loot drop.
+2. `src/meta/objects/silk-bundle.lua` — template: small-item, GUID {203f252d-61f6-4533-a379-f5ecb3880de4} (from bart-phase3-guids.md). Material: cotton (proxy — no silk material yet). Size: small, weight: 0.2. Spider death byproduct.
+
+**Files Modified:**
+3. `src/meta/creatures/wolf.lua` — Added `inventory` block with `carried = { "{b8db1d83-9c05-401c-ae7b-67c31b98d6fc}" }` (gnawed-bone GUID). Hands and worn empty.
+
+**Tests:** All tests pass except pre-existing failure in test-creature-combat.lua test 8 (creature_died stimulus — nil compare, unrelated to WAVE-2).
+
+**Patterns learned:**
+- Creature inventory uses direct GUID references (Phase 3 Option A). Loot tables deferred to Phase 4.
+- Spider silk is NOT inventory — it's a death_state byproduct (drops via reshape, not inventory mechanics).
+- Cotton is the proxy material for silk until a silk material is added.
+
+**Commit:** 436fed7

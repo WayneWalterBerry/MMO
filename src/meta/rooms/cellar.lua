@@ -7,7 +7,7 @@ return {
     level = { number = 1, name = "The Awakening" },
     sky_visible = false,
     keywords = {"cellar", "basement", "underground", "cellar room"},
-    description = "You stand at the foot of a narrow stone stairway in a low-ceilinged cellar. The walls are rough-hewn granite, slick with moisture that catches what little light there is. Water drips somewhere in the darkness, a slow and patient rhythm. The air is cold and heavy, thick with the smell of damp earth, old stone, and something faintly metallic. Cobwebs hang in thick curtains from the ceiling, swaying in a draft you cannot feel.",
+    description = "You stand at the foot of a narrow stone stairway in a low-ceilinged cellar. The walls are rough-hewn granite, slick with moisture that catches what little light there is. An iron brazier squats against the far wall, its basin blackened with old ash. Water drips somewhere in the darkness, a slow and patient rhythm. The air is cold and heavy, thick with the smell of damp earth, old stone, and something faintly metallic. Cobwebs hang in thick curtains from the ceiling, swaying in a draft you cannot feel.",
     short_description = "A cold, damp cellar of rough stone and dripping water.",
 
     on_smell = "Damp earth, cold stone, and something faintly metallic -- iron, perhaps, or old blood. The air is thick and stale, as if it has not moved in a very long time.",
@@ -18,6 +18,7 @@ return {
         { id = "cellar-bedroom-trapdoor-up", type_id = "{c915adfa-df5c-40bb-987f-751be2cc7525}" },
         { id = "cellar-storage-door-north", type_id = "{cd7f2d60-8528-4a7f-9236-0bfaad8c399d}" },
         { id = "cellar-rat", type_id = "{071e73f6-535e-42cb-b981-ebf85c27356f}" },
+        { id = "cellar-brazier", type_id = "{22b77e90-8407-427a-a272-6b88277ba1fc}" },
     },
 
     exits = {
