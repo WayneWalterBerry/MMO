@@ -187,6 +187,13 @@ return {
         },
     },
 
+    -- Inventory (WAVE-2)
+    inventory = {
+        hands = {},
+        worn = {},
+        carried = { "{b8db1d83-9c05-401c-ae7b-67c31b98d6fc}" },
+    },
+
     -- Death reshape (WAVE-1)
     death_state = {
         template = "furniture",
