@@ -1,0 +1,43 @@
+{
+  "_comment": "meta-check configuration — per-rule overrides and allowlists",
+  "_updated": "2026-07-26 — Nelson (QA) — Issue #250 orphan categorization",
+  "rules": {},
+  "categories": {},
+  "keyword_allowlist": [],
+  "orphan_allowlist": {
+    "_comment": "GUID-02 suppressions — objects not referenced by any room but legitimately orphaned",
+
+    "matchbox-open":       "mutation-target: matchbox mutates to matchbox-open when opened",
+    "glass-shard":         "mutation-target: glass objects mutate to glass-shard when broken",
+    "ceramic-shard":       "mutation-target: ceramic objects mutate to ceramic-shard when broken",
+    "damp-cloth":          "mutation-target: cloth + water crafting result",
+    "cold-water":          "mutation-target: water container contents, runtime-instantiated",
+
+    "locked-door":         "portal-variant: generic door template used by portal system",
+    "wooden-door":         "portal-variant: generic door template used by portal system",
+    "trap-door":           "portal-variant: generic trapdoor template used by portal system",
+
+    "bear-trap":           "future-content: trap for Level 2+ rooms",
+    "falling-club-trap":   "future-content: trap for Level 2+ rooms",
+    "falling-rock-trap":   "future-content: trap for Level 2+ rooms",
+    "poison-gas-vent":     "future-content: trap for Level 2+ rooms",
+    "unstable-ceiling":    "future-content: environmental hazard for Level 2+ rooms",
+
+    "bandage":             "future-content: healing item, needs crafting system or room placement",
+    "salve":               "future-content: healing item, needs room placement",
+    "healing-poultice":    "future-content: healing item, needs crafting system or room placement",
+    "nightshade-antidote": "future-content: healing item, needs crafting system or room placement",
+    "cloth":               "future-content: crafting material, needs room placement",
+    "rag":                 "future-content: crafting material, needs room placement",
+
+    "altar-candle":        "future-content: crypt room object, needs room placement",
+    "incense-stick":       "future-content: crypt/chapel object, needs room placement",
+    "burial-jewelry":      "future-content: crypt room object, needs room placement",
+    "chest":               "future-content: container, needs room placement in Level 2+",
+    "skull":               "future-content: crypt room object, needs room placement",
+    "stone-alcove":        "future-content: architectural element, needs room placement",
+    "terrible-jacket":     "future-content: wearable, needs room placement",
+    "wall-clock":          "future-content: furniture, needs room placement in hallway or study",
+    "wool-cloak":          "future-content: wearable, needs room placement"
+  }
+}

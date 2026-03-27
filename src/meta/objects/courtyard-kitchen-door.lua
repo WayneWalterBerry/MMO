@@ -61,26 +61,31 @@ return {
             on_listen = "The door rattles in its frame, no longer held by the latch. Wind catches it.",
         },
 
+        -- FUTURE: traversable = true when manor-kitchen room exists (Level 2 content)
+        -- See Issue #249, Issue #208
         open = {
-            traversable = true,
+            traversable = false,
             name = "an open wooden door",
-            description = "The wooden door stands open, revealing a dim kitchen passage beyond.",
-            room_presence = "The kitchen door stands open. The smell of old cooking drifts into the courtyard.",
-            on_examine = "The door stands open, scraped against the flagstones inside. Beyond: a dim kitchen passage, the shapes of shelves and pots visible in the darkness.",
-            on_feel = "The open door edge, rough and swollen. Warmer air drifts from the kitchen beyond.",
-            on_smell = "Old cooking grease, cold ash, dried herbs — the full smell of the kitchen pours through the open door.",
-            on_listen = "From the kitchen: the tick of cooling metal, the drip of condensation, the settling of an empty house.",
+            description = "The wooden door stands open, revealing a dim kitchen passage beyond — but the passage is choked with collapsed masonry.",
+            room_presence = "The kitchen door stands open, but collapsed masonry blocks the passage beyond.",
+            on_examine = "The door stands open, scraped against the flagstones inside. Beyond: a dim kitchen passage, the shapes of shelves and pots visible in the darkness. But barely a step inside, the ceiling has come down — heavy stone blocks and shattered timbers fill the passage. There's no way through.",
+            on_feel = "The open door edge, rough and swollen. Warmer air drifts from the kitchen beyond, but your hand meets cold stone almost immediately — the passage is blocked by fallen masonry.",
+            on_smell = "Old cooking grease, cold ash, dried herbs — the full smell of the kitchen pours through the open door, mixed with the dust of collapsed stone.",
+            on_listen = "From the kitchen: the tick of cooling metal, the drip of condensation. But closer: the occasional groan of settling rubble. The passage is unstable.",
+            blocked_message = "The door is open, but the passage beyond is choked with collapsed masonry. Heavy stone blocks and shattered timbers fill the way. You cannot pass.",
         },
 
+        -- FUTURE: traversable = true when manor-kitchen room exists (Level 2 content)
         broken = {
-            traversable = true,
+            traversable = false,
             name = "a splintered doorway",
-            description = "Where the wooden door once stood, only splintered planks and a twisted latch remain. The smell of old cooking grease drifts through the gap.",
-            room_presence = "The kitchen doorway is splintered open. Broken planks and a twisted latch are all that remain.",
-            on_examine = "The door is destroyed — warped planks splintered, the rusted latch torn free. The kitchen beyond is visible through the gap.",
-            on_feel = "Jagged splinters and bent iron. The door has been smashed through.",
-            on_smell = "Old grease, cold ash, and the sharper smell of freshly splintered wood.",
-            on_listen = "Wind blows freely through the shattered doorway into the kitchen.",
+            description = "Where the wooden door once stood, only splintered planks and a twisted latch remain. Beyond, collapsed masonry blocks the kitchen passage.",
+            room_presence = "The kitchen doorway is splintered open, but collapsed masonry blocks the passage beyond.",
+            on_examine = "The door is destroyed — warped planks splintered, the rusted latch torn free. The kitchen beyond is visible through the gap, but collapsed masonry fills the passage just inside. Heavy stone blocks, shattered timbers, dust. Impassable.",
+            on_feel = "Jagged splinters and bent iron. Beyond the doorframe, cold stone rubble fills the passage.",
+            on_smell = "Old grease, cold ash, the sharper smell of freshly splintered wood, and dust from collapsed stone.",
+            on_listen = "Wind blows through the shattered doorway, stirring dust in the blocked passage. Rubble settles with occasional groans.",
+            blocked_message = "The doorway is open, but the kitchen passage is completely blocked by collapsed masonry. You cannot pass.",
         },
     },
 

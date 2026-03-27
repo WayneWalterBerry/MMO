@@ -2436,10 +2436,13 @@ def main() -> int:
             if parsed.kind in ("object", "creature") and parsed.guid:
                 bare = parsed.guid.strip("{}")
                 if bare not in all_referenced_guids:
+                    obj_id = _as_string(parsed.fields.get('id')) or '?'
+                    if _active_config.is_orphan_allowed(obj_id):
+                        continue
                     _add_violation(violations, parsed.path,
                                    _line_for(parsed, "guid"),
                                    "warning", "GUID-02",
-                                   f"Object '{_as_string(parsed.fields.get('id')) or '?'}' "
+                                   f"Object '{obj_id}' "
                                    f"GUID not referenced by any room instance")
 
     # -----------------------------------------------------------------

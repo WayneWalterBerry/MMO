@@ -14,7 +14,11 @@ Config format:
     "categories": {
         "injury": { "enabled": false }
     },
-    "keyword_allowlist": ["garment", "clothing", "container"]
+    "keyword_allowlist": ["garment", "clothing", "container"],
+    "orphan_allowlist": {
+        "matchbox-open": "mutation-target",
+        "glass-shard": "mutation-target"
+    }
 }
 
 Missing keys inherit defaults from rule_registry.
@@ -49,6 +53,7 @@ class CheckConfig:
     rules: Dict[str, RuleConfig] = field(default_factory=dict)
     disabled_categories: Set[str] = field(default_factory=set)
     keyword_allowlist: Set[str] = field(default_factory=set)
+    orphan_allowlist: Dict[str, str] = field(default_factory=dict)
     squad_routing: Optional[Dict[str, str]] = None
 
     def is_rule_enabled(self, rule_id: str) -> bool:
@@ -71,6 +76,10 @@ class CheckConfig:
     def is_keyword_allowed(self, keyword: str) -> bool:
         """Return True if a keyword is in the collision allowlist."""
         return keyword.lower() in self.keyword_allowlist
+
+    def is_orphan_allowed(self, object_id: str) -> bool:
+        """Return True if an object ID is in the GUID-02 orphan allowlist."""
+        return object_id in self.orphan_allowlist
 
 
 _VALID_SEVERITIES = {"error", "warning", "info"}
@@ -108,6 +117,10 @@ def parse_config(json_text: str) -> CheckConfig:
 
     allowlist = data.get("keyword_allowlist", [])
     cfg.keyword_allowlist = {kw.lower() for kw in allowlist}
+
+    orphan_data = data.get("orphan_allowlist", {})
+    if isinstance(orphan_data, dict):
+        cfg.orphan_allowlist = {k: v for k, v in orphan_data.items()}
 
     routing_data = data.get("squad_routing", None)
     if isinstance(routing_data, dict):
