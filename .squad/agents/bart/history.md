@@ -29,7 +29,18 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
-### Recent Work: Sound System Architecture Plan (2026-07-31)
+### Recent Work: Unified Sound Implementation Plan (2026-07-31)
+
+**Consolidated 3 draft sections into unified 4-wave implementation plan:**
+- Merged Bart engine architecture, CBG game design (30KB), and Gil web pipeline (20KB) into `plans/sound/sound-implementation-plan.md` (333 lines)
+- Deleted consolidated drafts: `sound-design-notes.md`, `sound-web-pipeline-notes.md`
+- 4 waves: WAVE-0 (sound manager + platform abstraction), WAVE-1 (object metadata + asset sourcing), WAVE-2 (engine event hooks), WAVE-3 (build pipeline + polish + docs)
+- 18 design decisions consolidated (D-SOUND-1 through D-SOUND-18)
+- File ownership table spanning 10 team members across all waves
+- Risk register, architectural constraints, dependency graph
+- Followed implementation-plan skill format: status tracker, executive summary, quick reference table, per-wave details with gate criteria
+
+### Prior Work: Sound System Architecture Plan (2026-07-31)
 
 **Sound Implementation Plan — Engine Architecture Section:**
 - Wrote `plans/sound-implementation-plan.md` Section 1: Engine Architecture (10 subsections)
@@ -1063,3 +1074,36 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 6. **Performance baseline:** 176 test files, 1 pre-existing failure (injuries/test-injuries-comprehensive.lua). Zero regressions from module splits.
 
 **Key architectural pattern:** When extracting code that depends on local helper functions, pass helpers as a table parameter rather than duplicating them in the new module. Keeps the dependency graph clean and testable.
+
+### Phase 2 WAVE-3: NPC-vs-NPC Combat + Creature Morale (2026-08)
+
+**Status:** ✅ COMPLETE
+
+**What was done:**
+
+1. **Track 3A — NPC Combat Resolution (combat/init.lua +26 lines):**
+   - `active_fights` tracking: `start_fight()`, `end_fight()`, `join_fight()`, `remove_combatant()`, `find_fight_for_combatant()`
+   - `sort_combatants()`: speed desc → size asc → player last among equals
+   - `resolve_round()`: iterates ordered combatants, each attacks once, removes dead
+   - `select_npc_target(attacker, combatants)`: prey list priority, aggression>20 fallback (smallest target)
+   - `select_target(context, attacker)`: context-aware wrapper using `get_creatures_in_room`
+   - `cornered_bonus` in `resolve_damage()` multiplies base_force × 1.5
+
+2. **Track 3B — Creature Morale (creatures/morale.lua, creatures/init.lua):**
+   - `check_morale(creature)`: simple threshold check (health/max_health < flee_threshold), no context needed
+   - `attempt_flee(context, creature)`: delegates to `morale.check()` with helpers table
+   - Reads `combat.behavior.flee_threshold` (decimal ratio 0.0-1.0), fallback to `behavior.flee_threshold`
+   - Cornered fallback: `_cornered=true`, `alive-cornered` state, attack×1.5 via opts
+   - Morale check wired into attack action: checks both defender and attacker post-combat
+
+3. **Module extractions (LOC budget compliance):**
+   - Extracted `creatures/navigation.lua` (100 LOC): exit resolution, BFS distance, passability checking
+   - `creatures/morale.lua` expanded (85 LOC): full flee/cornered logic with helpers table pattern
+   - `creatures/init.lua` at 496 LOC (under 500 limit)
+
+4. **npc-behavior.lua updates:**
+   - `cornered` attack_pattern → aggressive stance
+   - Cornered creatures block `flee` defense → `counter` instead
+   - `select_stance()` returns `aggressive` when `_cornered` flag set
+
+**Test results:** 186 test files pass. 25/25 NPC combat tests green. Zero regressions.
