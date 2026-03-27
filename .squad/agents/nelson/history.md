@@ -659,3 +659,26 @@ Created TDD validation tests for 4 new creatures (cat, wolf, spider, bat):
 - All universal checks pass: dofile loading, required fields, sensory (on_feel mandatory), FSM states/transitions, body_tree with tissue layers, combat natural_weapons, behavior, drives, health > 0, animate=true, portable=false
 
 **Commit:** `3faf994`
+
+### WAVE-2 TDD: Creature Combat + Predator-Prey Tests (2026-07-30)
+
+**Status:** ✅ COMPLETE — 40 TDD tests written across 2 files
+
+**Files created:**
+- `test/creatures/test-creature-combat.lua` — 20 tests
+- `test/creatures/test-predator-prey.lua` — 20 tests
+
+**Results (TDD Red Phase):**
+- 14 PASS (data validation + existing engine APIs like `get_creatures_in_room`, `run_combat`)
+- 26 FAIL (expected — waiting for Bart's WAVE-2 engine exports: `score_actions`, `execute_action`, `has_prey_in_room`, `select_prey_target`)
+- 0 crashes — all unimplemented function calls fail gracefully with clear messages
+
+**Key findings during test authoring:**
+- `score_actions` and `execute_action` are local functions in `creatures/init.lua` — not yet exported. Bart must expose them (or a `_test` accessor) for WAVE-2
+- `has_prey_in_room` and `select_prey_target` don't exist yet — `predator-prey.lua` is a stub with only `detect_prey`, `evaluate_source_filter`, `predator_reaction`
+- `combat.run_combat` works for NPC-vs-NPC right now — cat vs rat resolves, health decrements, death state applies correctly
+- Mock context needs `game_start_time`, `headless`, and `player.hands` for `presentation.get_light_level` to not crash
+- Pre-existing failure: `injuries/test-injuries-comprehensive.lua` — not caused by WAVE-2 changes
+- Wolf `dead.portable = false` (too heavy) — territorial boost tests will need deterministic randomseed to compare scores
+
+**Commit:** `b9f53c4`

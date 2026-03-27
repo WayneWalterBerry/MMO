@@ -888,3 +888,83 @@ Research validated Bart's mutation analysis findings and informed the D-MUTATE-P
 4. Team decides Phase 2 go/no-go based on Phase 1 results
 
 **Deliverable Location:** `plans/parser-improvement-plan.md` (42KB, ready for implementation)
+
+---
+
+## Sound Effects Research (2026-03-27)
+
+**Status:** ✅ COMPLETE  
+**Report:** `resources/research/sound/sound-effects-research.md` (21 KB, 10 sections)  
+**Requested by:** Wayne Berry (Effe)
+
+**Key Findings:**
+
+1. **Platform Feasibility: Both YES**
+   - **Terminal/CLI:** Sound via `os.execute()` + WAV playback (platform-dependent but optional)
+   - **Web/Fengari:** Sound via Web Audio API + HTML5 `<audio>` (universal support across modern browsers)
+   - **Strategy:** Sound-optional architecture (game works without audio, but uses it when available)
+
+2. **Free Sound Sources (Vetted)**
+   - **Primary:** Zapsplat (100k+ CC0 SFX, high-quality, curated)
+   - **Secondary:** BBC Sound Library (16k broadcast-grade SFX, CC-BY-NC)
+   - **Tertiary:** OpenGameArt (1k game-ready SFX, CC0/CC-BY)
+   - **Note:** Prioritize CC0 + CC-BY sources for commercial use safety
+
+3. **Sound Candidates (63 objects + 5 creatures)**
+   - All 5 creatures have `on_listen` fields + rich FSM states → excellent audio hooks
+   - 63 objects with `on_listen` text
+   - **High-priority targets:** Candle (crackling), Doors (creaking), Containers (opening), Traps (springing), Mirrors (shattering)
+   - **Ambient candidates:** Fire, water, wind, stone creaks
+
+4. **Minimum Viable Sound Set (MVP):** 12–15 unique effects
+   - Creature vocalizations: 4 (rat, cat, wolf, bat)
+   - Door/lock: 3 (creak, click, clang)
+   - Object impacts: 3 (glass, chain, metal)
+   - Ambiance: 2 (fire crackle loop, water drip loop)
+   - UI (optional): 1
+   - **Estimated effort:** 2–3 hours sourcing + 4–6 hours integration
+
+5. **Architecture Integration (Clean)**
+   - Hook into existing FSM state transitions (when state changes → play sound)
+   - Extend object definitions with optional `sounds` field
+   - No engine refactoring needed; backward-compatible
+   - Event-driven primary; ambient secondary
+
+6. **File Size & Performance (Minimal Impact)**
+   - **Format:** OGG Vorbis recommended (128 kbps; ~50% smaller than WAV)
+   - **18-sound bundle:** ~400 KB uncompressed; ~100 KB gzipped (negligible vs 3 MB baseline)
+   - **Terminal:** `os.execute()` is blocking; keep sounds <3 sec
+   - **Web:** Web Audio API is non-blocking; no performance penalty
+
+7. **Accessibility (Sound = Enhancement, Not Required)**
+   - Game always works without audio (text descriptions complete)
+   - Mute toggle + volume control in settings
+   - Optional visual indicators: `[sounds like: door creaking]` for deaf players
+   - Design principle: Sound is immersion layer, not gameplay mechanic
+
+8. **Comparison: How Other Text Adventures Handle Sound**
+   - **Zork:** None (1980s text-only)
+   - **Anchorhead:** Ambient music + localized SFX (atmospheric)
+   - **Sunless Sea:** Full audio design (signature experience)
+   - **Lesson:** Sound rarely used in classic IF; increasingly common in modern web games
+
+9. **Implementation Phases**
+   - **Phase 1 (MVP):** 12–15 core sounds; creature FSM + key objects; terminal + web
+   - **Phase 2 (Polish):** 30–40 sounds; spatial audio; volume ducking; user settings
+   - **Phase 3 (Future):** Music; procedural synthesis; effects/reverb
+
+10. **Recommendations**
+    - **Start with web** (easier, higher impact)
+    - **Source from Zapsplat** (high-quality, curated, game-ready)
+    - **Event-driven primary** (hook FSM transitions)
+    - **Keep optional** (sound-optional architecture)
+    - **File organization:** `resources/audio/` (creatures/, objects/, ambience/)
+
+## Learnings
+
+- **Platform diversity:** Terminal + web + browser require different strategies, but all are viable
+- **Free resources abundance:** Professional-grade SFX readily available under CC0/CC-BY
+- **FSM as audio hook:** Objects already declare state changes; perfect integration point
+- **Size-conscious design:** OGG codec keeps bundle impact minimal (<1% of total)
+- **Accessibility precedent:** Web Audio API + fallback text descriptions align with WCAG standards
+- **Text adventure tradition:** Pure text is primary; sound is enhancement (lowers risk profile)
