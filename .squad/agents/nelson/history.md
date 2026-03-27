@@ -69,6 +69,33 @@
 
 ## Recent Updates
 
+### WAVE-4 Track 4E: Disease System TDD Tests (2026-07-30)
+
+**Status:** ✅ COMPLETE — 118 pass, 0 fail, 8 skip (awaiting Bart 4C/4D)
+
+**Files created:**
+- `test/injuries/test-disease-delivery.lua` — 26 pass, 1 skip
+- `test/injuries/test-rabies.lua` — 45 pass, 4 skip
+- `test/injuries/test-spider-venom.lua` — 47 pass, 3 skip
+
+**Coverage:**
+- Disease delivery: probability gating (0/0.08/1.0), severity thresholds (DEFLECT/GRAZE block, HIT/SEVERE/CRITICAL deliver), NPC-vs-NPC, graceful nil on_hit, correct target (defender not attacker), concurrent diseases tick independently
+- Rabies FSM: definition validation, hidden_until_state, tick transitions at 15/25/33, furious restricts drink, fatal kills, early cure (incubating/prodromal), late cure fails (furious), compute_health, rabies+wound coexistence
+- Spider venom FSM: immediate symptoms (no hidden state), transitions at 3/8, movement/attack/precise restrictions, cure windows, out-of-window cure fails (paralysis), venom+rabies independence, curing one doesn't affect other
+
+**Skipped tests (8):** Await Bart's Track 4C/4D implementation:
+- Disease FSM duration-based state transitions in injuries.tick() (3 skips rabies, 2 skips venom)
+- injuries.get_restrictions() (1 skip rabies, 1 skip venom)
+- combat.update on_hit disease delivery integration (1 skip)
+
+**Observations:**
+- Real rabies.lua and spider-venom.lua already exist on disk (Flanders 4A/4B complete)
+- Both definitions use `timed_events` with delay-in-seconds pattern (consistent with bleeding.lua)
+- Tests adapted to check both `duration` and `timed_events` patterns
+- healing_interactions on real definitions match spec exactly
+- Full test suite: 189/189 files pass, zero regressions
+
+
 ### WAVE-0 Parallel: Lint Fixes #249, #250 + Portal TDD #203, #204 (2026-07-26)
 
 **Status:** ✅ COMPLETE — All fixes applied, 178/178 test files pass
