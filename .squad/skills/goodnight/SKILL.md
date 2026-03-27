@@ -31,7 +31,7 @@ Spawn Brockman (background) to write the **Evening Edition** newspaper. Include:
 - Key decisions made
 - What's queued for tomorrow
 - The comic strip and op-ed (per standing directive)
-- Save to `docs/newspapers/` with today's date
+- Save to `newspaper/` with today's date
 
 ### Step 2 — Commit and Push
 
