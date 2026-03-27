@@ -702,3 +702,43 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 - Pre-assigned GUIDs prevent collision during parallel creature creation
 
 **Commit:** c770b74 (all tests pass; pre-existing BUG-149/151/152/156 failures unchanged)
+
+---
+
+## WAVE-4 Tracks 4A + 4B: Disease Injury Definitions
+
+### Latest Work (2026-07-28)
+
+### WAVE-4 4A: Rabies Injury Definition — BUILT ✅
+
+**Task:** Create `src/meta/injuries/rabies.lua` — first disease-type injury for NPC combat Phase 2.
+
+**What was built:**
+- `category = "disease"`, `hidden_until_state = "prodromal"` (silent incubation — engine support in 4D)
+- 5-state FSM: `incubating` (15 ticks, 0 dmg) → `prodromal` (10 ticks, 1 dmg/tick, restricts precise_actions) → `furious` (8 ticks, 3 dmg/tick, restricts drink + precise_actions) → `fatal` (terminal, death_message) + `healed` (terminal, cure success)
+- `curable_in = {"incubating", "prodromal"}` — once furious, no cure exists
+- `transmission = { probability = 0.08, via = "bite" }` — low transmission rate per bite
+- `healing_interactions`: healing-poultice works from incubating/prodromal states
+- New disease-specific fields: `hidden_until_state`, `curable_in`, `transmission` (not in existing injury templates — engine must implement in 4D)
+
+### WAVE-4 4B: Spider Venom Injury Definition — BUILT ✅
+
+**Task:** Create `src/meta/injuries/spider-venom.lua` — second disease-type injury for NPC combat Phase 2.
+
+**What was built:**
+- `category = "disease"`, no hidden state (immediate symptoms)
+- 4-state FSM: `injected` (3 ticks, 2 dmg/tick) → `spreading` (5 ticks, 3 dmg/tick, restricts movement) → `paralysis` (8 ticks, 1 dmg/tick, restricts movement + attack + precise_actions) → `healed` (terminal, auto-recovery)
+- `curable_in = {"injected", "spreading"}` — once paralysis sets in, must ride it out (but survives)
+- `transmission = { probability = 1.0, via = "bite" }` — guaranteed delivery per bite
+- `healing_interactions`: antivenom + healing-poultice from injected/spreading states
+- Key design difference from rabies: spider venom is NOT fatal — paralysis auto-resolves after 8 ticks
+
+### Design Decisions
+- Both files introduce 3 new fields not present in existing injuries: `hidden_until_state`, `curable_in`, `transmission` — these require engine support from Bart (Track 4D)
+- Rabies uses `initial_state = "incubating"` (not "active") to match disease semantics
+- Spider venom auto-heals from paralysis — design choice: venom metabolizes naturally, unlike rabies which is always fatal without cure
+- Healing items: rabies uses healing-poultice (per test plan expectations), spider venom accepts both antivenom and healing-poultice
+
+**TDD:** All 186 existing test files pass, zero regressions.
+
+**Commit:** 3746b17
