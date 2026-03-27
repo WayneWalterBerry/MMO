@@ -17,7 +17,7 @@
 | Wave | Name | Status | Gate | Tests |
 |------|------|--------|------|-------|
 | WAVE-0 | Pre-Flight (Audit + Module Splits + Architecture Docs) | ✅ PASSED | GATE-0 | 191 |
-| WAVE-1 | Death Consequences (In-Place Reshape) | ⏳ Not Started | GATE-1 | — |
+| WAVE-1 | Death Consequences (In-Place Reshape) | ✅ PASSED | GATE-1 | 194 |
 | WAVE-2 | Creature Inventory + Loot Drops | ⏳ Not Started | GATE-2 | — |
 | WAVE-3 | Full Food System + Cooking | ⏳ Not Started | GATE-3 | — |
 | WAVE-4 | Combat Polish + Cure System | ⏳ Not Started | GATE-4 | — |
@@ -457,19 +457,19 @@ death_state = {
 
 #### GATE-1 Criteria
 
-- [ ] Kill rat → rat instance reshapes to small-item template, same GUID preserved
-- [ ] Kill cat/wolf/spider/bat → each reshapes correctly per death_state
-- [ ] Reshaped rat is portable, examinable, has full sensory text from death_state
-- [ ] Reshaped wolf is NOT portable (template = furniture)
-- [ ] Reshaped rat spoilage FSM ticks correctly (fresh → bloated → rotten → bones)
-- [ ] Creature metadata cleared after reshape (behavior, drives, reactions, combat = nil)
-- [ ] Instance deregistered from creature tick system
-- [ ] Instance registered as room object
-- [ ] meat.lua material registered
-- [ ] Spider death → silk-bundle byproduct appears on room floor
-- [ ] Creatures WITHOUT death_state still use FSM dead state (backward compat)
-- [ ] All existing tests pass (zero regressions)
-- [ ] **Committed + tagged**
+- [x] Kill rat → rat instance reshapes to small-item template, same GUID preserved
+- [x] Kill cat/wolf/spider/bat → each reshapes correctly per death_state
+- [x] Reshaped rat is portable, examinable, has full sensory text from death_state
+- [x] Reshaped wolf is NOT portable (template = furniture)
+- [x] Reshaped rat spoilage FSM ticks correctly (fresh → bloated → rotten → bones)
+- [x] Creature metadata cleared after reshape (behavior, drives, reactions, combat = nil)
+- [x] Instance deregistered from creature tick system
+- [x] Instance registered as room object
+- [x] meat.lua material registered
+- [x] Spider death → silk-bundle byproduct appears on room floor
+- [x] Creatures WITHOUT death_state still use FSM dead state (backward compat)
+- [x] All existing tests pass (zero regressions)
+- [x] **Committed + tagged**
 
 ---
 
