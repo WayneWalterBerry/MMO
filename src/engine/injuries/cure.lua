@@ -252,6 +252,53 @@ function cure.remove_treatment(player, treatment_obj)
 end
 
 ---------------------------------------------------------------------------
+-- Metadata-driven cure: scan injuries for healing_interactions match
+-- The injury definition declares what cures it (no disease-specific code).
+-- @param player table
+-- @param healing_object table — item being applied (needs .id)
+-- @return boolean success, string|nil message
+---------------------------------------------------------------------------
+function cure.apply_healing_interaction(player, healing_object)
+    if not player.injuries or #player.injuries == 0 then
+        return false, "You don't have any injuries to treat."
+    end
+
+    local obj_id = healing_object and healing_object.id
+    if not obj_id then return false, nil end
+
+    for idx, injury in ipairs(player.injuries) do
+        local def = injuries.load_definition(injury.type)
+        if def and def.healing_interactions then
+            local interaction = def.healing_interactions[obj_id]
+            if interaction then
+                -- Check if injury is in a curable state
+                if interaction.from_states then
+                    local valid = false
+                    for _, s in ipairs(interaction.from_states) do
+                        if s == injury._state then valid = true; break end
+                    end
+                    if not valid then
+                        return false, interaction.reject_message
+                            or "It's too late for that to help."
+                    end
+                end
+                -- Transition to target state
+                injury._state = interaction.transitions_to or "cured"
+                injury.damage_per_tick = 0
+                -- Remove fully cured injuries
+                if injury._state == "cured" or injury._state == "healed" then
+                    table.remove(player.injuries, idx)
+                end
+                return true, interaction.message
+                    or "The treatment takes effect."
+            end
+        end
+    end
+
+    return false, "That doesn't seem to help with any of your injuries."
+end
+
+---------------------------------------------------------------------------
 -- Direct disease healing: check curable_in before allowing cure
 -- @param player table
 -- @param injury_type string

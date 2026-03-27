@@ -356,6 +356,7 @@ injuries.format_injury_options = cure.format_injury_options
 injuries.apply_treatment = cure.apply_treatment
 injuries.remove_treatment = cure.remove_treatment
 injuries.heal = cure.heal
+injuries.apply_healing_interaction = cure.apply_healing_interaction
 injuries.get_restrictions = cure.get_restrictions
 
 return injuries

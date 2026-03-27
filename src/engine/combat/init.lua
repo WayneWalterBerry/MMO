@@ -370,6 +370,21 @@ function M.run_combat(context, attacker, defender)
 
     local result = M.resolve_exchange(attacker, defender, weapon, target_zone, response, { light = light, stance = stance })
 
+    -- WAVE-4: Emit combat sound stimulus for creature reactions
+    if creatures_mod and creatures_mod.emit_stimulus then
+        local room_id = defender.location
+            or (context and context.current_room and context.current_room.id)
+        if room_id then
+            local intensity = 3  -- unarmed
+            if weapon and weapon.id and weapon.id ~= "fist" then intensity = 6 end
+            if result.defender_dead then intensity = 8 end
+            creatures_mod.emit_stimulus(room_id, "loud_noise", {
+                intensity = intensity,
+                source = attacker.id or attacker.guid or "combat",
+            })
+        end
+    end
+
     -- C12: Emit creature_died stimulus and capture death narration
     if result.defender_dead then
         if creatures_mod and creatures_mod.emit_stimulus then

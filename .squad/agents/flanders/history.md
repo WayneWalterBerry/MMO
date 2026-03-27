@@ -868,3 +868,23 @@ Created two food object definitions for the Food PoC system:
 - "wax" is the conventional proxy material for baked goods (bread.lua precedent). "plant" works for raw grain.
 
 **Commit:** 82ef2d5 (material fix), bba0d95 (original object creation)
+
+---
+
+## Phase 3 WAVE-4: Antidote Vial + Healing Interactions
+
+**Date:** 2026-08
+**Requested by:** Wayne Berry
+**Branch:** main
+
+### Work Done
+1. **Created** `src/meta/objects/antidote-vial.lua` — small-item glass vial, cures spider-venom. GUID `{87ec6b50-d0eb-4a1c-ae34-8b200625ccd0}` from Bart's Phase 3 pre-assignment. Keywords: antidote, vial, cure, antidote vial, glass vial. Consumable antidote type.
+2. **Updated** `src/meta/injuries/rabies.lua` — added `success_message` and `fail_message` to existing `healing-poultice` entry in `healing_interactions`.
+3. **Updated** `src/meta/injuries/spider-venom.lua` — added `antidote-vial` entry to `healing_interactions` with `from_states = { "injected", "spreading" }`, success/fail messages. Preserved existing antivenom and healing-poultice entries.
+
+### Design Notes
+- Task spec referenced `transitions_to = "cured"` and `from_states = { "envenomated", "swelling" }` — corrected to match actual FSM state names (`"healed"`, `"injected"`, `"spreading"`). State names must match what's declared in the injury's `states` table.
+- Antidote-vial follows healing-poultice pattern: `is_consumable = true`, `cures = {"spider-venom"}`, template = "small-item".
+- Room placement TBD by Moe (study shelf or cellar cabinet per WAVE-4 plan).
+
+**Commit:** b6d1955

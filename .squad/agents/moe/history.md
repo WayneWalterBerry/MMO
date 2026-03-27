@@ -456,6 +456,23 @@ Built all 5 new room .lua files in `src/meta/world/`:
 
 ---
 
+### Phase 3 WAVE-3: Place Cellar Brazier in Cellar Room
+
+**Date:** 2026-08
+**Task:** Place cellar-brazier as room-level furniture in the cellar room per Phase 3 WAVE-3 plan.
+
+**Changes:**
+- `src/meta/rooms/cellar.lua`: Added `cellar-brazier` instance (GUID `{22b77e90-8407-427a-a272-6b88277ba1fc}`) to `instances` array
+- Updated room `description` to reference "An iron brazier squats against the far wall, its basin blackened with old ash" — grounds the brazier spatially per plan requirement
+- No nesting (`on_top`/`underneath`) — brazier is room-level furniture
+- GUID sourced from `.squad/decisions/inbox/bart-phase3-guids.md`
+
+**Pattern used:** Same instance format as other room-level objects — `{ id = "cellar-brazier", type_id = "{guid}" }`. Brazier is permanent furniture so it's referenced in the room description (unlike creatures which are animate per Principle 0).
+
+**Tests:** All 197 test files passed after change. Committed on `main` as `bba0d95`.
+
+---
+
 ## Archives
 
 - `history-archive-2026-03-20T22-40Z-moe.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): world builder onboarding, room architecture, map design, level 1 expansion

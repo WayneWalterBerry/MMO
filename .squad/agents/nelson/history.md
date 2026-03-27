@@ -846,3 +846,49 @@ Created TDD validation tests for 4 new creatures (cat, wolf, spider, bat):
 **Regression check:** Full suite run — 2 pre-existing failures (`test-creature-combat.lua`, `test-injuries-comprehensive.lua`), both unrelated to WAVE-2. All 3 new test files pass clean.
 
 **Commit:** `887f8fa` — "Phase 3 WAVE-2: inventory + death drop TDD tests (40 tests)"
+
+### Recent Work: WAVE-3 — Food System TDD Tests (2026-07-13)
+
+**Task:** Write TDD tests for food system + cooking per WAVE-3 spec in `plans/npc-combat/npc-combat-implementation-phase3.md`.
+
+**4 test files created, 51 tests total:**
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `test/food/test-cook-verb.lua` | 15 | Cook verb handler, fire_source gating, aliases (roast/bake/grill), non-cookable rejection, creature death_state.crafting.cook metadata for rat/cat/bat/grain |
+| `test/food/test-eat-effects.lua` | 12 | Cooked food heal amounts (+3 rat, +4 cat, +2 bat, +1 flatbread), bat 10% food-poisoning risk, narration effects, item removal from registry, nutrition application, non-food rejection |
+| `test/food/test-cookable-gating.lua` | 8 | Raw meat food.raw/edible/cookable flags, grain on_eat_reject with cooking hint, bloated corpse not cookable, rotten corpse not edible, raw meat on_taste warning |
+| `test/food/test-food-poisoning.lua` | 16 | food-poisoning.lua validation (disease category, over_time damage), FSM progression (onset→nausea→recovery→cleared), damage per tick (0/1/0/terminal), duration (3+12+5=20 ticks), full cycle terminal |
+
+**Key findings during test creation:**
+- `food-poisoning.lua` already exists with category="disease" (not "toxin" as plan originally spec'd)
+- The eat handler already has raw-food-eating logic from prior WAVE, but doesn't distinguish grain (should reject) from raw meat (should allow with consequences) — Smithers WAVE-3 category-based gating needed
+- All creature `death_state.crafting.cook` metadata correctly declares `becomes`, `requires_tool`, `message`, and `fail_message_no_tool`
+- Cook verb handler already registered with roast/bake/grill aliases
+
+**Regression check:** Full suite — **201 test files pass, 0 failures, 0 regressions.**
+
+**Commit:** `7ccd8b6` — "Phase 3 WAVE-3: food system TDD tests (51 tests)"
+
+### Recent Work: WAVE-4 — Kick + Cure + Combat Sound TDD Tests (2026-03-27)
+
+**Task:** Write TDD tests for kick verb routing, cure mechanics, and combat sound propagation per WAVE-4 spec in `plans/npc-combat/npc-combat-implementation-phase3.md`.
+
+**3 test files created, 28 tests total:**
+
+| File | Tests | Coverage |
+|------|-------|---------|
+| `test/verbs/test-kick-combat.lua` | 5 | kick handler registered, aliased to hit (same fn ref), empty-noun error, self-infliction fallback for non-creature nouns, alias parity with punch/bash/hit |
+| `test/injuries/test-cure-mechanics.lua` | 15 | Poultice cures rabies (incubating + prodromal), poultice FAILS on furious rabies, antidote-vial cures spider-venom (injected + spreading), antidote FAILS on paralysis, wrong cure item (mismatched on_use.cures) → no effect, cure on injury without healing_interactions, definition validation (healing_interactions metadata on rabies + spider-venom), success/fail message output, cure.heal() respects curable_in window |
+| `test/combat/test-combat-sound.lua` | 8 | loud_noise stimulus emission from combat, same-room creature receives fear_delta, adjacent-room creature receives stimulus via portal graph, prey fear exceeds flee threshold, predator reaction is investigate (not flee), predator fear_delta is negative (curiosity), 2+ rooms away → no stimulus received, emit_combat_sound() returns adjacent-room player narration text |
+
+**Key findings during test creation:**
+- `kick` already aliased to `hit` in both `verbs/combat.lua` (line 226) and `verbs/init.lua` (line 496) — WAVE-4 Smithers work already done
+- `cure.try_heal()` uses `on_use.cures` as primary gate, then `curable_in` state window, then `healing_interactions` as secondary validation — "wrong item" means item whose `on_use.cures` targets a different injury type
+- `emit_combat_sound()` already implemented in `combat/narration.lua` (line 534) with proximity-based narration
+- Spider-venom `healing_interactions` includes antidote-vial, antivenom, AND healing-poultice — broader than plan spec'd
+- Rabies `healing_interactions` transitions to "healed" (not "cured" — the state is named `healed` in the def)
+
+**Regression check:** Full suite — **1 pre-existing failure** (`test-creature-combat.lua` test 8: creature_died stimulus nil compare, known since WAVE-2). All 3 new test files pass clean. Zero new regressions.
+
+**Commit:** `ad834c6` — "Phase 3 WAVE-4: kick + cure + combat sound TDD tests (28 tests)"
