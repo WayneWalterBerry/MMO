@@ -737,3 +737,50 @@ Created TDD validation tests for 4 new creatures (cat, wolf, spider, bat):
 - Wolf `dead.portable = false` (too heavy) — territorial boost tests will need deterministic randomseed to compare scores
 
 **Commit:** `b9f53c4`
+
+### WAVE-5 TDD: Food System Tests (2026-07-31)
+
+**Status:** ✅ COMPLETE — 25 TDD tests written across 2 files
+
+**Files created:**
+- `test/food/test-eat-drink.lua` — 15 tests
+- `test/food/test-bait.lua` — 10 tests
+
+**Results (TDD Phase):**
+- test-eat-drink.lua: 15/15 PASS (eat/drink handlers already implemented in survival.lua)
+- test-bait.lua: 7/10 PASS, 3 FAIL (expected TDD red — bait mechanic Track 5C not implemented)
+- 0 regressions in full test suite (only pre-existing failures unchanged)
+
+**Test coverage:**
+- Eat cheese/bread consumed + nutrition applied
+- Eat non-food rejected with message
+- Eat without holding rejected ("pick that up first")
+- Eat in dark works (food doesn't need light)
+- Consume removes object from registry
+- on_taste text emitted when eating
+- Eat aliases (consume, devour) registered
+- Spoiled food: warning but still edible
+- Drink handler + aliases (quaff, sip) registered
+- Drink blocked by rabies restriction (furious stage hydrophobia)
+- Nutrition value applied from food.nutrition field
+- Eaten food removed from player hands
+- Drop food + rat in room: rat approaches
+- Rat consumes dropped food (object removed) — PENDING 5C
+- Adjacent room movement toward food — PENDING 5C
+- bait_value priority (higher first)
+- In-combat hunger suppressed
+- Non-matching bait_targets ignored
+- Narration emitted on bait consumption — PENDING 5C
+- Multiple creatures evaluate independently
+- Bat ignores bread (not in bait_targets)
+
+**Key findings during test authoring:**
+- Eat handler already implemented in `survival.lua` with WAVE-5 nutrition support (lines 120-122)
+- Handler applies nutrition directly from `food.nutrition` field — no need for on_eat callback to duplicate
+- Drink handler already checks rabies restrictions via `injuries.get_restrictions()` — blocks with hydrophobia message
+- Eat requires item in inventory (hands/bags) — visible-only items get "pick that up first"
+- Spoiled food detection uses `obj._state == "spoiled"` — prints warning before consuming
+- `on_taste` field emitted automatically during eat (line 115-117), separate from `on_eat_message`
+- Bait mechanic (food consumption by creatures, adjacent room movement, narration) not yet in `creatures/init.lua` — 3 tests correctly fail as TDD red
+
+**Commit:** `076c1b4`
