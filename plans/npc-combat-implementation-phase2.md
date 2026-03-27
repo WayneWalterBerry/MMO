@@ -292,12 +292,17 @@ Template reference: `src/meta/creatures/rat.lua` (167 LOC). All creatures follow
 
 **spider.lua** — Passive, web-builder, venom
 - Size: tiny, weight 0.05, material "chitin"
-- body_tree: cephalothorax (vital), abdomen (vital), legs (grouped)
+- body_tree: cephalothorax (vital), abdomen (vital), legs (grouped as single node — 8 legs treated as one hit zone for simplicity; tissue: chitin shell)
 - States: alive-idle, alive-web-building, alive-flee, dead
 - Behavior: aggression 10, flee_threshold 60, web_builder true
 - Drives: hunger 20 (+1/tick), fear 10, curiosity 10
 - Combat: speed 5, weapons — bite (pierce, tooth-enamel, force 1, on_hit: venom effect 60% chance); natural_armor: chitin coverage cephalothorax/abdomen
 - Health: 3/3
+- **Telegraphing (CBG/Flanders review fix):**
+  - `on_listen` (spider room, dark or lit): *"Faint scratching, like tiny claws on stone."*
+  - `on_feel` (when player touches web strands): *"You brush sticky silk. Something large moves nearby."*
+  - Spider emits `creature_vocalizes` stimulus on player entry: faint hissing sound
+  - Web presence in room provides pre-encounter sensory warning before combat
 
 **bat.lua** — Aerial, light-reactive
 - Size: tiny, weight 0.02, material "flesh"
@@ -320,6 +325,27 @@ Template reference: `src/meta/creatures/rat.lua` (167 LOC). All creatures follow
 | `src/meta/rooms/hallway.lua` | wolf | Territorial — guards passage |
 | `src/meta/rooms/deep-cellar.lua` | spider | Dark, damp habitat |
 | `src/meta/rooms/crypt.lua` | bat | Dark, ceiling for roosting |
+
+### GUID Reservation (Flanders review fix)
+
+Before WAVE-1 kicks off, pre-assign GUIDs for all new objects to avoid collision and enable cross-file references during parallel creation:
+
+| Object | GUID Status | Notes |
+|--------|-------------|-------|
+| `cat.lua` | TBD — generate before WAVE-1 | Flanders generates via `powershell -c "[guid]::NewGuid()"` |
+| `wolf.lua` | TBD — generate before WAVE-1 | |
+| `spider.lua` | TBD — generate before WAVE-1 | |
+| `bat.lua` | TBD — generate before WAVE-1 | |
+| `chitin.lua` | TBD — generate before WAVE-1 | |
+
+**Process:** Flanders generates 5 UUIDs, records them in the creature `.lua` file `guid` fields, and shares with Moe (for room `type_id` references) before parallel work begins. No GUID pool file needed — GUIDs live in the `.lua` source files (Principle 1: code IS the definition).
+
+### Embedding Index Update (Smithers review fix)
+
+**Owner:** Nelson (WAVE-1)
+**Task:** After creature files are created, update `assets/parser/embedding-index.json` with new creature/food noun embeddings so Tier 2 semantic matching resolves "animal", "creature", "food" queries to the correct objects.
+**Scope:** Add entries for: cat, wolf, spider, bat, cheese, bread, spider-web.
+**Gate check:** GATE-1 verifies new keywords appear in embedding index. If deferred, document impact on Tier 2 matching.
 
 ### TDD (~80 tests across 4 files)
 
@@ -491,6 +517,14 @@ WAVE-0 ──► GATE-0 ──► WAVE-1 ──► GATE-1 ──► WAVE-2 ─�
 - **Adjacent room:** distant audio, 1 line max.
 - **Out of range:** nothing emitted.
 - Cap per R-9: 2 lines/exchange (same room), 1 line (adjacent), ≤6 lines/round.
+- **Narration budget protocol (CBG blocker fix):**
+  - Smithers implements `narration_budget` counter per combat round (init 0, cap 6).
+  - Each `narration.emit()` call increments counter.
+  - When budget reached: suppress non-critical narration (GRAZE/DEFLECT) but always keep critical (HIT/CRITICAL/DEATH).
+  - Overflow narration deferred to next round with marker: *"[The melee continues...]"*
+  - Player's own combat action narration is **exempt** from the cap (always shown).
+  - Morale break narration counts toward cap (1 line each).
+  - GATE-3 acceptance criteria: "3-creature fight produces ≤6 NPC narration lines/round."
 
 ### 3D — Tests (Nelson)
 
