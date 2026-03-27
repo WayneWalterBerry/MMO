@@ -368,6 +368,30 @@ Search results dumped in a block. Player should see items appear one-by-one with
 **Fix:** (1) Removed `is_container` guard from `find_deeper_match()`. (2) Added `matches_exact()` helper for strict matching (id/name/keyword only, no substring). (3) Three-pass deeper match: exact in contents → exact in parts → any in contents. When parent substring-matches target but child exact-matches, child wins.
 
 ### Tests: 24 new regression tests
+
+---
+
+### 2026-07-30: WAVE-5 Track 5B — Eat/Drink Verb Extensions
+
+**What shipped:** Extended eat/drink verb handlers in `src/engine/verbs/survival.lua` for food system PoC. All 191 test files pass, zero regressions.
+
+**Eat handler changes:**
+- Check `food.edible` (WAVE-5 food table) with fallback to legacy `obj.edible` for backward compatibility
+- Injury restriction check via `injuries.get_restrictions(player)` — `restricts.eat` blocks eating
+- Spoiled food warning: `_state == "spoiled"` prints warning but still allows consumption
+- `on_taste` sensory text emitted on successful eat
+- `food.nutrition` applied to `player.nutrition` accumulator
+- WAVE-5 food objects (with `food` table) require holding; legacy `edible` objects grandfathered to preserve on_eat hook tests (#102)
+
+**Drink handler changes:**
+- Rabies hydrophobia check: `restricts.drink` blocks drinking with thematic message, checked before object resolution
+- Added food-as-drink path for objects with `food.drinkable` (future extensibility)
+- Hoisted `injury_mod` pcall to module scope (shared with eat handler, avoids redundant require in FSM path)
+
+**Backward compatibility decision:** The old eat handler searched inventory then visible. The WAVE-5 spec says "object must be in player's hands." Resolved by requiring holding only for new `food` table objects while grandfathering legacy `edible` objects. This preserves all existing on_eat hook tests (test-engine-hooks-102.lua) while new food tests (test-eat-drink.lua) enforce holding.
+
+**Files changed:** `src/engine/verbs/survival.lua` (+81/-21 lines)
+**Tests:** All 191 test files pass (15/15 eat-drink tests, 20/20 hook tests)
 `test/search/test-search-bugs-068-074.lua`:
 - 9 tests for #68 (category synonyms, keyword match, full search integration)
 - 11 tests for #74 (matches_exact, find_deeper_match, composite parts, full search integration)
