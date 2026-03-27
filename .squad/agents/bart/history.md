@@ -29,7 +29,35 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
-### Recent Work: Unified Sound Implementation Plan (2026-07-31)
+### Recent Work: Phase 3 NPC+Combat Implementation Plan (2026-08-16)
+
+**Wrote `plans/npc-combat/npc-combat-implementation-phase3.md` — 6-wave plan:**
+- Comprehensive gap analysis: read all 3 design plans (combat, NPC, creature-inventory) + food system plan + Phase 2 implementation plan
+- Engine audit: discovered combat/init.lua at 695 LOC (39% over 500 limit), crafting.lua at 629 LOC, survival.lua at 715 LOC
+- Confirmed: no dead creature objects, no creature inventory, no cook verb, no food-poisoning/stress injuries, no mutations.die on creatures, kick not wired
+- 6 waves: WAVE-0 (combat module split), WAVE-1 (death→corpse mutation), WAVE-2 (creature inventory + loot), WAVE-3 (full food system + cook verb), WAVE-4 (combat polish + cure system), WAVE-5 (respawning + docs)
+- ~190 estimated new tests across ~20 test files
+- ~15 new files (objects, materials, injuries), ~15 modified files
+- 6 Open Questions for Wayne: corpse container vs scatter, respawn model, fire source location, wolf portability, stress scope, loot tables timing
+- Key architecture decisions: mutations.die is opt-in (backward compatible), dead creatures become objects via D-14 mutation, inventory uses direct GUID references (no loot tables in Phase 3)
+- Filed decisions: D-PHASE3-PLAN, D-COMBAT-MODULE-SPLIT
+
+### Recent Work: Phase 3 Plan v1.1 — Review Blocker Fixes (2026-08-16)
+
+**Fixed 9 blockers from 6 reviewers (CBG, Chalmers, Flanders, Marge, Moe, Smithers):**
+- **WAVE-0 expanded:** Now splits ALL 4 over-limit modules (combat 695, survival 715, crafting 629, injuries 556) — not just combat. Added consumption.lua, rest.lua, cooking.lua, cure.lua as extracted targets.
+- **`mutations.die` standardized:** Settled naming conflict with D-FOOD-ARCHITECTURE's `mutations.kill`. Plan uses `mutations.die` exclusively — matches `mutations.break`/`mutations.cook` convention.
+- **Dead-cat/dead-bat cook targets added:** `cooked-cat-meat.lua` (nutrition=20, heal=4) and `cooked-bat-meat.lua` (nutrition=10, heal=2, 10% disease risk). Complete mutation chain for all cookable creatures.
+- **Cross-wave compat tests:** Added 5 test files (wave0-1 through wave4-5), ~50 tests. Total estimate raised to ~240.
+- **Combat sound → Bart:** Reassigned from Smithers per routing.md ownership.
+- **Rat home_room → "cellar":** Fixed from ambiguous "start-room (cellar)".
+- **Spawn position documented:** "Creatures spawn as room-level objects, no spatial nesting."
+- **Food economy balance:** Added positive-sum requirement with per-creature HP math.
+- **Embedding index → Smithers:** Assigned ownership per wave in Appendix B (~100 phrases).
+- **Additional:** Spider silk as death byproduct (not inventory), raw meat edible-with-consequences, dead-spider portability contradiction fixed, parallelization note added, dual cooking metadata removed, food preservation deferred to Phase 4.
+- Plan bumped to v1.1, filed D-PHASE3-REVIEW-FIXES.
+
+### Prior Work: Unified Sound Implementation Plan (2026-07-31)
 
 **Consolidated 3 draft sections into unified 4-wave implementation plan:**
 - Merged Bart engine architecture, CBG game design (30KB), and Gil web pipeline (20KB) into `plans/sound/sound-implementation-plan.md` (333 lines)

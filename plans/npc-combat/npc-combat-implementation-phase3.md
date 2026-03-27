@@ -1,0 +1,998 @@
+# NPC + Combat Phase 3 Implementation Plan
+
+**Author:** Bart (Architecture Lead)
+**Date:** 2026-08-16
+**Version:** v1.1 (post-review — 9 blockers resolved)
+**Status:** 📋 DRAFT — Awaiting Wayne approval
+**Requested By:** Wayne "Effe" Berry
+**Governs:** Phase 3: Death Consequences → Creature Inventory → Full Food System → Combat Polish → Cure System → Respawning
+**Predecessor:** `plans/npc-combat/npc-combat-implementation-phase2.md` (Phase 2 — ✅ COMPLETE, 191 tests)
+
+---
+
+## Wave Status Tracker
+
+| Wave | Name | Status | Gate | Tests |
+|------|------|--------|------|-------|
+| WAVE-0 | Pre-Flight (Audit + Module Splits) | ⏳ Not Started | GATE-0 | — |
+| WAVE-1 | Death Consequences (Corpse Mutation) | ⏳ Not Started | GATE-1 | — |
+| WAVE-2 | Creature Inventory + Loot Drops | ⏳ Not Started | GATE-2 | — |
+| WAVE-3 | Full Food System + Cooking | ⏳ Not Started | GATE-3 | — |
+| WAVE-4 | Combat Polish + Cure System | ⏳ Not Started | GATE-4 | — |
+| WAVE-5 | Respawning + Documentation + Polish | ⏳ Not Started | GATE-5 | — |
+
+---
+
+## Section 1: Executive Summary
+
+Phase 3 completes the **creature lifecycle loop** and the **kill→loot→cook→eat gameplay arc** that Phase 2's creature ecosystem made possible. Phase 2 shipped 5 creatures with behavior, NPC-vs-NPC combat, disease, and a food PoC (cheese + bread). Phase 3 closes the gaps: when a creature dies, it becomes a lootable corpse; corpses can be cooked into food; creatures carry items that scatter on death; the player gets combat polish verbs; disease becomes curable; and creatures respawn to prevent extinction.
+
+### What We're Building
+
+1. **Death consequences** — creature death triggers D-14 mutation: `rat.lua` → `dead-rat.lua`. Corpse is a portable, examinable, cookable object. Five dead creature objects (one per Phase 2 creature).
+2. **Creature inventory** — creatures can declare carried/worn items via `inventory` metadata. Death instantiates items to room floor. Meta-lint validates inventory constraints.
+3. **Full food system** — `cook` verb handler, cookable check in `eat`, food effects pipeline, food-poisoning injury type, creature→food mutation chain (dead rat → cook → cooked meat), spoilage FSM.
+4. **Combat polish** — wire `kick` verb to combat, stress injury type, combat sound propagation (attracts nearby creatures), weapon combat metadata on existing weapon objects.
+5. **Cure system** — healing-poultice cures rabies (early stages), antidote cures spider-venom, cure mechanics in injury system.
+6. **Creature respawning** — population management engine, respawn timers on creature metadata, extinction prevention.
+
+### Why This Order
+
+Strict dependency chain: creatures must produce corpse objects on death (WAVE-1) before corpses can carry inventory (WAVE-2), carry inventory before the full cook-from-corpse loop works (WAVE-3), food and combat polish are parallel concerns (WAVE-4), and respawning + docs wrap the phase (WAVE-5). WAVE-0 addresses critical module size violations — combat/init.lua (695 LOC), survival.lua (715 LOC), crafting.lua (629 LOC), and injuries.lua (556 LOC, projected 596 after Phase 3) all breach or will breach the 500 LOC limit.
+
+**Mutation key name:** This plan standardizes on **`mutations.die`** (not `mutations.kill` as used in the earlier D-FOOD-ARCHITECTURE decision). `mutations.die` reads as "what happens when this thing dies" and is consistent with the existing `mutations.break`, `mutations.cook` naming convention (verb describing the event). The engine will check `obj.mutations.die` exclusively. D-FOOD-ARCHITECTURE references to `mutations.kill` are superseded by this plan.
+
+### Phase 2 Foundation (Already Built)
+
+| Asset | Location | LOC |
+|-------|----------|-----|
+| Creature engine | `src/engine/creatures/init.lua` | 466 |
+| Creature stimulus | `src/engine/creatures/stimulus.lua` | 91 |
+| Creature predator-prey | `src/engine/creatures/predator-prey.lua` | 65 |
+| Creature morale | `src/engine/creatures/morale.lua` | 75 |
+| Creature navigation | `src/engine/creatures/navigation.lua` | 96 |
+| Combat engine | `src/engine/combat/init.lua` | 695 |
+| Combat narration | `src/engine/combat/narration.lua` | 457 |
+| NPC combat behavior | `src/engine/combat/npc-behavior.lua` | 79 |
+| Verbs: combat | `src/engine/verbs/combat.lua` | 321 |
+| Verbs: crafting | `src/engine/verbs/crafting.lua` | 629 |
+| Verbs: survival | `src/engine/verbs/survival.lua` | 715 |
+| 5 creatures | `src/meta/creatures/{rat,cat,wolf,spider,bat}.lua` | — |
+| 9 injury types | `src/meta/injuries/` | — |
+| 2 food objects | `src/meta/objects/{cheese,bread}.lua` | — |
+| Player body_tree | `src/main.lua` (lines 354-361) | — |
+| 194 test files | `test/` | — |
+
+### Walk-Away Capability
+
+Same protocol as Phase 1/2: wave → parallel agents → gate → pass → checkpoint → next wave. Gate failure at 1× threshold. Commit/push after every gate. Nelson continuous LLM walkthroughs.
+
+---
+
+## Section 2: Quick Reference Table
+
+| Wave | Name | Parallel Tracks | Gate | Key Deliverables |
+|------|------|-----------------|------|------------------|
+| **WAVE-0** | Pre-Flight (Audit + Module Splits) | 4 tracks | GATE-0 | Combat split (695→~445+~250), survival split (715→~365+~200+~150), crafting split (629→~430+~200), injuries split (556→~356+~200), creatures/init growth guard, GUID pre-assignment, test verification |
+| **WAVE-1** | Death Consequences (Corpse Mutation) | 3-4 tracks | GATE-1 | mutations.die wiring, 5 dead creature objects, creature→object mutation on death |
+| **WAVE-2** | Creature Inventory + Loot Drops | 3-4 tracks | GATE-2 | Inventory metadata on creatures, death→room instantiation, meta-lint validation |
+| **WAVE-3** | Full Food System + Cooking | 4-5 tracks | GATE-3 | `cook` verb, cookable eat check, food effects, food-poisoning injury, cooked-rat-meat, spoilage FSM, meat material |
+| **WAVE-4** | Combat Polish + Cure System | 3-4 tracks | GATE-4 | `kick` verb, stress injury, cure mechanics, antidote objects, combat sound propagation |
+| **WAVE-5** | Respawning + Docs + Polish | 3-4 tracks | GATE-5 | Respawn engine, respawn metadata, Phase 3 docs, final LLM walkthrough |
+
+**Estimated new files:** ~30-35 (code + tests) + 4-6 doc files
+**Estimated modified files:** ~20-25 (engine modules, verbs, creature files, test runner, embedding index, synonym table)
+**Estimated scope:** 6 waves (WAVE-0 through WAVE-5), 6 gates (GATE-0 through GATE-5)
+
+---
+
+## Section 3: Dependency Graph
+
+```
+WAVE-0: Pre-Flight (Audit + Module Splits)
+├── [Bart]     Combat module split: init.lua (695 LOC) → init.lua + resolution.lua
+├── [Bart]     Survival module split: survival.lua (715 LOC) → survival.lua + consumption.lua + rest.lua
+├── [Bart]     Crafting module split: crafting.lua (629 LOC) → crafting.lua + cooking.lua
+├── [Bart]     Injuries module split: injuries.lua (556 LOC) → injuries.lua + cure.lua
+├── [Bart]     GUID pre-assignment for all new objects (~15 GUIDs)
+└── [Nelson]   Verify 194 test files pass post-splits, register new test dirs
+        │
+        ▼  ── GATE-0 (all module splits verified, all 194 tests pass) ──
+        │
+WAVE-1: Death Consequences (Corpse Mutation)
+├── [Bart]     Wire mutations.die in creature death path  ┐
+├── [Flanders] 5 dead creature objects (dead-rat, etc.)   │ parallel
+├── [Flanders] meat.lua material                          │
+└── [Nelson]   creature death → corpse tests              ┘
+        │
+        ▼  ── GATE-1 (kill creature → corpse appears, portable, correct sensory) ──
+        │
+WAVE-2: Creature Inventory + Loot Drops
+├── [Bart]     Inventory metadata → room instantiation    ┐
+├── [Flanders] Inventory metadata on wolf + spider        │ parallel
+├── [Flanders] Equipment objects for creature inventory   │
+├── [Nelson]   Inventory + death drop tests               │
+└── [Nelson]   Meta-lint: creature inventory validation   ┘
+        │
+        ▼  ── GATE-2 (creature dies → items scatter to room, meta-lint passes) ──
+        │
+WAVE-3: Full Food System + Cooking
+├── [Smithers] `cook` verb handler + aliases              ┐
+├── [Smithers] Cookable check + food effects in eat verb  │
+├── [Flanders] cooked-rat-meat.lua, food-poisoning.lua    │ parallel
+├── [Flanders] grain-handful.lua, flatbread.lua           │
+├── [Nelson]   Cook + eat + spoilage tests                │
+└── [Nelson]   LLM walkthrough: kill→cook→eat loop        ┘
+        │
+        ▼  ── GATE-3 (cook dead rat → cooked meat → eat → effects, spoilage ticks) ──
+        │
+        │  ═══ FOOD SYSTEM SHIPS (Brockman docs parallel in WAVE-5) ═══
+        │
+WAVE-4: Combat Polish + Cure System
+├── [Bart]     Cure mechanics in injury system            ┐
+├── [Bart]     Combat sound propagation (engine/***)      │ parallel
+├── [Smithers] `kick` verb → combat                       │
+├── [Flanders] stress.lua injury, antidote.lua object     │
+├── [Flanders] healing-poultice cure metadata update      │
+└── [Nelson]   Kick + stress + cure + sound tests         ┘
+        │
+        ▼  ── GATE-4 (kick resolves, stress inflicts, poultice cures rabies, sounds attract) ──
+        │
+WAVE-5: Respawning + Docs + Polish
+├── [Bart]     Respawn engine (population manager)        ┐
+├── [Flanders] Respawn metadata on creature definitions   │ parallel
+├── [Smithers] Weapon combat metadata on existing weapons │
+├── [Brockman] Phase 3 architecture + design docs         │
+├── [Nelson]   Respawn tests + final LLM walkthrough      ┘
+        │
+        ▼  ── GATE-5 (respawns work, docs complete, ZERO regressions) ──
+        │
+        ═══ PHASE 3 COMPLETE ═══
+```
+
+### Key Dependency Chain
+
+```
+Phase 2 ──→ W0 (splits) ──→ W1 (death) ──→ W2 (inventory) ──┐
+                                  │                           │
+                                  ├─────→ W3 (food) ←────────┘
+                                  │                    (W3 needs corpse objects from W1;
+                                  │                     W2 inventory data enriches corpse
+                                  │                     containers but is not strictly required)
+                                  ├─────→ W4 (combat+cure)
+                                  │       (needs W0 combat split stable,
+                                  │        independent of food/inventory)
+                                  └─────→ W5 (respawn+docs)
+                                          (needs creature death from W1,
+                                           not food or inventory)
+```
+
+**Parallelization note:** After W1, waves W3/W4/W5 could theoretically run in parallel since they touch different files. The serial chain (W2→W3→W4→W5) is the conservative approach for gate quality — each gate validates the prior wave's output before building on it. If schedule pressure requires, W3+W4 can run in parallel after W2 since they have no file conflicts. W5 (respawn + docs) should remain last as the integration/polish wave.
+
+---
+
+## Section 4: Implementation Waves (Detailed)
+
+### WAVE-0 — Pre-Flight (Audit + Module Splits)
+
+**Goal:** Address ALL module size violations before building on them. Four engine modules currently breach or will breach the 500 LOC limit after Phase 3 additions. Pre-assign GUIDs for all Phase 3 objects.
+
+**Critical Issue:** Multiple engine modules have grown past the 500 LOC guard from implementation-plan skill Pattern 13:
+
+| File | Current LOC | Phase 3 Adds | Projected | % Over 500 | Split Required? |
+|------|------------|-------------|-----------|-------------|-----------------|
+| `combat/init.lua` | 695 | ~15 (sound) | ~710 | **42%** | ✅ YES |
+| `verbs/survival.lua` | 715 | ~30 (eat effects) | ~745 | **49%** | ✅ YES |
+| `verbs/crafting.lua` | 629 | ~50 (cook verb) | ~679 | **36%** | ✅ YES |
+| `engine/injuries.lua` | 556 | ~40 (cure) | ~596 | **19%** | ✅ YES |
+| `creatures/init.lua` | 466 | ~120 (W1+W2+W5) | ~586 | **17%** | ⚠️ GUARD |
+
+All five must be addressed in WAVE-0 — building Phase 3 features on top of modules already in violation is unacceptable.
+
+#### Assignments
+
+| Agent | Task | Details |
+|-------|------|---------|
+| Bart | **Combat module split** | Extract damage resolution logic (~250 LOC) into `src/engine/combat/resolution.lua`. `init.lua` retains combat FSM orchestration, `resolution.lua` gets `resolve_damage()`, `resolve_exchange()`, layer penetration, severity mapping. Post-split: init.lua ~445, resolution.lua ~250. |
+| Bart | **Survival module split** | Extract eat/drink handlers (~200 LOC) into `src/engine/verbs/consumption.lua`. Extract sleep/rest handlers (~150 LOC) into `src/engine/verbs/rest.lua`. `survival.lua` retains shelter, temperature, thirst checks. Post-split: survival.lua ~365, consumption.lua ~200, rest.lua ~150. |
+| Bart | **Crafting module split** | Extract cook-related logic into `src/engine/verbs/cooking.lua` (~200 LOC). `crafting.lua` retains sew, repair, assemble. Post-split: crafting.lua ~430, cooking.lua ~200. WAVE-3 cook additions go to cooking.lua directly, never exceeding 500. |
+| Bart | **Injuries module split** | Extract cure/healing logic (~200 LOC) into `src/engine/injuries/cure.lua`. `injuries.lua` retains infliction, FSM progression. Post-split: injuries.lua ~356, cure.lua ~200. WAVE-4 cure mechanics go to cure.lua. |
+| Bart | **Creatures/init.lua growth guard** | Currently 466 LOC, projected 586 after Phase 3. Not yet over 500, but will be after WAVE-1+2+5 additions (~120 LOC). Add LOC check at GATE-2: if creatures/init.lua exceeds 500 LOC after WAVE-2, extract spawn/inventory logic into `creatures/inventory.lua` before WAVE-3. |
+| Bart | **GUID pre-assignment** | Generate ~15 Windows GUIDs for: 5 dead creatures, cooked-rat-meat, cooked-cat-meat, cooked-bat-meat, grain-handful, flatbread, food-poisoning injury, stress injury, antidote, meat material. Record in decision inbox. |
+| Nelson | **Test suite verification** | Run full suite post-splits, confirm 194 files pass. Register any new test dirs needed. |
+
+#### GATE-0 Criteria
+
+- [ ] `combat/init.lua` ≤ 500 LOC after split
+- [ ] `combat/resolution.lua` exists with clean interface
+- [ ] `verbs/survival.lua` ≤ 400 LOC after split
+- [ ] `verbs/consumption.lua` exists (eat/drink handlers)
+- [ ] `verbs/rest.lua` exists (sleep/rest handlers)
+- [ ] `verbs/crafting.lua` ≤ 450 LOC after split
+- [ ] `verbs/cooking.lua` exists (cook handler target for WAVE-3)
+- [ ] `engine/injuries.lua` ≤ 400 LOC after split
+- [ ] `engine/injuries/cure.lua` exists (cure path for WAVE-4)
+- [ ] All 194 test files pass (zero regressions)
+- [ ] GUIDs pre-assigned and recorded
+- [ ] **Committed + tagged** before WAVE-1
+
+---
+
+### WAVE-1 — Death Consequences (Corpse Mutation)
+
+**Goal:** When a creature's health reaches zero, the engine mutates it into a portable corpse object via D-14. Five dead creature objects created. This is the foundation for inventory drops (WAVE-2) and cooking (WAVE-3).
+
+**Design Source:** `plans/npc-combat/creature-inventory-plan.md` §4, `plans/food-system-plan.md` §5
+
+**Key Architecture Decision:** Creatures currently use FSM `dead` state (e.g., `{ from = "*", to = "dead", verb = "_damage", condition = "health_zero" }`). Phase 3 changes this: instead of staying in `dead` FSM state within the creature, the engine **replaces the creature with a corpse object** via `mutation.mutate()`. This is Principle D-14 in action — the code is rewritten, not flagged.
+
+#### Engine Changes (Bart)
+
+**File:** `src/engine/creatures/init.lua` (~40 LOC addition)
+- In the death handler (where creature health reaches 0), check for `mutations.die` on the creature
+- If present: call `mutation.mutate()` to replace creature with corpse object
+- Transfer location (room) from creature to corpse
+- Emit `creature_died` stimulus (already exists in stimulus.lua)
+- If `mutations.die.transfer_contents` is true, any future inventory transfers to corpse
+
+**Behavior without mutations.die:** Creatures that DON'T declare `mutations.die` keep existing behavior (FSM dead state). This is backward-compatible — no existing behavior changes.
+
+#### Dead Creature Objects (Flanders)
+
+Each dead creature is a new `.lua` file in `src/meta/objects/`:
+
+| File | Template | Edible? | Container? | Key Properties |
+|------|----------|---------|------------|----------------|
+| `dead-rat.lua` | small-item | Yes (cookable) | Yes (small — 1 capacity) | food.category=meat, food.raw=true, food.cook_to=cooked-rat-meat, spoilage FSM |
+| `dead-cat.lua` | small-item | Yes (cookable) | Yes (small — 2 capacity) | food.category=meat, food.raw=true, food.cook_to=cooked-cat-meat, larger than rat |
+| `dead-wolf.lua` | furniture | Yes (cookable, but requires butchery Phase 4) | Yes (medium — 5 capacity) | Too large to carry (portable=false), food.cookable=false (too big) |
+| `dead-spider.lua` | small-item | No (chitin) | No | Not edible — chitin exoskeleton |
+| `dead-bat.lua` | small-item | Yes (cookable) | No | food.category=meat, food.raw=true, food.cook_to=cooked-bat-meat, tiny |
+
+**Sensory requirements:** Every dead creature MUST have `on_feel` (primary dark sense), `on_smell` (blood/death/decay), `on_listen` (silence), full description, room_presence text. Spoilage FSM on edible corpses: fresh → bloated → rotten → bones (see food-system-plan.md §5).
+
+**Material:** `meat.lua` — new material for raw animal flesh (density 1050, ignition 300, hardness 1).
+
+#### Creature File Updates (Flanders)
+
+Add `mutations.die` to all 5 creature files:
+
+```lua
+-- Added to each creature .lua
+mutations = {
+    die = {
+        becomes = "dead-{creature-id}",
+        message = "{creature-specific death narration}",
+        transfer_contents = true,
+    },
+},
+```
+
+#### Tests (Nelson)
+
+| Test File | Coverage | Est. Tests |
+|-----------|----------|------------|
+| `test/creatures/test-creature-death-mutation.lua` | Kill each creature type → corpse appears, creature removed from registry, corpse is correct template | ~15 |
+| `test/creatures/test-corpse-properties.lua` | Dead creatures: portable (small), sensory text, edible where expected, container where expected | ~20 |
+| `test/food/test-corpse-spoilage.lua` | Dead rat spoilage FSM: fresh → bloated → rotten → bones, timer-driven | ~10 |
+
+#### GATE-1 Criteria
+
+- [ ] Kill rat → dead-rat.lua appears in room, rat removed from registry
+- [ ] Kill cat/wolf/spider/bat → each produces correct corpse
+- [ ] Dead rat is portable, examinable, has full sensory text
+- [ ] Dead wolf is NOT portable (too large)
+- [ ] Dead rat spoilage FSM ticks correctly
+- [ ] meat.lua material registered
+- [ ] All existing tests pass (zero regressions)
+- [ ] **Committed + tagged**
+
+---
+
+### WAVE-2 — Creature Inventory + Loot Drops
+
+**Goal:** Creatures can declare items they carry. On death, inventory items instantiate to the room floor.
+
+**Design Source:** `plans/npc-combat/creature-inventory-plan.md` §2, §4, §6
+
+#### Engine Changes (Bart)
+
+**File:** `src/engine/creatures/init.lua` (~60 LOC addition)
+
+1. **Inventory loading:** When creature spawns, validate `inventory` metadata (hands max 2, worn slots valid, carried items resolve to registry)
+2. **Death drop:** When creature dies (mutations.die fires), iterate inventory → instantiate each item as room-floor object. Items become independent registry objects.
+3. **Sensory integration:** Worn equipment appears in creature `description` / `room_presence` text. "A wolf, something glinting at its feet." → when wolf dies, items drop.
+
+**File:** `src/engine/creatures/init.lua` — creature tick must not double-process inventory items as room objects.
+
+#### Inventory Metadata Format
+
+```lua
+-- On a creature .lua file
+inventory = {
+    hands = {},                          -- max 2 items (GUIDs)
+    worn = {},                           -- slot → GUID mapping
+    carried = {},                        -- array of GUIDs (loose items)
+},
+```
+
+Phase 3 uses **direct GUID references** (Option A from creature-inventory-plan.md). Loot tables (Option B) deferred to Phase 4.
+
+#### Creature Updates (Flanders)
+
+| Creature | Inventory Additions | Rationale |
+|----------|-------------------|-----------|
+| wolf | `carried = { "gnawed-bone-01" }` | Wolves carry prey remains |
+| spider | (none — silk is a death byproduct, not inventory) | See WAVE-1 `mutations.die.byproducts` below |
+| rat | (none — rats carry nothing in Phase 3) | Keep simple |
+| cat | (none) | Cats don't carry items |
+| bat | (none) | Bats don't carry items |
+
+**Spider silk as death mutation byproduct (not inventory):** Spiders don't *carry* silk — they *produce* it from spinnerets. Instead of modeling silk as inventory, the spider's `mutations.die` declaration includes a `byproducts` array. When the spider dies, the mutation engine instantiates byproducts to the room floor alongside the corpse: `mutations.die.byproducts = { "silk-bundle" }`. Death narration: "The spider's abdomen splits, spilling a tangle of silk." This is cleaner than carried inventory and doesn't require WAVE-2 inventory mechanics — the silk drops in WAVE-1 via the death mutation path.
+
+#### New Objects (Flanders)
+
+| File | Description |
+|------|-------------|
+| `src/meta/objects/gnawed-bone.lua` | Small-item, wolf loot drop. Material: bone. Keywords: bone, gnawed bone. |
+| `src/meta/objects/silk-bundle.lua` | Small-item, spider loot drop. Material: silk (or cotton as proxy). Keywords: silk, web silk, bundle. |
+
+#### Meta-Lint Extension (Nelson)
+
+Add creature inventory validation rules:
+
+| Rule | Check |
+|------|-------|
+| INV-01 | `inventory.hands` has max 2 items |
+| INV-02 | `inventory.worn` slots are valid (head, torso, arms, legs, feet) |
+| INV-03 | Every GUID in inventory resolves to an object in registry |
+| INV-04 | Carried items respect size constraints |
+
+#### Tests (Nelson)
+
+| Test File | Coverage | Est. Tests |
+|-----------|----------|------------|
+| `test/creatures/test-creature-inventory.lua` | Inventory loads, validates, wolf carries bone | ~15 |
+| `test/creatures/test-death-drops.lua` | Kill wolf → bone appears on floor, kill spider → silk appears | ~15 |
+| `test/creatures/test-inventory-edge-cases.lua` | Empty inventory, over-hand-limit validation, GUID resolution failure | ~10 |
+
+#### GATE-2 Criteria
+
+- [ ] Wolf dies → gnawed-bone appears on room floor
+- [ ] Spider dies → silk-bundle appears on room floor
+- [ ] Creature with empty inventory → nothing drops (no crash)
+- [ ] Meta-lint INV-01 through INV-04 pass
+- [ ] Items are independent room objects post-drop (take, examine work)
+- [ ] All existing tests pass (zero regressions)
+- [ ] **Committed + tagged**
+
+---
+
+### WAVE-3 — Full Food System + Cooking
+
+**Goal:** Complete the kill→cook→eat gameplay arc. The `cook` verb transforms raw food into cooked food via D-14 mutation. Eating food applies effects. Spoiled food causes food poisoning.
+
+**Design Source:** `plans/food-system-plan.md` §6, §7, §8, §12
+
+#### Cook Verb Handler (Smithers)
+
+**File:** `src/engine/verbs/crafting.lua` (~50 LOC addition)
+
+```lua
+handlers["cook"] = function(ctx, noun)
+    -- 1. Find food in inventory or visible scope
+    -- 2. Check food.crafting.cook exists
+    -- 3. Find fire_source (visible tool search)
+    -- 4. Perform mutation: raw → cooked via mutation.mutate()
+    -- 5. Consume tool charge on fire source
+    -- 6. Print recipe.message
+end
+handlers["roast"] = handlers["cook"]
+handlers["bake"] = handlers["cook"]
+handlers["grill"] = handlers["cook"]
+```
+
+Follows existing `sew` pattern in crafting.lua. Recipe declared on the food object, not in the verb handler (Principle 8).
+
+#### Eat Handler Extensions (Smithers)
+
+**File:** `src/engine/verbs/survival.lua` (~30 LOC modification)
+
+1. **Raw meat edible with consequences:** If `obj.cookable == true` and `obj.edible ~= true` and `obj.food.raw == true`, allow eating but inflict food-poisoning injury. Print warning from sensory text first: `obj.on_taste or "The raw flesh tastes foul."` then `"You choke it down. Your stomach rebels almost immediately."` If `obj.cookable == true` and `obj.food.raw ~= true` (e.g., raw grain), reject with hint: `obj.on_eat_reject or "You can't eat that raw. Try cooking it first."`
+2. **Food effects pipeline:** After successful eat, process `obj.food.effects` array through existing effects pipeline. Supports: `narrate` (print message), `heal` (restore health), `inflict_injury` (food poisoning).
+
+#### New Food Objects (Flanders)
+
+| File | Type | Description |
+|------|------|-------------|
+| `src/meta/objects/cooked-rat-meat.lua` | small-item | Cooked rat meat. edible=true, nutrition=15, heal=3. |
+| `src/meta/objects/cooked-cat-meat.lua` | small-item | Cooked cat meat. edible=true, nutrition=20, heal=4. |
+| `src/meta/objects/cooked-bat-meat.lua` | small-item | Cooked bat meat. edible=true, nutrition=10, heal=2. food.risk=food-poisoning (10% — bat meat carries disease risk even when cooked). |
+| `src/meta/objects/grain-handful.lua` | small-item | Raw grain. edible=false, cookable=true, cook_to=flatbread. |
+| `src/meta/objects/flatbread.lua` | small-item | Baked flatbread. edible=true, nutrition=10. |
+| `src/meta/injuries/food-poisoning.lua` | injury | Nausea + damage, moderate severity, 20-tick duration. |
+
+**Dead-cat cooking integration:** Update `dead-cat.lua` with `crafting.cook = { becomes = "cooked-cat-meat", requires_tool = "fire_source", message = "You hold the cat over the flames. The fur blackens and curls away, leaving dark meat." }`.
+
+**Dead-bat cooking integration:** Update `dead-bat.lua` with `crafting.cook = { becomes = "cooked-bat-meat", requires_tool = "fire_source", message = "You singe the bat's leathery wings over the fire. The meat underneath is thin but edible." }`.
+
+#### Food Economy Balance Note
+
+**Positive-sum requirement:** The kill→cook→eat loop MUST be net-positive for the player or nobody will cook. Specific numbers:
+
+| Creature | Avg Damage Taken Killing | Cooked Nutrition | Cooked Heal | Net HP After Loop |
+|----------|------------------------|-----------------|-------------|-------------------|
+| rat | ~5 HP (2-3 exchanges) | 15 | +3 heal | **+3 net** (eat recovers more than damage taken) |
+| cat | ~8 HP (3-4 exchanges) | 20 | +4 heal | **+4 net** (cat is harder but more rewarding) |
+| bat | ~3 HP (1-2 exchanges) | 10 | +2 heal | **+2 net** (easy kill, small reward, disease risk) |
+
+**Rule:** `cooked_food_heal >= average_damage_from_killing`. If playtesting shows the loop is net-negative (player loses more HP killing than gained eating), buff food heal values before GATE-3 closes. The entire point of Phase 3 is making this loop rewarding.
+
+#### Dead-Rat Cooking Integration (Flanders)
+
+Update `dead-rat.lua` with crafting metadata:
+
+```lua
+crafting = {
+    cook = {
+        becomes = "cooked-rat-meat",
+        requires_tool = "fire_source",
+        message = "You hold the rat over the flames. The fur singes away and the flesh darkens.",
+        fail_message_no_tool = "You need a fire source to cook this.",
+    },
+},
+```
+
+**Note:** The cook verb reads from `obj.crafting.cook` (following the `sew` pattern). No separate `mutations.cook` block needed — the verb handler calls `mutation.mutate()` internally using the `crafting.cook.becomes` value.
+
+#### Tests (Nelson)
+
+| Test File | Coverage | Est. Tests |
+|-----------|----------|------------|
+| `test/food/test-cook-verb.lua` | Cook dead-rat → cooked meat, cook grain → flatbread, cook without fire fails | ~15 |
+| `test/food/test-eat-effects.lua` | Eat cooked meat → health restored, eat spoiled food → food poisoning | ~12 |
+| `test/food/test-cookable-gating.lua` | Eat raw grain → rejection message, eat dead rat raw → risk message | ~8 |
+| `test/food/test-food-poisoning.lua` | Food poisoning injury: infliction, FSM progression, recovery | ~10 |
+
+#### Nelson LLM Walkthrough: Kill→Cook→Eat Loop
+
+```bash
+echo "attack rat\nlook\ntake dead rat\ncook rat\neat rat meat" | lua src/main.lua --headless
+```
+
+Expected: Rat dies → dead rat appears → player takes it → cooks over fire → eats cooked meat → nutrition effect.
+
+#### GATE-3 Criteria
+
+- [ ] `cook dead rat` with fire source → produces cooked-rat-meat
+- [ ] `cook grain` with fire source → produces flatbread
+- [ ] `cook dead rat` without fire → rejection message
+- [ ] `eat grain` (raw) → rejection with cooking hint
+- [ ] `eat cooked rat meat` → health effect applies
+- [ ] `eat` spoiled food → food-poisoning injury inflicted
+- [ ] Food-poisoning injury FSM progresses correctly
+- [ ] Full kill→cook→eat loop works in headless mode
+- [ ] All existing tests pass (zero regressions)
+- [ ] **Committed + tagged**
+
+---
+
+### WAVE-4 — Combat Polish + Cure System
+
+**Goal:** Wire remaining combat verbs, add psychological injury type, make diseases curable, propagate combat sounds to attract creatures.
+
+**Design Sources:** `plans/npc-combat/combat-system-plan.md` §8.2 (verbs), §10.2 (stress), §10.4 (rabies cure); `plans/npc-combat/npc-system-plan.md` §5.4 (stimuli)
+
+#### Kick Verb (Smithers)
+
+**File:** `src/engine/verbs/init.lua` (~2 LOC)
+
+Currently `punch` routes to `hit` (line 481), but `kick` does not. Add:
+```lua
+handlers["kick"] = handlers["hit"]
+```
+
+This routes `kick rat` through the existing combat pipeline. The player's natural weapon selection in combat already resolves based on what's in the player's hands.
+
+#### Stress Injury (Flanders)
+
+**File:** `src/meta/injuries/stress.lua`
+
+Simplified 2-tier model for Phase 3 (full 3-tier in Phase 4):
+
+| State | Description | Restricts | Auto-Heal |
+|-------|-------------|-----------|-----------|
+| shaken | Hands tremble, breath fast | precise_actions | 10 turns safety |
+| recovered | Trembling stops | — | terminal |
+
+**Stress triggers:** First creature kill (medium), being critically wounded (high), prolonged combat >5 rounds (low per round). Inflicted through existing `injuries.inflict()` by combat engine.
+
+#### Cure Mechanics (Bart)
+
+**File:** `src/engine/injuries.lua` (~40 LOC addition)
+
+Add `healing_interactions` processing to the injury system:
+
+1. When a healing object is applied to a patient (via `use poultice on wound`), check injury's `healing_interactions` table
+2. If the healing object matches and the injury is in a curable state, transition to `cured`/`recovered`
+3. If the injury is past the curable window (e.g., rabies in furious state), reject with message
+
+**Metadata-driven:** Cure eligibility is declared on the injury definition (which states are curable and what cures them). No disease-specific engine code.
+
+```lua
+-- Already in rabies.lua design, needs implementation:
+healing_interactions = {
+    ["healing-poultice"] = {
+        transitions_to = "cured",
+        from_states = { "incubating", "prodromal" },
+    },
+},
+```
+
+#### Antidote Object (Flanders)
+
+**File:** `src/meta/objects/antidote-vial.lua`
+
+Small-item, liquid, cures spider-venom. Keywords: antidote, vial, cure. Placed in Level 1 (location TBD by Moe — study shelf or cellar cabinet).
+
+Update `spider-venom.lua` injury with healing_interactions for antidote-vial.
+
+#### Combat Sound Propagation (Bart)
+
+**File:** `src/engine/combat/init.lua` (~15 LOC addition)
+
+After combat narration phase (NARRATE), emit `loud_noise` stimulus to current room + adjacent rooms. This triggers creature reactions:
+- Creatures in adjacent rooms may flee away from combat sounds
+- Predators in adjacent rooms may investigate (approach)
+
+Uses existing stimulus infrastructure from `creatures/stimulus.lua`. Sound propagation uses the room exit graph for adjacency — "acoustically adjacent" means connected by an exit. Smithers provides the narration API; Bart calls it from the engine.
+
+#### Tests (Nelson)
+
+| Test File | Coverage | Est. Tests |
+|-----------|----------|------------|
+| `test/verbs/test-kick-combat.lua` | kick rat → combat resolves, kick aliases work | ~5 |
+| `test/injuries/test-stress.lua` | Stress infliction, shaken state, auto-recovery | ~10 |
+| `test/injuries/test-cure-mechanics.lua` | Poultice cures rabies (early), rejects late rabies, antidote cures venom | ~15 |
+| `test/combat/test-combat-sound.lua` | Combat emits loud_noise, adjacent creatures react | ~8 |
+
+#### GATE-4 Criteria
+
+- [ ] `kick rat` resolves through combat pipeline
+- [ ] Stress injury inflicts on first creature kill
+- [ ] Stress auto-heals after 10 turns of safety
+- [ ] Healing poultice cures rabies in incubating/prodromal states
+- [ ] Healing poultice FAILS to cure rabies in furious state
+- [ ] Antidote cures spider venom
+- [ ] Combat sounds attract/repel creatures in adjacent rooms
+- [ ] All existing tests pass (zero regressions)
+- [ ] **Committed + tagged**
+
+---
+
+### WAVE-5 — Respawning + Documentation + Polish
+
+**Goal:** Prevent creature extinction via respawn timers. Complete Phase 3 documentation. Final LLM walkthrough.
+
+**Design Source:** `plans/npc-combat/creature-inventory-plan.md` §11 Q5 (respawning)
+
+#### Respawn Engine (Bart)
+
+**File:** `src/engine/creatures/respawn.lua` (~100 LOC new module)
+
+**Design:**
+- Creatures with `respawn` metadata get tracked by the respawn manager
+- When a creature dies, a respawn timer starts
+- When the timer expires and the player is NOT in the creature's home room, a new instance spawns
+- Population cap per room prevents infinite accumulation
+- Respawn is a metadata declaration — no creature-specific engine code (Principle 8)
+
+**Spawn position:** Creatures spawn as room-level objects with no spatial nesting. They are added directly to the room registry, equivalent to their original placement. No `on_top`, `underneath`, or other spatial sub-location applies to creatures. If Phase 4 ever adds creatures that nest (e.g., "rat under the barrel"), the respawn system would need spawn-point metadata — but for Phase 3, room-level is correct.
+
+```lua
+-- On creature .lua file
+respawn = {
+    timer = 100,              -- ticks until respawn
+    home_room = "cellar",     -- where it respawns
+    max_population = 2,       -- max creatures of this type per room
+},
+```
+
+**File:** `src/engine/creatures/init.lua` (~20 LOC) — Wire respawn tick into creature_tick.
+
+#### Creature Respawn Metadata (Flanders)
+
+Add `respawn` table to all 5 creature definitions:
+
+| Creature | Timer | Home Room | Max Pop | Notes |
+|----------|-------|-----------|---------|-------|
+| rat | 60 | cellar | 3 | Rats breed fast |
+| cat | 120 | courtyard | 1 | Solitary |
+| wolf | 200 | hallway | 1 | Territorial — one at a time |
+| spider | 80 | deep-cellar | 2 | Web-builders repopulate |
+| bat | 60 | crypt | 3 | Bats colony |
+
+#### Weapon Combat Metadata (Smithers)
+
+Add `combat` table to existing weapon objects so held weapons properly feed the combat resolution:
+
+| Weapon | combat.type | combat.force | Notes |
+|--------|-------------|-------------|-------|
+| brass-candlestick | blunt | 4 | Improvised weapon |
+| iron-poker (if exists) | blunt | 5 | Fireplace tool |
+| letter-opener (if exists) | edged | 2 | Small blade |
+
+This ensures `attack rat with candlestick` uses the candlestick's material properties (brass) in damage resolution rather than defaulting to natural weapons.
+
+#### Documentation (Brockman)
+
+| Document | Location | Content |
+|----------|----------|---------|
+| `docs/architecture/engine/creature-death-mutation.md` | Architecture | D-14 mutation on creature death, corpse object pattern, inventory drop pipeline |
+| `docs/architecture/engine/creature-inventory.md` | Architecture | Inventory metadata format, death drop instantiation, containment reuse |
+| `docs/design/food-system.md` | Design | Cook verb, edibility tiers, mutation chain, spoilage, food effects |
+| `docs/design/cure-system.md` | Design | Healing interactions metadata, cure eligibility, antidote pattern |
+
+#### Tests (Nelson)
+
+| Test File | Coverage | Est. Tests |
+|-----------|----------|------------|
+| `test/creatures/test-respawn.lua` | Respawn timer, population cap, player-not-in-room check | ~15 |
+| `test/creatures/test-respawn-edge-cases.lua` | No respawn metadata = no respawn, max pop reached, timer edge | ~10 |
+
+#### Nelson Final LLM Walkthrough
+
+Full Phase 3 gameplay loop in `--headless` mode:
+
+```
+> look                          # see room + creatures
+> attack rat                    # combat → rat dies → dead-rat appears
+> take dead rat                 # portable corpse
+> cook rat                      # near fire → cooked-rat-meat
+> eat rat meat                  # nutrition + healing effect
+> attack wolf                   # wolf dies → gnawed-bone drops
+> take bone                     # loot from wolf corpse
+> wait (×60)                    # rat respawns in home room
+> go to cellar                  # new rat present
+```
+
+#### GATE-5 Criteria
+
+- [ ] Dead rat respawns after timer expires (player not in room)
+- [ ] Population cap prevents more than max_population creatures
+- [ ] No respawn if player is in room (prevents "spawn in face" moments)
+- [ ] Weapon combat metadata feeds damage resolution
+- [ ] All 4 documentation files complete
+- [ ] Full LLM walkthrough passes
+- [ ] All tests pass (zero regressions)
+- [ ] **Committed + tagged**
+
+---
+
+## Section 5: Testing Gates Summary
+
+| Gate | After Wave | Test Count (Est.) | Key Validation |
+|------|-----------|-------------------|----------------|
+| GATE-0 | WAVE-0 | 204 (+10 compat) | Module splits work, no regressions |
+| GATE-1 | WAVE-1 | ~259 (+45 + 10 compat) | Creature death → corpse mutation |
+| GATE-2 | WAVE-2 | ~309 (+40 + 10 compat) | Inventory loads, death drops work |
+| GATE-3 | WAVE-3 | ~364 (+45 + 10 compat) | Cook→eat loop, food effects, spoilage |
+| GATE-4 | WAVE-4 | ~412 (+38 + 10 compat) | Kick, stress, cure, combat sound |
+| GATE-5 | WAVE-5 | ~437 (+25) | Respawning, weapon metadata, docs |
+
+**Estimated total new test files:** ~25 (20 feature + 5 cross-wave compat)
+**Estimated total new tests:** ~240
+
+---
+
+## Section 6: TDD Test File Map
+
+| Test File | Wave | Module Tested | Est. Tests |
+|-----------|------|---------------|------------|
+| `test/creatures/test-creature-death-mutation.lua` | 1 | creatures/init.lua + mutation | 15 |
+| `test/creatures/test-corpse-properties.lua` | 1 | dead-*.lua objects | 20 |
+| `test/food/test-corpse-spoilage.lua` | 1 | dead-rat.lua FSM | 10 |
+| `test/creatures/test-creature-inventory.lua` | 2 | creatures/init.lua inventory | 15 |
+| `test/creatures/test-death-drops.lua` | 2 | death → room instantiation | 15 |
+| `test/creatures/test-inventory-edge-cases.lua` | 2 | validation, edge cases | 10 |
+| `test/food/test-cook-verb.lua` | 3 | verbs/crafting.lua cook | 15 |
+| `test/food/test-eat-effects.lua` | 3 | verbs/survival.lua effects | 12 |
+| `test/food/test-cookable-gating.lua` | 3 | eat handler cookable check | 8 |
+| `test/food/test-food-poisoning.lua` | 3 | food-poisoning injury | 10 |
+| `test/verbs/test-kick-combat.lua` | 4 | verbs/init.lua kick alias | 5 |
+| `test/injuries/test-stress.lua` | 4 | stress.lua injury | 10 |
+| `test/injuries/test-cure-mechanics.lua` | 4 | injuries.lua cure path | 15 |
+| `test/combat/test-combat-sound.lua` | 4 | combat sound propagation | 8 |
+| `test/creatures/test-respawn.lua` | 5 | creatures/respawn.lua | 15 |
+| `test/creatures/test-respawn-edge-cases.lua` | 5 | edge cases | 10 |
+
+### Cross-Wave Compatibility Tests
+
+Following the Phase 2 pattern (`test-wave1-2-compat.lua`, `test-wave2-3-compat.lua`, etc.), Phase 3 adds compatibility tests between every wave pair:
+
+| Test File | After Gate | Validates | Est. Tests |
+|-----------|-----------|-----------|------------|
+| `test/creatures/test-p3-wave0-1-compat.lua` | GATE-0 | Split combat module still resolves damage correctly in creature death path; survival split preserves eat handler for W3 food effects; crafting split preserves sew pattern for W3 cook verb | 10 |
+| `test/creatures/test-p3-wave1-2-compat.lua` | GATE-1 | Corpse objects from W1 are valid containers for W2 inventory drops; dead creatures with `container=true` pass containment validation | 10 |
+| `test/food/test-p3-wave2-3-compat.lua` | GATE-2 | Dead creature objects carry `crafting.cook` metadata needed by W3 cook verb; dead-rat/dead-cat/dead-bat all have `food.cook_to` pointing to valid target objects | 10 |
+| `test/injuries/test-p3-wave3-4-compat.lua` | GATE-3 | Food-poisoning injury compatible with W4 cure mechanics pipeline; `healing_interactions` table structure matches cure engine expectations | 10 |
+| `test/creatures/test-p3-wave4-5-compat.lua` | GATE-4 | Cured/stressed creatures can be targets for W5 respawn tracking; combat sound emission doesn't interfere with respawn timers | 10 |
+
+---
+
+## Section 7: File Ownership Summary
+
+### New Files
+
+| File | Owner | Wave | Type |
+|------|-------|------|------|
+| `src/engine/combat/resolution.lua` | Bart | 0 | Engine (extracted) |
+| `src/engine/verbs/consumption.lua` | Bart | 0 | Engine (extracted from survival.lua) |
+| `src/engine/verbs/rest.lua` | Bart | 0 | Engine (extracted from survival.lua) |
+| `src/engine/verbs/cooking.lua` | Bart | 0 | Engine (extracted from crafting.lua) |
+| `src/engine/injuries/cure.lua` | Bart | 0 | Engine (extracted from injuries.lua) |
+| `src/engine/creatures/respawn.lua` | Bart | 5 | Engine |
+| `src/meta/objects/dead-rat.lua` | Flanders | 1 | Object |
+| `src/meta/objects/dead-cat.lua` | Flanders | 1 | Object |
+| `src/meta/objects/dead-wolf.lua` | Flanders | 1 | Object |
+| `src/meta/objects/dead-spider.lua` | Flanders | 1 | Object |
+| `src/meta/objects/dead-bat.lua` | Flanders | 1 | Object |
+| `src/meta/materials/meat.lua` | Flanders | 1 | Material |
+| `src/meta/objects/gnawed-bone.lua` | Flanders | 2 | Object |
+| `src/meta/objects/silk-bundle.lua` | Flanders | 1 | Object (death mutation byproduct) |
+| `src/meta/objects/cooked-rat-meat.lua` | Flanders | 3 | Object |
+| `src/meta/objects/cooked-cat-meat.lua` | Flanders | 3 | Object |
+| `src/meta/objects/cooked-bat-meat.lua` | Flanders | 3 | Object |
+| `src/meta/objects/grain-handful.lua` | Flanders | 3 | Object |
+| `src/meta/objects/flatbread.lua` | Flanders | 3 | Object |
+| `src/meta/injuries/food-poisoning.lua` | Flanders | 3 | Injury |
+| `src/meta/injuries/stress.lua` | Flanders | 4 | Injury |
+| `src/meta/objects/antidote-vial.lua` | Flanders | 4 | Object |
+
+### Modified Files
+
+| File | Owner | Wave | Change |
+|------|-------|------|--------|
+| `src/engine/combat/init.lua` | Bart | 0, 4 | W0: extract resolution.lua; W4: sound emission |
+| `src/engine/verbs/survival.lua` | Bart | 0 | W0: extract consumption.lua + rest.lua |
+| `src/engine/verbs/crafting.lua` | Bart | 0 | W0: extract cooking.lua |
+| `src/engine/injuries.lua` | Bart | 0 | W0: extract cure.lua |
+| `src/engine/creatures/init.lua` | Bart | 1, 2, 5 | W1: mutations.die wiring; W2: inventory processing; W5: respawn tick |
+| `src/engine/verbs/cooking.lua` | Smithers | 3 | Cook verb handler (new file from W0 split) |
+| `src/engine/verbs/consumption.lua` | Smithers | 3 | Cookable check + food effects in eat (new file from W0 split) |
+| `src/engine/verbs/init.lua` | Smithers | 4 | Kick alias |
+| `src/engine/parser/synonym_table.lua` | Smithers | 3 | Cook aliases (roast, bake, grill, sear, fry) |
+| `src/assets/parser/embedding-index.json` | Smithers | 1-5 | ~100 new embedding phrases across all waves |
+| `src/meta/creatures/rat.lua` | Flanders | 1, 5 | W1: mutations.die; W5: respawn metadata |
+| `src/meta/creatures/cat.lua` | Flanders | 1, 5 | W1: mutations.die; W5: respawn metadata |
+| `src/meta/creatures/wolf.lua` | Flanders | 1, 2, 5 | W1: mutations.die; W2: inventory; W5: respawn |
+| `src/meta/creatures/spider.lua` | Flanders | 1, 5 | W1: mutations.die (with byproducts); W5: respawn |
+| `src/meta/creatures/bat.lua` | Flanders | 1, 5 | W1: mutations.die; W5: respawn |
+| `src/meta/injuries/rabies.lua` | Flanders | 4 | Add healing_interactions |
+| `src/meta/injuries/spider-venom.lua` | Flanders | 4 | Add healing_interactions |
+| `test/run-tests.lua` | Nelson | 0 | Register new test dirs |
+
+### File Conflict Prevention
+
+**No two agents touch the same file in any wave:**
+
+| Wave | Bart Files | Flanders Files | Smithers Files | Nelson Files |
+|------|-----------|----------------|----------------|--------------|
+| W0 | combat/init.lua, combat/resolution.lua, survival.lua, consumption.lua, rest.lua, crafting.lua, cooking.lua, injuries.lua, injuries/cure.lua | — | — | test/run-tests.lua |
+| W1 | creatures/init.lua | dead-*.lua, silk-bundle.lua, meat.lua, creature files (mutations) | embedding-index.json | test/creatures/*.lua |
+| W2 | creatures/init.lua | creature files (inventory), gnawed-bone | embedding-index.json | test/creatures/*.lua |
+| W3 | — | cooked-rat-meat, cooked-cat-meat, cooked-bat-meat, grain, flatbread, food-poisoning | cooking.lua, consumption.lua, synonym_table.lua, embedding-index.json | test/food/*.lua |
+| W4 | injuries/cure.lua, combat/init.lua (sound) | stress.lua, antidote.lua, rabies.lua, spider-venom.lua | init.lua (kick), embedding-index.json | test/ |
+| W5 | creatures/respawn.lua, creatures/init.lua | creature files (respawn) | weapon objects, embedding-index.json | test/creatures/*.lua |
+
+**Note WAVE-4 ownership clarification:** Bart owns combat sound propagation (`combat/init.lua`) per `.squad/routing.md` (Bart owns `src/engine/**`). Smithers owns the `kick` alias in `verbs/init.lua` and embedding index updates. No file conflicts.
+
+---
+
+## Section 8: Risk Register
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|-----------|
+| **Combat module split breaks existing tests** | Medium | High | Comprehensive test run at GATE-0 before any feature work. Git tag for rollback. |
+| **mutations.die path conflicts with existing FSM dead state** | Medium | High | Backward-compatible: only creatures WITH mutations.die use the new path. Existing dead state still works. |
+| **Dead creature objects bloat the registry** | Low | Low | Corpses spoil to bones (FSM), then become inert. Respawn system creates new instances, doesn't resurrect old ones. |
+| **Cook verb collision with crafting.lua patterns** | Low | Medium | Follow existing `sew` pattern exactly — same structure, same mutation call, same tool resolution. |
+| **Respawn timing feels wrong** | Medium | Medium | Tunable per-creature metadata. Playtest in LLM walkthroughs. Default timers conservative (60-200 ticks). |
+| **Inventory instantiation order creates race conditions** | Low | Medium | Death drop happens in a single synchronous pass — iterate inventory, instantiate each item, THEN remove creature. |
+| **food effects pipeline conflicts with existing eat handler** | Low | Medium | Effects processing is an additive extension — runs AFTER existing eat logic, doesn't replace it. |
+| **crafting.lua LOC addressed in W0 split** | N/A | N/A | W0 splits crafting.lua → crafting.lua (~430) + cooking.lua (~200). Cook handler goes to cooking.lua, never exceeding 500. |
+
+---
+
+## Section 9: Autonomous Execution Protocol
+
+Same as Phase 1/2:
+- Wave → parallel agents → collect → gate → pass? → checkpoint → next wave
+- Gate failure at 1× threshold → file GitHub issue, assign fix agent, re-gate
+- Escalate to Wayne after 1× gate failure
+- Commit/push after every gate
+- Checkpoint plan doc after every wave (update status tracker)
+- Nelson runs smoke-test LLM walkthrough after every wave
+- Nelson runs full scenario suite at GATE-3 (food loop) and GATE-5 (final)
+
+### Gate Failure Protocol
+
+1. First failure: file GitHub issue with failure details, assign implementer to fix
+2. Second failure (same gate): escalate to Wayne with options
+3. Rollback available: Git tag per gate allows revert to known-good state
+
+### Wave Checkpoint Protocol
+
+After each wave:
+1. Update Wave Status Tracker at top of this document
+2. Record actual test count vs. estimate
+3. Note any deviations from plan
+4. Verify no LOC threshold violations in modified modules
+
+---
+
+## Section 10: Open Questions
+
+These questions need Wayne's input before or during implementation.
+
+### Q1: Corpse as Container vs. Scatter to Floor
+
+**Question:** When a creature with inventory dies, should items scatter directly to the room floor, or should the corpse become a container the player must `search` / `open`?
+
+**Options:**
+| Option | Pros | Cons |
+|--------|------|------|
+| **A: Scatter to floor** | Simple, immediate, no new container mechanics needed | Clutters room description, loses context ("where did this sword come from?") |
+| **B: Corpse as container** | Richer gameplay (loot corpse), cleaner room, enables grave-robbing | More engine work (corpse becomes searchable container), adds commands |
+| **C: Hybrid** | Small items scatter, large items stay with corpse | Most realistic, but complex implementation |
+
+**Recommendation:** Option B (corpse as container). Phase 3 corpse objects already set `container = true` with capacity. The `search` verb already exists. Player types `search dead wolf` → sees inventory. `take sword from dead wolf` → gets it. Minimal engine work on top of WAVE-1 corpse objects.
+
+---
+
+### Q2: Creature Respawning — Timer-Based vs. Event-Based
+
+**Question:** How should creatures respawn?
+
+**Options:**
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| **A: Timer-based** | Respawn N ticks after death when player not in room | Predictable, simple, testable | Feels mechanical, player can "camp" a spawn |
+| **B: Event-based** | Respawn triggered by player leaving the area for N rooms/turns | More natural feeling | Harder to test, harder to predict |
+| **C: Off-screen only** | Respawn only happens when player hasn't visited room in N turns | Most natural, prevents farming | May cause permanent extinction in frequently-visited areas |
+
+**Recommendation:** Option A (timer-based) with the "player not in room" guard. Simplest, most testable. The timer values are tunable per-creature. If it feels mechanical during playtesting, upgrade to Option C in Phase 4.
+
+---
+
+### Q3: Fire Source for Cooking in Level 1
+
+**Question:** Cooking requires `fire_source`. The kitchen hearth is in manor-kitchen (Level 2, blocked by D-KITCHEN-DOOR-TRAVERSAL). Where does the Level 1 fire source for cooking go?
+
+**Options:**
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| **A: Lit candle/match counts** | Existing lit candle has fire_source capability | Zero new objects needed | Physically absurd (cooking over a candle?) |
+| **B: Cellar brazier** | New object: a small iron brazier in the cellar | Thematic (medieval), justifiable location | One more object to create |
+| **C: Courtyard fire pit** | New object: outdoor fire pit or cooking fire | Outdoor cooking makes sense | Needs a room that supports it |
+
+**Recommendation:** Option B (cellar brazier). The cellar is a natural location for a fire source, and it's already a creature-dense room. Creates interesting gameplay: cook your rat kill right where you found it.
+
+---
+
+### Q4: Dead Wolf — Portable or Furniture?
+
+**Question:** Dead wolves are medium-sized. Should the corpse be portable (carry in hands) or furniture-sized (interact in place)?
+
+**Options:**
+| Option | Pros | Cons |
+|--------|------|------|
+| **A: Portable (large item)** | Player can drag it to fire, simpler interaction | Breaks physical plausibility (carrying a 35kg wolf?) |
+| **B: Furniture (not portable)** | Realistic, forces in-place butchering | Requires butcher verb (Phase 4) to get meat, can't move |
+| **C: Portable with encumbrance** | Carry but can't do anything else (both hands, movement penalty) | Most realistic but complex |
+
+**Recommendation:** Option B (furniture, not portable). Wolf corpse stays where it died. Player can `search` it for inventory items. Cooking/butchering wolf meat deferred to Phase 4 with the `butcher` verb. Dead rat/cat/bat/spider are small → portable (`small-item` template). Dead wolf is too large → stays in-place (`furniture` template).
+
+---
+
+### Q5: Stress Injury Scope
+
+**Question:** How complex should the stress injury system be in Phase 3?
+
+**Options:**
+| Option | Tiers | Restricts | Complexity |
+|--------|-------|-----------|------------|
+| **A: Minimal (2-tier)** | shaken → recovered | precise_actions only | Low — ship it fast |
+| **B: Full (3-tier)** | shaken → panicked → shell-shocked → recovered | precise + attack + movement | Medium — richer gameplay |
+| **C: Deferred** | No stress in Phase 3 | — | Zero — ship it in Phase 4 |
+
+**Recommendation:** Option A (minimal 2-tier). Ship the foundation. Stress adds texture but the 3-tier model has cascading restrictions (can't attack, can't move) that need extensive playtesting. Start simple, expand in Phase 4.
+
+---
+
+### Q6: Loot Tables (Phase 3 or Phase 4?)
+
+**Question:** Should Phase 3 implement probabilistic loot tables, or stick with fixed inventory only?
+
+**Options:**
+| Option | Scope | Pros | Cons |
+|--------|-------|------|------|
+| **A: Fixed only** | Creatures carry exact items declared in metadata | Simple, deterministic, testable | Less variety — every wolf drops the same bone |
+| **B: Fixed + simple loot table** | Add `loot_table.on_death` with weighted probability | Adds variety without full system | More implementation work |
+
+**Recommendation:** Option A (fixed only for Phase 3). Fixed inventory is sufficient for 5 creatures. Loot tables add value when we have 20+ creature types and randomized dungeons — that's Phase 4 territory.
+
+---
+
+## Section 11: What We Deliberately Defer to Phase 4
+
+| Feature | Why Deferred | Design Plan Reference |
+|---------|-------------|----------------------|
+| **Loot tables** (probabilistic drops) | Need more creature types to justify complexity | creature-inventory-plan.md §5 |
+| **Butcher verb** (knife + corpse = meat + bones) | Only needed for medium+ corpses (wolf) | food-system-plan.md §16 Phase 3 |
+| **Pack tactics** (coordinated wolf attacks) | Requires AI coordination system not yet designed | combat-system-plan.md §11 Phase 3 |
+| **Wrestling/grapple** | Phase 3 of combat plan; rich feature, low priority | combat-system-plan.md §11 Phase 3 |
+| **Environmental combat** (push barrel, slam door) | Requires object-in-combat interaction model | combat-system-plan.md §11 Phase 3 |
+| **Weapon/armor degradation** | Fragility checks in combat add complexity | combat-system-plan.md §11 Phase 3 |
+| **Humanoid NPCs** (dialogue, memory, quests) | Phase 4 of NPC plan — massive scope | npc-system-plan.md §9 Phase 4 |
+| **Spider web creation** (creature-spawned objects) | Requires creature-creates-object engine pattern | npc-system-plan.md §9 Phase 3 |
+| **Lycanthropy** | Requires humanoid NPCs | combat-system-plan.md §10.3 |
+| **Multi-ingredient cooking** | Requires recipe system beyond single-item mutation | food-system-plan.md §16 Phase 3 |
+| **Food preservation** (salting, smoking, drying) | Players will ask "how do I preserve food?" after discovering spoilage — explicitly deferred to Phase 4 to prevent scope creep | — |
+| **Creature-to-creature looting** | Requires creature AI to evaluate loot value | creature-inventory-plan.md §8 Phase 3 |
+
+---
+
+## Section 12: Lessons from Phase 2
+
+Applied to Phase 3 planning:
+
+1. **Module split before building** (Learned: combat/init.lua grew to 695 LOC, survival.lua to 715, crafting.lua to 629). WAVE-0 addresses ALL violations proactively — not just the worst one.
+2. **GUID pre-assignment prevents collisions** (Learned: Phase 2 needed late GUID coordination). WAVE-0 generates all GUIDs upfront.
+3. **Backward compatibility is non-negotiable** (Learned: mutations.die path must not break existing FSM dead state). Opt-in design.
+4. **Territorial dual-path** (Learned: test isolation vs. tick integration). New code must work both in isolation AND through the full tick pipeline.
+5. **chunked plan writing** (Learned: Phase 2 opus crashed at 43 min). This plan is written as a single document (~30KB) since it's smaller scope than Phase 2's 70KB+.
+
+---
+
+## Appendix A: GUID Reservation Table
+
+To be filled during WAVE-0 by Bart:
+
+| Object | GUID | Status |
+|--------|------|--------|
+| dead-rat.lua | TBD | — |
+| dead-cat.lua | TBD | — |
+| dead-wolf.lua | TBD | — |
+| dead-spider.lua | TBD | — |
+| dead-bat.lua | TBD | — |
+| meat.lua (material) | TBD | — |
+| gnawed-bone.lua | TBD | — |
+| silk-bundle.lua | TBD | — |
+| cooked-rat-meat.lua | TBD | — |
+| cooked-cat-meat.lua | TBD | — |
+| cooked-bat-meat.lua | TBD | — |
+| grain-handful.lua | TBD | — |
+| flatbread.lua | TBD | — |
+| food-poisoning.lua | TBD | — |
+| stress.lua | TBD | — |
+| antidote-vial.lua | TBD | — |
+| cellar-brazier.lua (if Q3=B) | TBD | — |
+
+---
+
+## Appendix B: Parser Integration Matrix
+
+New nouns and keywords introduced per wave. **Embedding index updates owned by Smithers** (parallel-tracked per wave — without index updates, Tier 2 matching won't find new objects):
+
+| Wave | New Nouns | Verb Aliases | Embedding Index Update | Owner |
+|------|-----------|-------------|----------------------|-------|
+| W1 | dead rat, rat corpse, carcass, dead cat, dead wolf, dead spider, dead bat | — | Yes: ~30 phrases (5 dead creatures × 6 verb variants) | **Smithers** |
+| W2 | gnawed bone, silk bundle, silk, web silk | — | Yes: ~12 phrases (loot item keywords) | **Smithers** |
+| W3 | cooked rat meat, cooked cat meat, cooked bat meat, cooked meat, grain, barley, flatbread, bread | cook, roast, bake, grill, sear, fry | Yes: ~50 phrases (food keywords + "cook X" for all cookable objects) | **Smithers** |
+| W4 | antidote, vial, cure | kick (alias to hit) | Minimal: ~6 phrases (antidote-vial) | **Smithers** |
+| W5 | brazier (if Q3=B) | — | Yes: ~6 phrases (fire source) | **Smithers** |
+
+**Synonym table updates (Smithers, WAVE-3):** Add to `src/engine/parser/synonym_table.lua`: `roast→cook, bake→cook, grill→cook, sear→cook, fry→cook`.
+
+**Total: ~100 new embedding index phrases across all waves.**
