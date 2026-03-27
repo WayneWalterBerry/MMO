@@ -892,3 +892,26 @@ Created TDD validation tests for 4 new creatures (cat, wolf, spider, bat):
 **Regression check:** Full suite — **1 pre-existing failure** (`test-creature-combat.lua` test 8: creature_died stimulus nil compare, known since WAVE-2). All 3 new test files pass clean. Zero new regressions.
 
 **Commit:** `ad834c6` — "Phase 3 WAVE-4: kick + cure + combat sound TDD tests (28 tests)"
+
+### Recent Work: WAVE-5 — Respawn System TDD Tests (2026-03-28)
+
+**Task:** Write TDD tests for creature respawn system per WAVE-5 spec in `plans/npc-combat/npc-combat-implementation-phase3.md`.
+
+**2 test files created, 25 tests total:**
+
+| File | Tests | Coverage |
+|------|-------|---------|
+| `test/creatures/test-respawn.lua` | 15 | Timer starts on death, timer-expires+player-not-in-room spawns, player-in-room blocks respawn, population cap reached blocks spawn, below-cap succeeds, fresh GUID + full health, home_room placement, chain kill re-registers, independent timers per creature type, all 5 creatures have respawn metadata, metadata values match spec, pending cleared after spawn, species identity retained, spider→deep-cellar, bat pop cap enforcement |
+| `test/creatures/test-respawn-edge-cases.lua` | 10 | No respawn metadata = no-op, nil respawn = no tracking, max_population=0 never respawns, timer=0 immediate respawn, timer=1 single-tick respawn, missing home room no crash, double-register rejected, register(nil) no crash, player-leaves-room triggers respawn on next cycle, deep_copy preserves respawn metadata |
+
+**Key findings during test creation:**
+- `engine/creatures/respawn.lua` already exists (Bart shipped it) — tests validate the real module contract, not a mock
+- Real module API: `register(creature)`, `clear()`, `tick(ctx, list_fn, get_room_fn, player_room_id)`, `get_pending()`, `count_pending()`
+- Module keys pending entries by creature GUID (not type@room) — so each individual death tracks separately
+- When player blocks respawn (in home room), the module resets timer to FULL value (`entry.ticks_remaining = entry.timer`), not just 1 tick — this is a full retry cycle, not immediate-on-leave
+- Double-register same GUID is correctly rejected (returns false)
+- All 5 creature definitions already have `respawn` metadata matching WAVE-5 spec (Flanders already shipped)
+
+**Regression check:** Full suite — **1 pre-existing failure** (`test-creature-combat.lua` test 8: creature_died stimulus nil compare, known since WAVE-2). Both new test files pass clean. Zero new regressions.
+
+**Commit:** `b855f3b` — "Phase 3 WAVE-5: respawn TDD tests (25 tests)"
