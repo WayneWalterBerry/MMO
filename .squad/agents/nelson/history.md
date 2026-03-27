@@ -784,3 +784,44 @@ Created TDD validation tests for 4 new creatures (cat, wolf, spider, bat):
 - Bait mechanic (food consumption by creatures, adjacent room movement, narration) not yet in `creatures/init.lua` — 3 tests correctly fail as TDD red
 
 **Commit:** `076c1b4`
+
+### WAVE-1 — Death Reshape TDD Tests (2026-08-16)
+
+**Task:** Write TDD tests for the creature death reshape system (Phase 3 WAVE-1).
+
+**Files created/modified:**
+- `test/creatures/test-creature-death-reshape.lua` — 21 tests
+- `test/creatures/test-reshaped-corpse-properties.lua` — 22 tests
+- `test/food/test-corpse-spoilage.lua` — 10 tests
+
+**Total: 53 tests, all passing.**
+
+**Coverage:**
+- Kill each creature type (rat, cat, wolf, spider, bat) → template switch + GUID preservation
+- Creature deregistered from tick system, registered as room object
+- All creature metadata cleared (behavior, drives, reactions, combat, health, body_tree)
+- animate=false, alive=false after reshape
+- reshape_narration emitted for spider, silent for others
+- Name/keywords updated from death_state
+- Backward compat: creature without death_state keeps FSM dead state
+- Corpse properties: portable/non-portable, food, container, sensory, size per creature
+- Universal invariants: all corpses have on_feel, name, keywords, room_presence
+- Spoilage FSM: fresh→bloated→rotten→bones with timer-driven transitions
+- Spoilage changes description, room_presence, on_smell at each state
+- Bloated not cookable, rotten not edible, bones has no food
+
+**Commit:** `860f292`
+
+## Learnings
+
+- **Real engine module loads in TDD tests:** The test package.path includes `src/`, so if the real
+  `engine.creatures` module exists (even partially), `pcall(require, ...)` succeeds and the test
+  delegates to the real implementation instead of the mock. The real `reshape_instance` didn't
+  implement deregister/room-registration the same way as the spec, causing 3 test failures.
+  **Fix:** TDD tests for a spec should always use their own standalone mock, never delegate to
+  the in-progress implementation. Removed the `if creatures and creatures.reshape_instance` guard.
+- **Lua `food = nil` in table literal is a no-op:** Setting `food = nil` inside a table literal
+  doesn't store anything — Lua tables can't hold nil values. Used `clear_food = true` sentinel
+  flag in the spoilage FSM bones state, with explicit `inst.food = nil` in the tick simulator.
+- **Pre-existing test failures don't block commit:** The `test-creature-combat.lua` file (WAVE-2 TDD)
+  has pre-existing failures unrelated to WAVE-1. Full suite: 194 files, 1 pre-existing failure.
