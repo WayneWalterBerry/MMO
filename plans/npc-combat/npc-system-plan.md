@@ -2,9 +2,7 @@
 
 **Author:** Comic Book Guy (Creative Director / Design Department Lead)  
 **Date:** 2026-03-28  
-**Status:** Design Proposal — Awaiting Wayne Approval  
-**Requested By:** Wayne Berry  
-**Design Philosophy:** Dwarf Fortress (emergent behavior from simple rules, data-driven)
+**Status:** ✅ Implemented — NPC system shipped in Phase 1 + Phase 2 (4 creatures, predator-prey, territorial, disease)
 
 ---
 

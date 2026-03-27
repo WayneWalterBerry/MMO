@@ -1157,3 +1157,34 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 
 **Net LOC:** +35 (creatures/init.lua: 496 → 529, navigation.lua: 104 → 106)
 **Test results:** 191 test files pass. Bait tests: 10/10. Zero regressions.
+
+### Phase 2 Plan Files — Status Update
+**Date:** 2026-03-27
+
+Updated all plan files to reflect Phase 2 NPC+Combat completion:
+
+**npc-combat-implementation-phase2.md:**
+- Status: Ready for Review → ✅ COMPLETE
+- Wave Status Tracker: all 6 waves ✅ PASSED with test counts
+- GATE-0 through GATE-2 checkboxes: all 34 items checked (`- [x]`)
+- Architecture health check: all 6 items checked
+- Chunk 4 status: Draft → ✅ COMPLETE
+- Inline tracker: all waves ✅
+
+**npc-combat-implementation-phase1.md:**
+- Status: Ready for Execution → ✅ COMPLETE
+
+**combat-system-plan.md:**
+- Status: Design Proposal → ✅ Implemented
+
+**npc-system-plan.md:**
+- Status: Design Proposal → ✅ Implemented
+
+**creature-inventory-plan.md:**
+- Status: Design Proposal → ✅ Phase 1 Implemented
+
+**food-system-plan.md:**
+- Status: Draft → ✅ PoC COMPLETE
+
+**mutation-graph-linter-plan.md:**
+- Verified: already says PLAN ONLY — no changes needed

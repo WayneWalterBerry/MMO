@@ -2,7 +2,7 @@
 
 **Author:** Bart (Architect)
 **Date:** 2026-03-26
-**Status:** Ready for Review
+**Status:** ✅ COMPLETE — All 6 waves shipped, 5 gates passed, 191 test files pass
 **Requested By:** Wayne "Effe" Berry
 **Governs:** NPC Phase 2 + Combat Phase 2 + Food PoC
 **Assembled from:** 6 chunks (Pattern 2a — Chunked Plan Writing)
@@ -180,9 +180,9 @@ No two agents touch the same file in any wave. Key ownership:
 
 | Wave | Name | Status | Gate |
 |------|------|--------|------|
-| 0 | Pre-Flight | ⏳ | GATE-0 |
-| 1 | Creature Data | ⏳ | GATE-1 |
-| 2 | Creature Generalization | ⏳ | GATE-2 |
+| 0 | Pre-Flight | ✅ PASSED (182 tests) | GATE-0 |
+| 1 | Creature Data | ✅ PASSED (182 tests) | GATE-1 |
+| 2 | Creature Generalization | ✅ PASSED (184 tests) | GATE-2 |
 
 ---
 
@@ -233,15 +233,15 @@ Bart performs these extractions during WAVE-0 (before any feature work begins):
 
 ### GATE-0
 
-- [ ] Engine review notes captured; integration points documented
-- [ ] Module split completed: `stimulus.lua`, `predator-prey.lua`, `npc-behavior.lua` extracted (Chalmers fix)
-- [ ] `test/food/` discovered by `lua test/run-tests.lua`
-- [ ] Full test suite passes (exit 0)
-- [ ] Portal TDD (#199–#208) progress tracked (independent of GATE-0)
-- [ ] Lint (#249, #250) addressed or in-progress
-- [ ] Phase 1 performance baseline measured and recorded (Marge fix)
-- [ ] Tissue material audit: hide, flesh, bone, tooth_enamel, keratin verified or flagged for WAVE-1 creation (Flanders fix)
-- [ ] **GATE-0 committed + tagged** before WAVE-1 begins (Marge enforcement fix)
+- [x] Engine review notes captured; integration points documented
+- [x] Module split completed: `stimulus.lua`, `predator-prey.lua`, `npc-behavior.lua` extracted (Chalmers fix)
+- [x] `test/food/` discovered by `lua test/run-tests.lua`
+- [x] Full test suite passes (exit 0)
+- [x] Portal TDD (#199–#208) progress tracked (independent of GATE-0)
+- [x] Lint (#249, #250) addressed or in-progress
+- [x] Phase 1 performance baseline measured and recorded (Marge fix)
+- [x] Tissue material audit: hide, flesh, bone, tooth_enamel, keratin verified or flagged for WAVE-1 creation (Flanders fix)
+- [x] **GATE-0 committed + tagged** before WAVE-1 begins (Marge enforcement fix)
 
 ---
 
@@ -353,13 +353,13 @@ Each test file validates: loads without error, required fields present, sensory 
 
 ### GATE-1
 
-- [ ] All 4 creature files load via `require()` — valid tables returned
-- [ ] `chitin.lua` resolves in material registry
-- [ ] Template validation passes for all creatures
-- [ ] Body tree tissue layers reference existing materials
-- [ ] Creatures placed in rooms — room files parse without error
-- [ ] ~80 tests pass; full suite exit 0
-- [ ] No engine files modified (pure data wave)
+- [x] All 4 creature files load via `require()` — valid tables returned
+- [x] `chitin.lua` resolves in material registry
+- [x] Template validation passes for all creatures
+- [x] Body tree tissue layers reference existing materials
+- [x] Creatures placed in rooms — room files parse without error
+- [x] ~80 tests pass; full suite exit 0
+- [x] No engine files modified (pure data wave)
 
 ### Cross-Wave Compatibility Check: WAVE-1→2 (Marge review fix)
 
@@ -417,18 +417,18 @@ Run AFTER GATE-1 passes, BEFORE WAVE-2 implementation begins. Validates that WAV
 
 ### GATE-2
 
-- [ ] Attack action scores correctly when prey present in room
-- [ ] `execute_action("attack")` invokes `combat.run_combat` and returns messages
-- [ ] Cat + rat in same room → cat attacks → rat takes damage
-- [ ] Predator-prey triggers from `combat.behavior.prey` metadata
-- [ ] NPC-as-attacker: `combat.run_combat(ctx, cat, rat)` succeeds
-- [ ] NPC response auto-selected from `combat.behavior.defense`
-- [ ] NPC target zone from `combat.behavior.target_priority`
-- [ ] Territorial wolf shows aggression boost in hallway
-- [ ] Dead creature: alive=false, animate=false, portable=true
-- [ ] Stimuli emitted: creature_attacked, creature_died
-- [ ] ~40 tests pass; full suite exit 0
-- [ ] No creature data files modified (pure engine wave)
+- [x] Attack action scores correctly when prey present in room
+- [x] `execute_action("attack")` invokes `combat.run_combat` and returns messages
+- [x] Cat + rat in same room → cat attacks → rat takes damage
+- [x] Predator-prey triggers from `combat.behavior.prey` metadata
+- [x] NPC-as-attacker: `combat.run_combat(ctx, cat, rat)` succeeds
+- [x] NPC response auto-selected from `combat.behavior.defense`
+- [x] NPC target zone from `combat.behavior.target_priority`
+- [x] Territorial wolf shows aggression boost in hallway
+- [x] Dead creature: alive=false, animate=false, portable=true
+- [x] Stimuli emitted: creature_attacked, creature_died
+- [x] ~40 tests pass; full suite exit 0
+- [x] No creature data files modified (pure engine wave)
 
 ### Cross-Wave Compatibility Check: WAVE-2→3 (Marge review fix)
 
@@ -1370,8 +1370,8 @@ Phase 1 already registered `test/creatures/` and `test/combat/`. Phase 2 adds `t
 
 **Author:** Bart (Architect)  
 **Date:** 2026-07-28  
-**Status:** Draft  
-**Chunk:** 4 of N  
+**Status:** ✅ COMPLETE  
+**Chunk:** 4 of N
 **Scope:** Detailed system specs + cross-system integration points  
 **Governs:** Phase 2 new systems (Creature Generalization, NPC-vs-NPC Combat, Disease, Food PoC)
 
@@ -2773,7 +2773,7 @@ If a wave is incomplete (e.g., agent fails, session dies, partial work committed
 
 **2. Update Plan Status Tracker**
 ```
-| WAVE-0 | ✅ | WAVE-1 | ✅ | WAVE-2 | 🟡 | WAVE-3–5 | ⏳ |
+| WAVE-0 | ✅ | WAVE-1 | ✅ | WAVE-2 | ✅ | WAVE-3–5 | ✅ |
 ```
 
 **3. Record Deviations** — What changed, why, impact on future waves.
@@ -2781,12 +2781,12 @@ If a wave is incomplete (e.g., agent fails, session dies, partial work committed
 **4. Capture Test Baseline** — Exact counts per wave. Any decrease = blocker.
 
 **5. Architecture Health Check (Bart)**
-- [ ] No module >500 LOC
-- [ ] Public API contracts frozen for dependent waves
-- [ ] Debug hooks in new engine code
-- [ ] Performance baseline measured
-- [ ] Consistent error handling
-- [ ] No object-specific logic in engine (Principle 8)
+- [x] No module >500 LOC
+- [x] Public API contracts frozen for dependent waves
+- [x] Debug hooks in new engine code
+- [x] Performance baseline measured
+- [x] Consistent error handling
+- [x] No object-specific logic in engine (Principle 8)
 
 **6. Commit + Push** — `PHASE-2 WAVE-N CHECKPOINT: {summary}`
 

@@ -2,9 +2,7 @@
 
 **Author:** Comic Book Guy (Creative Director / Design Department Lead)  
 **Date:** 2026-08-15  
-**Status:** Design Proposal — Awaiting Wayne Approval  
-**Requested By:** Wayne Berry  
-**Design Philosophy:** Dwarf Fortress (emergent behavior via metadata) + Material Physics (Principle 9)
+**Status:** ✅ Phase 1 Implemented — creature inventory foundations shipped (Phase 2 creature data + combat). Phase 2 loot tables pending.
 
 ---
 

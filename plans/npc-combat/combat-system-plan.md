@@ -2,9 +2,7 @@
 
 **Author:** Comic Book Guy (Creative Director / Design Department Lead)  
 **Date:** 2026-07-28  
-**Status:** Design Proposal — Awaiting Wayne Approval  
-**Requested By:** Wayne "Effe" Berry  
-**Design Philosophy:** Dwarf Fortress physics + MTG structured phases + text IF narrative  
+**Status:** ✅ Implemented — NPC combat system shipped in Phase 1 + Phase 2 (191 test files pass)
 
 **Wayne's Combat Directives:**
 - **D-COMBAT-1:** 4–6 body zones (head, torso, arms, legs), NOT Dwarf Fortress's 200 parts

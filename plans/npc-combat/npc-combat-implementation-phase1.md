@@ -2,7 +2,7 @@
 
 **Author:** Bart (Architect)  
 **Date:** 2026-07-28  
-**Status:** Ready for Execution  
+**Status:** ✅ COMPLETE — Phase 1 shipped (creature engine 421 LOC, combat FSM 435 LOC, 14 test files)  
 **Requested By:** Wayne "Effe" Berry  
 **Governs:** NPC Phase 1 → Combat Phase 1 (sequential with internal parallelism)
 

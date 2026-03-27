@@ -2,7 +2,7 @@
 
 **Author:** Comic Book Guy (Game Designer)  
 **Date:** 2026-07-14 (revised 2026-07-28)  
-**Status:** Draft — revised with creature-food, cooking-craft, and edibility directives  
+**Status:** ✅ PoC COMPLETE — cheese + bread created, eat/drink verbs implemented, bait mechanic done (Phase 2 WAVE-5). Full design remains draft.  
 **Scope:** Level 1 food system, creature-to-food transformation, cooking craft gates, scaling path  
 **Dependencies:** NPC system, effects pipeline, FSM, mutation engine, creature inventory system
 
