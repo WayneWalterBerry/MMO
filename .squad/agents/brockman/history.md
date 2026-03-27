@@ -81,6 +81,39 @@
 1. Newspaper editions in separate files (2026-03-20T03:40Z)
 2. Room layout and movable furniture (2026-03-20T03:43Z)
 
+## Recent Updates (Continued)
+
+### Session: Testing Process Documentation (Current)
+**Status:** ✅ COMPLETED
+**Outcome:** Created comprehensive testing documentation in `docs/testing/` (4 files, ~29KB)
+
+**Files Created:**
+- `docs/testing/README.md` — Testing system overview (quick start, how it works, headless mode)
+- `docs/testing/framework.md` — API reference (test helpers, assertions, pcall wrapping, error handling)
+- `docs/testing/patterns.md` — Patterns & conventions (file structure, context factory, output capture, examples)
+- `docs/testing/directory-structure.md` — Test directory layout (16 directories, 200+ test files, discovery mechanism)
+
+**Key Insights Documented:**
+- Pure-Lua framework with zero external dependencies (ideal for browser deployment)
+- Test runner uses subprocess isolation (`io.popen`) — one failure doesn't contaminate others
+- Context factory pattern (`make_ctx()`) for test isolation
+- Output capture pattern for narration testing
+- Test file structure: package.path setup → imports → suites → summary → exit code
+- Framework uses `pcall()` wrapping to safely catch assertion errors
+- Exit code contract: 0 = pass, 1 = fail; runner aggregates subprocess codes
+- 16 test directories organized by subsystem (parser, verbs, search, inventory, injuries, etc.)
+- 200+ test files total across all directories
+- Directory discovery is hardcoded in `test/run-tests.lua` — add new dirs there
+
+**Coverage Areas:**
+- Parser pipeline (30+ tests) — preprocessing, normalization, verb/noun splitting
+- Verb handlers (80+ tests) — spatial, interaction, fire/light, combat, container verbs
+- Inventory system (11 tests) — take/drop, hand management, containers
+- Object discovery (23 tests) — keyword matching, nesting, spatial relationships
+- Integration scenarios (7 tests) — multi-command sequences
+
+**Design Decision:** Documentation focuses on **framework mechanics, patterns, and conventions** — NOT on what individual tests test (that belongs in test code comments). This enables developers to: (1) write new tests quickly, (2) understand test isolation, (3) add new test directories, (4) navigate the test suite by subsystem.
+
 ## Learnings
 - Documentation consolidation prevents design drift
 - Update foundational docs immediately after features land
