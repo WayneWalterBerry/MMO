@@ -3,7 +3,7 @@
 **Author:** Bart (Architecture Lead)
 **Date:** 2026-08-16
 **Version:** v1.4 (all 6-reviewer blocker fixes)
-**Status:** ✅ APPROVED — Ready for implementation
+**Status:** ✅ COMPLETE — All 6 waves shipped, all 5 gates passed
 **Changelog v1.4:** Fixed ALL blockers identified by 6-reviewer team (CBG, Chalmers, Flanders, Smithers, Moe, Marge). Changes: (1) WAVE-0 now includes Brockman architecture docs (creature-death-reshape.md, creature-inventory.md) as a parallel track — Wayne directive compliance. GATE-0 criteria updated with doc verification checkboxes. Bart reviews Brockman's docs before GATE-0 sign-off. (2) WAVE-5 Brockman scope narrowed to design docs only (food-system.md, cure-system.md) — architecture docs moved to WAVE-0. (3) Death reshape narration clarified: `reshape_narration` optional field added to death_state spec; combat death handler emits reshape narration if present, otherwise silent (player discovers on next `look`). (4) Combat sound propagation narration API specified: `emit_combat_sound(room, intensity, witness_text)` function defined for WAVE-4 with player-perspective narration per distance tier. (5) Cellar brazier room placement explicitly assigned to Moe in WAVE-3 with cellar.lua update task. (6) Moe pre-flight home room verification added before WAVE-5 respawn work. (7) File ownership, conflict matrix, quick reference, and dependency graph all updated.
 **Changelog v1.3:** Wayne directed fundamental change to creature death: no separate dead-creature files. Creatures contain their own `death_state` metadata block. Engine reshapes instances in-place on death (template switch creature→small-item/furniture). Eliminates 5 object files. New `reshape_instance()` engine function replaces `mutation.mutate()` for death. Stronger D-14 alignment — creature code literally transforms.
 **Requested By:** Wayne "Effe" Berry
@@ -21,7 +21,7 @@
 | WAVE-2 | Creature Inventory + Loot Drops | ✅ PASSED | GATE-2 | 198 |
 | WAVE-3 | Full Food System + Cooking | ✅ PASSED | GATE-3 | ~201+ |
 | WAVE-4 | Combat Polish + Cure System | ✅ PASSED | GATE-4 | ~204 |
-| WAVE-5 | Respawning + Design Docs + Polish | ⏳ Not Started | GATE-5 | — |
+| WAVE-5 | Respawning + Design Docs + Polish | ✅ PASSED | GATE-5 | ~209 |
 
 ---
 
@@ -867,15 +867,15 @@ Full Phase 3 gameplay loop in `--headless` mode:
 
 #### GATE-5 Criteria
 
-- [ ] Dead rat respawns after timer expires (player not in room)
-- [ ] Population cap prevents more than max_population creatures
-- [ ] No respawn if player is in room (prevents "spawn in face" moments)
-- [ ] Weapon combat metadata feeds damage resolution
-- [ ] All 5 home_room IDs verified as existing rooms (Moe pre-flight)
-- [ ] Design docs complete (food-system.md, cure-system.md)
-- [ ] Full LLM walkthrough passes
-- [ ] All tests pass (zero regressions)
-- [ ] **Committed + tagged**
+- [x] Dead rat respawns after timer expires (player not in room)
+- [x] Population cap prevents more than max_population creatures
+- [x] No respawn if player is in room (prevents "spawn in face" moments)
+- [x] Weapon combat metadata feeds damage resolution
+- [x] All 5 home_room IDs verified as existing rooms (Moe pre-flight)
+- [x] Design docs complete (food-system.md, cure-system.md)
+- [x] Full LLM walkthrough passes
+- [x] All tests pass (zero regressions)
+- [x] **Committed + tagged**
 
 ---
 
@@ -1247,3 +1247,22 @@ New nouns and keywords introduced per wave. **Embedding index updates owned by S
 **Synonym table updates (Smithers, WAVE-3):** Add to `src/engine/parser/synonym_table.lua`: `roast→cook, bake→cook, grill→cook, sear→cook, fry→cook`.
 
 **Total: ~100 new embedding index phrases across all waves.**
+
+---
+
+## Phase 3 Completion Summary
+
+**Status:** ✅ COMPLETE
+**Waves:** 6/6 passed (WAVE-0 through WAVE-5)
+**Gates:** 5/5 passed (GATE-0 through GATE-5)
+**Architecture change:** In-place creature death reshape (v1.3 directive)
+**Key deliverables:** reshape_instance() engine, death_state blocks, creature inventory + loot drops, full food system (cook/eat), cure mechanics, combat sound propagation, respawn engine
+**Docs bookend:** Architecture docs in WAVE-0, design docs in WAVE-5
+
+### Phase 3 Shipped
+
+All 6 waves of Phase 3 (Death Consequences → Creature Inventory → Full Food System → Combat Polish → Cure System → Respawning) have been delivered on schedule with all 5 gate criteria passing. The creature lifecycle loop is now complete: creatures die and reshape in-place, drop lootable corpses with inventory, can be cooked into food, eaten for healing effects, and respawn to prevent ecosystem extinction. The engine now features the industry-leading in-place reshape (D-14 mutation compliance), full multi-sensory food preparation pipeline, cure mechanics for diseases, and population management. Phase 3 represents a foundational milestone in the engine's progression toward beta playtesting.
+
+### Next: Phase 4
+
+Phase 4 will address stress injury mechanics, advanced puzzle design patterns, and UI polish for Phase 1 playtesting (Brockman). Stress will become the third core disease type (alongside rabies and spider-venom), introducing emotional consequences to combat and exploration.
