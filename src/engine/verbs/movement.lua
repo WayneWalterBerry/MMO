@@ -345,6 +345,69 @@ function M.register(handlers)
             handle_movement(ctx, noun)
         end
     end
+
+    ---------------------------------------------------------------------------
+    -- GOTO {room-id} — admin/debug teleport command
+    ---------------------------------------------------------------------------
+    handlers["goto"] = function(ctx, noun)
+        if not noun or noun == "" then
+            print("Goto where? Usage: goto <room-id>")
+            return
+        end
+
+        local target_id = noun:lower():gsub("^%s+", ""):gsub("%s+$", "")
+        local target_room = ctx.rooms and ctx.rooms[target_id]
+        if not target_room then
+            print("No room called '" .. target_id .. "' exists.")
+            return
+        end
+
+        -- Record previous room for "go back"
+        if context_window and ctx.current_room then
+            context_window.set_previous_room(ctx.current_room.id)
+        end
+
+        -- on_exit_room hook
+        if ctx.current_room and ctx.current_room.on_exit_room
+           and type(ctx.current_room.on_exit_room) == "function" then
+            ctx.current_room.on_exit_room(ctx.current_room, ctx)
+        end
+        if ctx.current_room and ctx.current_room.event_output
+           and ctx.current_room.event_output["on_exit_room"] then
+            print(ctx.current_room.event_output["on_exit_room"])
+            ctx.current_room.event_output["on_exit_room"] = nil
+        end
+
+        -- Move player
+        ctx.player.location = target_id
+        ctx.current_room = target_room
+
+        ctx.player.visited_rooms = ctx.player.visited_rooms or {}
+        local first_visit = not ctx.player.visited_rooms[target_id]
+        ctx.player.visited_rooms[target_id] = true
+
+        -- on_enter_room hook
+        if target_room.on_enter_room and type(target_room.on_enter_room) == "function" then
+            target_room.on_enter_room(target_room, ctx)
+        end
+        if target_room.event_output and target_room.event_output["on_enter_room"] then
+            print(target_room.event_output["on_enter_room"])
+            target_room.event_output["on_enter_room"] = nil
+        end
+
+        emit_player_enters(target_id)
+
+        print("You materialize in " .. (target_room.name or target_id) .. ".")
+        if first_visit then
+            ctx.verbs["look"](ctx, "")
+        else
+            print("**" .. (target_room.name or "Unnamed room") .. "**")
+            if target_room.short_description then
+                print(target_room.short_description)
+            end
+        end
+    end
+    handlers["teleport"] = handlers["goto"]
 end
 
 return M
