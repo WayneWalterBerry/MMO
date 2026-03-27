@@ -1107,3 +1107,32 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
    - `select_stance()` returns `aggressive` when `_cornered` flag set
 
 **Test results:** 186 test files pass. 25/25 NPC combat tests green. Zero regressions.
+
+### WAVE-4 Tracks 4C+4D — on_hit Disease Delivery + Disease Progression FSM
+**Date:** 2026-03-27
+**Commit:** `c3d4d4f`
+
+**Track 4C — on_hit Disease Delivery (combat/init.lua):**
+1. Fixed `normalize_weapon()` to preserve `on_hit` field on natural weapons
+2. Added generic on_hit disease delivery in `M.update()`:
+   - Fires at severity >= HIT
+   - Rolls `math.random()` against `on_hit.probability`
+   - Calls `injuries.inflict(defender, disease_id)` on success
+   - Sets `result.disease_inflicted` for downstream narration
+   - Fully symmetric player-vs-NPC and NPC-vs-NPC (Principle 8)
+
+**Track 4D — Disease Progression FSM (injuries.lua):**
+1. `compute_state_turns()` helper: supports both `state.duration` (direct turns) and `state.timed_events[1].delay / 360` (seconds)
+2. `injuries.inflict()` enhanced: initializes disease instance fields (`category`, `state_turns_remaining`, `_hidden`, `hidden_until_state`)
+3. `injuries.tick()` enhanced: disease FSM progression
+   - Decrements `state_turns_remaining` each tick
+   - Auto-transitions on expiry (supports both `duration_expired` and `timer_expired` conditions)
+   - Applies `mutate` table from transitions
+   - `hidden_until_state`: suppresses messages until symptomatic state reached
+4. `injuries.try_heal()` enhanced: `curable_in` guard rejects healing outside cure window
+5. New `injuries.heal(player, injury_type)`: standalone disease cure with `curable_in` check
+6. New `injuries.get_restrictions(player)`: returns merged restriction set from all active injury states
+7. `injuries.list()` enhanced: skips `_hidden` diseases
+
+**Net LOC:** +161 (combat: +17, injuries: +145 including new functions)
+**Test results:** 189 test files pass. Disease delivery: 27/27, Rabies: 49/49, Spider venom: 51/51. Zero regressions.
