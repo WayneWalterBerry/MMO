@@ -19,7 +19,7 @@
 | WAVE-0 | Pre-Flight (Audit + Module Splits + Architecture Docs) | ✅ PASSED | GATE-0 | 191 |
 | WAVE-1 | Death Consequences (In-Place Reshape) | ✅ PASSED | GATE-1 | 194 |
 | WAVE-2 | Creature Inventory + Loot Drops | ✅ PASSED | GATE-2 | 198 |
-| WAVE-3 | Full Food System + Cooking | ⏳ Not Started | GATE-3 | — |
+| WAVE-3 | Full Food System + Cooking | ✅ PASSED | GATE-3 | ~201+ |
 | WAVE-4 | Combat Polish + Cure System | ⏳ Not Started | GATE-4 | — |
 | WAVE-5 | Respawning + Design Docs + Polish | ⏳ Not Started | GATE-5 | — |
 
@@ -656,17 +656,17 @@ Expected: Rat dies → rat instance reshapes to dead-rat (same GUID) → player 
 
 #### GATE-3 Criteria
 
-- [ ] `cook dead rat` with fire source → produces cooked-rat-meat (via mutation.mutate, not reshape)
-- [ ] `cook grain` with fire source → produces flatbread
-- [ ] `cook dead rat` without fire → rejection message (reads death_state.crafting.cook.fail_message_no_tool)
-- [ ] `eat grain` (raw) → rejection with cooking hint
-- [ ] `eat cooked rat meat` → health effect applies
-- [ ] `eat` spoiled food → food-poisoning injury inflicted
-- [ ] Food-poisoning injury FSM progresses correctly
-- [ ] Full kill→cook→eat loop works in headless mode
-- [ ] Cellar brazier placed in cellar.lua (Moe) and functional as fire_source
-- [ ] All existing tests pass (zero regressions)
-- [ ] **Committed + tagged**
+- [x] `cook dead rat` with fire source → produces cooked-rat-meat (via mutation.mutate, not reshape)
+- [x] `cook grain` with fire source → produces flatbread
+- [x] `cook dead rat` without fire → rejection message (reads death_state.crafting.cook.fail_message_no_tool)
+- [x] `eat grain` (raw) → rejection with cooking hint
+- [x] `eat cooked rat meat` → health effect applies
+- [x] `eat` spoiled food → food-poisoning injury inflicted
+- [x] Food-poisoning injury FSM progresses correctly
+- [x] Full kill→cook→eat loop works in headless mode
+- [x] Cellar brazier placed in cellar.lua (Moe) and functional as fire_source
+- [x] All existing tests pass (zero regressions)
+- [x] **Committed + tagged**
 
 ---
 
