@@ -638,3 +638,24 @@ future fabric materials should stay above 0.3 or explicitly document why they do
   implementation rather than serving as pure red-phase TDD. No regressions in existing suite.
 
 ---
+
+### WAVE-1: Creature TDD Tests (2026-07-27)
+
+**Status:** ✅ COMPLETE — 106 tests across 4 files, all pass
+
+Created TDD validation tests for 4 new creatures (cat, wolf, spider, bat):
+
+| Test File | Tests | Creature-Specific Checks |
+|-----------|-------|--------------------------|
+| `test/creatures/test-cat.lua` | 26 | alive-hunt state, prey=["rat"] |
+| `test/creatures/test-wolf.lua` | 27 | territorial=true, territory="hallway", natural_armor, prey includes rat+cat |
+| `test/creatures/test-spider.lua` | 27 | material="chitin", web_builder, bite on_hit inflicts spider-venom |
+| `test/creatures/test-bat.lua` | 26 | light_reactive, roosting_position="ceiling", alive-roosting state, wings in body_tree |
+
+**Key findings during test authoring:**
+- Creature files already exist (Flanders WAVE-1 delivery) — tests validate against real data
+- `health` is a flat number field (not `{current, max}` table) — `max_health` is separate field
+- Wolf dead state has `portable = false` (too heavy to carry) — differs from rat/cat/spider which are `portable = true`
+- All universal checks pass: dofile loading, required fields, sensory (on_feel mandatory), FSM states/transitions, body_tree with tissue layers, combat natural_weapons, behavior, drives, health > 0, animate=true, portable=false
+
+**Commit:** `3faf994`

@@ -440,6 +440,22 @@ Built all 5 new room .lua files in `src/meta/world/`:
 
 ---
 
+## WAVE-1: Creature Placement in 4 Rooms (2026-03-26)
+
+**Task:** Place 4 creatures in room files per NPC combat Phase 2 WAVE-1 plan.
+
+**Changes:**
+- `courtyard.lua`: Added `courtyard-cat` (GUID `{46c2583c-2cec-4842-bfd3-5d56c737996d}`)
+- `hallway.lua`: Added `hallway-wolf` (GUID `{e69fc5e8-ce63-4b26-b5b2-faa2ff85d12c}`)
+- `deep-cellar.lua`: Added `deep-cellar-spider` (GUID `{f67e3d8b-ecab-41a4-9f3e-79da4c5374ae}`)
+- `crypt.lua`: Added `crypt-bat` (GUID `{52e32931-84dc-4a3d-a2cf-04cf79d61f4c}`)
+
+**Pattern used:** Follows cellar-rat convention — room-level `{ id = "room-creature", type_id = "{guid}" }`. No nesting (creatures roam freely). No `type` field needed when only `id` and `type_id` are provided. No room descriptions modified (creatures are animate, not permanent fixtures per Principle 0).
+
+**Naming convention:** `{room-id}-{creature}` (e.g., `courtyard-cat`, `hallway-wolf`) — consistent with `cellar-rat`.
+
+---
+
 ## Archives
 
 - `history-archive-2026-03-20T22-40Z-moe.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): world builder onboarding, room architecture, map design, level 1 expansion

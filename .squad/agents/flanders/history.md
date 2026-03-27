@@ -681,3 +681,24 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 - Cellar rat location unchanged — room instances still reference rat by GUID (auto-resolve)
 
 **Commit:** 2b3e426 (all tests pass; only pre-existing #275 unarmed failure)
+
+### 2026-07-20: WAVE-1 — 4 New Creatures + Chitin Material
+
+**Task:** Create cat, wolf, spider, bat creature files + chitin material per Phase 2 plan.
+
+**What was built (5 files):**
+1. **`src/meta/creatures/cat.lua`** — Small predator (15 HP), hunts rats. Claw (slash/keratin/3) + bite (pierce/tooth-enamel/5). States: idle, wander, flee, hunt, dead. Prey: {"rat"}.
+2. **`src/meta/creatures/wolf.lua`** — Medium territorial (40 HP), guards hallway. Bite (pierce/tooth-enamel/8) + claw (slash/keratin/4). Natural hide armor on body/head. States: idle, wander, patrol, aggressive, flee, dead. Prey: {"rat","cat","bat"}.
+3. **`src/meta/creatures/spider.lua`** — Tiny web-builder (3 HP), chitin material. Bite (pierce/tooth-enamel/1) with venom on_hit (60% chance). Chitin armor on cephalothorax/abdomen. States: idle, web-building, flee, dead. Body uses cephalothorax/abdomen/legs (not standard head/body).
+4. **`src/meta/creatures/bat.lua`** — Tiny aerial (3 HP), light-reactive. Bite (pierce/tooth-enamel/1), speed 9. States: roosting, flying, flee, dead. light_change reaction: fear +60, flee.
+5. **`src/meta/materials/chitin.lua`** — Insect exoskeleton (density 600, hardness 5, flexibility 0.2, color "dark brown").
+
+**Patterns learned:**
+- Spider uses non-standard body_tree zones (cephalothorax/abdomen/legs) — engine body_tree must support arbitrary zone names, not just head/body/legs/tail
+- Wolf is first creature with natural_armor — uses same format as combat.natural_armor array with material/coverage/thickness
+- Bat initial_state is "alive-roosting" not "alive-idle" — FSM supports creature-specific starting states
+- Chitin material follows same structure as bone/hide but adds `color` and `max_edge` fields not present in all materials
+- All creatures follow rat.lua template exactly: guid, template, id, name, keywords, description, sensory, FSM, behavior, drives, reactions, movement, awareness, health, body_tree, combat
+- Pre-assigned GUIDs prevent collision during parallel creature creation
+
+**Commit:** c770b74 (all tests pass; pre-existing BUG-149/151/152/156 failures unchanged)
