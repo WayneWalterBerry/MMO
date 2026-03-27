@@ -1,70 +1,257 @@
-# Food System — Proof of Concept (WAVE-5)
+# Food System Design
 
 ## Overview
 
-The food system is a **metadata-driven, object-oriented** design where food is not a template but a trait. Any object can become edible by declaring `edible = true` and a `food = {}` metadata table. This PoC implements basic consumption (eat/drink verbs), a spoilage FSM, and a creature-bait mechanic powered by hunger drives.
+The food system provides a complete pipeline for cooking raw food, managing edibility tiers, tracking spoilage state, and applying nutritional effects with injury consequences. It is implemented in Phase 3 WAVE-3 via the cook verb, consumption pipeline, and food object pattern.
 
-**Design Philosophy:** Eating is a buff, not a requirement. No hunger meter. No starvation clock. In a two-hand inventory system, forcing rations crowds out puzzle items.
-
-**Reference:** Full vision in `plans/food-system-plan.md`. This document covers WAVE-5 PoC scope only.
+The system is **positive-sum** — players accumulate nutrition faster than depletion, preventing starvation loops while maintaining survival tension through early-game food scarcity and cooking discovery.
 
 ---
 
-## 1. Food Metadata
+## 1. Cook Verb: Raw → Cooked Transformation
 
-Food is declared via two object properties:
+### Activation
+
+The cook verb transforms raw food into cooked food over a fire source using **D-14 Code Mutation** (Principle 8: Engine executes metadata). When a player cooks a food item, the engine rewrites the object's Lua definition at runtime.
+
+### Aliases
+
+The cook verb accepts four aliases for narrative flexibility:
+- `cook` — primary verb
+- `roast` — direct flame cooking
+- `bake` — oven/enclosed heat
+- `grill` — open-fire cooking
+
+All four map to the identical handler in `src/engine/verbs/cooking.lua`.
+
+### Mechanics: fire_source Requirement
+
+The cook verb requires a **fire_source** tool in either:
+1. **Player's inventory** (checked first)
+2. **Visible room scope** (fallback)
+
+The fire_source is identified via the object's `tool_capabilities` array or exact ID match. If no fire source is present, the verb fails with a custom message (defaulting to "You need a fire source to cook this.").
+
+### Recipe Structure
+
+Each cookable food object declares cooking metadata in `obj.crafting.cook`:
 
 ```lua
-edible = true,                    -- Signals object can be consumed
+crafting = {
+    cook = {
+        requires_tool = "fire_source",   -- tool capability required
+        becomes = "cooked-rat-meat",     -- target object type_id after mutation
+        message = "You cook [...] over the flames.",
+        fail_message_no_tool = "You need a fire source to cook this."
+    }
+}
+```
+
+### Mutation Flow
+
+1. Player holds raw food (e.g., raw rat corpse)
+2. Fire source located in inventory or room
+3. `perform_mutation()` fires: object mutates from `raw-rat-meat.lua` → `cooked-rat-meat.lua`
+4. Tool charge consumed (if applicable)
+5. Narration printed: "You cook [food] over the flames."
+6. Hint emitted: "Cooking raw meat makes it safe to eat and more nourishing."
+
+The mutation replaces the object entirely via `ctx.mutation.mutate()`, which rewrites the .lua file and updates the registry in-place. The player's hands are automatically adjusted if needed (inventory validation).
+
+## 2. Edibility Tiers
+
+### Tier 1: Cooked (Safe)
+
+**Edibility flag:** `food.edible = true`  
+**Examples:** `cooked-rat-meat`, `roasted grain`
+
+Cooked foods are immediately edible and safe. They grant full nutrition and any declared effects (heal, narration, injuries).
+
+Activation: `eat [food]` verb. Food must be in inventory; it is consumed and removed from registry.
+
+### Tier 2: Raw Meat (Conditional)
+
+**Edibility flags:** `food.raw = true`, `food.cookable = true`, `food.category = "meat"`  
+**Examples:** `raw-rat-meat`, `bat-corpse` flesh
+
+Raw meat is **edible but dangerous**. When consumed:
+- **Narration:** "You choke it down. Your stomach rebels almost immediately."
+- **Consequence:** Inflicts `food-poisoning` injury (immediate onset state)
+- **Nutrition:** Reduced bonus (half of cooked value) due to incomplete digestion
+- **Hint:** "Cooking raw meat makes it safe to eat and more nourishing."
+- **Removal:** Object is consumed and removed from registry
+
+**Design rationale:** Raw meat encourages cooking as a survival strategy while permitting high-risk shortcuts during food scarcity. The food-poisoning consequence (nausea, restricted actions, 1 damage-per-tick) incapacitates the player for ~12 ticks, reinforcing the cook-first meta.
+
+### Tier 3: Raw Grain & Non-Meat (Rejected)
+
+**Edibility flags:** `food.raw = true`, `food.cookable = true`, `food.category ≠ "meat"`  
+**Examples:** `wheat`, `mushroom` (uncooked)
+
+Raw non-meat foods are **rejected** and cannot be force-eaten. Attempting to eat them produces:
+- **Message:** `obj.on_eat_reject` or "You can't eat that raw. Try cooking it first."
+- **Result:** Action fails; food remains in inventory
+
+**Design rationale:** Separation of edible-raw (meat) vs. non-edible-raw (vegetables, grain) establishes distinct survival challenges.
+
+## 3. Spoilage FSM Chain
+
+Food objects progress through timed states representing freshness and decay via automatic FSM transitions:
+
+1. **fresh** (0–24 hours game time) — full nutrition, full effects
+2. **bloated** (24–48 hours) — visible signs of decay (description changes); minor nutrition loss
+3. **rotten** (48–72 hours) — severe visual decay; 50% nutrition, slight illness risk
+4. **bones** (72+ hours) — inedible husk; no nutrition; high poison risk or automatic rejection
+
+Spoilage is tracked via `obj._state` (FSM) and timed events that auto-transition after duration via `timed_events` array. Player is warned: "This food looks spoiled... but you eat it anyway." when consuming non-fresh food.
+
+Each state defines `on_feel`, `on_smell`, `on_taste` sensory descriptions so the player can identify decay via dark senses.
+
+---
+
+## 4. Mutation Chain: Death → Corpse → Cooked
+
+The complete pipeline from live creature to consumed food:
+
+```
+CREATURE (rat, bat, etc.)
+    ↓ [dies from combat → reshape to corpse]
+CORPSE (raw rat corpse, bat corpse)
+    ↓ [cooked over fire_source via cook verb]
+COOKED FOOD (cooked rat meat, roasted bat)
+    ↓ [eaten by player via eat verb]
+REMOVED FROM REGISTRY — nutrition applied, effects processed
+```
+
+Each transition is a code-level mutation:
+- **Death → Corpse:** Engine rewrites creature.lua → creature-corpse.lua; corpse inherits creature's inventory
+- **Corpse → Cooked:** Player-triggered cook verb rewrites corpse.lua → cooked-meat.lua via recipe; mutate() updates registry
+
+## 5. Food Metadata
+
+Food is declared via a `food = {}` table on any object:
+
+```lua
 food = {
-    nutrition = 10,               -- Buff strength (0-100), not tracked per-player
-    category = "snack",           -- Flavor: "snack", "meat", "liquid", etc.
-    bait_value = 50,              -- Creature attractiveness (0-100)
-    bait_target = "rodent",       -- Which creature type hunts this food ("rodent", "insect", etc.)
-    risk = "disease",             -- Optional danger on consumption ("disease", "poison", etc.)
-    risk_chance = 0.2,            -- Probability of risk trigger (0.0-1.0)
-    spoil_time = 120,             -- Game ticks until fresh → stale (optional, PoC only)
+    edible = true,                    -- Object can be consumed immediately
+    raw = true,                       -- Flagged as raw (optional, for raw-tier)
+    cookable = true,                  -- Can be cooked via cook verb
+    category = "meat",                -- "meat", "grain", "plant", "liquid" (gating)
+    nutrition = 15,                   -- Buff strength applied on consumption
+    effects = {
+        { type = "heal", amount = 3 },
+        { type = "narrate", message = "..." },
+        { type = "inflict_injury", injury_type = "food-poisoning", probability = 0.10 },
+    },
+    drinkable = false,                -- Can be drunk instead of eaten (for liquids)
 }
 ```
 
 **Key Rules:**
-- `edible = false` + `food = {}` makes food inedible unless cooked (not in WAVE-5 PoC).
-- No per-player nutrition tracking. Buff is temporary, flavor-only in PoC.
-- **Every food object MUST declare `on_feel`, `on_smell`, `on_taste`** — sensory descriptions updated by FSM state.
-- Objects inherit `small-item` template; no `food` template exists.
+- `edible = true` → immediately consumable; `edible = false` + `cookable = true` → only edible when cooked
+- **Every food object MUST declare `on_feel`, `on_smell`, `on_taste`** — primary sensory descriptions (darkness accessibility)
+- Objects inherit `small-item` template; no dedicated `food` template exists
 
 ---
 
-## 2. Eat/Drink Verbs
+## 6. Eat/Drink Verbs
 
 ### `eat` Handler
 
-Located in `src/engine/verbs/survival.lua`:
+Located in `src/engine/verbs/consumption.lua`:
 
 ```lua
 handlers["eat"] = function(ctx, noun)
-    local obj = find_in_inventory(ctx, noun) or find_visible(ctx, noun)
-    if not obj then return err_not_found(ctx) end
-    
-    if obj.edible then
-        print("You eat " .. obj.name .. ".")
-        if obj.on_eat_message then print(obj.on_eat_message) end
-        if obj.on_eat and type(obj.on_eat) == "function" then
-            obj.on_eat(obj, ctx)
-        end
-        remove_from_location(ctx, obj)
-        ctx.registry:remove(obj.id)
-    else
-        print("You can't eat " .. obj.name .. ".")
+    if noun == "" then
+        print("Eat what?")
+        return
     end
+    
+    local obj = find_in_inventory(ctx, noun) or find_visible(ctx, noun)
+    if not obj then
+        err_not_found(ctx)
+        return
+    end
+    
+    -- WAVE-5 food objects require holding; legacy edible objects are grandfathered
+    if obj.food and not find_in_inventory(ctx, noun) then
+        print("You'll need to pick that up first.")
+        return
+    end
+    
+    -- Check injury restrictions (e.g. jaw injuries could block eating)
+    if inj_ok and injury_mod then
+        local restricts = injury_mod.get_restrictions(ctx.player)
+        if restricts.eat then
+            print("Your injuries prevent you from eating.")
+            return
+        end
+    end
+    
+    local food = obj.food
+    
+    -- WAVE-3: Raw meat with consequences
+    if food and food.raw == true and food.cookable == true then
+        if food.edible ~= true then
+            if food.category == "meat" then
+                -- Raw meat: allow eating but with food-poisoning consequence
+                print(obj.on_taste or "The raw flesh tastes foul.")
+                print("You choke it down. Your stomach rebels almost immediately.")
+                injury_mod.inflict(ctx.player, "food-poisoning", obj.id or "raw meat", nil, nil)
+                if food.nutrition then
+                    ctx.player.nutrition = (ctx.player.nutrition or 0) + food.nutrition
+                end
+                remove_from_location(ctx, obj)
+                ctx.registry:remove(obj.id)
+                return
+            else
+                -- Non-meat raw cookable (grain, vegetables) — reject
+                print(obj.on_eat_reject or "You can't eat that raw. Try cooking it first.")
+                return
+            end
+        end
+    end
+    
+    -- Standard edibility check
+    local is_edible = (food and food.edible) or obj.edible
+    if not is_edible then
+        print("You can't eat " .. (obj.name or "that") .. ".")
+        return
+    end
+    
+    print("You eat " .. (obj.name or "it") .. ".")
+    if obj.on_taste then
+        print(obj.on_taste)
+    end
+    
+    -- Apply nutrition
+    if food and food.nutrition then
+        ctx.player.nutrition = (ctx.player.nutrition or 0) + food.nutrition
+    end
+    
+    -- Food effects pipeline
+    if food and food.effects then
+        effects.process(food.effects, {
+            player = ctx.player,
+            registry = ctx.registry,
+            source = obj,
+            source_id = obj.id or obj.guid,
+            game_over = false,
+        })
+    end
+    
+    remove_from_location(ctx, obj)
+    ctx.registry:remove(obj.id)
 end
 ```
 
 **Checks:**
-- Object must be in inventory or visible.
-- Object must declare `edible = true`.
-- No effect system integration in WAVE-5 (buff is flavor-only).
-- Object is removed from inventory and registry after consumption.
+- Object must be in inventory (new food objects) or visible (legacy edible objects)
+- Injury restrictions checked first (e.g., rabies blocks precise actions, food-poisoning blocks eating)
+- **Raw meat tier:** Special handling for `food.raw = true` + `food.category = "meat"` → inflicts food-poisoning
+- **Non-raw-edible check:** Cooked foods and other edible items require `food.edible = true`
+- Effects pipeline processes all declared effects (heal, narration, inflict_injury)
+- Object is consumed and removed from inventory and registry
 
 **Aliases:** `consume`, `devour`
 
@@ -72,206 +259,221 @@ end
 
 ```lua
 handlers["drink"] = function(ctx, noun)
-    local target = noun:match("^from%s+(.+)") or noun
-    local obj = find_in_inventory(ctx, target)
-    if not obj then return err_not_found(ctx) end
+    if noun == "" then print("Drink what?") return end
     
-    if obj.states then
-        local trans = fsm_mod.get_transitions(obj)
-        -- Find "drink" transition
-        if trans then
-            fsm_mod.transition(ctx.registry, obj.id, trans.to, {}, "drink")
+    -- Check injury restrictions before object resolution (rabies hydrophobia)
+    if inj_ok and injury_mod then
+        local restricts = injury_mod.get_restrictions(ctx.player)
+        if restricts.drink then
+            print("You can't bring yourself to drink — the mere thought of water fills you with terror.")
             return
         end
     end
-    print("You can't drink " .. obj.name .. ".")
+    
+    -- Strip "from" preposition: "drink from bottle" → "bottle"
+    local target = noun:match("^from%s+(.+)") or noun
+    
+    local obj = find_in_inventory(ctx, target)
+    if not obj then
+        err_not_found(ctx)
+        return
+    end
+    
+    -- FSM path: check for "drink" transition
+    if obj.states then
+        local transitions = fsm_mod.get_transitions(obj)
+        local target_trans = ...
+        if target_trans then
+            fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {}, "drink")
+            return
+        end
+    end
+    
+    -- Food-as-drink path (WAVE-5): objects with food.drinkable
+    if obj.food and obj.food.drinkable then
+        if obj.on_taste then print(obj.on_taste) end
+        if obj.food.nutrition then
+            ctx.player.nutrition = (ctx.player.nutrition or 0) + obj.food.nutrition
+        end
+        print("You drink " .. (obj.name or "it") .. ".")
+        remove_from_location(ctx, obj)
+        ctx.registry:remove(obj.id)
+        return
+    end
+    
+    print("You can't drink " .. (obj.name or "that") .. ".")
 end
 ```
 
 **Checks:**
-- Preposition strip: "drink from bottle" → "bottle".
-- Requires FSM state + "drink" transition (e.g., potion → empty-potion).
-- FSM triggers effect system (potions, poison, etc.).
-- Can be restricted by creature injury (e.g., rabies blocks drinking).
-
-**Aliases:** `quaff`, `sip`
-
----
-
-## 3. Bait Mechanic
-
-Food with `bait_value > 0` emits a stimulus that creatures detect. When a creature's hunger drive activates:
-
-1. **Stimulus Emission:** Food object on ground broadcasts `food_stimulus` with its `bait_value`.
-2. **Creature Detection:** Creature scans nearby room for food. If `bait_target` matches creature type and `bait_value` exceeds threshold:
-   - Food becomes priority over wander.
-   - Creature pathfinds to food.
-3. **Consumption:** Creature reaches food, consumes it (object removed from room).
-4. **No Instant Win:** Bait works cross-tick, not instantly. Player can intercept.
-
-**Example:**
-```lua
--- cheese.lua declares bait
-cheese = {
-    edible = true,
-    food = { bait_value = 75, bait_target = "rodent" },
-    name = "a wedge of cheese"
-}
-
--- In creature instance (rat):
--- Hunger drive: "If food_stimulus > 60 and bait_target = 'rodent', move toward food"
-```
-
-**Limitations (PoC):**
-- Bait does NOT work from closed containers (blocked by containment).
-- No skill check (pure creature drive).
-- No resource scarcity (unlimited food = unlimited lure).
-- Bait priority does NOT override combat (if creature is attacking player, bait is ignored).
+- Injury restrictions checked first (e.g., rabies hydrophobia blocks drinking)
+- Preposition strip: "drink from bottle" → "bottle"
+- FSM path: objects with "drink" transition execute state machine first
+- Food-as-drink path: `food.drinkable = true` enables drinking objects as consumables
+- Aliases: `quaff`, `sip`
 
 ---
 
-## 4. PoC Scope
+## 7. Food Effects Pipeline
 
-### Included (WAVE-5)
-
-| Feature | Status | File |
-|---------|--------|------|
-| **Food Metadata** | ✅ | Object `.lua` files |
-| **Eat Verb** | ✅ | `src/engine/verbs/survival.lua` |
-| **Drink Verb** | ✅ | `src/engine/verbs/survival.lua` |
-| **Spoilage FSM** | ✅ | Food object state machine (fresh → stale → spoiled) |
-| **Bait Stimulus** | ✅ | `src/engine/creatures/init.lua` (hunger drive) |
-| **Test Coverage** | ✅ | `test/food/test-eat-drink.lua`, `test/food/test-bait.lua`, `test/food/test-food-objects.lua` |
-| **Sample Objects** | ✅ | `src/meta/objects/cheese.lua`, `src/meta/objects/bread.lua` |
-
-### NOT Included (Defer to Full Vision)
-
-- **Cooking system** — No `cook` verb; food items only edible as-is.
-- **Nutrition tracking** — No per-player buff state; flavor-only in PoC.
-- **Hunger meter** — No player starvation; players don't starve.
-- **Recipes** — No crafting recipes; single objects only.
-- **Farming** — No food generation system.
-- **Spoilage behavior** — FSM states exist but don't yet trigger AI behavior (e.g., creatures avoid spoiled food).
-
----
-
-## 5. Food Objects (Examples)
-
-### Cheese
+Each food object can declare a `food.effects` array that processes upon consumption:
 
 ```lua
-return {
-    guid = "{guid}",
-    template = "small-item",
-    id = "cheese",
-    name = "a wedge of cheese",
-    keywords = {"cheese", "wedge"},
-    description = "A small wedge of hard cheese.",
-    
+food = {
     edible = true,
-    food = {
-        nutrition = 8,
-        category = "snack",
-        bait_value = 75,
-        bait_target = "rodent",
-        spoil_time = 120,
-    },
-    
-    on_feel = "Hard, waxy edges. Room-temperature.",
-    on_smell = "Sharp, tangy. Appetizing.",
-    on_taste = "Salty, with a sharp bite.",
-    on_eat_message = "You bite into the cheese. Delicious.",
-    
-    initial_state = "fresh",
-    states = {
-        fresh = { description = "A wedge of hard cheese." },
-        stale = { description = "The cheese has hardened and lost its appeal." },
-        spoiled = { description = "Green mold covers the cheese. Do not eat." },
-    },
-    transitions = {
-        { from = "fresh", to = "stale", timer = 120, message = "The cheese begins to harden." },
-        { from = "stale", to = "spoiled", timer = 60, message = "The cheese spoils." },
+    nutrition = 15,
+    effects = {
+        { type = "heal", amount = 3 },
+        { type = "narrate", message = "The rat meat is gamey but filling." },
+        { type = "inflict_injury", injury_type = "food-poisoning", probability = 0.10 },
     }
 }
 ```
 
-### Bread
+### Effect Types
+
+| Effect | Function | Example |
+|--------|----------|---------|
+| `heal` | Restore health | `{ type = "heal", amount = 5 }` |
+| `narrate` | Print flavor text | `{ type = "narrate", message = "..." }` |
+| `inflict_injury` | Apply disease/wound | `{ type = "inflict_injury", injury_type = "food-poisoning", probability = 0.10 }` |
+
+### Processing Order
+
+1. Base nutrition applied to `player.nutrition`
+2. All declared effects execute in array order via `effects.process(food.effects, {...})`
+3. Injury inflictions roll probability (if declared)
+4. Player narration outputs occur after healing/injury messages
+
+### Example: Cooked Rat Meat
+
+```lua
+food = {
+    edible = true,
+    nutrition = 15,
+    effects = {
+        { type = "heal", amount = 3 },
+        { type = "narrate", message = "The rat meat is gamey but filling." },
+    }
+}
+```
+
+When consumed:
+1. Nutrition: +15
+2. Health: +3
+3. Narration: "The rat meat is gamey but filling."
+
+---
+
+## 8. Food Economy: Positive-Sum Balance
+
+The food system is designed to be **positive-sum** — players accumulate nutrition faster than depletion over time, preventing starvation loops that frustrate gameplay. However, early-game scarcity creates tension.
+
+### Nutritional Balance
+
+| Food Source | Nutrition | Tier | Risk | Strategy |
+|-------------|-----------|------|------|----------|
+| Raw rat meat | 8 | Immediate | Food poisoning | Desperation; high survival cost |
+| Cooked rat meat | 15 | After fire-finding | None | Safe, preferred path |
+| Bat corpse (cooked) | 12 | After bat combat | None | Combat reward |
+| Foraged grain (cooked) | 10 | After cooking | None | Utility backup |
+
+### Depletion Rates
+
+- **Resting:** -0.5 nutrition/tick (minimal)
+- **Walking:** -1.0 nutrition/tick (moderate)
+- **Combat:** -2.0 nutrition/tick (high exertion)
+
+### Equilibrium Example
+
+Player finds fire source and 2 rats:
+- Cook 1 rat → +15 nutrition
+- Eat → -1 tick (moderate activity) = net +14 nutrition gain
+- Accumulation reaches 40+ nutrition, permitting 40+ ticks of exploration
+
+This creates a **survival phase** (finding fire + cooking) followed by **abundance** (multiple cooked meals). Players are not mechanically starved but narratively motivated to cook.
+
+## 9. Food Object Pattern Example
+
+### Cooked Rat Meat
 
 ```lua
 return {
-    guid = "{guid}",
+    guid = "{971e819c-8ad2-4f6e-934c-48236d7c5660}",
     template = "small-item",
-    id = "bread",
-    name = "a loaf of bread",
-    keywords = {"bread", "loaf"},
-    description = "A crusty loaf of dark bread.",
     
-    edible = true,
+    id = "cooked-rat-meat",
+    name = "a piece of cooked rat meat",
+    keywords = {"cooked rat", "rat meat", "cooked meat", "meat"},
+    description = "A small piece of dark, charred meat. The fur has been singed away, leaving browned flesh scored with grill marks. It smells better than it looks.",
+    
+    material = "meat",
+    size = 1,
+    weight = 0.3,
+    portable = true,
+    categories = {"small-item", "food", "consumable"},
+    
+    on_feel = "Warm and greasy. The surface is firm where it charred, softer underneath. Small bones poke through the flesh.",
+    on_smell = "Smoky and rich, with an underlying gamey musk. Not appetizing by choice, but your stomach disagrees.",
+    on_listen = "Silent. It cools with a faint tick as the fat contracts.",
+    on_taste = "Gamey and tough, with a smoky char. The flavor is strong -- wild, not farmed. Edible, if you don't think about it.",
+    
     food = {
-        nutrition = 12,
-        category = "snack",
-        bait_value = 50,
-        bait_target = "rodent",
-        spoil_time = 180,
+        edible = true,
+        nutrition = 15,
+        effects = {
+            { type = "heal", amount = 3 },
+            { type = "narrate", message = "The rat meat is gamey but filling." },
+        },
     },
     
-    on_feel = "Crusty exterior, soft inside. Warm.",
-    on_smell = "Yeasty, fresh. Homemade.",
-    on_taste = "Hearty grain flavor.",
-    on_eat_message = "You tear off a hunk and chew. Satisfying.",
-    
-    initial_state = "fresh",
-    states = {
-        fresh = { description = "A crusty loaf of dark bread." },
-        stale = { description = "The bread has gone hard and dry." },
-        spoiled = { description = "Mold covers the bread. Inedible." },
-    },
-    transitions = {
-        { from = "fresh", to = "stale", timer = 180 },
-        { from = "stale", to = "spoiled", timer = 120 },
-    }
+    mutations = {},
 }
 ```
 
 ---
 
-## 6. Future Expansion
+## 10. Raw Meat Consequence: Food-Poisoning Injury
 
-See `plans/food-system-plan.md` for the **full food system vision:**
+Eating raw meat inflicts **food-poisoning** injury with these characteristics:
 
-1. **Cooking** — Raw meat → cooked meat (mutation, new object).
-2. **Nutrition Tracking** — Player buff state machine (fed → hungry → starving).
-3. **Creature Starvation** — AI abandons tasks if hunger exceeds threshold.
-4. **Food Trade** — NPCs negotiate via food (not yet: no NPC shop system).
-5. **Farming & Foraging** — World-generated food resources.
-6. **Spoilage Behavior** — Creatures avoid spoiled food; mold spreads.
+### Onset State
 
----
+- **Duration:** 3 ticks (1080 seconds game time)
+- **Effect:** Initial cramps; eating blocked (`restricts.eat = true`)
+- **Damage:** None yet
+- **Narration:** "Your stomach lurches. Something you ate is fighting back."
 
-## Testing
+### Nausea State
 
-### Test Files
+- **Duration:** 12 ticks (4320 seconds game time)
+- **Effect:** Severe nausea; damage-per-tick = 1; eating + precise actions blocked
+- **Consequence:** Cumulative health loss during critical exploration period
+- **Narration:** "Waves of nausea roll through you. Your hands shake."
 
-| File | Coverage |
-|------|----------|
-| `test/food/test-eat-drink.lua` | Eat/drink verbs, restrictions, removal |
-| `test/food/test-bait.lua` | Stimulus emission, creature detection, consumption |
-| `test/food/test-food-objects.lua` | Food object load, FSM states, sensory |
-| `test/food/test-food-spoilage.lua` | Spoilage timer, state transitions, sensory updates |
+### Recovery State
 
-### Running Tests
+- **Duration:** 5 ticks (1800 seconds game time)
+- **Effect:** Subsiding symptoms; no damage; player regains mobility
+- **Narration:** "The nausea begins to ebb. Your stomach unclenches."
 
-```bash
-lua test/food/test-eat-drink.lua
-lua test/food/test-bait.lua
-```
+### Cleared State
 
----
+- **Terminal:** Yes — injury automatically removed when terminal state reached
+- **Narration:** "Your strength returns. The food poisoning has finally cleared."
 
-## Related Documentation
+**Total duration:** 20 ticks (max ~8 minutes game time). The penalty aligns with raw meat risk: players are incapacitated during a dangerous period, reinforcing the cook-first strategy.
 
-- `docs/design/npc-system.md` — Creature drives, stimuli, behavior.
-- `docs/design/object-design-patterns.md` — FSM pattern, metadata traits.
-- `docs/design/tools-system.md` — Tool/capability system (future: bait as tool).
-- `plans/food-system-plan.md` — Full vision, design rationale.
-- `plans/npc-combat-implementation-phase2.md` — WAVE-5 context, integration gates.
+### Injury Definition
+
+See `src/meta/injuries/food-poisoning.lua` for complete FSM.
+
+## 11. Implementation Files
+
+| File | Role |
+|------|------|
+| `src/engine/verbs/cooking.lua` | Cook verb handler + write verb |
+| `src/engine/verbs/consumption.lua` | Eat/drink handlers with raw-meat consequence |
+| `src/engine/effects.lua` | Food effects pipeline (heal, narrate, inflict_injury) |
+| `src/meta/objects/cooked-rat-meat.lua` | Food object pattern example |
+| `src/meta/injuries/food-poisoning.lua` | FSM injury definition |
