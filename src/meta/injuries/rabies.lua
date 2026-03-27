@@ -165,6 +165,8 @@ return {
         ["healing-poultice"] = {
             transitions_to = "healed",
             from_states = { "incubating", "prodromal" },
+            success_message = "The poultice draws the infection. You feel the fever receding.",
+            fail_message = "The disease has progressed too far. The poultice has no effect.",
         },
     },
 }

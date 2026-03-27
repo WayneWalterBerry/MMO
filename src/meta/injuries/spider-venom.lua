@@ -161,5 +161,11 @@ return {
             transitions_to = "healed",
             from_states = { "injected", "spreading" },
         },
+        ["antidote-vial"] = {
+            transitions_to = "healed",
+            from_states = { "injected", "spreading" },
+            success_message = "The antidote burns going down, but the swelling begins to subside.",
+            fail_message = "The paralysis is too advanced. The antidote cannot help now.",
+        },
     },
 }
