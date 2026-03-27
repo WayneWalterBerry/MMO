@@ -10,6 +10,7 @@ local M = {}
 -- get_exit_target(context, exit) -> target_room_id or nil
 ---------------------------------------------------------------------------
 function M.get_exit_target(context, exit)
+    if type(exit) == "string" then exit = { portal = exit } end
     if type(exit) ~= "table" then return nil end
     if exit.target then return exit.target end
     if exit.portal and context.registry then
@@ -56,6 +57,7 @@ end
 -- is_exit_passable(context, exit, creature) -> bool, target_room_id
 ---------------------------------------------------------------------------
 function M.is_exit_passable(context, exit, creature)
+    if type(exit) == "string" then exit = { portal = exit } end
     if type(exit) ~= "table" then return false, nil end
 
     if exit.target then

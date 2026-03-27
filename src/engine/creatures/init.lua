@@ -216,7 +216,38 @@ local function move_creature(context, creature, target_room_id)
     -- Update location (both obj.location and mock registry tracker)
     set_location(context.registry, creature, target_room_id)
 end
-
+-- Track 5C: food-as-bait behavior (R-5 boundary: no cooking/recipes/spoilage)
+local function find_bait(ctx, room_id, cid)
+    local r = {}
+    for _, o in ipairs(list_objects(ctx.registry)) do
+        if o.food and o.food.bait_targets and get_location(ctx.registry, o) == room_id then
+            for _, t in ipairs(o.food.bait_targets) do if t == cid then r[#r+1]=o; break end end
+        end
+    end
+    table.sort(r, function(a,b) return (a.food.bait_value or 0) > (b.food.bait_value or 0) end)
+    return r
+end
+local function try_bait(ctx, creature)
+    local h = creature.drives and creature.drives.hunger
+    if not h or (h.value or 0) < (h.satisfy_threshold or 80) then return nil end
+    if ctx.combat_active or (combat and combat.find_fight_for_combatant and combat.find_fight_for_combatant(creature)) then return nil end
+    local loc = get_location(ctx.registry, creature); if not loc then return nil end
+    local cn = creature.name or "a creature"
+    local pr, CN, msgs = get_player_room_id(ctx), cn:sub(1,1):upper()..cn:sub(2), {}
+    local food = find_bait(ctx, loc, creature.id)
+    if #food > 0 then
+        ctx.registry:remove(food[1].id); h.value = h.min or 0
+        if loc == pr then local m = CN.." scurries toward "..(food[1].name or "the food").." and devours it."; msgs[1] = m; print(m) end
+        return msgs end
+    local best, bv = nil, -1
+    for _, ex in ipairs(get_valid_exits(ctx, loc, creature)) do
+        local a = find_bait(ctx, ex.target, creature.id)
+        if #a > 0 and (a[1].food.bait_value or 0) > bv then best, bv = ex.target, a[1].food.bait_value or 0 end end
+    if not best then return nil end; move_creature(ctx, creature, best)
+    if loc == pr then msgs[1] = CN.." scurries away, drawn by a scent." end
+    if best == pr then msgs[1] = CN.." arrives, sniffing hungrily." end
+    return msgs
+end
 -- Morale helpers: built after all navigation/movement functions are defined
 local morale_helpers = {
     get_location = get_location,
@@ -408,6 +439,8 @@ function M.creature_tick(context, creature)
     for _, msg in ipairs(reaction_msgs) do
         messages[#messages + 1] = msg
     end
+    local bait = try_bait(context, creature)
+    if bait then for _, m in ipairs(bait) do messages[#messages+1] = m end; return messages end
 
     -- 3. Score and select best action
     local actions = score_actions(creature, context)
