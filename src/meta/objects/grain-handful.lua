@@ -9,7 +9,7 @@ return {
     keywords = {"grain", "handful of grain", "barley", "raw grain"},
     description = "A loose handful of barley grain, golden-brown and dusty. The kernels are hard and dry -- inedible raw, but they could be ground or cooked into something.",
 
-    material = "grain",
+    material = "plant",
     size = 1,
     weight = 0.2,
     portable = true,

@@ -9,7 +9,7 @@ return {
     keywords = {"flatbread", "bread", "flat bread", "cooked grain"},
     description = "A palm-sized disc of unleavened bread, baked brown and spotted with char marks. Dense, dry, and plain -- but it's food.",
 
-    material = "grain",
+    material = "wax",
     size = 1,
     weight = 0.15,
     portable = true,
