@@ -164,4 +164,86 @@ return {
             pack_size = 1,
         },
     },
+
+    -- Death reshape (WAVE-1)
+    death_state = {
+        template = "small-item",
+        name = "a dead rat",
+        description = "A dead rat lies on its side, legs splayed stiffly. Its fur is matted with blood and its beady eyes stare at nothing.",
+        keywords = {"dead rat", "rat corpse", "rat carcass", "dead rodent", "rat"},
+        room_presence = "A dead rat lies crumpled on the floor.",
+
+        -- Physical
+        portable = true,
+        size = "tiny",
+        weight = 0.3,
+
+        -- Sensory (on_feel mandatory — primary dark sense)
+        on_feel = "Cooling fur over a limp body. The tail hangs like wet string.",
+        on_smell = "Blood and musk. The sharp copper of death.",
+        on_listen = "Nothing. Absolutely nothing.",
+        on_taste = "Fur and blood. You immediately regret this decision.",
+
+        -- Food properties
+        food = {
+            category = "meat",
+            raw = true,
+            edible = false,
+            cookable = true,
+        },
+
+        -- Cooking recipe (read by cook verb)
+        crafting = {
+            cook = {
+                becomes = "cooked-rat-meat",
+                requires_tool = "fire_source",
+                message = "You hold the rat over the flames. The fur singes away and the flesh darkens.",
+                fail_message_no_tool = "You need a fire source to cook this.",
+            },
+        },
+
+        -- Container (small corpse can hold 1 item)
+        container = {
+            capacity = 1,
+            categories = { "tiny" },
+        },
+
+        -- Spoilage FSM
+        initial_state = "fresh",
+        states = {
+            fresh = {
+                description = "A freshly killed rat. The blood is still wet.",
+                room_presence = "A dead rat lies crumpled on the floor.",
+                duration = 30,
+            },
+            bloated = {
+                description = "The rat's body has swollen, its belly distended with gas.",
+                room_presence = "A bloated rat carcass lies on the floor, reeking.",
+                on_smell = "The sweet, cloying stench of decay.",
+                food = { cookable = false },
+                duration = 40,
+            },
+            rotten = {
+                description = "The rat is a putrid mess of matted fur and exposed tissue.",
+                room_presence = "A rotting rat carcass festers on the floor.",
+                on_smell = "Overwhelming rot. Your eyes water.",
+                food = { cookable = false, edible = false },
+                duration = 60,
+            },
+            bones = {
+                description = "A tiny scatter of cleaned rat bones.",
+                room_presence = "A small pile of rat bones sits on the floor.",
+                on_smell = "Nothing — just dry bone.",
+                on_feel = "Tiny, fragile bones. They click together.",
+                food = nil,
+            },
+        },
+        transitions = {
+            { from = "fresh", to = "bloated", verb = "_tick", condition = "timer_expired" },
+            { from = "bloated", to = "rotten", verb = "_tick", condition = "timer_expired" },
+            { from = "rotten", to = "bones", verb = "_tick", condition = "timer_expired" },
+        },
+
+        transfer_contents = true,
+    },
 }

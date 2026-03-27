@@ -186,4 +186,76 @@ return {
             pack_size = 1,
         },
     },
+
+    -- Death reshape (WAVE-1)
+    death_state = {
+        template = "furniture",
+        name = "a dead wolf",
+        description = "The wolf lies on its side, tongue lolling, amber eyes staring at nothing. Blood pools beneath the thick, scarred coat. The massive jaw hangs slack.",
+        keywords = {"dead wolf", "wolf corpse", "wolf carcass", "dead canine", "wolf"},
+        room_presence = "A dead wolf sprawls across the floor, blood pooling beneath it.",
+
+        -- Physical
+        portable = false,
+        size = "large",
+        weight = 45,
+
+        -- Sensory (on_feel mandatory — primary dark sense)
+        on_feel = "Coarse fur, already cooling. The massive jaw hangs slack. The body is heavy, immovable.",
+        on_smell = "Blood and wet fur. The territorial musk is fading fast.",
+        on_listen = "Nothing. The growl has stopped.",
+        on_taste = "Rank meat and matted fur. You spit blood.",
+
+        -- Food properties (too big to cook whole — requires butchery, Phase 4)
+        food = {
+            category = "meat",
+            raw = true,
+            edible = false,
+            cookable = false,
+        },
+
+        -- Container (large corpse can hold 5 items)
+        container = {
+            capacity = 5,
+            categories = { "tiny", "small", "medium" },
+        },
+
+        -- Spoilage FSM
+        initial_state = "fresh",
+        states = {
+            fresh = {
+                description = "A freshly killed wolf. The blood is still warm, pooling beneath the body.",
+                room_presence = "A dead wolf sprawls across the floor, blood pooling beneath it.",
+                duration = 40,
+            },
+            bloated = {
+                description = "The wolf's body has swollen grotesquely, its belly distended with gas. The stench is terrible.",
+                room_presence = "A bloated wolf carcass sprawls across the floor, reeking.",
+                on_smell = "A wall of decay. The sweet-sick stench of bloating flesh.",
+                food = { cookable = false },
+                duration = 50,
+            },
+            rotten = {
+                description = "The wolf is a putrid mass of matted fur and exposed tissue. The floor beneath is stained dark.",
+                room_presence = "A rotting wolf carcass festers on the floor.",
+                on_smell = "Overwhelming rot. You can taste it in the air.",
+                food = { cookable = false, edible = false },
+                duration = 80,
+            },
+            bones = {
+                description = "A large scatter of wolf bones, picked clean. The skull grins with yellowed fangs.",
+                room_presence = "A pile of wolf bones lies on the floor, the skull's fangs still bared.",
+                on_smell = "Nothing — just dry bone.",
+                on_feel = "Heavy, dense bones. The skull is the size of your hand. Fangs still sharp.",
+                food = nil,
+            },
+        },
+        transitions = {
+            { from = "fresh", to = "bloated", verb = "_tick", condition = "timer_expired" },
+            { from = "bloated", to = "rotten", verb = "_tick", condition = "timer_expired" },
+            { from = "rotten", to = "bones", verb = "_tick", condition = "timer_expired" },
+        },
+
+        transfer_contents = true,
+    },
 }

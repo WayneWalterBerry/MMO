@@ -165,4 +165,78 @@ return {
             pack_size = 1,
         },
     },
+
+    -- Death reshape (WAVE-1)
+    death_state = {
+        template = "small-item",
+        name = "a dead bat",
+        description = "A dead bat lies on the floor, wings crumpled and splayed like torn parchment. Its tiny mouth hangs open, revealing needle-thin fangs.",
+        keywords = {"dead bat", "bat corpse", "bat carcass", "bat"},
+        room_presence = "A dead bat lies on the floor, wings spread like crumpled parchment.",
+
+        -- Physical
+        portable = true,
+        size = "tiny",
+        weight = 0.15,
+
+        -- Sensory (on_feel mandatory — primary dark sense)
+        on_feel = "Papery wings, already stiffening. The fur is impossibly soft. No heartbeat.",
+        on_smell = "Guano and cooling flesh. A faint musk.",
+        on_listen = "Nothing. The chittering has stopped.",
+        on_taste = "Thin fur and tiny bones. Bitter.",
+
+        -- Food properties
+        food = {
+            category = "meat",
+            raw = true,
+            edible = false,
+            cookable = true,
+        },
+
+        -- Cooking recipe (read by cook verb)
+        crafting = {
+            cook = {
+                becomes = "cooked-bat-meat",
+                requires_tool = "fire_source",
+                message = "You singe the bat's leathery wings over the fire. The meat underneath is thin but edible.",
+                fail_message_no_tool = "You need a fire source to cook this.",
+            },
+        },
+
+        -- Spoilage FSM
+        initial_state = "fresh",
+        states = {
+            fresh = {
+                description = "A freshly killed bat. The wings are still pliable.",
+                room_presence = "A dead bat lies on the floor, wings spread like crumpled parchment.",
+                duration = 25,
+            },
+            bloated = {
+                description = "The bat's tiny body has swollen, wings stretched taut over distended flesh.",
+                room_presence = "A bloated bat carcass lies on the floor.",
+                on_smell = "The sweet stench of tiny decay.",
+                food = { cookable = false },
+                duration = 35,
+            },
+            rotten = {
+                description = "The bat is a shriveled husk, wings torn and matted with decay.",
+                room_presence = "A rotting bat carcass shrivels on the floor.",
+                on_smell = "A concentrated, sour rot.",
+                food = { cookable = false, edible = false },
+                duration = 50,
+            },
+            bones = {
+                description = "A tiny scatter of bat bones, thin as needles.",
+                room_presence = "A scattering of tiny bat bones sits on the floor.",
+                on_smell = "Nothing — just dry bone.",
+                on_feel = "Needle-thin bones, impossibly fragile. They snap at a touch.",
+                food = nil,
+            },
+        },
+        transitions = {
+            { from = "fresh", to = "bloated", verb = "_tick", condition = "timer_expired" },
+            { from = "bloated", to = "rotten", verb = "_tick", condition = "timer_expired" },
+            { from = "rotten", to = "bones", verb = "_tick", condition = "timer_expired" },
+        },
+    },
 }

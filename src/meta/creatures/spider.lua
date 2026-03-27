@@ -166,4 +166,28 @@ return {
             pack_size = 1,
         },
     },
+
+    -- Death reshape (WAVE-1)
+    death_state = {
+        template = "small-item",
+        name = "a dead spider",
+        description = "A dead spider lies curled on its back, legs drawn inward like a clenched fist. Its web sags, abandoned.",
+        keywords = {"dead spider", "spider corpse", "spider carcass", "dead arachnid", "spider"},
+        room_presence = "A dead spider lies curled beneath a sagging web.",
+        reshape_narration = "The spider's abdomen splits, spilling a tangle of silk.",
+
+        -- Physical
+        portable = true,
+        size = "small",
+        weight = 0.5,
+
+        -- Sensory (on_feel mandatory — primary dark sense)
+        on_feel = "Dry, brittle legs that crumble at the touch. A hard chitin shell, hollow-light.",
+        on_smell = "A faint chemical bitterness. Dry chitin and musty silk.",
+        on_listen = "Nothing. The web vibrates faintly in the air.",
+        on_taste = "Dry shell and acrid venom. Your tongue goes numb.",
+
+        -- Death byproducts (silk drops on death)
+        byproducts = { "silk-bundle" },
+    },
 }

@@ -174,4 +174,86 @@ return {
             pack_size = 1,
         },
     },
+
+    -- Death reshape (WAVE-1)
+    death_state = {
+        template = "small-item",
+        name = "a dead cat",
+        description = "A dead grey cat lies on its side, eyes glassy and half-closed. Its fur is matted with blood and its claws are still extended.",
+        keywords = {"dead cat", "cat corpse", "cat carcass", "dead feline", "cat"},
+        room_presence = "A dead cat lies crumpled on the floor.",
+
+        -- Physical
+        portable = true,
+        size = "small",
+        weight = 3.5,
+
+        -- Sensory (on_feel mandatory — primary dark sense)
+        on_feel = "Soft fur over a limp body, already cooling. The claws are still extended, pricking your fingers.",
+        on_smell = "Blood and warm fur. The musk is already fading.",
+        on_listen = "Nothing. The purr is gone.",
+        on_taste = "Fur and blood. No.",
+
+        -- Food properties
+        food = {
+            category = "meat",
+            raw = true,
+            edible = false,
+            cookable = true,
+        },
+
+        -- Cooking recipe (read by cook verb)
+        crafting = {
+            cook = {
+                becomes = "cooked-cat-meat",
+                requires_tool = "fire_source",
+                message = "You hold the cat over the flames. The fur blackens and curls away, leaving dark meat.",
+                fail_message_no_tool = "You need a fire source to cook this.",
+            },
+        },
+
+        -- Container (small corpse can hold 2 items)
+        container = {
+            capacity = 2,
+            categories = { "tiny", "small" },
+        },
+
+        -- Spoilage FSM
+        initial_state = "fresh",
+        states = {
+            fresh = {
+                description = "A freshly killed cat. The blood is still wet on its grey fur.",
+                room_presence = "A dead cat lies crumpled on the floor.",
+                duration = 30,
+            },
+            bloated = {
+                description = "The cat's body has swollen, its belly taut with gas. The fur is slick.",
+                room_presence = "A bloated cat carcass lies on the floor, reeking.",
+                on_smell = "The sweet, cloying stench of decay.",
+                food = { cookable = false },
+                duration = 40,
+            },
+            rotten = {
+                description = "The cat is a matted ruin of fur and exposed tissue. Flies circle.",
+                room_presence = "A rotting cat carcass festers on the floor.",
+                on_smell = "Overwhelming rot. Your eyes water.",
+                food = { cookable = false, edible = false },
+                duration = 60,
+            },
+            bones = {
+                description = "A scatter of cat bones, picked clean.",
+                room_presence = "A pile of cat bones sits on the floor.",
+                on_smell = "Nothing — just dry bone.",
+                on_feel = "Slender, fragile bones. They shift under your touch.",
+                food = nil,
+            },
+        },
+        transitions = {
+            { from = "fresh", to = "bloated", verb = "_tick", condition = "timer_expired" },
+            { from = "bloated", to = "rotten", verb = "_tick", condition = "timer_expired" },
+            { from = "rotten", to = "bones", verb = "_tick", condition = "timer_expired" },
+        },
+
+        transfer_contents = true,
+    },
 }
