@@ -1,0 +1,17 @@
+return {
+    guid = "{fc0f2712-62e6-4c02-b3a2-cc95b946be93}",
+    name = "chitin",
+    density = 600,
+    melting_point = nil,
+    ignition_point = 400,
+    hardness = 5,
+    flexibility = 0.2,
+    absorbency = 0.0,
+    opacity = 1.0,
+    flammability = 0.1,
+    conductivity = 0.1,
+    fragility = 0.3,
+    value = 1,
+    color = "dark brown",
+    max_edge = 0.3,
+}
