@@ -32,7 +32,7 @@ try {
         exit 1
     }
 } catch {
-    Write-Host "DEPLOY BLOCKED: Could not run tests — $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "DEPLOY BLOCKED: Could not run tests - $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 } finally {
     Pop-Location

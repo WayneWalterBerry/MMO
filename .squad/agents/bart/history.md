@@ -1379,3 +1379,24 @@ Updated all plan files to reflect Phase 2 NPC+Combat completion:
 
 **LOC management:** Compacted has_prey_in_room/select_prey_target to single-line style, removed redundant comments in check_morale. Net result: 526 LOC (4 under the 530 guard).
 
+
+## Phase 4 Plan v1.1 — All Review Blockers Fixed (2026-08-20)
+
+**Task:** Fix all 19 blockers from 6 reviewer reports on Phase 4 implementation plan.
+
+**Reviews processed:** Moe (REJECT, 3 blockers), Marge (CONDITIONAL, 5 blockers), Chalmers (CONDITIONAL, 5 blockers), CBG (CONDITIONAL, 4 blockers), Flanders (CONDITIONAL, 3 blockers), Smithers (CONDITIONAL, 3 blockers).
+
+**Key decisions made:**
+1. **Stress thresholds:** 3/6/10 (was 1/3/5). First-kill trigger removed. Overwhelmed debuffs reduced (-2 atk, +30% flee, 20% move).
+2. **Web mechanic:** Simplified to NPC movement obstacle (no size system, no trap state, no escape difficulty).
+3. **Pack tactics:** Simplified to stagger attacks + individual wolf AI. Full zone-targeting deferred to Phase 5.
+4. **Crafting syntax:** Tier 1 recipe-ID (craft silk-rope). English syntax deferred to Phase 5.
+5. **Silk-rope:** Immediate Level 1 use-case (courtyard well puzzle).
+6. **Silk-bandage:** Dual-purpose (+5 HP + stops bleeding tick).
+7. **Narration pipeline:** WAVE-0 design task with Smithers. ctx.narrate() convention.
+8. **Territory radius:** BFS exit-graph hops. Marker is invisible room object.
+9. **Weapon metadata:** Moved from WAVE-5 to WAVE-4.
+10. **Regression baseline:** PHASE-3-FINAL-COUNT measured at GATE-0, checked at every subsequent gate.
+
+**Files changed:** plans/npc-combat/npc-combat-implementation-phase4.md (v1.0 → v1.1)
+**Decision written:** .squad/decisions/inbox/bart-phase4-fixes.md

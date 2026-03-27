@@ -343,7 +343,8 @@ test("8. creature_died stimulus emitted on kill", function()
     creatures.emit_stimulus = orig_emit
 
     -- Check if rat died and stimulus was emitted
-    if rat.health <= 0 then
+    -- Note: death reshape sets health to nil (creature becomes corpse)
+    if not rat.health or rat.health <= 0 then
         local found = false
         for _, e in ipairs(emitted) do
             if e.type == "creature_died" then found = true; break end

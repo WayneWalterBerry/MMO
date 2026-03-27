@@ -2,8 +2,8 @@
 
 **Author:** Bart (Architecture Lead)
 **Date:** 2026-08-16
-**Version:** v1.0 (initial draft)
-**Status:** 📝 DRAFT — Pending Wayne review
+**Version:** v1.1 (all review blockers resolved)
+**Status:** 📝 REVISED — All 6 reviewer blockers addressed
 **Requested By:** Wayne "Effe" Berry
 **Governs:** Phase 4: Butchery System → Loot Tables → Stress Injury → Spider Web Creation → Creature Crafting → Advanced Behaviors
 **Predecessor:** `plans/npc-combat/npc-combat-implementation-phase3.md` (Phase 3 — ✅ COMPLETE, ~209 tests)
@@ -96,6 +96,8 @@ Same protocol as Phase 1/2/3: wave → parallel agents → gate → pass → che
 ## Section 3: Dependency Graph
 
 ```
+PRE-WAVE-0: Wayne answers Q1–Q7 (decision tree recorded in decisions inbox)
+    ↓
 WAVE-0: Pre-Flight (Audit + GUID Assignment + Architecture Docs)
 ├── [Bart]     LOC audit: verify all modules <500 post-Phase 3
 ├── [Bart]     GUID pre-assignment for Phase 4 objects (~18 GUIDs)
@@ -172,6 +174,19 @@ Phase 3 ──→ W0 (audit) ──→ W1 (butchery) ──→ W2 (loot tables) 
 
 **Parallelization note:** After W1, waves W2 and W4 could theoretically run in parallel since they touch different subsystems. The serial chain is the conservative approach. W3 (stress) needs W2's loot table tests but has minimal file overlap.
 
+### Test Stability Chain (v1.1 — Marge review)
+
+```
+W1 → W2 (code ready)
+W2 → W3 (10+ test iterations for RNG stability before stress work) ← critical path
+W3 → W4 (behavior stable before spider placement)
+W4 → W5 (all subsystems green before pack tactics testing)
+```
+
+Each gate includes:
+- Deterministic seed requirement (math.randomseed(42)) for all RNG-dependent tests
+- 100% pass rate on 3 consecutive runs (no flaky tests advance)
+
 ---
 
 ## Section 4: Implementation Waves (Detailed)
@@ -189,6 +204,8 @@ Phase 3 ──→ W0 (audit) ──→ W1 (butchery) ──→ W2 (loot tables) 
 | Brockman | **Architecture docs** | Write `docs/architecture/engine/butchery-system.md` (butchery pipeline, tool requirements, product metadata) and `docs/architecture/engine/loot-tables.md` (weighted roll algorithm, metadata spec, instantiation flow). |
 | Bart | **Doc review** | Review Brockman's architecture docs for technical accuracy before GATE-0 sign-off. |
 | Nelson | **Test verification** | Run `lua test/run-tests.lua`, verify ~209 tests pass. Register `test/butchery/`, `test/loot/`, `test/stress/` directories in test runner. |
+| Smithers | **Embedding collision audit** (v1.1) | Check "knife", "rope", "meat", "web" against existing embedding index for disambiguation collisions. Adjust adjective phrases if collisions found. |
+| Smithers + Bart | **Narration pipeline design** (v1.1) | Design `src/engine/narration/init.lua` interface. Document in `docs/architecture/ui/narration-pipeline.md`. Agree on `ctx.narrate(source, type, message)` convention. Must be signed off before WAVE-3 code starts. |
 
 #### Files Modified/Created
 
@@ -198,14 +215,35 @@ Phase 3 ──→ W0 (audit) ──→ W1 (butchery) ──→ W2 (loot tables) 
 | `docs/architecture/engine/loot-tables.md` | Brockman | CREATE |
 | `test/run-tests.lua` | Nelson | MODIFY (register new dirs) |
 | `.squad/decisions/inbox/bart-phase4-guids.md` | Bart | CREATE |
+| `docs/architecture/ui/narration-pipeline.md` | Smithers + Bart | CREATE (v1.1) |
 
 #### GATE-0 Criteria
 
+**Pre-GATE-0 Requirement:** Wayne answers Q1–Q7 (decisions recorded in `.squad/decisions/inbox/`).
+
 - [ ] All engine modules <500 LOC (or split plan documented)
 - [ ] ~18 GUIDs pre-assigned and recorded
-- [ ] `docs/architecture/engine/butchery-system.md` exists and reviewed ✓
-- [ ] `docs/architecture/engine/loot-tables.md` exists and reviewed ✓
-- [ ] `lua test/run-tests.lua` — ~209 tests pass, new dirs registered
+- [ ] `docs/architecture/engine/butchery-system.md` CREATED by Brockman
+      * Includes: pipeline diagram, tool requirements, product metadata spec, integration points
+      * Reviewed for accuracy by Bart
+      * Reviewed for completeness by Chalmers
+      * SIGN-OFF: Bart + Chalmers (in decision inbox)
+- [ ] `docs/architecture/engine/loot-tables.md` CREATED by Brockman
+      * Includes: weighted roll algorithm, metadata spec, instantiation flow, example creature
+      * Reviewed for accuracy by Bart
+      * Reviewed for completeness by Chalmers
+      * SIGN-OFF: Bart + Chalmers (in decision inbox)
+- [ ] Architecture docs bookend enforced: design docs DEFERRED to WAVE-5 (verify none created before then)
+- [ ] Embedding index collision audit (Smithers): check "knife", "meat", "rope", "web" for disambiguation issues. Adjust adjectives if collisions found.
+- [ ] Narration pipeline interface designed: Smithers + Bart sign off on `ctx.narrate(source, type, message)` convention. Document in `docs/architecture/ui/narration-pipeline.md`.
+- [ ] Phase 3 regression baseline measured:
+      * Run `lua test/run-tests.lua` on Phase 3 HEAD (before Phase 4 work)
+      * Record baseline test count as PHASE-3-FINAL-COUNT (expected ~209)
+      * GATE-0 target: PHASE-3-FINAL-COUNT tests pass (no regression)
+- [ ] LOC audit complete: all engine modules <500 LOC post-Phase 3
+      * Estimated Phase 4 budget: ~1,540 new+modified LOC (Appendix B)
+      * Acceptable LOC variance: ±15% per wave, ±25% total across Phase 4
+      * If budget exceeded in any wave: implement split (e.g., butchery.lua extracted from crafting.lua)
 - [ ] Git commit: `chore: Phase 4 WAVE-0 pre-flight complete`
 
 ---
@@ -302,7 +340,7 @@ end
 | Smithers | **`butcher` verb handler** | Implement verb in crafting.lua (or butchery.lua if split in WAVE-0). Aliases: `carve`, `skin`, `fillet`. Tool capability check for "butchering". |
 | Flanders | **butchery_products on wolf** | Add `death_state.butchery_products` block to `src/meta/creatures/wolf.lua`. 3 meat, 2 bone, 1 hide. Duration 5 min. |
 | Flanders | **butchery_products on spider** | Add to `src/meta/creatures/spider.lua`. Products: 1 spider-meat (poison risk!), 1 silk-bundle (already exists from Phase 3). |
-| Flanders | **wolf-meat.lua** | Cookable small-item. Nutrition 35, heal 8. Similar to cooked-rat-meat but raw. FSM: raw → cooked. |
+| Flanders | **wolf-meat.lua** | Cookable small-item. Nutrition 35, heal 8. Material: meat. **FSM:** `initial_state = "raw"`, states: `raw` (on_feel = "Cold, slippery flesh", on_taste = "Gamey and raw — risky to eat uncooked") and `cooked` (on_feel = "Warm, firm meat", on_taste = "Rich, gamey flavor"). Transition: `raw → cooked` via `cook` verb (follows cooked-rat-meat pattern). Creates `cooked-wolf-meat.lua` as mutation target. |
 | Flanders | **wolf-bone.lua** | Small-item. Can be used as improvised weapon (blunt, force 3). Material: bone. |
 | Flanders | **wolf-hide.lua** | Small-item. Crafting material for armor repairs (Phase 5+). Material: hide. |
 | Flanders | **butcher-knife.lua** | Tool object. Capabilities: `butchering`, `cutting`. Keywords: knife, butcher knife, carving knife. |
@@ -330,6 +368,7 @@ end
 - [ ] `butcher rat` → error (rat is small-item, not furniture; can be cooked directly)
 - [ ] wolf-meat can be cooked with existing `cook` verb
 - [ ] butcher-knife recognized by parser, has butchering capability
+- [ ] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
 - [ ] `lua test/run-tests.lua` — ~215 tests pass
 - [ ] Git commit: `feat: butchery system (WAVE-1)`
 
@@ -475,6 +514,9 @@ return M
 - [ ] Spider 10% chance drops spider-fang
 - [ ] Loot appears in room after death (not inside corpse)
 - [ ] Meta-lint passes on all creature files with loot_table
+- [ ] Deterministic seed loot tests verified (math.randomseed(42) consistency)
+- [ ] No flaky test reruns (100% pass rate on 3 consecutive runs)
+- [ ] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
 - [ ] `lua test/run-tests.lua` — ~223 tests pass
 - [ ] Git commit: `feat: loot tables engine (WAVE-2)`
 
@@ -501,18 +543,18 @@ return {
     name = "acute stress",
     category = "psychological",
 
-    -- Severity levels
+    -- Severity levels (v1.1: thresholds raised per CBG review — single kill must NOT cripple player)
     levels = {
-        { name = "shaken", threshold = 1, description = "Your hands tremble slightly." },
-        { name = "distressed", threshold = 3, description = "You're breathing hard, heart pounding." },
-        { name = "overwhelmed", threshold = 5, description = "Panic grips you. Everything feels wrong." },
+        { name = "shaken", threshold = 3, description = "Your hands tremble slightly." },
+        { name = "distressed", threshold = 6, description = "You're breathing hard, heart pounding." },
+        { name = "overwhelmed", threshold = 10, description = "Panic grips you. Everything feels wrong." },
     },
 
-    -- Effects at each level
+    -- Effects at each level (v1.1: overwhelmed debuffs reduced — hindrance, not wall)
     effects = {
         shaken = { attack_penalty = -1 },
         distressed = { attack_penalty = -2, flee_bias = 0.2 },
-        overwhelmed = { attack_penalty = -4, flee_bias = 0.5, movement_penalty = 0.5 },
+        overwhelmed = { attack_penalty = -2, flee_bias = 0.3, movement_penalty = 0.2 },
     },
 
     -- Cure conditions
@@ -523,12 +565,13 @@ return {
         description = "With time and safety, the panic subsides.",
     },
 
-    -- Stress sources (trauma triggers)
+    -- Stress sources (trauma triggers) (v1.1: first-kill spike removed per CBG review — victory rewards, not punishes)
     triggers = {
         witness_creature_death = 1,      -- +1 stress per witnessed death
         near_death_combat = 2,           -- +2 stress when health < 10%
-        player_first_kill = 3,           -- +3 stress on first kill (one-time)
         witness_gore = 1,                -- +1 stress seeing butchery
+        -- NOTE: player_first_kill removed. Single victory should not cripple the player.
+        -- Stress accumulates gradually through repeated exposure, not a one-time spike.
     },
 },
 ```
@@ -585,10 +628,11 @@ end
 
 - [ ] Witness creature death → player gains +1 stress
 - [ ] Near-death combat (health < 10%) → player gains +2 stress
-- [ ] Stress level "shaken" → -1 attack penalty (verified in combat)
-- [ ] Stress level "overwhelmed" → -4 attack, +50% flee bias, 50% movement penalty
+- [ ] Stress level "shaken" (threshold 3) → -1 attack penalty (verified in combat)
+- [ ] Stress level "overwhelmed" (threshold 10) → -2 attack, +30% flee bias, 20% movement penalty
 - [ ] Rest in safe room for 2 hours → stress cured
 - [ ] Stress visible in status output
+- [ ] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
 - [ ] `lua test/run-tests.lua` — ~230 tests pass
 - [ ] Git commit: `feat: stress injury system (WAVE-3)`
 
@@ -649,14 +693,14 @@ return {
     
     material = "silk",
     
-    -- Trap mechanic
-    trap = {
-        active = true,
-        affects_sizes = {"tiny", "small"},  -- rat, spider, bat (not player, cat, wolf)
-        effect = "immobilize",
-        escape_difficulty = 3,  -- 1-5 scale
-        message_trigger = "Something skitters into the web and struggles.",
-        message_escape = "It tears free of the web.",
+    -- Movement obstacle mechanic (v1.1: simplified from size-based trap per CBG review)
+    -- Web blocks NPC movement (any creature, size-agnostic) but player can walk through.
+    -- No size system, no escape_difficulty, no trap state machine.
+    obstacle = {
+        blocks_npc_movement = true,  -- NPCs cannot pass through web
+        player_passable = true,      -- player can walk through (sticky but passable)
+        message_blocked = "Something skitters into the web and struggles.",
+        message_destroyed = "The web tears apart.",
     },
     
     -- Player interaction
@@ -723,14 +767,27 @@ crafting_recipes = {
 | Agent | Task | Details |
 |-------|------|---------|
 | Bart | **create_object action** | Add to creatures/init.lua action dispatch. Cooldown tracking, condition checking, instantiation. ~50 LOC. |
-| Flanders | **spider-web.lua** | Trap object with affects_sizes, escape_difficulty, passable=true for player. |
-| Flanders | **silk-rope.lua** | Craftable item. Can be used for climbing (Phase 5+), binding. |
-| Flanders | **silk-bandage.lua** | Craftable item. Healing item (heal 5 HP, single use). |
+| Flanders | **spider-web.lua** | Movement obstacle (NPC-blocking, player-passable). No size system or trap state machine. |
+| Flanders | **silk-rope.lua** | Craftable item. Immediate Level 1 use: `tie rope to hook` (courtyard well puzzle). Also usable for binding (Phase 5+). Material: silk. |
+| Flanders | **silk-bandage.lua** | Craftable item. **Dual-purpose healing:** instant +5 HP AND stops active bleeding injury tick damage (treatment, not just raw HP). Single-use (consumed). FSM: `unused → used` (used state = consumed, removed from inventory). Can be used during combat (no safe-room restriction). Loot table weight: uncommon (spider silk is limited resource). |
 | Flanders | **spider.lua update** | Add creates_object behavior, web_ambush behavior. Max 2 webs per room. |
-| Smithers | **craft verb extensions** | Add recipe lookup for `craft rope from silk`, `craft bandage from silk`. Parser aliases. |
-| Moe | **cellar spider placement** | Place spider in cellar.lua with appropriate spawn_point for web creation. |
-| Nelson | **Web/trap tests** | `test/creatures/test-spider-web.lua` (creation, trap trigger, escape). `test/crafting/test-silk-crafting.lua` (silk→rope, silk→bandage). ~8 tests. |
+| Smithers | **craft verb extensions** | Add recipe lookup for `craft silk-rope`, `craft silk-bandage`. Tier 1 recipe-ID dispatch (no `craft X from Y` syntax in Phase 4). Parser aliases: make, create. |
+| Moe | **cellar spider placement** | Place spider in `src/meta/rooms/cellar.lua` with spatial spec below. |
+| Nelson | **Web/obstacle tests** | `test/creatures/test-spider-web.lua` (creation, NPC blocking, player passable). `test/crafting/test-silk-crafting.lua` (silk→rope, silk→bandage). ~8 tests. |
+
+#### Spider Placement Spatial Spec (v1.1 — Moe blocker resolved)
+
+```
+Cellar Spider Placement:
+- Spider position: floor, south wall near barrel
+- Web spawn zones: corners (barrel-side corner, torch-bracket corner)
+- Blocked zones: near brazier (heat source — spider avoids), within 1 tile of exits
+- Max active webs: 2 in cellar room
+- Room capacity: 1 spider + 1 rat (existing) coexist; spider does NOT spawn in deep-cellar or storage-cellar
+- Spatial relationships: spider avoids brazier if lit; prefers dark corners
+```
 | Nelson | **LLM walkthrough** | kill spider → get silk → craft rope → use rope (or bandage for healing). |
+| Smithers | **Weapon combat metadata** (moved from W5) | Add combat metadata (force, damage_type, reach) to remaining weapon objects: candlestick, poker, broken-bottle, etc. Parallel track alongside spider ecology. |
 
 #### Files Created/Modified
 
@@ -742,23 +799,37 @@ crafting_recipes = {
 | `src/meta/objects/silk-bandage.lua` | Flanders | CREATE |
 | `src/meta/creatures/spider.lua` | Flanders | MODIFY (creates_object, web_ambush) |
 | `src/engine/verbs/crafting.lua` | Smithers | MODIFY (craft recipes) |
-| `src/meta/world/cellar.lua` | Moe | MODIFY (spider placement) |
+| `src/meta/rooms/cellar.lua` | Moe | MODIFY (spider placement) |
 | `test/creatures/test-spider-web.lua` | Nelson | CREATE |
 | `test/crafting/test-silk-crafting.lua` | Nelson | CREATE |
 | `src/engine/parser/embedding-index.json` | Smithers | MODIFY (craft aliases) |
+| `src/meta/objects/candlestick.lua` | Smithers | MODIFY (combat metadata, moved from W5) |
+| `src/meta/objects/fire-poker.lua` | Smithers | MODIFY (combat metadata, moved from W5) |
 
 #### GATE-4 Criteria
 
 - [ ] Spider creates web after 30 min cooldown (deterministic test)
-- [ ] Web traps rat (tiny) — rat immobilized
-- [ ] Web does NOT trap wolf (medium) — size filter works
+- [ ] Web blocks NPC movement (rat cannot pass through web — size-agnostic obstacle)
 - [ ] Player can walk through web (passable)
-- [ ] `craft rope from silk` (2 silk-bundle) → silk-rope
-- [ ] `craft bandage from silk` (1 silk-bundle) → 2 silk-bandage
-- [ ] silk-bandage heals 5 HP when used
-- [ ] Spider attacks trapped rat (web_ambush behavior)
+- [ ] `craft silk-rope` (2 silk-bundle) → silk-rope (Tier 1 noun = recipe ID)
+- [ ] `craft silk-bandage` (1 silk-bundle) → 2 silk-bandage
+- [ ] silk-bandage heals 5 HP when used; also stops active bleeding injury tick (dual-purpose)
+- [ ] silk-rope has immediate Level 1 use-case (see Silk Rope Use-Case below)
+- [ ] Spider approaches prey blocked by web (ambush behavior)
+- [ ] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
 - [ ] `lua test/run-tests.lua` — ~240 tests pass
 - [ ] Git commit: `feat: spider ecology - webs and silk crafting (WAVE-4)`
+
+#### Silk Rope Level 1 Use-Case (v1.1 — CBG blocker resolved)
+
+Silk-rope must have immediate gameplay value in Level 1, not just "craft for Phase 5":
+- **Primary use:** `tie rope to hook` in courtyard well → player can descend safely (avoids fall damage)
+- **Puzzle integration:** Sideshow Bob designs courtyard well puzzle using silk-rope as solution
+- **Benefit:** Spider ecology becomes non-optional; silk is immediately valuable
+
+#### Crafting Syntax Decision (v1.1 — Smithers blocker resolved)
+
+Phase 4 uses **Tier 1 recipe-ID crafting**: player types `craft silk-rope` (noun = recipe ID). The English syntax `craft rope from silk` is **deferred to Phase 5** (requires Tier 3 GOAP or Tier 2 phrase explosion). Parser aliases: `craft silk-rope`, `make silk-rope`, `create silk-rope` → all resolve to same recipe.
 
 ---
 
@@ -766,9 +837,11 @@ crafting_recipes = {
 
 **Goal:** Add creature coordination (pack tactics), territorial systems, and complete Phase 4 documentation.
 
-#### Pack Tactics Design
+#### Pack Tactics Design (v1.1 — Simplified per CBG review)
 
-Wolves in the same room coordinate attacks:
+**Scope decision:** Full alpha/beta/omega role system with zone-targeting is **deferred to Phase 5**. Phase 4 implements **simplified pack awareness** instead: wolves in the same room are aware of each other and stagger attacks, but do NOT choose combat zones or require combat engine changes.
+
+Wolves in the same room have basic coordination:
 
 ```lua
 -- In wolf.lua behavior
@@ -777,27 +850,24 @@ behavior = {
     
     pack_tactics = {
         enabled = true,
-        role_selection = function(wolves, ctx)
-            -- Alpha: highest aggression attacks
-            -- Beta: flanks (targets different zone)
-            -- Omega: holds back as reserve
-            table.sort(wolves, function(a, b)
-                return a.behavior.aggression > b.behavior.aggression
-            end)
-            wolves[1].combat_role = "alpha"  -- primary attacker
-            if wolves[2] then wolves[2].combat_role = "beta" end
-            if wolves[3] then wolves[3].combat_role = "omega" end
-        end,
-        coordination = {
-            alpha = { target_zone = "torso", priority = 1 },
-            beta = { target_zone = "legs", priority = 0.8, delay = 1 },
-            omega = { target_zone = "arms", priority = 0.5, condition = "alpha_injured" },
-        },
+        -- Simplified: wolves attack in sequence, not simultaneously
+        -- Alpha (highest aggression) attacks first; others wait 1 game-turn
+        stagger_attacks = true,
+        alpha_selection = "highest_aggression",  -- emergent from existing metadata
+        -- NO zone targeting (combat engine unchanged)
+        -- NO omega reserve condition (too complex for Level 1)
     },
 },
 ```
 
-#### Territorial Marking System
+**What's deferred to Phase 5:** Zone-targeting (torso/legs/arms), omega reserve conditions, combat engine changes for coordinated zone selection. These require combat system maturity beyond Phase 4.
+
+**Individual wolf AI improvements (replaces full pack tactics LOC budget):**
+- Defensive retreat: flee when health < 20%, position behind furniture
+- Ambush positioning: wait near web before striking (reuses WAVE-4 web proximity)
+- Smart positioning: prefer attacking from doorway (blocks player escape)
+
+#### Territorial Marking System (v1.1 — Spatial scope clarified per Flanders review)
 
 ```lua
 -- In wolf.lua behavior
@@ -807,7 +877,7 @@ behavior = {
     territorial = {
         marks_territory = true,
         mark_object = "territory-marker",  -- invisible marker object
-        mark_radius = 2,  -- rooms
+        mark_radius = 2,  -- rooms (measured as exit-graph hops: 2 = 2 exits away from marked room)
         mark_duration = "1 day",
         
         response_to_mark = function(wolf, marker, ctx)
@@ -823,18 +893,25 @@ behavior = {
 },
 ```
 
+**Territorial Radius Spec (v1.1):**
+- **"Radius" = exit-graph hops.** `mark_radius = 2` means the marker affects the marked room + all rooms reachable within 2 exits. Engine uses BFS on room exit graph.
+- **territory-marker.lua** is an **invisible object placed in rooms** (`room:add_object(marker)`), NOT room metadata. Tracks: `owner` (creature GUID), `timestamp` (game time placed), `radius` (integer, hops).
+- **Engine check:** `src/engine/creatures/territorial.lua` → `is_in_territory(creature, room)` performs BFS from marker locations.
+- **Level 1 scope:** With 7 rooms, radius=2 covers most of the cellar area. Moe confirms room topology before WAVE-5.
+
 #### Assignments
 
 | Agent | Task | Details |
 |-------|------|---------|
-| Bart | **Pack tactics engine** | In creatures/init.lua or new pack.lua module. Role assignment (alpha/beta/omega), coordinated attack timing, zone distribution. ~100 LOC. |
-| Bart | **Territorial marking** | In creatures/init.lua. Mark placement, mark detection, response dispatch. ~80 LOC. |
+| Bart | **Pack tactics engine** | In creatures/init.lua or new pack.lua module. Simplified: stagger attacks, alpha selection by aggression. Individual wolf AI: defensive retreat, ambush positioning, smart positioning. ~80 LOC. |
+| Bart | **Territorial marking** | In creatures/init.lua. Mark placement, BFS radius detection, response dispatch. ~80 LOC. |
 | Bart | **Ambush behavior** | Spider ambush near web (from WAVE-4) + general ambush pattern for any creature with `behavior.ambush = true`. |
-| Flanders | **territory-marker.lua** | Invisible object (description = nil, not findable by player). Tracks owner, timestamp, radius. |
-| Smithers | **Weapon combat metadata** | Add combat metadata (force, damage_type, reach) to remaining weapon objects: candlestick, poker, broken-bottle, etc. |
+| Flanders | **territory-marker.lua** | Invisible object placed in rooms (not room metadata). Tracks owner (creature GUID), timestamp, radius. Not findable by player. |
 | Brockman | **Phase 4 design docs** | `docs/design/crafting-system.md` (butchery, silk crafting). `docs/design/stress-system.md` (stress injury). `docs/design/creature-ecology.md` (webs, pack tactics, territory). |
-| Nelson | **Behavior tests** | `test/creatures/test-pack-tactics.lua` (role assignment, coordination). `test/creatures/test-territorial.lua` (marking, response). ~8 tests. |
-| Nelson | **Final LLM walkthrough** | Full Phase 4 scenario: kill wolf → butcher → cook meat → eat. Kill spider → get silk → craft rope. Witness death → stress → rest cure. 2+ wolves → pack attack. |
+| Nelson | **Behavior tests** | `test/creatures/test-pack-tactics.lua` (alpha selection, stagger attacks). `test/creatures/test-territorial.lua` (marking, BFS radius, response). ~8 tests. |
+| Nelson | **Final LLM walkthrough** | Full Phase 4 scenario: kill wolf → butcher → cook meat → eat. Kill spider → get silk → craft rope. Witness death → stress → rest cure. 2+ wolves → stagger attack. |
+
+**NOTE (v1.1):** Weapon combat metadata (Smithers) **moved to WAVE-4** as parallel track to reduce WAVE-5 bottleneck (per Marge review). See WAVE-4 assignments.
 
 #### Files Created/Modified
 
@@ -844,8 +921,6 @@ behavior = {
 | `src/engine/creatures/territorial.lua` | Bart | CREATE |
 | `src/engine/creatures/init.lua` | Bart | MODIFY (integrate pack + territorial) |
 | `src/meta/objects/territory-marker.lua` | Flanders | CREATE |
-| `src/meta/objects/candlestick.lua` | Smithers | MODIFY (combat metadata) |
-| `src/meta/objects/fire-poker.lua` | Smithers | MODIFY (combat metadata) |
 | `docs/design/crafting-system.md` | Brockman | CREATE |
 | `docs/design/stress-system.md` | Brockman | CREATE |
 | `docs/design/creature-ecology.md` | Brockman | CREATE |
@@ -854,20 +929,46 @@ behavior = {
 
 #### GATE-5 Criteria
 
-- [ ] 2 wolves in room → alpha attacks first, beta targets different zone
+- [ ] 2 wolves in room → alpha (highest aggression) attacks first, others stagger 1 turn delay
+- [ ] Individual wolf AI: defensive retreat when health < 20%
 - [ ] Wolf marks territory after entering new room
 - [ ] Different wolf responds to territory mark (avoid/challenge based on aggression)
-- [ ] All weapon objects have combat metadata
-- [ ] `docs/design/crafting-system.md` exists and complete
-- [ ] `docs/design/stress-system.md` exists and complete
-- [ ] `docs/design/creature-ecology.md` exists and complete
+- [ ] Territory radius check: BFS 2-hop from marked room works correctly
+- [ ] All weapon objects have combat metadata (completed in WAVE-4)
+- [ ] Design docs acceptance criteria met (see table below)
+- [ ] Design docs bookend enforced: no architecture docs modified after WAVE-0 (unless bug fix)
 - [ ] Final LLM walkthrough passes (full Phase 4 loop)
+- [ ] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
 - [ ] `lua test/run-tests.lua` — ~250 tests pass
 - [ ] Git commit: `feat: advanced behaviors + Phase 4 docs (WAVE-5)`
+
+#### WAVE-5 Design Docs Acceptance Criteria (v1.1 — Chalmers blocker resolved)
+
+| Doc | Author | Min Content | Reviewers | Sign-Off |
+|-----|--------|-------------|-----------|----------|
+| `docs/design/crafting-system.md` | Brockman | Butchery pipeline, loot tables integration, silk crafting recipes, Tier 1 recipe-ID syntax, balance notes | Bart, Nelson | Chalmers |
+| `docs/design/stress-system.md` | Brockman | Stress levels (3-tier, thresholds 3/6/10), trauma triggers, debuff mechanics, cure progression (rest + safe room), balance rationale | Bart, Nelson | Chalmers |
+| `docs/design/creature-ecology.md` | Brockman | Pack awareness (stagger attacks), territorial marking (BFS radius), web obstacle mechanics, ambush behavior, player interactions | Bart, Nelson | Chalmers |
 
 ---
 
 ## Section 5: Testing Gates
+
+### Regression Baseline Protocol (v1.1 — Marge/Chalmers blocker resolved)
+
+Every gate includes a Phase 3 regression check. The baseline is established in GATE-0:
+
+```
+GATE-0 Baseline Measurement:
+- [ ] Run `lua test/run-tests.lua` on Phase 3 HEAD (before Phase 4 work)
+- [ ] Record baseline test count as PHASE-3-FINAL-COUNT (expected ~209)
+- [ ] GATE-0 target: PHASE-3-FINAL-COUNT tests pass (no regression)
+- [ ] GATE-1 target: PHASE-3-FINAL-COUNT + 6 new tests (butchery)
+- [ ] GATE-2 target: GATE-1 count + 8 new tests (loot)
+- [ ] GATE-3 target: GATE-2 count + 7 new tests (stress)
+- [ ] GATE-4 target: GATE-3 count + 10 new tests (spider ecology + silk crafting)
+- [ ] GATE-5 target: GATE-4 count + 10 new tests (behaviors + integration)
+```
 
 ### GATE-0 — Pre-Flight
 
@@ -903,7 +1004,7 @@ behavior = {
 | Check | Owner | Criteria |
 |-------|-------|----------|
 | Trauma triggers | Nelson | Witness death → +1 stress |
-| Debuff application | Nelson | Shaken → -1 attack in combat test |
+| Debuff application | Nelson | Shaken (threshold 3) → -1 attack in combat test |
 | Cure mechanics | Nelson | Rest 2 hours safe room → stress cleared |
 | Status display | Smithers | Stress level visible in UI |
 | Test count | Nelson | ~230 tests pass |
@@ -913,7 +1014,7 @@ behavior = {
 | Check | Owner | Criteria |
 |-------|-------|----------|
 | Web creation | Nelson | Spider creates web after cooldown |
-| Trap mechanic | Nelson | Rat trapped, wolf not trapped |
+| Trap mechanic | Nelson | Web blocks NPC movement (obstacle, not size-based trap) |
 | Silk crafting | Nelson | 2 silk → rope, 1 silk → 2 bandage |
 | Bandage healing | Nelson | Use bandage → +5 HP |
 | Ambush behavior | Nelson | Spider attacks trapped prey |
@@ -923,8 +1024,8 @@ behavior = {
 
 | Check | Owner | Criteria |
 |-------|-------|----------|
-| Pack tactics | Nelson | Alpha/beta role assignment works |
-| Territorial | Nelson | Mark placement + response dispatch |
+| Pack tactics | Nelson | Alpha selection + stagger attacks (simplified) |
+| Territorial | Nelson | Mark placement + BFS radius + response dispatch |
 | Docs complete | Brockman | 3 design docs reviewed |
 | LLM walkthrough | Nelson | Full scenario passes |
 | Zero regressions | Nelson | ~250 tests pass |
@@ -943,6 +1044,8 @@ behavior = {
 | **Module size regression** | Medium | Medium | LOC audit in WAVE-0; split proactively |
 | **Crafting recipe explosion** | Low | Medium | Phase 4 adds only 2 recipes (silk); cap scope |
 | **Territorial marking invisible to player** | Medium | Low | Add "You smell wolf scent here" narration when entering marked room |
+| **WAVE-5 convergence bottleneck** (v1.1) | Medium | High | Pre-write weapon metadata schema in W4 (moved). Prototype pack awareness in W0. Docs outline in W0. Reduces W5 to Bart (pack + territorial) + Nelson (tests + LLM) + Brockman (docs). |
+| **Stress spiral** (v1.1) | Low (mitigated) | High | Thresholds raised to 3/6/10, first-kill trigger removed, overwhelmed debuffs reduced. Run micro-playtest: "Kill 1 wolf, track stress" with Wayne observer. |
 
 ---
 
@@ -964,8 +1067,10 @@ behavior = {
 | `src/meta/objects/wolf-*.lua` | W1 | Flanders | — |
 | `src/meta/objects/spider-*.lua` | W2, W4 | Flanders | — |
 | `src/meta/objects/silk-*.lua` | W4 | Flanders | — |
+| `src/meta/objects/candlestick.lua` | W4 | Smithers | — |
+| `src/meta/objects/fire-poker.lua` | W4 | Smithers | — |
 | `src/meta/injuries/stress.lua` | W3 | Flanders | — |
-| `src/meta/world/cellar.lua` | W4 | Moe | — |
+| `src/meta/rooms/cellar.lua` | W4 | Moe | — |
 | `docs/architecture/engine/*.md` | W0 | Brockman | Bart (review) |
 | `docs/design/*.md` | W5 | Brockman | — |
 | `test/butchery/*.lua` | W1 | Nelson | — |
@@ -986,8 +1091,8 @@ behavior = {
 | W1 | — | creatures, objects | butcher verb | — | tests | — |
 | W2 | loot engine, death | creatures, spider-fang | — | — | tests, lint | — |
 | W3 | injuries, combat | stress.lua | status UI | — | tests | — |
-| W4 | creatures/init | spider, silk objects | craft verb | cellar | tests | — |
-| W5 | pack, territorial | territory-marker | weapon meta | — | tests, LLM | design docs |
+| W4 | creatures/init | spider, silk objects | craft verb, weapon meta | cellar | tests | — |
+| W5 | pack, territorial | territory-marker | — | — | tests, LLM | design docs |
 
 **No overlaps detected.** Each agent has exclusive file ownership per wave.
 
@@ -1026,6 +1131,17 @@ behavior = {
 - **C: Designated safe rooms** — only rooms with `safe_room = true` metadata
 
 **Recommendation:** Option A (no creatures). Simple, consistent with current ecosystem. Option B introduces complexity we don't need until pets exist.
+
+**Safe Room Implementation Spec (v1.1):**
+
+Regardless of which option Wayne selects, the following spec applies:
+
+1. **Metadata field:** `is_safe_room` (boolean) on room template. Default: `nil` (not explicitly safe).
+2. **Engine check location:** `src/engine/injuries.lua` → `check_safe_room(ctx)` — called by rest/cure verb handler. NOT a loader-time enforcement.
+3. **Resolution logic (Option A):** `is_safe = (#ctx.room:get_creatures() == 0)`. No metadata required on rooms — engine checks creature presence at rest-time.
+4. **Resolution logic (Option C, if Wayne selects):** `is_safe = (ctx.room.is_safe_room == true)`. Moe marks `start-room.lua` and `hallway.lua` as `is_safe_room = true`.
+5. **Designated safe rooms (Level 1 candidates):** `start-room` (defensive position, top of stairs), `hallway` (transitional, multiple exits). NOT `cellar` (spider), NOT `courtyard` (wolf), NOT `crypt` (dark, dangerous).
+6. **Sensory feedback:** When player enters a safe room: `"The air feels calmer here. You could rest."` (added to room `on_enter` or emitted by rest verb check).
 
 ### Q3: Spider Web Visibility in Darkness
 
@@ -1137,6 +1253,11 @@ To be filled during WAVE-0 by Bart:
 
 **Total: ~1,540 LOC new + modified code, ~350 LOC tests**
 
+**LOC Deviation Guidance (v1.1 — Chalmers blocker resolved):**
+- Acceptable LOC variance: **±15% per wave**, up to **±25% total** across Phase 4
+- If budget exceeded in any wave: document reason in wave summary, implement split (e.g., butchery.lua extracted from crafting.lua)
+- If total Phase 4 exceeds ±25% (~1,925 LOC): flag for Phase 5 refactoring audit
+
 ---
 
 ## Phase 4 Completion Criteria
@@ -1146,11 +1267,11 @@ Phase 4 is complete when:
 1. ✅ Wolf corpse can be butchered into meat + bone + hide
 2. ✅ Loot tables replace fixed inventory on all creatures
 3. ✅ Stress injury inflicts on trauma, debuffs combat, cures with rest
-4. ✅ Spider creates webs that trap small creatures
-5. ✅ Silk bundles craft into rope and bandages
-6. ✅ Wolves coordinate attacks with pack tactics
-7. ✅ All design docs complete (crafting, stress, ecology)
-8. ✅ ~250 tests pass with zero regressions
+4. ✅ Spider creates webs that block NPC movement (obstacle, not trap)
+5. ✅ Silk bundles craft into rope (immediate Level 1 use) and bandages (healing + bleeding cure)
+6. ✅ Wolves coordinate with simplified pack awareness (stagger attacks)
+7. ✅ All design docs complete (crafting, stress, ecology) with acceptance criteria met
+8. ✅ ~250 tests pass with zero regressions against PHASE-3-FINAL-COUNT baseline
 9. ✅ Final LLM walkthrough demonstrates full Phase 4 loop
 
 ---
@@ -1161,4 +1282,48 @@ Phase 5 will address **food preservation** (salting, smoking, drying), **environ
 
 ---
 
-*Plan authored by Bart (Architecture Lead). Awaiting Wayne's input on 7 open questions before execution.*
+*Plan authored by Bart (Architecture Lead). v1.1 — all reviewer blockers resolved.*
+
+---
+
+## Changelog
+
+### v1.1 (2026-08-20) — All Review Blockers Fixed
+
+**19 blockers resolved from 6 reviewer reports:**
+
+| # | Blocker | Reviewer | Fix |
+|---|---------|----------|-----|
+| 1 | Wrong file paths `src/meta/world/` | Moe | Changed to `src/meta/rooms/` (2 instances) |
+| 2 | Safe room definition unspecified | Moe | Added implementation spec: metadata field, engine check location, Level 1 candidates |
+| 3 | Spider placement underspecified | Moe | Added spatial spec: position, web zones, blocked zones, room capacity |
+| 4 | Architecture docs bookend missing | Marge | Added explicit GATE-0 docs criteria + GATE-5 enforcement |
+| 5 | WAVE-5 scope bottleneck | Marge | Moved weapon metadata to WAVE-4 parallel track |
+| 6 | No regression gate | Marge | Added Phase 3 regression baseline to every gate |
+| 7 | GATE-0 docs lack reviewer assignment | Chalmers | Added Brockman author, Bart accuracy review, Chalmers completeness review, sign-off protocol |
+| 8 | LOC estimates need deviation tolerance | Chalmers | Added ±15% per wave, ±25% total, split-on-exceed policy |
+| 9 | Test count baseline undefined | Chalmers | Added PHASE-3-FINAL-COUNT measurement + incremental targets per gate |
+| 10 | Silk crafting lacks Level 1 use-case | CBG | Added silk-rope courtyard well puzzle; spider ecology becomes non-optional |
+| 11 | Stress overwhelmed is game-breaking | CBG | Raised thresholds to 3/6/10, removed first-kill spike, reduced overwhelmed debuffs |
+| 12 | Web trap too complex for V1 | CBG | Simplified to NPC movement obstacle (no size system, no trap state machine) |
+| 13 | Pack tactics scope unjustified | CBG | Simplified to stagger attacks + individual wolf AI; full zone-targeting deferred to Phase 5 |
+| 14 | Wolf-meat FSM unclear | Flanders | Added explicit raw→cooked states, sensory text per state, cooked-wolf-meat as mutation target |
+| 15 | Territory marker radius undefined | Flanders | Defined as exit-graph hops (BFS), marker is invisible room object, engine check via territorial.lua |
+| 16 | Silk-bandage healing interaction | Flanders | Specified dual-purpose: +5 HP instant AND stops bleeding tick; single-use, usable in combat |
+| 17 | Crafting syntax ambiguous | Smithers | Decided: Tier 1 recipe-ID (`craft silk-rope`); English syntax deferred to Phase 5 |
+| 18 | Narration pipeline missing | Smithers | Added WAVE-0 design task: Smithers + Bart create narration-pipeline.md + ctx.narrate() convention |
+| 19 | Embedding collision check missing | Smithers | Added WAVE-0 collision audit task for knife/meat/rope/web disambiguation |
+
+**Key architectural decisions:**
+- Stress thresholds: 3/6/10 (was 1/3/5). First-kill trigger removed. Overwhelmed = -2 atk, +30% flee, 20% move penalty (was -4/+50%/50%).
+- Web mechanic: NPC movement obstacle (was size-based trap with escape difficulty).
+- Pack tactics: stagger attacks + individual wolf AI (was full alpha/beta/omega zone-targeting).
+- Crafting: Tier 1 recipe-ID dispatch (was ambiguous `craft X from Y`).
+- Territory radius: BFS exit-graph hops (was undefined "rooms").
+- Safe room: engine-level creature-presence check OR room metadata (Wayne decides Option A vs C).
+- Silk-bandage: dual-purpose healing + bleeding cure (was HP-only).
+- Weapon metadata: moved to WAVE-4 (was WAVE-5).
+
+### v1.0 (2026-08-16) — Initial Draft
+- Phase 4 plan created by Bart. 6 waves, 31 tasks, ~1,540 LOC budget.
+- Submitted for review to all 6 squad members.
