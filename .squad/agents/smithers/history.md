@@ -571,3 +571,33 @@ ew_budget(cap) / create_budget(cap) factory returns {count, cap, overflow_emitte
 **Files changed:** src/engine/combat/narration.lua (355 lines added — witness templates, budget system, proximity logic)
 
 **Tests:** 16/16 witness narration tests pass. 186 test files total, 0 new regressions.
+
+### 2026-03-27: Phase 3 WAVE-3 — Cook verb handler + eat handler extensions
+
+**What shipped:** Cook verb handler in cooking.lua and eat handler extensions in consumption.lua, implementing the full cook→eat gameplay arc for the food system. Added heal effect handler to effects.lua.
+
+**Cook verb handler (cooking.lua, +71 LOC):**
+- `cook` verb with `roast`, `bake`, `grill` aliases — all registered and pointing to same handler
+- Finds food object in inventory first, then visible scope; requires holding to cook
+- Checks `obj.crafting.cook` recipe on the object (Principle 8 — objects declare behavior)
+- Searches for fire_source tool: `find_tool_in_inventory` then `find_visible_tool` (covers brazier as room furniture)
+- Performs mutation via `perform_mutation()` for raw→cooked object swap (legitimate file-swap, not reshape)
+- Consumes tool charge on fire source if applicable
+- Prints `recipe.message` or `recipe.fail_message_no_tool`
+- Follows sew pattern from crafting.lua for consistency
+
+**Eat handler extensions (consumption.lua, +59 LOC):**
+- **Raw meat with consequences:** If `food.raw == true` and `food.category == "meat"` and `food.cookable == true` and `food.edible ~= true`: allows eating but inflicts food-poisoning injury via `injury_mod.inflict()`. Prints taste warning (`obj.on_taste`) then "You choke it down. Your stomach rebels almost immediately."
+- **Raw non-meat cookable rejection:** If `food.raw == true` and `food.cookable == true` and category is NOT meat: rejects with `obj.on_eat_reject or "You can't eat that raw. Try cooking it first."` — handles grain and similar.
+- **Non-raw cookable rejection:** Fallthrough for items with `cookable == true` but `raw ~= true` and `edible ~= true`.
+- **Food effects pipeline:** After successful eat, processes `obj.food.effects` array through `effects.process()` — supports `narrate`, `heal`, `inflict_injury` effect types.
+- Moved injury restriction check (jaw injuries) before food category gating for cleaner flow.
+
+**Effects pipeline (effects.lua, +31 LOC):**
+- Added `heal` effect handler: reduces accumulated injury damage by `effect.amount`. Iterates player injuries, reduces damage on each until heal amount exhausted. Optional `effect.nutrition` for general health benefit.
+
+**Key design decision:** Category-based gating (`food.category == "meat"` vs grain/other) determines whether raw food can be force-eaten with consequences vs rejected outright. The spec said `food.raw ~= true` for grain rejection, but grain objects have `food.raw = true` — the actual distinguishing factor is the food category. Meat is animal flesh you can choke down raw; grain needs cooking to become edible.
+
+**Files changed:** `src/engine/verbs/cooking.lua` (+71 LOC), `src/engine/verbs/consumption.lua` (+59 LOC net), `src/engine/effects.lua` (+31 LOC)
+
+**Tests:** All 43 food tests pass (15 cook-verb, 8 cookable-gating, 12 eat-effects, 8 eat-drink baseline). 0 new regressions. Pre-existing failures: 2 test files (creature-combat #346, injuries-comprehensive order-dependent).
