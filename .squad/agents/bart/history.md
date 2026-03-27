@@ -111,7 +111,24 @@
 
 ## Learnings
 
-- **In-place creature death reshape vs. file-swap mutation:** Wayne directive (2026-03-27) established that creatures must NOT have separate dead-creature files. The `death_state` metadata block lives inside the creature file itself. On death, `reshape_instance()` transforms the instance in-place — switches template, overwrites properties, deregisters from creature tick, registers as room object. This is stronger D-14 than file-swap mutation: the creature code declares ALL its possible shapes (living + dead). `mutation.mutate()` is reserved for genuine file-swap scenarios (e.g., cooking dead-rat → cooked-rat-meat.lua, where the cooked meat is a truly different object type).
+### Phase 4 Plan Synthesis (2026-08-16)
+
+**Wrote `plans/npc-combat/npc-combat-implementation-phase4.md` — 6-wave plan (1164 lines):**
+- **Theme:** "The Crafting Loop" — resources flow through the crafting pipeline. Player kills wolf → butchers corpse → gets wolf-meat + wolf-bone + wolf-hide → cooks meat, crafts hide into armor patch, uses bone as improvised weapon.
+- **Key features per wave:**
+  - WAVE-0: Pre-flight, LOC audit, ~18 GUID pre-assignment, architecture docs (butchery-system.md, loot-tables.md)
+  - WAVE-1: Butchery system — `butcher` verb, butchery_products metadata, wolf-meat/wolf-bone/wolf-hide objects, butcher-knife tool
+  - WAVE-2: Loot tables engine — weighted probabilistic drops replacing fixed inventory, meta-lint validation
+  - WAVE-3: Stress injury system — third injury type (psychological), trauma triggers, debuffs (attack penalty, flee bias), rest-based cure
+  - WAVE-4: Spider ecology — `create_object` creature action, spider-web trap mechanics, silk crafting (silk-rope, silk-bandage)
+  - WAVE-5: Advanced creature behaviors — pack tactics (wolf coordination), territorial marking, ambush behavior, design docs
+- **7 Open Questions for Wayne:** butchery time model, safe room definition, web visibility in darkness, pack alpha selection, territorial marker detection, silk bandage healing type, food preservation scope
+- **Deferred to Phase 5:** food preservation, wrestling/grapple, environmental combat, weapon degradation, humanoid NPCs
+- **Estimated scope:** ~30-35 new files, ~25-30 modified files, ~250 tests at completion
+- **LOC budget:** ~1,540 new/modified code + ~350 test LOC
+- **Synthesis method:** Read all 5 input documents (combat-system-plan, creature-inventory-plan, npc-system-plan, Phase 2 + Phase 3 implementation plans), extracted ALL deferred items, categorized by dependency, ordered waves by strict dependency chain
+
+- **In-place creature death reshape vs. file-swap mutation:**Wayne directive (2026-03-27) established that creatures must NOT have separate dead-creature files. The `death_state` metadata block lives inside the creature file itself. On death, `reshape_instance()` transforms the instance in-place — switches template, overwrites properties, deregisters from creature tick, registers as room object. This is stronger D-14 than file-swap mutation: the creature code declares ALL its possible shapes (living + dead). `mutation.mutate()` is reserved for genuine file-swap scenarios (e.g., cooking dead-rat → cooked-rat-meat.lua, where the cooked meat is a truly different object type).
 - **Template switching pattern: creature → small-item/furniture on death:** The `death_state.template` field controls what the creature becomes. Small creatures (rat, cat, spider, bat) become "small-item" (portable). Large creatures (wolf) become "furniture" (not portable). The engine doesn't hardcode sizes — the creature file declares the target template. This is Principle 8: objects declare behavior, engine executes.
 - **`reshape_instance()` engine function design:** Different from `mutation.mutate()` in three key ways: (1) no new file loaded — same instance transforms via metadata overlay, (2) must explicitly nil creature-only fields (behavior, drives, reactions, combat, body_tree) to prevent stale data leaking into the reshaped object, (3) must deregister from creature tick AND register as room object — the instance changes category, not just properties. GUID is preserved — the reshaped instance IS the same object, just in a different shape.
 - **Territorial dual-path needed:** Tests call `score_actions()` in isolation (not through `creature_tick()`), so territorial aggression boost must be in `score_actions` directly, not just in `creature_tick`. Fear reduction can stay in `creature_tick` since it affects subsequent ticks.
