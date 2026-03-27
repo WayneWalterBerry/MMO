@@ -1,0 +1,15 @@
+return {
+    guid = "{ae3e51b7-65bd-4554-9bbb-db610da9f286}",
+    name = "hide",
+    density = 1100,
+    melting_point = nil,
+    ignition_point = 350,
+    hardness = 2,
+    flexibility = 0.6,
+    absorbency = 0.2,
+    opacity = 1.0,
+    flammability = 0.2,
+    conductivity = 0.1,
+    fragility = 0.5,
+    value = 4,
+}

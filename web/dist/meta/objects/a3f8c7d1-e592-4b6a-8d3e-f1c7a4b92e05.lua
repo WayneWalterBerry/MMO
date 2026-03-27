@@ -3,7 +3,7 @@ return {
     template = "furniture",
     id = "trap-door",
     name = "a trap door",
-    keywords = {"trap door", "trapdoor", "trap", "hatch", "door in floor", "floor door"},
+    keywords = {"trapdoor handle", "iron ring", "door in floor", "floor door"},
 
     hidden = true,
     size = 6,
@@ -18,9 +18,6 @@ return {
     on_smell = "Damp earth and old wood rise from the cracks.",
 
     location = nil,
-
-    -- When opened, unhide the "down" exit in the room
-    reveals_exit = "down",
 
     -- FSM
     initial_state = "hidden",

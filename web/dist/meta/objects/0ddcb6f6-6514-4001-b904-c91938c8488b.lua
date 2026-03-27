@@ -5,7 +5,7 @@ return {
 
     id = "locked-door",
     material = "oak",
-    keywords = {"door", "locked door", "oak door", "wooden door", "side door"},
+    keywords = {"door", "locked door", "side door"},
     size = 6,
     categories = {"architecture", "wooden"},
     portable = false,

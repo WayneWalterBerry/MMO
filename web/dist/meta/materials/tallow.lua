@@ -1,7 +1,7 @@
 return {
+    guid = "{f6a10724-bc6a-48fe-b34f-403f008085c6}",
     name = "tallow",
     density = 850,
-    melting_point = 45,
     ignition_point = 200,
     hardness = 1,
     flexibility = 0.9,

@@ -1,4 +1,5 @@
 return {
+    guid = "{d0be52ce-e343-4218-b4b7-3a685a42af95}",
     name = "burlap",
     density = 370,
     melting_point = nil,

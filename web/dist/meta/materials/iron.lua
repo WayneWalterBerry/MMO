@@ -1,4 +1,5 @@
 return {
+    guid = "{e02485b5-dbaa-41d3-a288-0fe9a307b8e4}",
     name = "iron",
     density = 7870,
     melting_point = 1538,

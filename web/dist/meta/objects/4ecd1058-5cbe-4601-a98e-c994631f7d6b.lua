@@ -5,7 +5,7 @@ return {
     template = "furniture",
     id = "window",
     material = "glass",
-    keywords = {"window", "glass", "pane", "leaded glass"},
+    keywords = {"window frame", "window sill", "leaded pane", "diamond pane"},
     room_presence = "A tall leaded glass window is set deep in the stone of the far wall.",
 
     on_feel = "Cold glass pane, thick and uneven. Lead strips divide it into diamond shapes. An iron latch holds it shut.",

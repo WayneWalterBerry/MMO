@@ -153,7 +153,7 @@ return {
     -- Only the nightshade-specific antidote works. Generic cures fail.
     -- ═══════════════════════════════════════════════════════════
     healing_interactions = {
-        ["antidote-nightshade"] = {
+        ["nightshade-antidote"] = {
             transitions_to = "neutralized",
             from_states = { "active", "worsened" },
         },

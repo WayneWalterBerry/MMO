@@ -1,12 +1,22 @@
 return {
+  creatures = {
+    "bat",
+    "cat",
+    "rat",
+    "spider",
+    "wolf"
+  },
   injuries = {
     "bleeding",
     "bruised",
     "burn",
     "concussion",
     "crushing-wound",
+    "food-poisoning",
     "minor-cut",
-    "poisoned-nightshade"
+    "poisoned-nightshade",
+    "rabies",
+    "spider-venom"
   },
   levels = {
     "level-01"
@@ -17,20 +27,28 @@ return {
     "burlap",
     "cardboard",
     "ceramic",
+    "chitin",
     "cotton",
     "fabric",
+    "flesh",
     "glass",
     "hemp",
+    "hide",
     "iron",
+    "keratin",
     "leather",
     "linen",
+    "meat",
     "oak",
+    "organ",
     "paper",
     "plant",
     "silver",
+    "skin",
     "steel",
     "stone",
     "tallow",
+    "tooth-enamel",
     "velvet",
     "wax",
     "wood",
@@ -47,7 +65,9 @@ return {
   },
   templates = {
     "container",
+    "creature",
     "furniture",
+    "portal",
     "room",
     "sheet",
     "small-item"

@@ -1,0 +1,15 @@
+return {
+    guid = "{48834c08-5cff-447d-bdcd-aada93a792fe}",
+    name = "flesh",
+    density = 1050,
+    melting_point = nil,
+    ignition_point = 300,
+    hardness = 1,
+    flexibility = 0.8,
+    absorbency = 0.6,
+    opacity = 1.0,
+    flammability = 0.2,
+    conductivity = 0.1,
+    fragility = 0.7,
+    value = 5,
+}

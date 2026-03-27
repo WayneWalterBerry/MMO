@@ -1,0 +1,16 @@
+return {
+    guid = "{d801a970-5396-42d2-8dca-3485186d359a}",
+    name = "tooth-enamel",
+    density = 2900,
+    melting_point = nil,
+    ignition_point = nil,
+    hardness = 5,
+    flexibility = 0.0,
+    absorbency = 0.0,
+    opacity = 1.0,
+    flammability = 0.0,
+    conductivity = 0.1,
+    fragility = 0.4,
+    max_edge = 4,
+    value = 1,
+}

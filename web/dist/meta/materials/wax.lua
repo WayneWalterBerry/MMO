@@ -1,7 +1,7 @@
 return {
+    guid = "{005f9e64-f6f1-41cc-8195-0aa783e7aafa}",
     name = "wax",
     density = 900,
-    melting_point = 60,
     ignition_point = 230,
     hardness = 2,
     flexibility = 0.8,

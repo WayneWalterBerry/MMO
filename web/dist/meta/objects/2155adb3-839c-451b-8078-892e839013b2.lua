@@ -12,7 +12,7 @@ return {
 
     id = "silver-dagger",
     material = "silver",
-    keywords = {"dagger", "silver dagger", "knife", "blade", "weapon", "ceremonial dagger"},
+    keywords = {"dagger", "silver dagger", "weapon", "ceremonial dagger"},
     size = 2,
     weight = 0.5,
     categories = {"weapon", "tool", "metal", "treasure", "sharp"},
@@ -79,6 +79,14 @@ return {
     on_look = function(self)
         return self.description
     end,
+
+    -- Combat metadata (WAVE-4)
+    combat = {
+        type = "edged",
+        force = 5,
+        message = "slashes",
+        two_handed = false,
+    },
 
     mutations = {},
 }

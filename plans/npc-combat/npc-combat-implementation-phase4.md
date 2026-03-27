@@ -2,8 +2,8 @@
 
 **Author:** Bart (Architecture Lead)
 **Date:** 2026-08-16
-**Version:** v1.1 (all review blockers resolved)
-**Status:** 📝 REVISED — All 6 reviewer blockers addressed
+**Version:** v1.2 (all 7 open questions resolved)
+**Status:** ✅ APPROVED — Ready for implementation
 **Requested By:** Wayne "Effe" Berry
 **Governs:** Phase 4: Butchery System → Loot Tables → Stress Injury → Spider Web Creation → Creature Crafting → Advanced Behaviors
 **Predecessor:** `plans/npc-combat/npc-combat-implementation-phase3.md` (Phase 3 — ✅ COMPLETE, ~209 tests)
@@ -1116,21 +1116,25 @@ GATE-0 Baseline Measurement:
 
 ### Q1: Butchery Time — Real-Time or Skip?
 
+**Status:** ✅ **RESOLVED — Option B: Time passes**
+
 **Context:** Butchery takes "5 minutes" game time. Should this be:
 - **A: Instant** — butchery is immediate, duration is flavor text only
 - **B: Time passes** — butchery advances game clock 5 minutes (triggers FSM ticks, spoilage, etc.)
 - **C: Interruptible** — butchery starts, player can do other actions, completes after 5 min
 
-**Recommendation:** Option B (time passes). Consistent with existing `cook` verb which advances time. Adds strategic depth (spoilage during butchery).
+**Decision:** Option B (time passes). Butchery advances game clock 5 minutes, triggering FSM ticks, spoilage, candle burn, creature respawns during the action. This adds strategic depth (spoilage during butchery) and is consistent with existing `cook` verb which also advances time.
 
 ### Q2: Stress Cure — Safe Room Definition
+
+**Status:** ✅ **RESOLVED — Option B: No hostile creatures**
 
 **Context:** Stress cures with "rest in safe room." What makes a room safe?
 - **A: No creatures** — any room without creatures qualifies
 - **B: No hostile creatures** — friendly creatures (future: pets) don't break safety
 - **C: Designated safe rooms** — only rooms with `safe_room = true` metadata
 
-**Recommendation:** Option A (no creatures). Simple, consistent with current ecosystem. Option B introduces complexity we don't need until pets exist.
+**Decision:** Option B (no hostile creatures). Any room without hostile creatures qualifies as safe. Future friendly creatures (pets) don't break safety, allowing the system to extend gracefully as NPCs evolve.
 
 **Safe Room Implementation Spec (v1.1):**
 
@@ -1145,14 +1149,18 @@ Regardless of which option Wayne selects, the following spec applies:
 
 ### Q3: Spider Web Visibility in Darkness
 
+**Status:** ✅ **RESOLVED — Option C: Both**
+
 **Context:** At 2 AM (darkness), can player see spider webs?
 - **A: No** — webs are visual, invisible in dark
 - **B: Feel only** — player walks through, feels sticky threads
 - **C: Both** — `on_feel` triggers when entering, visible with light
 
-**Recommendation:** Option C. Webs have `on_feel` per existing sensory standards. Player in darkness feels them; with light, sees them.
+**Decision:** Option C (both). Webs have `on_feel` per existing sensory standards. Player in darkness feels sticky threads upon entering; with light, sees them visually. Multi-sense detection is consistent with the game's sensory-first design where all objects support touch, smell, listen, and taste.
 
 ### Q4: Pack Tactics — Alpha Selection Criteria
+
+**Status:** ✅ **RESOLVED — Option B: Highest health**
 
 **Context:** How is pack alpha chosen?
 - **A: Highest aggression** — most aggressive wolf leads
@@ -1160,34 +1168,40 @@ Regardless of which option Wayne selects, the following spec applies:
 - **C: First to enter room** — territorial precedence
 - **D: Explicit metadata** — wolf.lua declares `pack_role = "alpha"`
 
-**Recommendation:** Option A (highest aggression). Emergent behavior from existing metadata. No new data required.
+**Decision:** Option B (highest health). The strongest wolf leads the pack. Simple, consistent with existing combat health tracking, and requires no new metadata.
 
 ### Q5: Territorial Marking — Player Detection
+
+**Status:** ✅ **RESOLVED — Option B: Smell only**
 
 **Context:** Can player detect wolf territory markers?
 - **A: Invisible** — markers exist but player cannot see/smell/feel them
 - **B: Smell only** — `look` fails, `smell` reveals "You catch a musky animal scent."
 - **C: Visual + Smell** — with light, see scratches on trees; smell works in dark
 
-**Recommendation:** Option B (smell only). Adds gameplay depth without visual clutter. Consistent with sensory-first design.
+**Decision:** Option B (smell only). `look` fails to detect the marker, but `smell` reveals "You catch a musky animal scent." This rewards sensory exploration and is consistent with the game's sensory-first design.
 
 ### Q6: Silk Bandage Healing — Instant or Over Time?
+
+**Status:** ✅ **RESOLVED — Option A: Instant**
 
 **Context:** Silk bandage heals 5 HP. Should this be:
 - **A: Instant** — use bandage → +5 HP immediately
 - **B: Over time** — bandage applies, +1 HP per 10 minutes until +5 total
 - **C: Bleeding-only** — bandage stops bleeding injury progression, doesn't heal HP
 
-**Recommendation:** Option A (instant). Keeps crafting reward immediate and satisfying. Over-time healing adds complexity without clear gameplay benefit.
+**Decision:** Option A (instant). Use bandage → +5 HP immediately + stops bleeding progression. Consistent with cooked food instant heal pattern, keeps crafting rewards immediate and satisfying.
 
 ### Q7: Phase 4 Scope — Food Preservation?
+
+**Status:** ✅ **RESOLVED — Option B: No**
 
 **Context:** Phase 3 deferred food preservation (salting, smoking, drying). Include in Phase 4?
 - **A: Yes** — add preservation as WAVE-6 (7 waves total)
 - **B: No** — defer to Phase 5, keep Phase 4 focused on crafting loop
 - **C: Partial** — add salt-curing only (simplest preservation)
 
-**Recommendation:** Option B (defer to Phase 5). Phase 4 already has 6 waves. Food preservation is significant scope (new verb, spoilage FSM changes, salt object). Better as Phase 5 focus.
+**Decision:** Option B (defer to Phase 5). Keep Phase 4 focused on the crafting loop. Phase 4 already has 6 waves. Food preservation is significant scope (new verb, spoilage FSM changes, salt object) and deserves a focused phase.
 
 ---
 
@@ -1282,11 +1296,36 @@ Phase 5 will address **food preservation** (salting, smoking, drying), **environ
 
 ---
 
-*Plan authored by Bart (Architecture Lead). v1.1 — all reviewer blockers resolved.*
+*Plan authored by Bart (Architecture Lead). v1.2 — all 7 open questions resolved, APPROVED for implementation.*
 
 ---
 
 ## Changelog
+
+### v1.2 (2026-08-21) — All 7 Open Questions Resolved
+
+**Wayne's decisions recorded:**
+
+| # | Question | Decision | Justification |
+|---|----------|----------|---------------|
+| Q1 | Butchery Time | **Option B: Time passes** | Advances game clock 5 min → triggers FSM ticks, spoilage, candle burn, respawns. Strategic depth. |
+| Q2 | Stress Cure Safety | **Option B: No hostile creatures** | Any room without hostile creatures qualifies. Future pets won't break safety. |
+| Q3 | Web Visibility | **Option C: Both** | `on_feel` in darkness, visible with light. Multi-sense consistent with sensory design. |
+| Q4 | Pack Alpha | **Option B: Highest health** | Strongest wolf leads. Simple, uses existing health tracking. |
+| Q5 | Territory Detection | **Option B: Smell only** | `look` fails, `smell` reveals scent. Rewards sensory exploration. |
+| Q6 | Silk Bandage Healing | **Option A: Instant** | +5 HP immediately + stops bleeding. Consistent with food healing pattern. |
+| Q7 | Food Preservation | **Option B: No** | Defer to Phase 5. Phase 4 stays focused on crafting loop. |
+
+**Status update:** All decision dependencies resolved. WAVE-0 can begin immediately. No architectural changes required — all answers integrate cleanly into existing specs.
+
+**Affected subsystems:**
+- `src/engine/verbs/butchering.lua` — Q1 determines time-advance logic
+- `src/engine/injuries.lua` → `check_safe_room()` — Q2 determines hostile-creature check vs creature-presence check
+- `src/meta/objects/spider-web.lua` — Q3 determines sensory fields (on_feel + on_look or on_look-only)
+- `src/engine/creatures/pack.lua` — Q4 determines alpha selection (health comparison)
+- `src/meta/objects/territory-marker.lua` — Q5 determines smell-only vs visual detection
+- `src/meta/objects/silk-bandage.lua` — Q6 determines instant vs timed healing
+- WAVE-5 gate remains at 6 waves — Q7 defers preservation
 
 ### v1.1 (2026-08-20) — All Review Blockers Fixed
 

@@ -23,7 +23,7 @@ return {
 
     id = "nightstand",
     material = "oak",
-    keywords = {"nightstand", "night stand", "bedside table", "side table", "small table"},
+    keywords = {"nightstand", "night stand", "bedside table"},
     size = 4,
     weight = 15,
     categories = {"furniture", "wooden"},

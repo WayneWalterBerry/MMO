@@ -5,6 +5,7 @@ return {
     id = "start-room",
     name = "The Bedroom",
     level = { number = 1, name = "The Awakening" },
+    sky_visible = false,
     keywords = {"bedroom", "room", "chamber", "bedchamber"},
     description = "You stand in a dim bedchamber that smells of tallow, old wool, and the faintest ghost of lavender. The stone walls are bare save for the shadows that cling to them like ivy. Cold flagstones line the floor, and pale grey light filters in from somewhere, barely enough to see by. The air is still and heavy, as though the room has been holding its breath for a very long time.",
     short_description = "A dim bedchamber of cold stone and stale air.",
@@ -88,7 +89,6 @@ return {
         { id = "rug", type = "Rug", type_id = "7275e1d9-5837-4f39-b3be-d64ee6d667c9",
             underneath = {
                 { id = "brass-key", type = "Brass Key", type_id = "4586b2cd-3240-46de-8fb8-5216ad9d4830" },
-                { id = "trap-door", type = "Trap Door", type_id = "a3f8c7d1-e592-4b6a-8d3e-f1c7a4b92e05", hidden = true },
             },
         },
 
@@ -96,159 +96,15 @@ return {
         { id = "window", type = "Window", type_id = "4ecd1058-5cbe-4601-a98e-c994631f7d6b" },
         { id = "curtains", type = "Curtains", type_id = "cc981807-a74e-4ecc-8d52-903cc4fc5bd6" },
         { id = "chamber-pot", type = "Chamber Pot", type_id = "9a9ff109-93a0-4dcf-9d6e-0f0f4b83f4ba" },
-        { id = "bedroom-door", type = "Bedroom Door", type_id = "e4a7f3b2-91d6-4c8e-b5a0-3f2d1e8c6a49", location = "room" },
+        { id = "bedroom-hallway-door-north", type_id = "{25852832-6f19-48af-a118-20350ac8d243}" },
+        { id = "bedroom-courtyard-window-out", type_id = "{5a9a6d9f-f112-499e-8f1e-dae571675015}" },
+        { id = "bedroom-cellar-trapdoor-down", type_id = "{1b6fc3b4-e69e-4c09-aee9-02d718fb3052}" },
     },
 
     exits = {
-        north = {
-            target = "hallway",
-            type = "door",
-            passage_id = "bedroom-hallway-door",
-            name = "a heavy oak door",
-            keywords = {"door", "oak door", "heavy door", "north door", "barred door"},
-            description = "A heavy oak door with iron hinges, shut fast against its frame. There is no keyhole on this side — only smooth oak and cold iron bands. From beyond the door comes the faint creak of a heavy bar resting in its brackets. Someone has barred it from the corridor.",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = true,
-            key_id = nil,
-            hidden = false,
-            broken = false,
-
-            one_way = false,
-            breakable = true,
-            break_difficulty = 3,
-
-            mutations = {
-                close = {
-                    becomes_exit = {
-                        open = false,
-                        description = "A heavy oak door with iron hinges, shut tight against its frame.",
-                    },
-                    message = "You push the door shut. It closes with a heavy thud that echoes down the corridor.",
-                },
-                open = {
-                    condition = function(self) return not self.locked end,
-                    becomes_exit = {
-                        open = true,
-                        description = "A heavy oak door with iron hinges, standing open to the corridor beyond.",
-                    },
-                    message = "The door swings open on groaning iron hinges.",
-                },
-                ["break"] = {
-                    becomes_exit = {
-                        type = "hole in wall",
-                        name = "a splintered doorframe",
-                        keywords = {"doorframe", "splintered doorframe", "broken door"},
-                        description = "Where the oak door once stood, only splintered wood and twisted iron hinges remain. Splinters litter the floor.",
-                        open = true,
-                        locked = false,
-                        breakable = false,
-                        broken = true,
-                        max_carry_size = 4,
-                        max_carry_weight = 50,
-                    },
-                    spawns = {"wood-splinters"},
-                    message = "The door bursts inward with a crack of splintering oak! Fragments scatter across the stone floor.",
-                },
-            },
-        },
-
-        window = {
-            target = "courtyard",
-            type = "window",
-            passage_id = "bedroom-courtyard-window",
-            name = "the leaded glass window",
-            keywords = {"window", "glass", "leaded window", "pane"},
-            description = "A tall window of diamond-paned leaded glass, set deep in the stone wall. Through the warped glass you glimpse rooftops and a moonlit courtyard far below.",
-
-            max_carry_size = 2,
-            max_carry_weight = 10,
-            requires_hands_free = true,
-            player_max_size = 4,
-
-            open = false,
-            locked = true,
-            key_id = nil,
-            hidden = false,
-            broken = false,
-
-            one_way = false,
-            direction_hint = "down",
-            breakable = true,
-            break_difficulty = 2,
-
-            mutations = {
-                unlock = {
-                    becomes_exit = {
-                        locked = false,
-                        description = "The iron latch is open. The window could be pushed outward.",
-                    },
-                    message = "You slide the iron latch aside. It moves reluctantly, shedding flakes of rust.",
-                },
-                open = {
-                    condition = function(self) return not self.locked end,
-                    becomes_exit = {
-                        open = true,
-                        description = "The window stands open. Cold night air drifts in, carrying the scent of rain and chimney smoke from the courtyard below.",
-                    },
-                    message = "You push the window open. Cold air rushes in, guttering the candle flame.",
-                },
-                close = {
-                    becomes_exit = {
-                        open = false,
-                        description = "The window is closed. Through the warped glass you glimpse rooftops and a moonlit courtyard.",
-                    },
-                    message = "You pull the window shut. The sounds of the night are muffled once more.",
-                },
-                ["break"] = {
-                    becomes_exit = {
-                        type = "hole in wall",
-                        name = "a shattered window frame",
-                        keywords = {"window", "broken window", "shattered window", "window frame"},
-                        description = "Jagged shards of leaded glass cling to the stone frame like broken teeth. Cold air howls through the gap. The courtyard is visible far below -- a dangerous drop.",
-                        open = true,
-                        locked = false,
-                        breakable = false,
-                        broken = true,
-                        requires_hands_free = true,
-                        max_carry_size = 3,
-                    },
-                    spawns = {"glass-shard", "glass-shard"},
-                    message = "The window explodes inward in a shower of glass! Shards skitter across the stone floor.",
-                },
-            },
-        },
-
-        down = {
-            target = "cellar",
-            type = "trap_door",
-            passage_id = "bedroom-cellar-trapdoor",
-            name = "the trap door",
-            keywords = {"trap door", "trapdoor", "hatch", "down", "stairway", "stairs"},
-            description = "A narrow stone stairway spirals down into darkness through the open trap door.",
-
-            max_carry_size = 3,
-            max_carry_weight = 30,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = false,
-            key_id = nil,
-            hidden = true,
-            broken = false,
-
-            one_way = false,
-            direction_hint = "down",
-            breakable = false,
-
-            mutations = {},
-        },
+        north = { portal = "bedroom-hallway-door-north" },
+        window = { portal = "bedroom-courtyard-window-out" },
+        down = { portal = "bedroom-cellar-trapdoor-down" },
     },
 
     -- No custom on_look: engine composes room view dynamically from

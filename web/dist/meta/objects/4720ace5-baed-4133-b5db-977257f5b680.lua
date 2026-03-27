@@ -3,7 +3,7 @@ return {
     template = "container",
     id = "sack",
     name = "a burlap sack",
-    keywords = {"sack", "bag", "burlap sack", "burlap", "pouch"},
+    keywords = {"sack", "burlap sack", "burlap", "pouch"},
     description = "A rough burlap sack, cinched at the top with a length of fraying rope. It smells faintly of grain and old earth. Something small and hard rattles inside.",
 
     on_feel = "Rough burlap, cinched with fraying rope. Something small and hard shifts inside when you squeeze.",

@@ -1,0 +1,16 @@
+return {
+    guid = "{733cf086-2400-4229-8355-b726fdc16c12}",
+    name = "keratin",
+    density = 1300,
+    melting_point = nil,
+    ignition_point = 400,
+    hardness = 3,
+    flexibility = 0.2,
+    absorbency = 0.0,
+    opacity = 1.0,
+    flammability = 0.3,
+    conductivity = 0.1,
+    fragility = 0.3,
+    max_edge = 3,
+    value = 1,
+}

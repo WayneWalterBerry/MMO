@@ -15,7 +15,7 @@ return {
 
     id = "falling-club-trap",
     material = "oak",
-    keywords = {"club", "trap", "spring trap", "mechanism", "lever", "club trap", "spring", "pressure plate", "plate", "panel", "flagstone"},
+    keywords = {"club", "spring trap", "mechanism", "club trap", "spring", "pressure plate", "plate", "panel", "flagstone"},
     size = 5,
     weight = 80,
     categories = {"trap", "dangerous", "hazard", "mechanical", "wooden"},

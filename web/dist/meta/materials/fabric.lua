@@ -1,4 +1,5 @@
 return {
+    guid = "{53720fc0-5dd0-41ce-ade3-070dbc8b6489}",
     name = "fabric",
     density = 300,
     melting_point = nil,

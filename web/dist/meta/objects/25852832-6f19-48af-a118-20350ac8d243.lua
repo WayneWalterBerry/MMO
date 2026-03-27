@@ -1,42 +1,51 @@
--- bedroom-door.lua — Interactable door object (Bedroom north wall)
--- Linked to exit: start-room.exits.north (passage_id: bedroom-hallway-door)
--- Barred from hallway side (iron bar, not key lock). No keyhole on bedroom side.
--- FSM states: barred → unbarred → open
--- See: docs/objects/bedroom-door.md, Issue #57
+-- bedroom-hallway-door-north.lua — Portal object: bedroom side of oak door
+-- Paired with: bedroom-hallway-door-south.lua (hallway side)
+-- Replaces: bedroom-door.lua (furniture) + start-room.exits.north (inline exit)
+-- See: plans/portal-unification-plan.md (Phase 2), Issue #198
 return {
-    guid = "{e4a7f3b2-91d6-4c8e-b5a0-3f2d1e8c6a49}",
-    template = "furniture",
+    guid = "{25852832-6f19-48af-a118-20350ac8d243}",
+    template = "portal",
 
-    id = "bedroom-door",
+    id = "bedroom-hallway-door-north",
+    name = "a heavy oak door",
     material = "oak",
-    keywords = {"door", "oak door", "heavy door", "bedroom door", "barred door",
-                "north door", "heavy oak door", "iron bands"},
+    keywords = {"door", "heavy door", "bedroom door", "oak door",
+                "heavy oak door", "north door", "iron bands", "barred door"},
     size = 6,
     weight = 120,
-    categories = {"architecture", "wooden"},
     portable = false,
+    categories = {"architecture", "wooden", "portal"},
 
-    linked_exit = "north",
-    linked_passage_id = "bedroom-hallway-door",
+    portal = {
+        target = "hallway",
+        bidirectional_id = "{4bb381ad-2c9d-4926-8ebc-e55d8e48f4c4}",
+        direction_hint = "north",
+    },
 
-    name = "a heavy oak door",
+    max_carry_size = 4,
+    max_carry_weight = 50,
+    requires_hands_free = false,
+    player_max_size = 5,
+
+    -- Descriptions (bedroom perspective — no keyhole, no handle, bar on other side)
     description = "A heavy oak door with iron bands. It appears to be barred from the other side.",
     room_presence = "A heavy oak door with iron bands stands in the north wall, barred from the corridor beyond.",
     on_examine = "Thick oak planks, darkened with age, bound together by three horizontal iron bands. The hinges are heavy iron, bolted deep into the stone frame. There is no keyhole on this side — no handle either, just smooth oak and cold iron. The door sits tight in its frame. From beyond comes the faint creak of something heavy resting in iron brackets — a bar, laid across the other side.",
     on_feel = "Rough oak grain under your fingers, cold iron bands riveted flat against the wood. The door is solid — no give when you push. You trace the edge where wood meets stone: sealed tight, not even a draught slips through.",
     on_smell = "Old oak and iron. A faint staleness from the corridor beyond, like dust and cold stone.",
     on_listen = "You press your ear to the oak. Silence at first — then the faint creak of the iron bar shifting in its brackets as the building settles. No footsteps. No voices. Just the bar, and the weight of the door.",
+    on_taste = "You press your tongue to the oak. Dry, gritty wood grain and the metallic bite of iron. It tastes of age.",
     on_knock = "You rap your knuckles against the oak. A deep, dull thud — the door is thick and heavy. The sound dies quickly, swallowed by the corridor beyond. No one answers.",
     on_push = "You set your shoulder against the oak and push. The door doesn't budge. Something heavy holds it from the other side — the iron bar in its brackets.",
     on_pull = "You grip the edge of the door and pull. It doesn't move. The hinges open inward, and whatever bars it from the hallway holds fast.",
 
-    location = nil,
-
+    -- FSM — barred → unbarred → open (and barred → broken)
     initial_state = "barred",
     _state = "barred",
 
     states = {
         barred = {
+            traversable = false,
             name = "a heavy oak door",
             description = "A heavy oak door with iron bands. It appears to be barred from the other side.",
             room_presence = "A heavy oak door with iron bands stands in the north wall, barred from the corridor beyond.",
@@ -50,6 +59,7 @@ return {
         },
 
         unbarred = {
+            traversable = false,
             name = "an unbarred oak door",
             description = "The heavy oak door stands unbarred, closed but no longer held fast.",
             room_presence = "The heavy oak door to the north stands unbarred.",
@@ -63,6 +73,7 @@ return {
         },
 
         open = {
+            traversable = true,
             name = "an open oak door",
             description = "The heavy oak door stands open, revealing a dim corridor beyond.",
             room_presence = "The heavy oak door to the north stands open to the corridor.",
@@ -76,6 +87,7 @@ return {
         },
 
         broken = {
+            traversable = true,
             name = "a splintered doorframe",
             description = "Where the oak door once stood, only splintered wood and twisted iron hinges remain.",
             room_presence = "A splintered doorframe gapes in the north wall, opening to the corridor.",
@@ -118,9 +130,21 @@ return {
             from = "barred", to = "broken", verb = "break",
             requires_strength = 3,
             message = "You slam into the door with everything you have. The oak cracks, splinters fly, and the iron bar beyond tears free of its brackets. The door bursts inward!",
+            spawns = {"wood-splinters"},
             mutate = {
                 keywords = { add = "broken", remove = "barred" },
             },
+        },
+    },
+
+    on_traverse = {
+        wind_effect = {
+            strength = "draught",
+            extinguishes = { "candle" },
+            spares = { wind_resistant = true },
+            message_extinguish = "As you step through the doorway, a cold draught funnels through the corridor and snuffs your candle flame. Darkness.",
+            message_spared = "A cold draught funnels through the doorway as you pass. Your lantern flame shivers but holds.",
+            message_no_light = nil,
         },
     },
 

@@ -5,6 +5,7 @@ return {
     id = "hallway",
     name = "The Manor Hallway",
     level = { number = 1, name = "The Awakening" },
+    sky_visible = false,
     keywords = {"hallway", "corridor", "hall", "manor", "passage", "manor hallway"},
     description = "Warmth. After the cellars, the warmth is the first thing you notice. You stand in a wide, wood-paneled corridor lit by torches in iron brackets. The floor is polished oak that gleams in the firelight, and the walls are plastered white above dark wainscoting. Portraits hang at regular intervals — stern faces in heavy frames, watching. Doors lead off to left and right, all of them closed. The air smells of beeswax, old wood, and the faint char of torch smoke. At the far end, a grand staircase ascends into shadow.",
     short_description = "A warm, torchlit corridor lined with portraits and closed doors.",
@@ -27,177 +28,36 @@ return {
 
     instances = {
         -- Torches
-        { id = "torch-lit-west",          type = "Lit Torch",     type_id = "d95glu9s-6077-4a80-c393-e57156345678" },
-        { id = "torch-lit-east",          type = "Lit Torch",     type_id = "d95glu9s-6077-4a80-c393-e57156345678" },
+        { id = "torch-lit-west",          type = "Lit Torch",     type_id = "816862a1-c892-45ba-8d0f-2a72315f8eb2" },
+        { id = "torch-lit-east",          type = "Lit Torch",     type_id = "816862a1-c892-45ba-8d0f-2a72315f8eb2" },
 
         -- Portraits
-        { id = "portrait-1",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789" },
-        { id = "portrait-2",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789" },
-        { id = "portrait-3",              type = "Portrait",      type_id = "e06hmv0t-7188-4b91-d4a4-f68267456789" },
+        { id = "portrait-1",              type = "Portrait",      type_id = "21c70054-ed7f-4873-ac0e-f8c90a2ff18a" },
+        { id = "portrait-2",              type = "Portrait",      type_id = "21c70054-ed7f-4873-ac0e-f8c90a2ff18a" },
+        { id = "portrait-3",              type = "Portrait",      type_id = "21c70054-ed7f-4873-ac0e-f8c90a2ff18a" },
 
         -- === Side Table ===
-        { id = "side-table",              type = "Side Table",    type_id = "f17inw1u-8299-4ca2-e5b5-079378567890",
+        { id = "side-table",              type = "Side Table",    type_id = "b9c53625-2c37-4a70-988b-0769375705bd",
             on_top = {
-                { id = "vase",                    type = "Vase",          type_id = "028jox2v-93a0-4db3-f6c6-180489678901" },
+                { id = "vase",                    type = "Vase",          type_id = "1ae1f401-2c06-421c-8530-eb339c061a9f" },
             },
         },
+
+        -- === South portal (bedroom-hallway door, hallway side) ===
+        { id = "bedroom-hallway-door-south", type_id = "{a47ce304-4425-4bd0-a9e9-224b7c8baa8c}" },
+        { id = "hallway-deep-cellar-stairs-down", type_id = "{becc667f-877b-49e7-bee0-32fc49d48af6}" },
+        { id = "hallway-level2-stairs-up", type_id = "{13cec4d5-cbff-4d71-a983-63752d7fe99a}" },
+        { id = "hallway-west-door", type_id = "{2c11b569-9d5d-481c-bed8-070c55ceba6c}" },
+        { id = "hallway-east-door", type_id = "{22f675a7-1827-4cf3-bbde-40ed2c109c3a}" },
+        { id = "hallway-wolf", type_id = "{e69fc5e8-ce63-4b26-b5b2-faa2ff85d12c}" },
     },
 
     exits = {
-        south = {
-            target = "start-room",
-            type = "door",
-            passage_id = "bedroom-hallway-door",
-            name = "a heavy oak door",
-            keywords = {"door", "oak door", "heavy door", "south door", "bedroom door", "barred door"},
-            description = "A heavy oak door with iron hinges. A thick iron bar rests in brackets across it, holding it shut. Through the gap beneath the door, cold air seeps from the dark room beyond.",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = true,
-            key_id = nil,
-            hidden = false,
-            broken = false,
-            one_way = false,
-            breakable = true,
-            break_difficulty = 3,
-
-            mutations = {
-                close = {
-                    becomes_exit = {
-                        open = false,
-                        description = "A heavy oak door with iron hinges, shut tight.",
-                    },
-                    message = "You push the door shut. It closes with a heavy thud.",
-                },
-                open = {
-                    condition = function(self) return not self.locked end,
-                    becomes_exit = {
-                        open = true,
-                        description = "The heavy oak door stands open, revealing the dim bedchamber beyond.",
-                    },
-                    message = "The door swings open on groaning iron hinges.",
-                },
-                lock = {
-                    becomes_exit = {
-                        open = false,
-                        locked = true,
-                        description = "A heavy oak door with iron hinges. The iron bar is back in its brackets, holding the door shut.",
-                    },
-                    message = "You heave the iron bar back into its brackets. The door is barred once more.",
-                },
-                unlock = {
-                    becomes_exit = {
-                        locked = false,
-                        description = "A heavy oak door with iron hinges. The iron bar has been lifted from its brackets and leans against the wall.",
-                    },
-                    message = "You lift the heavy iron bar from its brackets. It comes free with a groan of metal on metal, and you lean it against the wall.",
-                },
-            },
-        },
-
-        down = {
-            target = "deep-cellar",
-            type = "stairway",
-            passage_id = "deep-cellar-hallway-stairway",
-            name = "stone steps descending",
-            keywords = {"stairs", "stairway", "staircase", "down", "steps", "stone stairs", "descend", "cellar"},
-            description = "Stone steps descend through an archway in the floor, curving down into the cool darkness of the cellars below. A chill draught rises from the depths.",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = true,
-            locked = false,
-            hidden = false,
-            broken = false,
-            one_way = false,
-
-            on_traverse = {
-                wind_effect = {
-                    strength = "gust",
-                    extinguishes = { "candle" },
-                    spares = { wind_resistant = true },
-                    message_extinguish = "As you descend, a chill updraft gusts through the stairwell from the cellars below. Your candle flame flattens, sputters — and dies. Cold darkness rushes in.",
-                    message_spared = "A chill updraft gusts up from below as you descend. Your lantern flame shivers behind its glass but holds.",
-                    message_no_light = nil,
-                },
-            },
-        },
-
-        north = {
-            target = "level-2",
-            type = "stairway",
-            passage_id = "hallway-level2-staircase",
-            name = "a grand staircase",
-            keywords = {"staircase", "stairs", "grand staircase", "up", "north", "grand stairs", "bannister"},
-            description = "A grand staircase of polished oak ascends to the upper floors. The bannister is carved with the same symbols you saw in the deep cellar — familiar now, unsettling. The stairs curve upward out of sight.",
-
-            max_carry_size = 5,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = true,
-            locked = false,
-            hidden = false,
-            broken = false,
-            one_way = false,
-        },
-
-        west = {
-            target = "manor-west",
-            type = "door",
-            passage_id = "hallway-west-door",
-            name = "a heavy oak door",
-            keywords = {"door", "west door", "oak door", "locked door"},
-            description = "A heavy oak door, closed and locked. Through the keyhole, you glimpse a darkened room beyond — bookshelves? A study?",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = true,
-            key_id = nil,
-            hidden = false,
-            broken = false,
-            one_way = false,
-            breakable = false,
-
-            mutations = {},
-        },
-
-        east = {
-            target = "manor-east",
-            type = "door",
-            passage_id = "hallway-east-door",
-            name = "a lighter oak door",
-            keywords = {"door", "east door", "oak door", "kitchen door", "locked door"},
-            description = "A lighter oak door, closed and latched. A warm smell seeps from underneath — old cooking fires, herbs, grease. The kitchen, perhaps.",
-
-            max_carry_size = 4,
-            max_carry_weight = 50,
-            requires_hands_free = false,
-            player_max_size = 5,
-
-            open = false,
-            locked = true,
-            key_id = nil,
-            hidden = false,
-            broken = false,
-            one_way = false,
-            breakable = false,
-
-            mutations = {},
-        },
+        south = { portal = "bedroom-hallway-door-south" },
+        down = { portal = "hallway-deep-cellar-stairs-down" },
+        north = { portal = "hallway-level2-stairs-up" },
+        west = { portal = "hallway-west-door" },
+        east = { portal = "hallway-east-door" },
     },
 
     on_enter = function(self)

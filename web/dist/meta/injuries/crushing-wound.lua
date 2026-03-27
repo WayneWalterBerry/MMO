@@ -79,6 +79,7 @@ return {
             description = "The crushing wound festers. The bruised flesh is hot and swollen, streaked with angry red lines. Infection has taken hold.",
             on_feel = "Burning heat radiates from the wound. The swelling has spread up your arm. Fever is setting in.",
             on_look = "The wound is inflamed and oozing. Red streaks extend from the injury site. This is getting worse.",
+            on_smell = "A foul, meaty stench from the infected wound. The smell of flesh beginning to turn.",
 
             damage_per_tick = 5,
 
@@ -100,6 +101,8 @@ return {
             name = "septic crushing wound",
             description = "Sepsis. The infection from the crushing wound has spread. Your arm is useless, and fever clouds your mind. Without treatment, this ends badly.",
             on_feel = "Burning fever. The arm is nearly numb. You can barely think straight.",
+            on_look = "The arm is mottled black and purple. The flesh is dying. Dark fluid seeps from the wound edges.",
+            on_smell = "The thick, sweet reek of gangrene. Unmistakable.",
 
             damage_per_tick = 12,
 
