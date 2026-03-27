@@ -16,7 +16,7 @@
 
 | Wave | Name | Status | Gate | Tests |
 |------|------|--------|------|-------|
-| WAVE-0 | Pre-Flight (Audit + Module Splits + Architecture Docs) | ⏳ Not Started | GATE-0 | — |
+| WAVE-0 | Pre-Flight (Audit + Module Splits + Architecture Docs) | ✅ PASSED | GATE-0 | 191 |
 | WAVE-1 | Death Consequences (In-Place Reshape) | ⏳ Not Started | GATE-1 | — |
 | WAVE-2 | Creature Inventory + Loot Drops | ⏳ Not Started | GATE-2 | — |
 | WAVE-3 | Full Food System + Cooking | ⏳ Not Started | GATE-3 | — |
@@ -212,21 +212,21 @@ All five must be addressed in WAVE-0 — building Phase 3 features on top of mod
 
 #### GATE-0 Criteria
 
-- [ ] `combat/init.lua` ≤ 500 LOC after split
-- [ ] `combat/resolution.lua` exists with clean interface
-- [ ] `verbs/survival.lua` ≤ 400 LOC after split
-- [ ] `verbs/consumption.lua` exists (eat/drink handlers)
-- [ ] `verbs/rest.lua` exists (sleep/rest handlers)
-- [ ] `verbs/crafting.lua` ≤ 450 LOC after split
-- [ ] `verbs/cooking.lua` exists (cook handler target for WAVE-3)
-- [ ] `engine/injuries.lua` ≤ 400 LOC after split
-- [ ] `engine/injuries/cure.lua` exists (cure path for WAVE-4)
-- [ ] All 194 test files pass (zero regressions)
-- [ ] GUIDs pre-assigned and recorded
-- [ ] `docs/architecture/engine/creature-death-reshape.md` exists and explains reshape_instance() pattern, D-14 alignment, death_state format, backward compat
-- [ ] `docs/architecture/engine/creature-inventory.md` exists and documents inventory metadata format, death drop pipeline, containment reuse
-- [ ] Bart has reviewed and signed off on both architecture docs
-- [ ] **Committed + tagged** before WAVE-1
+- [x] `combat/init.lua` ≤ 500 LOC after split
+- [x] `combat/resolution.lua` exists with clean interface
+- [x] `verbs/survival.lua` ≤ 400 LOC after split
+- [x] `verbs/consumption.lua` exists (eat/drink handlers)
+- [x] `verbs/rest.lua` exists (sleep/rest handlers)
+- [x] `verbs/crafting.lua` ≤ 450 LOC after split
+- [x] `verbs/cooking.lua` exists (cook handler target for WAVE-3)
+- [x] `engine/injuries.lua` ≤ 400 LOC after split
+- [x] `engine/injuries/cure.lua` exists (cure path for WAVE-4)
+- [x] All 194 test files pass (zero regressions)
+- [x] GUIDs pre-assigned and recorded
+- [x] `docs/architecture/engine/creature-death-reshape.md` exists and explains reshape_instance() pattern, D-14 alignment, death_state format, backward compat
+- [x] `docs/architecture/engine/creature-inventory.md` exists and documents inventory metadata format, death drop pipeline, containment reuse
+- [x] Bart has reviewed and signed off on both architecture docs
+- [x] **Committed + tagged** before WAVE-1
 
 ---
 
