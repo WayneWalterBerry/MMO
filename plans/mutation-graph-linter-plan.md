@@ -9,7 +9,9 @@
 
 ## Executive Summary
 
-Build a pure-Lua test that walks every `.lua` file in `src/meta/objects/`, `src/meta/creatures/`, and `src/meta/injuries/`, extracts all mutation edges (becomes, spawns, crafting, tool depletion), builds a directed graph of all possible object states, and validates every link. Dynamic mutations (`dynamic = true`) are detected and flagged but never followed. The linter runs as part of the regular test suite via `test/run-tests.lua`.
+Build a pure-Lua test that **dynamically discovers all `.lua` files across all subdirectories of `src/meta/`** (objects, creatures, injuries, rooms, templates, levels, materials, and any future subdirectories), extracts all mutation edges (becomes, spawns, crafting, tool depletion), builds a directed graph of all possible object states, and validates every link. Dynamic mutations (`dynamic = true`) are detected and flagged but never followed. The linter runs as part of the regular test suite via `test/run-tests.lua`.
+
+**CRITICAL: No hardcoded directory list.** The scanner recursively enumerates all subdirectories of `src/meta/` at runtime. When new subdirectories are added (e.g., `src/meta/food/`, `src/meta/npcs/`), the linter picks them up automatically without code changes.
 
 **Known broken edges found during analysis:**
 - `poison-gas-vent.lua` → `poison-gas-vent-plugged` (file does not exist)
@@ -94,9 +96,10 @@ The test file contains both the graph-building library and the test harness. No 
 #### Key Functions
 
 ```lua
--- Scan directories and return list of .lua file paths
--- signature: scan_dirs(dirs) → { "src/meta/objects/candle.lua", ... }
-local function scan_dirs(dirs)
+-- Recursively scan ALL subdirectories of src/meta/ for .lua files
+-- No hardcoded directory list — discovers subdirs at runtime
+-- signature: scan_meta_root(root) → { "src/meta/objects/candle.lua", ... }
+local function scan_meta_root(root)
 
 -- Load a single .lua file in sandbox, return table or nil+error
 -- Uses loadfile() with empty env (same pattern as engine loader)
@@ -112,8 +115,9 @@ local function extract_edges(obj, source_id)
 
 -- Build the full graph from all scanned files
 -- Returns: nodes{}, edges[], dynamics[], broken[], load_errors[]
--- signature: build_graph(scan_dirs) → graph_result
-local function build_graph(dirs)
+-- signature: build_graph(root) → graph_result
+-- root = "src/meta" — all subdirs scanned automatically
+local function build_graph(root)
 
 -- Detect cycles using DFS with coloring (white/gray/black)
 -- Returns: list of cycles, each cycle = { node1, node2, ... }
@@ -185,13 +189,13 @@ end
 #### Suite 1: File Loading (~90 tests, 1 per .lua file)
 ```lua
 t.suite("All meta files load successfully")
--- For each file in src/meta/objects/, src/meta/creatures/, src/meta/injuries/:
+-- For each .lua file discovered under src/meta/ (all subdirs):
 --   t.test("loads: candle.lua", function()
 --       local obj, err = safe_load(filepath)
 --       t.assert_truthy(obj, "failed to load: " .. filepath .. " — " .. tostring(err))
 --   end)
 ```
-Estimated count: ~90 files (83 objects + 1 creature + 7 injuries = ~91)
+Estimated count: dynamically determined — currently ~95+ files across 7 subdirectories (objects, creatures, injuries, rooms, templates, levels, materials). Grows automatically as content is added.
 
 #### Suite 2: Required Fields (~90 tests)
 ```lua
@@ -337,7 +341,7 @@ source: "earned — mutation graph linter implementation"
 ```
 
 **Patterns documented:**
-1. How to add new scan directories (just add path to `scan_dirs` list)
+1. How the scanner auto-discovers all `src/meta/` subdirectories (no hardcoded list — future-proof)
 2. How to add new edge types (add extraction case in `extract_edges()`)
 3. How the sandbox loader handles function-containing objects
 4. Why dynamic mutations are skipped (unbounded runtime generation)
@@ -405,10 +409,20 @@ Cycles are NOT auto-filed as issues. They're reported in the test output for hum
 
 ### File Discovery
 
-Uses the same `io.popen` + `dir /b` (Windows) / `ls` (Unix) pattern as `test/run-tests.lua`. Scans:
-- `src/meta/objects/*.lua`
-- `src/meta/creatures/*.lua`
-- `src/meta/injuries/*.lua`
+Uses the same `io.popen` + `dir /b` (Windows) / `ls` (Unix) pattern as `test/run-tests.lua`. **Dynamically discovers ALL subdirectories of `src/meta/`:**
+
+1. First pass: enumerate subdirectories of `src/meta/` (e.g., `dir /b /ad src\meta` on Windows, `ls -d src/meta/*/` on Unix)
+2. Second pass: for each subdirectory, enumerate `*.lua` files
+3. Result: complete list of every `.lua` file under `src/meta/`, regardless of how many subdirectories exist
+
+Current subdirectories (auto-discovered, not hardcoded):
+- `src/meta/objects/` — game objects
+- `src/meta/creatures/` — animate beings
+- `src/meta/injuries/` — injury type definitions
+- `src/meta/rooms/` — room definitions (may contain mutation edges via exit doors)
+- `src/meta/templates/` — base templates (validated but treated as non-instantiable)
+- `src/meta/levels/` — level definitions
+- `src/meta/materials/` — material definitions (no mutations expected, but scanned for completeness)
 
 ### Edge Cases
 
@@ -416,7 +430,7 @@ Uses the same `io.popen` + `dir /b` (Windows) / `ls` (Unix) pattern as `test/run
 2. **`mutations = {}`** — Empty table. No edges. No error.
 3. **Self-referencing becomes** — `poison-gas-vent` unplug → becomes `poison-gas-vent` (same file). Valid cycle (self-edge). Reported but not an error.
 4. **Duplicate spawn IDs** — `blanket.lua` spawns `{"cloth", "cloth"}`. Two edges to same target. Valid (creates 2 instances). Edge count reflects duplicates; target validation deduplicates.
-5. **Template-only files** — Files in `src/meta/templates/` are NOT scanned as nodes. They are base classes, not instantiable objects. However, if a template has `mutations` (like `sheet.lua` has `tear.spawns = {"cloth"}`), those edges ARE validated because instances inherit them.
+5. **Template-only files** — Files in `src/meta/templates/` are scanned but flagged as `is_template = true`. They are base classes, not instantiable objects. If a template has `mutations` (like `sheet.lua` has `tear.spawns = {"cloth"}`), those edges ARE validated because instances inherit them. Template nodes are included in the graph but excluded from "unreachable" reports.
 6. **Objects with only FSM mutations** — Objects like `candle.lua` that use only `transitions[].mutate` (property patches) have no outgoing file-swap edges. They are valid leaf nodes in the graph.
 
 ### Template Inheritance
