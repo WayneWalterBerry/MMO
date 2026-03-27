@@ -41,7 +41,7 @@ Phase 2 extends the NPC + Combat foundation shipped in Phase 1 (creature engine 
 1. **New creatures** — cat, wolf, spider, bat with body_tree + combat metadata. Spider introduces chitin material.
 2. **Creature generalization** — inter-creature reactions (cat chases rat), territorial behavior, NPC stimulus emission. Deferred `attack` action enters Combat FSM.
 3. **NPC-vs-NPC combat** — unified combatant interface, combat witness narration, multi-combatant turn order (3+), creature morale/flee.
-4. **Disease system** — generic `on_hit` disease delivery. Rabies (rat, 15% chance, incubation → death). Spider venom (100%).
+4. **Disease system** — generic `on_hit` disease delivery. Rabies (rat, 8% chance, incubation → death). Spider venom (100%).
 5. **Food PoC** — cheese + bread, food-as-bait (rat hunger + food = lure), eat/drink verb extensions. Minimal scope.
 
 ### Why This Order
@@ -118,7 +118,7 @@ WAVE-3: NPC Combat Integration
         │
 WAVE-4: Disease System
 ├── [Bart]     Generic on_hit disease delivery         ┐
-├── [Flanders] rabies.lua (15%, incubation → death)    │ parallel
+├── [Flanders] rabies.lua (8%, incubation → death)     │ parallel
 ├── [Flanders] spider-venom.lua (100% on hit)          │
 └── [Nelson]   disease tests                           ┘
         │
@@ -190,6 +190,32 @@ No two agents touch the same file in any wave. Key ownership:
 
 **Goal:** Verify engine foundations before building on them. Fix test infra gaps.
 
+### Pre-WAVE-0: Module Split Plan (Chalmers review fix)
+
+**Problem:** `creatures/init.lua` (483 LOC) is modified in both WAVE-2 (+60-80 LOC) and WAVE-5 (+60-80 LOC), risking merge conflicts and exceeding the 500 LOC threshold. `combat/init.lua` (487 LOC) gains +80 LOC, also exceeding 500 LOC.
+
+**Decision: Option A — Extract stimulus + predator-prey before WAVE-2.**
+
+Bart performs these extractions during WAVE-0 (before any feature work begins):
+
+| Extract From | New Module | Est. LOC | Rationale |
+|-------------|-----------|---------|-----------|
+| `creatures/init.lua` | `src/engine/creatures/stimulus.lua` | ~80 | Creature-to-creature stimulus emission + processing. Clear interface boundary. |
+| `creatures/init.lua` | `src/engine/creatures/predator-prey.lua` | ~60 | Prey detection, predator reaction, source_filter evaluation. |
+| `combat/init.lua` | `src/engine/combat/npc-behavior.lua` | ~50 | NPC response auto-select, NPC stance, NPC target zone. |
+
+**Post-split sizes:**
+- `creatures/init.lua`: ~343 LOC (483 - 140) + WAVE-2 adds ~40 (attack action only) = ~383 LOC ✅
+- `creatures/stimulus.lua`: ~80 LOC + WAVE-2 adds ~20 = ~100 LOC ✅
+- `creatures/predator-prey.lua`: ~60 LOC (stable after WAVE-2) ✅
+- `combat/init.lua`: ~437 LOC (487 - 50) + WAVE-3 adds ~30 = ~467 LOC ✅
+- `combat/npc-behavior.lua`: ~50 LOC + WAVE-3 adds ~30 = ~80 LOC ✅
+- WAVE-5 bait mechanic goes in `creatures/init.lua` (~40 LOC) → ~423 LOC total ✅
+
+**File conflict resolution:** WAVE-2 modifies `creatures/init.lua` (attack action), `stimulus.lua` (creature stimuli), and `predator-prey.lua` (detection). WAVE-5 modifies only `creatures/init.lua` (hunger/bait). No file touched by both WAVE-2 and WAVE-5 for the same subsystem. Merge conflict risk eliminated.
+
+**Timing:** Split happens during WAVE-0 code review (Bart). Committed before GATE-0. All existing tests must pass post-split.
+
 ### Assignments
 
 | Agent | Task |
@@ -208,10 +234,14 @@ No two agents touch the same file in any wave. Key ownership:
 ### GATE-0
 
 - [ ] Engine review notes captured; integration points documented
+- [ ] Module split completed: `stimulus.lua`, `predator-prey.lua`, `npc-behavior.lua` extracted (Chalmers fix)
 - [ ] `test/food/` discovered by `lua test/run-tests.lua`
 - [ ] Full test suite passes (exit 0)
-- [ ] Portal TDD (#199–#208) progress tracked
+- [ ] Portal TDD (#199–#208) progress tracked (independent of GATE-0)
 - [ ] Lint (#249, #250) addressed or in-progress
+- [ ] Phase 1 performance baseline measured and recorded (Marge fix)
+- [ ] Tissue material audit: hide, flesh, bone, tooth_enamel, keratin verified or flagged for WAVE-1 creation (Flanders fix)
+- [ ] **GATE-0 committed + tagged** before WAVE-1 begins (Marge enforcement fix)
 
 ---
 
@@ -305,6 +335,16 @@ Each test file validates: loads without error, required fields present, sensory 
 - [ ] ~80 tests pass; full suite exit 0
 - [ ] No engine files modified (pure data wave)
 
+### Cross-Wave Compatibility Check: WAVE-1→2 (Marge review fix)
+
+**CREATE** `test/creatures/test-wave1-2-compat.lua` (~10 tests)
+Run AFTER GATE-1 passes, BEFORE WAVE-2 implementation begins. Validates that WAVE-1 creature data is compatible with WAVE-2 engine expectations:
+- Load real `cat.lua` + `rat.lua`; verify `combat.behavior` fields exist for `score_actions()`
+- Verify `combat.natural_weapons` structure matches what `resolve_exchange()` expects
+- Verify `behavior.prey` array is parseable by predator-prey detection
+- Verify `on_hit` field structure on rat bite weapon is compatible with WAVE-4 disease delivery
+- **Owner:** Nelson. **SLA:** run within 30 min of GATE-1 pass.
+
 ---
 
 ## WAVE-2 — Creature Generalization (Behavior + Combat)
@@ -364,6 +404,15 @@ Each test file validates: loads without error, required fields present, sensory 
 - [ ] ~40 tests pass; full suite exit 0
 - [ ] No creature data files modified (pure engine wave)
 
+### Cross-Wave Compatibility Check: WAVE-2→3 (Marge review fix)
+
+**CREATE** `test/combat/test-wave2-3-compat.lua` (~10 tests)
+Run AFTER GATE-2 passes, BEFORE WAVE-3 implementation begins. Validates that WAVE-2 creature attack/combat integration is compatible with WAVE-3 NPC-vs-NPC expectations:
+- Verify `creatures.execute_action("attack", target)` completes without error and sets combat state
+- Verify `resolve_exchange()` accepts NPC as both attacker and defender
+- Verify `on_hit` field structure on weapons is compatible with WAVE-4 disease delivery
+- **Owner:** Nelson. **SLA:** run within 30 min of GATE-2 pass.
+
 ---
 
 ## Dependency Graph
@@ -380,8 +429,11 @@ WAVE-0 ──► GATE-0 ──► WAVE-1 ──► GATE-1 ──► WAVE-2 ─�
 
 | File | Owner | Wave |
 |------|-------|------|
-| `src/engine/creatures/init.lua` | Bart | W0 review, W2 modify |
+| `src/engine/creatures/init.lua` | Bart | W0 review + split, W2 modify |
+| `src/engine/creatures/stimulus.lua` | Bart | W0 create (split), W2 modify |
+| `src/engine/creatures/predator-prey.lua` | Bart | W0 create (split), W2 modify |
 | `src/engine/combat/init.lua` | Bart | W0 review, W2 modify |
+| `src/engine/combat/npc-behavior.lua` | Bart | W0 create (split), W3 modify |
 | `test/run-tests.lua` | Nelson | W0 modify |
 | `src/meta/creatures/{cat,wolf,spider,bat}.lua` | Flanders | W1 create |
 | `src/meta/materials/chitin.lua` | Flanders | W1 create |
@@ -467,7 +519,16 @@ Lit visual narration, dark audio-only, adjacent distant, out-of-range silence, l
 
 ### GATE-3
 
-All ~40 new tests pass. `test/run-tests.lua` zero regressions. LLM cat-kills-rat passes. Doc exists. Multi-combatant order verified (3+ creatures, fixed seed). `git diff --stat` clean. **~50 tests total.**
+All ~40 new tests pass. `test/run-tests.lua` zero regressions. LLM cat-kills-rat passes. Doc exists. Multi-combatant order verified (3+ creatures, fixed seed `math.randomseed(42)`). `git diff --stat` clean. **~50 tests total.**
+
+### Cross-Wave Compatibility Check: WAVE-3→4 (Marge review fix)
+
+**CREATE** `test/injuries/test-wave3-4-compat.lua` (~10 tests)
+Run AFTER GATE-3 passes, BEFORE WAVE-4 implementation begins. Validates that WAVE-3 combat resolution is compatible with WAVE-4 disease delivery:
+- Verify `combat.run_combat()` accepts creature as attacker and calls `resolve_exchange()`
+- Verify `resolve_exchange()` checks for `on_hit` field on weapons (even if delivery not yet implemented)
+- Verify `restricts` flag structure is present on injury definitions and compatible with verb dispatch
+- **Owner:** Nelson. **SLA:** run within 30 min of GATE-3 pass.
 
 ---
 
@@ -489,7 +550,7 @@ All ~40 new tests pass. `test/run-tests.lua` zero regressions. LLM cat-kills-rat
 
 `category = "disease"`, `hidden_until_state = "prodromal"` (silent incubation).
 FSM: `incubating`(15t, 0 dmg) → `prodromal`(10t, 1 dmg, restricts `precise_actions`) → `furious`(8t, 3 dmg, restricts `drink`+`precise_actions`) → `fatal`(1t, lethal).
-`curable_in = {"incubating", "prodromal"}`. `transmission.probability = 0.15`.
+`curable_in = {"incubating", "prodromal"}`. `transmission.probability = 0.08`.
 
 ### 4B — Spider Venom (Flanders)
 
@@ -518,7 +579,7 @@ After `resolve_exchange()` at severity ≥ HIT: check attacker's `natural_weapon
 ### 4E — Tests (Nelson)
 
 **CREATE** `test/injuries/test-disease-delivery.lua` (~15 tests)
-Prob 1.0 always delivers, 0.15 rate verified (fixed seed ±5), DEFLECT/GRAZE don't deliver, NPC-vs-NPC delivery, no `on_hit` → no error, concurrent diseases tick independently.
+Prob 1.0 always delivers, 0.08 rate verified (fixed seed ±4), DEFLECT/GRAZE don't deliver, NPC-vs-NPC delivery, no `on_hit` → no error, concurrent diseases tick independently.
 
 **CREATE** `test/injuries/test-rabies.lua` (~15 tests)
 Incubation hidden, transitions at 15/25/33 ticks, `drink` blocked in furious, fatal kills, early cure works (incubating/prodromal), late cure fails (furious), `compute_health()` reflects disease damage, rabies + wound coexist.
@@ -660,14 +721,18 @@ No file modified by two agents in same wave. Gates enforce sequential completion
 | Check | Method | Pass Criteria |
 |-------|--------|---------------|
 | Test dirs registered | `test/run-tests.lua` discovers new dirs without error | Runner finds 0 files in new dirs (no crash) |
-| LOC guard | `wc -l src/engine/**/*.lua` | Every file < 500 lines |
+| LOC guard | `wc -l src/engine/**/*.lua` | Every file < 500 lines (post-module-split) |
 | No regressions | `lua test/run-tests.lua` | All existing tests pass |
+| Module split verified | `ls src/engine/creatures/stimulus.lua src/engine/creatures/predator-prey.lua src/engine/combat/npc-behavior.lua` | All 3 extracted modules exist (Chalmers fix) |
+| Performance baseline | `test/creatures/test-phase1-baseline.lua` — `os.clock()` benchmark creature tick + combat resolution | Recorded. Sets GATE-2 budget = baseline + 20% margin (Marge fix) |
+| Tissue material audit | `grep -r "hide\|flesh\|bone\|tooth_enamel\|keratin" src/meta/materials/` | All 5 tissue materials exist OR creation added to WAVE-1 (Flanders fix) |
 
 **Pass/fail:** ALL checks pass. Binary.  
 **Reviewer:** Bart (architecture)  
 **Action on fail:** Fix before proceeding — pre-flight is blocking.
 
-**On pass:** No separate commit — WAVE-0 is a 5-minute setup folded into WAVE-1 commit.
+**On pass:** `git add -A && git commit -m "GATE-0: preflight passed — baseline measured, LOC guard verified" && git tag phase2-gate-0 && git push`  
+**GATE-0 is enforced** — WAVE-1 cannot begin without the `phase2-gate-0` tag in git history.
 
 ---
 
@@ -690,7 +755,7 @@ No file modified by two agents in same wave. Gates enforce sequential completion
 | Cat | `animate=true`, `template="creature"`, `behavior.prey={"rat"}`, `body_tree` with head/body/legs/tail | Keywords include "cat", "feline"; size is string `"small"`; `on_feel` present |
 | Wolf | `animate=true`, `behavior.aggression >= 70`, `body_tree` with head/body/legs | Keywords include "wolf"; size `"medium"`; `combat.natural_weapons` includes bite; `can_open_doors=false` |
 | Spider | `animate=true`, `behavior.ambush=true`, `body_tree` with body/legs | Keywords include "spider"; size `"tiny"`; `combat.natural_weapons` bite has `on_hit.inflict="spider-venom"` |
-| Rat (updated) | `combat` table added, `body_tree` present | `combat.natural_weapons` bite has `on_hit.inflict="rabies"` with `probability=0.15` |
+| Rat (updated) | `combat` table added, `body_tree` present | `combat.natural_weapons` bite has `on_hit.inflict="rabies"` with `probability=0.08` |
 
 **Material resolution checks:**
 
@@ -788,7 +853,7 @@ No file modified by two agents in same wave. Gates enforce sequential completion
 
 | Test Case | Input | Expected |
 |-----------|-------|----------|
-| Rabies delivery: 15% chance | Rat bites player 100 times with `math.randomseed(42)` | ~15 infections (±5 tolerance); `injuries.inflict("rabies")` called |
+| Rabies delivery: 8% chance | Rat bites player 100 times with `math.randomseed(42)` | ~8 infections (±4 tolerance); `injuries.inflict("rabies")` called |
 | Rabies incubation | Player infected, 15 ticks pass | State transitions: `incubating` → `prodromal`; message "You feel feverish..." |
 | Rabies hydrophobia | Rabies reaches `furious` state | `restricts.drink = true`; player cannot use `drink` verb |
 | Rabies terminal | Rabies reaches `fatal` state | Death message emitted; player dies |
@@ -966,6 +1031,34 @@ echo "go cellar\nwait\nwait\nwait" | lua src/main.lua --headless
 - No infinite combat loops — combat resolves or creatures flee
 - Key validation: turn order with 3+ participants is correct and terminates
 
+**Scenario P2-E2: "Creature Flees Successfully" (Marge review fix)**
+
+```bash
+# Setup: Wolf at low health vs player in hallway. Wolf should flee, not fight to death.
+echo "go hallway\nattack wolf\nwait\nattack wolf\nattack wolf\nlook" | lua src/main.lua --headless
+```
+
+**Expected output contains:**
+- Wolf takes repeated damage → health drops below `flee_threshold` (0.2)
+- Wolf morale breaks: "The wolf breaks away and bolts!" or similar flee narration
+- Wolf exits room via valid exit
+- Second `look`: wolf no longer in hallway
+- Key validation: morale/flee logic works end-to-end in headless LLM walkthrough
+
+**Scenario P2-E3: "Player Joins Active NPC Combat" (Marge review fix)**
+
+```bash
+# Setup: Cat and rat fighting in cellar. Player enters mid-fight and attacks one.
+echo "go cellar\nwait\nwait\nattack rat\nlook" | lua src/main.lua --headless
+```
+
+**Expected output contains:**
+- Cat-vs-rat combat already in progress (predator-prey trigger)
+- Player joins combat with `attack rat`
+- Turn order recalculates to include player
+- 3-way fight resolves (player + cat vs rat, or similar)
+- Key validation: player intervention in active NPC combat works without crash
+
 ---
 
 ### GATE-4 Scenarios: Disease Delivery
@@ -974,7 +1067,7 @@ echo "go cellar\nwait\nwait\nwait" | lua src/main.lua --headless
 
 ```bash
 # Setup: Player provokes rat. Rat bites. Seed chosen for rabies transmission.
-# Use math.randomseed that triggers the 15% chance.
+# Use math.randomseed that triggers the 8% chance.
 echo "go cellar\ngrab rat\nwait\nwait\nwait\nwait\nwait\nwait\nwait\nwait\nwait\nwait\nwait\nwait\nwait\nwait\nwait\nlook" | lua src/main.lua --headless
 ```
 
@@ -1147,7 +1240,7 @@ Every test file listed below is created by Nelson. Tests are written to the **sp
 | `test/creatures/test-cat.lua` | `src/meta/creatures/cat.lua` | WAVE-1 | Loads via `dofile()`; `animate=true`; `template="creature"`; `behavior.prey={"rat"}`; `body_tree` has head/body/legs/tail; `on_feel` present; keywords include "cat"; size is string `"small"` |
 | `test/creatures/test-wolf.lua` | `src/meta/creatures/wolf.lua` | WAVE-1 | Loads via `dofile()`; `animate=true`; `behavior.aggression >= 70`; `body_tree` has head/body/legs (no tail); `combat.natural_weapons` includes bite with force ≥ 6; size `"medium"` |
 | `test/creatures/test-spider.lua` | `src/meta/creatures/spider.lua` | WAVE-1 | Loads via `dofile()`; `animate=true`; `behavior.ambush=true`; `body_tree` has body/legs only; `combat.natural_weapons` bite has `on_hit.inflict="spider-venom"`; size `"tiny"`; material includes `"chitin"` |
-| `test/creatures/test-rat-phase2.lua` | `src/meta/creatures/rat.lua` (modified) | WAVE-1 | `combat` table added; `combat.natural_weapons` bite has `on_hit.inflict="rabies"` with `probability=0.15`; `body_tree` present (head/body/legs/tail); Phase 1 fields still intact |
+| `test/creatures/test-rat-phase2.lua` | `src/meta/creatures/rat.lua` (modified) | WAVE-1 | `combat` table added; `combat.natural_weapons` bite has `on_hit.inflict="rabies"` with `probability=0.08`; `body_tree` present (head/body/legs/tail); Phase 1 fields still intact |
 | `test/creatures/test-creature-materials.lua` | `src/meta/materials/chitin.lua`, `hide.lua`, `tooth_enamel.lua`, `keratin.lua` | WAVE-1 | Each material loads; `density` is number; `hardness` is number; resolves through `engine/materials` registry |
 
 ### Creature Combat + Behavior Tests (WAVE-2)
@@ -1373,6 +1466,23 @@ end
 ```
 
 **Territory wander:** Creatures with `territory_aggression = "patrol"` get their `wander` action constrained to territory rooms only. The existing `wander` action picks a random valid exit — we add a filter that rejects exits leading outside the territory.
+
+#### A.3.1 Creature Portal Traversal Rules (Moe review fix)
+
+Creatures can traverse portals (stairs, archways, doors) according to these default rules:
+
+| Portal State | Creature Behavior | Notes |
+|-------------|-------------------|-------|
+| Open passage (archway, stairway) | **YES** — creatures traverse freely | Default for all creatures |
+| Open/unlocked door | **YES** — creatures traverse freely | Door must be in open state |
+| Closed door (unlocked) | **NO** — creatures cannot open doors unless `can_open_doors=true` | Rat has `can_open_doors=false` (cellar-confined) |
+| Locked door | **NO** — no creature can traverse | Requires player to unlock first |
+
+**Territorial override:** Creatures with `territorial=true` do not leave their territory rooms even if passages are open, unless fleeing extreme threat (health < flee_threshold × 0.5). The wolf stays in the hallway; the spider stays in the cellar.
+
+**`can_open_doors` semantics:** This flag controls whether a creature can pass through CLOSED (but unlocked) doors. Default is `false` for all creatures. The rat is confined to the cellar by a closed door, not by invisible walls. If the player opens the cellar door, the rat CAN traverse it on subsequent ticks.
+
+**Multi-room hunting:** Cat hunts rat across rooms via open passages only. Cat in courtyard cannot reach rat in cellar if the connecting door is closed. This creates emergent gameplay — opening doors changes the ecosystem.
 
 #### A.4 Attack Action: creature_tick() → Combat FSM
 
@@ -1712,7 +1822,7 @@ The `on_hit` field on natural weapons is the universal mechanism for combat-tran
     on_hit = {
         type = "disease",             -- effect category
         disease = "rabies",           -- injury type ID (matches file in src/meta/injuries/)
-        chance = 0.15,                -- probability per successful hit (0.0 – 1.0)
+        chance = 0.08,                -- probability per successful hit (0.0 – 1.0; reduced from 0.15 per CBG review)
     },
 }
 ```
@@ -1860,7 +1970,7 @@ return {
 
 **Timeline:** 15 turns incubation (silent) → 10 turns fever → 5 turns hydrophobia → death. Total: 30 turns from bite to death if untreated. Curable only in first 25 turns (incubating + prodromal) with a healing poultice.
 
-**Delivery:** The rat's `bite` natural weapon gains `on_hit = { type = "disease", disease = "rabies", chance = 0.15 }`. Not every rat carries rabies — the 15% chance creates uncertainty. The player gets bitten, takes the minor-cut damage from the bite itself, and may or may not have contracted rabies. They won't know for 15 turns.
+**Delivery:** The rat's `bite` natural weapon gains `on_hit = { type = "disease", disease = "rabies", chance = 0.08 }`. Not every rat carries rabies — the 8% chance creates uncertainty without early-game frustration (CBG recommendation: 8% ≈ 1 in 12.5 bites; tunable post-GATE-5 up to max 12%).
 
 **Gameplay intent:** Rabies creates a ticking clock the player doesn't know about. By the time symptoms appear (turn 15), they have only 10 turns to find and apply a healing poultice before it becomes incurable. This rewards players who treat animal bites prophylactically — good real-world-consistent design.
 
@@ -1955,7 +2065,7 @@ return {
 |----------|--------|-------------|
 | Onset | Delayed (15 turns) | Immediate |
 | Hidden? | Yes (incubation) | No (instant symptoms) |
-| Delivery chance | 15% per bite | 100% per bite |
+| Delivery chance | 8% per bite | 100% per bite |
 | Cure window | Early stages only | All non-fatal stages |
 | Progression speed | Slow (30 turns total) | Fast (15 turns total) |
 | Movement restriction | No | Yes (paralysis) |
@@ -2410,10 +2520,10 @@ The existing tick order naturally places creature combat (in creature tick) befo
 |---|------|-------|--------|------------|
 | R-1 | **Creature-to-creature cascade (3+ in one room)** | High | High | Hard cap: max 3 creature reactions per tick per room. Wolf's reaction to cat-kills-rat queues for NEXT tick. Unit test: 3-creature room, no infinite loop. |
 | R-2 | **Multi-combatant turn order** | Med | High | Pairwise resolution only. 3-way fight = 2 exchange cycles per round (priority queue). No true N-way combat. Test with 3 fixed-seed combatants. |
-| R-3 | **Rabies too lethal** | Med | Med | 15-turn incubation + 15% transmission chance. Poultice cures early stages. Tuning knob at GATE-4 LLM testing. Fallback: extend incubation to 25 turns. |
+| R-3 | **Rabies too lethal** | Med | Med | 15-turn incubation + 8% transmission chance (reduced from 15% per CBG review). Poultice cures early stages. Tuning knob at GATE-4 LLM testing. Max 12% in Level 1. Fallback: extend incubation to 25 turns. |
 | R-4 | **Spider venom too punishing** | Med | Med | Spider is ambush-only (`territorial`), player must enter its room. Antidote available same level. CBG reviews at GATE-4. |
 | R-5 | **Food system scope creep** | High | High | Hard boundary: eat/drink verbs + 2 food objects + hunger satisfaction ONLY. No cooking/spoilage/recipes. If >1 wave, cut. |
-| R-6 | **Engine files approaching 500 LOC** | Med | Med | Module size guard (Pattern 13). Likely splits: `creatures/init.lua` → `tick.lua` + `actions.lua`; `combat/init.lua` already split in Phase 1. Trigger `engine-code-review` skill before shipping. |
+| R-6 | **Engine files approaching 500 LOC** | Med | Med | Module size guard (Pattern 13). Pre-emptive split in WAVE-0 (Chalmers fix): `creatures/init.lua` → `stimulus.lua` + `predator-prey.lua`; `combat/init.lua` → `npc-behavior.lua`. Post-split all files <500 LOC. |
 | R-7 | **Spider web — new creature-created object pattern** | Med | High | First runtime-spawned object (not in room files). Prototype in isolation BEFORE WAVE-2. Dedicated test: tick → web in room → valid GUID → keyword resolves. Fallback: defer web to Phase 3, ship spider with bite-only. |
 | R-8 | **Performance: 10 creatures ticking** | Low | High | Spatial optimization from Phase 1 (full-tick player's room only). Benchmark at GATE-2 with 10 creatures across 3 rooms. Budget: <50ms total. Fallback: batch ticks (3 per frame, round-robin). |
 | R-9 | **NPC combat narration floods output** | Med | Med | Cap witness narration: 2 lines per exchange (same room), 1 line (adjacent room). Test: 3-creature fight ≤6 lines per round. |
@@ -2493,6 +2603,43 @@ Design debt → `.squad/decisions/inbox/cbg-design-debt-phase2-WAVE-N.md`.
 2. **GATE-5** — play-test disease + food
 3. **Any escalation** from 1x-failure rule
 
+### Decision Authority & Autonomy Protocol (Marge review fix)
+
+Phase 2 must be executable without Wayne present for routine decisions. This section defines who decides what.
+
+#### Gate Decision Authority
+
+| Gate | Authority | Rule |
+|------|----------|------|
+| GATE-0 | Bart (sole authority) | Bart declares pass/fail on LOC guard + regression check |
+| GATE-1 | Bart + Marge | Both must agree PASS. Any FAIL = re-work. |
+| GATE-2 | Bart + Marge | Bart: architecture correctness. Marge: performance check. |
+| GATE-3 | Bart + Nelson | Bart: architecture. Nelson: LLM walkthrough pass. |
+| GATE-4 | Bart + Marge | Bart: architecture. Marge: regression analysis. |
+| GATE-5 | Bart + Nelson + CBG | Bart: architecture. Nelson: full LLM. CBG: player experience. |
+
+**Decision rule:** Unanimous "PASS" = gate passes. Any "FAIL" = re-work required. Ambiguous outcome (e.g., "performance is 48ms, budget is 50ms") = escalate to Wayne.
+
+#### Parallel Wave Conflict Resolution
+
+When agents disagree during a wave (e.g., Nelson's test fails on Bart's code):
+
+1. **Bart's code fails Nelson's test:** Bart has 4 hours to fix. If unfixed, Nelson escalates to Wayne.
+2. **Nelson's test appears wrong:** Nelson has 2 hours to debug/revise test. If unresolved, Bart escalates to Wayne.
+3. **Flanders' data incompatible with engine:** Bart + Flanders jointly diagnose (1 hour). If unresolved, escalate to Wayne.
+4. **Smithers' narration doesn't match spec:** Smithers has 2 hours to revise. CBG arbitrates tone/content disputes.
+
+#### Emergency Abort Protocol
+
+If a wave discovers a fundamental architectural flaw mid-implementation (e.g., creature predator-prey is O(n²) and runs at 200ms):
+
+1. **Stop current wave.** No further commits.
+2. **Bart assesses:** Can it be fixed within 1 day? → Fix in-place, continue wave.
+3. **Cannot fix in 1 day:** Wayne decides:
+   - (A) Ship with known issue + documented tech debt
+   - (B) De-scope feature (e.g., defer food to Phase 3)
+   - (C) Re-architect (pause Phase 2, re-plan affected waves)
+
 ---
 
 ## Section 12: Gate Failure Protocol
@@ -2537,6 +2684,50 @@ Agent fails twice on same issue → locked out. Fresh agent (or Bart for archite
 ### Rollback
 
 Git tags per gate. Revert to `phase2-gate-(N-1)` if needed. Never roll back >2 waves without Wayne.
+
+### Crash & Recovery Protocol (Chalmers review fix)
+
+#### Mid-Wave Failure
+
+If a wave is incomplete (e.g., agent fails, session dies, partial work committed):
+
+1. **Status check:** Each agent reports completed/incomplete files. Coordinator runs `git diff --stat` to assess.
+2. **Partial test run:** Run test suite on completed deliverables only. Incomplete files' tests are skipped (not failed).
+3. **Resume, don't restart:** Remaining agents pick up where they left off. No re-planning. Completed files are NOT reverted.
+4. **Session continuity:** If session dies mid-wave, next session reads Wave Status Tracker, resumes from last verified file. Partial wave with failing tests = re-run the failing agent's task only (`git checkout` their files, re-execute).
+
+#### Gate Failure Classifications
+
+| Failure Type | Owner | SLA | Rollback? | Example |
+|-------------|-------|-----|-----------|---------|
+| **Data load failure** (creature/object doesn't parse) | Flanders | 1 hour | No (in-place fix) | `cat.lua` syntax error |
+| **Test infrastructure failure** (test dir not found, runner crash) | Nelson | 30 min | No (in-place fix) | `test/food/` not registered |
+| **Engine bug** (attack action crashes, infinite loop) | Bart | 2 hours | Yes (roll back wave) | `execute_action("attack")` nil error |
+| **Material resolution failure** (tissue/chitin not found) | Flanders | 1 hour | No (create missing material) | `hide` material undefined |
+| **Narration/verb bug** (output garbled, wrong message) | Smithers | 1 hour | No (in-place fix) | Witness narration shows visual in dark |
+| **LLM scenario non-deterministic** (passes sometimes, fails other times) | Nelson | 1 hour (re-seed) | Maybe (investigate first) | Seed 42 fails, 43 passes |
+| **Performance budget exceeded** (>50ms creature tick) | Bart | 3 hours | No (optimize in-place) | Predator-prey scan too slow |
+
+#### Gate Failure Escalation Matrix (Chalmers review fix)
+
+| Gate | Failure Category | Primary Owner | Escalation If SLA Expires | Rollback Scope |
+|------|-----------------|---------------|--------------------------|----------------|
+| GATE-0 | Test dir / LOC guard | Nelson / Bart | Bart takes over | No rollback (pre-flight) |
+| GATE-1 | Creature load fails | Flanders | Bart reviews data format | Roll back WAVE-1 creature files |
+| GATE-1 | Material resolution | Flanders | Bart creates material stubs | No rollback |
+| GATE-2 | Attack action crashes | Bart | Escalate to Wayne | Roll back WAVE-2 engine changes |
+| GATE-2 | Predator-prey wrong | Bart | Nelson writes diagnostic test | No rollback (in-place fix) |
+| GATE-3 | Multi-combatant hangs | Bart | Escalate to Wayne (re-design?) | Roll back WAVE-3 |
+| GATE-3 | Narration wrong | Smithers | Bart reviews spec | No rollback |
+| GATE-4 | Disease FSM stuck | Bart or Flanders | Cross-check data vs engine | No rollback (in-place fix) |
+| GATE-5 | LLM fails non-deterministic | Nelson | Re-seed (43, 44). 3 fails = bug. | Investigate before rollback |
+| GATE-5 | Integration regression | Bart | Full team diagnostic | Roll back to GATE-4 tag |
+
+**Decision rules:**
+- Code bugs (Bart/Smithers): SLA 2-3 hours. Roll back wave on second failure.
+- Data issues (Flanders/Moe): SLA 1 hour. In-place fix. No rollback.
+- Test/infra issues (Nelson): SLA 30 min – 1 hour. In-place fix.
+- **If SLA expires:** Escalate to Wayne for judgment (defer wave, split task, re-assign agent).
 
 ---
 

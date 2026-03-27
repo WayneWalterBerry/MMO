@@ -1,4 +1,9 @@
-# Food System Design Plan
+#!/usr/bin/env python3
+"""Writes the updated food-system-plan.md"""
+import os
+
+content = []
+content.append("""# Food System Design Plan
 
 **Author:** Comic Book Guy (Game Designer)  
 **Date:** 2026-07-14 (revised 2026-07-28)  
@@ -167,8 +172,9 @@ Every food object declares a `food = {}` table in its metadata:
 | `risk` | string | No | Risk type when eating (`disease`, `poison`, etc.) |
 | `risk_chance` | number | No | Probability of risk (0.0-1.0) |
 | `on_eat_message` | string | No | Custom message when eaten |
+""")
 
----
+content.append("""---
 
 ## 4. Food as Objects
 
@@ -279,8 +285,9 @@ The engine reads `mutations.die`, calls `mutation.mutate()`, and the creature is
 6. Registry entry at key "rat" is replaced — now points to dead-rat table
 7. Old creature data (behavior, drives, reactions, movement) is gone
 8. Object is now a portable small-item with `edible = true`
+""")
 
-### The Dead Rat Object
+content.append("""### The Dead Rat Object
 
 ```lua
 -- src/meta/objects/dead-rat.lua
@@ -495,8 +502,9 @@ handlers["grill"] = handlers["cook"]
 ### Why a Dedicated Verb
 
 Players type `cook meat`, `bake bread`, `roast rat` — natural language verbs. The `sew` pattern proves the model: each craft type gets its own handler. The recipe on the object controls output, not the verb name.
+""")
 
----
+content.append("""---
 
 ## 8. Mutation Chain: Live Rat to Dinner
 
@@ -710,8 +718,9 @@ A cautious player can identify any food item without risk using SMELL + FEEL.
 | **Fresh (raw)** | "Raw poultry — faintly metallic" | "Cold, clammy, bumpy skin" | "Raw and bloody" (nausea) |
 | **Cooked** | "Roasted meat — smoky, savory" | "Hot, crispy, firm flesh" | "Rich, well-cooked" |
 | **Spoiled** | "Rotting meat — eyes water" | "Slimy, warm, skin slides" | "IMMEDIATE GAG" (poisoning) |
+""")
 
----
+content.append("""---
 
 ## 11. Food and Creatures (Bait)
 
@@ -886,8 +895,9 @@ Multi-ingredient cooking, `butcher` verb (knife + corpse = meat + bones), brewin
 ### Phase 4: World Economy
 
 Food trade, tavern meals, cooking skill, food quality tiers.
+""")
 
----
+content.append("""---
 
 ## 17. Open Questions
 
@@ -985,3 +995,12 @@ Recommendation: Yes. Add `food = { category = "drink", nutrition = 5, effects = 
 | **Nelson** | QA | Tests: cook with fire, cook without fire, eat raw, eat cooked, spoilage FSM |
 | **Sideshow Bob** | Puzzles | Design cooking puzzles (rat bait, food trade, hunger pressure) |
 | **Bart** | Architecture | Wire kill handler to call `mutation.mutate` on creature death (Phase 2) |
+""")
+
+output_path = r"C:\Users\wayneb\source\repos\MMO\plans\food-system-plan.md"
+full_content = "\n".join(content)
+with open(output_path, "w", encoding="utf-8") as f:
+    f.write(full_content)
+
+size_kb = len(full_content.encode("utf-8")) / 1024
+print(f"Written {size_kb:.1f} KB to {output_path}")
