@@ -8,6 +8,8 @@ local M = {}
 
 local stimulus = require("engine.creatures.stimulus")
 local predator_prey = require("engine.creatures.predator-prey")
+local combat_ok, combat = pcall(require, "engine.combat")
+if not combat_ok then combat = nil end
 
 ---------------------------------------------------------------------------
 -- Registry abstraction: works with both real registry (:list) and test mocks (:all)
@@ -260,7 +262,21 @@ local function score_actions(creature, context)
     end
     scores[#scores + 1] = { action = "vocalize", score = vocal_score }
 
-    -- Attack: no-op until WAVE-5 (D-COMBAT-NPC-PHASE-SEQUENCING)
+    -- Attack: score when prey is present in the same room
+    if predator_prey.has_prey_in_room(creature, context, M.get_creatures_in_room, get_location) then
+        local aggression = behavior.aggression or 0
+        local hunger_val = drives.hunger and drives.hunger.value or 0
+        local attack_score = aggression * 0.5 + hunger_val * 0.5
+        -- Territorial boost: creature in home territory gets aggression bonus
+        if behavior.territorial then
+            local territory = behavior.territory or behavior.home_territory
+            local loc = get_location(context.registry, creature)
+            if territory and loc == territory then
+                attack_score = attack_score + aggression * 0.3
+            end
+        end
+        scores[#scores + 1] = { action = "attack", score = attack_score }
+    end
 
     for _, entry in ipairs(scores) do
         entry.score = entry.score + math.random() * 2
@@ -378,7 +394,48 @@ local function execute_action(context, creature, action)
             end
         end
 
-    -- attack is a no-op until WAVE-5 (D-COMBAT-NPC-PHASE-SEQUENCING)
+    elseif action == "attack" then
+        local target = predator_prey.select_prey_target(
+            context, creature, M.get_creatures_in_room, get_location)
+        if target and combat then
+            if creature._state and creature._state ~= "dead" then
+                creature._state = "alive-hunt"
+            end
+            local result = combat.run_combat(context, creature, target)
+            local room_id = creature_loc or player_room
+            -- Emit creature_attacked stimulus via M.emit_stimulus for testability
+            if room_id then
+                M.emit_stimulus(room_id, "creature_attacked", {
+                    attacker_id = creature.id or creature.guid,
+                    defender_id = target.id or target.guid,
+                    attacker_name = creature.name,
+                    defender_name = target.name,
+                })
+            end
+            -- Emit creature_died if target was killed
+            if result and result.defender_dead and room_id then
+                M.emit_stimulus(room_id, "creature_died", {
+                    creature_id = target.id or target.guid,
+                    creature_name = target.name,
+                    killer_id = creature.id or creature.guid,
+                    killer_name = creature.name,
+                })
+            end
+            -- Narrate if player is in the same room
+            if creature_loc == player_room then
+                local atk_name = creature.name or "a creature"
+                local def_name = target.name or "a creature"
+                if result and result.text and result.text ~= "" then
+                    messages[#messages + 1] = result.text
+                else
+                    messages[#messages + 1] = atk_name:sub(1,1):upper() ..
+                        atk_name:sub(2) .. " attacks " .. def_name .. "!"
+                end
+                if result and result.death_narration then
+                    messages[#messages + 1] = result.death_narration
+                end
+            end
+        end
     end
 
     return messages
@@ -393,6 +450,19 @@ function M.creature_tick(context, creature)
 
     if not creature.animate or creature._state == "dead" then
         return messages
+    end
+
+    -- 0. Territorial evaluation: reduce fear, boost effective aggression
+    local behavior = creature.behavior or {}
+    if behavior.territorial then
+        local territory = behavior.territory or behavior.home_territory
+        local creature_loc = get_location(context.registry, creature)
+        if territory and creature_loc == territory then
+            if creature.drives and creature.drives.fear then
+                local fear = creature.drives.fear
+                fear.value = math.max(fear.min or 0, (fear.value or 0) - 10)
+            end
+        end
     end
 
     -- 1. Update drives
@@ -445,5 +515,19 @@ function M.tick(context)
     M.clear_stimuli()
     return messages
 end
+
+---------------------------------------------------------------------------
+-- Public API: expose internal functions for testing and cross-module use
+---------------------------------------------------------------------------
+function M.has_prey_in_room(creature, context)
+    return predator_prey.has_prey_in_room(creature, context, M.get_creatures_in_room, get_location)
+end
+
+function M.select_prey_target(context, creature)
+    return predator_prey.select_prey_target(context, creature, M.get_creatures_in_room, get_location)
+end
+
+M.score_actions = score_actions
+M.execute_action = execute_action
 
 return M

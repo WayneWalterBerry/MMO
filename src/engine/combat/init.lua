@@ -218,6 +218,15 @@ local function resolve_damage(attacker, defender, weapon, target_zone, response,
     local stance = opts and opts.stance or "balanced"
     local stance_mod = STANCE_MODIFIERS[stance] or STANCE_MODIFIERS.balanced
 
+    -- NPC stance: if attacker is NPC, read combat.behavior via npc-behavior
+    if not is_player(attacker) and npc_behavior then
+        local npc_stance = npc_behavior.select_stance(attacker)
+        if npc_stance and STANCE_MODIFIERS[npc_stance] then
+            stance = npc_stance
+            stance_mod = STANCE_MODIFIERS[npc_stance]
+        end
+    end
+
     local weapon_type = weapon and weapon.combat and weapon.combat.type or "blunt"
     if weapon_type == "slash" then weapon_type = "edged" end
 
@@ -229,11 +238,18 @@ local function resolve_damage(attacker, defender, weapon, target_zone, response,
 
     if is_player(attacker) then
         base_force = base_force * (stance_mod.attack or 1.0)
+    elseif stance ~= "balanced" then
+        base_force = base_force * (stance_mod.attack or 1.0)
     end
 
     local defense_multiplier = 1.0
     local response_type = response
     if type(response_type) == "table" then response_type = response_type.type end
+
+    -- NPC response auto-select: if no response provided, read defender's behavior
+    if not response_type and not is_player(defender) and npc_behavior then
+        response_type = npc_behavior.select_response(defender, attacker)
+    end
     if response_type == "block" then
         defense_multiplier = 0.3
     elseif response_type == "flee" then
@@ -259,6 +275,8 @@ local function resolve_damage(attacker, defender, weapon, target_zone, response,
     end
 
     if is_player(defender) then
+        defense_multiplier = defense_multiplier * (stance_mod.defense or 1.0)
+    elseif stance ~= "balanced" then
         defense_multiplier = defense_multiplier * (stance_mod.defense or 1.0)
     end
 
@@ -465,7 +483,20 @@ function M.run_combat(context, attacker, defender)
 
     local stance = context and context.combat_stance or "balanced"
     local weapon = pick_weapon(attacker)
-    local result = M.resolve_exchange(attacker, defender, weapon, nil, nil, { light = light, stance = stance })
+
+    -- NPC target zone: use combat.behavior.target_priority for zone selection
+    local target_zone = nil
+    if not is_player(attacker) and npc_behavior then
+        target_zone = npc_behavior.select_target_zone(attacker, defender)
+    end
+
+    -- NPC defense response: auto-select from defender's combat.behavior.defense
+    local response = nil
+    if not is_player(defender) and npc_behavior then
+        response = npc_behavior.select_response(defender, attacker)
+    end
+
+    local result = M.resolve_exchange(attacker, defender, weapon, target_zone, response, { light = light, stance = stance })
 
     -- C12: Emit creature_died stimulus and capture death narration
     if result.defender_dead then

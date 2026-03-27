@@ -1,43 +1,77 @@
 -- engine/combat/npc-behavior.lua
 -- NPC combat decision-making: response selection, stance, target zone.
--- Stub created during WAVE-0 module split (Phase 2).
---
--- WAVE-2 will move the following into this module:
---   - NPC response auto-select: choose block/dodge/counter/flee based on
---     creature combat stats, health, and fear level
---   - NPC stance management: aggressive/defensive/balanced selection based
---     on creature personality and combat state
---   - NPC target zone selection: weighted zone picking using creature
---     combat.preferred_zones and body_tree awareness
+-- Reads creature combat.behavior metadata (Principle 8).
 --
 -- Ownership: Bart (Architecture Lead)
 
 local M = {}
 
+-- Map creature attack_pattern → engine stance
+local PATTERN_TO_STANCE = {
+    aggressive  = "aggressive",
+    sustained   = "aggressive",
+    ambush      = "aggressive",
+    hit_and_run = "defensive",
+    defensive   = "defensive",
+    opportunistic = "balanced",
+    random      = "balanced",
+}
+
 ---------------------------------------------------------------------------
 -- select_response(creature, attacker, combat_state) -> response_type
--- Chooses a defensive response for an NPC creature.
--- Stub: returns nil (engine falls through to default) until WAVE-2.
+-- Reads defender's combat.behavior.defense (dodge/block/flee/counter/none).
 ---------------------------------------------------------------------------
 function M.select_response(creature, attacker, combat_state)
+    local cb = creature and creature.combat and creature.combat.behavior
+    if not cb then return nil end
+    local defense = cb.defense
+    if defense and defense ~= "none" then return defense end
     return nil
 end
 
 ---------------------------------------------------------------------------
 -- select_stance(creature, combat_state) -> stance_string
--- Chooses a combat stance for an NPC creature.
--- Stub: returns "balanced" until WAVE-2.
+-- Maps creature's combat.behavior.attack_pattern to engine stance.
 ---------------------------------------------------------------------------
 function M.select_stance(creature, combat_state)
+    local cb = creature and creature.combat and creature.combat.behavior
+    if not cb then return "balanced" end
+    local pattern = cb.attack_pattern or cb.stance
+    if pattern and PATTERN_TO_STANCE[pattern] then
+        return PATTERN_TO_STANCE[pattern]
+    end
     return "balanced"
 end
 
 ---------------------------------------------------------------------------
 -- select_target_zone(creature, defender, combat_state) -> zone_string|nil
--- Chooses a target body zone for an NPC attacker.
--- Stub: returns nil (random weighted zone) until WAVE-2.
+-- Uses combat.behavior.target_priority to bias zone selection.
+-- "weakest" → vital zones, "threatening" → largest zone, else nil (random).
 ---------------------------------------------------------------------------
 function M.select_target_zone(creature, defender, combat_state)
+    local cb = creature and creature.combat and creature.combat.behavior
+    if not cb or not cb.target_priority then return nil end
+    local bt = defender and defender.body_tree
+    if not bt then return nil end
+
+    local priority = cb.target_priority
+    if priority == "weakest" then
+        -- Target vital zones (head preferred)
+        for zone, info in pairs(bt) do
+            if info and info.vital then return zone end
+        end
+    elseif priority == "threatening" then
+        -- Target largest zone
+        local best_zone, best_size = nil, 0
+        for zone, info in pairs(bt) do
+            local sz = (info and info.size) or 1
+            if sz > best_size then
+                best_zone, best_size = zone, sz
+            end
+        end
+        return best_zone
+    end
+    -- "closest" or unknown → nil (engine uses random weighted)
     return nil
 end
 

@@ -29,7 +29,27 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
-### Recent Work: WAVE-0 — Module Splits & Architecture Prep (2026-03-27)
+### Recent Work: WAVE-2 — Creature Generalization Engine Work (2026-07-30)
+
+**WAVE-2 Completion — Bart's Engine Work for Creature Attack + NPC Combat:**
+- Fleshed out `src/engine/creatures/predator-prey.lua` — `has_prey_in_room()` and `select_prey_target()` scan same-room creatures against `behavior.prey` metadata
+- Fleshed out `src/engine/combat/npc-behavior.lua` — `select_response()` reads `combat.behavior.defense`, `select_stance()` maps `attack_pattern` to engine stance, `select_target_zone()` uses `target_priority` for zone bias
+- Added `creature_attacked` / `creature_died` convenience emitters to `src/engine/creatures/stimulus.lua`
+- Wired attack action in `creatures/init.lua`: `score_actions()` scores attack when prey present (aggression + hunger + territorial bonus), `execute_action()` calls `combat.run_combat()` and emits stimuli
+- Added territorial evaluation in `creature_tick()`: reduces fear when in home territory
+- NPC support in `combat/init.lua`: auto-select stance/response/target-zone for non-player combatants
+- `creatures/init.lua` at 468 LOC (under 500 limit)
+- **Test suite:** 184 test files pass (40 WAVE-2 tests now green)
+- **Decisions filed:** D-WAVE2-ENGINE
+
+## Learnings
+
+- **Territorial dual-path needed:** Tests call `score_actions()` in isolation (not through `creature_tick()`), so territorial aggression boost must be in `score_actions` directly, not just in `creature_tick`. Fear reduction can stay in `creature_tick` since it affects subsequent ticks.
+- **Stimulus routing matters for testability:** Tests monkey-patch `creatures.emit_stimulus` to track emissions. Using `stimulus.emit_creature_attacked()` directly bypasses the intercept. Always route through the module's public `emit_stimulus` function.
+- **attack_pattern ≠ stance:** Creature metadata uses `combat.behavior.attack_pattern` (opportunistic/sustained/ambush/hit_and_run/random), not `stance`. The `npc-behavior` module maps these to engine stances (aggressive/defensive/balanced) via `PATTERN_TO_STANCE` table.
+- **Prey list lives on behavior, not combat:** `creature.behavior.prey` (not `creature.combat.behavior.prey`) holds the prey ID array. Must read from the right path.
+
+### Prior Work: WAVE-0 — Module Splits & Architecture Prep (2026-03-27)
 
 **WAVE-0 Completion — Bart's Module Splits + Mutation Architecture:**
 - Extracted `src/engine/creatures/stimulus.lua` (67 LOC) — queue management for creature behavior

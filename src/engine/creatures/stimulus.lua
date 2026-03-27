@@ -22,6 +22,32 @@ function M.emit(room_id, stimulus_type, data)
 end
 
 ---------------------------------------------------------------------------
+-- emit_creature_attacked(room_id, attacker, defender)
+-- Convenience: emits creature_attacked stimulus after an attack resolves.
+---------------------------------------------------------------------------
+function M.emit_creature_attacked(room_id, attacker, defender)
+    M.emit(room_id, "creature_attacked", {
+        attacker_id = attacker and (attacker.id or attacker.guid),
+        defender_id = defender and (defender.id or defender.guid),
+        attacker_name = attacker and attacker.name,
+        defender_name = defender and defender.name,
+    })
+end
+
+---------------------------------------------------------------------------
+-- emit_creature_died(room_id, creature, killer)
+-- Convenience: emits creature_died stimulus when a creature is killed.
+---------------------------------------------------------------------------
+function M.emit_creature_died(room_id, creature, killer)
+    M.emit(room_id, "creature_died", {
+        creature_id = creature and (creature.id or creature.guid),
+        creature_name = creature and creature.name,
+        killer_id = killer and (killer.id or killer.guid),
+        killer_name = killer and killer.name,
+    })
+end
+
+---------------------------------------------------------------------------
 -- clear()
 -- Drains the stimulus queue (called after tick processes all stimuli).
 ---------------------------------------------------------------------------
