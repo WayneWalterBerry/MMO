@@ -781,3 +781,29 @@ Created two food object definitions for the Food PoC system:
 **TDD:** All 189 existing tests pass, zero regressions. Pre-existing food test failures (`test/food/test-eat-drink.lua`, `test/food/test-bait.lua`) are from other WAVE-5 tracks (5B/5C/5D), not caused by these objects.
 
 **Commit:** 7569dc3
+
+### 2026-08: Phase 3 WAVE-1 — death_state Blocks on 5 Creatures + Meat Material
+
+**Task:** Add `death_state` metadata blocks to all 5 creature files and create the `meat` material. D-14 in-place reshape pattern — creatures declare their own dead form, no separate dead-creature files.
+
+**Creatures Updated (death_state added):**
+
+1. **rat.lua** — template: small-item, portable, size: tiny, weight: 0.3. Edible/cookable (becomes cooked-rat-meat). Container capacity 1. Spoilage FSM: fresh(30)→bloated(40)→rotten(60)→bones. transfer_contents = true.
+2. **cat.lua** — template: small-item, portable, size: small, weight: 3.5. Edible/cookable (becomes cooked-cat-meat). Container capacity 2. Spoilage FSM: fresh(30)→bloated(40)→rotten(60)→bones. transfer_contents = true.
+3. **wolf.lua** — template: furniture, NOT portable, size: large, weight: 45. Food category meat but cookable=false (too big, requires butchery Phase 4). Container capacity 5. Spoilage FSM: fresh(40)→bloated(50)→rotten(80)→bones. transfer_contents = true.
+4. **spider.lua** — template: small-item, portable, size: small, weight: 0.5. NOT edible (chitin). NOT a container. byproducts = {"silk-bundle"} (silk drops on death). reshape_narration for silk spill. No spoilage FSM.
+5. **bat.lua** — template: small-item, portable, size: tiny, weight: 0.15. Edible/cookable (becomes cooked-bat-meat). NOT a container. Spoilage FSM: fresh(25)→bloated(35)→rotten(50)→bones.
+
+**Material Created:**
+- `src/meta/materials/meat.lua` — GUID {94d05bd1-8393-4a54-a21f-7eae6ed503d9} from bart-phase3-guids.md. density=1050, ignition_point=300, hardness=1. All 11 required properties present (flexibility, absorbency, opacity, flammability, conductivity, fragility, value).
+
+**Tests Updated:**
+- `test/objects/test-material-migration.lua` — count 30→31, added "meat" to EXPECTED_MATERIALS list.
+
+**Patterns learned:**
+- New materials MUST include all 11 core properties (density, melting_point, ignition_point, hardness, flexibility, absorbency, opacity, flammability, conductivity, fragility, value) — test-material-migration.lua and test-material-properties.lua enforce this strictly.
+- Material count tests are hardcoded — always update expected count when adding materials.
+- death_state follows the exact same structural pattern as the plan example: template, name, description, keywords, room_presence, physical props, sensory (on_feel mandatory), food, crafting, container, spoilage FSM, transfer_contents.
+- Spider is unique: no food, no container, no spoilage — but has byproducts and reshape_narration for silk drop.
+
+**Commit:** 7c067c9
