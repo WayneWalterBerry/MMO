@@ -517,4 +517,48 @@ function M.emit_morale_break(creature_name, direction, light)
     return M.emit(text, SEVERITY.GRAZE, false)
 end
 
+---------------------------------------------------------------------------
+-- Combat sound propagation narration API (WAVE-4)
+---------------------------------------------------------------------------
+
+--- Emit combat sound narration for the player based on distance from combat.
+-- Same room: nil (combat narration already covers it).
+-- Adjacent room: directional sound text.
+-- 2+ exits away: nil (sound doesn't propagate that far).
+--
+-- @param room       string  room id where combat occurs
+-- @param intensity  number  0-10 scale (unarmed=3, weapon=6, death=8)
+-- @param witness_text string template override (unused in Phase 3; reserved)
+-- @param opts       table   { player_room_id, exits, light }
+-- @return string|nil  narration text for the player
+function M.emit_combat_sound(room, intensity, witness_text, opts)
+    opts = opts or {}
+    local prox = M.proximity(opts.player_room_id, room, opts.exits)
+
+    if prox == "same" then return nil end
+    if prox == "distant" then return nil end
+
+    -- Adjacent: directional sound narration
+    local direction = find_direction(opts.exits, room)
+    return "You hear violent sounds from the " .. direction .. ". Something crashes."
+end
+
+--- Narrate a creature fleeing from combat noise (visible to player only).
+-- @param creature_name string  display name of the creature
+-- @param light         boolean whether the player can see
+-- @return string|nil   narration text, or nil if dark
+function M.creature_flee_sound(creature_name, light)
+    if not light then return nil end
+    return (creature_name or "Something") .. " skitters away from the noise."
+end
+
+--- Narrate a predator investigating combat noise (visible to player only).
+-- @param creature_name string  display name of the creature
+-- @param light         boolean whether the player can see
+-- @return string|nil   narration text, or nil if dark
+function M.creature_investigate_sound(creature_name, light)
+    if not light then return nil end
+    return (creature_name or "Something") .. " perks up, drawn toward the sounds."
+end
+
 return M

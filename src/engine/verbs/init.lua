@@ -493,6 +493,7 @@ function verbs.create()
         handlers["slap"]     = handlers["hit"]
         handlers["whack"]    = handlers["hit"]
         handlers["headbutt"] = handlers["hit"]
+        handlers["kick"]     = handlers["hit"]
 
         -- strike: preserve fire.lua match-striking, add creature combat fallback
         local original_strike = handlers["strike"]
