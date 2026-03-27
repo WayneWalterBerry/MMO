@@ -888,3 +888,33 @@ Created two food object definitions for the Food PoC system:
 - Room placement TBD by Moe (study shelf or cellar cabinet per WAVE-4 plan).
 
 **Commit:** b6d1955
+
+
+---
+
+## Phase 3 WAVE-5: Respawn Metadata on 5 Creatures
+
+**Date:** 2026-03
+**Requested by:** Wayne Berry
+**Branch:** main
+
+### Work Done
+
+Added 
+espawn table to all 5 creature files:
+
+| Creature | File | Timer | Home Room | Max Pop |
+|----------|------|-------|-----------|---------|
+| rat | src/meta/creatures/rat.lua | 60 | cellar | 3 |
+| cat | src/meta/creatures/cat.lua | 120 | courtyard | 1 |
+| wolf | src/meta/creatures/wolf.lua | 200 | hallway | 1 |
+| spider | src/meta/creatures/spider.lua | 80 | deep-cellar | 2 |
+| bat | src/meta/creatures/bat.lua | 60 | crypt | 3 |
+
+### Design Notes
+- Inserted 
+espawn block between combat metadata and death_state in each file -- logical placement: combat defines how they fight, respawn defines how they return, death_state defines what they become.
+- All 5 files Lua-parse clean and respawn values load correctly at runtime.
+- Engine respawn logic (reading these tables) is Bart's domain -- this wave is metadata-only.
+
+**Commit:** cbaaa13

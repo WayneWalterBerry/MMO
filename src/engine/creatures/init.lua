@@ -12,6 +12,7 @@ local morale = require("engine.creatures.morale")
 local navigation = require("engine.creatures.navigation")
 local death = require("engine.creatures.death")
 local creature_inventory = require("engine.creatures.inventory")
+local respawn = require("engine.creatures.respawn")
 local combat_ok, combat = pcall(require, "engine.combat")
 if not combat_ok then combat = nil end
 
@@ -359,9 +360,10 @@ local function execute_action(context, creature, action)
                     defender_name = target.name,
                 })
             end
-            -- Creature death: reshape if death_state present, then emit stimulus
+            -- Creature death: register respawn, reshape, emit stimulus
             if result and result.defender_dead and room_id then
                 local dead_name = target.name
+                respawn.register(target)
                 local death_room = get_room(context, room_id)
                 M.handle_creature_death(target, context, death_room)
                 M.emit_stimulus(room_id, "creature_died", {
@@ -463,7 +465,7 @@ end
 ---------------------------------------------------------------------------
 -- tick(context) -> messages[]
 -- Master tick: iterates all animate objects, runs creature_tick for each,
--- then drains the stimulus queue.
+-- advances respawn timers, then drains the stimulus queue.
 ---------------------------------------------------------------------------
 function M.tick(context)
     local messages = {}
@@ -484,6 +486,9 @@ function M.tick(context)
             end
         end
     end
+
+    -- Advance respawn timers (spawns new creatures when ready)
+    respawn.tick(context, list_objects, get_room, get_player_room_id(context))
 
     M.clear_stimuli()
     return messages
@@ -523,6 +528,13 @@ end
 ---------------------------------------------------------------------------
 M.reshape_instance = death.reshape_instance
 M.handle_creature_death = death.handle_creature_death
+
+---------------------------------------------------------------------------
+-- Respawn API (delegated to engine/creatures/respawn.lua)
+---------------------------------------------------------------------------
+M.register_for_respawn = respawn.register
+M.respawn_pending = respawn.count_pending
+M.respawn_clear = respawn.clear
 
 ---------------------------------------------------------------------------
 -- Inventory API (delegated to engine/creatures/inventory.lua)
