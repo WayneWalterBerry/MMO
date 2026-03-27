@@ -63,8 +63,11 @@ local show_hint = H.show_hint
 local M = {}
 
 function M.register(handlers)
+    -- Injury restriction helper (WAVE-5)
+    local inj_ok, injury_mod = pcall(require, "engine.injuries")
+
     ---------------------------------------------------------------------------
-    -- EAT -- stub for consumables
+    -- EAT -- consume food items (WAVE-5: food.edible + nutrition + restrictions)
     ---------------------------------------------------------------------------
     handlers["eat"] = function(ctx, noun)
         if noun == "" then
@@ -81,36 +84,80 @@ function M.register(handlers)
             return
         end
 
-        if obj.edible then
-            print("You eat " .. (obj.name or "it") .. ".")
-            if obj.on_eat_message then
-                print(obj.on_eat_message)
-            end
-            -- on_eat hook: fire callback if object declares one
-            if obj.on_eat and type(obj.on_eat) == "function" then
-                obj.on_eat(obj, ctx)
-            end
-            -- event_output: one-shot flavor text for on_eat
-            if obj.event_output and obj.event_output["on_eat"] then
-                print(obj.event_output["on_eat"])
-                obj.event_output["on_eat"] = nil
-            end
-            show_hint(ctx, "eat", "Careful what you eat — not everything is safe to consume.")
-            remove_from_location(ctx, obj)
-            ctx.registry:remove(obj.id)
-        else
-            print("You can't eat " .. (obj.name or "that") .. ".")
+        -- WAVE-5 food objects require holding; legacy edible objects are grandfathered
+        if obj.food and not find_in_inventory(ctx, noun) then
+            print("You'll need to pick that up first.")
+            return
         end
+
+        -- Check edibility: food.edible (WAVE-5 food table) or legacy obj.edible
+        local food = obj.food
+        local is_edible = (food and food.edible) or obj.edible
+        if not is_edible then
+            print("You can't eat " .. (obj.name or "that") .. ".")
+            return
+        end
+
+        -- Check injury restrictions (e.g. jaw injuries could block eating)
+        if inj_ok and injury_mod then
+            local restricts = injury_mod.get_restrictions(ctx.player)
+            if restricts.eat then
+                print("Your injuries prevent you from eating.")
+                return
+            end
+        end
+
+        -- Spoiled food warning
+        if obj._state == "spoiled" then
+            print("This food looks spoiled... but you eat it anyway.")
+        else
+            print("You eat " .. (obj.name or "it") .. ".")
+        end
+
+        -- Emit on_taste sensory text
+        if obj.on_taste then
+            print(obj.on_taste)
+        end
+
+        -- Apply nutrition to player
+        if food and food.nutrition then
+            ctx.player.nutrition = (ctx.player.nutrition or 0) + food.nutrition
+        end
+
+        if obj.on_eat_message then
+            print(obj.on_eat_message)
+        end
+        -- on_eat hook: fire callback if object declares one
+        if obj.on_eat and type(obj.on_eat) == "function" then
+            obj.on_eat(obj, ctx)
+        end
+        -- event_output: one-shot flavor text for on_eat
+        if obj.event_output and obj.event_output["on_eat"] then
+            print(obj.event_output["on_eat"])
+            obj.event_output["on_eat"] = nil
+        end
+        show_hint(ctx, "eat", "Careful what you eat — not everything is safe to consume.")
+        remove_from_location(ctx, obj)
+        ctx.registry:remove(obj.id)
     end
 
     handlers["consume"] = handlers["eat"]
     handlers["devour"] = handlers["eat"]
 
     ---------------------------------------------------------------------------
-    -- DRINK -- consume a liquid (FSM or generic)
+    -- DRINK -- consume a liquid (FSM or generic, WAVE-5: restriction check)
     ---------------------------------------------------------------------------
     handlers["drink"] = function(ctx, noun)
         if noun == "" then print("Drink what?") return end
+
+        -- Check injury restrictions before object resolution (rabies hydrophobia)
+        if inj_ok and injury_mod then
+            local restricts = injury_mod.get_restrictions(ctx.player)
+            if restricts.drink then
+                print("You can't bring yourself to drink — the mere thought of water fills you with terror.")
+                return
+            end
+        end
 
         -- Strip "from" preposition: "drink from bottle" → "bottle"
         local target = noun:match("^from%s+(.+)") or noun
@@ -153,8 +200,7 @@ function M.register(handlers)
                         })
                         -- Propagate game_over back to the main context
                         local eff_ctx = { player = ctx.player }
-                        local inj_ok, injury_mod = pcall(require, "engine.injuries")
-                        if inj_ok then
+                        if inj_ok and injury_mod then
                             local health = injury_mod.compute_health(ctx.player)
                             if health <= 0 then
                                 ctx.game_over = true
@@ -174,6 +220,20 @@ function M.register(handlers)
                 end
                 return
             end
+        end
+
+        -- Food-as-drink path (WAVE-5): objects with food.drinkable
+        if obj.food and obj.food.drinkable then
+            if obj.on_taste then
+                print(obj.on_taste)
+            end
+            if obj.food.nutrition then
+                ctx.player.nutrition = (ctx.player.nutrition or 0) + obj.food.nutrition
+            end
+            print("You drink " .. (obj.name or "it") .. ".")
+            remove_from_location(ctx, obj)
+            ctx.registry:remove(obj.id)
+            return
         end
 
         if obj.on_drink_reject then
