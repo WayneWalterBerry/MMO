@@ -116,14 +116,10 @@ local function make_live_creature(def, guid_override)
     return inst
 end
 
--- Standalone reshape_instance that mirrors the spec, used when engine module
--- isn't available yet (TDD). When the real module loads, we use its version.
+-- Standalone reshape_instance that mirrors the SPEC from creature-death-reshape.md.
+-- TDD: we test the specified behavior, not the current (possibly incomplete)
+-- engine implementation. When the engine is finalized, tests verify the contract.
 local function reshape_instance(instance, death_state, registry, room)
-    if creatures and creatures.reshape_instance then
-        return creatures.reshape_instance(instance, death_state, registry, room)
-    end
-
-    -- Fallback: manual reshape per architecture doc
     instance.template = death_state.template
     instance.name = death_state.name
     instance.description = death_state.description
