@@ -1020,6 +1020,38 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 
 **LOC counts (GATE-4):**
 - injuries/cure.lua: 352 (was 305, +47)
+
+## WAVE-5: Respawn Engine (2026-03-27)
+
+**Task:** Implement respawn engine — prevent creature extinction via metadata-driven respawn timers. Wire into creature tick cycle.
+
+**Implementation:**
+
+1. **Created `src/engine/creatures/respawn.lua` (158 LOC)**
+   - `register(creature)` — captures respawn spec from creature metadata on death, starts countdown
+   - `tick(context, list_fn, get_room_fn, player_room_id)` — advances all timers, spawns new creature instances when timer expires
+   - Population cap: `count_population()` checks living creatures of same type in target room
+   - Player-not-in-room guard: if player is in home_room at spawn time, timer resets (prevents "spawn in face")
+   - New instances get fresh GUIDs (`{respawn-type-timestamp}`), full health, registered in object registry
+   - Test API: `get_pending()`, `clear()`, `count_pending()`, `count_population()`
+
+2. **Modified `src/engine/creatures/init.lua` (+14 LOC, 480 total — under 500 ✓)**
+   - Added `require("engine.creatures.respawn")` at module top
+   - Wired `respawn.register(target)` into NPC-vs-NPC death path (before reshape, so respawn metadata is captured while creature still has it)
+   - Added `respawn.tick()` call at end of master `tick()`, after creature behavior and before stimulus clear
+   - Exported `register_for_respawn`, `respawn_pending`, `respawn_clear` via delegation pattern
+
+**Key design decisions:**
+- Register BEFORE reshape — death.reshape_instance clears creature metadata, so respawn data must be captured first
+- Respawn metadata lives on the creature `.lua` file (Principle 8 — no creature-specific engine code)
+- Spawn position: room-level only, no spatial nesting (per plan spec)
+- Timer reset on player-in-room prevents immersion-breaking visible spawns
+
+**LOC counts (GATE-5):**
+- creatures/respawn.lua: 158 LOC (new)
+- creatures/init.lua: 480 LOC (was 470, +10 net — under 500 ✓)
+
+**Tests:** All 206 test files passed. Zero regressions.
 - combat/init.lua: 410 (was 395, +15)
 - injuries/init.lua: 362 (was 361, +1)
 
