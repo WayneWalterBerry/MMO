@@ -15,16 +15,22 @@ local PATTERN_TO_STANCE = {
     defensive   = "defensive",
     opportunistic = "balanced",
     random      = "balanced",
+    cornered    = "aggressive",
 }
 
 ---------------------------------------------------------------------------
 -- select_response(creature, attacker, combat_state) -> response_type
 -- Reads defender's combat.behavior.defense (dodge/block/flee/counter/none).
+-- Cornered creatures never select "flee" — they fight.
 ---------------------------------------------------------------------------
 function M.select_response(creature, attacker, combat_state)
     local cb = creature and creature.combat and creature.combat.behavior
     if not cb then return nil end
     local defense = cb.defense
+    -- Cornered creatures cannot flee
+    if creature._cornered and defense == "flee" then
+        return "counter"
+    end
     if defense and defense ~= "none" then return defense end
     return nil
 end
@@ -32,8 +38,10 @@ end
 ---------------------------------------------------------------------------
 -- select_stance(creature, combat_state) -> stance_string
 -- Maps creature's combat.behavior.attack_pattern to engine stance.
+-- Cornered creatures always use aggressive stance.
 ---------------------------------------------------------------------------
 function M.select_stance(creature, combat_state)
+    if creature._cornered then return "aggressive" end
     local cb = creature and creature.combat and creature.combat.behavior
     if not cb then return "balanced" end
     local pattern = cb.attack_pattern or cb.stance

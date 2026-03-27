@@ -318,3 +318,32 @@ The bear trap design now demonstrates the complete **object declaration → pipe
 - Meta-commands (`save`, `quit`) must bypass consciousness gate
 
 **Decision filed:** `.squad/decisions/inbox/comic-book-guy-unconsciousness.md`
+
+### Session Update: Sound Design Plan — Game Design Section (2026-07-28)
+**Status:** ✅ DESIGN COMPLETE
+
+**Deliverable:** `plans/sound-design-notes.md` — ~30 KB game design section for sound implementation.
+
+**What was done:**
+- Wrote comprehensive game design section for adding sound effects to the engine
+- Audited all 110+ objects in `src/meta/objects/` and all 5 creatures in `src/meta/creatures/` for sound potential
+- Categorized every object with `on_listen` text into sound tiers (T1/T2/T3) and mapped to specific sound files
+- Designed 3-tier sound priority system: Must-Have (creatures, doors, fire, combat), High-Value (ambient, containers, destruction, liquid), Nice-to-Have (UI, clock, mechanical, weather, textile)
+- Designed per-room ambient loops for all 7 rooms with distinct sonic identities
+- Designed combat sound layering with 3-slot simultaneous sound budget
+- Defined 4 damage-type-based impact sounds (pierce/slash/blunt/crush) per Principle 9
+- Specified accessibility model: text always canonical, sound never conveys unique information
+- Created concrete MVP sound list: 24 files, ~100 KB gzipped, covering all Tier 1 categories
+- Designed time-of-day ambient variation (deferred to Phase 2)
+
+**Key Design Decisions:**
+- Text is ALWAYS present — sound enhances, never replaces (Wayne's accessibility requirement)
+- Dead creatures produce silence, not death sounds — absence of sound IS the sound
+- 3 simultaneous sounds maximum in combat (ambient + creature + impact)
+- Doors share 2–3 base creak sounds — material variation expressed in text, not unique files
+- 4 damage-type impact sounds cover all combat (type-based, not weapon-based, per Principle 9)
+- Single master volume + 3 toggles (SFX, ambient, creature) — no full mixer in MVP
+- Ambient crossfade 1.5s on room transitions; event sounds duck ambient 30%
+- Time-of-day ambient variation deferred to Phase 2 (night ambient = MVP default)
+
+**Decision filed:** `.squad/decisions/inbox/cbg-sound-plan.md`

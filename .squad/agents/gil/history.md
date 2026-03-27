@@ -340,3 +340,18 @@
 - **MMO branch:** squad/251-web-debug-fix commit 7d21a7f
 - $([char]0x26A0)$([char]0xFE0F) **Critical learning: .nojekyll is mandatory.** Any file starting with _ will be 404'd by GitHub Pages without this file. The _index.lua manifest and potentially any future _-prefixed files depend on it. This must be part of every deploy checklist.
 - $([char]0x26A0)$([char]0xFE0F) **Critical learning: build scripts overwrite source files.** uild-engine.ps1 reads ootstrapper.js, stamps timestamps via regex, and writes it back. uild-meta.ps1 does the same for game-adapter.lua. Any code changes must be made AFTER the build runs, or the build will overwrite them. The deploy script (deploy.ps1) calls both builds first.
+### 2026-03-27: Sound Web Pipeline Plan
+- **Timestamp:** 2026-03-27T14:30Z
+- **Status:** Plan written, not yet implemented
+- **Task:** Wayne requested the WEB AUDIO PIPELINE section of the sound implementation plan. Frink completed the sound research; my job was the browser-specific delivery plan.
+- **Output:** `plans/sound-web-pipeline-notes.md` — covers Web Audio API integration, compression (OGG Opus @ 48kbps mono), lazy loading piggybacking on room JIT loader, asset hosting (`assets/sounds/` to flat deploy `sounds/`), Fengari bridge (6 JS functions on `window`, Lua wrapper via `_G._web_sound`), silent fallback on all failure paths, and autoplay unlock via first keypress.
+- **Key decisions proposed:**
+  - **Format:** OGG Opus (60% smaller than Vorbis for SFX, native browser decode)
+  - **Bridge pattern:** Same `window._xxxYyy` pattern as existing `_appendOutput`, `_updateStatusBar`, etc.
+  - **Loading:** Async `fetch()` + `decodeAudioData()` — non-blocking, room text renders before sounds arrive
+  - **Fallback:** Every bridge call wrapped in `pcall()` — sound failure never crashes the game
+  - **Autoplay:** `_ensureAudioContext()` in existing keydown handler — first keypress unlocks AudioContext
+  - **No manifest needed for MVP** — objects declare their sounds; engine loads what's referenced
+- **Decision filed:** `.squad/decisions/inbox/gil-sound-plan.md`
+- **Estimated Gil implementation work:** 5.5 hours (JS subsystem 2h, Lua bridge 1h, build/deploy 1h, mute UI 0.5h, testing 1h)
+- Warning: Engine-side hooks (FSM transitions, verb handlers checking `obj.sounds`) are Bart's domain. My scope is web layer only: bootstrapper.js, game-adapter.lua, build scripts, deploy pipeline.

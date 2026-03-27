@@ -49,6 +49,35 @@
 
 ## Recent Updates
 
+### Session: WAVE-3 Track 3E — NPC Combat Architecture Documentation (Current)
+**Status:** ✅ COMPLETED
+**Deliverable:** `docs/architecture/combat/npc-combat.md` (11.6 KB, ~200 lines)
+
+**What I Created:**
+1. **NPC Combat Resolution Flow** — 6-phase pipeline (INITIATE → DECLARE → RESPOND → RESOLVE → NARRATE → UPDATE), unified combatant interface, NPC auto-selection of weapon/zone/defense via `npc_behavior` modules
+2. **Combatant Interface** — Required fields (combat.speed, body_tree, health), optional NPC fields (behavior, flee_threshold, cornered_bonus)
+3. **Turn Order Algorithm** — Speed (highest first) → size tiebreak (smaller first) → player-last, with SIZE_MODIFIERS lookup table
+4. **active_fights Tracking** — Fight lifecycle (create → round loop → resolve → cleanup), budget tracking for narration, combat_active flag to suppress wander
+5. **Morale & Flee System** — Threshold check after RESOLVE, creature-specific values (rat 0.3, cat 0.4, wolf 0.2, spider 0.1), cornered fallback (1.5× force multiplier when no exits)
+6. **Witness Narration Tiers** — 4 locality/light combinations (same room light, same room dark, adjacent, out of range), with Tier 1–2 examples
+7. **Narration Budget Protocol** — 6-line cap/round, critical exemptions (death, player action always shown), GRAZE/DEFLECT deferred when over budget, round reset
+
+**Key Code References:**
+- `src/engine/combat/init.lua`: `resolve_exchange()`, `run_combat()`, STANCE_MODIFIERS, SIZE_MODIFIERS
+- `src/engine/combat/npc-behavior.lua`: `select_response()`, `select_stance()`, `select_target_zone()`
+- `src/engine/creatures/init.lua`: Drive system, stimulus integration, flee pathfinding
+- `src/engine/combat/narration.lua`: Light-dependent templates, witness tiers
+
+**Learnings:**
+- NPC combat is **not a separate path** — same `resolve_exchange()` pipeline for all combatants; NPC-ness is expressed via behavior metadata + auto-selection functions
+- Turn order algorithm has a **subtle player disadvantage**: player acts last in tiebreaks, modeling humanoid vulnerability
+- Narration budget prevents **exponential output spam** in 3+ creature fights; critical narration always bypasses cap to preserve death messages
+- `active_fights` lifecycle mirrors game loop tick structure: create fight on first NPC-NPC exchange, loop through combatants each tick, resolve when list depleted
+- Morale **threshold is a fraction**, not absolute health — allows scaling across creature sizes (rat with 10 max health flees at health < 3; wolf with 50 max health flees at health < 10)
+- Cornered creatures can't flee but get defensive bonus instead — avoids "trap door" behavior where caged creatures are helpless
+
+
+
 ### Session: Documentation Reorganization — Design vs Architecture (2026-03-20T22:15Z)
 **Status:** ✅ COMPLETED
 **Outcome:** Clear separation of gameplay design from technical implementation; 40+ cross-references updated

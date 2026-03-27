@@ -29,7 +29,22 @@
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
 
-### Recent Work: WAVE-2 — Creature Generalization Engine Work (2026-07-30)
+### Recent Work: Sound System Architecture Plan (2026-07-31)
+
+**Sound Implementation Plan — Engine Architecture Section:**
+- Wrote `plans/sound-implementation-plan.md` Section 1: Engine Architecture (10 subsections)
+- Designed `sounds` table metadata for objects, creatures, and rooms — event-keyed with prefixes (`on_state_`, `ambient_`, `on_verb_`, `on_mutate`)
+- Designed lazy loading: `sound_manager:scan_object()` piggybacks on existing loader → registry flow
+- Mapped 12 engine event hook points to sound triggers (FSM transitions, verb execution, room entry/exit, mutation, combat, timer expiration)
+- Designed `src/engine/sound/init.lua` module: platform-agnostic API with injected driver pattern
+- Two platform drivers: Web (Fengari + Web Audio API via JS bridge) and Terminal (os.execute best-effort, no-op fallback)
+- Room-scoped audio: earshot = current room + player hands; room transitions stop/start ambients; mutation-aware
+- Default verb sounds table for baseline coverage without per-object declarations
+- Effects pipeline integration via `play_sound` effect type registration
+- Filed 7 sub-decisions: D-SOUND-1 through D-SOUND-7 covering metadata, lazy loading, drivers, room scope, accessibility, compression, effects integration
+- **Decisions filed:** D-SOUND-ARCHITECTURE (inbox)
+
+### Prior Work: WAVE-2 — Creature Generalization Engine Work (2026-07-30)
 
 **WAVE-2 Completion — Bart's Engine Work for Creature Attack + NPC Combat:**
 - Fleshed out `src/engine/creatures/predator-prey.lua` — `has_prey_in_room()` and `select_prey_target()` scan same-room creatures against `behavior.prey` metadata

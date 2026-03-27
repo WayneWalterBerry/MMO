@@ -95,9 +95,37 @@
 - Locked/closed/open FSM with silver-key, bidirectional sync
 - Commit: `b675174`
 
+### WAVE-3 TDD: NPC Combat + Witness Narration Tests (2026-07-31)
+
+**Status:** ✅ COMPLETE — 41 TDD tests written across 2 files
+
+**Files created:**
+- `test/combat/test-npc-combat.lua` — 25 tests
+- `test/combat/test-witness-narration.lua` — 16 tests
+
+**Results (TDD Red Phase):**
+- 30 PASS (data validation, existing combat engine APIs like `run_combat`, `initiate`, `resolve_exchange`, narration `generate`)
+- 11 FAIL (expected — waiting for Bart/Smithers WAVE-3 implementations):
+  - Bart: `active_fights` lifecycle tracking, `select_target` aggression fallback, `attempt_flee` movement, cornered stance
+  - Smithers: narration budget system (`emit`, `new_budget`), adjacency-based witness narration, distance filtering
+
+**Key findings during test authoring:**
+- `wolf.combat.behavior.aggression` is a string (`"territorial"`) while `wolf.behavior.aggression` is numeric (70) — tests must handle both locations and types
+- `combat.initiate()` already works for speed-based turn order with size tiebreak — cat (small, speed=7) goes before wolf (medium, speed=7)
+- `combat.run_combat()` requires `player.hands` in context for `presentation.get_light_level` — mock context must include hands
+- Dead creature mutation works end-to-end: health→0 triggers `_state="dead"`, `alive=false`, `animate=false`, `portable=true`
+- Narration `generate()` ignores `distance` and `witness` opts — Smithers must add distance-aware witness narration for WAVE-3
+- No `narration.emit` or `narration.new_budget` functions exist yet — entire budget system is TDD red phase
+- Pre-existing failures in other test files (injuries, creatures) not caused by WAVE-3 changes
+
+**Commit:** `c33714f`
+
 ## Learnings
 
 - EXIT-01 has a lint gap: portals can target non-existent rooms but the lint only validates `portal.target` exists as a string, not that the target room exists. The Phase 2 inline EXIT-01 check was bypassed by the portal migration.
+- Wolf creature has dual aggression: `behavior.aggression = 70` (numeric, for drive system) and `combat.behavior.aggression = "territorial"` (string, for attack pattern). Tests comparing aggression thresholds must use the correct source and handle type differences.
+- Combat engine `run_combat` calls `presentation.get_light_level` which requires `player.hands` — any mock context involving player-as-combatant must include `hands = { nil, nil }` in the player table.
+- Narration module has LIGHT_TEMPLATES and DARK_TEMPLATES but no witness/adjacency/budget system yet — all distance-aware and budget-capped narration is WAVE-3 scope for Smithers.
 - The `orphan_allowlist` pattern in `.meta-check.json` is a good model for other per-object suppressions. The config system only supports global rule enable/disable, not per-file. This extension adds targeted suppressions.
 - `courtyard-kitchen-door` had a real traversal bug hiding behind the lint issue — the EXIT-01 warning was gone but the runtime error remained. Always verify runtime behavior, not just lint status.
 - Portal TDD tests follow a consistent 10-section pattern: file loading → structure → metadata → states → transitions → sensory → movement → bidirectional sync → room wiring → keywords.

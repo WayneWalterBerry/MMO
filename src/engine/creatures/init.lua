@@ -8,6 +8,8 @@ local M = {}
 
 local stimulus = require("engine.creatures.stimulus")
 local predator_prey = require("engine.creatures.predator-prey")
+local morale = require("engine.creatures.morale")
+local navigation = require("engine.creatures.navigation")
 local combat_ok, combat = pcall(require, "engine.combat")
 if not combat_ok then combat = nil end
 
@@ -118,98 +120,21 @@ end
 -- Reaction system
 ---------------------------------------------------------------------------
 
--- get_exit_target(context, exit) -> target_room_id or nil
--- Resolves exit target from either simple format or portal-based format.
+-- Navigation helpers delegated to navigation module
 local function get_exit_target(context, exit)
-    if type(exit) ~= "table" then return nil end
-    -- Simple exit: { target = "room-id", open = true }
-    if exit.target then return exit.target end
-    -- Portal-based exit: { portal = "portal-id" }
-    if exit.portal and context.registry then
-        local reg = context.registry
-        if type(reg.get) == "function" then
-            local portal = reg:get(exit.portal)
-            if portal and portal.portal then return portal.portal.target end
-        end
-    end
-    return nil
+    return navigation.get_exit_target(context, exit)
 end
 
--- get_room_distance(context, from_id, to_id) -> number
--- BFS distance between two rooms. Returns 999 if unreachable.
 local function get_room_distance(context, from_id, to_id)
-    if from_id == to_id then return 0 end
-    local visited = { [from_id] = true }
-    local frontier = { from_id }
-    local depth = 0
-    while #frontier > 0 and depth < 10 do
-        depth = depth + 1
-        local next_frontier = {}
-        for _, rid in ipairs(frontier) do
-            local room = get_room(context, rid)
-            if room and room.exits then
-                for _, exit in pairs(room.exits) do
-                    local target_id = get_exit_target(context, exit)
-                    if target_id and not visited[target_id] then
-                        if target_id == to_id then return depth end
-                        visited[target_id] = true
-                        next_frontier[#next_frontier + 1] = target_id
-                    end
-                end
-            end
-        end
-        frontier = next_frontier
-    end
-    return 999
+    return navigation.get_room_distance(context, from_id, to_id, get_room)
 end
 
--- is_exit_passable(context, exit, creature) -> bool, target_room_id
--- Checks whether a creature can pass through an exit.
 local function is_exit_passable(context, exit, creature)
-    if type(exit) ~= "table" then return false, nil end
-
-    -- Simple exit format: { target = "room-id", open = bool }
-    if exit.target then
-        if exit.open == false then
-            if not (creature.movement and creature.movement.can_open_doors) then
-                return false, nil
-            end
-        end
-        return true, exit.target
-    end
-
-    -- Portal-based exit: { portal = "portal-id" }
-    if exit.portal and context.registry and type(context.registry.get) == "function" then
-        local portal = context.registry:get(exit.portal)
-        if not portal then return false, nil end
-        local state = portal.states and portal.states[portal._state]
-        if not state or not state.traversable then
-            if not (creature.movement and creature.movement.can_open_doors) then
-                return false, nil
-            end
-        end
-        local target = portal.portal and portal.portal.target
-        if not target then return false, nil end
-        return true, target
-    end
-
-    return false, nil
+    return navigation.is_exit_passable(context, exit, creature)
 end
 
--- get_valid_exits(context, room_id, creature) -> array of { direction, target }
--- Returns exits a creature can traverse from the given room.
 local function get_valid_exits(context, room_id, creature)
-    local room = get_room(context, room_id)
-    if not room or not room.exits then return {} end
-
-    local valid = {}
-    for dir, exit in pairs(room.exits) do
-        local passable, target = is_exit_passable(context, exit, creature)
-        if passable and target then
-            valid[#valid + 1] = { direction = dir, target = target }
-        end
-    end
-    return valid
+    return navigation.get_valid_exits(context, room_id, creature, get_room)
 end
 
 -- Stimulus helpers table — passed to stimulus.process() so it can resolve
@@ -223,6 +148,21 @@ local stimulus_helpers = {
 -- Delegated to stimulus module.
 local function process_stimuli(context, creature)
     return stimulus.process(context, creature, stimulus_helpers)
+end
+
+---------------------------------------------------------------------------
+-- Morale system (Track 3B): delegates to morale module
+---------------------------------------------------------------------------
+
+local morale_helpers = {
+    get_location = get_location,
+    get_valid_exits = get_valid_exits,
+    get_player_room_id = get_player_room_id,
+    move_creature = move_creature,
+}
+
+local function check_morale(context, creature, combat_result)
+    return morale.check(context, creature, combat_result, morale_helpers)
 end
 
 ---------------------------------------------------------------------------
@@ -435,6 +375,27 @@ local function execute_action(context, creature, action)
                     messages[#messages + 1] = result.death_narration
                 end
             end
+
+            -- Track 3B: Morale check on the DEFENDER after combat resolves
+            if result and not result.defender_dead then
+                local morale = check_morale(context, target, result)
+                if target._morale_message then
+                    messages[#messages + 1] = target._morale_message
+                    target._morale_message = nil
+                end
+                -- If defender fled, remove from any active fight
+                if morale == "flee" and combat.find_fight_for_combatant then
+                    local fight = combat.find_fight_for_combatant(target)
+                    if fight then combat.remove_combatant(fight, target) end
+                end
+            end
+
+            -- Track 3B: Morale check on the ATTACKER too
+            local attacker_morale = check_morale(context, creature, result)
+            if creature._morale_message then
+                messages[#messages + 1] = creature._morale_message
+                creature._morale_message = nil
+            end
         end
     end
 
@@ -529,5 +490,6 @@ end
 
 M.score_actions = score_actions
 M.execute_action = execute_action
+M.check_morale = check_morale
 
 return M
