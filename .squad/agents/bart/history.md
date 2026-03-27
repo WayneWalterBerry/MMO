@@ -1136,3 +1136,24 @@ ormalize_effect() to accept BOTH flat format ({ type = "wind_effect", ... }) and
 
 **Net LOC:** +161 (combat: +17, injuries: +145 including new functions)
 **Test results:** 189 test files pass. Disease delivery: 27/27, Rabies: 49/49, Spider venom: 51/51. Zero regressions.
+
+### WAVE-5 Track 5C — Food-as-Bait Mechanic
+**Date:** 2026-03-28
+**Commit:** `edabb12`
+
+**Track 5C — Bait Mechanic (creatures/init.lua):**
+1. `find_bait(ctx, room_id, creature_id)`: scans registry for food objects with `food.bait_targets` matching creature in specified room, sorted by `bait_value` descending (highest priority first)
+2. `try_bait(ctx, creature)`: hunger-driven bait-seeking behavior
+   - Triggers when `drives.hunger.value >= drives.hunger.satisfy_threshold`
+   - Same room: consume best bait (registry:remove, hunger reset to min)
+   - Adjacent room: move toward room with highest bait_value food
+   - In-combat suppression: `ctx.combat_active` or active fight → skip bait
+   - Narration: prints + returns consumption message when in player's room
+3. Integrated into `creature_tick()` between stimulus processing and action scoring — bait behavior preempts normal action selection (returns early)
+4. Hard boundary R-5 enforced: no cooking, recipes, or spoilage-driven creature behavior
+
+**Navigation fix (navigation.lua):**
+- `is_exit_passable()` and `get_exit_target()`: added string portal ID resolution — converts string exit values to `{ portal = string }` table format before processing. Enables rooms that reference portals by GUID string in exits table.
+
+**Net LOC:** +35 (creatures/init.lua: 496 → 529, navigation.lua: 104 → 106)
+**Test results:** 191 test files pass. Bait tests: 10/10. Zero regressions.

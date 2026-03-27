@@ -49,7 +49,34 @@
 
 ## Recent Updates
 
-### Session: WAVE-3 Track 3E — NPC Combat Architecture Documentation (Current)
+### Session: WAVE-5 Track 5E — Food System PoC Documentation (Current)
+**Status:** ✅ COMPLETED
+**Deliverable:** `docs/design/food-system.md` (~150 lines, 9.6 KB)
+
+**What I Created:**
+1. **Food Metadata Reference** — `edible`, `food = {}` table with nutrition, bait_value, bait_target, spoil_time fields
+2. **Eat/Drink Verb Documentation** — Handler signatures, checks (edible flag, inventory/visible search), removal flow
+3. **Bait Mechanic Explanation** — Stimulus emission, creature detection, cross-tick pathfinding, bait priority, containment limitations
+4. **PoC Scope Matrix** — Included (metadata, eat/drink, spoilage FSM, bait stimulus, test coverage) vs. deferred (cooking, nutrition tracking, hunger meter, recipes, farming)
+5. **Sample Food Objects** — Cheese and bread with full FSM, sensory descriptions, bait configuration
+6. **Future Expansion Roadmap** — References to food-system-plan.md for cooking, NPC starvation, food trade, farming
+
+**Key Code References:**
+- `src/engine/verbs/survival.lua`: `eat` and `drink` handlers (lines 69–187)
+- `src/meta/objects/`: cheese.lua, bread.lua (sample objects with FSM and bait metadata)
+- `src/engine/creatures/init.lua`: Hunger drive stimulus detection (WAVE-5 implementation)
+- `test/food/`: Four test suites covering eat/drink/bait/spoilage/objects
+
+**Learnings:**
+- Food is a **metadata trait, not a template** — any object can be edible by declaring `edible = true` + `food = {...}`
+- Bait works via **creature stimulus detection** — hunger drive polls for food within smell range; bait_target matches creature type; priority is evaluated cross-tick
+- Spoilage FSM uses **state machine with timer transitions** — fresh → stale → spoiled, with sensory updates (on_smell changes for stale/spoiled)
+- PoC scope is **lean but complete** — eat/drink/bait work end-to-end; cooking/farming/nutrition defer to full vision
+- **No per-player hunger meter** — follows Valheim philosophy: eating is optional buff, not survival requirement (frees inventory for puzzles)
+
+---
+
+### Session: WAVE-3 Track 3E — NPC Combat Architecture Documentation
 **Status:** ✅ COMPLETED
 **Deliverable:** `docs/architecture/combat/npc-combat.md` (11.6 KB, ~200 lines)
 
