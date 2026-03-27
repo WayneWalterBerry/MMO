@@ -57,6 +57,39 @@
 
 ## Recent Updates
 
+### WAVE-0 Parallel: Lint Fixes #249, #250 + Portal TDD #203, #204 (2026-07-26)
+
+**Status:** ✅ COMPLETE — All fixes applied, 178/178 test files pass
+
+#### #249 — EXIT-01: 4 exits target non-existent rooms
+- EXIT-01 no longer fires in lint (portal migration resolved inline exit checks)
+- Found real bug: `courtyard-kitchen-door.lua` open/broken states were `traversable = true` targeting non-existent `manor-kitchen` — would cause runtime crash
+- Fix: set `traversable = false` + `blocked_message` on open/broken states (collapsed masonry narrative)
+- Other 3 boundary portals (hallway-level2-stairs-up, hallway-west-door, hallway-east-door) already safely blocked
+- Commit: `621d27d`
+
+#### #250 — GUID-02: 28 orphan objects not referenced by any room
+- Added `orphan_allowlist` support to lint config system (`config.py` + `lint.py`)
+- Created `.meta-check.json` with categorized suppressions:
+  - 5 mutation targets, 3 portal variants, 5 traps, 6 healing/crafting, 9 unplaced objects
+- All 28 GUID-02 warnings now suppressed with documented reasons
+- Commit: `621d27d`
+
+#### #203 — Portal TDD: deep-cellar ↔ hallway stairway (61 tests)
+- Always-open stairway, wind traverse effects, bidirectional sync
+- Commit: `b675174`
+
+#### #204 — Portal TDD: deep-cellar ↔ crypt archway (75 tests)
+- Locked/closed/open FSM with silver-key, bidirectional sync
+- Commit: `b675174`
+
+## Learnings
+
+- EXIT-01 has a lint gap: portals can target non-existent rooms but the lint only validates `portal.target` exists as a string, not that the target room exists. The Phase 2 inline EXIT-01 check was bypassed by the portal migration.
+- The `orphan_allowlist` pattern in `.meta-check.json` is a good model for other per-object suppressions. The config system only supports global rule enable/disable, not per-file. This extension adds targeted suppressions.
+- `courtyard-kitchen-door` had a real traversal bug hiding behind the lint issue — the EXIT-01 warning was gone but the runtime error remained. Always verify runtime behavior, not just lint status.
+- Portal TDD tests follow a consistent 10-section pattern: file loading → structure → metadata → states → transitions → sensory → movement → bidirectional sync → room wiring → keywords.
+
 ### P0 Fix Verification — Issues #132, #133, #135 (2026-07-25)
 
 **Status:** ✅ ALL VERIFIED AND CLOSED
