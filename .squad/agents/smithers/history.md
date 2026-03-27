@@ -625,3 +625,24 @@ ew_budget(cap) / create_budget(cap) factory returns {count, cap, overflow_emitte
 **Tests:** 0 new regressions. Pre-existing failures (12 movement/exit/lock tests in 1 file) unrelated to these changes.
 
 **Commit:** 6eb1978 — "Phase 3 WAVE-4: kick verb + combat sound narration"
+
+### goto Admin/Debug Teleport Command
+
+**What shipped:** `goto <room-id>` verb — an admin/debug command that teleports the player to any room by ID, preserving inventory (hands, worn items). Also aliased as `teleport`.
+
+**Implementation:** Added to `src/engine/verbs/movement.lua` inside `M.register()`. The handler:
+- Validates noun (empty → usage hint, invalid room → "No room called 'xyz' exists.")
+- Looks up target in `ctx.rooms` by ID
+- Fires `on_exit_room` / `on_enter_room` hooks
+- Records previous room for `go back` support
+- Tracks visited_rooms for first-visit auto-look
+- Prints "You materialize in {room name}." confirmation
+
+**Tests:** `test/verbs/test-goto.lua` — 7 tests, all passing:
+- goto valid room (cellar, crypt) — moves player, triggers enter
+- goto invalid room → error message
+- goto with no argument → usage hint
+- Inventory preserved (hands + worn items)
+- goto same room — no crash
+
+**Commit:** 5aa5066 — "feat: goto admin command for room teleportation (debug)"
