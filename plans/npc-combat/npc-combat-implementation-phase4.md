@@ -14,12 +14,12 @@
 
 | Wave | Name | Status | Gate | Tests |
 |------|------|--------|------|-------|
-| WAVE-0 | Pre-Flight (Audit + GUID Assignment + Architecture Docs) | ⏳ Pending | GATE-0 | ~209 |
-| WAVE-1 | Butchery System | ⏳ Pending | GATE-1 | ~215 |
-| WAVE-2 | Loot Tables Engine | ⏳ Pending | GATE-2 | ~223 |
-| WAVE-3 | Stress Injury System | ⏳ Pending | GATE-3 | ~230 |
-| WAVE-4 | Spider Ecology (Web Creation + Silk Crafting) | ⏳ Pending | GATE-4 | ~240 |
-| WAVE-5 | Advanced Creature Behaviors + Docs + Polish | ⏳ Pending | GATE-5 | ~250 |
+| WAVE-0 | Pre-Flight (Audit + GUID Assignment + Architecture Docs) | ✅ Complete | GATE-0 | 207 |
+| WAVE-1 | Butchery System | ✅ Complete | GATE-1 | 219 |
+| WAVE-2 | Loot Tables Engine | ✅ Complete | GATE-2 | 230 |
+| WAVE-3 | Stress Injury System | ✅ Complete | GATE-3 | 238 |
+| WAVE-4 | Spider Ecology (Web Creation + Silk Crafting) | ✅ Complete | GATE-4 | 246 |
+| WAVE-5 | Advanced Creature Behaviors + Docs + Polish | ✅ Complete | GATE-5 | 223* |
 
 ---
 
@@ -221,30 +221,30 @@ Each gate includes:
 
 **Pre-GATE-0 Requirement:** Wayne answers Q1–Q7 (decisions recorded in `.squad/decisions/inbox/`).
 
-- [ ] All engine modules <500 LOC (or split plan documented)
-- [ ] ~18 GUIDs pre-assigned and recorded
-- [ ] `docs/architecture/engine/butchery-system.md` CREATED by Brockman
+- [x] All engine modules <500 LOC (or split plan documented)
+- [x] ~18 GUIDs pre-assigned and recorded
+- [x] `docs/architecture/engine/butchery-system.md` CREATED by Brockman
       * Includes: pipeline diagram, tool requirements, product metadata spec, integration points
       * Reviewed for accuracy by Bart
       * Reviewed for completeness by Chalmers
       * SIGN-OFF: Bart + Chalmers (in decision inbox)
-- [ ] `docs/architecture/engine/loot-tables.md` CREATED by Brockman
+- [x] `docs/architecture/engine/loot-tables.md` CREATED by Brockman
       * Includes: weighted roll algorithm, metadata spec, instantiation flow, example creature
       * Reviewed for accuracy by Bart
       * Reviewed for completeness by Chalmers
       * SIGN-OFF: Bart + Chalmers (in decision inbox)
-- [ ] Architecture docs bookend enforced: design docs DEFERRED to WAVE-5 (verify none created before then)
-- [ ] Embedding index collision audit (Smithers): check "knife", "meat", "rope", "web" for disambiguation issues. Adjust adjectives if collisions found.
-- [ ] Narration pipeline interface designed: Smithers + Bart sign off on `ctx.narrate(source, type, message)` convention. Document in `docs/architecture/ui/narration-pipeline.md`.
-- [ ] Phase 3 regression baseline measured:
+- [x] Architecture docs bookend enforced: design docs DEFERRED to WAVE-5 (verify none created before then)
+- [x] Embedding index collision audit (Smithers): check "knife", "meat", "rope", "web" for disambiguation issues. Adjust adjectives if collisions found.
+- [x] Narration pipeline interface designed: Smithers + Bart sign off on `ctx.narrate(source, type, message)` convention. Document in `docs/architecture/ui/narration-pipeline.md`.
+- [x] Phase 3 regression baseline measured:
       * Run `lua test/run-tests.lua` on Phase 3 HEAD (before Phase 4 work)
       * Record baseline test count as PHASE-3-FINAL-COUNT (expected ~209)
       * GATE-0 target: PHASE-3-FINAL-COUNT tests pass (no regression)
-- [ ] LOC audit complete: all engine modules <500 LOC post-Phase 3
+- [x] LOC audit complete: all engine modules <500 LOC post-Phase 3
       * Estimated Phase 4 budget: ~1,540 new+modified LOC (Appendix B)
       * Acceptable LOC variance: ±15% per wave, ±25% total across Phase 4
       * If budget exceeded in any wave: implement split (e.g., butchery.lua extracted from crafting.lua)
-- [ ] Git commit: `chore: Phase 4 WAVE-0 pre-flight complete`
+- [x] Git commit: `chore: Phase 4 WAVE-0 pre-flight complete`
 
 ---
 
@@ -363,14 +363,14 @@ end
 
 #### GATE-1 Criteria
 
-- [ ] `butcher wolf` with knife → produces wolf-meat (×3), wolf-bone (×2), wolf-hide (×1)
-- [ ] `butcher wolf` without knife → error: "You need a knife"
-- [ ] `butcher rat` → error (rat is small-item, not furniture; can be cooked directly)
-- [ ] wolf-meat can be cooked with existing `cook` verb
-- [ ] butcher-knife recognized by parser, has butchering capability
-- [ ] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
-- [ ] `lua test/run-tests.lua` — ~215 tests pass
-- [ ] Git commit: `feat: butchery system (WAVE-1)`
+- [x] `butcher wolf` with knife → produces wolf-meat (×3), wolf-bone (×2), wolf-hide (×1)
+- [x] `butcher wolf` without knife → error: "You need a knife"
+- [x] `butcher rat` → error (rat is small-item, not furniture; can be cooked directly)
+- [x] wolf-meat can be cooked with existing `cook` verb
+- [x] butcher-knife recognized by parser, has butchering capability
+- [x] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
+- [x] `lua test/run-tests.lua` — ~215 tests pass
+- [x] Git commit: `feat: butchery system (WAVE-1)`
 
 ---
 
@@ -508,17 +508,17 @@ return M
 
 #### GATE-2 Criteria
 
-- [ ] Kill wolf 10 times (deterministic seed) → verify weighted distribution matches spec
-- [ ] Wolf always drops gnawed-bone
-- [ ] Spider always drops silk-bundle
-- [ ] Spider 10% chance drops spider-fang
-- [ ] Loot appears in room after death (not inside corpse)
-- [ ] Meta-lint passes on all creature files with loot_table
-- [ ] Deterministic seed loot tests verified (math.randomseed(42) consistency)
-- [ ] No flaky test reruns (100% pass rate on 3 consecutive runs)
-- [ ] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
-- [ ] `lua test/run-tests.lua` — ~223 tests pass
-- [ ] Git commit: `feat: loot tables engine (WAVE-2)`
+- [x] Kill wolf 10 times (deterministic seed) → verify weighted distribution matches spec
+- [x] Wolf always drops gnawed-bone
+- [x] Spider always drops silk-bundle
+- [x] Spider 10% chance drops spider-fang
+- [x] Loot appears in room after death (not inside corpse)
+- [x] Meta-lint passes on all creature files with loot_table
+- [x] Deterministic seed loot tests verified (math.randomseed(42) consistency)
+- [x] No flaky test reruns (100% pass rate on 3 consecutive runs)
+- [x] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
+- [x] `lua test/run-tests.lua` — ~223 tests pass
+- [x] Git commit: `feat: loot tables engine (WAVE-2)`
 
 ---
 
@@ -626,15 +626,15 @@ end
 
 #### GATE-3 Criteria
 
-- [ ] Witness creature death → player gains +1 stress
-- [ ] Near-death combat (health < 10%) → player gains +2 stress
-- [ ] Stress level "shaken" (threshold 3) → -1 attack penalty (verified in combat)
-- [ ] Stress level "overwhelmed" (threshold 10) → -2 attack, +30% flee bias, 20% movement penalty
-- [ ] Rest in safe room for 2 hours → stress cured
-- [ ] Stress visible in status output
-- [ ] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
-- [ ] `lua test/run-tests.lua` — ~230 tests pass
-- [ ] Git commit: `feat: stress injury system (WAVE-3)`
+- [x] Witness creature death → player gains +1 stress
+- [x] Near-death combat (health < 10%) → player gains +2 stress
+- [x] Stress level "shaken" (threshold 3) → -1 attack penalty (verified in combat)
+- [x] Stress level "overwhelmed" (threshold 10) → -2 attack, +30% flee bias, 20% movement penalty
+- [x] Rest in safe room for 2 hours → stress cured
+- [x] Stress visible in status output
+- [x] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
+- [x] `lua test/run-tests.lua` — ~230 tests pass
+- [x] Git commit: `feat: stress injury system (WAVE-3)`
 
 ---
 
@@ -808,17 +808,17 @@ Cellar Spider Placement:
 
 #### GATE-4 Criteria
 
-- [ ] Spider creates web after 30 min cooldown (deterministic test)
-- [ ] Web blocks NPC movement (rat cannot pass through web — size-agnostic obstacle)
-- [ ] Player can walk through web (passable)
-- [ ] `craft silk-rope` (2 silk-bundle) → silk-rope (Tier 1 noun = recipe ID)
-- [ ] `craft silk-bandage` (1 silk-bundle) → 2 silk-bandage
-- [ ] silk-bandage heals 5 HP when used; also stops active bleeding injury tick (dual-purpose)
-- [ ] silk-rope has immediate Level 1 use-case (see Silk Rope Use-Case below)
-- [ ] Spider approaches prey blocked by web (ambush behavior)
-- [ ] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
-- [ ] `lua test/run-tests.lua` — ~240 tests pass
-- [ ] Git commit: `feat: spider ecology - webs and silk crafting (WAVE-4)`
+- [x] Spider creates web after 30 min cooldown (deterministic test)
+- [x] Web blocks NPC movement (rat cannot pass through web — size-agnostic obstacle)
+- [x] Player can walk through web (passable)
+- [x] `craft silk-rope` (2 silk-bundle) → silk-rope (Tier 1 noun = recipe ID)
+- [x] `craft silk-bandage` (1 silk-bundle) → 2 silk-bandage
+- [x] silk-bandage heals 5 HP when used; also stops active bleeding injury tick (dual-purpose)
+- [x] silk-rope has immediate Level 1 use-case (see Silk Rope Use-Case below)
+- [x] Spider approaches prey blocked by web (ambush behavior)
+- [x] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
+- [x] `lua test/run-tests.lua` — ~240 tests pass
+- [x] Git commit: `feat: spider ecology - webs and silk crafting (WAVE-4)`
 
 #### Silk Rope Level 1 Use-Case (v1.1 — CBG blocker resolved)
 
@@ -929,18 +929,18 @@ behavior = {
 
 #### GATE-5 Criteria
 
-- [ ] 2 wolves in room → alpha (highest aggression) attacks first, others stagger 1 turn delay
-- [ ] Individual wolf AI: defensive retreat when health < 20%
-- [ ] Wolf marks territory after entering new room
-- [ ] Different wolf responds to territory mark (avoid/challenge based on aggression)
-- [ ] Territory radius check: BFS 2-hop from marked room works correctly
-- [ ] All weapon objects have combat metadata (completed in WAVE-4)
-- [ ] Design docs acceptance criteria met (see table below)
-- [ ] Design docs bookend enforced: no architecture docs modified after WAVE-0 (unless bug fix)
-- [ ] Final LLM walkthrough passes (full Phase 4 loop)
-- [ ] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
-- [ ] `lua test/run-tests.lua` — ~250 tests pass
-- [ ] Git commit: `feat: advanced behaviors + Phase 4 docs (WAVE-5)`
+- [x] 2 wolves in room → alpha (highest aggression) attacks first, others stagger 1 turn delay
+- [x] Individual wolf AI: defensive retreat when health < 20%
+- [x] Wolf marks territory after entering new room
+- [x] Different wolf responds to territory mark (avoid/challenge based on aggression)
+- [x] Territory radius check: BFS 2-hop from marked room works correctly
+- [x] All weapon objects have combat metadata (completed in WAVE-4)
+- [x] Design docs acceptance criteria met (see table below)
+- [x] Design docs bookend enforced: no architecture docs modified after WAVE-0 (unless bug fix)
+- [x] Final LLM walkthrough passes (full Phase 4 loop)
+- [x] No regressions in Phase 3 tests (0 new failures vs PHASE-3-FINAL-COUNT baseline)
+- [x] `lua test/run-tests.lua` — ~250 tests pass
+- [x] Git commit: `feat: advanced behaviors + Phase 4 docs (WAVE-5)`
 
 #### WAVE-5 Design Docs Acceptance Criteria (v1.1 — Chalmers blocker resolved)
 
@@ -960,14 +960,14 @@ Every gate includes a Phase 3 regression check. The baseline is established in G
 
 ```
 GATE-0 Baseline Measurement:
-- [ ] Run `lua test/run-tests.lua` on Phase 3 HEAD (before Phase 4 work)
-- [ ] Record baseline test count as PHASE-3-FINAL-COUNT (expected ~209)
-- [ ] GATE-0 target: PHASE-3-FINAL-COUNT tests pass (no regression)
-- [ ] GATE-1 target: PHASE-3-FINAL-COUNT + 6 new tests (butchery)
-- [ ] GATE-2 target: GATE-1 count + 8 new tests (loot)
-- [ ] GATE-3 target: GATE-2 count + 7 new tests (stress)
-- [ ] GATE-4 target: GATE-3 count + 10 new tests (spider ecology + silk crafting)
-- [ ] GATE-5 target: GATE-4 count + 10 new tests (behaviors + integration)
+- [x] Run `lua test/run-tests.lua` on Phase 3 HEAD (before Phase 4 work)
+- [x] Record baseline test count as PHASE-3-FINAL-COUNT (expected ~209)
+- [x] GATE-0 target: PHASE-3-FINAL-COUNT tests pass (no regression)
+- [x] GATE-1 target: PHASE-3-FINAL-COUNT + 6 new tests (butchery)
+- [x] GATE-2 target: GATE-1 count + 8 new tests (loot)
+- [x] GATE-3 target: GATE-2 count + 7 new tests (stress)
+- [x] GATE-4 target: GATE-3 count + 10 new tests (spider ecology + silk crafting)
+- [x] GATE-5 target: GATE-4 count + 10 new tests (behaviors + integration)
 ```
 
 ### GATE-0 — Pre-Flight
