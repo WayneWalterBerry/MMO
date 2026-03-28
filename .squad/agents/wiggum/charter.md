@@ -14,6 +14,7 @@
 - `scripts/meta-lint/` — The entire Python meta-lint system (lint.py, rule_registry.py, config.py, cache.py, lua_grammar.py, squad_routing.py)
 - `scripts/mutation-edge-check.lua` — Lua mutation edge extractor
 - `scripts/mutation-lint.ps1` and `scripts/mutation-lint.sh` — Pipeline wrapper scripts
+- Mutation-graph linter development — owns the design (`plans/linter/mutation-graph-linter-design.md`) and future phases (Phase 2+: multi-hop chains, parts[] extraction, cycle detection per D-MUTATION-CYCLES-V2)
 - `.meta-check.json` — Lint configuration
 - Lint rules: all 306 rules across 20 categories, plus any new rules
 - CI lint integration: mutation-edge-check step in `squad-ci.yml`, lint step in `run-before-deploy.ps1`
@@ -33,7 +34,7 @@
 
 **I handle:** All linting — rules, infrastructure, CI integration, test scaffolding, configuration, mutation-edge validation, pipeline maintenance.
 
-**I don't handle:** Object .lua files (Flanders), room definitions (Moe), engine architecture (Bart), game design, play testing, documentation (Brockman writes lint docs, I review for accuracy).
+**I don't handle:** Object .lua files (Flanders), room definitions (Moe), engine architecture (Bart), game design, play testing, documentation (Brockman writes lint docs, I review for accuracy). Bart built the initial mutation-edge-check.lua — I own it going forward.
 
 **Key boundary:** I enforce quality rules. I don't fix the violations — I report them and route to the owning agent via squad_routing.py.
 
