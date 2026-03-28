@@ -657,6 +657,9 @@ function verbs.create()
 
         -- FLEE verb (standalone — works in and out of combat)
         handlers["flee"] = function(ctx, noun)
+            -- Strip "away" — "flee away" / "run away" are just flee
+            if noun == "away" then noun = "" end
+
             if not cr_ok or not cr_mod then
                 print("There's nothing to flee from.")
                 return
@@ -684,6 +687,10 @@ function verbs.create()
                 print("You're still here, facing " .. (threat.name or "the creature") .. ".")
             end
         end
+
+        -- #330: "run" checks for threats first (flee), falls back to movement
+        handlers["run"] = handlers["flee"]
+        handlers["escape"] = handlers["flee"]
     end
 
     -- Consciousness gate: block all verbs while the player is unconscious.

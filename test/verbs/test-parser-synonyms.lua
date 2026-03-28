@@ -174,13 +174,20 @@ test("'move' is NOT the same function as 'go' (#32 disambiguation)", function()
     h.assert_truthy(move_handler ~= go_handler, "'move' should be a separate disambiguator, not a raw 'go' alias")
 end)
 
-test("'walk', 'run', 'head', 'travel' are synonyms for 'go'", function()
+test("'walk', 'head', 'travel' are synonyms for 'go'", function()
     local go_handler = handlers["go"]
     
     eq(go_handler, handlers["walk"], "'walk' should be synonym")
-    eq(go_handler, handlers["run"], "'run' should be synonym")
     eq(go_handler, handlers["head"], "'head' should be synonym")
     eq(go_handler, handlers["travel"], "'travel' should be synonym")
+end)
+
+test("'run' is a flee verb, not a go synonym (#330)", function()
+    local go_handler = handlers["go"]
+    local flee_handler = handlers["flee"]
+    
+    h.assert_truthy(handlers["run"] ~= go_handler, "'run' should NOT be a 'go' alias (#330)")
+    eq(flee_handler, handlers["run"], "'run' should be a 'flee' synonym")
 end)
 
 -- Note: Full integration testing of movement requires a room context,
