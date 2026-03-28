@@ -1,0 +1,499 @@
+C:\Users\wayneb\source\repos\MMO\src\meta\creatures\bat.lua : 13 : WARNING : MAT-03 : [Flanders] : Material 'flesh' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\creatures\cat.lua : 13 : WARNING : MAT-03 : [Flanders] : Material 'flesh' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\creatures\rat.lua : 13 : WARNING : MAT-03 : [Flanders] : Material 'flesh' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\creatures\spider.lua : 13 : WARNING : MAT-03 : [Flanders] : Material 'chitin' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\creatures\wolf.lua : 13 : WARNING : MAT-03 : [Flanders] : Material 'flesh' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\food-poisoning.lua : 34 : INFO : INJ-32 : [Flanders] : Non-terminal state 'onset' should have on_look
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\food-poisoning.lua : 34 : WARNING : INJ-43 : [Flanders] : State 'onset' unknown restrict action 'eat'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\food-poisoning.lua : 34 : INFO : INJ-32 : [Flanders] : Non-terminal state 'nausea' should have on_look
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\food-poisoning.lua : 34 : WARNING : INJ-43 : [Flanders] : State 'nausea' unknown restrict action 'eat'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\food-poisoning.lua : 34 : WARNING : INJ-43 : [Flanders] : State 'nausea' unknown restrict action 'precise_actions'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\food-poisoning.lua : 34 : INFO : INJ-32 : [Flanders] : Non-terminal state 'recovery' should have on_look
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\food-poisoning.lua : 25 : WARNING : INJ-19 : [Flanders] : damage_type is 'over_time' but on_inflict.damage_per_tick is 0
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\food-poisoning.lua : 16 : INFO : INJ-69 : [Flanders] : Unknown top-level field 'severity'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\minor-cut.lua : 19 : INFO : INJ-69 : [Flanders] : Unknown top-level field 'interpolation_defaults'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\rabies.lua : 41 : WARNING : INJ-43 : [Flanders] : State 'prodromal' unknown restrict action 'precise_actions'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\rabies.lua : 41 : WARNING : INJ-43 : [Flanders] : State 'furious' unknown restrict action 'drink'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\rabies.lua : 41 : WARNING : INJ-43 : [Flanders] : State 'furious' unknown restrict action 'precise_actions'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\rabies.lua : 41 : WARNING : INJ-28 : [Flanders] : All terminal states are fatal; consider adding a healed terminal
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\rabies.lua : 32 : WARNING : INJ-19 : [Flanders] : damage_type is 'over_time' but on_inflict.damage_per_tick is 0
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\rabies.lua : 22 : INFO : INJ-69 : [Flanders] : Unknown top-level field 'hidden_until_state'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\rabies.lua : 23 : INFO : INJ-69 : [Flanders] : Unknown top-level field 'curable_in'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\rabies.lua : 24 : INFO : INJ-69 : [Flanders] : Unknown top-level field 'transmission'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\spider-venom.lua : 40 : WARNING : INJ-43 : [Flanders] : State 'spreading' unknown restrict action 'movement'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\spider-venom.lua : 40 : WARNING : INJ-43 : [Flanders] : State 'paralysis' unknown restrict action 'movement'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\spider-venom.lua : 40 : WARNING : INJ-43 : [Flanders] : State 'paralysis' unknown restrict action 'attack'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\spider-venom.lua : 40 : WARNING : INJ-43 : [Flanders] : State 'paralysis' unknown restrict action 'precise_actions'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\spider-venom.lua : 22 : INFO : INJ-69 : [Flanders] : Unknown top-level field 'curable_in'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\spider-venom.lua : 23 : INFO : INJ-69 : [Flanders] : Unknown top-level field 'transmission'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\stress.lua : 31 : WARNING : INJ-28 : [Flanders] : All terminal states are fatal; consider adding a healed terminal
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\stress.lua : 87 : INFO : INJ-69 : [Flanders] : Unknown top-level field 'levels'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\stress.lua : 95 : INFO : INJ-69 : [Flanders] : Unknown top-level field 'effects'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\stress.lua : 103 : INFO : INJ-69 : [Flanders] : Unknown top-level field 'cure'
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\stress.lua : 113 : INFO : INJ-69 : [Flanders] : Unknown top-level field 'triggers'
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\bone.lua : 12 : INFO : MD-21 : [Flanders] : Non-metal material 'bone' has conductivity > 0
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\chitin.lua : 12 : INFO : MD-21 : [Flanders] : Non-metal material 'chitin' has conductivity > 0
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\chitin.lua : 15 : INFO : MD-24 : [Flanders] : Unknown material field 'color'
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\chitin.lua : 16 : INFO : MD-24 : [Flanders] : Unknown material field 'max_edge'
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\flesh.lua : 13 : WARNING : MD-20 : [Flanders] : High flexibility (0.8) with high fragility (0.7) is unusual
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\flesh.lua : 12 : INFO : MD-21 : [Flanders] : Non-metal material 'flesh' has conductivity > 0
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\hide.lua : 12 : INFO : MD-21 : [Flanders] : Non-metal material 'hide' has conductivity > 0
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\keratin.lua : 12 : INFO : MD-21 : [Flanders] : Non-metal material 'keratin' has conductivity > 0
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\keratin.lua : 14 : INFO : MD-24 : [Flanders] : Unknown material field 'max_edge'
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\meat.lua : 3 : INFO : MD-05 : [Flanders] : Materials should not have an id field
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\meat.lua : 14 : WARNING : MD-20 : [Flanders] : High flexibility (0.8) with high fragility (0.7) is unusual
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\meat.lua : 13 : INFO : MD-21 : [Flanders] : Non-metal material 'meat' has conductivity > 0
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\meat.lua : 3 : INFO : MD-24 : [Flanders] : Unknown material field 'id'
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\meat.lua : 16 : INFO : MD-24 : [Flanders] : Unknown material field 'description'
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\meat.lua : 17 : INFO : MD-24 : [Flanders] : Unknown material field 'on_feel'
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\meat.lua : 18 : INFO : MD-24 : [Flanders] : Unknown material field 'on_smell'
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\organ.lua : 13 : WARNING : MD-20 : [Flanders] : High flexibility (0.9) with high fragility (0.8) is unusual
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\organ.lua : 12 : INFO : MD-21 : [Flanders] : Non-metal material 'organ' has conductivity > 0
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\skin.lua : 13 : WARNING : MD-20 : [Flanders] : High flexibility (0.7) with high fragility (0.6) is unusual
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\skin.lua : 12 : INFO : MD-21 : [Flanders] : Non-metal material 'skin' has conductivity > 0
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\tooth-enamel.lua : 12 : INFO : MD-21 : [Flanders] : Non-metal material 'tooth-enamel' has conductivity > 0
+C:\Users\wayneb\source\repos\MMO\src\meta\materials\tooth-enamel.lua : 14 : INFO : MD-24 : [Flanders] : Unknown material field 'max_edge'
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\altar-candle.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'wax' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\antidote-vial.lua : 19 : WARNING : MAT-03 : [Flanders] : Material 'glass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bandage.lua : 23 : WARNING : MAT-03 : [Flanders] : Material 'linen' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\barrel.lua : 17 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bear-trap.lua : 17 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bed-sheets.lua : 15 : WARNING : MAT-03 : [Flanders] : Material 'cotton' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bed.lua : 5 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-cellar-trapdoor-down.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-courtyard-window-out.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'glass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-north.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-south.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\blanket.lua : 16 : WARNING : MAT-03 : [Flanders] : Material 'wool' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\brass-key.lua : 16 : WARNING : MAT-03 : [Flanders] : Material 'brass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\brass-spittoon.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'brass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bread.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'wax' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bronze-ring.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'brass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-coins.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'silver' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-jewelry.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'silver' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-necklace.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'silver' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\butcher-knife.lua : 12 : WARNING : MAT-03 : [Flanders] : Material 'steel' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\candle-holder.lua : 14 : WARNING : MAT-03 : [Flanders] : Material 'brass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\candle-stub.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'tallow' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\candle.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'wax' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-bedroom-trapdoor-up.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-brazier.lua : 13 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-storage-door-north.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\ceramic-shard.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'ceramic' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\chain.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\chamber-pot.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'ceramic' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\charred-hide.lua : 10 : WARNING : MAT-03 : [Flanders] : Material 'hide' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cheese.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'wax' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\chest.lua : 14 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cloth-scraps.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'fabric' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cloth.lua : 14 : WARNING : MAT-03 : [Flanders] : Material 'fabric' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cobblestone.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'stone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cold-water.lua : 22 : WARNING : MAT-03 : [Flanders] : Material 'ceramic' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-bat-meat.lua : 13 : WARNING : MAT-03 : [Flanders] : Material 'meat' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-cat-meat.lua : 12 : WARNING : MAT-03 : [Flanders] : Material 'meat' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-rat-meat.lua : 12 : WARNING : MAT-03 : [Flanders] : Material 'meat' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-wolf-meat.lua : 12 : WARNING : MAT-03 : [Flanders] : Material 'meat' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\copper-coin.lua : 10 : WARNING : MAT-03 : [Flanders] : Material 'brass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\courtyard-bedroom-window-in.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'glass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\courtyard-kitchen-door.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\crowbar.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\crypt-deep-cellar-archway-east.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\curtains.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'velvet' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\damp-cloth.lua : 22 : WARNING : MAT-03 : [Flanders] : Material 'linen' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-crypt-archway-west.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-hallway-stairs-up.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'stone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-storage-door-south.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\drawer.lua : 12 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\falling-club-trap.lua : 17 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\falling-rock-trap.lua : 17 : WARNING : MAT-03 : [Flanders] : Material 'stone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\flatbread.lua : 12 : WARNING : MAT-03 : [Flanders] : Material 'wax' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\glass-shard.lua : 32 : WARNING : MAT-03 : [Flanders] : Material 'glass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\gnawed-bone.lua : 10 : WARNING : MAT-03 : [Flanders] : Material 'bone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\grain-handful.lua : 12 : WARNING : MAT-03 : [Flanders] : Material 'plant' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\grain-sack.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'burlap' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-deep-cellar-stairs-down.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'stone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-east-door.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-level2-stairs-up.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-west-door.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\healing-poultice.lua : 22 : WARNING : MAT-03 : [Flanders] : Material 'linen' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\incense-burner.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'brass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\incense-stick.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'plant' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\iron-key.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\ivy.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'plant' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\knife.lua : 24 : WARNING : MAT-03 : [Flanders] : Material 'steel' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\large-crate.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\locked-door.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\match.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox-open.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'cardboard' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'cardboard' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\mirror.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'glass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\needle.lua : 16 : WARNING : MAT-03 : [Flanders] : Material 'steel' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\nightshade-antidote.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'glass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\nightstand.lua : 25 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\offering-bowl.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'ceramic' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\oil-flask.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'ceramic' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\oil-lantern.lua : 10 : WARNING : MAT-03 : [Flanders] : Material 'brass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\paper.lua : 17 : WARNING : MAT-03 : [Flanders] : Material 'paper' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\pen.lua : 17 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\pencil.lua : 16 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\pillow.lua : 16 : WARNING : MAT-03 : [Flanders] : Material 'linen' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\pin.lua : 16 : WARNING : MAT-03 : [Flanders] : Material 'steel' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\poison-bottle.lua : 17 : WARNING : MAT-03 : [Flanders] : Material 'glass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\poison-gas-vent.lua : 17 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\portrait.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\rag.lua : 15 : WARNING : MAT-03 : [Flanders] : Material 'fabric' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\rain-barrel.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\rope-coil.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'hemp' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\rug.lua : 5 : WARNING : MAT-03 : [Flanders] : Material 'wool' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\sack.lua : 15 : WARNING : MAT-03 : [Flanders] : Material 'fabric' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\salve.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'ceramic' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\sarcophagus.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'stone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\sewing-manual.lua : 17 : WARNING : MAT-03 : [Flanders] : Material 'paper' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\side-table.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silk-bandage.lua : 21 : WARNING : MAT-03 : [Flanders] : Material 'silk' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silk-bundle.lua : 10 : WARNING : MAT-03 : [Flanders] : Material 'silk' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silk-rope.lua : 20 : WARNING : MAT-03 : [Flanders] : Material 'silk' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silver-coin.lua : 10 : WARNING : MAT-03 : [Flanders] : Material 'silver' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silver-dagger.lua : 14 : WARNING : MAT-03 : [Flanders] : Material 'silver' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silver-key.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'silver' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\skull.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'bone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\small-crate.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\spider-fang.lua : 10 : WARNING : MAT-03 : [Flanders] : Material 'tooth-enamel' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\spider-meat.lua : 12 : WARNING : MAT-03 : [Flanders] : Material 'meat' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\spider-web.lua : 20 : WARNING : MAT-03 : [Flanders] : Material 'silk' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\stone-alcove.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'stone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\stone-altar.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'stone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\stone-sarcophagus.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'stone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\stone-well.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'stone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\storage-cellar-door-south.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\storage-deep-cellar-door-north.lua : 11 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\tainted-meat.lua : 10 : WARNING : MAT-03 : [Flanders] : Material 'flesh' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\tattered-scroll.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'paper' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\terrible-jacket.lua : 15 : WARNING : MAT-03 : [Flanders] : Material 'fabric' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\territory-marker.lua : 1 : WARNING : MAT-01 : [Flanders] : Missing material field
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\thread.lua : 17 : WARNING : MAT-03 : [Flanders] : Material 'cotton' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\tome.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'leather' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torch-bracket.lua : 16 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torch.lua : 9 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torn-cloth.lua : 10 : WARNING : MAT-03 : [Flanders] : Material 'cotton' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\trap-door.lua : 1 : WARNING : S-11 : [Bart] : Missing description field
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\trap-door.lua : 13 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\trousers.lua : 18 : WARNING : MAT-03 : [Flanders] : Material 'wool' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\unstable-ceiling.lua : 17 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\vanity.lua : 10 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\vase.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'ceramic' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wall-clock.lua : 119 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wall-inscription.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'stone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wall-sconce.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'iron' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wardrobe.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\well-bucket.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\window.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'glass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wine-bottle.lua : 10 : WARNING : MAT-03 : [Flanders] : Material 'glass' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wine-rack.lua : 7 : WARNING : MAT-03 : [Flanders] : Material 'wood' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wolf-bone.lua : 12 : WARNING : MAT-03 : [Flanders] : Material 'bone' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wolf-hide.lua : 12 : WARNING : MAT-03 : [Flanders] : Material 'hide' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wolf-meat.lua : 12 : WARNING : MAT-03 : [Flanders] : Material 'meat' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wooden-door.lua : 8 : WARNING : MAT-03 : [Flanders] : Material 'oak' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wool-cloak.lua : 16 : WARNING : MAT-03 : [Flanders] : Material 'wool' referenced by name - prefer GUID for consistency
+C:\Users\wayneb\source\repos\MMO\src\meta\templates\world.lua : 1 : ERROR : TD-06 : [Bart] : Template missing keywords table
+C:\Users\wayneb\source\repos\MMO\src\meta\creatures\bat.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'creature' appears in multiple files: bat.lua, cat.lua, rat.lua, spider.lua, wolf.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\creatures\cat.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'creature' appears in multiple files: bat.lua, cat.lua, rat.lua, spider.lua, wolf.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\creatures\rat.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'creature' appears in multiple files: bat.lua, cat.lua, rat.lua, spider.lua, wolf.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\creatures\spider.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'creature' appears in multiple files: bat.lua, cat.lua, rat.lua, spider.lua, wolf.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\creatures\wolf.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'creature' appears in multiple files: bat.lua, cat.lua, rat.lua, spider.lua, wolf.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\antidote-vial.lua : 11 : WARNING : XF-03 : [Smithers] : Keyword 'antidote' appears in multiple files: antidote-vial.lua, nightshade-antidote.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\nightshade-antidote.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'antidote' appears in multiple files: antidote-vial.lua, nightshade-antidote.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\antidote-vial.lua : 11 : WARNING : XF-03 : [Smithers] : Keyword 'vial' appears in multiple files: antidote-vial.lua, nightshade-antidote.lua, poison-bottle.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\nightshade-antidote.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'vial' appears in multiple files: antidote-vial.lua, nightshade-antidote.lua, poison-bottle.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\poison-bottle.lua : 18 : WARNING : XF-03 : [Smithers] : Keyword 'vial' appears in multiple files: antidote-vial.lua, nightshade-antidote.lua, poison-bottle.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\antidote-vial.lua : 11 : WARNING : XF-03 : [Smithers] : Keyword 'cure' appears in multiple files: antidote-vial.lua, nightshade-antidote.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\nightshade-antidote.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'cure' appears in multiple files: antidote-vial.lua, nightshade-antidote.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\antidote-vial.lua : 11 : WARNING : XF-03 : [Smithers] : Keyword 'glass vial' appears in multiple files: antidote-vial.lua, nightshade-antidote.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\nightshade-antidote.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'glass vial' appears in multiple files: antidote-vial.lua, nightshade-antidote.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bandage.lua : 14 : WARNING : XF-03 : [Smithers] : Keyword 'linen' appears in multiple files: bandage.lua, bed-sheets.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bed-sheets.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'linen' appears in multiple files: bandage.lua, bed-sheets.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-cellar-trapdoor-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'trap door' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-bedroom-trapdoor-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'trap door' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-cellar-trapdoor-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'trapdoor' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-bedroom-trapdoor-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'trapdoor' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-cellar-trapdoor-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'hatch' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-bedroom-trapdoor-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'hatch' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-cellar-trapdoor-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'down' appears in multiple files: bedroom-cellar-trapdoor-down.lua, hallway-deep-cellar-stairs-down.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-deep-cellar-stairs-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'down' appears in multiple files: bedroom-cellar-trapdoor-down.lua, hallway-deep-cellar-stairs-down.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-cellar-trapdoor-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stairway' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-bedroom-trapdoor-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stairway' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-hallway-stairs-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stairway' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-deep-cellar-stairs-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stairway' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-level2-stairs-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stairway' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-cellar-trapdoor-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stairs' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-bedroom-trapdoor-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stairs' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-hallway-stairs-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stairs' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-deep-cellar-stairs-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stairs' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-level2-stairs-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stairs' appears in multiple files: bedroom-cellar-trapdoor-down.lua, cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-cellar-trapdoor-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'iron ring' appears in multiple files: bedroom-cellar-trapdoor-down.lua, trap-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\trap-door.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'iron ring' appears in multiple files: bedroom-cellar-trapdoor-down.lua, trap-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-cellar-trapdoor-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'trapdoor handle' appears in multiple files: bedroom-cellar-trapdoor-down.lua, trap-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\trap-door.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'trapdoor handle' appears in multiple files: bedroom-cellar-trapdoor-down.lua, trap-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-courtyard-window-out.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'window' appears in multiple files: bedroom-courtyard-window-out.lua, courtyard-bedroom-window-in.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\courtyard-bedroom-window-in.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'window' appears in multiple files: bedroom-courtyard-window-out.lua, courtyard-bedroom-window-in.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, courtyard-kitchen-door.lua, deep-cellar-storage-door-south.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua, storage-cellar-door-south.lua, storage-deep-cellar-door-north.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, courtyard-kitchen-door.lua, deep-cellar-storage-door-south.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua, storage-cellar-door-south.lua, storage-deep-cellar-door-north.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-storage-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, courtyard-kitchen-door.lua, deep-cellar-storage-door-south.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua, storage-cellar-door-south.lua, storage-deep-cellar-door-north.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\courtyard-kitchen-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, courtyard-kitchen-door.lua, deep-cellar-storage-door-south.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua, storage-cellar-door-south.lua, storage-deep-cellar-door-north.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-storage-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, courtyard-kitchen-door.lua, deep-cellar-storage-door-south.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua, storage-cellar-door-south.lua, storage-deep-cellar-door-north.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-east-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, courtyard-kitchen-door.lua, deep-cellar-storage-door-south.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua, storage-cellar-door-south.lua, storage-deep-cellar-door-north.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-west-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, courtyard-kitchen-door.lua, deep-cellar-storage-door-south.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua, storage-cellar-door-south.lua, storage-deep-cellar-door-north.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\locked-door.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, courtyard-kitchen-door.lua, deep-cellar-storage-door-south.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua, storage-cellar-door-south.lua, storage-deep-cellar-door-north.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\storage-cellar-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, courtyard-kitchen-door.lua, deep-cellar-storage-door-south.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua, storage-cellar-door-south.lua, storage-deep-cellar-door-north.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\storage-deep-cellar-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, courtyard-kitchen-door.lua, deep-cellar-storage-door-south.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua, storage-cellar-door-south.lua, storage-deep-cellar-door-north.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wooden-door.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, courtyard-kitchen-door.lua, deep-cellar-storage-door-south.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua, storage-cellar-door-south.lua, storage-deep-cellar-door-north.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'heavy door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, hallway-west-door.lua, storage-cellar-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'heavy door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, hallway-west-door.lua, storage-cellar-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-storage-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'heavy door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, hallway-west-door.lua, storage-cellar-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-west-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'heavy door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, hallway-west-door.lua, storage-cellar-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\storage-cellar-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'heavy door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, cellar-storage-door-north.lua, hallway-west-door.lua, storage-cellar-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'bedroom door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'bedroom door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'oak door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, hallway-east-door.lua, hallway-west-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'oak door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, hallway-east-door.lua, hallway-west-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-east-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'oak door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, hallway-east-door.lua, hallway-west-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-west-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'oak door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua, hallway-east-door.lua, hallway-west-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'north door' appears in multiple files: bedroom-hallway-door-north.lua, storage-deep-cellar-door-north.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\storage-deep-cellar-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'north door' appears in multiple files: bedroom-hallway-door-north.lua, storage-deep-cellar-door-north.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'barred door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'barred door' appears in multiple files: bedroom-hallway-door-north.lua, bedroom-hallway-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'south door' appears in multiple files: bedroom-hallway-door-south.lua, deep-cellar-storage-door-south.lua, storage-cellar-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-storage-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'south door' appears in multiple files: bedroom-hallway-door-south.lua, deep-cellar-storage-door-south.lua, storage-cellar-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\storage-cellar-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'south door' appears in multiple files: bedroom-hallway-door-south.lua, deep-cellar-storage-door-south.lua, storage-cellar-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bedroom-hallway-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'iron bar' appears in multiple files: bedroom-hallway-door-south.lua, crowbar.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\crowbar.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'iron bar' appears in multiple files: bedroom-hallway-door-south.lua, crowbar.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\blanket.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'wool' appears in multiple files: blanket.lua, wool-cloak.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wool-cloak.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'wool' appears in multiple files: blanket.lua, wool-cloak.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\brass-spittoon.lua : 11 : WARNING : XF-03 : [Smithers] : Keyword 'helmet' appears in multiple files: brass-spittoon.lua, chamber-pot.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\chamber-pot.lua : 11 : WARNING : XF-03 : [Smithers] : Keyword 'helmet' appears in multiple files: brass-spittoon.lua, chamber-pot.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\brass-spittoon.lua : 11 : WARNING : XF-03 : [Smithers] : Keyword 'improvised helmet' appears in multiple files: brass-spittoon.lua, chamber-pot.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\chamber-pot.lua : 11 : WARNING : XF-03 : [Smithers] : Keyword 'improvised helmet' appears in multiple files: brass-spittoon.lua, chamber-pot.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bread.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'bread' appears in multiple files: bread.lua, flatbread.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\flatbread.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'bread' appears in multiple files: bread.lua, flatbread.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bronze-ring.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'ring' appears in multiple files: bronze-ring.lua, burial-jewelry.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-jewelry.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'ring' appears in multiple files: bronze-ring.lua, burial-jewelry.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bronze-ring.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'band' appears in multiple files: bronze-ring.lua, burial-jewelry.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-jewelry.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'band' appears in multiple files: bronze-ring.lua, burial-jewelry.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bronze-ring.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'jewelry' appears in multiple files: bronze-ring.lua, burial-jewelry.lua, burial-necklace.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-jewelry.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'jewelry' appears in multiple files: bronze-ring.lua, burial-jewelry.lua, burial-necklace.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-necklace.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'jewelry' appears in multiple files: bronze-ring.lua, burial-jewelry.lua, burial-necklace.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bronze-ring.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'burial ring' appears in multiple files: bronze-ring.lua, burial-jewelry.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-jewelry.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'burial ring' appears in multiple files: bronze-ring.lua, burial-jewelry.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bronze-ring.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'treasure' appears in multiple files: bronze-ring.lua, burial-coins.lua, burial-jewelry.lua, burial-necklace.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-coins.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'treasure' appears in multiple files: bronze-ring.lua, burial-coins.lua, burial-jewelry.lua, burial-necklace.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-jewelry.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'treasure' appears in multiple files: bronze-ring.lua, burial-coins.lua, burial-jewelry.lua, burial-necklace.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-necklace.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'treasure' appears in multiple files: bronze-ring.lua, burial-coins.lua, burial-jewelry.lua, burial-necklace.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-coins.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'money' appears in multiple files: burial-coins.lua, copper-coin.lua, silver-coin.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\copper-coin.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'money' appears in multiple files: burial-coins.lua, copper-coin.lua, silver-coin.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silver-coin.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'money' appears in multiple files: burial-coins.lua, copper-coin.lua, silver-coin.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-necklace.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'chain' appears in multiple files: burial-necklace.lua, chain.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\chain.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'chain' appears in multiple files: burial-necklace.lua, chain.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\candle-holder.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'sconce' appears in multiple files: candle-holder.lua, torch-bracket.lua, wall-sconce.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torch-bracket.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'sconce' appears in multiple files: candle-holder.lua, torch-bracket.lua, wall-sconce.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wall-sconce.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'sconce' appears in multiple files: candle-holder.lua, torch-bracket.lua, wall-sconce.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-bedroom-trapdoor-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'staircase' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-hallway-stairs-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'staircase' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-deep-cellar-stairs-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'staircase' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-level2-stairs-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'staircase' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-bedroom-trapdoor-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'up' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-hallway-stairs-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'up' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-level2-stairs-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'up' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-level2-stairs-up.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-bedroom-trapdoor-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'steps' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-hallway-stairs-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'steps' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-deep-cellar-stairs-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'steps' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-bedroom-trapdoor-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stone stairs' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-hallway-stairs-up.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stone stairs' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-deep-cellar-stairs-down.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'stone stairs' appears in multiple files: cellar-bedroom-trapdoor-up.lua, deep-cellar-hallway-stairs-up.lua, hallway-deep-cellar-stairs-down.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-brazier.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'brazier' appears in multiple files: cellar-brazier.lua, incense-burner.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\incense-burner.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'brazier' appears in multiple files: cellar-brazier.lua, incense-burner.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-brazier.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'fire' appears in multiple files: cellar-brazier.lua, torch.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torch.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'fire' appears in multiple files: cellar-brazier.lua, torch.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-storage-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'iron door' appears in multiple files: cellar-storage-door-north.lua, storage-cellar-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\storage-cellar-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'iron door' appears in multiple files: cellar-storage-door-north.lua, storage-cellar-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-storage-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'iron-bound door' appears in multiple files: cellar-storage-door-north.lua, storage-cellar-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\storage-cellar-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'iron-bound door' appears in multiple files: cellar-storage-door-north.lua, storage-cellar-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-storage-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'padlock' appears in multiple files: cellar-storage-door-north.lua, deep-cellar-crypt-archway-west.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-crypt-archway-west.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'padlock' appears in multiple files: cellar-storage-door-north.lua, deep-cellar-crypt-archway-west.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-storage-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'locked door' appears in multiple files: cellar-storage-door-north.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-east-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'locked door' appears in multiple files: cellar-storage-door-north.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-west-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'locked door' appears in multiple files: cellar-storage-door-north.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\locked-door.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'locked door' appears in multiple files: cellar-storage-door-north.lua, hallway-east-door.lua, hallway-west-door.lua, locked-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cellar-storage-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'storage door' appears in multiple files: cellar-storage-door-north.lua, deep-cellar-storage-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-storage-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'storage door' appears in multiple files: cellar-storage-door-north.lua, deep-cellar-storage-door-south.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\ceramic-shard.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'shard' appears in multiple files: ceramic-shard.lua, glass-shard.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\glass-shard.lua : 13 : WARNING : XF-03 : [Smithers] : Keyword 'shard' appears in multiple files: ceramic-shard.lua, glass-shard.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\ceramic-shard.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'fragment' appears in multiple files: ceramic-shard.lua, glass-shard.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\glass-shard.lua : 13 : WARNING : XF-03 : [Smithers] : Keyword 'fragment' appears in multiple files: ceramic-shard.lua, glass-shard.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\chamber-pot.lua : 11 : WARNING : XF-03 : [Smithers] : Keyword 'pot' appears in multiple files: chamber-pot.lua, salve.lua, vase.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\salve.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'pot' appears in multiple files: chamber-pot.lua, salve.lua, vase.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\vase.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'pot' appears in multiple files: chamber-pot.lua, salve.lua, vase.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\charred-hide.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'hide' appears in multiple files: charred-hide.lua, wolf-hide.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wolf-hide.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'hide' appears in multiple files: charred-hide.lua, wolf-hide.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\charred-hide.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'scrap' appears in multiple files: charred-hide.lua, cloth.lua, rag.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cloth.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'scrap' appears in multiple files: charred-hide.lua, cloth.lua, rag.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\rag.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'scrap' appears in multiple files: charred-hide.lua, cloth.lua, rag.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torn-cloth.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'scrap' appears in multiple files: charred-hide.lua, cloth.lua, rag.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cloth-scraps.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'cloth' appears in multiple files: cloth-scraps.lua, cloth.lua, rag.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cloth.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'cloth' appears in multiple files: cloth-scraps.lua, cloth.lua, rag.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\rag.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'cloth' appears in multiple files: cloth-scraps.lua, cloth.lua, rag.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torn-cloth.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'cloth' appears in multiple files: cloth-scraps.lua, cloth.lua, rag.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cloth-scraps.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'fabric' appears in multiple files: cloth-scraps.lua, cloth.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cloth.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'fabric' appears in multiple files: cloth-scraps.lua, cloth.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torn-cloth.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'fabric' appears in multiple files: cloth-scraps.lua, cloth.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cloth-scraps.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'torn cloth' appears in multiple files: cloth-scraps.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torn-cloth.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'torn cloth' appears in multiple files: cloth-scraps.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cloth.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'burlap' appears in multiple files: cloth.lua, sack.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\sack.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'burlap' appears in multiple files: cloth.lua, sack.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-bat-meat.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'cooked meat' appears in multiple files: cooked-bat-meat.lua, cooked-cat-meat.lua, cooked-rat-meat.lua, cooked-wolf-meat.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-cat-meat.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'cooked meat' appears in multiple files: cooked-bat-meat.lua, cooked-cat-meat.lua, cooked-rat-meat.lua, cooked-wolf-meat.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-rat-meat.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'cooked meat' appears in multiple files: cooked-bat-meat.lua, cooked-cat-meat.lua, cooked-rat-meat.lua, cooked-wolf-meat.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-wolf-meat.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'cooked meat' appears in multiple files: cooked-bat-meat.lua, cooked-cat-meat.lua, cooked-rat-meat.lua, cooked-wolf-meat.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-bat-meat.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'meat' appears in multiple files: cooked-bat-meat.lua, cooked-cat-meat.lua, cooked-rat-meat.lua, cooked-wolf-meat.lua, tainted-meat.lua, wolf-meat.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-cat-meat.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'meat' appears in multiple files: cooked-bat-meat.lua, cooked-cat-meat.lua, cooked-rat-meat.lua, cooked-wolf-meat.lua, tainted-meat.lua, wolf-meat.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-rat-meat.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'meat' appears in multiple files: cooked-bat-meat.lua, cooked-cat-meat.lua, cooked-rat-meat.lua, cooked-wolf-meat.lua, tainted-meat.lua, wolf-meat.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-wolf-meat.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'meat' appears in multiple files: cooked-bat-meat.lua, cooked-cat-meat.lua, cooked-rat-meat.lua, cooked-wolf-meat.lua, tainted-meat.lua, wolf-meat.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\tainted-meat.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'meat' appears in multiple files: cooked-bat-meat.lua, cooked-cat-meat.lua, cooked-rat-meat.lua, cooked-wolf-meat.lua, tainted-meat.lua, wolf-meat.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wolf-meat.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'meat' appears in multiple files: cooked-bat-meat.lua, cooked-cat-meat.lua, cooked-rat-meat.lua, cooked-wolf-meat.lua, tainted-meat.lua, wolf-meat.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-wolf-meat.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'wolf meat' appears in multiple files: cooked-wolf-meat.lua, wolf-meat.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wolf-meat.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'wolf meat' appears in multiple files: cooked-wolf-meat.lua, wolf-meat.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\copper-coin.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'coin' appears in multiple files: copper-coin.lua, silver-coin.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silver-coin.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'coin' appears in multiple files: copper-coin.lua, silver-coin.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\courtyard-kitchen-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'wooden door' appears in multiple files: courtyard-kitchen-door.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wooden-door.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'wooden door' appears in multiple files: courtyard-kitchen-door.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\courtyard-kitchen-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'kitchen door' appears in multiple files: courtyard-kitchen-door.lua, hallway-east-door.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-east-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'kitchen door' appears in multiple files: courtyard-kitchen-door.lua, hallway-east-door.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wooden-door.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'kitchen door' appears in multiple files: courtyard-kitchen-door.lua, hallway-east-door.lua, wooden-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\courtyard-kitchen-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'east door' appears in multiple files: courtyard-kitchen-door.lua, hallway-east-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-east-door.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'east door' appears in multiple files: courtyard-kitchen-door.lua, hallway-east-door.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\crypt-deep-cellar-archway-east.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'archway' appears in multiple files: crypt-deep-cellar-archway-east.lua, deep-cellar-crypt-archway-west.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-crypt-archway-west.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'archway' appears in multiple files: crypt-deep-cellar-archway-east.lua, deep-cellar-crypt-archway-west.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\crypt-deep-cellar-archway-east.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'arch' appears in multiple files: crypt-deep-cellar-archway-east.lua, deep-cellar-crypt-archway-west.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-crypt-archway-west.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'arch' appears in multiple files: crypt-deep-cellar-archway-east.lua, deep-cellar-crypt-archway-west.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\crypt-deep-cellar-archway-east.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'gate' appears in multiple files: crypt-deep-cellar-archway-east.lua, deep-cellar-crypt-archway-west.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-crypt-archway-west.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'gate' appears in multiple files: crypt-deep-cellar-archway-east.lua, deep-cellar-crypt-archway-west.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\crypt-deep-cellar-archway-east.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'passage' appears in multiple files: crypt-deep-cellar-archway-east.lua, deep-cellar-crypt-archway-west.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-crypt-archway-west.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'passage' appears in multiple files: crypt-deep-cellar-archway-east.lua, deep-cellar-crypt-archway-west.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\crypt-deep-cellar-archway-east.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'iron gate' appears in multiple files: crypt-deep-cellar-archway-east.lua, deep-cellar-crypt-archway-west.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-crypt-archway-west.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'iron gate' appears in multiple files: crypt-deep-cellar-archway-east.lua, deep-cellar-crypt-archway-west.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\damp-cloth.lua : 13 : WARNING : XF-03 : [Smithers] : Keyword 'compress' appears in multiple files: damp-cloth.lua, healing-poultice.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\healing-poultice.lua : 13 : WARNING : XF-03 : [Smithers] : Keyword 'compress' appears in multiple files: damp-cloth.lua, healing-poultice.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-storage-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'black iron door' appears in multiple files: deep-cellar-storage-door-south.lua, storage-deep-cellar-door-north.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\storage-deep-cellar-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'black iron door' appears in multiple files: deep-cellar-storage-door-south.lua, storage-deep-cellar-door-north.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\deep-cellar-storage-door-south.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'black door' appears in multiple files: deep-cellar-storage-door-south.lua, storage-deep-cellar-door-north.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\storage-deep-cellar-door-north.lua : 12 : WARNING : XF-03 : [Smithers] : Keyword 'black door' appears in multiple files: deep-cellar-storage-door-south.lua, storage-deep-cellar-door-north.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\gnawed-bone.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'bone' appears in multiple files: gnawed-bone.lua, skull.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\skull.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'bone' appears in multiple files: gnawed-bone.lua, skull.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\grain-handful.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'grain' appears in multiple files: grain-handful.lua, grain-sack.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\grain-sack.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'grain' appears in multiple files: grain-handful.lua, grain-sack.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\incense-stick.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'stick' appears in multiple files: incense-stick.lua, match.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\match.lua : 10 : WARNING : XF-03 : [Smithers] : Keyword 'stick' appears in multiple files: incense-stick.lua, match.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\large-crate.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'crate' appears in multiple files: large-crate.lua, small-crate.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\small-crate.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'crate' appears in multiple files: large-crate.lua, small-crate.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\large-crate.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'wooden crate' appears in multiple files: large-crate.lua, small-crate.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\small-crate.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'wooden crate' appears in multiple files: large-crate.lua, small-crate.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\large-crate.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'box' appears in multiple files: large-crate.lua, small-crate.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\small-crate.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'box' appears in multiple files: large-crate.lua, small-crate.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox-open.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'matchbox' appears in multiple files: matchbox-open.lua, matchbox.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'matchbox' appears in multiple files: matchbox-open.lua, matchbox.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox-open.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'match box' appears in multiple files: matchbox-open.lua, matchbox.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'match box' appears in multiple files: matchbox-open.lua, matchbox.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox-open.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'box of matches' appears in multiple files: matchbox-open.lua, matchbox.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'box of matches' appears in multiple files: matchbox-open.lua, matchbox.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox-open.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'tinderbox' appears in multiple files: matchbox-open.lua, matchbox.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'tinderbox' appears in multiple files: matchbox-open.lua, matchbox.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox-open.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'lucifers' appears in multiple files: matchbox-open.lua, matchbox.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'lucifers' appears in multiple files: matchbox-open.lua, matchbox.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\paper.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'parchment' appears in multiple files: paper.lua, tattered-scroll.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\tattered-scroll.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'parchment' appears in multiple files: paper.lua, tattered-scroll.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\rag.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'rag' appears in multiple files: rag.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torn-cloth.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'rag' appears in multiple files: rag.lua, torn-cloth.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\sarcophagus.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'sarcophagus' appears in multiple files: sarcophagus.lua, stone-sarcophagus.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\stone-sarcophagus.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'sarcophagus' appears in multiple files: sarcophagus.lua, stone-sarcophagus.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\sarcophagus.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'coffin' appears in multiple files: sarcophagus.lua, stone-sarcophagus.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\stone-sarcophagus.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'coffin' appears in multiple files: sarcophagus.lua, stone-sarcophagus.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\sarcophagus.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'stone coffin' appears in multiple files: sarcophagus.lua, stone-sarcophagus.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\stone-sarcophagus.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'stone coffin' appears in multiple files: sarcophagus.lua, stone-sarcophagus.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\sarcophagus.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'tomb' appears in multiple files: sarcophagus.lua, stone-sarcophagus.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\stone-sarcophagus.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'tomb' appears in multiple files: sarcophagus.lua, stone-sarcophagus.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\sarcophagus.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'casket' appears in multiple files: sarcophagus.lua, stone-sarcophagus.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\stone-sarcophagus.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'casket' appears in multiple files: sarcophagus.lua, stone-sarcophagus.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\sarcophagus.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'stone box' appears in multiple files: sarcophagus.lua, stone-sarcophagus.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\stone-sarcophagus.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'stone box' appears in multiple files: sarcophagus.lua, stone-sarcophagus.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\sewing-manual.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'book' appears in multiple files: sewing-manual.lua, tome.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\tome.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'book' appears in multiple files: sewing-manual.lua, tome.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silk-bundle.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'silk' appears in multiple files: silk-bundle.lua, spider-web.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\spider-web.lua : 14 : WARNING : XF-03 : [Smithers] : Keyword 'silk' appears in multiple files: silk-bundle.lua, spider-web.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silver-coin.lua : 7 : WARNING : XF-03 : [Smithers] : Keyword 'silver' appears in multiple files: silver-coin.lua, silver-key.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silver-key.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'silver' appears in multiple files: silver-coin.lua, silver-key.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\tattered-scroll.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'text' appears in multiple files: tattered-scroll.lua, wall-inscription.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wall-inscription.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'text' appears in multiple files: tattered-scroll.lua, wall-inscription.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\tattered-scroll.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'writing' appears in multiple files: tattered-scroll.lua, wall-inscription.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wall-inscription.lua : 8 : WARNING : XF-03 : [Smithers] : Keyword 'writing' appears in multiple files: tattered-scroll.lua, wall-inscription.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\tattered-scroll.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'manuscript' appears in multiple files: tattered-scroll.lua, tome.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\tome.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'manuscript' appears in multiple files: tattered-scroll.lua, tome.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torch-bracket.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'bracket' appears in multiple files: torch-bracket.lua, wall-sconce.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wall-sconce.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'bracket' appears in multiple files: torch-bracket.lua, wall-sconce.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torch-bracket.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'torch holder' appears in multiple files: torch-bracket.lua, wall-sconce.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wall-sconce.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'torch holder' appears in multiple files: torch-bracket.lua, wall-sconce.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torch-bracket.lua : 6 : WARNING : XF-03 : [Smithers] : Keyword 'iron bracket' appears in multiple files: torch-bracket.lua, wall-sconce.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wall-sconce.lua : 9 : WARNING : XF-03 : [Smithers] : Keyword 'iron bracket' appears in multiple files: torch-bracket.lua, wall-sconce.lua
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\spider-venom.lua : 155 : WARNING : XR-01 : [Smithers] : Healing item 'antivenom' not found in object files
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\stress.lua : 68 : WARNING : XR-01 : [Smithers] : Healing item 'safe-room' not found in object files
+C:\Users\wayneb\source\repos\MMO\src\meta\injuries\stress.lua : 68 : WARNING : XR-01 : [Smithers] : Healing item 'meditation' not found in object files
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\altar-candle.lua : 5 : WARNING : GUID-02 : [Bart] : Object 'altar-candle' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bandage.lua : 10 : WARNING : GUID-02 : [Bart] : Object 'bandage' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bear-trap.lua : 13 : WARNING : GUID-02 : [Bart] : Object 'bear-trap' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\bread.lua : 5 : WARNING : GUID-02 : [Bart] : Object 'bread' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\burial-jewelry.lua : 3 : WARNING : GUID-02 : [Bart] : Object 'burial-jewelry' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\ceramic-shard.lua : 5 : WARNING : GUID-02 : [Bart] : Object 'ceramic-shard' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\charred-hide.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'charred-hide' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cheese.lua : 5 : WARNING : GUID-02 : [Bart] : Object 'cheese' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\chest.lua : 9 : WARNING : GUID-02 : [Bart] : Object 'chest' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cloth.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'cloth' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cold-water.lua : 9 : WARNING : GUID-02 : [Bart] : Object 'cold-water' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-bat-meat.lua : 5 : WARNING : GUID-02 : [Bart] : Object 'cooked-bat-meat' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-cat-meat.lua : 4 : WARNING : GUID-02 : [Bart] : Object 'cooked-cat-meat' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-rat-meat.lua : 4 : WARNING : GUID-02 : [Bart] : Object 'cooked-rat-meat' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\cooked-wolf-meat.lua : 4 : WARNING : GUID-02 : [Bart] : Object 'cooked-wolf-meat' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\copper-coin.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'copper-coin' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\damp-cloth.lua : 9 : WARNING : GUID-02 : [Bart] : Object 'damp-cloth' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\falling-club-trap.lua : 13 : WARNING : GUID-02 : [Bart] : Object 'falling-club-trap' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\falling-rock-trap.lua : 13 : WARNING : GUID-02 : [Bart] : Object 'falling-rock-trap' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\flatbread.lua : 4 : WARNING : GUID-02 : [Bart] : Object 'flatbread' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\glass-shard.lua : 9 : WARNING : GUID-02 : [Bart] : Object 'glass-shard' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\gnawed-bone.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'gnawed-bone' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\grain-handful.lua : 4 : WARNING : GUID-02 : [Bart] : Object 'grain-handful' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\incense-stick.lua : 5 : WARNING : GUID-02 : [Bart] : Object 'incense-stick' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\locked-door.lua : 3 : WARNING : GUID-02 : [Bart] : Object 'locked-door' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\matchbox-open.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'matchbox-open' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\nightshade-antidote.lua : 5 : WARNING : GUID-02 : [Bart] : Object 'nightshade-antidote' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\poison-gas-vent.lua : 13 : WARNING : GUID-02 : [Bart] : Object 'poison-gas-vent' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\rag.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'rag' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\salve.lua : 5 : WARNING : GUID-02 : [Bart] : Object 'salve' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silk-bandage.lua : 10 : WARNING : GUID-02 : [Bart] : Object 'silk-bandage' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silk-bundle.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'silk-bundle' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silk-rope.lua : 9 : WARNING : GUID-02 : [Bart] : Object 'silk-rope' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\silver-coin.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'silver-coin' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\skull.lua : 3 : WARNING : GUID-02 : [Bart] : Object 'skull' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\spider-fang.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'spider-fang' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\spider-meat.lua : 4 : WARNING : GUID-02 : [Bart] : Object 'spider-meat' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\stone-alcove.lua : 5 : WARNING : GUID-02 : [Bart] : Object 'stone-alcove' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\tainted-meat.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'tainted-meat' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\terrible-jacket.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'terrible-jacket' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\territory-marker.lua : 8 : WARNING : GUID-02 : [Bart] : Object 'territory-marker' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\torn-cloth.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'torn-cloth' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\trap-door.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'trap-door' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\unstable-ceiling.lua : 13 : WARNING : GUID-02 : [Bart] : Object 'unstable-ceiling' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wall-clock.lua : 110 : WARNING : GUID-02 : [Bart] : Object 'wall-clock' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wolf-bone.lua : 4 : WARNING : GUID-02 : [Bart] : Object 'wolf-bone' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wolf-hide.lua : 4 : WARNING : GUID-02 : [Bart] : Object 'wolf-hide' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wolf-meat.lua : 4 : WARNING : GUID-02 : [Bart] : Object 'wolf-meat' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wooden-door.lua : 4 : WARNING : GUID-02 : [Bart] : Object 'wooden-door' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\wool-cloak.lua : 2 : WARNING : GUID-02 : [Bart] : Object 'wool-cloak' GUID not referenced by any room instance
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\courtyard-bedroom-window-in.lua : 18 : WARNING : EXIT-04 : [Sideshow Bob] : Portal 'courtyard-bedroom-window-in' direction_hint 'window' doesn't match room 'courtyard' exit direction 'up'
+C:\Users\wayneb\source\repos\MMO\src\meta\objects\hallway-level2-stairs-up.lua : 19 : WARNING : EXIT-04 : [Sideshow Bob] : Portal 'hallway-level2-stairs-up' direction_hint 'up' doesn't match room 'hallway' exit direction 'north'

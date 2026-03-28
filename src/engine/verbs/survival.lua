@@ -139,6 +139,8 @@ function M.register(handlers)
 
     handlers["spill"] = handlers["pour"]
     handlers["fill"] = handlers["pour"]
+    handlers["fuel"] = handlers["pour"]     -- #398: "fuel lantern" routes to pour
+    handlers["refuel"] = handlers["pour"]   -- #398: "refuel lantern" routes to pour
 
     ---------------------------------------------------------------------------
     -- DUMP / EMPTY — container-aware pour (#182)

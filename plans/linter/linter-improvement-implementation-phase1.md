@@ -6,7 +6,7 @@
 **Requested By:** Wayne "Effe" Berry  
 **Governs:** Meta-lint improvement across all 3 phases (Quick Wins → Portal/Creature Validation → Architecture Evolution)  
 **Decision:** D-LINTER-IMPL-WAVES  
-**Source Plan:** `plans/linter-improvement-plan.md`
+**Source Plan:** `plans/linter/linter-improvement-design.md`
 
 ---
 
@@ -31,7 +31,7 @@
 
 Meta-lint is the quality gate for all `src/meta/` content. It currently validates 306 rules across 20 categories in a Python + Lark pipeline (~2,538 lines in `lint.py` plus supporting modules: `config.py`, `rule_registry.py`, `cache.py`, `squad_routing.py`). It works — 0 false positives on 130+ files, ~180ms per run. But research and open issues expose gaps: keyword collision noise (#190), unhelpful info-level rules (#195, #196), no creature validation, incomplete fix-safety classification, and no per-environment configuration.
 
-This plan implements all 3 phases from `plans/linter-improvement-plan.md` in 6 waves with 5 gates:
+This plan implements all 3 phases from `plans/linter/linter-improvement-design.md` in 6 waves with 5 gates:
 
 - **Phase 1 (Quick Wins)** → WAVE-1 through WAVE-3: Fix 3 bugs, audit fix safety, add `--fix`/`--unsafe-fixes` CLI
 - **Phase 2 (Portal + Creature Validation)** → WAVE-4: Verify 7 EXIT-* rules (already implemented), implement 20 CREATURE-* rules
@@ -517,7 +517,7 @@ Environment config can also come from `.meta-lint.toml` or `.meta-check.json` (e
 **Bart instructions — squad routing (squad_routing.py):**
 
 The `squad_routing.py` module already exists (~2,326 bytes). Enhance it:
-1. Ensure all rule prefixes map to owning agents (from `plans/linter-improvement-plan.md` Section 5.1):
+1. Ensure all rule prefixes map to owning agents (from `plans/linter/linter-improvement-design.md` Section 5.1):
 ```python
 ROUTING_TABLE = {
     "S-*":        "Smithers",
@@ -884,7 +884,7 @@ If an agent's code failed a gate twice, that agent is locked out. Fresh agent ta
 
 | Resource | Location |
 |----------|----------|
-| Source design plan | `plans/linter-improvement-plan.md` |
+| Source design plan | `plans/linter/linter-improvement-design.md` |
 | Current linter source | `scripts/meta-lint/lint.py` (~2,538 LOC) |
 | Rule registry | `scripts/meta-lint/rule_registry.py` |
 | Config module | `scripts/meta-lint/config.py` |
@@ -898,4 +898,4 @@ If an agent's code failed a gate twice, that agent is locked out. Fresh agent ta
 ---
 
 > **Footer — Mutation Graph Linter:**  
-> The mutation graph linter (`plans/mutation-graph-linter-plan.md`) is a **separate effort** from this plan. It is a pure-Lua test that validates mutation edges (becomes, spawns, crafting), NOT a Python meta-lint rule. It runs via `test/run-tests.lua`, not `scripts/meta-lint/lint.py`. The two efforts are independent and can be implemented in parallel.
+> The mutation graph linter (`plans/linter/mutation-graph-linter-design.md`) is a **separate effort** from this plan. It is a pure-Lua test that validates mutation edges (becomes, spawns, crafting), NOT a Python meta-lint rule. It runs via `test/run-tests.lua`, not `scripts/meta-lint/lint.py`. The two efforts are independent and can be implemented in parallel.

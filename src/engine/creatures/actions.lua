@@ -165,6 +165,26 @@ function M.execute_action(context, creature, action, helpers)
 
     elseif action == "wander" then
         local exits = helpers.get_valid_exits(context, creature_loc, creature)
+
+        -- Territory leash (#400): restrict wander to patrol_rooms or territory
+        local behavior = creature.behavior or {}
+        if behavior.territory then
+            local patrol = behavior.patrol_rooms
+            if not patrol then
+                patrol = { behavior.territory }
+            end
+            local allowed = {}
+            for _, ex in ipairs(exits) do
+                for _, room_id in ipairs(patrol) do
+                    if ex.target == room_id then
+                        allowed[#allowed + 1] = ex
+                        break
+                    end
+                end
+            end
+            exits = allowed
+        end
+
         if #exits > 0 then
             local choice = exits[math.random(#exits)]
             local old_loc = creature_loc
@@ -177,8 +197,19 @@ function M.execute_action(context, creature, action, helpers)
 
             if old_loc == player_room then
                 local name = creature.name or "a creature"
-                messages[#messages + 1] = name:sub(1,1):upper() .. name:sub(2) ..
-                    " scurries " .. choice.direction .. "."
+                local Name = name:sub(1,1):upper() .. name:sub(2)
+                -- #401: Add prepositions for non-cardinal exit directions
+                local CARDINAL = {
+                    north=true, south=true, east=true, west=true,
+                    up=true, down=true, northeast=true, northwest=true,
+                    southeast=true, southwest=true,
+                }
+                local dir = choice.direction
+                if CARDINAL[dir] then
+                    messages[#messages + 1] = Name .. " scurries " .. dir .. "."
+                else
+                    messages[#messages + 1] = Name .. " scurries through the " .. dir .. "."
+                end
             elseif choice.target == player_room then
                 local name = creature.name or "a creature"
                 local st = creature.states and creature.states[creature._state]

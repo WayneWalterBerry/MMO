@@ -594,7 +594,7 @@ test("INTEGRATION: Targeted search finds matchbox", function()
     truthy(not search.is_searching(), "Search should complete")
 end)
 
-test("INTEGRATION: Search auto-opens unlocked containers", function()
+test("INTEGRATION: Search makes unlocked container contents accessible", function()
     local ctx = make_ctx()
     local nightstand = ctx.registry:get("nightstand")
     
@@ -617,7 +617,9 @@ test("INTEGRATION: Search auto-opens unlocked containers", function()
         step_count = step_count + 1
     end
     
-    truthy(containers.is_open(nightstand), "Nightstand should be opened during search")
+    -- #384: Search peeks containers — contents become accessible but
+    -- the container stays visually closed (is_open remains false).
+    truthy(nightstand.accessible, "Nightstand contents should be accessible after search")
 end)
 
 test("INTEGRATION: Search skips locked containers", function()

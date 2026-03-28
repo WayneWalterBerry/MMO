@@ -11,6 +11,14 @@ function compound.transform_compound_actions(text)
         return "hit" .. text:sub(#first_word + 1)
     end
 
+    -- #399: "strike match" / "strike a match" → "light match"
+    -- Without this, fuzzy noun resolution matches "match" to trap door.
+    -- "strike match on X" is NOT transformed — the strike handler already
+    -- handles the "A on B" pattern for matchbox striker resolution.
+    if text:match("^strike%s+a%s+match$") or text == "strike match" then
+        return "light match"
+    end
+
     local hurt_target = text:match("^hurt%s+(.+)$")
     if hurt_target then
         return "hit " .. hurt_target

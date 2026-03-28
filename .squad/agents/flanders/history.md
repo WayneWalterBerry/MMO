@@ -73,3 +73,12 @@
 
 **Cross-domain note:** Touched `territorial.lua`, `creatures/init.lua` (Bart), `narration.lua` (Bart), `smell.lua`/`listen.lua` (Smithers). Decision filed to `.squad/decisions/inbox/flanders-territory-narration-sensory-fixes.md`.
 
+### 2026-07-20: Test Fix Batch — Issues #393, #392, #394
+
+**Flaky dagger damage (#393):** Test "silver dagger stab creates bleeding with higher damage" expected damage=8 but got 12 when `random_body_area()` rolled torso (1.5x). Fix: changed test input from `"self with silver dagger"` to `"left arm with silver dagger"` — explicit 1.0x body area makes damage deterministically 8. Lesson: tests asserting exact damage values must pin the body area to avoid multiplier variance.
+
+**Search auto-open vs peek (#392):** Test "Search auto-opens unlocked containers" checked `containers.is_open()` but the engine uses `peek_open` (#384) — contents become accessible without visually opening. Many tests validate peek behavior. Fix: changed assertion to check `nightstand.accessible` instead of `containers.is_open(nightstand)`, renamed test to "Search makes unlocked container contents accessible". Lesson: `peek_open` sets `accessible=true` but restores `is_open` — always test the right property.
+
+**Surface object narration (#394):** Test "traverse.step: object with surfaces returns empty narrative (undirected)" failed because #385 added `narrator.enumerate_room_object()` for surfaced objects during undirected sweep, conflicting with bug #40 fix. Fix: return empty narrative for surfaced objects — surface entries in the queue handle their own narration.
+
+**Cross-domain note:** Touched `src/engine/search/traverse.lua` (Bart's domain) for #394 — minimal change, removed contradictory narration path. Decision filed to `.squad/decisions/inbox/flanders-surface-object-narration.md`.

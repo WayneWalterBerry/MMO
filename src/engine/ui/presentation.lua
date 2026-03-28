@@ -149,6 +149,13 @@ function presentation.get_light_level(ctx)
         if has_filter then return "dim" end
     end
 
+    -- #401: Ambient room light (moonlight, bioluminescence, etc.)
+    -- light_level >= 2 is full visibility; 1 is dim (enough to see shapes)
+    if room.light_level and room.light_level >= 1 then
+        if room.light_level >= 2 then return "lit" end
+        return "dim"
+    end
+
     return "dark"
 end
 

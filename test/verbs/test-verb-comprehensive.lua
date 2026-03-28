@@ -174,7 +174,8 @@ local ALIASES = {
     -- movement
     n = "north", s = "south", e = "east", w = "west",
     u = "up", d = "down",
-    walk = "go", run = "go", head = "go", travel = "go",
+    walk = "go", head = "go", travel = "go",
+    run = "flee", escape = "flee",
     -- meta
     i = "inventory",
     adjust = "set",
@@ -1313,8 +1314,8 @@ test("walk alias points to go", function()
     eq(handlers["walk"], handlers["go"], "walk is go alias")
 end)
 
-test("run alias points to go", function()
-    eq(handlers["run"], handlers["go"], "run is go alias")
+test("run alias points to flee", function()
+    eq(handlers["run"], handlers["flee"], "run is flee alias (per #330)")
 end)
 
 test("travel alias points to go", function()

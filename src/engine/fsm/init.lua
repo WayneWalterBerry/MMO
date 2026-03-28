@@ -41,17 +41,30 @@ local function apply_mutations(obj, mutations)
         elseif type(v) == "table" and (v.add ~= nil or v.remove ~= nil) then
             local list = obj[k]
             if type(list) ~= "table" then list = {}; obj[k] = list end
+            -- #402: support table remove (e.g., remove = {"barred", "iron bar"})
             if v.remove then
-                for i = #list, 1, -1 do
-                    if list[i] == v.remove then table.remove(list, i) end
+                if type(v.remove) == "table" then
+                    local rm_set = {}
+                    for _, r in ipairs(v.remove) do rm_set[r] = true end
+                    for i = #list, 1, -1 do
+                        if rm_set[list[i]] then table.remove(list, i) end
+                    end
+                else
+                    for i = #list, 1, -1 do
+                        if list[i] == v.remove then table.remove(list, i) end
+                    end
                 end
             end
+            -- #402: support table add (e.g., add = {"barred", "iron bar"})
             if v.add then
-                local found = false
-                for _, item in ipairs(list) do
-                    if item == v.add then found = true; break end
+                local adds = type(v.add) == "table" and v.add or { v.add }
+                for _, item_to_add in ipairs(adds) do
+                    local found = false
+                    for _, item in ipairs(list) do
+                        if item == item_to_add then found = true; break end
+                    end
+                    if not found then list[#list + 1] = item_to_add end
                 end
-                if not found then list[#list + 1] = v.add end
             end
         else
             obj[k] = v

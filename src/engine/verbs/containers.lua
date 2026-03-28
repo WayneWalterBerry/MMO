@@ -398,7 +398,22 @@ function M.register(handlers)
                         exit.locked = false
                         print("You unlock " .. (exit.name or "the door") .. ".")
                     else
-                        print("You don't have the right key.")
+                        -- Check if player holds a wrong key
+                        local held_key = nil
+                        for i = 1, 2 do
+                            local hand = ctx.player.hands[i]
+                            if hand then
+                                local ho = type(hand) == "table" and hand or ctx.registry:get(hand)
+                                if ho and (ho.id:match("key") or (ho.keywords and ho.keywords[1] and tostring(ho.keywords[1]):match("key"))) then
+                                    held_key = ho; break
+                                end
+                            end
+                        end
+                        if held_key then
+                            print("The " .. (held_key.name or "key") .. " doesn't fit.")
+                        else
+                            print("You don't have the right key.")
+                        end
                     end
                 end
             else
@@ -488,9 +503,11 @@ function M.register(handlers)
                             end
                         end
                     end
-                    if key_obj or exit.key_id then
+                    if key_obj then
                         exit.locked = true
-                        print("You lock " .. (exit.name or "the door") .. ".")
+                        print((exit.name or "The door") .. " is now locked.")
+                    elseif exit.key_id then
+                        print("You don't have the right key.")
                     else
                         print("You can't lock that.")
                     end

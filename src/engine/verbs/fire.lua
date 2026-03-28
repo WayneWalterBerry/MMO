@@ -426,7 +426,7 @@ function M.register(handlers)
             -- #172: flammable objects without light states → redirect to burn
             local mat = obj.material and materials.get(obj.material)
             local flammability = mat and mat.flammability or 0
-            if flammability >= BURN_THRESHOLD then
+            if obj.flammable or flammability >= BURN_THRESHOLD then
                 handlers["burn"](ctx, noun)
                 return
             end
@@ -756,10 +756,11 @@ function M.register(handlers)
         end
 
         -- Derive burnability from material flammability (Principle 9: material consistency)
+        -- obj.flammable == true overrides material threshold (e.g. paper with no material)
         local mat = obj.material and materials.get(obj.material)
         local flammability = mat and mat.flammability or 0
 
-        if flammability < BURN_THRESHOLD then
+        if not obj.flammable and flammability < BURN_THRESHOLD then
             print("You can't burn " .. (obj.name or "that") .. ".")
             return
         end

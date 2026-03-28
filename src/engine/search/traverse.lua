@@ -787,9 +787,11 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 return result
             end
         end
-        -- #385: Undirected sweep — enumerate object existence
+        -- Undirected sweep: surface entries in the queue handle content
+        -- narration, so the parent object entry returns empty to avoid
+        -- contradictory text (e.g., listing the object AND its contents).
         if not target and not is_goal_search then
-            result.narrative = narrator.enumerate_room_object(ctx, obj)
+            result.narrative = ""
             return result
         end
         -- Targeted/goal with no match — suppress; surfaces follow in queue
