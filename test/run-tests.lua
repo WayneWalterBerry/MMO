@@ -2,17 +2,21 @@
 -- Discovers and runs all test-*.lua files under test subdirectories.
 -- Returns exit code 1 if any test file fails.
 --
--- Usage: lua test/run-tests.lua [--bench]
---   --bench   Also discover and run bench-*.lua benchmark files
+-- Usage: lua test/run-tests.lua [--bench] [--shard <name>]
+--   --bench          Also discover and run bench-*.lua benchmark files
+--   --shard <name>   Run only test directories matching shard name (for CI matrix)
 -- Must be run from the repository root (C:\Users\wayneb\source\repos\MMO).
 
 local SEP = package.config:sub(1, 1) -- \ on Windows, / on Unix
 
 -- Parse CLI flags
 local include_bench = false
-for _, a in ipairs(arg or {}) do
+local shard_filter = nil
+for i, a in ipairs(arg or {}) do
     if a == "--bench" then
         include_bench = true
+    elseif a == "--shard" and arg[i + 1] then
+        shard_filter = arg[i + 1]
     end
 end
 
@@ -28,6 +32,9 @@ print("========================================")
 print("  MMO Test Suite")
 if include_bench then
     print("  (including benchmarks)")
+end
+if shard_filter then
+    print("  (shard: " .. shard_filter .. ")")
 end
 print("========================================")
 
@@ -57,6 +64,62 @@ local test_dirs = {
     repo_root .. SEP .. "test" .. SEP .. "crafting",
     repo_root .. SEP .. "test" .. SEP .. "engine",
 }
+
+-- Shard group definitions for CI matrix sharding
+-- Each named shard maps to the directory basenames it covers.
+-- Subdirectories (e.g., parser/pipeline) are matched via parent_name.
+-- "other" catches everything not covered by any named shard.
+local shard_groups = {
+    parser    = {"parser"},
+    verbs     = {"verbs"},
+    creatures = {"creatures", "combat"},
+    rooms     = {"rooms", "integration"},
+    search    = {"search", "inventory", "nightstand"},
+}
+
+-- Filter directories by shard name
+if shard_filter then
+    if shard_filter == "other" then
+        -- Collect all directory names covered by named shards
+        local covered = {}
+        for _, group in pairs(shard_groups) do
+            for _, name in ipairs(group) do
+                covered[name] = true
+            end
+        end
+        local filtered = {}
+        for _, dir in ipairs(test_dirs) do
+            local dir_name = dir:match("([^/\\]+)$")
+            local parent_name = dir:match("([^/\\]+)[/\\][^/\\]+$")
+            if not covered[dir_name] and not covered[parent_name or ""] then
+                filtered[#filtered + 1] = dir
+            end
+        end
+        test_dirs = filtered
+    else
+        -- Build match set from shard group (or use shard name directly)
+        local group = shard_groups[shard_filter]
+        local match_set = {}
+        if group then
+            for _, name in ipairs(group) do match_set[name] = true end
+        else
+            match_set[shard_filter] = true
+        end
+        local filtered = {}
+        for _, dir in ipairs(test_dirs) do
+            local dir_name = dir:match("([^/\\]+)$")
+            local parent_name = dir:match("([^/\\]+)[/\\][^/\\]+$")
+            if match_set[dir_name] or match_set[parent_name or ""] then
+                filtered[#filtered + 1] = dir
+            end
+        end
+        if #filtered == 0 then
+            print("No test directories match shard: " .. shard_filter)
+            os.exit(1)
+        end
+        test_dirs = filtered
+    end
+end
 
 local is_windows = SEP == "\\"
 
