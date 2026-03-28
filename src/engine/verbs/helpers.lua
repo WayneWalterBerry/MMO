@@ -111,5 +111,6 @@ H.vision_blocked_by_worn = core.vision_blocked_by_worn
 H.try_fsm_verb = combat.try_fsm_verb
 H.find_portal_by_keyword = portal.find_portal_by_keyword
 H.sync_bidirectional_portal = portal.sync_bidirectional_portal
+H.find_exit_by_keyword = search.find_exit_by_keyword
 
 return H

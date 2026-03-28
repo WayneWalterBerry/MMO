@@ -552,6 +552,42 @@ local function find_in_inventory(ctx, keyword)
     return nil
 end
 
+---------------------------------------------------------------------------
+-- Helper: find an exit door in room.exits by keyword, name, or direction.
+-- Returns (exit_table, direction_key) or (nil, nil).
+---------------------------------------------------------------------------
+local function find_exit_by_keyword(ctx, keyword)
+    if not keyword or keyword == "" then return nil, nil end
+    local room = ctx.current_room
+    if not room or not room.exits then return nil, nil end
+    local kw = keyword:lower()
+        :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+
+    -- Match by direction name first
+    if room.exits[kw] and type(room.exits[kw]) == "table" then
+        return room.exits[kw], kw
+    end
+
+    -- Search by keywords, name, or target
+    for dir, exit in pairs(room.exits) do
+        if type(exit) == "table" then
+            if type(exit.keywords) == "table" then
+                for _, k in ipairs(exit.keywords) do
+                    if k:lower() == kw then return exit, dir end
+                end
+            end
+            if exit.name then
+                local padded = " " .. exit.name:lower() .. " "
+                if padded:find(" " .. kw .. " ", 1, true) then return exit, dir end
+            end
+            -- Match by target room id (for "enter closet")
+            if exit.target and exit.target:lower() == kw then return exit, dir end
+        end
+    end
+
+    return nil, nil
+end
+
 M.matches_keyword = matches_keyword
 M._score_adjective_match = _score_adjective_match
 M.interaction_verbs = interaction_verbs
@@ -563,5 +599,6 @@ M._fv_bags = _fv_bags
 M._fv_worn = _fv_worn
 M.find_visible = find_visible
 M.find_in_inventory = find_in_inventory
+M.find_exit_by_keyword = find_exit_by_keyword
 
 return M

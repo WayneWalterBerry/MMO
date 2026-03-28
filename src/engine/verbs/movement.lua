@@ -52,6 +52,7 @@ local inventory_weight = H.inventory_weight
 local move_spatial_object = H.move_spatial_object
 local find_portal_by_keyword = H.find_portal_by_keyword
 local sync_bidirectional_portal = H.sync_bidirectional_portal
+local find_exit_by_keyword = H.find_exit_by_keyword
 
 local get_game_time = H.get_game_time
 local is_daytime = H.is_daytime
@@ -168,6 +169,13 @@ function M.register(handlers)
                 dir = portal.portal.direction_hint
             end
         end
+        -- If still not a direction, try exit keyword match
+        if not dir then
+            local exit_match, exit_dir = find_exit_by_keyword(ctx, clean)
+            if exit_match then
+                dir = exit_dir
+            end
+        end
         if not dir then
             print("You can't go that way.")
             return
@@ -267,6 +275,92 @@ function M.register(handlers)
 
             if first_visit then
                 ctx.verbs["look"](ctx, "")
+            else
+                print("**" .. (target_room.name or "Unnamed room") .. "**")
+                if target_room.short_description then
+                    print(target_room.short_description)
+                end
+            end
+            return
+        end
+
+        -----------------------------------------------------------------
+        -- Legacy exit handling (non-portal exits in room.exits)
+        -----------------------------------------------------------------
+        if exit and type(exit) == "table" and not exit.portal then
+            -- Hidden exits are not traversable
+            if exit.hidden then
+                print("You can't go that way.")
+                return
+            end
+            -- Locked exits
+            if exit.locked then
+                print((exit.name or ("The way " .. dir)) .. " is locked.")
+                return
+            end
+            -- Closed exits
+            if exit.open == false then
+                print((exit.name or ("The way " .. dir)) .. " is closed.")
+                return
+            end
+
+            local target_id = exit.target
+            local target_room = ctx.rooms and ctx.rooms[target_id]
+            if not target_room then
+                print("That way leads somewhere you cannot yet reach.")
+                return
+            end
+
+            -- Fire traverse effects
+            if exit.on_traverse and traverse_effects then
+                traverse_effects.process(exit, ctx)
+            end
+
+            -- on_exit_room hook
+            local old_room = ctx.current_room
+            if old_room.on_exit_room and type(old_room.on_exit_room) == "function" then
+                old_room.on_exit_room(old_room, ctx)
+            end
+            if old_room.event_output and old_room.event_output["on_exit_room"] then
+                print(old_room.event_output["on_exit_room"])
+                old_room.event_output["on_exit_room"] = nil
+            end
+
+            -- Record previous room for "go back"
+            if context_window and ctx.current_room then
+                context_window.set_previous_room(ctx.current_room.id)
+            end
+
+            -- Move player
+            ctx.player.location = target_id
+            ctx.current_room = target_room
+
+            ctx.player.visited_rooms = ctx.player.visited_rooms or {}
+            local first_visit = not ctx.player.visited_rooms[target_id]
+            ctx.player.visited_rooms[target_id] = true
+
+            -- on_enter_room hook
+            if target_room.on_enter_room and type(target_room.on_enter_room) == "function" then
+                target_room.on_enter_room(target_room, ctx)
+            end
+            if target_room.event_output and target_room.event_output["on_enter_room"] then
+                print(target_room.event_output["on_enter_room"])
+                target_room.event_output["on_enter_room"] = nil
+            end
+
+            emit_player_enters(target_id)
+
+            -- Print arrival
+            print("")
+            if first_visit then
+                if ctx.verbs and ctx.verbs["look"] then
+                    ctx.verbs["look"](ctx, "")
+                else
+                    print("**" .. (target_room.name or "Unnamed room") .. "**")
+                    if target_room.description then
+                        print(target_room.description)
+                    end
+                end
             else
                 print("**" .. (target_room.name or "Unnamed room") .. "**")
                 if target_room.short_description then

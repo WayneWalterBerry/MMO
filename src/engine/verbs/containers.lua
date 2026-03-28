@@ -50,6 +50,7 @@ local spawn_objects = H.spawn_objects
 local perform_mutation = H.perform_mutation
 local inventory_weight = H.inventory_weight
 local move_spatial_object = H.move_spatial_object
+local find_exit_by_keyword = H.find_exit_by_keyword
 
 local get_game_time = H.get_game_time
 local is_daytime = H.is_daytime
@@ -146,7 +147,54 @@ function M.register(handlers)
         if obj then
             print("You can't open " .. (obj.name or "that") .. ".")
         else
-            err_not_found(ctx)
+            -- Fallback: try exit doors in room.exits
+            local exit, exit_dir = find_exit_by_keyword(ctx, noun)
+            if exit then
+                if exit.locked then
+                    -- Try to find key in hands and auto-unlock
+                    local key_obj = nil
+                    if exit.key_id then
+                        for i = 1, 2 do
+                            local hand = ctx.player.hands[i]
+                            if hand then
+                                local ho = type(hand) == "table" and hand or ctx.registry:get(hand)
+                                if ho and ho.id == exit.key_id then key_obj = ho; break end
+                            end
+                        end
+                    end
+                    if key_obj then
+                        exit.locked = false
+                        exit.open = true
+                        print("You unlock and open " .. (exit.name or "the door") .. ".")
+                    elseif ctx.tool_noun then
+                        -- Player specified a key but it's the wrong one
+                        local tool = nil
+                        for i = 1, 2 do
+                            local hand = ctx.player.hands[i]
+                            if hand then
+                                local ho = type(hand) == "table" and hand or ctx.registry:get(hand)
+                                if ho then tool = ho; break end
+                            end
+                        end
+                        if tool and exit.key_id and tool.id ~= exit.key_id then
+                            print("The " .. (tool.name or "key") .. " doesn't fit.")
+                        else
+                            print((exit.name or "The door") .. " is locked.")
+                        end
+                    else
+                        print((exit.name or "The door") .. " is locked.")
+                    end
+                elseif exit.open then
+                    print("It is already open.")
+                else
+                    exit.open = true
+                    local msg = exit.mutations and exit.mutations.open
+                        and exit.mutations.open.message
+                    print(msg or ("You open " .. (exit.name or "the door") .. "."))
+                end
+            else
+                err_not_found(ctx)
+            end
         end
     end
 
@@ -223,7 +271,22 @@ function M.register(handlers)
         if obj then
             print("You can't close " .. (obj.name or "that") .. ".")
         else
-            err_not_found(ctx)
+            -- Fallback: try exit doors in room.exits
+            local exit, exit_dir = find_exit_by_keyword(ctx, noun)
+            if exit then
+                if not exit.open and exit.open ~= nil then
+                    print("It is already closed.")
+                elseif exit.open then
+                    exit.open = false
+                    local msg = exit.mutations and exit.mutations.close
+                        and exit.mutations.close.message
+                    print(msg or ("You close " .. (exit.name or "the door") .. "."))
+                else
+                    print("You can't close that.")
+                end
+            else
+                err_not_found(ctx)
+            end
         end
     end
 
@@ -280,7 +343,41 @@ function M.register(handlers)
 
             print("You can't unlock " .. (obj.name or "that") .. ".")
         else
-            err_not_found(ctx)
+            -- Parse "unlock X with Y" — extract the door keyword
+            local target_noun = noun
+            local base_match = noun:lower():match("^(.-)%s+with%s+")
+            if base_match and base_match ~= "" then
+                target_noun = base_match
+            end
+
+            -- Fallback: try exit doors in room.exits
+            local exit, exit_dir = find_exit_by_keyword(ctx, target_noun)
+            if exit then
+                if not exit.locked then
+                    print("It isn't locked.")
+                else
+                    -- Find matching key in player's hands
+                    local key_obj = nil
+                    if exit.key_id then
+                        for i = 1, 2 do
+                            local hand = ctx.player.hands[i]
+                            if hand then
+                                local ho = type(hand) == "table" and hand or ctx.registry:get(hand)
+                                if ho and ho.id == exit.key_id then key_obj = ho; break end
+                            end
+                        end
+                    end
+
+                    if key_obj then
+                        exit.locked = false
+                        print("You unlock " .. (exit.name or "the door") .. ".")
+                    else
+                        print("You don't have the right key.")
+                    end
+                end
+            else
+                err_not_found(ctx)
+            end
         end
     end
 
@@ -335,7 +432,37 @@ function M.register(handlers)
 
             print("You can't lock " .. (obj.name or "that") .. ".")
         else
-            err_not_found(ctx)
+            -- Fallback: try exit doors in room.exits
+            local exit, exit_dir = find_exit_by_keyword(ctx, noun)
+            if exit then
+                if exit.locked then
+                    print("It is already locked.")
+                else
+                    -- Close the door first if it's open
+                    if exit.open then
+                        exit.open = false
+                    end
+                    -- Find key in player's hands
+                    local key_obj = nil
+                    if exit.key_id then
+                        for i = 1, 2 do
+                            local hand = ctx.player.hands[i]
+                            if hand then
+                                local ho = type(hand) == "table" and hand or ctx.registry:get(hand)
+                                if ho and ho.id == exit.key_id then key_obj = ho; break end
+                            end
+                        end
+                    end
+                    if key_obj or exit.key_id then
+                        exit.locked = true
+                        print("You lock " .. (exit.name or "the door") .. ".")
+                    else
+                        print("You can't lock that.")
+                    end
+                end
+            else
+                err_not_found(ctx)
+            end
         end
     end
 end
