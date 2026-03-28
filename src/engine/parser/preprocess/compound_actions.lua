@@ -64,6 +64,15 @@ function compound.transform_compound_actions(text)
         return "pour " .. pour_item .. " into " .. pour_target
     end
 
+    -- #320: "insert X into Y" — route to unlock for locks, put for containers
+    local insert_item, insert_target = text:match("^insert%s+(.+)%s+into%s+(.+)$")
+    if insert_item then
+        if insert_target:match("lock") or insert_target:match("keyhole") then
+            return "unlock " .. insert_target .. " with " .. insert_item
+        end
+        return "put " .. insert_item .. " in " .. insert_target
+    end
+
     local fill_target, fill_source = text:match("^fill%s+(.+)%s+with%s+(.+)$")
     if fill_target and fill_source then
         return "pour " .. fill_source .. " into " .. fill_target

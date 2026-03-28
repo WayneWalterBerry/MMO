@@ -365,6 +365,19 @@ function M.register(handlers)
         else
             -- Fallback: try exit doors in room.exits (target_noun already stripped above)
             local exit, exit_dir = find_exit_by_keyword(ctx, target_noun)
+            -- #321: If "padlock"/"lock" noun can't find an exit, search for any locked exit
+            if not exit and (target_noun:match("lock") or target_noun:match("padlock")) then
+                local room_exits = ctx.current_room and ctx.current_room.exits
+                if room_exits then
+                    for dir, ex in pairs(room_exits) do
+                        if type(ex) == "table" and ex.locked then
+                            exit = ex
+                            exit_dir = dir
+                            break
+                        end
+                    end
+                end
+            end
             if exit then
                 if not exit.locked then
                     print("It isn't locked.")

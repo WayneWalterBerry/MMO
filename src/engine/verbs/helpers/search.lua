@@ -138,10 +138,46 @@ local function _try_room_scored(kw, reg, room, ctx)
     end
 
     -- Tied scores — build disambiguation prompt
+    -- #309: When objects have identical display names (e.g., two iron-bound doors),
+    -- include direction from room.exits to differentiate them.
+    local function _door_direction(obj_item, room_ref)
+        if not room_ref or not room_ref.exits then return nil end
+        for dir, exit in pairs(room_ref.exits) do
+            if type(exit) == "table" and exit.id and exit.id == obj_item.id then
+                return dir
+            end
+        end
+        return nil
+    end
+
     local names = {}
+    local raw_names = {}
     for _, m in ipairs(matches) do
         if m.score == top_score then
-            names[#names + 1] = m.obj.name or m.obj.id or "something"
+            local name = m.obj.name or m.obj.id or "something"
+            raw_names[#raw_names + 1] = name
+        end
+    end
+    -- Check for duplicate display names
+    local has_dupes = false
+    local seen_names = {}
+    for _, n in ipairs(raw_names) do
+        if seen_names[n] then has_dupes = true; break end
+        seen_names[n] = true
+    end
+    local name_idx = 0
+    for _, m in ipairs(matches) do
+        if m.score == top_score then
+            name_idx = name_idx + 1
+            local name = raw_names[name_idx]
+            if has_dupes then
+                local dir = _door_direction(m.obj, room)
+                if dir then
+                    local bare = name:gsub("^a%s+", ""):gsub("^an%s+", ""):gsub("^the%s+", "")
+                    name = "the " .. dir .. " " .. bare
+                end
+            end
+            names[#names + 1] = name
         end
     end
     local prompt
@@ -470,7 +506,9 @@ do
         -- BUG-146 (#46): Skip fuzzy when caller needs exact-only (e.g., search
         -- scope detection). Fuzzy "match"→"mat" causes search to target the rug
         -- instead of doing a room-wide search for "match".
-        if core.fuzzy and not ctx._exact_only then
+        -- #309: Skip fuzzy if disambiguation prompt already set (preserves
+        -- direction-qualified prompt from _try_room_scored).
+        if core.fuzzy and not ctx._exact_only and not ctx.disambiguation_prompt then
             local fobj, floc, fparent, fsurface, prompt = core.fuzzy.resolve(ctx, keyword)
             if fobj then
                 ctx.last_object = fobj

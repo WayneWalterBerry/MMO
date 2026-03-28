@@ -233,12 +233,15 @@ function M.register(handlers)
             obj = find_visible(ctx, noun)
         end
 
-        -- #313: If found object is not lightable, check parts for a nested lightable item
+        -- #313: If found object is not lightable, check parts AND contents
+        -- for a nested lightable item.
         -- e.g. "light candle" finds candle-holder (name contains "candle") but the
-        -- actual candle is a part — redirect to the nested candle
+        -- actual candle is a part or contents item — redirect to the nested candle
         if obj and not is_lightable(obj) then
             local kw = noun:lower()
                 :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+            -- Strip "with X" tool modifier from keyword
+            kw = kw:gsub("%s+with%s+.+$", "")
             -- Check parts of the found object itself
             if obj.parts then
                 for _, part in pairs(obj.parts) do
@@ -247,6 +250,15 @@ function M.register(handlers)
                         if live and is_lightable(live) then
                             obj = live; break
                         end
+                    end
+                end
+            end
+            -- #313: Also check contents of the found object (candle in holder.contents)
+            if not is_lightable(obj) and obj.contents then
+                for _, inner_id in ipairs(obj.contents) do
+                    local inner = ctx.registry:get(inner_id)
+                    if inner and matches_keyword(inner, kw) and is_lightable(inner) then
+                        obj = inner; break
                     end
                 end
             end
@@ -272,10 +284,12 @@ function M.register(handlers)
             end
         end
 
-        -- #313: Also check parts of held items when no object found at all
+        -- #313: Also check parts and contents of held items when no object found at all
         if not obj then
             local kw = noun:lower()
                 :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+            -- Strip "with X" tool modifier from keyword
+            kw = kw:gsub("%s+with%s+.+$", "")
             for i = 1, 2 do
                 local hand = ctx.player.hands[i]
                 if hand then
@@ -285,6 +299,15 @@ function M.register(handlers)
                             if matches_keyword(part, kw) then
                                 local live = part.id and ctx.registry:get(part.id)
                                 if live then obj = live; break end
+                            end
+                        end
+                    end
+                    -- Also check contents of held items
+                    if not obj and held and held.contents then
+                        for _, inner_id in ipairs(held.contents) do
+                            local inner = ctx.registry:get(inner_id)
+                            if inner and matches_keyword(inner, kw) then
+                                obj = inner; break
                             end
                         end
                     end

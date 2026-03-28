@@ -333,9 +333,10 @@ function fuzzy.score_object(obj, parsed)
 
     ---------------------------------------------------------------------------
     -- 4. Typo tolerance via Levenshtein distance
-    -- #71: Tighten length ratio check — the shorter word must be at least 75%
-    -- of the longer word's length. Prevents "cloak"→"oak" false positives
-    -- (3/5=60% < 75% → rejected).
+    -- #71/#335: Tighten length ratio check — the shorter word must be at least
+    -- 80% of the longer word's length. Prevents false positives like
+    -- "meat"→"mat" (3/4=75% < 80%) while allowing "candel"→"candle" (100%).
+    -- Raised from 75% to 80% to eliminate cross-length absurd matches (#335).
     ---------------------------------------------------------------------------
     local max_dist = fuzzy.max_typo_distance(#base)
     if max_dist > 0 then
@@ -346,7 +347,7 @@ function fuzzy.score_object(obj, parsed)
                 local shorter = math.min(#word, #base)
                 local longer = math.max(#word, #base)
                 if math.abs(#word - #base) <= max_dist
-                    and shorter / longer >= 0.75 then
+                    and shorter / longer >= 0.80 then
                     local d = fuzzy.levenshtein(base, word)
                     if d < best_dist then best_dist = d end
                 end
@@ -356,7 +357,7 @@ function fuzzy.score_object(obj, parsed)
                 local shorter = math.min(#s, #base)
                 local longer = math.max(#s, #base)
                 if math.abs(#s - #base) <= max_dist
-                    and shorter / longer >= 0.75 then
+                    and shorter / longer >= 0.80 then
                     local d = fuzzy.levenshtein(base, s)
                     if d < best_dist then best_dist = d end
                 end
