@@ -33,4 +33,42 @@
 - **World 1** ("The Manor") sketched: gothic domestic horror, late medieval era, stone/iron/wood/tallow/wool palette, consumable light, no magic, real animals only.
 - Decision filed: `D-WORLDS-CONCEPT` in `.squad/decisions/inbox/cbg-worlds-concept.md`.
 
+## Session 2026-03-28: Regenerated Worlds Design Files
+
+**Objective:** Recover 2 lost design files from lost session checkpoint.
+
+**Output:** 
+- ✅ `docs/design/worlds.md` — Complete design specification (20.9 KB)
+  - Full format spec for World table structure
+  - Theme system (8-field format: pitch, era, aesthetic, atmosphere, mood, tone, constraints, design_notes)
+  - Hierarchy documentation (World → Level → Room → Object)
+  - The Manor (World 1) complete specification
+  - Engine integration points (boot sequence, world transitions, theme enforcement)
+  - Future multi-world vision (The Swamp, The Palace, The Crypt, rifts)
+  - File locations, templates, design principles
+
+- ✅ `plans/worlds/worlds-design.md` — Design plan (17.3 KB)
+  - Goals & scope (V1 design phase)
+  - 7 key design decisions (D1–D7)
+  - World 1 specification (levels, theme details, play duration)
+  - Theme system rationale
+  - Engine integration (boot, context, level transitions, multi-world future)
+  - Multi-world vision (V2+)
+  - Rollout plan (Phase 1–5, owners, estimates)
+  - Success criteria
+  - Open questions & appendices
+
+**Changes Committed:**
+- Commit: `7826ec9` — "regenerate: worlds design doc + design plan (lost files recovered)"
+- Also includes: `plans/worlds/worlds-design.md`, `src/meta/templates/world.lua`, `src/meta/worlds/world-01.lua`
+- Verification: Both files tracked in git, on remote main branch, HEAD = 68b35089bbac92fe0368b92d6094548c06f88a00
+
+**Key Insights:**
+- Worlds are metadata containers for aesthetic/theme guidance, NOT gameplay enforcement
+- Single-world auto-boot simplifies V1; multi-world UI deferred to V2+
+- Theme-as-guidance (not enforced by engine) gives designers freedom while maintaining cohesion
+- Lazy loading: World .lua (~500 bytes) at boot, Levels/Rooms on-demand
+- 8-field theme structure fully captures world identity
+- The Manor theme for V1 is complete and consistent across all 3 levels
+
 ## Recent Updates
