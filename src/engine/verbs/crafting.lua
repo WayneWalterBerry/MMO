@@ -24,6 +24,10 @@ function M.register(handlers)
     local placement = require("engine.verbs.placement")
     placement.register(handlers)
 
+    -- Delegate butcher/carve/skin/fillet to butchery module
+    local butchery = require("engine.verbs.butchery")
+    butchery.register(handlers)
+
     ---------------------------------------------------------------------------
     -- SEW {material} WITH {tool} -- crafting verb (requires sewing skill)
     ---------------------------------------------------------------------------

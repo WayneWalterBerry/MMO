@@ -54,6 +54,30 @@
 - Dawn Light: ✅ NEW FEATURE — sleep until dawn enables `look` without matches
 - Issue Fixes: ✅ ALL VERIFIED (#2, #3, #4, #5, BUG-065, #72, #78-84)
 
+### Recent Work: Phase 4 WAVE-1 — Butchery Test Suite (2026-03-28)
+
+**WAVE-1 TDD Delivery — Nelson's Butchery Tests:**
+- Created `test/butchery/test-butcher-verb.lua` — 4 verb handler tests
+  - butcher wolf corpse with knife → products spawned, corpse removed
+  - butcher without knife → "You need a knife" error
+  - butcher living creature → "You can't butcher that" rejection
+  - butcher non-creature (chair) → "You can't butcher that" rejection
+- Created `test/butchery/test-butchery-products.lua` — 8 metadata validation tests
+  - wolf death_state.butchery_products: field exists, 3 meat / 2 bone / 1 hide, requires_tool = "butchering", removes_corpse = true
+  - spider death_state.butchery_products: field exists, 1 spider-meat / 1 silk-bundle
+  - butcher-knife.lua: loads, has "butchering" capability, required fields (id, name, keywords, on_feel, portable)
+- **Result:** 12/12 tests PASS (standalone + test runner)
+- **Parallel delivery confirmed:** Smithers' verb handler and Flanders' objects/metadata arrived before tests ran — full green on first execution
+- **No regressions:** Pre-existing test suite unaffected (pre-existing failures in test-combat-verbs.lua not related)
+
+## Learnings
+
+- The `butchery.lua` verb handler uses `find_visible` from helpers, not a simple `registry:find_by_keyword`. Mock contexts need real `room.contents` arrays with IDs that map to `reg:get()`.
+- `object_sources` + `loader` fields are checked before use in butchery.lua (line 115), so mock contexts without them work fine for the tool-check and narration paths.
+- Flanders added `butchery_products` to both wolf.lua and spider.lua death_state blocks, matching the spec exactly.
+- `butcher-knife.lua` uses `capabilities` field (not just `provides_tool`), should check both in tests.
+- Test runner may show different results than standalone when previous test files pollute the Lua environment; always validate standalone too.
+
 ## Archives
 
 - `history-archive-2026-03-20T22-40Z-nelson.md` — Full archive (2026-03-19 to 2026-03-20T22:40Z): all 7 playtests, 32 bugs, regression verification, pass-by-pass findings

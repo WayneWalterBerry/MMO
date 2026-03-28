@@ -26,7 +26,11 @@ return {
             on_top = {
                 { id = "incense-burner",     type = "Incense Burner",    type_id = "2fce1fb5-94ad-44f7-9036-4332a62d3405" },
                 { id = "tattered-scroll",    type = "Tattered Scroll",   type_id = "08d903bb-98fa-4c75-a986-26502479d12f" },
-                { id = "offering-bowl",      type = "Offering Bowl",     type_id = "dfea4690-5a7c-406d-ba4e-20388319ea0e" },
+                { id = "offering-bowl",      type = "Offering Bowl",     type_id = "dfea4690-5a7c-406d-ba4e-20388319ea0e",
+                    contents = {
+                        { id = "antidote-vial",  type = "Antidote Vial",     type_id = "87ec6b50-d0eb-4a1c-ae34-8b200625ccd0" },
+                    },
+                },
             },
         },
 

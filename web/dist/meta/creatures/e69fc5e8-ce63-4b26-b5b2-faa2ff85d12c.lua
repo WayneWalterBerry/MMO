@@ -240,21 +240,21 @@ return {
             fresh = {
                 description = "A freshly killed wolf. The blood is still warm, pooling beneath the body.",
                 room_presence = "A dead wolf sprawls across the floor, blood pooling beneath it.",
-                duration = 40,
+                timed_events = { { delay = 40, event = "timer_expired", to_state = "bloated" } },
             },
             bloated = {
                 description = "The wolf's body has swollen grotesquely, its belly distended with gas. The stench is terrible.",
                 room_presence = "A bloated wolf carcass sprawls across the floor, reeking.",
                 on_smell = "A wall of decay. The sweet-sick stench of bloating flesh.",
                 food = { cookable = false },
-                duration = 50,
+                timed_events = { { delay = 50, event = "timer_expired", to_state = "rotten" } },
             },
             rotten = {
                 description = "The wolf is a putrid mass of matted fur and exposed tissue. The floor beneath is stained dark.",
                 room_presence = "A rotting wolf carcass festers on the floor.",
                 on_smell = "Overwhelming rot. You can taste it in the air.",
                 food = { cookable = false, edible = false },
-                duration = 80,
+                timed_events = { { delay = 80, event = "timer_expired", to_state = "bones" } },
             },
             bones = {
                 description = "A large scatter of wolf bones, picked clean. The skull grins with yellowed fangs.",
@@ -265,9 +265,9 @@ return {
             },
         },
         transitions = {
-            { from = "fresh", to = "bloated", verb = "_tick", condition = "timer_expired" },
-            { from = "bloated", to = "rotten", verb = "_tick", condition = "timer_expired" },
-            { from = "rotten", to = "bones", verb = "_tick", condition = "timer_expired" },
+            { from = "fresh", to = "bloated", trigger = "auto", condition = "timer_expired" },
+            { from = "bloated", to = "rotten", trigger = "auto", condition = "timer_expired" },
+            { from = "rotten", to = "bones", trigger = "auto", condition = "timer_expired" },
         },
 
         transfer_contents = true,

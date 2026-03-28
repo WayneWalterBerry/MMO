@@ -1,27 +1,30 @@
 # Current Focus
 
-**Last session:** 2026-03-27
+**Last session:** 2026-03-28  
 **Last user:** Wayne Berry
 
 ## What We Were Working On
-- Phase 2 NPC+Combat implementation plan — assembled, reviewed, blockers being fixed
-- Food system design — creature→food mutation, cooking-as-craft, eat-causes-injuries
-- Issue burndown — 11 closed this session (waves 1-3 of 6)
+- Phase 4 WAVE-1 butchery system — COMPLETE (4 agents, 0 blockers, 12 tests pass)
+- Butcher verb (Smithers), butchery objects (Flanders), creatures split (Bart), tests (Nelson)
+- All decisions merged to decisions.md, inbox cleaned
 
 ## Board State
-- Open issues: 18
+- Open issues: TBD (check GitHub)
 - Open PRs: 0
-- Urgent: None — CRITICAL trapdoor (#276) fixed
+- WAVE-1 Shipped: ✅ All deliverables complete
 
-## Still Running (from last session)
-- Bart: Fixing 16 Phase 2 plan review blockers
-- CBG: Updating food-system-plan.md with Wayne's directives
-- Both may have committed by next session start — check git log
+## Next Phase: WAVE-2 Loot Tables
+- Flanders: Create loot-table object instances (5-10 creatures)
+- Chef: Food mutation metadata (creature → food → cook → eat pipeline)
+- Both coordinated via Coordinator, outcome logged to orchestration-log
+
+## Still Running (from WAVE-1)
+- Git commit pending (Scribe final step)
+- PR ready after commit
 
 ## Tomorrow's Queue
-1. Collect Bart P2 blocker fixes + CBG food plan update
-2. Engine refactoring Phase 2 (6 must-split files per review)
-3. Continue burndown waves 4-6 (portals, puzzle 017, lint)
-4. Resolve food plan open questions with Wayne
-5. Scribe deep clean (15+ decision inbox files pending)
-6. Push remaining commits to origin
+1. Verify WAVE-1 git commit pushed
+2. Queue WAVE-2 loot tables agents
+3. Monitor for any WAVE-1 regression reports
+4. Coordinate with Chef on food metadata timing
+

@@ -689,3 +689,24 @@ ew_budget(cap) / create_budget(cap) factory returns {count, cap, overflow_emitte
 
 **Tests:** All 7 goto tests pass, all 22 narration tests pass, no regressions introduced.
 **Commit:** 37a72ed — "fix: goto keyword search + combat text polish (#287, #288, #289, #290)"
+
+### Session — Phase 4 WAVE-1: Butcher Verb Handler
+**Date:** 2026-03-27
+**Requested by:** Wayne Berry
+
+**Implemented butcher verb handler** (src/engine/verbs/butchery.lua):
+- New file, split from crafting.lua for clean separation (167 LOC)
+- Validates: dead creature + death_state.butchery_products + tool with "butchering" capability
+- Advances game time by 5 minutes via ctx.time_offset (follows rest.lua pattern)
+- Ticks FSMs during butchery (candles burn, spoilage advances)
+- Instantiates products via object_sources + loader (production path)
+- Corpse removal matches by both id and guid for test/engine compatibility
+- Error messages: "You can't butcher that." / "There's nothing useful to carve from this corpse." / "You need a knife to butcher this."
+
+**Verb aliases registered:** butcher, carve, skin, fillet
+
+**Embedding index updated:** 380 new phrases (IDs 11132-11511) — 4 aliases × 95 nouns, all with verb="butcher" and adjective-first noun IDs per collision audit.
+
+**Registration:** crafting.lua delegates to butchery.lua (same pattern as cooking/placement delegation).
+
+**Tests:** 4/4 butchery TDD tests pass. No regressions (2 pre-existing failures in injuries/combat unchanged).

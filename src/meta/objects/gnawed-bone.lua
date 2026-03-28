@@ -4,7 +4,7 @@ return {
 
     id = "gnawed-bone",
     name = "a gnawed bone",
-    keywords = {"bone", "gnawed bone", "gnawed", "wolf bone"},
+    keywords = {"bone", "gnawed bone", "gnawed", "bone fragment"},
     description = "A fragment of bone, cracked and scored with tooth marks. Whatever animal it came from is long gone.",
 
     material = "bone",

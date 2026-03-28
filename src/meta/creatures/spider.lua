@@ -196,5 +196,20 @@ return {
 
         -- Death byproducts (silk drops on death)
         byproducts = { "silk-bundle" },
+
+        -- Butchery products (Phase 4 WAVE-1)
+        butchery_products = {
+            requires_tool = "butchering",
+            duration = "2 minutes",
+            products = {
+                { id = "spider-meat", quantity = 1 },
+                { id = "silk-bundle", quantity = 1 },
+            },
+            narration = {
+                start = "You carefully slice open the spider's abdomen, avoiding the venom sac...",
+                complete = "You extract a small lump of pale meat and a wad of silk from the spider's body.",
+            },
+            removes_corpse = true,
+        },
     },
 }

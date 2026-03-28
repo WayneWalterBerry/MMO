@@ -1,6 +1,6 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-28T01:19:00Z  
+**Last Updated:** 2026-03-28T01:30:00Z  
 **Last Deep Clean:** 2026-03-25T18:21:05Z
 **Scribe:** Session Logger & Memory Manager
 
@@ -55,7 +55,10 @@ Quick-reference table of ALL decisions (active + archived).
 | D-PHASE4-WAVE0-LOC-AUDIT | Architecture | ✅ Complete | Phase 4 LOC audit complete; creatures/init.lua split planned; 19 GUIDs assigned; 1,540 LOC budget | Active |
 | D-PHASE4-WAVE0-TEST-BASELINE | Testing | ✅ Complete | Phase 3 baseline: 207 tests; 3 new dirs registered (butchery/loot/stress); 0 regressions | Active |
 | D-PHASE4-WAVE0-EMBEDDING-AUDIT | Architecture | ✅ Complete | 3 HIGH collisions (knife/rope/bandage); adjective-first resolution; narration pipeline designed | Active |
-| D-CREATURES-ACTIONS-SPLIT | Architecture | 🟡 Planned | Extract score_actions/move_creature/execute_action from creatures/init.lua to creatures/actions.lua (split before W1) | Active |
+| D-CREATURES-ACTIONS-SPLIT | Architecture | ✅ Implemented | Extract score_actions/move_creature/execute_action from creatures/init.lua to creatures/actions.lua (split before W1) | Active |
+| D-WAVE1-BUTCHERY-CREATURES-SPLIT | Architecture | ✅ Implemented | creatures/init.lua → creatures/actions.lua (546→310 LOC); 0 regressions; −190 LOC headroom for Phase 4 | Active |
+| D-WAVE1-BUTCHER-VERB | Architecture | ✅ Implemented | butchery.lua verb handler (167 LOC), 4 aliases, 380 phrases, 12 tests; time advancement via time_offset + FSM tick | Active |
+| D-WAVE1-BUTCHERY-OBJECTS | Architecture | ✅ Implemented | 6 butchery objects (wolf-meat, cooked-wolf-meat, wolf-bone, wolf-hide, butcher-knife, spider-meat); creature metadata wired | Active |
 | Architecture Notes | Architecture | 📦 Archived | See full entry | Archive |
 | D-104: PLAYER-CANONICAL-STATE (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
 | D-105: OBJECT-INSTANCING-FACTORY (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
@@ -123,9 +126,147 @@ Quick-reference table of ALL decisions (active + archived).
 
 ---
 
-## Active Decisions
+## D-WAVE1-BUTCHERY-CREATURES-SPLIT: creatures/init.lua Refactored to actions.lua
 
-These are decisions agents need to know about RIGHT NOW.
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-28  
+**Status:** ✅ Implemented  
+**Category:** Architecture  
+**Phase:** Phase 4 WAVE-1
+
+**Decision:** Extracted `score_actions`, `move_creature`, `find_bait`, `try_bait`, and `execute_action` from `src/engine/creatures/init.lua` into `src/engine/creatures/actions.lua` to free up LOC headroom before Flanders' butchery metadata additions.
+
+**Files Modified:**
+- `src/engine/creatures/init.lua`: 546 LOC → 310 LOC (−236 LOC, −43%)
+- `src/engine/creatures/actions.lua`: Created, 264 LOC
+
+**How Dependencies Were Handled:**
+- **actions.lua** receives `action_helpers` table from init.lua containing utility functions and M.* wrappers
+- **M.* wrapper closures** (emit_stimulus, handle_creature_death, attempt_flee) resolve at call time, preserving test monkey-patching
+- **morale_helpers.move_creature** delegates to `creature_actions.move_creature` — no circular dependency
+- **Public API preserved:** `M.score_actions()` and `M.execute_action()` keep original signatures
+
+**Test Results:**
+- Zero regressions: 410 passed, 13 pre-existing failures (unrelated)
+- Full suite run confirmed before and after
+
+**Impact on Phase 4:**
+- WAVE-1 (Flanders' butchery metadata) now has ~190 LOC of headroom before 500-LOC ceiling
+- WAVE-5 behavior additions (~80 LOC) go into actions.lua, not init.lua
+- Both modules stay under 500 LOC through all of Phase 4
+
+**Who Should Know:**
+- **Flanders:** You have headroom for WAVE-1 butchery metadata; init.lua has space
+- **Nelson:** Run full test suite if modifying creature behavior
+- **All agents:** No breaking changes to creature module API
+
+---
+
+## D-WAVE1-BUTCHER-VERB: Butcher Verb Handler Implementation
+
+**Author:** Smithers (UI/Parser Engineer)  
+**Date:** 2026-03-28  
+**Status:** ✅ Implemented  
+**Category:** Architecture  
+**Phase:** Phase 4 WAVE-1
+
+**Decision 1: File Split — Create `src/engine/verbs/butchery.lua` (not add to crafting.lua)**
+- **Chose:** Separate file for distinct system lifecycle
+- **Rationale:** Butchery has its own test suite and lifecycle. crafting.lua delegates to it (same pattern as cooking.lua, placement.lua)
+- **Result:** 167 LOC, keeps crafting.lua focused on sew/stitch/mend
+
+**Decision 2: Product Instantiation Pattern**
+- **Chose:** Inline instantiation loop with nil-guard on `ctx.object_sources` (not using spawn_objects)
+- **Rationale:** Shared `spawn_objects` helper crashes if nil (no nil-check). Graceful fallback for test mocks
+- **Result:** Same deduplication (id-2, id-3 suffixes for duplicates), works in test + real contexts
+
+**Decision 3: Corpse Removal by ID or GUID**
+- **Chose:** Search room.contents for both id and guid match
+- **Rationale:** Real engine stores IDs; test mocks use GUIDs. Matching both ensures handler works everywhere without mock changes
+
+**Decision 4: Time Advancement**
+- **Chose:** `ctx.time_offset += 5/60` (hours) + 1 FSM tick cycle
+- **Rationale:** No `ctx.game:advance_time()` API exists. rest.lua is only existing time-advance pattern. One tick fires FSM transitions + on_tick callbacks + candle burn
+
+**Files Created:**
+- `src/engine/verbs/butchery.lua` (167 LOC)
+
+**Parser Coverage:**
+- 4 aliases: ["butcher", "butchering", "butchered", "butcher up"]
+- 380 embedding phrases
+- Integrated into verbs/init.lua dispatch
+
+**Test Results:**
+- 12 tests written and passing
+- All pass, no regressions
+
+**Affects:**
+- **Bart (engine):** Time API discussion for future standardization
+- **Nelson (tests):** Butchery test suite in test/verbs/
+- **Flanders (objects):** Products spawned via object_sources
+
+---
+
+## D-WAVE1-BUTCHERY-OBJECTS: Butchery Products & Creature Metadata
+
+**Author:** Flanders (Object & Injury Systems Engineer)  
+**Date:** 2026-03-28  
+**Status:** ✅ Implemented  
+**Category:** Architecture  
+**Phase:** Phase 4 WAVE-1
+
+**Decision 1: Spider-Meat GUID**
+- **Gap:** Bart's pre-assignment (bart-phase4-guids.md) did not include spider-meat
+- **Action:** Generated GUID {6b7c8bb2-71b1-4ac6-a57e-8a23536d3054}
+- **Note for Bart:** Add this to Phase 4 GUID registry
+
+**Decision 2: Spider vs Wolf Butchery Duration**
+- **Spider:** 2 minutes (tiny creature, minimal carving)
+- **Wolf:** 5 minutes (large furniture-template corpse, significant processing)
+- **Rationale:** Duration scales with corpse size and complexity
+
+**Decision 3: Spider-Meat Poison Risk**
+- **Set:** 30% spider-venom risk when eaten (even raw)
+- **Rationale:** Spider's venom sac (60% venom on bite) can't be fully separated in tiny meat. Higher risk than cooked-bat-meat (10% food-poisoning)
+
+**Decision 4: Wolf-Hide Keywords**
+- **Keywords:** "wolf hide", "animal skin", "pelt", "hide"
+- **Bare "hide" included** since no other hide objects exist yet
+- **Flag for future:** When "hide" verb implemented, parser needs verb/noun POS gate
+
+**Decision 5: Gnawed-Bone Keyword Fix**
+- **Removed:** "wolf bone" from gnawed-bone.lua keywords
+- **Replaced with:** "bone fragment"
+- **Rationale:** Per Smithers' embedding collision audit, prevent disambiguation collision with new wolf-bone object
+
+**Decision 6: Butcher-Knife Tool Resolution Dual-Pattern**
+- **Set:** Both `provides_tool = {"butchering", "cutting_edge"}` AND `capabilities = {"butchering", "cutting"}`
+- **Rationale:** Two systems exist in parallel (provides_tool vs capabilities). Included both for maximum compatibility until Bart consolidates tool API in Phase 4 cleanup
+
+**Files Created:**
+- `src/meta/objects/wolf-meat.lua` (raw cookable meat)
+- `src/meta/objects/cooked-wolf-meat.lua` (cooked food)
+- `src/meta/objects/wolf-bone.lua` (improvised weapon)
+- `src/meta/objects/wolf-hide.lua` (crafting material)
+- `src/meta/objects/butcher-knife.lua` (butchering tool)
+- `src/meta/objects/spider-meat.lua` (venom-risk food)
+
+**Files Modified:**
+- `src/meta/creatures/wolf.lua` (added butchery_products to death_state)
+- `src/meta/creatures/spider.lua` (added butchery_products to death_state)
+- `src/meta/objects/gnawed-bone.lua` (removed "wolf bone" keyword)
+
+**Test Results:**
+- All 12 butchery tests pass with new objects
+- No regressions
+
+**Affects:**
+- **Bart (engine):** Tool resolution API consolidation pending (Phase 4 cleanup)
+- **Smithers (parser):** Embedding collision fixed; check collision audit for other objects
+- **Nelson (tests):** All 12 butchery tests cover these objects
+- **Moe (rooms):** Corpses spawn these products in rooms when butchered
+
+---
 
 
 ### D-14: True Code Mutation (Objects Rewritten, Not Flagged)

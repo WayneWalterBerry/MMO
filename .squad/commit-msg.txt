@@ -1,0 +1,17 @@
+feat: Phase 4 WAVE-1 butchery system complete
+
+WAVE-1 deliverables shipped:
+- Bart: creatures/init.lua refactored to actions.lua (546→310 LOC, -190 headroom)
+- Smithers: butchery.lua verb handler (167 LOC, 4 aliases, 380 phrases, 12 tests)
+- Flanders: 6 butchery objects (wolf-meat, cooked-wolf-meat, wolf-bone, wolf-hide, butcher-knife, spider-meat) + creature metadata
+- Nelson: 12 butchery tests, all passing, 0 regressions
+
+All decisions merged to .squad/decisions.md (3 inbox files merged, deduped, archived).
+Session log: .squad/log/2026-03-28T01-30-phase4-wave1.md
+Orchestration manifest: .squad/orchestration-log/2026-03-28T01-30-wave1.md
+
+Test Results:
+- Full suite: 410 passed, 13 pre-existing failures (unrelated)
+- No new regressions
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

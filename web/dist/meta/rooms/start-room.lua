@@ -43,6 +43,7 @@ return {
             nested = {
                 { id = "drawer", type = "Drawer", type_id = "83dda7fe-c35c-4af7-94a0-346601e6d864",
                     contents = {
+                        { id = "healing-poultice", type = "Healing Poultice", type_id = "fcd722b7-27d2-42cb-baf5-86e66cf2fc07" },
                         { id = "matchbox", type = "Matchbox", type_id = "41eb8a2f-972f-4245-a1fb-bbfdcaad4868",
                             contents = {
                                 { id = "match-1", type = "Match", type_id = "009b0347-2ba3-45d1-a733-7a587ad1f5c9" },

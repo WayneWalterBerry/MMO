@@ -228,6 +228,22 @@ return {
             cookable = false,
         },
 
+        -- Butchery products (Phase 4 WAVE-1)
+        butchery_products = {
+            requires_tool = "butchering",
+            duration = "5 minutes",
+            products = {
+                { id = "wolf-meat", quantity = 3 },
+                { id = "wolf-bone", quantity = 2 },
+                { id = "wolf-hide", quantity = 1 },
+            },
+            narration = {
+                start = "You begin carving the wolf carcass with your knife. Blood and fur fly.",
+                complete = "You finish butchering the wolf. Three cuts of meat, two bones, and a pelt lie at your feet.",
+            },
+            removes_corpse = true,
+        },
+
         -- Container (large corpse can hold 5 items)
         container = {
             capacity = 5,

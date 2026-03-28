@@ -918,3 +918,23 @@ espawn block between combat metadata and death_state in each file -- logical pla
 - Engine respawn logic (reading these tables) is Bart's domain -- this wave is metadata-only.
 
 **Commit:** cbaaa13
+
+### Phase 4 WAVE-1: Butchery Objects — BUILT ✅ (2026-08-16)
+
+**Task:** Create all butchery product objects and add butchery metadata to wolf and spider creatures. Execute WAVE-1 of Phase 4 NPC combat implementation.
+
+**What was built:**
+
+1. **wolf.lua** — Added `butchery_products` block to `death_state`: 3 wolf-meat, 2 wolf-bone, 1 wolf-hide. Tool: "butchering", duration: "5 minutes", removes_corpse: true.
+2. **spider.lua** — Added `butchery_products` block to `death_state`: 1 spider-meat, 1 silk-bundle. Tool: "butchering", duration: "2 minutes", removes_corpse: true.
+3. **wolf-meat.lua** — Raw cookable meat (GUID from Bart's pre-assignment). FSM: raw → cooked via crafting.cook mutation to cooked-wolf-meat. Material: meat, nutrition: 35, heal: 8.
+4. **cooked-wolf-meat.lua** — Cooked food product (GUID from Bart's pre-assignment). Edible, nutrition 35, heal 8.
+5. **wolf-bone.lua** — Improvised blunt weapon (force 3). Material: bone. provides_tool: blunt_weapon.
+6. **wolf-hide.lua** — Crafting material for future armor repairs. Material: hide.
+7. **butcher-knife.lua** — Tool with capabilities: butchering + cutting. Keywords per Smithers audit: "butcher knife", "carving knife", "butchering knife" (no bare "knife"). Material: steel.
+8. **spider-meat.lua** — Edible with 30% spider-venom risk. Material: meat. Nutrition 8, heal 2.
+9. **gnawed-bone.lua** — Removed "wolf bone" keyword, added "bone fragment" per Smithers embedding collision audit.
+
+**GUIDs used (from bart-phase4-guids.md):** wolf-meat, cooked-wolf-meat, wolf-bone, wolf-hide, butcher-knife all used pre-assigned GUIDs. spider-meat required a new GUID ({6b7c8bb2-71b1-4ac6-a57e-8a23536d3054}) — gap in Bart's pre-assignment, filed in decision inbox.
+
+**Tests:** All 9 files Lua-parse clean. Full test suite: 3 failures — butchery/test-butcher-verb (engine verb handler issue in helpers.lua, Smithers domain), injuries/test-injuries-comprehensive (pre-existing), verbs/test-combat-verbs (pre-existing, caused by Smithers' carve→butcher rerouting in crafting.lua). Zero regressions from object definitions.

@@ -1,11 +1,4 @@
 return {
-  creatures = {
-    "bat",
-    "cat",
-    "rat",
-    "spider",
-    "wolf"
-  },
   injuries = {
     "bleeding",
     "bruised",

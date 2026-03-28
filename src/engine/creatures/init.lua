@@ -15,6 +15,7 @@ local creature_inventory = require("engine.creatures.inventory")
 local respawn = require("engine.creatures.respawn")
 local combat_ok, combat = pcall(require, "engine.combat")
 if not combat_ok then combat = nil end
+local creature_actions = require("engine.creatures.actions")
 
 ---------------------------------------------------------------------------
 -- Registry abstraction: works with both real registry (:list) and test mocks (:all)
@@ -131,287 +132,55 @@ local function process_stimuli(context, creature)
 end
 
 ---------------------------------------------------------------------------
--- Behavior selection (utility scoring)
+-- Death reshape API (delegated to engine/creatures/death.lua)
+-- Placed early so action_helpers can reference M.handle_creature_death.
 ---------------------------------------------------------------------------
-
--- score_actions(creature, context) -> sorted array of { action, score }
-local function score_actions(creature, context)
-    local behavior = creature.behavior or {}
-    local drives = creature.drives or {}
-    local scores = {}
-
-    scores[#scores + 1] = { action = "idle", score = 10 }
-
-    -- C14: Suppress wander during active combat
-    local wander_score = 0
-    if not (context and context.combat_active) then
-        if drives.curiosity then
-            wander_score = wander_score + (drives.curiosity.value or 0) * 0.3
-        end
-        wander_score = wander_score + (behavior.wander_chance or 0) * 0.2
-    end
-    scores[#scores + 1] = { action = "wander", score = wander_score }
-
-    local fear_val = drives.fear and drives.fear.value or 0
-    local flee_threshold = behavior.flee_threshold or 50
-    if fear_val >= flee_threshold then
-        scores[#scores + 1] = { action = "flee", score = fear_val * 1.5 }
-    end
-
-    local vocal_score = 0
-    if fear_val > 10 and fear_val < flee_threshold then
-        vocal_score = fear_val * 0.3
-    end
-    if drives.curiosity then
-        vocal_score = vocal_score + (drives.curiosity.value or 0) * 0.1
-    end
-    scores[#scores + 1] = { action = "vocalize", score = vocal_score }
-
-    -- Attack: score when prey is present in the same room
-    if predator_prey.has_prey_in_room(creature, context, M.get_creatures_in_room, get_location) then
-        local aggression = behavior.aggression or 0
-        local hunger_val = drives.hunger and drives.hunger.value or 0
-        local attack_score = aggression * 0.5 + hunger_val * 0.5
-        -- Territorial boost: creature in home territory gets aggression bonus
-        if behavior.territorial then
-            local territory = behavior.territory or behavior.home_territory
-            local loc = get_location(context.registry, creature)
-            if territory and loc == territory then
-                attack_score = attack_score + aggression * 0.3
-            end
-        end
-        scores[#scores + 1] = { action = "attack", score = attack_score }
-    end
-
-    for _, entry in ipairs(scores) do
-        entry.score = entry.score + math.random() * 2
-    end
-
-    table.sort(scores, function(a, b) return a.score > b.score end)
-    return scores
-end
+M.reshape_instance = death.reshape_instance
+M.handle_creature_death = death.handle_creature_death
 
 ---------------------------------------------------------------------------
--- Action execution
+-- Action helpers table (dependencies for creatures/actions.lua)
 ---------------------------------------------------------------------------
+local action_helpers = {
+    get_location = get_location,
+    set_location = set_location,
+    get_room = get_room,
+    get_player_room_id = get_player_room_id,
+    list_objects = list_objects,
+    get_valid_exits = get_valid_exits,
+    -- Wrappers resolve M.* at call time so test monkey-patching works
+    get_creatures_in_room = function(reg, room_id)
+        return M.get_creatures_in_room(reg, room_id)
+    end,
+    emit_stimulus = function(room_id, st, data)
+        return M.emit_stimulus(room_id, st, data)
+    end,
+    handle_creature_death = function(target, ctx, room)
+        return M.handle_creature_death(target, ctx, room)
+    end,
+}
 
--- move_creature(context, creature, target_room_id)
--- Moves a creature between rooms, updating location and room.contents.
-local function move_creature(context, creature, target_room_id)
-    local old_loc = get_location(context.registry, creature)
-
-    -- Update room.contents arrays (real game uses these)
-    local old_room = get_room(context, old_loc)
-    if old_room and old_room.contents then
-        for i = #old_room.contents, 1, -1 do
-            if old_room.contents[i] == creature.id then
-                table.remove(old_room.contents, i)
-                break
-            end
-        end
-    end
-    local new_room = get_room(context, target_room_id)
-    if new_room then
-        new_room.contents = new_room.contents or {}
-        new_room.contents[#new_room.contents + 1] = creature.id
-    end
-
-    -- Update location (both obj.location and mock registry tracker)
-    set_location(context.registry, creature, target_room_id)
-end
--- Track 5C: food-as-bait behavior (R-5 boundary: no cooking/recipes/spoilage)
-local function find_bait(ctx, room_id, cid)
-    local r = {}
-    for _, o in ipairs(list_objects(ctx.registry)) do
-        if o.food and o.food.bait_targets and get_location(ctx.registry, o) == room_id then
-            for _, t in ipairs(o.food.bait_targets) do if t == cid then r[#r+1]=o; break end end
-        end
-    end
-    table.sort(r, function(a,b) return (a.food.bait_value or 0) > (b.food.bait_value or 0) end)
-    return r
-end
-local function try_bait(ctx, creature)
-    local h = creature.drives and creature.drives.hunger
-    if not h or (h.value or 0) < (h.satisfy_threshold or 80) then return nil end
-    if ctx.combat_active or (combat and combat.find_fight_for_combatant and combat.find_fight_for_combatant(creature)) then return nil end
-    local loc = get_location(ctx.registry, creature); if not loc then return nil end
-    local cn = creature.name or "a creature"
-    local pr, CN, msgs = get_player_room_id(ctx), cn:sub(1,1):upper()..cn:sub(2), {}
-    local food = find_bait(ctx, loc, creature.id)
-    if #food > 0 then
-        ctx.registry:remove(food[1].id); h.value = h.min or 0
-        if loc == pr then local m = CN.." scurries toward "..(food[1].name or "the food").." and devours it."; msgs[1] = m; print(m) end
-        return msgs end
-    local best, bv = nil, -1
-    for _, ex in ipairs(get_valid_exits(ctx, loc, creature)) do
-        local a = find_bait(ctx, ex.target, creature.id)
-        if #a > 0 and (a[1].food.bait_value or 0) > bv then best, bv = ex.target, a[1].food.bait_value or 0 end end
-    if not best then return nil end; move_creature(ctx, creature, best)
-    if loc == pr then msgs[1] = CN.." scurries away, drawn by a scent." end
-    if best == pr then msgs[1] = CN.." arrives, sniffing hungrily." end
-    return msgs
-end
--- Morale helpers: built after all navigation/movement functions are defined
+-- Morale helpers: move_creature delegates to extracted actions module
 local morale_helpers = {
     get_location = get_location,
     get_valid_exits = get_valid_exits,
     get_player_room_id = get_player_room_id,
-    move_creature = move_creature,
+    move_creature = function(ctx, creature, target)
+        creature_actions.move_creature(ctx, creature, target, action_helpers)
+    end,
 }
 
 local function check_morale(context, creature, combat_result)
     return morale.check(context, creature, combat_result, morale_helpers)
 end
 
--- execute_action(context, creature, action) -> messages[]
-local function execute_action(context, creature, action)
-    local messages = {}
-    local player_room = get_player_room_id(context)
-    local creature_loc = get_location(context.registry, creature)
+function M.attempt_flee(context, creature)
+    return morale.check(context, creature, nil, morale_helpers)
+end
 
-    if action == "idle" then
-        if creature._state and creature._state ~= "alive-idle"
-           and creature._state ~= "dead" then
-            creature._state = "alive-idle"
-        end
-
-    elseif action == "wander" then
-        local exits = get_valid_exits(context, creature_loc, creature)
-        if #exits > 0 then
-            local choice = exits[math.random(#exits)]
-            local old_loc = creature_loc
-
-            if creature._state and creature._state ~= "dead" then
-                creature._state = "alive-wander"
-            end
-
-            move_creature(context, creature, choice.target)
-
-            if old_loc == player_room then
-                local name = creature.name or "a creature"
-                messages[#messages + 1] = name:sub(1,1):upper() .. name:sub(2) ..
-                    " scurries " .. choice.direction .. "."
-            elseif choice.target == player_room then
-                local name = creature.name or "a creature"
-                local st = creature.states and creature.states[creature._state]
-                local arrival = st and st.room_presence
-                messages[#messages + 1] = arrival or
-                    (name:sub(1,1):upper() .. name:sub(2) .. " arrives.")
-            end
-            creature._last_exit = choice.direction
-        else
-            if creature._state and creature._state ~= "dead" then
-                creature._state = "alive-idle"
-            end
-        end
-
-    elseif action == "flee" then
-        local exits = get_valid_exits(context, creature_loc, creature)
-        if #exits > 0 then
-            local choice = exits[math.random(#exits)]
-            local old_loc = creature_loc
-
-            if creature._state and creature._state ~= "dead" then
-                creature._state = "alive-flee"
-            end
-
-            move_creature(context, creature, choice.target)
-
-            if old_loc == player_room then
-                local name = creature.name or "a creature"
-                messages[#messages + 1] = name:sub(1,1):upper() .. name:sub(2) ..
-                    " bolts " .. choice.direction .. "!"
-            elseif choice.target == player_room then
-                local name = creature.name or "a creature"
-                messages[#messages + 1] = name:sub(1,1):upper() .. name:sub(2) ..
-                    " darts into the room, eyes wide with fear!"
-            end
-            creature._last_exit = choice.direction
-        else
-            if creature._state and creature._state ~= "dead" then
-                creature._state = "alive-flee"
-            end
-        end
-
-    elseif action == "vocalize" then
-        if creature_loc == player_room then
-            local st = creature.states and creature.states[creature._state]
-            local sound = st and st.on_listen
-            if sound then
-                messages[#messages + 1] = sound
-            end
-        end
-
-    elseif action == "attack" then
-        local target = predator_prey.select_prey_target(
-            context, creature, M.get_creatures_in_room, get_location)
-        if target and combat then
-            if creature._state and creature._state ~= "dead" then
-                creature._state = "alive-hunt"
-            end
-            local result = combat.run_combat(context, creature, target)
-            local room_id = creature_loc or player_room
-            -- Emit creature_attacked stimulus via M.emit_stimulus for testability
-            if room_id then
-                M.emit_stimulus(room_id, "creature_attacked", {
-                    attacker_id = creature.id or creature.guid,
-                    defender_id = target.id or target.guid,
-                    attacker_name = creature.name,
-                    defender_name = target.name,
-                })
-            end
-            -- Creature death: register respawn, reshape, emit stimulus
-            if result and result.defender_dead and room_id then
-                local dead_name = target.name
-                respawn.register(target)
-                local death_room = get_room(context, room_id)
-                M.handle_creature_death(target, context, death_room)
-                M.emit_stimulus(room_id, "creature_died", {
-                    creature_id = target.id or target.guid,
-                    creature_name = dead_name,
-                    killer_id = creature.id or creature.guid,
-                    killer_name = creature.name,
-                })
-            end
-            -- Narrate if player is in the same room
-            if creature_loc == player_room then
-                local atk_name = creature.name or "a creature"
-                local def_name = target.name or "a creature"
-                if result and result.text and result.text ~= "" then
-                    messages[#messages + 1] = result.text
-                else
-                    messages[#messages + 1] = atk_name:sub(1,1):upper() ..
-                        atk_name:sub(2) .. " attacks " .. def_name .. "!"
-                end
-                if result and result.death_narration then
-                    messages[#messages + 1] = result.death_narration
-                end
-            end
-
-            -- Track 3B: Morale check on the DEFENDER after combat resolves
-            if result and not result.defender_dead then
-                local morale_result = M.attempt_flee(context, target)
-                if target._morale_message then
-                    messages[#messages + 1] = target._morale_message
-                    target._morale_message = nil
-                end
-                -- If defender fled, remove from any active fight
-                if morale_result == "flee" and combat.find_fight_for_combatant then
-                    local fight = combat.find_fight_for_combatant(target)
-                    if fight then combat.remove_combatant(fight, target) end
-                end
-            end
-
-            -- Track 3B: Morale check on the ATTACKER too
-            M.attempt_flee(context, creature)
-            if creature._morale_message then
-                messages[#messages + 1] = creature._morale_message
-                creature._morale_message = nil
-            end
-        end
-    end
-
-    return messages
+-- attempt_flee added after definition so action_helpers captures it
+action_helpers.attempt_flee = function(ctx, creature)
+    return M.attempt_flee(ctx, creature)
 end
 
 ---------------------------------------------------------------------------
@@ -446,14 +215,14 @@ function M.creature_tick(context, creature)
     for _, msg in ipairs(reaction_msgs) do
         messages[#messages + 1] = msg
     end
-    local bait = try_bait(context, creature)
+    local bait = creature_actions.try_bait(context, creature, action_helpers)
     if bait then for _, m in ipairs(bait) do messages[#messages+1] = m end; return messages end
 
     -- 3. Score and select best action
-    local actions = score_actions(creature, context)
-    local best = actions[1]
+    local scored = creature_actions.score_actions(creature, context, action_helpers)
+    local best = scored[1]
     if best then
-        local action_msgs = execute_action(context, creature, best.action)
+        local action_msgs = creature_actions.execute_action(context, creature, best.action, action_helpers)
         for _, msg in ipairs(action_msgs) do
             messages[#messages + 1] = msg
         end
@@ -500,8 +269,13 @@ end
 function M.has_prey_in_room(c, ctx) return predator_prey.has_prey_in_room(c, ctx, M.get_creatures_in_room, get_location) end
 function M.select_prey_target(ctx, c) return predator_prey.select_prey_target(ctx, c, M.get_creatures_in_room, get_location) end
 
-M.score_actions = score_actions
-M.execute_action = execute_action
+-- Delegate to actions module, preserving original public signatures
+function M.score_actions(creature, context)
+    return creature_actions.score_actions(creature, context, action_helpers)
+end
+function M.execute_action(context, creature, action)
+    return creature_actions.execute_action(context, creature, action, action_helpers)
+end
 
 -- check_morale(creature) -> true if health/max_health < flee_threshold
 function M.check_morale(creature)
@@ -518,16 +292,6 @@ function M.check_morale(creature)
     if not threshold then return nil end
     return (health / max_health) < threshold
 end
-
-function M.attempt_flee(context, creature)
-    return morale.check(context, creature, nil, morale_helpers)
-end
-
----------------------------------------------------------------------------
--- Death reshape API (delegated to engine/creatures/death.lua)
----------------------------------------------------------------------------
-M.reshape_instance = death.reshape_instance
-M.handle_creature_death = death.handle_creature_death
 
 ---------------------------------------------------------------------------
 -- Respawn API (delegated to engine/creatures/respawn.lua)

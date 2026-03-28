@@ -1492,3 +1492,15 @@ Updated all plan files to reflect Phase 2 NPC+Combat completion:
 #### Architecture Decision
 - Filed art-creatures-split.md: Extract action execution into creatures/actions.lua before WAVE-1.
 - Filed art-phase4-guids.md: 19 GUIDs + LOC budget (~1,540 LOC, ±25% variance).
+
+
+## Learnings (WAVE-1 Pre-Work: creatures/init.lua Split)
+
+#### Split Execution
+- Extracted score_actions, move_creature, find_bait, try_bait, execute_action from creatures/init.lua into creatures/actions.lua.
+- init.lua: 546 -> ~310 LOC (40% reduction). actions.lua: ~264 LOC. Both well under 500 LOC ceiling.
+- Helpers table pattern worked cleanly. Wrapper closures for M.emit_stimulus, M.handle_creature_death, M.attempt_flee ensure test monkey-patching still works (closures resolve M.* at call time, not capture time).
+- action_helpers.attempt_flee must be added AFTER M.attempt_flee is defined -- table field assignment after definition avoids forward-reference issues.
+- Death reshape delegation moved earlier in init.lua so action_helpers can reference it.
+- morale_helpers.move_creature wraps creature_actions.move_creature with action_helpers -- no circular dependency.
+- Zero test regressions: same 410 passed, same 13 pre-existing failures (verb aliases + lock/unlock -- unrelated to creatures).
