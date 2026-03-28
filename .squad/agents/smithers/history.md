@@ -163,3 +163,25 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 5. **Negation detection** (K): Must detect "don't"/"stop"/"not" before stripping and reject or flag
 6. **Heavy typo tolerance** (I): Current typo correction requires >4 char words; short mangled tokens fail
 7. **P6 guard too aggressive** (I): Rejects valid inputs when lead word is unknown slang/contraction
+
+### 2026-08 — WAVE-3 Fix Classification + CLI Integration
+
+**Task:** Populated `fixable`/`fix_safety` fields on all 200 rules in `rule_registry.py` from Bart's `docs/meta-lint/fix-safety-audit.md`. Added `--fix` and `--unsafe-fixes` CLI flags to `lint.py`.
+
+**rule_registry.py changes:**
+- Updated `RuleMeta.fix_safety` from `str` to `Optional[str]` — `None` means not fixable.
+- Updated `_r()` default from `fix_safety="unsafe"` to `fix_safety=None`.
+- All 200 rules now have explicit `fixable`/`fix_safety` per the audit: 75 safe, 47 unsafe, 78 not-fixable.
+- Regex-based transformation used; caught 2 rules with parentheses in descriptions (INJ-26, MAT-03) that needed manual fix after automated pass.
+
+**lint.py changes:**
+- Added `--fix` flag: prefixes safe-fixable violations with `[FIXABLE-SAFE]`.
+- Added `--unsafe-fixes` flag: prefixes safe with `[FIXABLE-SAFE]` and unsafe with `[FIXABLE-UNSAFE]`, plus stderr warning.
+- `--fix`/`--unsafe-fixes` + `--format json` → immediate error (incompatible).
+- Without flags, output is unchanged (no [FIXABLE] prefixes).
+- Updated `Violation.fix_safety` to `Optional[str]` and cache deserialization default to `None`.
+- Added `_fix_prefix()` helper; threaded `fix_mode` through `_format_text()` and `_format_text_by_owner()`.
+
+**Verification:** `--fix` → 1 FIXABLE-SAFE violation; `--unsafe-fixes` → 372 total fixable. All 38 existing linter tests pass.
+
+**Lesson:** When using regex to transform code that contains user-facing strings with parentheses (like rule descriptions), a simple `[^)]*` pattern breaks on embedded `)`. Always syntax-check the output file after automated transforms.

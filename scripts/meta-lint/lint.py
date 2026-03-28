@@ -401,6 +401,7 @@ KNOWN_MATERIAL_FIELDS = {
 }
 FERROUS_MATERIALS = {"iron", "steel"}
 METAL_MATERIALS = {"iron", "steel", "brass", "silver", "copper", "gold", "tin", "lead", "bronze"}
+VALID_CREATURE_SIZES = {"tiny", "small", "medium", "large", "huge"}
 
 
 def _build_line_index(source: str) -> List[int]:
@@ -1804,6 +1805,237 @@ def _validate_level(parsed: ParsedFile, room_ids: set, object_ids: set,
                                    f"restricted object '{ro_str}' not found in object files")
 
 
+# =============================================================================
+# Creature Validator (CREATURE-001 through CREATURE-020)
+# =============================================================================
+
+def _validate_creature(parsed: ParsedFile, materials: Dict[str, object],
+                       violations: List[Violation]) -> None:
+    """Validate creature-specific rules. Runs AFTER standard OBJ-* checks."""
+    path = parsed.path
+    fields = parsed.fields
+
+    # CREATURE-001: animate = true must exist
+    animate_v = fields.get("animate")
+    if animate_v is None or _value_kind(animate_v) != "boolean" or animate_v.value is not True:
+        _add_violation(violations, path, _line_for(parsed, "animate"), "error",
+                       "CREATURE-001", "Creature must have animate = true")
+
+    # CREATURE-002: behavior table must exist
+    behavior_v = fields.get("behavior")
+    behavior_t = _as_table(behavior_v)
+    if behavior_v is None:
+        _add_violation(violations, path, 1, "error",
+                       "CREATURE-002", "Creature missing behavior table")
+    elif behavior_t is None:
+        _add_violation(violations, path, _line_for(parsed, "behavior"), "error",
+                       "CREATURE-002", "behavior must be a table")
+    else:
+        # CREATURE-003: behavior must have >= 1 drive entry
+        behavior_keys = set(behavior_t.fields.keys())
+        if len(behavior_keys) == 0:
+            _add_violation(violations, path, _line_for(parsed, "behavior"), "error",
+                           "CREATURE-003", "behavior table must have at least 1 entry")
+
+        # CREATURE-004: creature states must include an idle key
+        states_v = fields.get("states")
+        states_t = _as_table(states_v)
+        if states_t is not None:
+            state_keys = set(states_t.fields.keys())
+            has_idle = any("idle" in k for k in state_keys)
+            if not has_idle:
+                _add_violation(violations, path, _line_for(parsed, "states"), "error",
+                               "CREATURE-004",
+                               "Creature states must include an idle state (e.g. alive-idle)")
+
+    # CREATURE-005: health and max_health must be numbers
+    health_v = fields.get("health")
+    max_health_v = fields.get("max_health")
+    if health_v is None or _value_kind(health_v) != "number":
+        _add_violation(violations, path, _line_for(parsed, "health"), "error",
+                       "CREATURE-005", "health must be a number")
+    if max_health_v is None or _value_kind(max_health_v) != "number":
+        _add_violation(violations, path, _line_for(parsed, "max_health"), "error",
+                       "CREATURE-005", "max_health must be a number")
+
+    # CREATURE-006: alive must be boolean
+    alive_v = fields.get("alive")
+    if alive_v is None or _value_kind(alive_v) != "boolean":
+        _add_violation(violations, path, _line_for(parsed, "alive"), "error",
+                       "CREATURE-006", "Creature must have alive as boolean")
+
+    # CREATURE-007 / CREATURE-008: Drive weights
+    drives_v = fields.get("drives")
+    drives_t = _as_table(drives_v)
+    if drives_t is not None:
+        weight_sum = 0.0
+        has_weights = False
+        for drive_name, drive_val in drives_t.fields.items():
+            drive_tbl = _as_table(drive_val)
+            if drive_tbl is None:
+                continue
+            w = drive_tbl.fields.get("weight")
+            if w is not None and _value_kind(w) == "number":
+                has_weights = True
+                if w.value < 0.0 or w.value > 1.0:
+                    _add_violation(violations, path, _line_for(parsed, "drives"),
+                                   "warning", "CREATURE-007",
+                                   f"Drive '{drive_name}' weight {w.value} not in 0.0-1.0")
+                weight_sum += w.value
+        if has_weights and weight_sum > 1.0:
+            _add_violation(violations, path, _line_for(parsed, "drives"), "warning",
+                           "CREATURE-008",
+                           f"Drive weights sum to {weight_sum:.2f}, should be <= 1.0")
+
+    # CREATURE-009: reactions table must exist with >= 1 entry
+    reactions_v = fields.get("reactions")
+    reactions_t = _as_table(reactions_v)
+    if reactions_v is None:
+        _add_violation(violations, path, 1, "error",
+                       "CREATURE-009", "Creature missing reactions table")
+    elif reactions_t is None:
+        _add_violation(violations, path, _line_for(parsed, "reactions"), "error",
+                       "CREATURE-009", "reactions must be a table")
+    elif len(reactions_t.fields) == 0:
+        _add_violation(violations, path, _line_for(parsed, "reactions"), "error",
+                       "CREATURE-009", "reactions table must have at least 1 entry")
+    else:
+        # CREATURE-010: Each reaction should have drive_deltas table
+        for reaction_name, reaction_val in reactions_t.fields.items():
+            reaction_tbl = _as_table(reaction_val)
+            if reaction_tbl is None:
+                continue
+            if reaction_tbl.fields.get("drive_deltas") is None:
+                _add_violation(violations, path, _line_for(parsed, "reactions"),
+                               "warning", "CREATURE-010",
+                               f"Reaction '{reaction_name}' should have drive_deltas table")
+
+    # CREATURE-011: size must be string enum
+    size_v = fields.get("size")
+    if size_v is None:
+        _add_violation(violations, path, 1, "error",
+                       "CREATURE-011", "Creature missing size")
+    elif _value_kind(size_v) != "string":
+        _add_violation(violations, path, _line_for(parsed, "size"), "error",
+                       "CREATURE-011", "size must be a string")
+    elif size_v.value not in VALID_CREATURE_SIZES:
+        _add_violation(violations, path, _line_for(parsed, "size"), "error",
+                       "CREATURE-011",
+                       f"size '{size_v.value}' not in valid set "
+                       f"({', '.join(sorted(VALID_CREATURE_SIZES))})")
+
+    # CREATURE-012: weight must be positive number
+    weight_v = fields.get("weight")
+    if weight_v is None or _value_kind(weight_v) != "number":
+        _add_violation(violations, path, _line_for(parsed, "weight"), "error",
+                       "CREATURE-012", "weight must be a positive number")
+    elif weight_v.value <= 0:
+        _add_violation(violations, path, _line_for(parsed, "weight"), "error",
+                       "CREATURE-012", f"weight must be > 0, got {weight_v.value}")
+
+    # CREATURE-013: material must resolve to registered material
+    mat_value = parsed.material
+    if mat_value is not None:
+        mat_names = materials.get("names", set())
+        mat_guid_to_name = materials.get("guid_to_name", {})
+        mat_bare = mat_value.strip("{}")
+        if mat_value not in mat_names and mat_bare not in mat_guid_to_name:
+            _add_violation(violations, path, _line_for(parsed, "material"), "warning",
+                           "CREATURE-013",
+                           f"Material '{mat_value}' does not resolve to registered material")
+
+    # CREATURE-014: on_feel check (reuse existing SN-01/SN-02 logic)
+    on_feel = fields.get("on_feel")
+    states_v_for_feel = fields.get("states")
+    states_t_for_feel = _as_table(states_v_for_feel)
+    if on_feel is None:
+        state_on_feel_ok = False
+        if states_t_for_feel is not None:
+            for state_def in states_t_for_feel.fields.values():
+                if state_def.kind == "table":
+                    s_on_feel = state_def.value.fields.get("on_feel")
+                    if s_on_feel and s_on_feel.kind in ("string", "function"):
+                        state_on_feel_ok = True
+                        break
+        if not state_on_feel_ok:
+            _add_violation(violations, path, 1, "error",
+                           "CREATURE-014", "Creature missing on_feel (primary dark sense)")
+    elif on_feel.kind not in ("string", "function"):
+        _add_violation(violations, path, _line_for(parsed, "on_feel"), "error",
+                       "CREATURE-014", "on_feel must be string or function")
+
+    # CREATURE-015: keywords check (reuse existing S-09/S-10 logic)
+    kw_v = fields.get("keywords")
+    kw_t = _as_table(kw_v)
+    if kw_t is None:
+        _add_violation(violations, path, 1, "error",
+                       "CREATURE-015", "Creature missing keywords table")
+    elif len(kw_t.array) == 0:
+        _add_violation(violations, path, _line_for(parsed, "keywords"), "error",
+                       "CREATURE-015", "Creature keywords table is empty")
+    else:
+        for entry in kw_t.array:
+            if entry.kind != "string":
+                _add_violation(violations, path, _line_for(parsed, "keywords"), "error",
+                               "CREATURE-015", "Creature keywords must be strings")
+                break
+
+    # CREATURE-016: description check (reuse existing S-11 logic)
+    desc_v = fields.get("description")
+    if desc_v is None:
+        _add_violation(violations, path, 1, "error",
+                       "CREATURE-016", "Creature missing description")
+    elif desc_v.kind not in ("string", "function"):
+        _add_violation(violations, path, _line_for(parsed, "description"), "error",
+                       "CREATURE-016", "description must be string or function")
+
+    # CREATURE-017: FSM must include dead state
+    states_v_017 = fields.get("states")
+    states_t_017 = _as_table(states_v_017)
+    if states_t_017 is not None:
+        state_keys_017 = set(states_t_017.fields.keys())
+        if "dead" not in state_keys_017:
+            _add_violation(violations, path, _line_for(parsed, "states"), "error",
+                           "CREATURE-017", "Creature FSM must include a 'dead' state")
+        else:
+            # CREATURE-018: dead state should set animate = false, portable = true
+            dead_val = states_t_017.fields.get("dead")
+            dead_tbl = _as_table(dead_val)
+            if dead_tbl is not None:
+                dead_animate = dead_tbl.fields.get("animate")
+                dead_portable = dead_tbl.fields.get("portable")
+                issues = []
+                if (dead_animate is None or _value_kind(dead_animate) != "boolean"
+                        or dead_animate.value is not False):
+                    issues.append("animate = false")
+                if (dead_portable is None or _value_kind(dead_portable) != "boolean"
+                        or dead_portable.value is not True):
+                    issues.append("portable = true")
+                if issues:
+                    _add_violation(violations, path, _line_for(parsed, "states"),
+                                   "warning", "CREATURE-018",
+                                   f"dead state should set {' and '.join(issues)}")
+    else:
+        _add_violation(violations, path, 1, "error",
+                       "CREATURE-017", "Creature missing states table (no dead state)")
+
+    # CREATURE-019: Room spawn GUIDs in placement must resolve to existing rooms
+    # (Cross-file resolution — home_room is a string id, validated at cross-ref pass)
+    respawn_v = fields.get("respawn")
+    respawn_t = _as_table(respawn_v)
+    if respawn_t is not None:
+        home_room_v = respawn_t.fields.get("home_room")
+        if home_room_v is not None and _value_kind(home_room_v) == "string":
+            pass  # Cross-file resolution deferred to cross-ref pass
+
+    # CREATURE-020: Loot table GUIDs must resolve to existing objects
+    # (Template-based refs checked by LOOT-003 in cross-ref pass)
+    loot_v = fields.get("loot_table")
+    loot_t = _as_table(loot_v)
+    if loot_t is not None:
+        pass  # Structural validation already handled by LOOT-001..005
+
+
 def _validate_file(parsed: ParsedFile, materials: Dict[str, object], violations: List[Violation]) -> None:
     path = parsed.path
     fields = parsed.fields
@@ -1986,6 +2218,10 @@ def _validate_file(parsed: ParsedFile, materials: Dict[str, object], violations:
                     if conditional_tbl is None:
                         _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-001",
                                        "loot_table.conditional must be a table")
+
+    # ── Creature-specific validation (CREATURE-001 through CREATURE-020) ───
+    if parsed.kind == "creature":
+        _validate_creature(parsed, materials, violations)
 
     if parsed.template == "room":
         description = fields.get("description")

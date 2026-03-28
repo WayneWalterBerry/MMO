@@ -274,6 +274,28 @@ _r("LOOT-003", "error",   "loot",        "loot_table template refs must resolve 
 _r("LOOT-004", "error",   "loot",        "variable min must be <= max, both >= 0", fixable=True, fix_safety="unsafe")
 _r("LOOT-005", "warning", "loot",        "always items must have template field, no duplicates", fixable=True, fix_safety="unsafe")
 
+# ── Creature (Phase 4 WAVE-4) ───────────────────────────────────────────────
+_r("CREATURE-001", "error",   "creature", "animate = true must exist", fixable=True, fix_safety="safe")
+_r("CREATURE-002", "error",   "creature", "behavior table must exist")
+_r("CREATURE-003", "error",   "creature", "behavior must have >= 1 drive entry")
+_r("CREATURE-004", "error",   "creature", "behavior.states must include idle key")
+_r("CREATURE-005", "error",   "creature", "health and max_health must be numbers")
+_r("CREATURE-006", "error",   "creature", "alive must be boolean", fixable=True, fix_safety="safe")
+_r("CREATURE-007", "warning", "creature", "Drive weights must each be 0.0-1.0")
+_r("CREATURE-008", "warning", "creature", "Drive weights must sum to <= 1.0")
+_r("CREATURE-009", "error",   "creature", "reactions table must exist with >= 1 entry")
+_r("CREATURE-010", "warning", "creature", "Each reaction should have drive_deltas table")
+_r("CREATURE-011", "error",   "creature", "size must be string enum (tiny/small/medium/large/huge)")
+_r("CREATURE-012", "error",   "creature", "weight must be positive number")
+_r("CREATURE-013", "warning", "creature", "material must resolve to registered material")
+_r("CREATURE-014", "error",   "creature", "Standard OBJ on_feel check (reuse)")
+_r("CREATURE-015", "error",   "creature", "Standard OBJ keywords check (reuse)")
+_r("CREATURE-016", "error",   "creature", "Standard OBJ description check (reuse)")
+_r("CREATURE-017", "error",   "creature", "FSM must include dead state")
+_r("CREATURE-018", "warning", "creature", "dead state should set animate=false, portable=true")
+_r("CREATURE-019", "warning", "creature", "Room spawn GUIDs in placement must resolve to existing rooms")
+_r("CREATURE-020", "warning", "creature", "Loot table GUIDs must resolve to existing objects")
+
 
 def get_rule(rule_id: str) -> Optional[RuleMeta]:
     """Look up rule metadata by ID."""

@@ -2,9 +2,10 @@
 -- Discovers and runs all test-*.lua files under test subdirectories.
 -- Returns exit code 1 if any test file fails.
 --
--- Usage: lua test/run-tests.lua [--bench] [--shard <name>]
+-- Usage: lua test/run-tests.lua [--bench] [--shard <name>] [--changed]
 --   --bench          Also discover and run bench-*.lua benchmark files
 --   --shard <name>   Run only test directories matching shard name (for CI matrix)
+--   --changed        Only run tests for directories affected by git-diff changes
 -- Must be run from the repository root (C:\Users\wayneb\source\repos\MMO).
 
 local SEP = package.config:sub(1, 1) -- \ on Windows, / on Unix
@@ -12,11 +13,14 @@ local SEP = package.config:sub(1, 1) -- \ on Windows, / on Unix
 -- Parse CLI flags
 local include_bench = false
 local shard_filter = nil
+local changed_only = false
 for i, a in ipairs(arg or {}) do
     if a == "--bench" then
         include_bench = true
     elseif a == "--shard" and arg[i + 1] then
         shard_filter = arg[i + 1]
+    elseif a == "--changed" then
+        changed_only = true
     end
 end
 
@@ -27,16 +31,6 @@ package.path = repo_root .. SEP .. "test" .. SEP .. "parser" .. SEP .. "?.lua;"
              .. repo_root .. SEP .. "src" .. SEP .. "?.lua;"
              .. repo_root .. SEP .. "src" .. SEP .. "?" .. SEP .. "init.lua;"
              .. package.path
-
-print("========================================")
-print("  MMO Test Suite")
-if include_bench then
-    print("  (including benchmarks)")
-end
-if shard_filter then
-    print("  (shard: " .. shard_filter .. ")")
-end
-print("========================================")
 
 -- Directories to scan for test files
 local test_dirs = {
@@ -64,6 +58,101 @@ local test_dirs = {
     repo_root .. SEP .. "test" .. SEP .. "crafting",
     repo_root .. SEP .. "test" .. SEP .. "engine",
 }
+
+-- Source-to-test mapping for --changed flag
+local source_to_tests = {
+    ["src/engine/verbs/"]       = {"verbs"},
+    ["src/engine/parser/"]      = {"parser"},
+    ["src/engine/fsm/"]         = {"fsm"},
+    ["src/engine/containment/"] = {"inventory", "search"},
+    ["src/engine/injuries/"]    = {"injuries", "stress"},
+    ["src/engine/creatures/"]   = {"creatures", "combat"},
+    ["src/engine/ui/"]          = {"ui"},
+    ["src/meta/objects/"]       = {"objects", "sensory"},
+    ["src/meta/world/"]         = {"rooms"},
+    ["src/meta/injuries/"]      = {"injuries"},
+    ["src/engine/effects.lua"]  = {"verbs", "integration"},
+    ["src/engine/display.lua"]  = {"ui"},
+    -- Engine core changes → run everything (nil = run all)
+    ["src/engine/registry/"]    = nil,
+    ["src/engine/loader/"]      = nil,
+    ["src/engine/loop/"]        = nil,
+    ["src/engine/mutation/"]    = nil,
+    ["src/main.lua"]            = nil,
+    -- Test changes → run the changed test's directory
+    ["test/"]                   = "self",
+}
+
+-- Git-diff-based incremental test filtering
+local changed_run_all = false
+local changed_needed_dirs = {}
+if changed_only then
+    local changed_files = {}
+
+    -- Staged changes (committed vs HEAD)
+    local staged_pipe = io.popen("git diff --name-only HEAD 2>nul")
+    if staged_pipe then
+        for line in staged_pipe:lines() do
+            changed_files[#changed_files + 1] = line
+        end
+        staged_pipe:close()
+    end
+
+    -- Unstaged changes (working tree vs index)
+    local unstaged_pipe = io.popen("git diff --name-only 2>nul")
+    if unstaged_pipe then
+        for line in unstaged_pipe:lines() do
+            changed_files[#changed_files + 1] = line
+        end
+        unstaged_pipe:close()
+    end
+
+    for _, file in ipairs(changed_files) do
+        -- Normalize backslashes to forward slashes for matching
+        local norm = file:gsub("\\", "/")
+        local matched = false
+        for prefix, test_dirs_for_prefix in pairs(source_to_tests) do
+            if norm:find(prefix, 1, true) == 1 then
+                matched = true
+                if test_dirs_for_prefix == nil then
+                    changed_run_all = true
+                    break
+                elseif test_dirs_for_prefix == "self" then
+                    local dir = norm:match("test/([^/]+)/")
+                    if dir then changed_needed_dirs[dir] = true end
+                else
+                    for _, d in ipairs(test_dirs_for_prefix) do
+                        changed_needed_dirs[d] = true
+                    end
+                end
+            end
+        end
+        if changed_run_all then break end
+        -- Unmatched files outside safe-to-skip paths → conservative, run all
+        if not matched and not norm:match("^docs/")
+                       and not norm:match("^plans/")
+                       and not norm:match("^%.squad/")
+                       and not norm:match("^resources/")
+                       and not norm:match("^web/")
+                       and not norm:match("^scripts/") then
+            changed_run_all = true
+            break
+        end
+    end
+
+    if not changed_run_all and next(changed_needed_dirs) then
+        -- Filter test_dirs to only needed directories
+        local filtered = {}
+        for _, dir in ipairs(test_dirs) do
+            local dir_name = dir:match("([^/\\]+)$")
+            if changed_needed_dirs[dir_name] then
+                filtered[#filtered + 1] = dir
+            end
+        end
+        test_dirs = filtered
+    end
+    -- If changed_run_all or no changes found, run everything (safe default)
+end
 
 -- Shard group definitions for CI matrix sharding
 -- Each named shard maps to the directory basenames it covers.
@@ -120,6 +209,29 @@ if shard_filter then
         test_dirs = filtered
     end
 end
+
+-- Print suite header (after all filtering is resolved)
+print("========================================")
+print("  MMO Test Suite")
+if include_bench then
+    print("  (including benchmarks)")
+end
+if shard_filter then
+    print("  (shard: " .. shard_filter .. ")")
+end
+if changed_only then
+    if changed_run_all then
+        print("  (--changed: core change detected, running all)")
+    elseif next(changed_needed_dirs) then
+        local dirs = {}
+        for d in pairs(changed_needed_dirs) do dirs[#dirs + 1] = d end
+        table.sort(dirs)
+        print("  (--changed: " .. table.concat(dirs, ", ") .. ")")
+    else
+        print("  (--changed: no changes detected, running all)")
+    end
+end
+print("========================================")
 
 local is_windows = SEP == "\\"
 
