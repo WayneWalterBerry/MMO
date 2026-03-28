@@ -4,27 +4,30 @@
 **Last user:** Wayne Berry
 
 ## What We Were Working On
-- Phase 4 WAVE-2 loot tables engine — COMPLETE (3 agents, 0 blockers, 11 tests pass)
-- Loot engine (Bart), loot objects (Flanders), tests (Nelson)
+- Phase 4 WAVE-3 stress injury system — COMPLETE (5 agents, 0 blockers, 8 tests pass, 30 creature tests pass)
+- Stress API (Bart), stress.lua injury type (Flanders), narration layer (Smithers), tests (Nelson x2)
 - All decisions merged to decisions.md, inbox cleaned
+- Git commit: ddc2866 (Phase 4 WAVE-3 stress injury system complete)
 
 ## Board State
 - Open issues: TBD (check GitHub)
 - Open PRs: 0
-- WAVE-2 Shipped: ✅ All deliverables complete
+- WAVE-3 Shipped: ✅ All deliverables complete
+- Test baseline: 207 + 8 stress tests = 215 passing
 
-## Next Phase: WAVE-3 Stress Injury
-- Nelson: Update 2 creature test files (from WAVE-2 loot_table conversion)
-- Bart: tainted-meat food.on_eat processing support
-- Smithers: Embedding index update for 6 new loot objects
+## Next Phase: WAVE-4 Spider Ecology
+- Spiders: nests, silk mechanics, predation
+- Creature interactivity (NYI)
+- Estimated effort: 5 agents, 3 waves
 
 ## Current Tasks
-- Git commit pending (Scribe final step)
-- PR ready after commit
+- WAVE-3 orchestration log written (.squad/orchestration-log/2026-03-28T02-00-wave3.md)
+- WAVE-3 session log written (.squad/log/2026-03-28T02-00-phase4-wave3.md)
+- Decision inbox merged (D-STRESS-HOOKS → decisions.md)
+- Git commit complete (ddc2866)
 
 ## Tomorrow's Queue
-1. Verify WAVE-2 git commit pushed
-2. Monitor creature test file updates (Nelson)
-3. Monitor embedding index updates (Smithers)
-4. Flag tainted-meat food.on_eat blockers
+1. Verify WAVE-3 commit pushed
+2. Spawn WAVE-4 team
+3. Monitor spider ecology implementation (Bart, Flanders, Smithers, Nelson, Bob)
 
