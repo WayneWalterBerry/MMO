@@ -46,3 +46,15 @@
 **Spider creates_object (#379):** The spider had `cooldown = "30 minutes"` (string, should be numeric 30) and a `condition` function (violates Principle 8). Replaced with `cooldown = 30` and `max_per_room = 2`. Also required a companion engine fix in `actions.lua` to use `registry:instantiate(template)` and enforce `max_per_room` natively. Lesson: creature metadata must be pure data — no inline functions.
 
 **Cross-domain note:** #379 required touching `src/engine/creatures/actions.lua` (Bart's domain) because the engine lacked `template`-based instantiation and `max_per_room` enforcement. Decision filed to `.squad/decisions/inbox/`.
+
+### 2026-07-20: Bug Fix Batch — Issues #369, #337, #370, #345, #331
+
+**Spider body zones (#369/#337):** Combat narration was using human anatomy words ("knee", "thigh", "shin", "haunch") for spider's `legs` zone because `narration.lua::zone_text()` had a hardcoded `zone_words` table with no creature awareness. Fix: added `names` arrays to all creature body_tree zones (spider, rat, wolf, cat, bat) and modified `zone_text()` to check `body_tree[zone].names` first. Principle 8 in action — objects declare their narration words, engine executes.
+
+**Death message formatting (#345/#370):** Verified death messages now use `"The " + creature.id + " is dead!"` (capitalized definite article). The fix was already in verbs/init.lua (line 427). Wrote proper TDD test to validate end-to-end.
+
+**Dead creature verb aliases (#331):** All combat verb aliases (stab, hit, kick, punch, strike, swing) now check for dead creatures in room contents before falling through to non-combat handlers. Uses the `check_dead_creature()` helper already in verbs/init.lua.
+
+**Cross-domain note:** Touched `src/engine/combat/narration.lua` (Bart's domain) — added `body_tree` parameter to `zone_text()` and threaded it through `generate()` and `witness_visual()`. Minimal change, no behavioral change to fallback path. Decision filed to `.squad/decisions/inbox/flanders-creature-zone-names.md`.
+
+**Lesson:** When creature zones share names with human zones (e.g., "legs"), the narration system needs creature-specific overrides. The `names` field pattern works well — objects provide their vocabulary, engine picks from it.
