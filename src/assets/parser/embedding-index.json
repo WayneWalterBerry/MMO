@@ -69138,6 +69138,1147 @@
       "verb": "craft",
       "noun": "silk-bandage"
     }
+  ,
+    {
+      "id": 11524,
+      "text": "dissect a stone offering bowl",
+      "verb": "dissect",
+      "noun": "offering-bowl"
+    },
+    {
+      "id": 11525,
+      "text": "gut a stone offering bowl",
+      "verb": "gut",
+      "noun": "offering-bowl"
+    },
+    {
+      "id": 11526,
+      "text": "dissect a small glass vial",
+      "verb": "dissect",
+      "noun": "nightshade-antidote"
+    },
+    {
+      "id": 11527,
+      "text": "gut a small glass vial",
+      "verb": "gut",
+      "noun": "nightshade-antidote"
+    },
+    {
+      "id": 11528,
+      "text": "dissect a human skull",
+      "verb": "dissect",
+      "noun": "skull"
+    },
+    {
+      "id": 11529,
+      "text": "gut a human skull",
+      "verb": "gut",
+      "noun": "skull"
+    },
+    {
+      "id": 11530,
+      "text": "dissect a small nightstand",
+      "verb": "dissect",
+      "noun": "nightstand"
+    },
+    {
+      "id": 11531,
+      "text": "gut a small nightstand",
+      "verb": "gut",
+      "noun": "nightstand"
+    },
+    {
+      "id": 11532,
+      "text": "dissect an oak side table",
+      "verb": "dissect",
+      "noun": "side-table"
+    },
+    {
+      "id": 11533,
+      "text": "gut an oak side table",
+      "verb": "gut",
+      "noun": "side-table"
+    },
+    {
+      "id": 11534,
+      "text": "dissect a large wooden crate",
+      "verb": "dissect",
+      "noun": "large-crate"
+    },
+    {
+      "id": 11535,
+      "text": "gut a large wooden crate",
+      "verb": "gut",
+      "noun": "large-crate"
+    },
+    {
+      "id": 11536,
+      "text": "dissect a handful of old coins",
+      "verb": "dissect",
+      "noun": "burial-coins"
+    },
+    {
+      "id": 11537,
+      "text": "gut a handful of old coins",
+      "verb": "gut",
+      "noun": "burial-coins"
+    },
+    {
+      "id": 11538,
+      "text": "dissect a brass candle holder",
+      "verb": "dissect",
+      "noun": "candle-holder"
+    },
+    {
+      "id": 11539,
+      "text": "gut a brass candle holder",
+      "verb": "gut",
+      "noun": "candle-holder"
+    },
+    {
+      "id": 11540,
+      "text": "dissect an oak vanity",
+      "verb": "dissect",
+      "noun": "vanity"
+    },
+    {
+      "id": 11541,
+      "text": "gut an oak vanity",
+      "verb": "gut",
+      "noun": "vanity"
+    },
+    {
+      "id": 11542,
+      "text": "dissect a portrait",
+      "verb": "dissect",
+      "noun": "portrait"
+    },
+    {
+      "id": 11543,
+      "text": "gut a portrait",
+      "verb": "gut",
+      "noun": "portrait"
+    },
+    {
+      "id": 11544,
+      "text": "dissect a tallow candle",
+      "verb": "dissect",
+      "noun": "candle"
+    },
+    {
+      "id": 11545,
+      "text": "gut a tallow candle",
+      "verb": "gut",
+      "noun": "candle"
+    },
+    {
+      "id": 11546,
+      "text": "dissect a pair of moth-eaten trousers",
+      "verb": "dissect",
+      "noun": "trousers"
+    },
+    {
+      "id": 11547,
+      "text": "gut a pair of moth-eaten trousers",
+      "verb": "gut",
+      "noun": "trousers"
+    },
+    {
+      "id": 11548,
+      "text": "dissect a small drawer",
+      "verb": "dissect",
+      "noun": "drawer"
+    },
+    {
+      "id": 11549,
+      "text": "gut a small drawer",
+      "verb": "gut",
+      "noun": "drawer"
+    },
+    {
+      "id": 11550,
+      "text": "dissect a lit tallow candle",
+      "verb": "dissect",
+      "noun": "candle-lit"
+    },
+    {
+      "id": 11551,
+      "text": "gut a lit tallow candle",
+      "verb": "gut",
+      "noun": "candle-lit"
+    },
+    {
+      "id": 11552,
+      "text": "dissect a locked oak door",
+      "verb": "dissect",
+      "noun": "locked-door"
+    },
+    {
+      "id": 11553,
+      "text": "gut a locked oak door",
+      "verb": "gut",
+      "noun": "locked-door"
+    },
+    {
+      "id": 11554,
+      "text": "dissect a ceramic chamber pot",
+      "verb": "dissect",
+      "noun": "chamber-pot"
+    },
+    {
+      "id": 11555,
+      "text": "gut a ceramic chamber pot",
+      "verb": "gut",
+      "noun": "chamber-pot"
+    },
+    {
+      "id": 11556,
+      "text": "dissect a lit match",
+      "verb": "dissect",
+      "noun": "match-lit"
+    },
+    {
+      "id": 11557,
+      "text": "gut a lit match",
+      "verb": "gut",
+      "noun": "match-lit"
+    },
+    {
+      "id": 11558,
+      "text": "dissect heavy velvet curtains (open)",
+      "verb": "dissect",
+      "noun": "curtains-open"
+    },
+    {
+      "id": 11559,
+      "text": "gut heavy velvet curtains (open)",
+      "verb": "gut",
+      "noun": "curtains-open"
+    },
+    {
+      "id": 11560,
+      "text": "dissect a sewing needle",
+      "verb": "dissect",
+      "noun": "needle"
+    },
+    {
+      "id": 11561,
+      "text": "gut a sewing needle",
+      "verb": "gut",
+      "noun": "needle"
+    },
+    {
+      "id": 11562,
+      "text": "dissect an iron torch bracket",
+      "verb": "dissect",
+      "noun": "torch-bracket"
+    },
+    {
+      "id": 11563,
+      "text": "gut an iron torch bracket",
+      "verb": "gut",
+      "noun": "torch-bracket"
+    },
+    {
+      "id": 11564,
+      "text": "dissect a wooden match",
+      "verb": "dissect",
+      "noun": "match"
+    },
+    {
+      "id": 11565,
+      "text": "gut a wooden match",
+      "verb": "gut",
+      "noun": "match"
+    },
+    {
+      "id": 11566,
+      "text": "dissect some cloth scraps",
+      "verb": "dissect",
+      "noun": "cloth-scraps"
+    },
+    {
+      "id": 11567,
+      "text": "gut some cloth scraps",
+      "verb": "gut",
+      "noun": "cloth-scraps"
+    },
+    {
+      "id": 11568,
+      "text": "dissect a heavy iron key",
+      "verb": "dissect",
+      "noun": "iron-key"
+    },
+    {
+      "id": 11569,
+      "text": "gut a heavy iron key",
+      "verb": "gut",
+      "noun": "iron-key"
+    },
+    {
+      "id": 11570,
+      "text": "dissect an old barrel",
+      "verb": "dissect",
+      "noun": "barrel"
+    },
+    {
+      "id": 11571,
+      "text": "gut an old barrel",
+      "verb": "gut",
+      "noun": "barrel"
+    },
+    {
+      "id": 11572,
+      "text": "dissect a tarnished burial necklace",
+      "verb": "dissect",
+      "noun": "burial-necklace"
+    },
+    {
+      "id": 11573,
+      "text": "gut a tarnished burial necklace",
+      "verb": "gut",
+      "noun": "burial-necklace"
+    },
+    {
+      "id": 11574,
+      "text": "dissect a wall inscription",
+      "verb": "dissect",
+      "noun": "wall-inscription"
+    },
+    {
+      "id": 11575,
+      "text": "gut a wall inscription",
+      "verb": "gut",
+      "noun": "wall-inscription"
+    },
+    {
+      "id": 11576,
+      "text": "dissect a wooden chest",
+      "verb": "dissect",
+      "noun": "chest"
+    },
+    {
+      "id": 11577,
+      "text": "gut a wooden chest",
+      "verb": "gut",
+      "noun": "chest"
+    },
+    {
+      "id": 11578,
+      "text": "dissect a candle stub",
+      "verb": "dissect",
+      "noun": "candle-stub"
+    },
+    {
+      "id": 11579,
+      "text": "gut a candle stub",
+      "verb": "gut",
+      "noun": "candle-stub"
+    },
+    {
+      "id": 11580,
+      "text": "dissect a blank sheet of paper",
+      "verb": "dissect",
+      "noun": "paper"
+    },
+    {
+      "id": 11581,
+      "text": "gut a blank sheet of paper",
+      "verb": "gut",
+      "noun": "paper"
+    },
+    {
+      "id": 11582,
+      "text": "dissect a heavy wool blanket",
+      "verb": "dissect",
+      "noun": "blanket"
+    },
+    {
+      "id": 11583,
+      "text": "gut a heavy wool blanket",
+      "verb": "gut",
+      "noun": "blanket"
+    },
+    {
+      "id": 11584,
+      "text": "dissect an oak vanity (drawer open, mirror broken)",
+      "verb": "dissect",
+      "noun": "vanity-open-mirror-broken"
+    },
+    {
+      "id": 11585,
+      "text": "gut an oak vanity (drawer open, mirror broken)",
+      "verb": "gut",
+      "noun": "vanity-open-mirror-broken"
+    },
+    {
+      "id": 11586,
+      "text": "dissect a thick ivy",
+      "verb": "dissect",
+      "noun": "ivy"
+    },
+    {
+      "id": 11587,
+      "text": "gut a thick ivy",
+      "verb": "gut",
+      "noun": "ivy"
+    },
+    {
+      "id": 11588,
+      "text": "dissect a small matchbox",
+      "verb": "dissect",
+      "noun": "matchbox"
+    },
+    {
+      "id": 11589,
+      "text": "gut a small matchbox",
+      "verb": "gut",
+      "noun": "matchbox"
+    },
+    {
+      "id": 11590,
+      "text": "dissect a loose cobblestone",
+      "verb": "dissect",
+      "noun": "cobblestone"
+    },
+    {
+      "id": 11591,
+      "text": "gut a loose cobblestone",
+      "verb": "gut",
+      "noun": "cobblestone"
+    },
+    {
+      "id": 11592,
+      "text": "dissect a wooden wine rack",
+      "verb": "dissect",
+      "noun": "wine-rack"
+    },
+    {
+      "id": 11593,
+      "text": "gut a wooden wine rack",
+      "verb": "gut",
+      "noun": "wine-rack"
+    },
+    {
+      "id": 11594,
+      "text": "dissect a brass oil lantern",
+      "verb": "dissect",
+      "noun": "oil-lantern"
+    },
+    {
+      "id": 11595,
+      "text": "gut a brass oil lantern",
+      "verb": "gut",
+      "noun": "oil-lantern"
+    },
+    {
+      "id": 11596,
+      "text": "dissect a small glass bottle",
+      "verb": "dissect",
+      "noun": "poison-bottle"
+    },
+    {
+      "id": 11597,
+      "text": "gut a small glass bottle",
+      "verb": "gut",
+      "noun": "poison-bottle"
+    },
+    {
+      "id": 11598,
+      "text": "dissect an oak vanity (mirror broken)",
+      "verb": "dissect",
+      "noun": "vanity-mirror-broken"
+    },
+    {
+      "id": 11599,
+      "text": "gut an oak vanity (mirror broken)",
+      "verb": "gut",
+      "noun": "vanity-mirror-broken"
+    },
+    {
+      "id": 11600,
+      "text": "dissect a heavy wooden door",
+      "verb": "dissect",
+      "noun": "wooden-door"
+    },
+    {
+      "id": 11601,
+      "text": "gut a heavy wooden door",
+      "verb": "gut",
+      "noun": "wooden-door"
+    },
+    {
+      "id": 11602,
+      "text": "dissect a brass spittoon",
+      "verb": "dissect",
+      "noun": "brass-spittoon"
+    },
+    {
+      "id": 11603,
+      "text": "gut a brass spittoon",
+      "verb": "gut",
+      "noun": "brass-spittoon"
+    },
+    {
+      "id": 11604,
+      "text": "dissect a coil of rope",
+      "verb": "dissect",
+      "noun": "rope-coil"
+    },
+    {
+      "id": 11605,
+      "text": "gut a coil of rope",
+      "verb": "gut",
+      "noun": "rope-coil"
+    },
+    {
+      "id": 11606,
+      "text": "dissect a glass shard",
+      "verb": "dissect",
+      "noun": "glass-shard"
+    },
+    {
+      "id": 11607,
+      "text": "gut a glass shard",
+      "verb": "gut",
+      "noun": "glass-shard"
+    },
+    {
+      "id": 11608,
+      "text": "dissect heavy velvet curtains",
+      "verb": "dissect",
+      "noun": "curtains"
+    },
+    {
+      "id": 11609,
+      "text": "gut heavy velvet curtains",
+      "verb": "gut",
+      "noun": "curtains"
+    },
+    {
+      "id": 11610,
+      "text": "dissect a sewing pin",
+      "verb": "dissect",
+      "noun": "pin"
+    },
+    {
+      "id": 11611,
+      "text": "gut a sewing pin",
+      "verb": "gut",
+      "noun": "pin"
+    },
+    {
+      "id": 11612,
+      "text": "dissect a moth-eaten wool cloak",
+      "verb": "dissect",
+      "noun": "wool-cloak"
+    },
+    {
+      "id": 11613,
+      "text": "gut a moth-eaten wool cloak",
+      "verb": "gut",
+      "noun": "wool-cloak"
+    },
+    {
+      "id": 11614,
+      "text": "dissect an ink pen",
+      "verb": "dissect",
+      "noun": "pen"
+    },
+    {
+      "id": 11615,
+      "text": "gut an ink pen",
+      "verb": "gut",
+      "noun": "pen"
+    },
+    {
+      "id": 11616,
+      "text": "dissect a brass incense burner",
+      "verb": "dissect",
+      "noun": "incense-burner"
+    },
+    {
+      "id": 11617,
+      "text": "gut a brass incense burner",
+      "verb": "gut",
+      "noun": "incense-burner"
+    },
+    {
+      "id": 11618,
+      "text": "dissect a tarnished silver ring",
+      "verb": "dissect",
+      "noun": "burial-jewelry"
+    },
+    {
+      "id": 11619,
+      "text": "gut a tarnished silver ring",
+      "verb": "gut",
+      "noun": "burial-jewelry"
+    },
+    {
+      "id": 11620,
+      "text": "dissect a burning torch",
+      "verb": "dissect",
+      "noun": "torch"
+    },
+    {
+      "id": 11621,
+      "text": "gut a burning torch",
+      "verb": "gut",
+      "noun": "torch"
+    },
+    {
+      "id": 11622,
+      "text": "dissect an open leaded glass window",
+      "verb": "dissect",
+      "noun": "window-open"
+    },
+    {
+      "id": 11623,
+      "text": "gut an open leaded glass window",
+      "verb": "gut",
+      "noun": "window-open"
+    },
+    {
+      "id": 11624,
+      "text": "dissect a leaded glass window",
+      "verb": "dissect",
+      "noun": "window"
+    },
+    {
+      "id": 11625,
+      "text": "gut a leaded glass window",
+      "verb": "gut",
+      "noun": "window"
+    },
+    {
+      "id": 11626,
+      "text": "dissect a piece of cloth",
+      "verb": "dissect",
+      "noun": "cloth"
+    },
+    {
+      "id": 11627,
+      "text": "gut a piece of cloth",
+      "verb": "gut",
+      "noun": "cloth"
+    },
+    {
+      "id": 11628,
+      "text": "dissect an iron chain",
+      "verb": "dissect",
+      "noun": "chain"
+    },
+    {
+      "id": 11629,
+      "text": "gut an iron chain",
+      "verb": "gut",
+      "noun": "chain"
+    },
+    {
+      "id": 11630,
+      "text": "dissect a terrible burlap jacket",
+      "verb": "dissect",
+      "noun": "terrible-jacket"
+    },
+    {
+      "id": 11631,
+      "text": "gut a terrible burlap jacket",
+      "verb": "gut",
+      "noun": "terrible-jacket"
+    },
+    {
+      "id": 11632,
+      "text": "dissect a silver dagger",
+      "verb": "dissect",
+      "noun": "silver-dagger"
+    },
+    {
+      "id": 11633,
+      "text": "gut a silver dagger",
+      "verb": "gut",
+      "noun": "silver-dagger"
+    },
+    {
+      "id": 11634,
+      "text": "dissect a heavy oak door",
+      "verb": "dissect",
+      "noun": "bedroom-hallway-door-north"
+    },
+    {
+      "id": 11635,
+      "text": "gut a heavy oak door",
+      "verb": "gut",
+      "noun": "bedroom-hallway-door-north"
+    },
+    {
+      "id": 11636,
+      "text": "dissect a heavy wardrobe (open)",
+      "verb": "dissect",
+      "noun": "wardrobe-open"
+    },
+    {
+      "id": 11637,
+      "text": "gut a heavy wardrobe (open)",
+      "verb": "gut",
+      "noun": "wardrobe-open"
+    },
+    {
+      "id": 11638,
+      "text": "dissect a dirty rag",
+      "verb": "dissect",
+      "noun": "rag"
+    },
+    {
+      "id": 11639,
+      "text": "gut a dirty rag",
+      "verb": "gut",
+      "noun": "rag"
+    },
+    {
+      "id": 11640,
+      "text": "dissect a small ceramic oil flask",
+      "verb": "dissect",
+      "noun": "oil-flask"
+    },
+    {
+      "id": 11641,
+      "text": "gut a small ceramic oil flask",
+      "verb": "gut",
+      "noun": "oil-flask"
+    },
+    {
+      "id": 11642,
+      "text": "dissect an iron wall sconce",
+      "verb": "dissect",
+      "noun": "wall-sconce"
+    },
+    {
+      "id": 11643,
+      "text": "gut an iron wall sconce",
+      "verb": "gut",
+      "noun": "wall-sconce"
+    },
+    {
+      "id": 11644,
+      "text": "dissect a wooden wall clock",
+      "verb": "dissect",
+      "noun": "wall-clock"
+    },
+    {
+      "id": 11645,
+      "text": "gut a wooden wall clock",
+      "verb": "gut",
+      "noun": "wall-clock"
+    },
+    {
+      "id": 11646,
+      "text": "dissect a ceramic vase",
+      "verb": "dissect",
+      "noun": "vase"
+    },
+    {
+      "id": 11647,
+      "text": "gut a ceramic vase",
+      "verb": "gut",
+      "noun": "vase"
+    },
+    {
+      "id": 11648,
+      "text": "dissect a bronze ring",
+      "verb": "dissect",
+      "noun": "bronze-ring"
+    },
+    {
+      "id": 11649,
+      "text": "gut a bronze ring",
+      "verb": "gut",
+      "noun": "bronze-ring"
+    },
+    {
+      "id": 11650,
+      "text": "dissect an oak vanity (drawer open)",
+      "verb": "dissect",
+      "noun": "vanity-open"
+    },
+    {
+      "id": 11651,
+      "text": "gut an oak vanity (drawer open)",
+      "verb": "gut",
+      "noun": "vanity-open"
+    },
+    {
+      "id": 11652,
+      "text": "dissect a trap door",
+      "verb": "dissect",
+      "noun": "trap-door"
+    },
+    {
+      "id": 11653,
+      "text": "gut a trap door",
+      "verb": "gut",
+      "noun": "trap-door"
+    },
+    {
+      "id": 11654,
+      "text": "dissect a dusty wine bottle",
+      "verb": "dissect",
+      "noun": "wine-bottle"
+    },
+    {
+      "id": 11655,
+      "text": "gut a dusty wine bottle",
+      "verb": "gut",
+      "noun": "wine-bottle"
+    },
+    {
+      "id": 11656,
+      "text": "dissect a leather-bound tome",
+      "verb": "dissect",
+      "noun": "tome"
+    },
+    {
+      "id": 11657,
+      "text": "gut a leather-bound tome",
+      "verb": "gut",
+      "noun": "tome"
+    },
+    {
+      "id": 11658,
+      "text": "dissect a small knife",
+      "verb": "dissect",
+      "noun": "knife"
+    },
+    {
+      "id": 11659,
+      "text": "gut a small knife",
+      "verb": "gut",
+      "noun": "knife"
+    },
+    {
+      "id": 11660,
+      "text": "dissect a burlap sack",
+      "verb": "dissect",
+      "noun": "sack"
+    },
+    {
+      "id": 11661,
+      "text": "gut a burlap sack",
+      "verb": "gut",
+      "noun": "sack"
+    },
+    {
+      "id": 11662,
+      "text": "dissect a bear trap",
+      "verb": "dissect",
+      "noun": "bear-trap"
+    },
+    {
+      "id": 11663,
+      "text": "gut a bear trap",
+      "verb": "gut",
+      "noun": "bear-trap"
+    },
+    {
+      "id": 11664,
+      "text": "dissect a heavy sack of grain",
+      "verb": "dissect",
+      "noun": "grain-sack"
+    },
+    {
+      "id": 11665,
+      "text": "gut a heavy sack of grain",
+      "verb": "gut",
+      "noun": "grain-sack"
+    },
+    {
+      "id": 11666,
+      "text": "dissect a wooden bucket",
+      "verb": "dissect",
+      "noun": "well-bucket"
+    },
+    {
+      "id": 11667,
+      "text": "gut a wooden bucket",
+      "verb": "gut",
+      "noun": "well-bucket"
+    },
+    {
+      "id": 11668,
+      "text": "dissect a crude bandage",
+      "verb": "dissect",
+      "noun": "bandage"
+    },
+    {
+      "id": 11669,
+      "text": "gut a crude bandage",
+      "verb": "gut",
+      "noun": "bandage"
+    },
+    {
+      "id": 11670,
+      "text": "dissect a tattered scroll",
+      "verb": "dissect",
+      "noun": "tattered-scroll"
+    },
+    {
+      "id": 11671,
+      "text": "gut a tattered scroll",
+      "verb": "gut",
+      "noun": "tattered-scroll"
+    },
+    {
+      "id": 11672,
+      "text": "dissect a stone well",
+      "verb": "dissect",
+      "noun": "stone-well"
+    },
+    {
+      "id": 11673,
+      "text": "gut a stone well",
+      "verb": "gut",
+      "noun": "stone-well"
+    },
+    {
+      "id": 11674,
+      "text": "dissect a stone sarcophagus",
+      "verb": "dissect",
+      "noun": "stone-sarcophagus"
+    },
+    {
+      "id": 11675,
+      "text": "gut a stone sarcophagus",
+      "verb": "gut",
+      "noun": "stone-sarcophagus"
+    },
+    {
+      "id": 11676,
+      "text": "dissect a threadbare rug",
+      "verb": "dissect",
+      "noun": "rug"
+    },
+    {
+      "id": 11677,
+      "text": "gut a threadbare rug",
+      "verb": "gut",
+      "noun": "rug"
+    },
+    {
+      "id": 11678,
+      "text": "dissect a small silver key",
+      "verb": "dissect",
+      "noun": "silver-key"
+    },
+    {
+      "id": 11679,
+      "text": "gut a small silver key",
+      "verb": "gut",
+      "noun": "silver-key"
+    },
+    {
+      "id": 11680,
+      "text": "dissect a stone altar",
+      "verb": "dissect",
+      "noun": "stone-altar"
+    },
+    {
+      "id": 11681,
+      "text": "gut a stone altar",
+      "verb": "gut",
+      "noun": "stone-altar"
+    },
+    {
+      "id": 11682,
+      "text": "dissect a small wooden crate",
+      "verb": "dissect",
+      "noun": "small-crate"
+    },
+    {
+      "id": 11683,
+      "text": "gut a small wooden crate",
+      "verb": "gut",
+      "noun": "small-crate"
+    },
+    {
+      "id": 11684,
+      "text": "dissect a dog-eared sewing manual",
+      "verb": "dissect",
+      "noun": "sewing-manual"
+    },
+    {
+      "id": 11685,
+      "text": "gut a dog-eared sewing manual",
+      "verb": "gut",
+      "noun": "sewing-manual"
+    },
+    {
+      "id": 11686,
+      "text": "dissect an iron crowbar",
+      "verb": "dissect",
+      "noun": "crowbar"
+    },
+    {
+      "id": 11687,
+      "text": "gut an iron crowbar",
+      "verb": "gut",
+      "noun": "crowbar"
+    },
+    {
+      "id": 11688,
+      "text": "dissect a large four-poster bed",
+      "verb": "dissect",
+      "noun": "bed"
+    },
+    {
+      "id": 11689,
+      "text": "gut a large four-poster bed",
+      "verb": "gut",
+      "noun": "bed"
+    },
+    {
+      "id": 11690,
+      "text": "dissect a ceramic shard",
+      "verb": "dissect",
+      "noun": "ceramic-shard"
+    },
+    {
+      "id": 11691,
+      "text": "gut a ceramic shard",
+      "verb": "gut",
+      "noun": "ceramic-shard"
+    },
+    {
+      "id": 11692,
+      "text": "dissect a small brass key",
+      "verb": "dissect",
+      "noun": "brass-key"
+    },
+    {
+      "id": 11693,
+      "text": "gut a small brass key",
+      "verb": "gut",
+      "noun": "brass-key"
+    },
+    {
+      "id": 11694,
+      "text": "dissect a stone sarcophagus",
+      "verb": "dissect",
+      "noun": "sarcophagus"
+    },
+    {
+      "id": 11695,
+      "text": "gut a stone sarcophagus",
+      "verb": "gut",
+      "noun": "sarcophagus"
+    },
+    {
+      "id": 11696,
+      "text": "dissect a spool of thread",
+      "verb": "dissect",
+      "noun": "thread"
+    },
+    {
+      "id": 11697,
+      "text": "gut a spool of thread",
+      "verb": "gut",
+      "noun": "thread"
+    },
+    {
+      "id": 11698,
+      "text": "dissect an ornate mirror",
+      "verb": "dissect",
+      "noun": "mirror"
+    },
+    {
+      "id": 11699,
+      "text": "gut an ornate mirror",
+      "verb": "gut",
+      "noun": "mirror"
+    },
+    {
+      "id": 11700,
+      "text": "dissect a small nightstand (drawer open)",
+      "verb": "dissect",
+      "noun": "nightstand-open"
+    },
+    {
+      "id": 11701,
+      "text": "gut a small nightstand (drawer open)",
+      "verb": "gut",
+      "noun": "nightstand-open"
+    },
+    {
+      "id": 11702,
+      "text": "dissect a goose-down pillow",
+      "verb": "dissect",
+      "noun": "pillow"
+    },
+    {
+      "id": 11703,
+      "text": "gut a goose-down pillow",
+      "verb": "gut",
+      "noun": "pillow"
+    },
+    {
+      "id": 11704,
+      "text": "dissect a heavy wardrobe",
+      "verb": "dissect",
+      "noun": "wardrobe"
+    },
+    {
+      "id": 11705,
+      "text": "gut a heavy wardrobe",
+      "verb": "gut",
+      "noun": "wardrobe"
+    },
+    {
+      "id": 11706,
+      "text": "dissect a rain barrel",
+      "verb": "dissect",
+      "noun": "rain-barrel"
+    },
+    {
+      "id": 11707,
+      "text": "gut a rain barrel",
+      "verb": "gut",
+      "noun": "rain-barrel"
+    },
+    {
+      "id": 11708,
+      "text": "dissect a graphite pencil",
+      "verb": "dissect",
+      "noun": "pencil"
+    },
+    {
+      "id": 11709,
+      "text": "gut a graphite pencil",
+      "verb": "gut",
+      "noun": "pencil"
+    },
+    {
+      "id": 11710,
+      "text": "dissect a small clay pot of salve",
+      "verb": "dissect",
+      "noun": "salve"
+    },
+    {
+      "id": 11711,
+      "text": "gut a small clay pot of salve",
+      "verb": "gut",
+      "noun": "salve"
+    },
+    {
+      "id": 11712,
+      "text": "dissect rumpled bed sheets",
+      "verb": "dissect",
+      "noun": "bed-sheets"
+    },
+    {
+      "id": 11713,
+      "text": "gut rumpled bed sheets",
+      "verb": "gut",
+      "noun": "bed-sheets"
+    }
   ],
   "model": "TaylorAI/gte-tiny",
   "note": "Slim index - vectors stripped. Full index archived at resources/archive/embedding-index-full.json"

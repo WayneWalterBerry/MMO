@@ -164,9 +164,11 @@ function M.register(handlers)
     end
 
     -- Verb aliases
-    handlers["carve"] = handlers["butcher"]
-    handlers["skin"] = handlers["butcher"]
-    handlers["fillet"] = handlers["butcher"]
+    handlers["carve"]   = handlers["butcher"]
+    handlers["skin"]    = handlers["butcher"]
+    handlers["fillet"]  = handlers["butcher"]
+    handlers["dissect"] = handlers["butcher"]
+    handlers["gut"]     = handlers["butcher"]
 end
 
 return M

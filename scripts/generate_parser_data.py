@@ -192,6 +192,8 @@ VERB_SYNONYMS: dict[str, list[str]] = {
     "consume":    ["consume", "eat", "ingest"],
     "devour":     ["devour", "eat", "gobble"],
     "burn":       ["burn", "set fire to", "incinerate", "torch", "set ablaze"],
+    "attack":     ["attack", "kill", "slay", "murder", "fight"],
+    "butcher":    ["butcher", "carve", "skin", "fillet", "dissect", "gut"],
     "time":       ["time", "check time", "what time is it"],
     "help":       ["help", "commands", "what can i do"],
 }

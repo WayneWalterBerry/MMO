@@ -499,7 +499,10 @@ function verbs.create()
 
             print("You don't see that here to attack.")
         end
-        handlers["fight"] = handlers["attack"]
+        handlers["fight"]  = handlers["attack"]
+        handlers["kill"]   = handlers["attack"]
+        handlers["slay"]   = handlers["attack"]
+        handlers["murder"] = handlers["attack"]
 
         -- Extend hit/strike/swing: try creature combat first, fall through
         handlers["hit"] = function(ctx, noun)
