@@ -16,6 +16,8 @@ local respawn = require("engine.creatures.respawn")
 local combat_ok, combat = pcall(require, "engine.combat")
 if not combat_ok then combat = nil end
 local creature_actions = require("engine.creatures.actions")
+local pack_tactics = require("engine.creatures.pack-tactics")
+local territorial = require("engine.creatures.territorial")
 
 ---------------------------------------------------------------------------
 -- Registry abstraction: works with both real registry (:list) and test mocks (:all)
@@ -196,14 +198,72 @@ function M.creature_tick(context, creature)
 
     -- 0. Territorial evaluation: reduce fear, boost effective aggression
     local behavior = creature.behavior or {}
+    local creature_loc = get_location(context.registry, creature)
     if behavior.territorial then
         local territory = behavior.territory or behavior.home_territory
-        local creature_loc = get_location(context.registry, creature)
         if territory and creature_loc == territory then
             if creature.drives and creature.drives.fear then
                 local fear = creature.drives.fear
                 fear.value = math.max(fear.min or 0, (fear.value or 0) - 10)
             end
+        end
+    end
+
+    -- 0a. Territory marking: place marker when creature enters a new room
+    if behavior.territorial and behavior.marks_territory ~= false then
+        if creature_loc and creature_loc ~= creature._last_marked_room then
+            local existing = territorial.find_markers_in_room(context.registry, creature_loc)
+            local already_marked = false
+            for _, m in ipairs(existing) do
+                local m_owner = (m.territory and m.territory.owner) or m.owner or m.creator
+                if m_owner == creature.guid then
+                    already_marked = true; break
+                end
+            end
+            if not already_marked then
+                territorial.mark_territory(creature, context)
+                creature._last_marked_room = creature_loc
+            end
+        end
+    end
+
+    -- 0b. Territorial marker response: evaluate foreign markers in room
+    if behavior.territorial and creature_loc then
+        local markers = territorial.find_markers_in_room(context.registry, creature_loc)
+        for _, marker in ipairs(markers) do
+            local m_owner = (marker.territory and marker.territory.owner) or marker.owner or marker.creator
+            if m_owner and m_owner ~= creature.guid then
+                local response = territorial.evaluate_marker(creature, marker, context)
+                if response == "avoid" then
+                    -- Flee from foreign territory
+                    local exits = get_valid_exits(context, creature_loc, creature)
+                    if #exits > 0 then
+                        local choice = exits[math.random(#exits)]
+                        creature_actions.move_creature(context, creature, choice.target, action_helpers)
+                        creature._last_exit = choice.direction
+                    end
+                    return messages
+                elseif response == "challenge" then
+                    creature._state = "alive-aggressive"
+                end
+                break
+            end
+        end
+    end
+
+    -- 0c. Pack tactics: defensive retreat when health < 20%
+    if pack_tactics.should_retreat(creature, context) then
+        local exits = get_valid_exits(context, creature_loc, creature)
+        if #exits > 0 then
+            local choice = exits[math.random(#exits)]
+            creature_actions.move_creature(context, creature, choice.target, action_helpers)
+            creature._state = "alive-flee"
+            local player_room = get_player_room_id(context)
+            if creature_loc == player_room then
+                local cn = creature.name or "a creature"
+                messages[#messages + 1] = cn:sub(1,1):upper() .. cn:sub(2) .. " limps away, seeking cover."
+            end
+            return messages
         end
     end
 
@@ -218,10 +278,61 @@ function M.creature_tick(context, creature)
     local bait = creature_actions.try_bait(context, creature, action_helpers)
     if bait then for _, m in ipairs(bait) do messages[#messages+1] = m end; return messages end
 
-    -- 3. Score and select best action
+    -- 2a. Ambush check: creature with behavior.ambush stays hidden until trigger
+    if behavior.ambush and not creature._ambush_sprung then
+        local ambush = behavior.ambush
+        local should_spring = false
+        if type(ambush.condition) == "function" then
+            should_spring = ambush.condition(creature, context)
+        elseif ambush.trigger_on_proximity then
+            local player_room = get_player_room_id(context)
+            should_spring = creature_loc == player_room
+        end
+        if not should_spring then
+            return messages
+        end
+        creature._ambush_sprung = true
+        local player_room = get_player_room_id(context)
+        if creature_loc == player_room and ambush.narration then
+            messages[#messages + 1] = ambush.narration
+        end
+    end
+
+    -- 2b. Web ambush (spider-specific via metadata — Principle 8)
+    if behavior.web_ambush and not creature._ambush_sprung then
+        local web_ambush = behavior.web_ambush
+        local should_spring = false
+        if type(web_ambush.condition) == "function" then
+            should_spring = web_ambush.condition(creature, context)
+        end
+        if should_spring then
+            creature._ambush_sprung = true
+        else
+            return messages
+        end
+    end
+
+    -- 3. Score and select best action (with pack stagger)
     local scored = creature_actions.score_actions(creature, context, action_helpers)
     local best = scored[1]
     if best then
+        -- Pack stagger: if attacking and pack present, only alpha attacks this turn
+        if best.action == "attack" and creature_loc then
+            local pack = pack_tactics.get_pack_in_room(context.registry, creature_loc, creature)
+            if #pack > 1 then
+                local alpha = pack_tactics.select_alpha(pack, context)
+                if alpha and alpha.guid ~= creature.guid then
+                    -- Non-alpha: skip attack this turn (stagger delay)
+                    if not creature._pack_waited then
+                        creature._pack_waited = true
+                        best = { action = "idle", score = 0 }
+                    else
+                        creature._pack_waited = nil
+                    end
+                end
+            end
+        end
+
         local action_msgs = creature_actions.execute_action(context, creature, best.action, action_helpers)
         for _, msg in ipairs(action_msgs) do
             messages[#messages + 1] = msg
@@ -306,5 +417,15 @@ M.respawn_clear = respawn.clear
 M.validate_inventory = creature_inventory.validate
 M.drop_inventory_on_death = creature_inventory.drop_on_death
 M.inventory_presence_hint = creature_inventory.presence_hint
+
+---------------------------------------------------------------------------
+-- Pack Tactics API (delegated to engine/creatures/pack-tactics.lua)
+---------------------------------------------------------------------------
+M.pack_tactics = pack_tactics
+
+---------------------------------------------------------------------------
+-- Territorial API (delegated to engine/creatures/territorial.lua)
+---------------------------------------------------------------------------
+M.territorial = territorial
 
 return M

@@ -1569,3 +1569,30 @@ Updated all plan files to reflect Phase 2 NPC+Combat completion:
 ### Testing
 - Zero new regressions. 1 pre-existing test file failure (test-combat-verbs: carve→slash routing) unchanged from before WAVE-3.
 - Movement test file (test-movement-verbs.lua) has 21 pre-existing failures due to portal-only movement code — NOT caused by WAVE-3.
+
+## Learnings (Phase 4 WAVE-5: Pack Tactics, Territorial Marking, Ambush Behavior)
+
+### Architecture Decisions
+- **pack-tactics.lua** (~95 LOC): Alpha selection by highest health (Q4 override — plan spec said aggression, Q4 resolved to health). Stagger attacks via plan_attack() returning delay array. Single wolf bypass (delay=0). Defensive retreat at <20% health threshold. get_pack_in_room() finds same-species creatures by matching base id.
+- **territorial.lua** (~198 LOC): Mark placement creates invisible territory-marker objects in rooms. BFS radius detection reuses navigation.get_exit_target() for exit resolution. evaluate_marker() returns "patrol"/"challenge"/"avoid" based on ownership + aggression threshold (>0.7 normalized = challenge). Dual-format bridge: handles both top-level owner/radius (Flanders format) and territory.{owner,radius} subtable (test/engine format).
+- **Ambush behavior** integrated into creature_tick: generic ehavior.ambush with condition function + ehavior.web_ambush (spider metadata). Ambush creatures skip action selection until trigger fires, then _ambush_sprung flag prevents re-hiding.
+- **territory-marker.lua** updated to include 	erritory subtable alongside Flanders' top-level fields. Engine contract: territorial.lua reads via marker_owner() helper that checks both paths. This was necessary because Nelson's tests use m.territory.owner pattern and Flanders used top-level owner.
+- **Pack stagger in creature_tick**: When best action is "attack" and 2+ same-species creatures share a room, non-alpha wolves idle for one turn (_pack_waited flag alternates). Alpha always attacks immediately.
+
+### Files Created
+| File | LOC | Purpose |
+|------|-----|---------|
+| src/engine/creatures/pack-tactics.lua | 95 | Pack coordination: alpha selection, stagger, retreat |
+| src/engine/creatures/territorial.lua | 198 | Territory marking, BFS radius, marker evaluation |
+
+### Files Modified
+| File | Change |
+|------|--------|
+| src/engine/creatures/init.lua | +72 LOC: territory marking on room entry, marker response dispatch, defensive retreat check, ambush behavior check, pack stagger in action selection. Exposed pack_tactics and territorial as M.pack_tactics and M.territorial. |
+| src/meta/objects/territory-marker.lua | Added territory = { owner, radius, timestamp } subtable for engine contract compatibility. |
+
+### Testing
+- Pack tactics: 4/4 tests pass (alpha selection, stagger, single wolf, defensive retreat)
+- Territorial: 5/5 tests pass (mark placement, BFS radius, own-territory patrol, foreign response, smell detection Q5)
+- Full suite: 4 test file failures (all pre-existing: silk-crafting, predator-prey, spider-web, combat-verbs). Down from 8 baseline — cleared test-wolf.lua and test-material-audit.lua as side effects.
+- Zero new regressions.
