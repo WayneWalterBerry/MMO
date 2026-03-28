@@ -572,7 +572,9 @@ test("17. select_prey_target returns first alive prey match", function()
     rat.location = "test-room"
     cat.location = "test-room"
 
-    local ctx = make_context({ creatures = { wolf, rat, cat } })
+    -- Player in different room so wolf targets creatures, not player
+    local player = { location = "other-room", hands = { nil, nil } }
+    local ctx = make_context({ creatures = { wolf, rat, cat }, player = player })
 
     local select_fn = creatures.select_prey_target
         or (creatures._test and creatures._test.select_prey_target)
@@ -580,7 +582,7 @@ test("17. select_prey_target returns first alive prey match", function()
 
     local target = select_fn(ctx, wolf)
     h.assert_truthy(target, "select_prey_target must return a creature")
-    -- Wolf's prey list is {"rat", "cat", "bat"} — should match one of them
+    -- Wolf's prey list is {"player", "rat", "cat", "bat"} — player absent, so rat or cat
     h.assert_truthy(target.id == "rat" or target.id == "cat",
         "wolf's prey target must be rat or cat, got: " .. tostring(target.id))
 end)
@@ -635,9 +637,9 @@ test("20. wolf hunts bat — bat is valid prey", function()
     wolf.location = "test-room"
     bat.location = "test-room"
 
-    local ctx = make_context({ creatures = { wolf, bat } })
-
-    local has_prey_fn = creatures.has_prey_in_room
+    -- Player in different room so wolf targets bat, not player
+    local player = { location = "other-room", hands = { nil, nil } }
+    local ctx = make_context({ creatures = { wolf, bat }, player = player })    local has_prey_fn = creatures.has_prey_in_room
         or (creatures._test and creatures._test.has_prey_in_room)
     h.assert_truthy(has_prey_fn, "has_prey_in_room function must exist")
 
