@@ -528,7 +528,7 @@ test("uncork aliases: unstop/unseal registered", function()
     truthy(handlers["unseal"], "unseal should be registered")
 end)
 
-test("combat aliases: slice/nick → cut; carve → slash", function()
+test("combat aliases: slice/nick → cut; carve → butcher", function()
     local handlers = require("engine.verbs").create()
     truthy(handlers["slice"], "slice should be registered")
     truthy(handlers["nick"], "nick should be registered")

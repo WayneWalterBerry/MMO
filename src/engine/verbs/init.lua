@@ -134,19 +134,20 @@ function verbs.create()
                 injury_mod.inflict(ctx.player, "minor-cut", creature.id or "creature", "arms", 2)
             end
         end
-        local original_grab = handlers["grab"]
-        handlers["grab"] = function(ctx, noun)
+        local original_take = handlers["take"]
+        handlers["take"] = function(ctx, noun)
             if noun ~= "" then
                 local creature = find_creature_by_keyword(ctx, noun)
                 if creature then
                     return handlers["catch"](ctx, noun)
                 end
             end
-            if original_grab then
-                return original_grab(ctx, noun)
+            if original_take then
+                return original_take(ctx, noun)
             end
             return handlers["catch"](ctx, noun)
         end
+        handlers["grab"] = handlers["take"]
         handlers["snatch"] = handlers["catch"]
     end
 

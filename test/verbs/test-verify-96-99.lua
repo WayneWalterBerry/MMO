@@ -324,13 +324,16 @@ test("#97-c: opening narration appears BEFORE contents narration", function()
     end
 end)
 
-test("#97-d: wardrobe is_open=true after search enters it", function()
+test("#97-d: wardrobe accessible but closed after search peeks inside", function()
     local ctx, reg = make_bedroom()
     local wardrobe = reg:get("wardrobe")
     eq(false, containers.is_open(wardrobe), "wardrobe starts closed")
     full_search(ctx, "cloak")
-    truthy(containers.is_open(wardrobe),
-        "wardrobe must be open after search found cloak inside")
+    -- #384: Search peeks — container stays closed but accessible
+    eq(false, containers.is_open(wardrobe),
+        "wardrobe should stay closed after search peek")
+    truthy(wardrobe.accessible == true,
+        "wardrobe must be accessible after search peeked inside")
 end)
 
 test("#97-e: nightstand inside surface accessible after search enters it", function()
@@ -408,7 +411,7 @@ end)
 
 h.suite("VERIFY #99: get after search (box + pencil — duplicate of #98)")
 
-test("#99-a: 'find pencil' opens box, 'get pencil' succeeds", function()
+test("#99-a: 'find pencil' peeks box, 'get pencil' succeeds", function()
     local ctx, reg = make_office()
 
     -- find pencil
@@ -417,10 +420,12 @@ test("#99-a: 'find pencil' opens box, 'get pencil' succeeds", function()
     truthy(lower:find("pencil"),
         "search should discover the pencil.\nOutput:\n" .. find_out)
 
-    -- box should now be open
+    -- #384: box stays closed but accessible after search peek
     local box = reg:get("desk-box")
-    truthy(containers.is_open(box),
-        "box must be open after search found pencil inside")
+    eq(false, containers.is_open(box),
+        "box should stay closed after search peek")
+    truthy(box.accessible == true,
+        "box must be accessible after search found pencil inside")
 
     -- get pencil
     local get_out = capture_print(function()

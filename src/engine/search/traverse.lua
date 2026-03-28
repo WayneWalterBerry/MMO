@@ -10,6 +10,21 @@ local narrator = require("engine.search.narrator")
 local goals = require("engine.search.goals")
 
 ---------------------------------------------------------------------------
+-- #384: Search peeks into containers without changing open/closed state.
+-- Opens the container to mark surfaces accessible, then immediately
+-- restores is_open/open/_state so the container appears unchanged.
+---------------------------------------------------------------------------
+local function peek_open(ctx, obj)
+    local saved_is_open = obj.is_open
+    local saved_open = obj.open
+    local saved_state = obj._state
+    containers.open(ctx, obj)
+    obj.is_open = saved_is_open
+    obj.open = saved_open
+    if saved_state ~= nil then obj._state = saved_state end
+end
+
+---------------------------------------------------------------------------
 -- Build search queue from room proximity list
 ---------------------------------------------------------------------------
 
@@ -202,6 +217,29 @@ function traverse.build_queue(room, scope, target, registry, part_surface)
                     end
                     if #search_list > 0 then break end
                 end
+            end
+        end
+        -- #377: If still not found, check surface contents of room objects.
+        -- This handles child objects (e.g., pillow on top of bed) that aren't
+        -- in the proximity list directly but are registered and findable.
+        if #search_list == 0 and registry then
+            for _, obj_id in ipairs(proximity_list) do
+                local obj = registry:get(obj_id)
+                if obj and obj.surfaces then
+                    for _, surf_data in pairs(obj.surfaces) do
+                        if type(surf_data) == "table" and surf_data.contents then
+                            for _, child_id in ipairs(surf_data.contents) do
+                                if child_id == scope then
+                                    search_list[#search_list + 1] = child_id
+                                    include_nested_containers = true
+                                    break
+                                end
+                            end
+                        end
+                        if #search_list > 0 then break end
+                    end
+                end
+                if #search_list > 0 then break end
             end
         end
     end
@@ -494,7 +532,50 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
             -- Non-container inaccessible surfaces (e.g., rug's "underneath")
             -- are truly hidden and can't be searched until made accessible (#26)
             if not containers.is_container(parent) then
-                result.narrative = ""
+                -- #377: Covering objects (rug) hide what's beneath — stay blocked
+                if parent.covering then
+                    result.narrative = ""
+                    return result
+                end
+                -- #377: Non-covering non-containers (pillow) can be searched by
+                -- feel/look. Peek into the surface without changing accessibility.
+                local actual_surface = parent.surfaces and parent.surfaces[entry.surface_name]
+                local peek_contents = actual_surface and actual_surface.contents or {}
+                if #peek_contents > 0 then
+                    if target and not is_goal_search then
+                        for _, child_id in ipairs(peek_contents) do
+                            local child = registry:get(child_id)
+                            if child and matches_target(child, target, registry, 0) then
+                                result.found = true
+                                result.item = child
+                                result.narrative = narrator.found_target(ctx, child, parent)
+                                return result
+                            end
+                        end
+                    elseif is_goal_search and goal_type and goal_value then
+                        for _, child_id in ipairs(peek_contents) do
+                            local child = registry:get(child_id)
+                            if child and goals.matches_goal(child, goal_type, goal_value, registry) then
+                                result.found = true
+                                result.item = child
+                                result.narrative = narrator.found_target(ctx, child, parent)
+                                return result
+                            end
+                        end
+                    else
+                        -- Undirected: enumerate contents found by feel
+                        local items = {}
+                        for _, child_id in ipairs(peek_contents) do
+                            local child = registry:get(child_id)
+                            if child then
+                                items[#items + 1] = child.name or child.id
+                            end
+                        end
+                        if #items > 0 then
+                            result.narrative = narrator.surface_contents(ctx, entry.surface_name, parent, items)
+                        end
+                    end
+                end
                 return result
             end
 
@@ -505,7 +586,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
             if actual_surface_mut then
                 actual_surface_mut.accessible = true
             end
-            containers.open(ctx, parent)
+            peek_open(ctx, parent)
 
             -- #97: Build opening narration line
             local open_part = nil
@@ -545,7 +626,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                     if containers.is_container(child) then
                         -- #97: Also open nested containers during search
                         if containers.can_auto_open(child) then
-                            containers.open(ctx, child)
+                            peek_open(ctx, child)
                         end
                         local child_contents = containers.get_contents(child, registry)
                         if #child_contents > 0 then
@@ -608,7 +689,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                         if deeper then
                             -- #97: Also open nested containers during search
                             if containers.is_container(child) and containers.can_auto_open(child) then
-                                containers.open(ctx, child)
+                                peek_open(ctx, child)
                             end
                             result.found = true
                             result.item = deeper
@@ -706,7 +787,12 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                 return result
             end
         end
-        -- No match or undirected — suppress narration; surfaces follow in queue
+        -- #385: Undirected sweep — enumerate object existence
+        if not target and not is_goal_search then
+            result.narrative = narrator.enumerate_room_object(ctx, obj)
+            return result
+        end
+        -- Targeted/goal with no match — suppress; surfaces follow in queue
         result.narrative = ""
         return result
     end
@@ -718,8 +804,8 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
             result.narrative = narrator.container_locked(ctx, obj)
             return result
         else
-            -- #97: Actually open the container so items become accessible
-            containers.open(ctx, obj)
+            -- #97/#384: Peek inside container (accessible=true but is_open restored)
+            peek_open(ctx, obj)
             local opening_line = narrator.nested_container_opening(ctx, obj)
 
             local contents = containers.get_contents(obj, registry)
@@ -752,7 +838,7 @@ function traverse.step(ctx, entry, target, is_goal_search, goal_type, goal_value
                             if deeper then
                                 -- #97: Also open nested containers
                                 if containers.is_container(child) and containers.can_auto_open(child) then
-                                    containers.open(ctx, child)
+                                    peek_open(ctx, child)
                                 end
                                 result.found = true
                                 result.item = deeper

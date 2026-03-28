@@ -194,13 +194,16 @@ test("matchbox becomes accessible after search finds match inside", function()
         "matchbox must be accessible after search found match inside; got: " .. tostring(matchbox.accessible))
 end)
 
-test("matchbox is_open=true after search enters it", function()
+test("matchbox accessible after search enters it", function()
     local ctx, reg, room, matchbox = make_matchbox_room()
 
     full_find(ctx, "match")
 
-    truthy(containers.is_open(matchbox),
-        "matchbox must be open after search entered it")
+    -- #384: Search peeks — container stays closed but accessible
+    eq(false, containers.is_open(matchbox),
+        "matchbox should stay closed after search peek")
+    truthy(matchbox.accessible == true,
+        "matchbox must be accessible after search entered it")
 end)
 
 test("ctx.last_noun set to found item's id after search", function()
@@ -350,16 +353,15 @@ end)
 
 h.suite("7. Search integrity (#135 safety)")
 
-test("search.find for nonexistent item still leaves container open", function()
+test("search.find for nonexistent item still leaves container accessible", function()
     local ctx, reg, room, matchbox = make_matchbox_room()
 
     -- Search for something that doesn't exist
     full_find(ctx, "diamond")
 
-    -- The matchbox was opened during search (search enters containers)
-    -- It should remain open
-    truthy(containers.is_open(matchbox),
-        "matchbox should be open after search traversed it")
+    -- #384: Search peeks — container stays closed but accessible
+    eq(false, containers.is_open(matchbox),
+        "matchbox should stay closed after search peek")
     truthy(matchbox.accessible == true,
         "matchbox should be accessible after search traversed it; got: " .. tostring(matchbox.accessible))
 end)

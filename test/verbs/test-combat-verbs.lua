@@ -484,12 +484,12 @@ test("slice routes to cut handler", function()
     h.assert_eq("minor-cut", ctx.player.injuries[1].type, "slice → cut → minor-cut")
 end)
 
-test("carve routes to slash handler", function()
+test("carve routes to butcher handler", function()
     setup_injuries()
-    -- carve → slash → (self-infliction check, then cut fallback for world objects)
+    -- carve → butcher (not slash — butchery alias, see #381)
     local ctx = make_ctx({ verb = "carve" })
     local output = capture_output(function() handlers["carve"](ctx, "") end)
-    h.assert_truthy(output:find("Slash what"), "carve should route to slash")
+    h.assert_truthy(output:find("Butcher what"), "carve should route to butcher")
 end)
 
 ---------------------------------------------------------------------------

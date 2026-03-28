@@ -251,16 +251,18 @@ test("#97: search for item in closed wardrobe narrates opening", function()
         "Should mention wardrobe by name.\nOutput:\n" .. output)
 end)
 
-test("#97: container state changes to open after search enters it", function()
+test("#97: container accessible but closed after search peeks inside", function()
     local ctx, reg = make_test_room()
     local wardrobe = reg:get("wardrobe")
     -- Verify initially closed
     eq(false, containers.is_open(wardrobe), "wardrobe should start closed")
     -- Search for cloak (inside wardrobe)
     full_search(ctx, "cloak")
-    -- After search, wardrobe should be open
-    truthy(containers.is_open(wardrobe),
-        "wardrobe should be open after search entered it")
+    -- #384: Search peeks — container stays closed but becomes accessible
+    eq(false, containers.is_open(wardrobe),
+        "wardrobe should stay closed after search peek")
+    truthy(wardrobe.accessible == true,
+        "wardrobe should be accessible after search peeked inside")
 end)
 
 test("#97: nightstand drawer surface becomes accessible after search", function()
@@ -282,17 +284,16 @@ end)
 
 h.suite("3. BUGS #98/#99 — Take after find")
 
-test("#98: wardrobe is open after finding cloak, item reachable", function()
+test("#98: wardrobe accessible after finding cloak, item reachable", function()
     local ctx, reg = make_test_room()
     local wardrobe = reg:get("wardrobe")
     -- Find the cloak
     full_search(ctx, "cloak")
-    -- Wardrobe should now be open
-    truthy(containers.is_open(wardrobe),
-        "wardrobe must be open so take can reach items inside")
-    -- Cloak should be accessible (container is open)
-    truthy(wardrobe.is_open == true or wardrobe.open == true,
-        "wardrobe.is_open should be true after search")
+    -- #384: Container stays closed but accessible after search peek
+    eq(false, containers.is_open(wardrobe),
+        "wardrobe should stay closed after search peek")
+    truthy(wardrobe.accessible == true,
+        "wardrobe must be accessible so take can reach items inside")
 end)
 
 test("#98: nightstand drawer accessible after finding knife", function()
@@ -342,9 +343,11 @@ test("#99: same root cause — find pencil in closed container then take", funct
 
     -- Find the pencil
     full_search(ctx, "pencil")
-    -- Box should be open now
-    truthy(containers.is_open(box),
-        "box must be open after search found pencil inside")
+    -- #384: Box stays closed but accessible after search peek
+    eq(false, containers.is_open(box),
+        "box should stay closed after search peek")
+    truthy(box.accessible == true,
+        "box must be accessible after search found pencil inside")
 end)
 
 ---------------------------------------------------------------------------

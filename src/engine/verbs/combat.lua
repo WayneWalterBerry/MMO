@@ -308,7 +308,7 @@ function M.register(handlers)
         -- Fall through to cut logic for world objects
         handlers["cut"](ctx, noun)
     end
-    handlers["carve"] = handlers["slash"]
+    -- "carve" is a butchery alias (see butchery.lua), not a combat action
 
     ---------------------------------------------------------------------------
     -- PRICK SELF WITH {tool}

@@ -157,7 +157,7 @@ local ALIASES = {
     smack = "hit", bang = "hit", slap = "hit", whack = "hit",
     headbutt = "hit",
     slice = "cut", nick = "cut",
-    carve = "slash",
+    carve = "butcher",
     -- crafting
     inscribe = "write",
     stitch = "sew", mend = "sew",

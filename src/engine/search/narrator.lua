@@ -162,6 +162,21 @@ function narrator.step_narrative(ctx, object, found_target)
     return narrative
 end
 
+--- #385: Enumerate object during undirected room sweep.
+-- Brief one-liner listing the object, without "nothing there" suffix.
+-- @param ctx game context
+-- @param object discovered object
+-- @return string
+function narrator.enumerate_room_object(ctx, object)
+    local sense = get_primary_sense(ctx, ctx.current_room)
+    local name = format_object_name(object)
+    if sense == "touch" then
+        return "  " .. name
+    else
+        return "  " .. name
+    end
+end
+
 --- Generate narrative for container open
 -- @param ctx game context
 -- @param container container being opened
@@ -303,6 +318,11 @@ local function resolve_part_display(surface_name, parent)
         if parent.parts[surface_name] then
             local part = parent.parts[surface_name]
             return part.name or surface_name
+        end
+        -- Third try: use the first available part name (more descriptive than
+        -- a generic spatial term like "inside")
+        for key, part in pairs(parent.parts) do
+            return part.name or key
         end
     end
     return surface_name or "compartment"

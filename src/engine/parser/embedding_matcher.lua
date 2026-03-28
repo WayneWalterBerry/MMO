@@ -498,6 +498,19 @@ function matcher:match(input_text)
     return nil, nil, 0, nil
   end
 
+  -- P6: Unknown lead-word guard — if the first content token is completely
+  -- foreign to the game world (not in any phrase, not a recognized verb or
+  -- noun), it's likely an unsupported verb like "fly" or "swim". Reject to
+  -- prevent noun-only false positives (e.g. "fly north" → "look north").
+  if #input_tokens >= 2 then
+    local first = input_tokens[1]
+    if not self.verb_tokens[first]
+       and not self.known_noun_tokens[first]
+       and not (self.inverted_index and self.inverted_index[first]) then
+      return nil, nil, 0, nil
+    end
+  end
+
   local use_bm25 = (bm25_data ~= nil)
 
   -- Candidate retrieval: inverted index when BM25 is available

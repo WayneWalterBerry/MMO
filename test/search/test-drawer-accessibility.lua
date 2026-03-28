@@ -236,24 +236,26 @@ end
 
 h.suite("1. Search opens nested containers in drawer chain (#149)")
 
-test("search opens drawer (nightstand root content) during traversal", function()
+test("search peeks drawer (nightstand root content) during traversal", function()
     local ctx, reg, room, nightstand, drawer = make_nightstand_room()
 
     full_search(ctx, nil, "nightstand")
 
-    truthy(containers.is_open(drawer),
-        "drawer must be open after search nightstand; is_open=" .. tostring(drawer.is_open))
+    -- #384: Search peeks — container stays closed but accessible
+    eq(false, containers.is_open(drawer),
+        "drawer should stay closed after search peek; is_open=" .. tostring(drawer.is_open))
     truthy(drawer.accessible == true,
         "drawer.accessible must be true after search; got: " .. tostring(drawer.accessible))
 end)
 
-test("search opens matchbox inside drawer during traversal", function()
+test("search peeks matchbox inside drawer during traversal", function()
     local ctx, reg, room, nightstand, drawer, matchbox = make_nightstand_room()
 
     full_search(ctx, nil, "nightstand")
 
-    truthy(containers.is_open(matchbox),
-        "matchbox must be open after search nightstand; is_open=" .. tostring(matchbox.is_open))
+    -- #384: Search peeks — container stays closed but accessible
+    eq(false, containers.is_open(matchbox),
+        "matchbox should stay closed after search peek; is_open=" .. tostring(matchbox.is_open))
     truthy(matchbox.accessible == true,
         "matchbox.accessible must be true after search; got: " .. tostring(matchbox.accessible))
 end)
@@ -365,9 +367,9 @@ test("3-level chain: drawer→matchbox→match all accessible after search", fun
     full_search(ctx, nil, "nightstand")
 
     truthy(drawer.accessible == true, "drawer accessible")
-    truthy(containers.is_open(drawer), "drawer open")
+    eq(false, containers.is_open(drawer), "drawer stays closed after peek")
     truthy(matchbox.accessible == true, "matchbox accessible")
-    truthy(containers.is_open(matchbox), "matchbox open")
+    eq(false, containers.is_open(matchbox), "matchbox stays closed after peek")
     eq(2, #matchbox.contents, "matchbox should still contain 2 matches")
 end)
 
