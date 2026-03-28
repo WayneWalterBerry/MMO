@@ -6,7 +6,6 @@ Phase 1 improvements:
   - Rule registry with metadata (severity, fixable, fix_safety)
   - Per-rule configuration via .meta-check.json
   - Smart XF-03 keyword collision filtering
-  - MD-19 melting/ignition point conflict detection
   - XR-05b generic material inheritance warning
 
 Phase 3 improvements:
@@ -1432,18 +1431,6 @@ def _validate_material(parsed: ParsedFile, violations: List[Violation]) -> None:
     if flammability is not None and flammability == 0 and has_ip:
         _add_violation(violations, path, _line_for(parsed, "ignition_point"), "warning", "MD-18",
                        "Non-flammable material should not have ignition_point")
-
-    # MD-19: Melting/ignition point conflict detection (upgraded from INFO)
-    if has_mp and has_ip:
-        mp_val = mp_v.value if _value_kind(mp_v) == "number" else None
-        ip_val = ip_v.value if _value_kind(ip_v) == "number" else None
-        if mp_val is not None and ip_val is not None and mp_val <= ip_val:
-            _add_violation(violations, path, _line_for(parsed, "melting_point"), "warning", "MD-19",
-                           f"melting_point ({mp_val}) <= ignition_point ({ip_val}): "
-                           f"material melts before or at ignition temperature")
-        elif mp_val is not None and ip_val is not None:
-            _add_violation(violations, path, _line_for(parsed, "melting_point"), "info", "MD-19",
-                           f"Material declares both melting_point ({mp_val}) and ignition_point ({ip_val})")
 
     # MD-20: flexibility >= 0.7 and fragility > 0.3 (WARNING)
     flex_v = fields.get("flexibility")

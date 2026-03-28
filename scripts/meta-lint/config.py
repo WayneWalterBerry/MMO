@@ -8,7 +8,6 @@ Config format:
 {
     "rules": {
         "XF-03": { "enabled": false },
-        "MD-19": { "severity": "warning" },
         "XR-05b": { "enabled": true, "severity": "error" }
     },
     "categories": {
