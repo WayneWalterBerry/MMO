@@ -220,4 +220,48 @@ function M.find_markers_in_room(registry, room_id)
     return markers
 end
 
+---------------------------------------------------------------------------
+-- expire_markers(ctx, duration_hours)
+-- Removes territory markers whose timestamp is older than duration_hours.
+-- duration_hours: max age in game hours (e.g. 24 for "1 day").
+-- ctx must have .registry and .game_time (current game hours).
+---------------------------------------------------------------------------
+function M.expire_markers(ctx, duration_hours)
+    if not ctx or not ctx.registry or not duration_hours then return end
+    local now = ctx.game_time or 0
+    local to_remove = {}
+
+    for _, obj in ipairs(list_objects(ctx.registry)) do
+        if is_marker(obj) then
+            local ts = (obj.territory and obj.territory.timestamp) or obj.timestamp
+            if ts and (now - ts) >= duration_hours then
+                to_remove[#to_remove + 1] = obj
+            end
+        end
+    end
+
+    for _, marker in ipairs(to_remove) do
+        -- Remove from registry
+        local reg = ctx.registry
+        if type(reg.remove) == "function" then
+            reg:remove(marker.guid)
+        elseif reg._objects then
+            reg._objects[marker.guid] = nil
+            if marker.id then reg._objects[marker.id] = nil end
+        end
+
+        -- Remove from room contents
+        if marker.location then
+            local room = get_room(ctx, marker.location)
+            if room and room.contents then
+                for i = #room.contents, 1, -1 do
+                    if room.contents[i] == marker.guid then
+                        table.remove(room.contents, i)
+                    end
+                end
+            end
+        end
+    end
+end
+
 return M

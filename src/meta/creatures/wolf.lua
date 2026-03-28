@@ -214,7 +214,7 @@ return {
     respawn = {
         timer = 200,
         home_room = "hallway",
-        max_population = 1,
+        max_population = 3,
     },
 
     -- Death reshape (WAVE-1)

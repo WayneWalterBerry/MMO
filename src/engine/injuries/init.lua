@@ -544,9 +544,27 @@ function injuries.get_stress_effects(player)
     return get_level_effects(level, def)
 end
 
+-- Parse cure duration from stress definition (e.g. "2 hours" -> 2.0)
+local function parse_stress_cure_duration()
+    local def = load_stress_def()
+    if not def or not def.cure or not def.cure.duration then return nil end
+    local s = def.cure.duration
+    local num, unit = s:match("(%d+)%s*(%a+)")
+    if not num then return nil end
+    num = tonumber(num)
+    unit = unit:lower()
+    if unit:match("^hour") then return num
+    elseif unit:match("^min") then return num / 60
+    elseif unit:match("^day") then return num * 24
+    end
+    return num
+end
+
 -- Cure stress via rest. Accepts optional ctx for safe-room checking.
--- Checks ctx.room for hostile creatures; cures if safe.
-function injuries.cure_stress(player, ctx)
+-- rest_hours: how many game hours of rest this call represents.
+-- When rest_hours is provided, enforces the cure.duration from stress.lua.
+-- Without rest_hours, cures instantly (backward compatibility).
+function injuries.cure_stress(player, ctx, rest_hours)
     if not player or (player.stress or 0) <= 0 then return false end
 
     -- Check safe room via ctx.room creatures (test-compatible path)
@@ -561,9 +579,19 @@ function injuries.cure_stress(player, ctx)
         end
     end
 
+    -- Duration enforcement when rest_hours is provided
+    if rest_hours then
+        local required = parse_stress_cure_duration() or 2
+        player.stress_rest_accumulated = (player.stress_rest_accumulated or 0) + rest_hours
+        if player.stress_rest_accumulated < required then
+            return false
+        end
+    end
+
     player.stress = 0
     player.stress_level = nil
     player.stress_effects = {}
+    player.stress_rest_accumulated = 0
 
     print("With rest and safety, the panic slowly fades.")
     return true

@@ -471,7 +471,7 @@ test("11. respawn metadata values match WAVE-5 spec", function()
     local expected = {
         { def = rat_def,    id = "rat",    timer = 60,  room = "cellar",      max = 3 },
         { def = cat_def,    id = "cat",    timer = 120, room = "courtyard",   max = 1 },
-        { def = wolf_def,   id = "wolf",   timer = 200, room = "hallway",     max = 1 },
+        { def = wolf_def,   id = "wolf",   timer = 200, room = "hallway",     max = 3 },
         { def = spider_def, id = "spider", timer = 80,  room = "deep-cellar", max = 2 },
         { def = bat_def,    id = "bat",    timer = 60,  room = "crypt",       max = 3 },
     }
