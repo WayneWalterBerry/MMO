@@ -1,5 +1,28 @@
 # Current Focus
 
+**Last session:** 2026-03-28
+**Last user:** Wayne Berry
+
+## What We Were Working On
+- Phase 4 NPC+Combat: ALL 6 WAVES COMPLETE (butchery, loot tables, stress, spider ecology, pack tactics, territorial)
+- Evening Edition newspaper published
+- Goodnight deep clean: 13 histories compressed, 37 logs archived
+
+## Board State
+- Open issues: 17
+- Open PRs: 0
+- Urgent: None
+
+## Still Running (from this session)
+- Nothing — all agents completed
+
+## Tomorrow's Queue
+1. Fix 3 wiring bugs from Nelson's Phase 4 walkthrough (silk disambiguation, craft recipe wiring, brass key/padlock)
+2. Close issues #261 (Stress injury) — now implemented
+3. Puzzle 017 issues (#254-258) — Flanders + Moe assigned
+4. Phase 5 planning
+5. Level 2 playtesting
+
 **Last session:** 2026-03-28T02:30  
 **Last user:** Scribe
 
