@@ -1451,3 +1451,22 @@ Updated all plan files to reflect Phase 2 NPC+Combat completion:
 **Files changed:** `src/engine/creatures/death.lua`, `src/engine/creatures/inventory.lua`, `src/engine/loop/init.lua`
 **Tests:** All creature tests pass (death-drops: 15/15, reshape: 21/21, inventory: 15/15). Only pre-existing failure: `integration/test-room-override.lua`.
 **Commit:** 8a5ef58
+### Session — Fix #282 (Spoilage FSM Timer) + #286 (Room/Inventory Display)
+**Date:** 2026-03-27
+**Requested by:** Wayne Berry
+**Commit:** 53f77c0
+
+#### Bug #282: Corpse Spoilage FSM Timer Never Fires
+**Root cause (2 issues):**
+1. All creature `death_state` spoilage FSMs used `duration = N` in state tables, but the engine's `fsm.start_timer()` expects `timed_events = { { delay = N, event = "...", to_state = "..." } }`. Timer was never scheduled.
+2. Spoilage transitions used `verb = "_tick"` but `fsm.tick_timers()` checks for `trigger = "auto"` with `condition = "timer_expired"`. Even if timer started, the transition match would fail.
+
+**Fix:** Converted all 4 creature death_states (rat, bat, cat, wolf) from `duration` → `timed_events` arrays, and changed transitions from `verb = "_tick"` → `trigger = "auto"`. Timer registration in `death.lua` was already fixed in commit 8a5ef58.
+
+#### Bug #286: Cooked Meat in Both Room AND Inventory
+**Root cause:** Room_presence renderer in `sensory.lua` iterated `room.contents` without checking if items were held by the player. After cooking, the mutated object's ID remained in `room.contents` while also in the player's hand.
+
+**Fix:** Added carried-items filter in `sensory.lua` using `get_all_carried_ids()` to build a set of all carried object IDs (hands + bags + worn), then skip those in the room_presence loop. Used defensive pcall to avoid test isolation issues.
+
+**Files changed:** `src/meta/creatures/rat.lua`, `src/meta/creatures/bat.lua`, `src/meta/creatures/cat.lua`, `src/meta/creatures/wolf.lua`, `src/engine/verbs/sensory.lua`
+**Tests:** All 207 test files pass. Pre-existing failure: `integration/test-room-override.lua`.
