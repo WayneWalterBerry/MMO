@@ -3,7 +3,7 @@
 **Author:** Comic Book Guy (Creative Director / Design Department Lead)  
 **Date:** 2026-08-15  
 **Status:** 🟢 Design Proposal — Awaiting Wayne Approval  
-**Supersedes:** `plans/food-system-plan.md` (food design), `plans/creature-inventory-plan.md` (loot design)  
+**Supersedes:** `plans/food-system-design.md` (food design), `plans/creature-inventory-plan.md` (loot design)  
 **Incorporates:** Wayne's 3 directives, Bart's 2 architecture decisions, Frink's 2 research docs, CBG's creature→food design
 
 ---
@@ -955,7 +955,7 @@ This phase is distant and deliberately vague. It depends on NPC system maturity,
 
 | Document | Relevance |
 |----------|-----------|
-| `plans/food-system-plan.md` | Prior food design (superseded by this plan for scope; details still valid) |
+| `plans/food-system-design.md` | Prior food design (superseded by this plan for scope; details still valid) |
 | `plans/creature-inventory-plan.md` | Prior loot design (superseded by this plan for scope; details still valid) |
 | `plans/combat-system-plan.md` | Combat → death → mutation trigger |
 | `.squad/decisions/inbox/bart-food-architecture.md` | Bart's A+B hybrid recommendation |

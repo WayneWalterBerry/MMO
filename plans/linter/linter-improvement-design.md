@@ -124,7 +124,7 @@ skip_templates = true
 
 ### 4.1 EXIT-* Portal Validation (7 Rules) — Issue #197
 
-From `plans/portal-unification-plan.md`, Section 6.4:
+From `plans/portal-unification-design.md`, Section 6.4:
 
 | Rule | Severity | Description |
 |------|----------|-------------|
@@ -302,7 +302,7 @@ Phase 3 (blocked by Phase 2 rule count)
 | Game validator patterns | `resources/research/architecture/linters/game-validators.md` |
 | Current linter source | `scripts/meta-lint/lint.py` |
 | Linter docs | `docs/meta-lint/` (overview, architecture, usage, rules, schemas) |
-| Portal unification plan | `plans/portal-unification-plan.md` (Section 6.4 — EXIT-* rules) |
+| Portal unification plan | `plans/portal-unification-design.md` (Section 6.4 — EXIT-* rules) |
 | NPC system plan | `plans/npc-system-plan.md` (Section 11 — CREATURE-* rules) |
 | Acceptance criteria V1 | `docs/meta-lint/acceptance-criteria.md` |
 | Acceptance criteria V2 | `docs/meta-lint/acceptance-criteria-v2.md` |

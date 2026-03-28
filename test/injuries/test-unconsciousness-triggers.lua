@@ -672,6 +672,12 @@ test("gas vent can knock player out twice in succession", function()
     ctx.player.consciousness.state = "conscious"
     ctx.player.consciousness.wake_timer = 0
 
+    -- #402: fsm_interact now correctly changes state via fsm.transition(),
+    -- so the vent is in "active" state after the first KO. Simulate the
+    -- game-loop auto-reset (from="active", to="leaking", trigger="auto",
+    -- condition="player_wakes") that would fire when the player wakes.
+    gas_def._state = "leaking"
+
     -- Second KO (gas resets)
     capture_print(function() handlers["breathe"](ctx, "gas") end)
     h.assert_eq("unconscious", ctx.player.consciousness.state,

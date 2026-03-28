@@ -891,7 +891,7 @@ If an agent's code failed a gate twice, that agent is locked out. Fresh agent ta
 | Squad routing module | `scripts/meta-lint/squad_routing.py` |
 | Cache module | `scripts/meta-lint/cache.py` |
 | Linter docs | `docs/meta-lint/` |
-| Portal unification plan | `plans/portal-unification-plan.md` (EXIT-* rules, Section 6.4) |
+| Portal unification plan | `plans/portal-unification-design.md` (EXIT-* rules, Section 6.4) |
 | NPC system plan | `plans/npc-system-plan.md` (CREATURE-* rules, Section 11) |
 | Linter research | `resources/research/architecture/linters/INDEX.md` |
 

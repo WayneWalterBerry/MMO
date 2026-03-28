@@ -234,7 +234,7 @@ All five must be addressed in WAVE-0 — building Phase 3 features on top of mod
 
 **Goal:** When a creature's health reaches zero, the engine reshapes the creature instance in-place into a portable corpse object. The creature file itself contains ALL death state data — no separate dead-creature files exist. This is D-14 in its purest form: the instance transforms, same GUID, different shape.
 
-**Design Source:** `plans/npc-combat/creature-inventory-plan.md` §4, `plans/food-system-plan.md` §5, Wayne directive (2026-03-27: in-place death reshape)
+**Design Source:** `plans/npc-combat/creature-inventory-plan.md` §4, `plans/food-system-design.md` §5, Wayne directive (2026-03-27: in-place death reshape)
 
 **Key Architecture Decision (v1.3 — Wayne directive):** Instead of file-swap mutation (`mutation.mutate()` to a separate `dead-rat.lua`), the engine **reshapes the creature instance in-place** using a new `reshape_instance()` function. Each creature file declares a `death_state` metadata block containing everything the dead version needs: new template, name, description, sensory text, food properties, container properties, and spoilage FSM. On death, the engine:
 1. Switches the instance's template from "creature" to the `death_state.template` value ("small-item" or "furniture")
@@ -443,7 +443,7 @@ death_state = {
 },
 ```
 
-**Sensory requirements:** Every `death_state` MUST have `on_feel` (primary dark sense), `on_smell` (blood/death/decay), `on_listen` (silence), full description, `room_presence` text. Spoilage FSM on edible corpses: fresh → bloated → rotten → bones (see food-system-plan.md §5).
+**Sensory requirements:** Every `death_state` MUST have `on_feel` (primary dark sense), `on_smell` (blood/death/decay), `on_listen` (silence), full description, `room_presence` text. Spoilage FSM on edible corpses: fresh → bloated → rotten → bones (see food-system-design.md §5).
 
 **Material:** `meat.lua` — new material for raw animal flesh (density 1050, ignition 300, hardness 1).
 
@@ -557,7 +557,7 @@ Add creature inventory validation rules:
 
 **Goal:** Complete the kill→cook→eat gameplay arc. The `cook` verb transforms raw food into cooked food via D-14 mutation. The cook target is the reshaped creature instance (now a small-item with `crafting.cook` metadata declared in the creature file's `death_state` block). Eating food applies effects. Spoiled food causes food poisoning.
 
-**Design Source:** `plans/food-system-plan.md` §6, §7, §8, §12
+**Design Source:** `plans/food-system-design.md` §6, §7, §8, §12
 
 #### Cook Verb Handler (Smithers)
 
@@ -1180,7 +1180,7 @@ Fixed inventory only. No loot tables in Phase 3. Fixed inventory is sufficient f
 | Feature | Why Deferred | Design Plan Reference |
 |---------|-------------|----------------------|
 | **Loot tables** (probabilistic drops) | Need more creature types to justify complexity | creature-inventory-plan.md §5 |
-| **Butcher verb** (knife + corpse = meat + bones) | Only needed for medium+ corpses (wolf) | food-system-plan.md §16 Phase 3 |
+| **Butcher verb** (knife + corpse = meat + bones) | Only needed for medium+ corpses (wolf) | food-system-design.md §16 Phase 3 |
 | **Pack tactics** (coordinated wolf attacks) | Requires AI coordination system not yet designed | combat-system-plan.md §11 Phase 3 |
 | **Wrestling/grapple** | Phase 3 of combat plan; rich feature, low priority | combat-system-plan.md §11 Phase 3 |
 | **Environmental combat** (push barrel, slam door) | Requires object-in-combat interaction model | combat-system-plan.md §11 Phase 3 |
@@ -1188,7 +1188,7 @@ Fixed inventory only. No loot tables in Phase 3. Fixed inventory is sufficient f
 | **Humanoid NPCs** (dialogue, memory, quests) | Phase 4 of NPC plan — massive scope | npc-system-plan.md §9 Phase 4 |
 | **Spider web creation** (creature-spawned objects) | Requires creature-creates-object engine pattern | npc-system-plan.md §9 Phase 3 |
 | **Lycanthropy** | Requires humanoid NPCs | combat-system-plan.md §10.3 |
-| **Multi-ingredient cooking** | Requires recipe system beyond single-item mutation | food-system-plan.md §16 Phase 3 |
+| **Multi-ingredient cooking** | Requires recipe system beyond single-item mutation | food-system-design.md §16 Phase 3 |
 | **Food preservation** (salting, smoking, drying) | Players will ask "how do I preserve food?" after discovering spoilage — explicitly deferred to Phase 4 to prevent scope creep | — |
 | **Creature-to-creature looting** | Requires creature AI to evaluate loot value | creature-inventory-plan.md §8 Phase 3 |
 | **Stress injury** | Complex cascading restrictions (can't attack, can't move) need extensive playtesting | Phase 4 — deferred per Q5 decision |
