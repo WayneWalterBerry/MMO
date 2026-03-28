@@ -506,7 +506,7 @@ class Violation:
     rule_id: str
     message: str
     fixable: bool = False
-    fix_safety: str = "unsafe"
+    fix_safety: Optional[str] = None
     owner: str = "unassigned"
 
 
@@ -614,7 +614,7 @@ def _add_violation(violations: List[Violation], path: Path, line: int, severity:
         severity = rc.severity
     meta = rule_registry.get_rule(rule_id)
     fixable = meta.fixable if meta else False
-    fix_safety = meta.fix_safety if meta else "unsafe"
+    fix_safety = meta.fix_safety if meta else None
     owner = _squad_router.owner_for(rule_id)
     violations.append(Violation(
         file=str(path), line=line, severity=severity, rule_id=rule_id,
@@ -2051,16 +2051,30 @@ def _collect_lua_files(path: Path) -> List[Path]:
     return lua_files
 
 
-def _format_text(violations: List[Violation], by_owner: bool = False) -> str:
+def _fix_prefix(v: Violation, fix_mode: str) -> str:
+    """Return a [FIXABLE-SAFE] or [FIXABLE-UNSAFE] prefix when fix flags are active."""
+    if not fix_mode or not v.fixable:
+        return ""
+    if v.fix_safety == "safe":
+        return "[FIXABLE-SAFE] "
+    if fix_mode == "unsafe" and v.fix_safety == "unsafe":
+        return "[FIXABLE-UNSAFE] "
+    return ""
+
+
+def _format_text(violations: List[Violation], by_owner: bool = False,
+                 fix_mode: str = "") -> str:
     if by_owner and violations:
-        return _format_text_by_owner(violations)
+        return _format_text_by_owner(violations, fix_mode=fix_mode)
     lines = []
     for v in violations:
-        lines.append(f"{v.file} : {v.line} : {v.severity.upper()} : {v.rule_id} : [{v.owner}] : {v.message}")
+        prefix = _fix_prefix(v, fix_mode)
+        lines.append(f"{prefix}{v.file} : {v.line} : {v.severity.upper()} : {v.rule_id} : [{v.owner}] : {v.message}")
     return "\n".join(lines)
 
 
-def _format_text_by_owner(violations: List[Violation]) -> str:
+def _format_text_by_owner(violations: List[Violation],
+                           fix_mode: str = "") -> str:
     """Group violations by squad owner for easy assignment."""
     from collections import defaultdict
     by_owner: Dict[str, List[Violation]] = defaultdict(list)
@@ -2071,7 +2085,8 @@ def _format_text_by_owner(violations: List[Violation]) -> str:
         vlist = by_owner[owner]
         lines.append(f"\n=== {owner} ({len(vlist)} violations) ===")
         for v in vlist:
-            lines.append(f"  {v.file} : {v.line} : {v.severity.upper()} : {v.rule_id} : {v.message}")
+            prefix = _fix_prefix(v, fix_mode)
+            lines.append(f"  {prefix}{v.file} : {v.line} : {v.severity.upper()} : {v.rule_id} : {v.message}")
     return "\n".join(lines)
 
 
@@ -2134,8 +2149,14 @@ def main() -> int:
     parser_cli.add_argument("--init-config", action="store_true", help="Generate default .meta-check.json and exit")
     parser_cli.add_argument("--by-owner", action="store_true", help="Group text output by squad member owner")
     parser_cli.add_argument("--no-cache", action="store_true", help="Disable incremental caching (full re-scan)")
+    parser_cli.add_argument("--fix", action="store_true", help="Mark safe-fixable violations (fix_safety=safe)")
+    parser_cli.add_argument("--unsafe-fixes", action="store_true", help="Mark ALL fixable violations (safe + unsafe)")
 
     args = parser_cli.parse_args()
+
+    if (args.fix or args.unsafe_fixes) and args.format == "json":
+        print("ERROR: --fix/--unsafe-fixes incompatible with --format json", file=sys.stderr)
+        return 1
 
     root = Path(__file__).resolve().parents[2]
 
@@ -2203,7 +2224,7 @@ def main() -> int:
                         severity=cv["severity"], rule_id=cv["rule_id"],
                         message=cv["message"],
                         fixable=cv.get("fixable", False),
-                        fix_safety=cv.get("fix_safety", "unsafe"),
+                        fix_safety=cv.get("fix_safety"),
                         owner=cv.get("owner", _squad_router.owner_for(cv["rule_id"])),
                     ))
                 parsed = _parse_file(path, [])
@@ -2963,10 +2984,18 @@ def main() -> int:
 
     cache_stats = {"enabled": use_cache, "hits": cache_hits, "misses": cache_misses}
 
+    # Determine fix mode from CLI flags
+    fix_mode = ""
+    if args.unsafe_fixes:
+        fix_mode = "unsafe"
+        print("\u26a0 Applying unsafe fixes \u2014 review changes before committing.", file=sys.stderr)
+    elif args.fix:
+        fix_mode = "safe"
+
     if args.format == "json":
         output = _format_json(filtered, len(lua_files), exit_code, cache_stats)
     else:
-        output = _format_text(filtered, by_owner=args.by_owner)
+        output = _format_text(filtered, by_owner=args.by_owner, fix_mode=fix_mode)
 
     if args.output:
         Path(args.output).write_text(output, encoding="utf-8")
