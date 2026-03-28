@@ -56,6 +56,8 @@ end
 
 local function actor_name(actor)
     if not actor then return "Someone" end
+    -- #289: Detect player attacker and narrate as "You"
+    if actor.id == "player" or actor.is_player then return "You" end
     local name = actor.name or actor.id or "someone"
     if name:lower() == "you" then return "You" end
     return name:sub(1, 1):upper() .. name:sub(2)
@@ -133,9 +135,12 @@ local DARK_TEMPLATES = {
 }
 
 local function render(template, data)
-    return (template:gsub("{(.-)}", function(key)
+    local text = template:gsub("{(.-)}", function(key)
         return data[key] or ""
-    end))
+    end)
+    -- #290: Collapse duplicate prepositions from verb+template overlap
+    text = text:gsub("into into", "into")
+    return text
 end
 
 function M.generate(result, light)

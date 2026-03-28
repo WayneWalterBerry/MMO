@@ -351,14 +351,37 @@ function M.register(handlers)
     ---------------------------------------------------------------------------
     handlers["goto"] = function(ctx, noun)
         if not noun or noun == "" then
-            print("Goto where? Usage: goto <room-id>")
+            print("Goto where? Usage: goto <room-name>")
             return
         end
 
         local target_id = noun:lower():gsub("^%s+", ""):gsub("%s+$", "")
         local target_room = ctx.rooms and ctx.rooms[target_id]
+
+        -- #287: Fall back to keyword/name search across all rooms
+        if not target_room and ctx.rooms then
+            for rid, room in pairs(ctx.rooms) do
+                local rname = (room.name or ""):lower()
+                if rname == target_id or rname:find(target_id, 1, true) then
+                    target_id = rid
+                    target_room = room
+                    break
+                end
+                if room.keywords then
+                    for _, kw in ipairs(room.keywords) do
+                        if kw:lower() == target_id then
+                            target_id = rid
+                            target_room = room
+                            break
+                        end
+                    end
+                    if target_room then break end
+                end
+            end
+        end
+
         if not target_room then
-            print("No room called '" .. target_id .. "' exists.")
+            print("No room called '" .. noun .. "' exists.")
             return
         end
 
