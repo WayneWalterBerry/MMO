@@ -93,6 +93,7 @@ return {
             mark_radius = 2,
             mark_duration = "1 day",
         },
+        territory = "hallway",
     },
 
     -- Drives

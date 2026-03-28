@@ -241,26 +241,55 @@ function M.execute_action(context, creature, action, helpers)
                 end
             end
             if obj_spec then
-                -- Condition check (e.g., max N objects per room)
+                -- max_per_room cap (declarative metadata — Principle 8)
                 local proceed = true
-                if obj_spec.condition then
+                if obj_spec.max_per_room and obj_spec.template then
+                    local room = helpers.get_room(context, creature_loc)
+                    if room and room.contents then
+                        local tpl = obj_spec.template
+                        local count = 0
+                        for _, ref in ipairs(room.contents) do
+                            local obj = context.registry and type(context.registry.get) == "function"
+                                and context.registry:get(ref) or nil
+                            if obj and obj.id and (obj.id == tpl or obj.id:sub(1, #tpl) == tpl) then
+                                count = count + 1
+                            end
+                        end
+                        if count >= obj_spec.max_per_room then
+                            proceed = false
+                        end
+                    end
+                end
+                -- Custom condition check
+                if proceed and obj_spec.condition then
                     proceed = obj_spec.condition(creature, context, helpers)
                 end
                 if proceed then
-                    local spec = obj_spec.object_def or {}
-                    local instance = {}
-                    for k, v in pairs(spec) do instance[k] = v end
-                    local uid = (creature.id or "creature") .. "-obj-" .. tostring(os.time()) .. "-" .. tostring(math.random(1000, 9999))
-                    instance.id = instance.id and (instance.id .. "-" .. uid) or uid
-                    instance.creator = creature.guid or creature.id
-                    -- Register in registry and place in creature's room
-                    if context.registry and type(context.registry.register) == "function" then
-                        context.registry:register(instance.id, instance)
+                    local instance
+                    -- Prefer registry:instantiate(template) for proper deep-copy + GUID
+                    if obj_spec.template and context.registry
+                        and type(context.registry.instantiate) == "function" then
+                        instance = context.registry:instantiate(obj_spec.template)
+                    else
+                        local spec = obj_spec.object_def or {}
+                        instance = {}
+                        for k, v in pairs(spec) do instance[k] = v end
+                        local uid = (creature.id or "creature") .. "-obj-" .. tostring(os.time()) .. "-" .. tostring(math.random(1000, 9999))
+                        instance.id = instance.id and (instance.id .. "-" .. uid) or uid
+                        -- Register manually when not using instantiate
+                        if context.registry then
+                            if type(context.registry.register) == "function" then
+                                context.registry:register(instance.id, instance)
+                            elseif type(context.registry.add) == "function" then
+                                context.registry:add(instance)
+                            end
+                        end
                     end
+                    instance.creator = creature.guid or creature.id
                     local room = helpers.get_room(context, creature_loc)
                     if room then
                         room.contents = room.contents or {}
-                        room.contents[#room.contents + 1] = instance.id
+                        room.contents[#room.contents + 1] = instance.guid or instance.id
                     end
                     instance.location = creature_loc
                     creature._last_creation = os.time()

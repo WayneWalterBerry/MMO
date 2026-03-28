@@ -75,11 +75,8 @@ return {
         -- WAVE-4: Creature-created objects (spider spins webs)
         creates_object = {
             template = "spider-web",
-            cooldown = "30 minutes",
-            condition = function(creature, ctx)
-                local webs = ctx.room:find_by_template("spider-web")
-                return #webs < 2
-            end,
+            cooldown = 30,
+            max_per_room = 2,
             narration = "The spider spins a web in the corner.",
         },
 
