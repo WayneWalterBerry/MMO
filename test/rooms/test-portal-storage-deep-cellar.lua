@@ -823,12 +823,12 @@ test("north portal has 'door' keyword", function()
     h.assert_truthy(found, "north portal must have 'door' keyword")
 end)
 
-test("north portal has 'iron door' keyword", function()
+test("north portal has 'black iron door' keyword", function()
     local found = false
     for _, k in ipairs(portal_north_def.keywords) do
-        if k == "iron door" then found = true; break end
+        if k == "black iron door" then found = true; break end
     end
-    h.assert_truthy(found, "north portal must have 'iron door' keyword")
+    h.assert_truthy(found, "north portal must have 'black iron door' keyword")
 end)
 
 test("south portal has 'door' keyword", function()
@@ -839,12 +839,12 @@ test("south portal has 'door' keyword", function()
     h.assert_truthy(found, "south portal must have 'door' keyword")
 end)
 
-test("south portal has 'iron door' keyword", function()
+test("south portal has 'black iron door' keyword", function()
     local found = false
     for _, k in ipairs(portal_south_def.keywords) do
-        if k == "iron door" then found = true; break end
+        if k == "black iron door" then found = true; break end
     end
-    h.assert_truthy(found, "south portal must have 'iron door' keyword")
+    h.assert_truthy(found, "south portal must have 'black iron door' keyword")
 end)
 
 test("north portal found by registry keyword 'door'", function()
@@ -856,12 +856,12 @@ test("north portal found by registry keyword 'door'", function()
     eq(pn.id, found.id, "found portal should be north portal")
 end)
 
-test("north portal found by registry keyword 'iron door'", function()
+test("north portal found by registry keyword 'black iron door'", function()
     local reg = registry_mod.new()
     local pn = deep_copy(portal_north_def)
     reg:register(pn.id, pn)
-    local found = reg:find_by_keyword("iron door")
-    h.assert_truthy(found, "registry must find portal by 'iron door'")
+    local found = reg:find_by_keyword("black iron door")
+    h.assert_truthy(found, "registry must find portal by 'black iron door'")
 end)
 
 ---------------------------------------------------------------------------

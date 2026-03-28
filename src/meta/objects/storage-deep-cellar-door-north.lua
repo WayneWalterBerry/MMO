@@ -7,10 +7,10 @@ return {
     template = "portal",
 
     id = "storage-deep-cellar-door-north",
-    name = "a second iron-bound door",
+    name = "the black iron door",
     material = "iron",
-    keywords = {"door", "iron door", "heavy door", "second door",
-                "iron-bound door", "north door", "deep cellar door"},
+    keywords = {"door", "black iron door", "black door", "second door",
+                "north door", "deep cellar door"},
     size = 6,
     weight = 150,
     portable = false,
@@ -27,10 +27,10 @@ return {
     requires_hands_free = false,
     player_max_size = 5,
 
-    description = "A second iron-bound door blocks the far end of the vault. This one is different — heavier, older, with a lock plate of black iron. A large keyhole waits, dark and empty.",
-    room_presence = "A second iron-bound door blocks the far end of the vault, its black iron lock plate staring like an empty eye.",
-    on_examine = "Heavier and older than the door behind you. The oak is nearly black with age, and the iron bands are thicker, more crudely forged — older work. A lock plate of black iron bears a large keyhole — meant for an iron key, not the delicate brass one. The door does not yield to pushing.",
-    on_feel = "Cold iron bands over oak. Heavier than the door behind you. The keyhole is large — meant for an iron key, not the delicate brass one. The door does not yield to pushing.",
+    description = "A black iron door blocks the far end of the vault. Heavier and older than the iron-bound door behind you, with a lock plate of black iron. A large keyhole waits, dark and empty.",
+    room_presence = "A black iron door blocks the far end of the vault, its lock plate staring like an empty eye.",
+    on_examine = "Heavier and older than the iron-bound door behind you. The oak is nearly black with age, and the iron bands are thicker, more crudely forged — older work. A lock plate of black iron bears a large keyhole — meant for an iron key, not the delicate brass one. The door does not yield to pushing.",
+    on_feel = "Cold black iron over ancient oak. Heavier than the door behind you. The keyhole is large — meant for an iron key, not the delicate brass one. The door does not yield to pushing.",
     on_smell = "Old iron and ancient oak. From beyond the door: drier air, colder, carrying the ghost of incense and old wax.",
     on_listen = "Silence from beyond. A deeper, more profound silence than the cellar behind you — as if the space beyond absorbs sound. No rats. No dripping.",
     on_taste = "Iron and ancient oak. The metal tastes older, cruder than the padlock on the other door.",
@@ -41,9 +41,9 @@ return {
     states = {
         locked = {
             traversable = false,
-            name = "a locked iron-bound door",
-            description = "A heavy iron-bound door, older and heavier than the first. A black iron lock plate with a large keyhole — meant for an iron key.",
-            room_presence = "A heavy iron-bound door blocks the far end of the vault, locked tight. Its keyhole stares darkly.",
+            name = "a locked black iron door",
+            description = "A heavy black iron door, older and heavier than the first. A black iron lock plate with a large keyhole — meant for an iron key.",
+            room_presence = "A heavy black iron door blocks the far end of the vault, locked tight. Its keyhole stares darkly.",
             on_examine = "The lock plate is black iron, the keyhole large. An iron key would fit. The door is immovable.",
             on_feel = "Cold, heavy iron. The keyhole is large — an iron key, not brass. The door does not budge.",
             on_smell = "Iron and ancient oak. The faintest breath of incense from beyond.",
@@ -52,9 +52,9 @@ return {
 
         closed = {
             traversable = false,
-            name = "an unlocked iron-bound door",
-            description = "The iron-bound door stands unlocked, its heavy lock plate hanging loose.",
-            room_presence = "The heavy iron-bound door to the deep cellar stands unlocked.",
+            name = "an unlocked black iron door",
+            description = "The black iron door stands unlocked, its heavy lock plate hanging loose.",
+            room_presence = "The heavy black iron door to the deep cellar stands unlocked.",
             on_examine = "The lock plate hangs loose — the iron key turned it. The door is heavy but free. A push would open it.",
             on_feel = "The door shifts — barely — in its frame. No longer locked, but heavy. It would take effort to open.",
             on_smell = "More of the ancient incense scent seeps through. Wax and dust.",
@@ -63,9 +63,9 @@ return {
 
         open = {
             traversable = true,
-            name = "an open iron-bound door",
-            description = "The iron door stands open, revealing a passage into older, darker stone beyond.",
-            room_presence = "The iron-bound door stands open, revealing worked limestone and vaulted darkness beyond.",
+            name = "an open black iron door",
+            description = "The black iron door stands open, revealing a passage into older, darker stone beyond.",
+            room_presence = "The black iron door stands open, revealing worked limestone and vaulted darkness beyond.",
             on_examine = "The door stands wide on massive hinges. Beyond: the architecture changes completely. Rough granite gives way to precisely fitted limestone. A vaulted ceiling rises into shadow. You smell incense and ancient dust.",
             on_feel = "The open door edge. Beyond: colder, drier air. The stone changes — smooth limestone instead of rough granite.",
             on_smell = "Incense and ancient dust pour through the opening. Wax and mineral dust. The smell of a place built for reverence.",

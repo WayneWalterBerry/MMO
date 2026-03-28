@@ -7,10 +7,10 @@ return {
     template = "portal",
 
     id = "deep-cellar-storage-door-south",
-    name = "the iron door",
+    name = "the black iron door",
     material = "iron",
-    keywords = {"door", "iron door", "iron-bound door", "south door",
-                "heavy door", "storage door"},
+    keywords = {"door", "black iron door", "black door", "south door",
+                "storage door"},
     size = 6,
     weight = 150,
     portable = false,
@@ -27,9 +27,9 @@ return {
     requires_hands_free = false,
     player_max_size = 5,
 
-    description = "The iron door stands open behind you, leading back to the narrow storage vault.",
-    room_presence = "The iron-bound door leads back to the storage vault.",
-    on_examine = "The same iron-bound door, seen from the deep cellar side. Heavy oak and iron, framed in limestone instead of granite. The lock plate and keyhole are on the storage side.",
+    description = "The black iron door stands open behind you, leading back to the narrow storage vault.",
+    room_presence = "The black iron door leads back to the storage vault.",
+    on_examine = "The same black iron door, seen from the deep cellar side. Heavy oak and iron, framed in limestone instead of granite. The lock plate and keyhole are on the storage side.",
     on_feel = "Heavy oak planks, thick iron bands. From this side the lock plate is unreachable — smooth oak and cold iron. The door is thick and solid.",
     on_smell = "From beyond the door: old grain, wood rot, the stale air of the storage vault. On this side: incense, ancient dust, cold limestone.",
     on_listen = "From beyond: the faint scratching of rats in the storage vault. On this side: the deep silence of the vaulted chamber.",
@@ -41,9 +41,9 @@ return {
     states = {
         locked = {
             traversable = false,
-            name = "a locked iron door",
-            description = "The iron door is shut, locked from the storage side. The lock plate is on the other face.",
-            room_presence = "The iron-bound door is shut tight, locked from the other side.",
+            name = "a locked black iron door",
+            description = "The black iron door is shut, locked from the storage side. The lock plate is on the other face.",
+            room_presence = "The black iron door is shut tight, locked from the other side.",
             on_examine = "Locked from the storage side. The keyhole is on the other face of the door.",
             on_feel = "Heavy oak and iron. The door does not budge. The lock is on the other side.",
             on_smell = "Old grain and wood rot seep from beyond. Locked and sealed.",
@@ -52,9 +52,9 @@ return {
 
         closed = {
             traversable = false,
-            name = "a closed iron door",
-            description = "The iron door is shut, cutting off the storage vault behind you.",
-            room_presence = "The iron-bound door to the storage vault is closed.",
+            name = "a closed black iron door",
+            description = "The black iron door is shut, cutting off the storage vault behind you.",
+            room_presence = "The black iron door to the storage vault is closed.",
             on_examine = "The door is closed but unlocked. A push would open it.",
             on_feel = "The door shifts — heavy, but free. Not locked.",
             on_smell = "Old grain seeps around the edges.",
@@ -63,9 +63,9 @@ return {
 
         open = {
             traversable = true,
-            name = "an open iron door",
-            description = "The iron door stands open, leading back to the narrow storage vault.",
-            room_presence = "The iron-bound door stands open to the storage vault beyond.",
+            name = "an open black iron door",
+            description = "The black iron door stands open, leading back to the narrow storage vault.",
+            room_presence = "The black iron door stands open to the storage vault beyond.",
             on_examine = "The door stands open on massive hinges. Beyond: the long, narrow storage vault with its sagging shelves and the smell of old grain.",
             on_feel = "The open door edge. Warmer, staler air drifts in from the storage vault.",
             on_smell = "Old grain, wood rot, and the sweet tang of decay from the vault.",
