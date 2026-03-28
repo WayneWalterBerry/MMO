@@ -20,6 +20,10 @@ Reference docs explain *what things are*:
 - **`rooms/`** — Per-room reference docs
 - **`puzzles/`** — Per-puzzle reference docs
 
+## Testing & Quality
+- **`testing/`** — Test framework, test patterns, CI guidelines
+  - **`testing/mutation-graph-linting.md`** — Mutation graph linter: edge extraction, validation, and debugging broken mutations
+
 ## Other Resources
 - **`levels/`** — Level design and intro docs
 - **`contributing/`** — Contribution guidelines and project standards
