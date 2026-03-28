@@ -219,22 +219,33 @@ The script supports two output modes via CLI flags:
    ```
    Outputs one file path per line — only valid (existing) targets. Broken edges go to stderr. Designed for piping to Python linter.
 
+### Parallel Execution
+
+**Objects can be expanded and linted in parallel.** The Lua edge extractor and Python meta-lint are independent per-object — there's no global dependency between "expand all" and "lint all." This enables three levels of parallelism:
+
+1. **Per-object streaming:** The extractor emits target paths as it finds them (one per line to stdout). The linter can begin processing the first target before the extractor finishes scanning.
+2. **Parallel linting:** Multiple linter instances run concurrently on different target files (`xargs -P` on Unix, `ForEach-Object -Parallel` on PowerShell 7).
+3. **Combined report:** Broken edges (from Lua) and lint violations (from Python) are collected independently, then merged into a single final report by the wrapper script.
+
+This means the wall-clock time is roughly `max(extract_time, lint_time)` instead of `extract_time + lint_time`.
+
 ### Integration with Python Meta-Lint
 
-Two complementary usage patterns:
+Usage patterns (all support parallel execution):
 
 ```bash
-# 1. Check edge existence (Lua only)
+# 1. Check edge existence only (Lua)
 lua scripts/mutation-edge-check.lua
 
-# 2. Full validation: edges + lint rules on all targets
-lua scripts/mutation-edge-check.lua --targets-only | xargs python scripts/meta-lint/lint.py
+# 2. Full parallel validation: edges + lint rules on all targets
+# Unix — parallel linting with 4 workers
+lua scripts/mutation-edge-check.lua --targets-only | xargs -P 4 -I {} python scripts/meta-lint/lint.py {}
 
-# 3. Windows equivalent
-lua scripts/mutation-edge-check.lua --targets-only | ForEach-Object { python scripts/meta-lint/lint.py $_ }
+# 3. Windows — parallel linting with PowerShell 7
+lua scripts/mutation-edge-check.lua --targets-only | ForEach-Object -Parallel { python scripts/meta-lint/lint.py $_ } -ThrottleLimit 4
 ```
 
-Or better: a wrapper script (`scripts/mutation-lint.ps1` / `scripts/mutation-lint.sh`) that runs both steps and combines output.
+Wrapper scripts (`scripts/mutation-lint.ps1` / `scripts/mutation-lint.sh`) run both steps with parallel linting and combine the outputs into a single report.
 
 ### Sandbox Loading Pattern
 
@@ -320,11 +331,16 @@ source: "earned — mutation edge extractor + meta-lint integration"
 
 ### Execution
 ```bash
-# Step 1: Check edges (Lua)
-lua scripts/mutation-edge-check.lua
+# Full parallel run: extract + lint concurrently
+# Unix
+lua scripts/mutation-edge-check.lua --targets-only | xargs -P 4 -I {} python scripts/meta-lint/lint.py {} > lint-results.txt &
+lua scripts/mutation-edge-check.lua > edge-results.txt &
+wait
+# Combine: edge-results.txt + lint-results.txt → final report
 
-# Step 2: Lint all targets (Python)
-lua scripts/mutation-edge-check.lua --targets-only | xargs python scripts/meta-lint/lint.py
+# Or use the wrapper (recommended):
+./scripts/mutation-lint.sh    # Unix
+.\scripts\mutation-lint.ps1   # Windows
 ```
 
 ### Issue Filing Rules
