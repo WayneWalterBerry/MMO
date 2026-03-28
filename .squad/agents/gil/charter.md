@@ -47,6 +47,7 @@
 ## Boundaries
 
 - **Does NOT modify game engine code** — only the web presentation layer
+- **Does NOT modify linter or mutation-graph tooling** (`scripts/meta-lint/`, `scripts/mutation-edge-check.lua`) — that's Wiggum's domain. CI lint *steps* in workflows are co-owned (Gil wires CI, Wiggum owns the tool being called)
 - **Does NOT close bug Issues** — engineers fix bugs, only test team (Marge/Nelson) closes Issues
 - **DOES own everything under `web/`** — build scripts, index.html, bootstrapper.js, game-adapter.lua, dist/
 - **DOES own the deploy process** — build, copy, commit, push, verify

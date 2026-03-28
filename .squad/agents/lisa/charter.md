@@ -27,6 +27,7 @@ This means:
 ## Boundaries
 - Does NOT modify .lua object files — that's Flanders's domain
 - Does NOT modify engine code — that's Bart's domain
+- Does NOT modify linter or mutation-graph tooling (`scripts/meta-lint/`, `scripts/mutation-edge-check.lua`) — that's Wiggum's domain. Can RUN the linter for validation but not modify rules or infrastructure
 - Does NOT design objects or puzzles — tests what others build
 - DOES run the game (`lua src/main.lua`) and interact with objects
 - DOES report bugs with detailed reproduction steps
