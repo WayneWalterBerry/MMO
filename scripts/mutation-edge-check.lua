@@ -235,16 +235,104 @@ local function resolve_target(target_id, file_map)
     return file_map[target_id]
 end
 
+-- mechanism_to_type(mechanism) -> display type for --json output
+local function mechanism_to_type(mechanism)
+    -- Strip death_state. prefix if present
+    local m = mechanism:gsub("^death_state%.", "")
+    if m == "mutations.becomes" then return "file-swap" end
+    if m == "mutations.spawns" then return "spawn" end
+    if m == "transitions.spawns" then return "spawn" end
+    if m == "crafting.becomes" then return "crafting" end
+    if m == "on_tool_use.when_depleted" then return "depletion" end
+    if m:match("^loot_table%.") then return "loot" end
+    if m == "behavior.creates_object" then return "creature-spawn" end
+    if m == "butchery_products" then return "butchery" end
+    return m
+end
+
+-- json_escape(s) -> JSON-safe string
+local function json_escape(s)
+    s = s:gsub("\\", "\\\\")
+    s = s:gsub('"', '\\"')
+    s = s:gsub("\n", "\\n")
+    s = s:gsub("\r", "\\r")
+    s = s:gsub("\t", "\\t")
+    return s
+end
+
+-- emit_json(files, all_edges, broken, all_dynamics, valid_targets) -> JSON string
+local function emit_json(files, all_edges, broken, all_dynamics, valid_targets)
+    local parts = {}
+    local function w(s) parts[#parts + 1] = s end
+
+    w('{\n')
+
+    -- summary
+    w('  "summary": {\n')
+    w('    "files_scanned": ' .. #files .. ',\n')
+    w('    "edges_found": ' .. #all_edges .. ',\n')
+    w('    "broken_targets": ')
+    -- Count unique broken target ids
+    local broken_ids = {}
+    for _, b in ipairs(broken) do
+        broken_ids[b.target] = true
+    end
+    local broken_target_count = 0
+    for _ in pairs(broken_ids) do broken_target_count = broken_target_count + 1 end
+    w(broken_target_count .. ',\n')
+    w('    "broken_edges": ' .. #broken .. ',\n')
+    w('    "dynamic_paths": ' .. #all_dynamics .. ',\n')
+    w('    "valid_targets": ' .. #valid_targets .. '\n')
+    w('  },\n')
+
+    -- broken edges
+    w('  "broken": [\n')
+    for i, b in ipairs(broken) do
+        w('    { ')
+        w('"from": "' .. json_escape(b.source) .. '", ')
+        w('"to": "' .. json_escape(b.target) .. '", ')
+        w('"type": "' .. json_escape(mechanism_to_type(b.mechanism)) .. '", ')
+        w('"verb": "' .. json_escape(b.verb) .. '", ')
+        w('"source_file": "' .. json_escape(b.source_filepath) .. '"')
+        w(' }')
+        if i < #broken then w(',') end
+        w('\n')
+    end
+    w('  ],\n')
+
+    -- dynamic mutations
+    w('  "dynamic": [\n')
+    for i, d in ipairs(all_dynamics) do
+        -- mutator: use the mechanism's last segment as the function/key name
+        local mutator = d.mechanism:match("([^.]+)$") or d.mechanism
+        w('    { ')
+        w('"from": "' .. json_escape(d.source) .. '", ')
+        w('"verb": "' .. json_escape(d.verb) .. '", ')
+        w('"mutator": "' .. json_escape(mutator) .. '"')
+        w(' }')
+        if i < #all_dynamics then w(',') end
+        w('\n')
+    end
+    w('  ]\n')
+
+    w('}\n')
+    return table.concat(parts)
+end
+
 -- main(root) — orchestrator
 local function main(root)
     root = root or ("src" .. SEP .. "meta")
 
     local targets_mode = false
+    local json_mode = false
     if arg then
         for i = 1, #arg do
             if arg[i] == "--targets" then targets_mode = true end
+            if arg[i] == "--json" then json_mode = true end
         end
     end
+    -- --json wins if both specified
+    if json_mode then targets_mode = false end
 
     -- Scan all .lua files
     local files, subdirs = scan_meta_root(root)
@@ -277,7 +365,10 @@ local function main(root)
     end
 
     -- Output
-    if targets_mode then
+    if json_mode then
+        io.write(emit_json(files, all_edges, broken, all_dynamics, valid_targets))
+        os.exit(#broken > 0 and 1 or 0)
+    elseif targets_mode then
         -- Valid target filepaths to stdout (deduplicated)
         local seen = {}
         for _, vt in ipairs(valid_targets) do
