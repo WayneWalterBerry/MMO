@@ -203,14 +203,16 @@ Uses `test/parser/test-helpers.lua` (existing framework). Tests the extractor fu
 #### `scripts/mutation-lint.ps1` — Specification
 
 ```powershell
-# Mutation Lint — Full Pipeline
-# Step 1: Run Lua edge extractor (reports broken edges)
-# Step 2: Pipe valid targets to Python meta-lint (reports rule violations)
+# Mutation Lint — Full Parallel Pipeline
+# Objects are expanded and linted in parallel (D-MUTATION-LINT-PARALLEL)
+# Step 1: Edge check (broken edges report)
+# Step 2: Lint all valid targets concurrently with -Parallel
 
 param(
     [switch]$EdgesOnly,    # Skip lint step, just check edges
     [string]$Format = "text",
-    [string]$Env = $null
+    [string]$Env = $null,
+    [int]$ThrottleLimit = 4  # Parallel lint workers
 )
 
 # Step 1: Edge check
@@ -220,12 +222,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if (-not $EdgesOnly) {
-    # Step 2: Lint all valid targets
+    # Step 2: Lint all valid targets in parallel
     $targets = lua scripts/mutation-edge-check.lua --targets-only
     if ($targets) {
-        $targets | ForEach-Object {
-            python scripts/meta-lint/lint.py $_ --format $Format
-        }
+        $targets | ForEach-Object -Parallel {
+            python scripts/meta-lint/lint.py $_ --format $using:Format
+        } -ThrottleLimit $ThrottleLimit
     }
 }
 ```
@@ -234,10 +236,19 @@ if (-not $EdgesOnly) {
 
 ```bash
 #!/bin/bash
-# Step 1: Edge check
-lua scripts/mutation-edge-check.lua
-# Step 2: Lint targets
-lua scripts/mutation-edge-check.lua --targets-only | xargs python scripts/meta-lint/lint.py
+# Mutation Lint — Full Parallel Pipeline
+# Objects are expanded and linted in parallel (D-MUTATION-LINT-PARALLEL)
+WORKERS=${1:-4}
+
+# Step 1: Edge check (runs concurrently with lint via background job)
+lua scripts/mutation-edge-check.lua &
+EDGE_PID=$!
+
+# Step 2: Lint targets in parallel (starts immediately, streams from extractor)
+lua scripts/mutation-edge-check.lua --targets-only | xargs -P "$WORKERS" -I {} python scripts/meta-lint/lint.py {}
+
+# Wait for edge report to finish
+wait $EDGE_PID
 ```
 
 #### Integration Test
