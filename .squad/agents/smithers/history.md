@@ -49,6 +49,20 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+### 2026-07 — WAVE-1 Linter Fixes: XF-03 Smart Filtering (#190) + XR-05 Template Suppression (#196)
+
+**XF-03 (keyword collision false positives):** Rewrote the XF-03 cross-file keyword check in `lint.py` from unconditional WARNING to context-aware 3-tier logic:
+1. **Config opt-out:** `config.get_rule_config("XF-03", "allowed_shared")` — keywords like "match", "key", "door" skip entirely (37 violations eliminated).
+2. **Cross-room downgrade:** Built `guid_to_room_ids` map by recursively walking room `instances` → `type_id` GUIDs. Objects confirmed in different rooms get downgraded to INFO (110 violations downgraded).
+3. **Same-room disambiguation:** For confirmed same-room pairs, checks if either object has a keyword the other lacks. If so, the player can disambiguate — no warning needed.
+4. **Unplaced objects:** Objects not placed in any room keep the existing WARNING behavior (conservative — 99 warnings preserved).
+
+**Key design choice:** Disambiguation only fires for objects with confirmed same-room placement. Unplaced objects (no room assignment) retain WARNING because they may be placed later and room context is needed for proper disambiguation. This keeps the linter useful for detecting potential issues during object authoring.
+
+**XR-05 (template false positive):** Removed `_add_violation` for XR-05 inside the template loop but kept `generic_templates.add()` so XR-05b (object inheritance of generic material) still works. One-line change.
+
+**Results:** Baseline 246 XF-03 → 209 total (37 eliminated, 110 downgraded to INFO, 99 warnings remain). All 8 linter tests pass (6 passed, 1 xpassed, 1 xfailed for out-of-scope feature).
+
 ### 2026-07 — Phase 4 Silk Wiring Bugs (2 fixes)
 
 **Bug 1: Identical-item disambiguation bypass** — `_try_room_scored()` in helpers.lua fired disambiguation when multiple objects with the same `id` tied on adjective score (e.g., 3 silk-bundles on the floor from killed spiders). Added an `all_same_id` check after tie detection: if every top-scoring match shares the same base `id`, return the first one. Fungible items don't need disambiguation.

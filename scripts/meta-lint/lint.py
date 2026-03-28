@@ -2264,6 +2264,42 @@ def main() -> int:
             for parsed in files:
                 _add_violation(violations, parsed.path, _line_for(parsed, "guid"), "error", "XF-01", f"Duplicate guid '{guid}'")
 
+    # Build object GUID → room ID mapping for XF-03 room-aware filtering (#190)
+    guid_to_room_ids: Dict[str, Set[str]] = {}
+
+    def _collect_room_membership(
+        table_value: Optional[LuaValue], room_id: str,
+    ) -> None:
+        if table_value is None or not isinstance(table_value, LuaValue):
+            return
+        tbl = _as_table(table_value)
+        if tbl is None:
+            return
+        for item in tbl.array:
+            if item.kind != "table":
+                continue
+            item_fields = item.value.fields
+            type_id = _as_string(item_fields.get("type_id"))
+            if type_id is not None:
+                bare = type_id.strip("{}")
+                guid_to_room_ids.setdefault(bare, set()).add(room_id)
+            for rel in ("on_top", "contents", "nested", "underneath"):
+                rel_value = item_fields.get(rel)
+                if rel_value is not None:
+                    _collect_room_membership(rel_value, room_id)
+
+    for p in parsed_files:
+        if p.kind == "room":
+            rid = _as_string(p.fields.get("id"))
+            if rid:
+                _collect_room_membership(p.fields.get("instances"), rid)
+
+    # XF-03 config: allowed_shared keywords and cross-room severity
+    xf03_allowed = _active_config.get_rule_config("XF-03", "allowed_shared") or []
+    xf03_allowed_set = frozenset(k.lower() for k in xf03_allowed)
+    xf03_cross_sev = _active_config.get_rule_config(
+        "XF-03", "cross_room_severity", "info")
+
     for keyword, files in keyword_map.items():
         if len(files) > 1:
             # Smart XF-03: skip category keywords and config-allowlisted keywords
@@ -2271,9 +2307,72 @@ def main() -> int:
                 continue
             if _active_config.is_keyword_allowed(keyword):
                 continue
+            if keyword in xf03_allowed_set:
+                continue
             file_list = ", ".join(sorted({f.path.name for f in files}))
+
+            # Resolve room membership per file
+            file_rooms: Dict[str, Set[str]] = {}
+            for f in files:
+                bare = f.guid.strip("{}") if f.guid else None
+                file_rooms[str(f.path)] = (
+                    guid_to_room_ids.get(bare, set()) if bare else set()
+                )
+
             for parsed in files:
-                _add_violation(violations, parsed.path, _line_for(parsed, "keywords"), "warning", "XF-03", f"Keyword '{keyword}' appears in multiple files: {file_list}")
+                p_rooms = file_rooms[str(parsed.path)]
+                peers = [f for f in files if f is not parsed]
+
+                # Classify peers: cross-room only when BOTH have known rooms
+                # and no overlap. Unplaced objects keep WARNING (conservative).
+                confirmed_cross = []
+                same_or_unknown = []
+                for peer in peers:
+                    pr = file_rooms[str(peer.path)]
+                    if p_rooms and pr and not (p_rooms & pr):
+                        confirmed_cross.append(peer)
+                    else:
+                        same_or_unknown.append(peer)
+
+                if not same_or_unknown and confirmed_cross:
+                    # All peers confirmed in different rooms — downgrade
+                    _add_violation(
+                        violations, parsed.path,
+                        _line_for(parsed, "keywords"),
+                        xf03_cross_sev, "XF-03",
+                        f"Keyword '{keyword}' shared cross-room: {file_list}")
+                elif same_or_unknown:
+                    # Same-room or unplaced peers — check disambiguation
+                    # for confirmed same-room pairs only
+                    confirmed_same = [
+                        p for p in same_or_unknown
+                        if p_rooms and file_rooms[str(p.path)]
+                        and (p_rooms & file_rooms[str(p.path)])
+                    ]
+                    if confirmed_same:
+                        # At least one peer shares a room — disambiguate
+                        p_kws = set(k.lower() for k in parsed.keywords)
+                        ambiguous = False
+                        for peer in confirmed_same:
+                            peer_kws = set(k.lower() for k in peer.keywords)
+                            if not (p_kws - peer_kws) and not (peer_kws - p_kws):
+                                ambiguous = True
+                                break
+                        if ambiguous:
+                            _add_violation(
+                                violations, parsed.path,
+                                _line_for(parsed, "keywords"),
+                                "warning", "XF-03",
+                                f"Keyword '{keyword}' ambiguous in same room: "
+                                f"{file_list}")
+                    else:
+                        # Unplaced objects — keep existing WARNING behavior
+                        _add_violation(
+                            violations, parsed.path,
+                            _line_for(parsed, "keywords"),
+                            "warning", "XF-03",
+                            f"Keyword '{keyword}' appears in multiple files: "
+                            f"{file_list}")
 
     # -----------------------------------------------------------------
     # Cross-file data collection for V2 validators
@@ -2384,7 +2483,7 @@ def main() -> int:
                                            f"on_use.cures '{cures}' not a known injury id")
 
     # XR-04: Object material values reference material files (covered by MAT-02)
-    # XR-05: Template material = "generic" is intentional (INFO)
+    # XR-05: Templates intentionally use generic material — suppressed (#196)
     template_ids: set = set()
     generic_templates: Set[str] = set()
     for parsed in parsed_files:
@@ -2395,10 +2494,8 @@ def main() -> int:
             mat = _as_string(parsed.fields.get("material"))
             if mat and mat == "generic" and mat not in materials.get("names", set()):
                 generic_templates.add(tid or "")
-                _add_violation(violations, parsed.path,
-                               _line_for(parsed, "material"),
-                               "info", "XR-05",
-                               "Template uses 'generic' material (instances must override)")
+                # XR-05 suppressed for templates — they intentionally use
+                # generic material; only object files trigger XR-05 via XR-05b
 
     # XR-05b: Objects inheriting a generic-material template without override
     if generic_templates:

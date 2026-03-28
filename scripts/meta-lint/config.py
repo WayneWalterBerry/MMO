@@ -42,6 +42,28 @@ sys.modules.setdefault("rule_registry", rule_registry)
 _spec.loader.exec_module(rule_registry)
 
 
+# Per-rule configuration defaults.  Rules can declare structured parameters
+# here; user overrides in .meta-check.json are merged on top at load time.
+DEFAULT_RULE_CONFIG: Dict[str, Dict] = {
+    "XF-03": {
+        "allowed_shared": ["match", "key", "door"],
+        "cross_room_severity": "info",
+    },
+}
+
+
+def get_rule_config(rule_id: str, key: str, default=None):
+    """Look up a per-rule configuration value from defaults.
+
+    Returns the value for *key* under *rule_id*, or *default* if the rule
+    or key is not present in DEFAULT_RULE_CONFIG.
+    """
+    rule = DEFAULT_RULE_CONFIG.get(rule_id)
+    if rule is None:
+        return default
+    return rule.get(key, default)
+
+
 @dataclass
 class RuleConfig:
     enabled: bool = True
@@ -55,6 +77,16 @@ class CheckConfig:
     keyword_allowlist: Set[str] = field(default_factory=set)
     orphan_allowlist: Dict[str, str] = field(default_factory=dict)
     squad_routing: Optional[Dict[str, str]] = None
+    rule_params: Dict[str, Dict] = field(default_factory=dict)
+
+    def get_rule_config(self, rule_id: str, key: str, default=None):
+        """Look up per-rule config: user overrides first, then defaults."""
+        user = self.rule_params.get(rule_id)
+        if user is not None:
+            val = user.get(key)
+            if val is not None:
+                return val
+        return get_rule_config(rule_id, key, default)
 
     def is_rule_enabled(self, rule_id: str) -> bool:
         """Check if a rule is enabled (per-rule overrides beat category)."""
@@ -109,6 +141,10 @@ def parse_config(json_text: str) -> CheckConfig:
                 raise ValueError(f"Invalid severity '{sev}' for rule {rule_id}")
             rc.severity = sev
         cfg.rules[rule_id] = rc
+        # Collect additional per-rule params (beyond enabled/severity)
+        extra = {k: v for k, v in opts.items() if k not in ("enabled", "severity")}
+        if extra:
+            cfg.rule_params[rule_id] = extra
 
     categories_data = data.get("categories", {})
     for cat_name, cat_opts in categories_data.items():

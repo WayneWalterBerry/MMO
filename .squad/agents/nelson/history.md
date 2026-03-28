@@ -34,3 +34,14 @@
 - Pre-existing test failures (4 files: silk-crafting, predator-prey, spider-web, combat-verbs) predate this change.
 - `loader` is a static module (no `.new()`), `loader.load_source()` takes a SOURCE STRING not a file path.
 - `verbs.create()` returns handlers directly — no `register_all` method.
+
+### Linter Test Infrastructure — WAVE-0 + WAVE-1 (2026-07-29)
+- Built pytest scaffold at `test/linter/` for meta-lint testing (D-LINTER-TEST-INFRA)
+- **Files created:** `__init__.py`, `conftest.py` (5 fixtures: `lint_runner`, `tmp_meta_dir`, `sample_object`, `sample_room`, `sample_creature`, `sample_portal`), `helpers.py` (constants + assertion helpers), `fixtures/` (5 .lua files)
+- **Baseline snapshot:** 206 files, 462 violations (1 error, 319 warnings, 142 info) — stored in `test/linter/baseline-snapshot.json`
+- **test_xf03.py** — 5 tests for XF-03 keyword collision smart filtering (#190): same-room WARNING, cross-room INFO downgrade, allowlist suppression, disambiguator suppression, regression on true ambiguity. All pass.
+- **test_xr05.py** — 3 tests for XR-05 generic material detection (#196): template suppression, object XR-05b warning, real material no-fire. All pass.
+- **Discovery:** WAVE-1 XF-03 and XR-05 fixes are already implemented in `lint.py` — room-aware filtering, disambiguator logic, `get_rule_config()` API, and template XR-05 suppression are all live. Tests validate the existing implementation.
+- **Key pattern:** lint.py resolves project root from `Path(__file__).resolve().parents[2]`, NOT cwd. Tests must use `--config` to isolate from project `.meta-check.json`. The `lint_runner` fixture handles this.
+- `conftest.py` uses `_load_sibling()` importlib pattern (same as lint.py) for module imports.
+- Tests use subprocess to call lint.py with `--format json --no-cache`, parse JSON output, filter by rule_id.

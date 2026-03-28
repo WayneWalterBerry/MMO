@@ -1,0 +1,41 @@
+{
+  "meta_check_version": "3.0",
+  "timestamp": "2026-03-28T20:26:18.576723+00:00",
+  "files_scanned": 206,
+  "summary": {
+    "total_files": 206,
+    "errors": 1,
+    "warnings": 319,
+    "infos": 142,
+    "fixable_count": 209,
+    "safe_fixes": 0,
+    "unsafe_fixes": 209,
+    "by_owner": {
+      "Flanders": 196,
+      "Bart": 52,
+      "Smithers": 212,
+      "Sideshow Bob": 2
+    }
+  },
+  "exit_code": 1,
+  "total_violations": 462,
+  "violations_by_rule": {
+    "EXIT-04": 2,
+    "GUID-02": 50,
+    "INJ-19": 2,
+    "INJ-28": 2,
+    "INJ-32": 3,
+    "INJ-43": 10,
+    "INJ-69": 11,
+    "MAT-01": 1,
+    "MAT-03": 145,
+    "MD-05": 1,
+    "MD-20": 4,
+    "MD-21": 9,
+    "MD-24": 8,
+    "S-11": 1,
+    "TD-06": 1,
+    "XF-03": 209,
+    "XR-01": 3
+  }
+}
