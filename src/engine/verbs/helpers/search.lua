@@ -165,6 +165,10 @@ local function _try_room_scored(kw, reg, room, ctx)
         if seen_names[n] then has_dupes = true; break end
         seen_names[n] = true
     end
+    -- #299: Ordinal words for differentiating identical-name items
+    local ordinals = { "first", "second", "third", "fourth", "fifth",
+                       "sixth", "seventh", "eighth", "ninth", "tenth" }
+    local ordinal_idx = 0
     local name_idx = 0
     for _, m in ipairs(matches) do
         if m.score == top_score then
@@ -175,6 +179,12 @@ local function _try_room_scored(kw, reg, room, ctx)
                 if dir then
                     local bare = name:gsub("^a%s+", ""):gsub("^an%s+", ""):gsub("^the%s+", "")
                     name = "the " .. dir .. " " .. bare
+                else
+                    -- #299: Ordinal fallback for non-door identical names
+                    ordinal_idx = ordinal_idx + 1
+                    local ord = ordinals[ordinal_idx] or tostring(ordinal_idx)
+                    local bare = name:gsub("^a%s+", ""):gsub("^an%s+", ""):gsub("^the%s+", "")
+                    name = "the " .. ord .. " " .. bare
                 end
             end
             names[#names + 1] = name

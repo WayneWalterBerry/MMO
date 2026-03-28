@@ -197,13 +197,27 @@ function verbs.create()
                 end
             end
             if all_same then return matches[1] end
-            -- Different creatures: prompt disambiguation
+            -- Different creatures: prompt disambiguation (#344 fix: standard format)
             local names = {}
             for _, c in ipairs(matches) do
                 names[#names + 1] = c.name or c.id
             end
-            print("Which one? " .. table.concat(names, ", ") .. "?")
-            ctx.disambiguation_prompt = names
+            local prompt
+            if #names == 2 then
+                prompt = "Which do you mean: " .. names[1] .. " or " .. names[2] .. "?"
+            else
+                local parts = {}
+                for i, n in ipairs(names) do
+                    if i == #names then
+                        parts[#parts + 1] = "or " .. n
+                    else
+                        parts[#parts + 1] = n
+                    end
+                end
+                prompt = "Which do you mean: " .. table.concat(parts, ", ") .. "?"
+            end
+            print(prompt)
+            ctx.disambiguation_prompt = prompt
             return nil
         end
 

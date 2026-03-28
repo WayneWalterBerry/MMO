@@ -64,6 +64,17 @@ function M.register(handlers)
         fsm_interact(ctx, noun, "step", "Step on what?")
     end
 
+    -- #322: unbar/bar verb handlers for door FSM transitions
+    handlers["unbar"] = function(ctx, noun)
+        fsm_interact(ctx, noun, "unbar", "Unbar what?")
+    end
+    handlers["lift bar"] = handlers["unbar"]
+    handlers["remove bar"] = handlers["unbar"]
+
+    handlers["bar"] = function(ctx, noun)
+        fsm_interact(ctx, noun, "bar", "Bar what?")
+    end
+
 end
 
 return M
