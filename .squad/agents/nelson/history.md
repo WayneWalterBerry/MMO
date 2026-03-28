@@ -76,3 +76,12 @@
 - **Registered `test/meta` in run-tests.lua:** added to `test_dirs`, `source_to_tests` mapping for `scripts/mutation-edge-check.lua`, and shard note ("other" shard).
 - **All 256 test files pass** including the new one. No regressions.
 
+### WAVE-1 Mutation-Lint Integration Tests (2026-08-23)
+- Built `test/meta/test-mutation-lint-integration.lua` — 13 tests across 5 suites for end-to-end mutation-lint pipeline.
+- **Python availability guard:** Checks `io.popen("python --version")` — if unavailable, prints "SKIP: Python not available" and exits 0 (not a failure). Critical for CI environments without Python.
+- **`suite()` is just a print header, NOT a function wrapper.** Tests follow directly after `suite("name")` calls — no nesting. Initial version used `suite("name", function()...)` which broke test discovery.
+- **`--targets` output includes WARNING lines for broken edges.** Parser must skip lines starting with "WARNING:" to get clean filepath list. Without filtering, file existence checks fail on warning text.
+- **Test coverage:** (1) `--targets` runs without crash and outputs filepaths, (2) all listed files exist on disk, (3) known targets present (cloth.lua, glass-shard.lua, matchbox.lua, silk-bundle.lua, rag.lua), (4) lint.py executes without crashing on first target + known target, (5) wrapper script existence check (graceful skip if Bart's task incomplete).
+- **`run_command()` helper:** Uses `io.popen(cmd .. " 2>&1")` to capture both stdout and stderr. Returns output string + success boolean. Essential for cross-platform command execution.
+- **All 257 test files pass** including the new integration test. No regressions.
+
