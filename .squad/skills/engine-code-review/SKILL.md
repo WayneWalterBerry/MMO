@@ -10,6 +10,8 @@ source: "earned — March 25 P0-A engine code review (verbs/init.lua 5,884→12 
 
 When engine code has been growing organically across many sessions and multiple agents contributing, .lua files can become runaways — monoliths that are too large for efficient LLM editing, hard to test in isolation, and risky to modify. This skill defines the pattern Wayne established: periodic senior engineer code review → TDD safety net → refactor → verify.
 
+**Primary goal: LLM editability.** The reason we split files is so LLM agents can modify them most easily. The Coordinator decides which files to split based on Bart's review — no human approval needed for the split list. The guiding question is always: "Will this split make it easier for an LLM agent to read, understand, and edit this code?" If yes, split. If the file is already manageable for an LLM context window, leave it alone.
+
 Applies when:
 - Any engine file exceeds ~500 lines
 - Multiple agents are frequently editing the same file (contention signal)
