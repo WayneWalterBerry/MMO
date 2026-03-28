@@ -2,6 +2,18 @@
 
 Welcome to **MMO**, a modern text adventure game inspired by the timeless design of *Zork*. This is a working prototype implementing a **Lua-based interactive fiction engine** with containment hierarchies, a mutation-based object system, and a verb-dispatch command parser.
 
+## 🎮 Play Now
+
+**[Play in your browser →](https://waynewalterberry.github.io/play/)**
+
+Wake up in a dark manor at 2 AM with no memory. Your only tool: your senses.
+
+MMO is a Zork-inspired text adventure that runs entirely in the browser — no install required. The game is powered by Fengari, a JavaScript implementation of Lua, so you can experience the full engine directly in your browser.
+
+**Try it now:** https://waynewalterberry.github.io/play/
+
+---
+
 ## What Is This?
 
 MMO is a functional **text adventure engine** built on Lua, featuring:
