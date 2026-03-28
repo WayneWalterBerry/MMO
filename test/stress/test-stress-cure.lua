@@ -257,6 +257,110 @@ test("2. rest in unsafe room does NOT cure stress", function()
 end)
 
 ---------------------------------------------------------------------------
+-- TESTS: #308 — Rest verb MUST call cure_stress
+---------------------------------------------------------------------------
+suite("#308: rest verb handler calls cure_stress")
+
+test("3. #308: rest verb reduces stress when resting in safe room", function()
+    h.assert_truthy(injury_mod, "engine.injuries must load")
+    setup()
+
+    local verbs_ok, verbs_mod = pcall(require, "engine.verbs")
+    h.assert_truthy(verbs_ok, "engine.verbs must load: " .. tostring(verbs_mod))
+    local handlers = verbs_mod.create()
+    local rest_fn = handlers["rest"]
+    h.assert_truthy(rest_fn, "rest handler must exist")
+
+    local player = fresh_player()
+    player.hands = { nil, nil }
+    player.worn = {}
+    player.bags = {}
+    player.consciousness = { state = "conscious" }
+
+    -- Accumulate stress to "shaken" level (3 stress)
+    add_stress_n(player, "witness_creature_death", 3)
+    h.assert_eq(3, player.stress, "Pre-condition: stress must be 3")
+
+    local safe_room = make_safe_room()
+    safe_room.contents = {}
+    safe_room.sky_visible = false
+
+    local reg = {
+        _objects = {},
+        get = function(self, id) return self._objects[id] end,
+        list = function(self) return {} end,
+    }
+
+    local ctx = {
+        player = player,
+        current_room = safe_room,
+        room = safe_room,
+        registry = reg,
+        time_offset = 2,
+        game_start_time = os.time(),
+        headless = true,
+        current_verb = "rest",
+        known_objects = {},
+    }
+
+    capture_output(function()
+        rest_fn(ctx, "for 2 hours")
+    end)
+
+    h.assert_eq(0, player.stress,
+        "#308: Stress must be 0 after resting 2 hours in a safe room (got " .. tostring(player.stress) .. ")")
+end)
+
+test("4. #308: rest verb does NOT reduce stress in unsafe room", function()
+    h.assert_truthy(injury_mod, "engine.injuries must load")
+    setup()
+
+    local verbs_ok, verbs_mod = pcall(require, "engine.verbs")
+    h.assert_truthy(verbs_ok, "engine.verbs must load")
+    local handlers = verbs_mod.create()
+    local rest_fn = handlers["rest"]
+
+    local player = fresh_player()
+    player.hands = { nil, nil }
+    player.worn = {}
+    player.bags = {}
+    player.consciousness = { state = "conscious" }
+
+    -- Accumulate stress
+    add_stress_n(player, "witness_creature_death", 3)
+    h.assert_eq(3, player.stress, "Pre-condition: stress must be 3")
+
+    local unsafe_room = make_unsafe_room()
+    unsafe_room.contents = {}
+    unsafe_room.sky_visible = false
+
+    local reg = {
+        _objects = {},
+        get = function(self, id) return self._objects[id] end,
+        list = function(self) return {} end,
+    }
+
+    local ctx = {
+        player = player,
+        current_room = unsafe_room,
+        room = unsafe_room,
+        registry = reg,
+        time_offset = 2,
+        game_start_time = os.time(),
+        headless = true,
+        current_verb = "rest",
+        known_objects = {},
+    }
+
+    capture_output(function()
+        rest_fn(ctx, "for 2 hours")
+    end)
+
+    h.assert_eq(3, player.stress,
+        "#308: Stress must remain 3 when resting in unsafe room (hostile creatures)")
+end)
+
+---------------------------------------------------------------------------
 -- Summary
 ---------------------------------------------------------------------------
 local exit_code = h.summary()

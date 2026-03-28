@@ -208,6 +208,17 @@ function M.register(handlers)
             end
         end
 
+        -- #308: Attempt stress cure after rest (safe room + duration gated)
+        local cure_inj_ok, cure_injury_mod = pcall(require, "engine.injuries")
+        if cure_inj_ok and cure_injury_mod and cure_injury_mod.cure_stress
+           and ctx.player and (ctx.player.stress or 0) > 0 then
+            local cure_ctx = { room = ctx.current_room }
+            local cured = cure_injury_mod.cure_stress(ctx.player, cure_ctx, sleep_hours)
+            if cured then
+                sleep_messages[#sleep_messages + 1] = "With rest and safety, the panic slowly fades."
+            end
+        end
+
         -- Compute time after sleep
         local after_h, after_m = get_game_time(ctx)
 

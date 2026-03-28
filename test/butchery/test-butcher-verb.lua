@@ -184,6 +184,41 @@ local function make_living_wolf()
     }
 end
 
+-- #343: Living wolf WITH death_state (matches real wolf object structure)
+local function make_living_wolf_with_death_state()
+    return {
+        guid = "{live-wolf-ds-001}",
+        id = "wolf",
+        template = "creature",
+        name = "a grey wolf",
+        keywords = {"wolf"},
+        description = "A snarling wolf bares its teeth.",
+        on_feel = "You'd rather not touch a living wolf.",
+        animate = true,
+        alive = true,
+        portable = false,
+        is_corpse = false,
+        max_health = 22,
+        health = 22,
+        death_state = {
+            template = "furniture",
+            portable = false,
+            butchery_products = {
+                requires_tool = "butchering",
+                products = {
+                    { id = "wolf-meat", quantity = 3 },
+                    { id = "wolf-hide", quantity = 1 },
+                },
+                narration = {
+                    start = "You begin carving the wolf carcass...",
+                    complete = "You finish butchering.",
+                },
+                removes_corpse = true,
+            },
+        },
+    }
+end
+
 local function make_chair()
     return {
         guid = "{test-chair-001}",
@@ -380,6 +415,34 @@ test("4. butcher non-creature (chair) says 'You can't butcher that'", function()
 
     h.assert_truthy(output:lower():find("can't butcher") or output:lower():find("cannot butcher"),
         "Should reject butchering a chair — got: " .. output)
+end)
+
+-- Test 5: #343 — butcher LIVING creature with death_state → must reject
+-- Bug: alive check is `target.alive ~= false and not target.death_state`
+-- A living wolf with death_state bypasses: true AND false = false → guard skipped!
+test("5. #343: butcher living wolf with death_state rejects (can't butcher living creature)", function()
+    h.assert_truthy(handlers, "engine.verbs must load and create handlers")
+    h.assert_truthy(handlers["butcher"], "butcher verb handler must exist")
+
+    local wolf = make_living_wolf_with_death_state()
+    local knife = make_butcher_knife()
+    local player = make_player()
+    player.hands[1] = knife
+
+    local ctx = make_context({
+        room_objects = { wolf, knife },
+        player = player,
+    })
+
+    local output = capture_output(function()
+        handlers["butcher"](ctx, "wolf")
+    end)
+
+    -- Must NOT reach butchery products — must reject at alive check
+    h.assert_truthy(
+        output:lower():find("can't butcher") or output:lower():find("cannot butcher")
+        or output:lower():find("living"),
+        "#343: Must reject butchering a LIVING wolf even if it has death_state — got: " .. output)
 end)
 
 ---------------------------------------------------------------------------

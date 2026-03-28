@@ -37,9 +37,9 @@ function M.register(handlers)
             return
         end
 
-        -- Must be a dead creature (alive == false set by reshape_instance)
-        if target.alive ~= false and not target.death_state then
-            print("You can't butcher that.")
+        -- #343: Must be dead — reject any living creature regardless of death_state
+        if target.alive ~= false then
+            print("You can't butcher a living creature.")
             return
         end
 
