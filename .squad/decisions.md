@@ -1,6 +1,6 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-28T01:30:00Z  
+**Last Updated:** 2026-03-28T02:00:00Z  
 **Last Deep Clean:** 2026-03-25T18:21:05Z
 **Scribe:** Session Logger & Memory Manager
 
@@ -59,6 +59,7 @@ Quick-reference table of ALL decisions (active + archived).
 | D-WAVE1-BUTCHERY-CREATURES-SPLIT | Architecture | ✅ Implemented | creatures/init.lua → creatures/actions.lua (546→310 LOC); 0 regressions; −190 LOC headroom for Phase 4 | Active |
 | D-WAVE1-BUTCHER-VERB | Architecture | ✅ Implemented | butchery.lua verb handler (167 LOC), 4 aliases, 380 phrases, 12 tests; time advancement via time_offset + FSM tick | Active |
 | D-WAVE1-BUTCHERY-OBJECTS | Architecture | ✅ Implemented | 6 butchery objects (wolf-meat, cooked-wolf-meat, wolf-bone, wolf-hide, butcher-knife, spider-meat); creature metadata wired | Active |
+| D-STRESS-HOOKS | Architecture | ✅ Implemented | Stress trauma hooks (death, combat, gore) delegate to central injuries.add_stress() API; debuffs as multipliers | Active |
 | Architecture Notes | Architecture | 📦 Archived | See full entry | Archive |
 | D-104: PLAYER-CANONICAL-STATE (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
 | D-105: OBJECT-INSTANCING-FACTORY (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
@@ -265,6 +266,40 @@ Quick-reference table of ALL decisions (active + archived).
 - **Smithers (parser):** Embedding collision fixed; check collision audit for other objects
 - **Nelson (tests):** All 12 butchery tests cover these objects
 - **Moe (rooms):** Corpses spawn these products in rooms when butchered
+
+---
+
+## D-STRESS-HOOKS: Stress Trauma Hook Architecture
+
+**Author:** Bart (Architect)  
+**Date:** 2026-03-28  
+**Status:** ✅ Implemented  
+**Category:** Architecture  
+**Phase:** Phase 4 WAVE-3
+
+**Decision:** Stress trauma hooks follow the same pattern as C11/C12 injury and stimulus hooks — minimal integration points that delegate to a central API (`injuries.add_stress`). No stress-specific logic lives in the caller.
+
+**Key Design Points:**
+
+1. **Three trauma hooks, three files:** 
+   - `witness_creature_death` (death.lua)
+   - `near_death_combat` (combat/init.lua)
+   - `witness_gore` (butchery.lua)
+   - Each is a single call to `injuries.add_stress(player, trigger_name)`
+
+2. **Stress debuffs as multipliers:**
+   - `attack_penalty` → 15% force reduction per point (floor 0.3×) in `resolution.resolve_damage`
+   - `movement_penalty` → probability of movement failure in `verbs/movement.lua` + reduced flee speed in `verbs/init.lua`
+   - `flee_bias` → auto-selects flee in headless mode; narrative hint in interactive mode
+
+3. **`is_safe_room(room, registry)`** checks for alive creatures with `behavior.aggression > 0`. Separate from `cure_stress` for flexibility.
+
+4. **Graceful degradation:** All hooks pcall-guard the `engine.injuries` require. If stress.lua metadata doesn't exist, all hooks are no-ops.
+
+**Affects:**
+- **Nelson:** Tests verify stress accumulation across triggers and debuff application. See GATE-3 criteria in plan.
+- **Smithers:** Narration tables are in injuries/init.lua — review/own the text.
+- **Flanders:** stress.lua already matches expected schema. No changes needed.
 
 ---
 

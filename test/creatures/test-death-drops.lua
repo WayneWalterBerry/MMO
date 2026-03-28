@@ -158,32 +158,41 @@ local function reshape_instance(instance, death_state, registry, room)
         instance.transitions = death_state.transitions
     end
 
-    -- WAVE-1: byproducts (spider silk)
-    if death_state.byproducts then
+    -- WAVE-2: loot_table drops — guaranteed items scatter to room floor
+    local instance_had_loot_table = instance.loot_table ~= nil
+    if instance.loot_table then
+        if instance.loot_table.always then
+            for _, entry in ipairs(instance.loot_table.always) do
+                local item = registry:get(entry.template)
+                if item then registry:register_as_room_object(item, room) end
+            end
+        end
+        instance.loot_table = nil
+    end
+
+    -- WAVE-1: byproducts (spider silk) — skipped if loot_table handled drops
+    if death_state.byproducts and not instance_had_loot_table then
         for _, bp_id in ipairs(death_state.byproducts) do
             local bp = registry:get(bp_id)
             if bp then registry:register_as_room_object(bp, room) end
         end
     end
 
-    -- WAVE-2: inventory drops — items scatter to room floor
+    -- Legacy: inventory drops (for backward-compat test fixtures)
     if instance.inventory then
         local inv = instance.inventory
-        -- Drop hand-held items
         if inv.hands then
             for _, guid in ipairs(inv.hands) do
                 local item = registry:get(guid)
                 if item then registry:register_as_room_object(item, room) end
             end
         end
-        -- Drop worn items
         if inv.worn then
             for _, guid in pairs(inv.worn) do
                 local item = registry:get(guid)
                 if item then registry:register_as_room_object(item, room) end
             end
         end
-        -- Drop carried items
         if inv.carried then
             for _, guid in ipairs(inv.carried) do
                 local item = registry:get(guid)
@@ -282,14 +291,14 @@ local death_states = {
 ---------------------------------------------------------------------------
 -- TESTS: Death drops (WAVE-2)
 ---------------------------------------------------------------------------
-suite("DEATH DROPS: inventory items scatter to room floor (WAVE-2)")
+suite("DEATH DROPS: creature items scatter to room floor (WAVE-2)")
 
 -- 1. Kill wolf → gnawed-bone appears as room floor object
 test("1. kill wolf — gnawed-bone appears as room floor object", function()
     reset_deregister_tracking()
     local inst = make_live_creature(ok_wolf and wolf_def or {
         id = "wolf", guid = "{wolf-drop-01}",
-        inventory = { hands = {}, worn = {}, carried = { GNAWED_BONE_GUID } },
+        loot_table = { always = { { template = "gnawed-bone" } } },
     }, "{wolf-drop-01}")
     local bone = bone_def and deep_copy(bone_def) or { guid = GNAWED_BONE_GUID, id = "gnawed-bone", portable = true }
     local registry = make_mock_registry({ bone })
@@ -360,7 +369,7 @@ test("6. dropped items are independent room objects", function()
     reset_deregister_tracking()
     local inst = make_live_creature(ok_wolf and wolf_def or {
         id = "wolf", guid = "{wolf-indep-01}",
-        inventory = { hands = {}, worn = {}, carried = { GNAWED_BONE_GUID } },
+        loot_table = { always = { { template = "gnawed-bone" } } },
     }, "{wolf-indep-01}")
     local bone = bone_def and deep_copy(bone_def) or { guid = GNAWED_BONE_GUID, id = "gnawed-bone", portable = true }
     local registry = make_mock_registry({ bone })
@@ -382,7 +391,7 @@ test("7. dropped items have correct GUIDs", function()
     reset_deregister_tracking()
     local inst = make_live_creature(ok_wolf and wolf_def or {
         id = "wolf", guid = "{wolf-guid-01}",
-        inventory = { hands = {}, worn = {}, carried = { GNAWED_BONE_GUID } },
+        loot_table = { always = { { template = "gnawed-bone" } } },
     }, "{wolf-guid-01}")
     local bone = bone_def and deep_copy(bone_def) or { guid = GNAWED_BONE_GUID, id = "gnawed-bone" }
     local registry = make_mock_registry({ bone })
@@ -400,7 +409,7 @@ test("8. reshaped corpse and dropped items coexist in room", function()
     reset_deregister_tracking()
     local inst = make_live_creature(ok_wolf and wolf_def or {
         id = "wolf", guid = "{wolf-coexist-01}",
-        inventory = { hands = {}, worn = {}, carried = { GNAWED_BONE_GUID } },
+        loot_table = { always = { { template = "gnawed-bone" } } },
     }, "{wolf-coexist-01}")
     local bone = bone_def and deep_copy(bone_def) or { guid = GNAWED_BONE_GUID, id = "gnawed-bone" }
     local registry = make_mock_registry({ bone })
@@ -420,7 +429,7 @@ test("9. dropped items are take-able (portable = true)", function()
     reset_deregister_tracking()
     local inst = make_live_creature(ok_wolf and wolf_def or {
         id = "wolf", guid = "{wolf-take-01}",
-        inventory = { hands = {}, worn = {}, carried = { GNAWED_BONE_GUID } },
+        loot_table = { always = { { template = "gnawed-bone" } } },
     }, "{wolf-take-01}")
     local bone = bone_def and deep_copy(bone_def) or {
         guid = GNAWED_BONE_GUID, id = "gnawed-bone", portable = true,
@@ -441,7 +450,7 @@ test("10. wolf corpse GUID preserved after inventory drop", function()
     local original_guid = "{wolf-preserve-01}"
     local inst = make_live_creature(ok_wolf and wolf_def or {
         id = "wolf", guid = original_guid,
-        inventory = { hands = {}, worn = {}, carried = { GNAWED_BONE_GUID } },
+        loot_table = { always = { { template = "gnawed-bone" } } },
     }, original_guid)
     local bone = bone_def and deep_copy(bone_def) or { guid = GNAWED_BONE_GUID, id = "gnawed-bone" }
     local registry = make_mock_registry({ bone })
@@ -473,12 +482,12 @@ test("11. multiple inventory items all drop", function()
     h.assert_eq(3, registry:count_room_objects(), "corpse + 2 items = 3 room objects")
 end)
 
--- 12. Inventory cleared from corpse after drop
-test("12. inventory cleared from corpse after drop", function()
+-- 12. Loot table cleared from corpse after drop
+test("12. loot_table cleared from corpse after drop", function()
     reset_deregister_tracking()
     local inst = make_live_creature(ok_wolf and wolf_def or {
         id = "wolf", guid = "{wolf-clear-01}",
-        inventory = { hands = {}, worn = {}, carried = { GNAWED_BONE_GUID } },
+        loot_table = { always = { { template = "gnawed-bone" } } },
     }, "{wolf-clear-01}")
     local bone = bone_def and deep_copy(bone_def) or { guid = GNAWED_BONE_GUID, id = "gnawed-bone" }
     local registry = make_mock_registry({ bone })
@@ -486,7 +495,7 @@ test("12. inventory cleared from corpse after drop", function()
 
     reshape_instance(inst, death_states.wolf, registry, room)
 
-    h.assert_nil(inst.inventory, "inventory must be nil on corpse after drops")
+    h.assert_nil(inst.loot_table, "loot_table must be nil on corpse after drops")
 end)
 
 -- 13. Gnawed-bone has correct properties after drop

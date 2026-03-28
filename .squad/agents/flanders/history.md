@@ -959,3 +959,25 @@ espawn block between combat metadata and death_state in each file -- logical pla
 **GUIDs used (from bart-phase4-guids.md):** wolf-meat, cooked-wolf-meat, wolf-bone, wolf-hide, butcher-knife all used pre-assigned GUIDs. spider-meat required a new GUID ({6b7c8bb2-71b1-4ac6-a57e-8a23536d3054}) — gap in Bart's pre-assignment, filed in decision inbox.
 
 **Tests:** All 9 files Lua-parse clean. Full test suite: 3 failures — butchery/test-butcher-verb (engine verb handler issue in helpers.lua, Smithers domain), injuries/test-injuries-comprehensive (pre-existing), verbs/test-combat-verbs (pre-existing, caused by Smithers' carve→butcher rerouting in crafting.lua). Zero regressions from object definitions.
+
+### Phase 4 WAVE-3: Stress Injury Type
+
+**Task:** Create `src/meta/injuries/stress.lua` — third injury category (psychological), completing the injury triad: physical, disease, psychological.
+
+**What was built:**
+- **`stress.lua`** — Threshold-based accumulator injury (not FSM-progression like physical injuries).
+  - GUID: {18c87fad-5f27-435f-9802-b914e238207f} (PowerShell-generated — bart-phase4-guids.md still does not exist)
+  - Category: `psychological` (new category alongside physical and disease)
+  - 3 severity levels: shaken (threshold 3), distressed (threshold 6), overwhelmed (threshold 10)
+  - v1.1 thresholds raised per CBG review — single kill must NOT cripple player
+  - Effects: shaken (-1 atk), distressed (-2 atk, 0.2 flee_bias), overwhelmed (-2 atk, 0.3 flee_bias, 0.2 move_penalty)
+  - v1.1 overwhelmed debuffs reduced — hindrance, not wall
+  - Cure: rest method, 2 hours game time, requires safe_room (no hostile creatures)
+  - Triggers: witness_creature_death (+1), near_death_combat (+2), witness_gore (+1)
+  - player_first_kill explicitly NOT included (v1.1: victory rewards, not punishes)
+
+**Patterns learned:**
+- Stress injury uses a `levels` + `effects` + `triggers` structure, NOT the FSM states/transitions/timed_events pattern used by physical/disease injuries. New category = new metadata shape.
+- Matched file conventions: header comment with pattern description, section separators (═══), consistent field ordering (identity → levels → effects → cure → triggers).
+- Nelson's TDD tests (`test/stress/`) test engine functions (`add_stress`, `cure_stress`, `get_stress_effects`) that Bart hasn't implemented yet — those failures are expected and not caused by stress.lua definition.
+- bart-phase4-guids.md STILL does not exist at WAVE-3 — same pattern as WAVE-2, generate fresh GUIDs via PowerShell.

@@ -1011,3 +1011,61 @@ Created TDD validation tests for 4 new creatures (cat, wolf, spider, bat):
 - Decision recorded at `.squad/decisions/inbox/nelson-phase4-baseline.md`
 
 **Key insight:** The test runner gracefully handles empty directories — `dir /b` returns nothing and moves on. No placeholder files needed.
+
+## Learnings
+
+### WAVE-3 — Stress Injury Test Suite (Phase 4)
+
+**Delivery:** 3 test files, 8 tests total (TDD red phase — implementations by Bart/Flanders in parallel)
+
+**Files created:**
+- `test/stress/test-stress-infliction.lua` — 3 tests
+  1. witness creature death → +1 stress
+  2. near-death combat → +2 stress
+  3. witness gore (butchery) → +1 stress
+- `test/stress/test-stress-debuffs.lua` — 3 tests
+  1. shaken (3 stress) → -1 attack_penalty
+  2. distressed (6 stress) → -2 attack_penalty + 0.2 flee_bias
+  3. overwhelmed (10 stress) → -2 attack_penalty + 0.3 flee_bias + 0.2 movement_penalty
+- `test/stress/test-stress-cure.lua` — 2 tests
+  1. rest in safe room (no hostile creatures) → stress = 0
+  2. rest in unsafe room (hostile creature present) → stress persists
+
+**Pattern notes:**
+- Stress injury is `category = "psychological"` with `damage_type = "accumulator"` — different from physical/toxin injuries
+- Engine needs `add_stress(player, trigger)` convenience function (or fallback to `inflict` with stress type)
+- Engine needs `get_stress_level(player)` and `get_stress_effects(player)` for debuff verification
+- Engine needs `cure_stress(player, ctx)` or `rest_cure(player, ctx)` for cure path
+- Safe room definition per Q2 resolution: no hostile creatures in room (checked via `room.creatures` table)
+- Thresholds from v1.1 CBG review: shaken=3, distressed=6, overwhelmed=10 (raised to prevent single-kill crippling)
+- All tests pcall-guard module loads (TDD: stress system may not exist yet)
+- All files parse clean (lua -e loadfile verified)
+
+## Learnings
+
+### WAVE-2 — Loot Table Test Regression Fix
+
+**Date:** 2026-03-28
+**Triggered by:** Flanders converted wolf.lua and spider.lua from fixed `inventory` to `loot_table` metadata.
+
+**Files updated (not deleted — updated):**
+- `test/creatures/test-creature-inventory.lua` — tests 1-5 rewritten
+  - Old: checked `wolf_def.inventory`, `inventory.hands`, `inventory.carried`, etc.
+  - New: checks `wolf_def.loot_table`, `loot_table.always`, `loot_table.on_death`, template strings
+  - Tests 6-15 unchanged (validation rules, other creatures)
+- `test/creatures/test-death-drops.lua` — `reshape_instance` mock updated + 7 test fallbacks
+  - Added `loot_table.always` processing to mock reshape (WAVE-2 drop path)
+  - Kept legacy `inventory` drop path for backward-compat test fixtures (test 11)
+  - `loot_table` supersedes `death_state.byproducts` to avoid double-registration (spider silk)
+  - Updated wolf fallback definitions from `inventory` to `loot_table` in tests 1, 6-10, 12
+  - Test 12 now asserts `loot_table = nil` on corpse (was `inventory = nil`)
+
+**Key pattern:** When creatures migrate from fixed inventory to loot_table:
+- `loot_table.always` = guaranteed drops (replaces `inventory.carried`)
+- `loot_table.on_death` = weighted random drops (new capability)
+- `loot_table.variable` = quantity-range drops (new capability)
+- `loot_table.conditional` = kill-method-specific drops (new capability)
+- If creature has `loot_table`, skip `death_state.byproducts` to avoid duplication
+
+**Result:** 30/30 tests pass (15 each file). No test count decrease.
+**Pre-existing failure:** `verbs/test-combat-verbs.lua` has 1 unrelated failure (`carve` alias → `slash` not wired).

@@ -49,6 +49,27 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+### Phase 4 WAVE-3: Stress Narration Integration
+
+**What shipped:** Full stress narration UI for the WAVE-3 stress injury system.
+
+**Task 1 — Status Display:** Modified `src/engine/ui/status.lua` to show the capitalized stress level name (Shaken/Distressed/Overwhelmed) on the status bar's right side, separated from health by a pipe. No clutter when unstressed — stress indicator only appears at or above the "shaken" threshold.
+
+**Task 2 — Stress Event Narration:** Added trigger-specific narration (`"The sight of death shakes you."`, `"A wave of terror washes over you..."`, `"The gore turns your stomach."`), level-crossing narration (`"Your hands begin to tremble."`, `"Your breathing quickens..."`, `"Panic overwhelms you."`), and cure narration (`"With rest and safety, the panic slowly fades."`). All print via `print()` matching existing injury narration patterns.
+
+**Task 3 — Integration:** Extended Bart's skeleton `add_stress()` to include narration + level tracking (`player.stress_level`, `player.stress_effects`), updated `cure_stress()` to accept `ctx` for safe-room checks and print cure message, enhanced `injuries.list()` to display stress description alongside physical injuries. Fixed `load_stress_def()` to check `_cache` (test injection path via `register_definition`), and forward-declared the function so `injuries.list()` can call it.
+
+**Key pattern:** Stress narration follows the same `print()` passthrough used by rabies/venom infliction messages and injury tick messages. The WAVE-0 narration pipeline design (`ctx.narrate()`) remains the future migration target but is not needed for WAVE-3 scope.
+
+**Files modified:**
+- `src/engine/injuries/init.lua` — Narration tables, `add_stress` narration, `cure_stress` narration + ctx param, `injuries.list` stress display, forward-declared `load_stress_def`
+- `src/engine/ui/status.lua` — Stress indicator in status bar right side
+
+**Files created:**
+- `test/stress/test-stress-narration.lua` — 11 tests covering trigger narration (3), level-change narration (4), cure narration (1), status bar (2), injuries list (1)
+
+**Test results:** All 19 stress tests pass (8 pre-existing + 11 new). Full suite: 1 pre-existing failure (`verbs/test-combat-verbs.lua`), zero new regressions.
+
 
 ### Phase 4 WAVE-0: Embedding Collision Audit + Narration Pipeline Design
 

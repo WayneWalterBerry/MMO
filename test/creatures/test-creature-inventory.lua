@@ -127,45 +127,48 @@ end
 ---------------------------------------------------------------------------
 suite("CREATURE INVENTORY: metadata structure (WAVE-2)")
 
--- 1. Wolf has inventory field
-test("1. wolf has inventory field", function()
+-- 1. Wolf has loot_table field (WAVE-2: replaces fixed inventory)
+test("1. wolf has loot_table field", function()
     h.assert_truthy(ok_wolf, "wolf.lua must load")
-    h.assert_truthy(wolf_def.inventory, "wolf must have inventory field")
-    h.assert_eq("table", type(wolf_def.inventory), "inventory must be a table")
+    h.assert_truthy(wolf_def.loot_table, "wolf must have loot_table field")
+    h.assert_eq("table", type(wolf_def.loot_table), "loot_table must be a table")
 end)
 
--- 2. Wolf inventory has hands, worn, carried slots
-test("2. wolf inventory has hands, worn, carried slots", function()
-    h.assert_truthy(ok_wolf and wolf_def.inventory, "wolf inventory required")
-    local inv = wolf_def.inventory
-    h.assert_eq("table", type(inv.hands), "inventory.hands must be a table")
-    h.assert_eq("table", type(inv.worn), "inventory.worn must be a table")
-    h.assert_eq("table", type(inv.carried), "inventory.carried must be a table")
+-- 2. Wolf loot_table has always and on_death sections
+test("2. wolf loot_table has always and on_death sections", function()
+    h.assert_truthy(ok_wolf and wolf_def.loot_table, "wolf loot_table required")
+    local lt = wolf_def.loot_table
+    h.assert_eq("table", type(lt.always), "loot_table.always must be a table")
+    h.assert_eq("table", type(lt.on_death), "loot_table.on_death must be a table")
 end)
 
--- 3. Wolf carried contains gnawed-bone GUID
-test("3. wolf carried contains gnawed-bone GUID", function()
-    h.assert_truthy(ok_wolf and wolf_def.inventory, "wolf inventory required")
-    local carried = wolf_def.inventory.carried
-    h.assert_truthy(#carried >= 1, "wolf must carry at least one item")
+-- 3. Wolf loot_table.always contains gnawed-bone template
+test("3. wolf loot_table.always contains gnawed-bone template", function()
+    h.assert_truthy(ok_wolf and wolf_def.loot_table, "wolf loot_table required")
+    local always = wolf_def.loot_table.always
+    h.assert_truthy(#always >= 1, "wolf must have at least one always drop")
     local found = false
-    for _, guid in ipairs(carried) do
-        if guid == GNAWED_BONE_GUID then found = true; break end
+    for _, entry in ipairs(always) do
+        if entry.template == "gnawed-bone" then found = true; break end
     end
-    h.assert_truthy(found, "wolf must carry gnawed-bone GUID " .. GNAWED_BONE_GUID)
+    h.assert_truthy(found, "wolf loot_table.always must include gnawed-bone template")
 end)
 
--- 4. Wolf hands is empty (wolves don't hold items in paws)
-test("4. wolf hands is empty", function()
-    h.assert_truthy(ok_wolf and wolf_def.inventory, "wolf inventory required")
-    h.assert_eq(0, #wolf_def.inventory.hands, "wolf hands should be empty")
+-- 4. Wolf loot_table.on_death has weighted entries
+test("4. wolf loot_table.on_death has weighted entries", function()
+    h.assert_truthy(ok_wolf and wolf_def.loot_table, "wolf loot_table required")
+    local on_death = wolf_def.loot_table.on_death
+    h.assert_truthy(#on_death >= 1, "on_death must have at least one entry")
+    for i, entry in ipairs(on_death) do
+        h.assert_eq("number", type(entry.weight), "on_death[" .. i .. "] must have numeric weight")
+    end
 end)
 
--- 5. Wolf carried GUIDs are strings
-test("5. wolf carried GUIDs are strings", function()
-    h.assert_truthy(ok_wolf and wolf_def.inventory, "wolf inventory required")
-    for i, guid in ipairs(wolf_def.inventory.carried) do
-        h.assert_eq("string", type(guid), "carried[" .. i .. "] must be a string")
+-- 5. Wolf loot_table always entry templates are strings
+test("5. wolf loot_table always entry templates are strings", function()
+    h.assert_truthy(ok_wolf and wolf_def.loot_table, "wolf loot_table required")
+    for i, entry in ipairs(wolf_def.loot_table.always) do
+        h.assert_eq("string", type(entry.template), "always[" .. i .. "].template must be a string")
     end
 end)
 

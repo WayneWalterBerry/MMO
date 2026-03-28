@@ -58,7 +58,7 @@ function status.create_updater()
             location_str = room_name
         end
 
-        -- Right side: health status (if injured)
+        -- Right side: health status (if injured) + stress indicator
         local right_str = ""
         local p = ctx.player
         if p then
@@ -68,6 +68,17 @@ function status.create_updater()
                 local max_hp = p.max_health or 100
                 if health < max_hp then
                     right_str = "Health: " .. health .. "/" .. max_hp .. " "
+                end
+
+                -- Stress indicator (WAVE-3)
+                local stress_level = injury_mod.get_stress_level(p)
+                if stress_level then
+                    local stress_label = stress_level:sub(1,1):upper() .. stress_level:sub(2)
+                    if right_str ~= "" then
+                        right_str = right_str .. "| " .. stress_label .. " "
+                    else
+                        right_str = stress_label .. " "
+                    end
                 end
             end
         end
