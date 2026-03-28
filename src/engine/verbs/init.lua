@@ -504,6 +504,23 @@ function verbs.create()
         handlers["slay"]   = handlers["attack"]
         handlers["murder"] = handlers["attack"]
 
+        -- #358: Extend stab/jab/pierce: try creature combat first, fall through to self-infliction
+        local original_stab = handlers["stab"]
+        handlers["stab"] = function(ctx, noun)
+            if noun ~= "" then
+                local first_word = noun:match("^(%S+)")
+                local creature = find_creature(ctx, first_word)
+                if creature and creature.alive ~= false and creature._state ~= "dead" then
+                    return handlers["attack"](ctx, noun)
+                end
+            end
+            if original_stab then return original_stab(ctx, noun) end
+            print("Stab what?")
+        end
+        handlers["jab"]    = handlers["stab"]
+        handlers["pierce"] = handlers["stab"]
+        handlers["stick"]  = handlers["stab"]
+
         -- Extend hit/strike/swing: try creature combat first, fall through
         handlers["hit"] = function(ctx, noun)
             if noun ~= "" then

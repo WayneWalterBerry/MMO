@@ -56,7 +56,31 @@ function M.register(handlers)
             tool = find_visible_tool(ctx, butch.requires_tool)
         end
         if not tool then
-            print("You need a knife to butcher this.")
+            -- #357: Distinguish "no tool" from "wrong tool" — check if player
+            -- holds something knife-like that lacks the required capability
+            local held_blade = nil
+            for i = 1, 2 do
+                local h_obj = ctx.player.hands[i]
+                if h_obj then
+                    local kws = h_obj.keywords or {}
+                    for _, kw in ipairs(kws) do
+                        if kw:find("knife") or kw:find("blade") or kw:find("dagger") then
+                            held_blade = h_obj
+                            break
+                        end
+                    end
+                    if not held_blade and h_obj.id and
+                       (h_obj.id:find("knife") or h_obj.id:find("blade") or h_obj.id:find("dagger")) then
+                        held_blade = h_obj
+                    end
+                end
+                if held_blade then break end
+            end
+            if held_blade then
+                print("Your " .. (held_blade.id or "blade") .. " isn't suited for butchering. You need a proper butchering tool.")
+            else
+                print("You need a sharp tool capable of butchering.")
+            end
             return
         end
 

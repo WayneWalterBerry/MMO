@@ -249,18 +249,19 @@ do
     end)
     assert_eq(player.injuries[1]._state, "injected",
         "newly inflicted venom starts in 'injected'")
-    assert_eq(player.injuries[1].damage, 2,
-        "initial damage is 2 (immediate)")
-    assert_eq(player.injuries[1].damage_per_tick, 2,
-        "damage_per_tick is 2 from infliction")
+    assert_eq(player.injuries[1].damage, venom_def.on_inflict.initial_damage,
+        "initial damage matches definition")
+    assert_eq(player.injuries[1].damage_per_tick, venom_def.on_inflict.damage_per_tick,
+        "damage_per_tick matches definition")
     assert_true(output:find("venom") or output:find("Venom") or output:find("burn") or output:find("Burn"),
         "infliction message mentions venom/burning")
 end
 
 ---------------------------------------------------------------------------
--- 3. Transitions at correct tick: injected→spreading at tick 3
+-- 3. Transitions at correct tick: injected→spreading at tick 5
+-- (Retuned in #360: was tick 3, now tick 5 for longer curable window)
 ---------------------------------------------------------------------------
-print("\n=== Spider Venom: transition injected→spreading at tick 3 ===")
+print("\n=== Spider Venom: transition injected→spreading at tick 5 ===")
 setup()
 
 do
@@ -269,33 +270,34 @@ do
         injury_mod.inflict(player, "spider-venom", "spider-bite")
     end)
 
-    -- Tick 2: should still be injected
-    for i = 1, 2 do
+    -- Tick 4: should still be injected
+    for i = 1, 4 do
         capture_print(function() injury_mod.tick(player) end)
     end
-    local ok, state_at_2 = pcall(function() return player.injuries[1]._state end)
-    if ok and state_at_2 == "injected" then
-        assert_true(true, "still injected at tick 2")
-    elseif ok and state_at_2 == "spreading" then
-        skip("injected at tick 2", "disease FSM duration not yet implemented")
+    local ok, state_at_4 = pcall(function() return player.injuries[1]._state end)
+    if ok and state_at_4 == "injected" then
+        assert_true(true, "still injected at tick 4")
+    elseif ok and state_at_4 == "spreading" then
+        skip("injected at tick 4", "disease FSM duration not yet implemented")
     else
-        assert_eq(ok and state_at_2 or "error", "injected", "expected injected at tick 2")
+        assert_eq(ok and state_at_4 or "error", "injected", "expected injected at tick 4")
     end
 
-    -- Tick 3: should transition to spreading
+    -- Tick 5: should transition to spreading
     capture_print(function() injury_mod.tick(player) end)
-    local ok2, state_at_3 = pcall(function() return player.injuries[1]._state end)
-    if ok2 and state_at_3 == "spreading" then
-        assert_true(true, "transitions to spreading at tick 3")
+    local ok2, state_at_5 = pcall(function() return player.injuries[1]._state end)
+    if ok2 and state_at_5 == "spreading" then
+        assert_true(true, "transitions to spreading at tick 5")
     else
-        skip("spreading at tick 3", "disease FSM duration transitions not yet implemented")
+        skip("spreading at tick 5", "disease FSM duration transitions not yet implemented")
     end
 end
 
 ---------------------------------------------------------------------------
--- 4. Transitions at correct tick: spreading→paralysis at tick 8
+-- 4. Transitions at correct tick: spreading→paralysis at tick 11
+-- (Retuned in #360: was tick 8, now tick 11 — 5 injected + 6 spreading)
 ---------------------------------------------------------------------------
-print("\n=== Spider Venom: transition spreading→paralysis at tick 8 ===")
+print("\n=== Spider Venom: transition spreading→paralysis at tick 11 ===")
 setup()
 
 do
@@ -304,16 +306,16 @@ do
         injury_mod.inflict(player, "spider-venom", "spider-bite")
     end)
 
-    -- Tick through 8 turns (3 injected + 5 spreading)
-    for i = 1, 8 do
+    -- Tick through 11 turns (5 injected + 6 spreading)
+    for i = 1, 11 do
         capture_print(function() injury_mod.tick(player) end)
     end
 
     local ok, state = pcall(function() return player.injuries[1]._state end)
     if ok and state == "paralysis" then
-        assert_true(true, "transitions to paralysis at tick 8")
+        assert_true(true, "transitions to paralysis at tick 11")
     else
-        skip("paralysis at tick 8", "disease FSM duration transitions not yet implemented (state: " .. tostring(ok and state or "error") .. ")")
+        skip("paralysis at tick 11", "disease FSM duration transitions not yet implemented (state: " .. tostring(ok and state or "error") .. ")")
     end
 end
 
@@ -496,14 +498,16 @@ do
     assert_eq(player.injuries[1].type, "spider-venom", "first is spider-venom")
     assert_eq(player.injuries[2].type, "rabies", "second is rabies")
 
-    -- Health reflects both: venom 2 initial + rabies 0 initial = 2 damage
-    assert_eq(injury_mod.compute_health(player), 98,
-        "health reflects both diseases (100 - 2 - 0)")
+    -- Health reflects both: venom initial + rabies 0 initial
+    local venom_dmg = venom_def.on_inflict.initial_damage
+    assert_eq(injury_mod.compute_health(player), 100 - venom_dmg - 0,
+        "health reflects both diseases (100 - " .. venom_dmg .. " - 0)")
 
-    -- Tick once: venom does 2/tick, rabies does 0/tick (incubating)
+    -- Tick once: venom does dpt/tick, rabies does 0/tick (incubating)
+    local venom_dpt = venom_def.on_inflict.damage_per_tick
     capture_print(function() injury_mod.tick(player) end)
-    assert_eq(player.injuries[1].damage, 4,
-        "venom ticks independently (2 + 2 = 4)")
+    assert_eq(player.injuries[1].damage, venom_dmg + venom_dpt,
+        "venom ticks independently (" .. venom_dmg .. " + " .. venom_dpt .. ")")
     assert_eq(player.injuries[2].damage, 0,
         "rabies incubating stays at 0 damage")
     assert_eq(player.injuries[1].turns_active, 1, "venom at turn 1")
@@ -549,7 +553,7 @@ end
 
 ---------------------------------------------------------------------------
 -- 13. Spider venom state durations match spec
--- Spec: injected=3t, spreading=5t, paralysis=8t
+-- Spec: injected=5t, spreading=6t, paralysis=8t (retuned in #360)
 -- Real definitions use timed_events with delay in seconds (1 tick = 360s)
 ---------------------------------------------------------------------------
 print("\n=== Spider Venom: state durations match spec ===")
@@ -569,8 +573,8 @@ do
         return nil
     end
 
-    assert_eq(get_ticks(def.states.injected), 3, "injected duration is 3 ticks")
-    assert_eq(get_ticks(def.states.spreading), 5, "spreading duration is 5 ticks")
+    assert_eq(get_ticks(def.states.injected), 5, "injected duration is 5 ticks")
+    assert_eq(get_ticks(def.states.spreading), 6, "spreading duration is 6 ticks")
     assert_eq(get_ticks(def.states.paralysis), 8, "paralysis duration is 8 ticks")
 end
 
@@ -603,10 +607,10 @@ print("\n=== Spider Venom: damage_per_tick values per state ===")
 
 do
     local def = venom_def
-    assert_eq(def.states.injected.damage_per_tick, 2,
-        "injected damage_per_tick is 2")
-    assert_eq(def.states.spreading.damage_per_tick, 3,
-        "spreading damage_per_tick is 3")
+    assert_eq(def.states.injected.damage_per_tick, 1,
+        "injected damage_per_tick is 1")
+    assert_eq(def.states.spreading.damage_per_tick, 2,
+        "spreading damage_per_tick is 2")
     assert_eq(def.states.paralysis.damage_per_tick, 1,
         "paralysis damage_per_tick is 1")
 end

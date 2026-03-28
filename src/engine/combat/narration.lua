@@ -28,7 +28,7 @@ local tissue_words = {
     hide = "hide",
     flesh = "flesh",
     bone = "bone",
-    organ = "organs",
+    organ = "organ",
 }
 
 local function zone_text(zone)
@@ -45,8 +45,9 @@ end
 
 local function material_text(material_name)
     if not material_name then return "weapon" end
+    -- #363: Use singular/mass-noun forms to avoid subject-verb disagreement
     if material_name == "tooth-enamel" then
-        return pick({ "teeth", "tooth-enamel", "enamel", "fangs" })
+        return pick({ "tooth", "tooth-enamel", "enamel", "fang" })
     end
     if material_name == "keratin" then
         return pick({ "keratin claws", "claws", "keratin" })
@@ -55,8 +56,8 @@ local function material_text(material_name)
 end
 
 local function actor_name(actor)
-    if not actor then return "Someone" end
-    -- #289: Detect player attacker and narrate as "You"
+    -- #366: nil attacker in player-initiated combat defaults to "You"
+    if not actor then return "You" end
     if actor.id == "player" or actor.is_player then return "You" end
     local name = actor.name or actor.id or "someone"
     if name:lower() == "you" then return "You" end

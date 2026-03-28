@@ -14,6 +14,13 @@ return {
     category = "physical",
     description = "A small laceration that stings but heals on its own.",
 
+    -- Interpolation: {source} and {location} are replaced at runtime
+    -- with the actual weapon/tool and body part from combat context.
+    interpolation_defaults = {
+        location = "hand",
+        source = "something sharp",
+    },
+
     -- ═══════════════════════════════════════════════════════════
     -- DAMAGE MODEL
     -- ═══════════════════════════════════════════════════════════
@@ -23,7 +30,7 @@ return {
     on_inflict = {
         initial_damage = 3,
         damage_per_tick = 0,
-        message = "A sharp sting — a thin line of blood appears on your hand.",
+        message = "A sharp sting — a thin line of blood appears on your {location}.",
     },
 
     -- ═══════════════════════════════════════════════════════════
@@ -33,7 +40,7 @@ return {
         -- ── ACTIVE: Cut is fresh, stinging ──
         active = {
             name = "minor cut",
-            description = "A small cut on your hand where the glass caught you. It stings, but the bleeding has mostly stopped on its own.",
+            description = "A small cut on your {location} where the {source} caught you. It stings, but the bleeding has mostly stopped on its own.",
             on_feel = "The skin around the cut is tender and slightly raised.",
             on_look = "A thin red line, barely bleeding. Nothing serious.",
 
@@ -48,9 +55,9 @@ return {
         -- ── TREATED: Bandage applied, healing accelerated ──
         treated = {
             name = "bandaged cut",
-            description = "The bandage on your hand is snug. The sting is fading.",
+            description = "The bandage on your {location} is snug. The sting is fading.",
             on_feel = "Tight cloth covers the cut. Comforting pressure.",
-            on_look = "A small bandage wrapped around your hand. Barely necessary.",
+            on_look = "A small bandage wrapped around your {location}. Barely necessary.",
 
             damage_per_tick = 0,
 
@@ -63,7 +70,7 @@ return {
         -- ── HEALED: Terminal — injury removed ──
         healed = {
             name = "healed cut",
-            description = "The cut on your hand has closed. Barely a mark remains.",
+            description = "The cut on your {location} has closed. Barely a mark remains.",
             terminal = true,
         },
     },
@@ -77,7 +84,7 @@ return {
             from = "active", to = "treated",
             verb = "use",
             requires_item_cures = "minor-cut",
-            message = "You wrap the cloth snugly around the cut on your hand. The sting fades.",
+            message = "You wrap the cloth snugly around the cut on your {location}. The sting fades.",
         },
 
         -- ── Auto-transitions ──
@@ -85,7 +92,7 @@ return {
             from = "active", to = "healed",
             trigger = "auto",
             condition = "timer_expired",
-            message = "The cut on your hand has closed on its own. Barely a mark remains.",
+            message = "The cut on your {location} has closed on its own. Barely a mark remains.",
         },
         {
             from = "treated", to = "healed",

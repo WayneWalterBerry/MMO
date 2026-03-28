@@ -125,7 +125,9 @@ function M.register(handlers)
                     return tool_obj
                 end
                 local cap_state = has_capable_state(tool_obj, required_tool)
-                if cap_state and tool_obj._state ~= cap_state then
+                -- #361: Don't auto-ignite tools in terminal state (spent match)
+                local cur_state = tool_obj._state and tool_obj.states and tool_obj.states[tool_obj._state]
+                if cap_state and tool_obj._state ~= cap_state and not (cur_state and cur_state.terminal) then
                     auto_ignite(ctx, tool_obj, cap_state)
                     return tool_obj
                 end
@@ -149,10 +151,14 @@ function M.register(handlers)
             if hand then
                 local obj = _hobj(hand, ctx.registry)
                 if obj and obj ~= exclude_obj then
-                    local cap_state = has_capable_state(obj, required_tool)
-                    if cap_state and obj._state ~= cap_state then
-                        auto_ignite(ctx, obj, cap_state)
-                        return obj
+                    -- #361: Skip objects in terminal state (spent matches)
+                    local cur_state = obj._state and obj.states and obj.states[obj._state]
+                    if not (cur_state and cur_state.terminal) then
+                        local cap_state = has_capable_state(obj, required_tool)
+                        if cap_state and obj._state ~= cap_state then
+                            auto_ignite(ctx, obj, cap_state)
+                            return obj
+                        end
                     end
                 end
             end

@@ -63,6 +63,34 @@ function injuries.reset_id_counter()
 end
 
 ---------------------------------------------------------------------------
+-- Text interpolation: replace {key} placeholders with context values.
+-- Used by injury templates that declare {source}, {location}, etc.
+-- Falls back to definition's interpolation_defaults, then raw key name.
+---------------------------------------------------------------------------
+local function readable_source(source_id)
+    if not source_id or source_id == "" or source_id == "unknown" then
+        return nil
+    end
+    return source_id:gsub("%-", " ")
+end
+
+function injuries.interpolate(text, vars)
+    if not text then return nil end
+    if not vars then return text end
+    return (text:gsub("{(%w+)}", function(key)
+        return vars[key] or key
+    end))
+end
+
+local function build_interp_vars(instance, def)
+    local defaults = def and def.interpolation_defaults or {}
+    return {
+        location = instance.location or defaults.location or "body",
+        source = readable_source(instance.source) or defaults.source or "something",
+    }
+end
+
+---------------------------------------------------------------------------
 -- Compute initial state_turns_remaining from definition state metadata.
 -- Supports both `duration` (direct turn count) and `timed_events` (seconds).
 ---------------------------------------------------------------------------
@@ -133,9 +161,10 @@ function injuries.inflict(player, injury_type, source, location, override_damage
     player.injuries = player.injuries or {}
     player.injuries[#player.injuries + 1] = instance
 
-    -- Print infliction message
+    -- Print infliction message (interpolate placeholders from context)
     if on_inflict.message then
-        print(on_inflict.message)
+        local vars = build_interp_vars(instance, def)
+        print(injuries.interpolate(on_inflict.message, vars))
     end
 
     return instance
@@ -218,7 +247,8 @@ function injuries.tick(player)
                             end
                         end
                         if show_msg and t.message then
-                            messages[#messages + 1] = t.message
+                            local vars = build_interp_vars(injury, def)
+                            messages[#messages + 1] = injuries.interpolate(t.message, vars)
                         end
                         -- Initialize state_turns_remaining for new state
                         local new_state_def = def.states and def.states[injury._state]
@@ -331,6 +361,10 @@ function injuries.list(player)
         local symptom = (state_def and state_def.symptom)
                      or (state_def and state_def.description)
                      or ""
+
+        -- Interpolate placeholders in symptom/description text
+        local vars = build_interp_vars(injury, def)
+        symptom = injuries.interpolate(symptom, vars) or symptom
 
         local line = "  " .. name
         if injury.location then
