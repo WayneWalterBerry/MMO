@@ -1,6 +1,6 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-28T02:15:00Z  
+**Last Updated:** 2026-03-28T02:30:00Z  
 **Last Deep Clean:** 2026-03-25T18:21:05Z
 **Scribe:** Session Logger & Memory Manager
 
@@ -61,6 +61,7 @@ Quick-reference table of ALL decisions (active + archived).
 | D-WAVE1-BUTCHERY-OBJECTS | Architecture | ✅ Implemented | 6 butchery objects (wolf-meat, cooked-wolf-meat, wolf-bone, wolf-hide, butcher-knife, spider-meat); creature metadata wired | Active |
 | D-STRESS-HOOKS | Architecture | ✅ Implemented | Stress trauma hooks (death, combat, gore) delegate to central injuries.add_stress() API; debuffs as multipliers | Active |
 | D-CREATE-OBJECT-ACTION | Architecture | ✅ Implemented | Creature object creation via metadata-driven behavior.creates_object pattern; NPC obstacle detection in navigation | Active |
+| D-WAVE5-BEHAVIORS | Architecture | ✅ Implemented | Pack Tactics + Territorial + Ambush engine design (Bart) | Active |
 | Architecture Notes | Architecture | 📦 Archived | See full entry | Archive |
 | D-104: PLAYER-CANONICAL-STATE (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
 | D-105: OBJECT-INSTANCING-FACTORY (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
@@ -4576,6 +4577,52 @@ Six major game systems analyzed. **Key findings:**
 
 ### Equipment Effects on Combat
 - Yes—armor provides defense, weapons have stats. Equipment quality directly affects survival.
+
+---
+
+## D-WAVE5-BEHAVIORS: Pack Tactics + Territorial + Ambush Engine Modules
+
+**Author:** Bart (Architecture Lead) | **Date:** 2026-03-28T02:30 | **Status:** ✅ Implemented (WAVE-5)  
+**Affects:** Flanders (territory-marker.lua), Nelson (tests), Moe (room topology for BFS)  
+**Phase:** Phase 4 WAVE-5 (Final Wave)
+
+### Decisions
+
+#### D-PACK-ALPHA-HEALTH: Alpha Selection Uses Highest Health (Q4 Override)
+The plan spec said `alpha_selection = "highest_aggression"` but Q4 resolution overrides to **highest current health**. Ties broken by max_health. This is simpler and more gameplay-intuitive — the healthiest wolf leads.
+
+#### D-TERRITORY-DUAL-FORMAT: Territory Marker Dual-Format Bridge
+Flanders' territory-marker.lua stores `owner`, `radius` at the top level. Engine tests expect `territory.owner`, `territory.radius` subtable. Engine (territorial.lua) reads BOTH via `marker_owner()` / `marker_radius()` helpers. territory-marker.lua updated to include `territory = { owner, radius, timestamp }` subtable alongside top-level fields. **Flanders:** keep both formats in sync when editing territory-marker.lua.
+
+#### D-TERRITORY-MARKER-CONTRACT: Engine Contract for Territory Markers
+Any object with `id == "territory-marker"` OR a `territory` subtable is treated as a territory marker. Ownership resolved via: `marker.territory.owner` → `marker.owner` → `marker.creator` (first non-nil wins). Radius defaults to 2 if not specified.
+
+#### D-PACK-STAGGER-FLAG: Pack Attack Stagger Mechanism
+Non-alpha wolves in a pack use a `_pack_waited` flag to skip one attack turn. Flag alternates each tick — wolves idle for one turn then attack on the next. This is the simplified Phase 4 approach; full coordinated zone-targeting deferred to Phase 5.
+
+#### D-AMBUSH-GENERIC: Generic Ambush Behavior Pattern
+Any creature can declare `behavior.ambush = { condition = fn, narration = "..." }`. Creature skips action selection until condition returns true. `_ambush_sprung` flag prevents re-hiding. Spider's existing `behavior.web_ambush` also supported as a separate check.
+
+#### D-RETREAT-THRESHOLD: Defensive Retreat at 20% Health
+`pack_tactics.should_retreat()` triggers when `health / max_health < 0.20`. This runs in creature_tick BEFORE action selection — wounded creatures flee immediately rather than attacking. Separate from morale.check() which uses `flee_threshold` from combat.behavior.
+
+### Affected Agents
+- **Bart** — pack_tactics.lua, territorial.lua, ambush integration (9 tests pass)
+- **Flanders** — territory-marker.lua now has `territory` subtable; keep in sync with top-level fields
+- **Nelson** — test-pack-tactics.lua (4 tests), test-territorial.lua (5 tests) all pass; 3 wiring bugs identified
+- **Moe** — BFS radius=2 covers most of Level 1's 7 rooms; verify room topology supports intended territory boundaries
+- **Comic Book Guy** — Pack tactics and territorial behavior are simplified Phase 4 versions; full system in Phase 5
+
+### Implementation Files
+- `src/engine/pack_tactics.lua` (95 LOC) — Alpha selection, pack coordination, retreat logic
+- `src/engine/territorial.lua` (198 LOC) — Territory marker detection, radius-based scanning
+- `src/meta/objects/territory-marker.lua` — Dual-format compatibility
+- `test/verbs/test-pack-tactics.lua` (4 tests)
+- `test/verbs/test-territorial.lua` (5 tests)
+
+### Phase 4 Completion Note
+This decision marks the **final wave (WAVE-5)** of Phase 4 "NPC + Combat Implementation." All 6 waves complete, 3 wiring bugs identified for Phase 5 sprint (silk disambiguation, craft wiring, brass key/padlock).
+
 
 ### Death Mechanics
 - **Drops all items at death site**

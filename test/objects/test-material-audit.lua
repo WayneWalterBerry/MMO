@@ -64,9 +64,9 @@ for _, fname in ipairs(object_files) do
     local ok, obj = pcall(dofile, objects_dir .. fname)
     if ok and type(obj) == "table" then
         loaded_objects[#loaded_objects + 1] = { file = fname, obj = obj }
-        if not obj.material then
+        if not obj.material and not obj.invisible then
             missing_material[#missing_material + 1] = fname
-        elseif not valid_materials[obj.material] then
+        elseif obj.material and not valid_materials[obj.material] then
             invalid_material[#invalid_material + 1] = fname .. " (material=\"" .. tostring(obj.material) .. "\")"
         end
     else

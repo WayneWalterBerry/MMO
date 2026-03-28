@@ -1,6 +1,63 @@
 # Brockman — History (Summarized)
 
-## Recent Work: WAVE-0 — Phase 4 Architecture Documentation (2026-08-16)
+## Recent Work: WAVE-5 — Phase 4 Design Documentation (2026-08-21)
+
+**Phase 4 WAVE-5 Deliverables:**
+- **Created `docs/design/crafting-system.md`** (15.6 KB, ~400 lines)
+  - Complete crafting system overview: butchery pipeline, loot tables integration, silk crafting recipes
+  - Butchery mechanics: corpse → resources (wolf-meat, wolf-bone, wolf-hide) via knife tool with 5-minute time cost
+  - Loot tables: probabilistic drops with weighted rolls enabling resource variety on creature death
+  - Silk crafting recipes: Tier 1 recipe-ID dispatch (`craft silk-rope`, `make silk-bandage`), no tools required
+  - Balance rationale: silk as bottleneck resource, limited spider count (6-10 bundles per playthrough), immediate use-case (courtyard well puzzle)
+  - Verb integration: `craft`, `make`, `create` aliases; recipe lookup in crafting_recipes table
+  - Testing strategy: recipe lookup, ingredient validation, consumption, result instantiation, narration
+  - Known limitations: recipe-ID syntax only (Tier 1), deferred multi-step recipes (Phase 5+)
+  - Related systems: butchery, loot tables, food system, tools, parser
+
+- **Created `docs/design/stress-system.md`** (17.5 KB, ~450 lines)
+  - Complete stress system spec: 3-tier severity (shaken/distressed/overwhelmed) with thresholds 3/6/10 (v1.1 raised)
+  - Trauma triggers: witness_creature_death (+1), near_death_combat (+2), witness_gore (+1), removed player_first_kill (v1.1)
+  - Debuff mechanics: shaken (-1 attack), distressed (-2 attack, +20% flee bias), overwhelmed (-2 attack, +30% flee, +20% move penalty)
+  - Cure progression: rest in safe room (no hostile creatures) for 2 hours game-time → stress cured
+  - Balance decisions (v1.1): thresholds raised (prevent spiral), first-kill removed (reward victory), debuffs reduced (hindrance not wall)
+  - Integration: combat system (attack penalty), injury system (injury type), room traversal (movement penalty), flee mechanics (flee bias)
+  - Testing strategy: infliction, debuff application in combat, cure mechanics, status display, incomplete cure interruption
+  - Known limitations: no player agency items (valium), no PTSD triggers, no skill progression, witness-gore narration pending (WAVE-0 task)
+  - Related systems: injuries, combat, cure, creature death, status UI
+
+- **Created `docs/design/creature-ecology.md`** (22.4 KB, ~550 lines)
+  - Complete creature ecology: pack awareness, territorial marking, web obstacles
+  - Pack tactics (simplified v1.1): stagger attacks (alpha attacks, beta waits 1 turn), alpha by highest health, individual wolf AI (defensive retreat, ambush positioning, smart positioning)
+  - Territory marking: invisible room markers with BFS exit-graph radius (2 hops = affected rooms), response logic (aggression-based: challenge/avoid), player detection via smell only
+  - Web obstacles: NPC movement block (size-agnostic), player passable, spider cooldown (30 min), max 2 per room
+  - Ambush behavior: spider prioritizes trapped prey, creates dynamic NPC hunting patterns
+  - Integration: combat (stagger affects attack order), room traversal (web blocks NPC exit), territory (affects creature response)
+  - Testing strategy: pack stagger rhythm, alpha selection with health changes, territorial marking and BFS radius, web creation and blocking, ambush priority
+  - Design rationale (v1.1): pack simplified (defer zone-targeting), territory defined precisely (BFS hops), web obstacle simplified (NPC block vs trap FSM)
+  - Known limitations: pack capped at 3 wolves (Level 1), territory invisible on map, web not destructible by NPC, no omega reserve
+  - Related systems: combat, creatures, spatial (room graph), spider ecology, creature death
+
+**Key Principles Applied:**
+- Acceptance criteria met per Phase 4 plan WAVE-5 section (crafting, stress, ecology)
+- All three docs aligned with existing design doc style: overview → mechanic sections → integration → balance rationale → testing → limitations → glossary
+- Cross-referenced existing architecture docs (WAVE-0: butchery-system.md, loot-tables.md)
+- Version tracking (v1.0 → v1.1) documented design decisions and changes
+- Practical examples provided (scenarios, code snippets, player interactions)
+- Deferred complexity captured (Phase 5+ items) to clarify Phase 4 scope boundaries
+
+**Learnings:**
+- Crafting system bridges resource generation (loot/butchery) → consumption (recipes). Tier 1 recipe-ID is intentional simplification; natural language syntax (Tier 3) requires parser maturity
+- Stress design balances challenge with agency: thresholds prevent spiral, debuffs hinder rather than block, safe-room cure ensures escape valve. v1.1 adjustments after team review (Bart, Nelson, CBG) critical
+- Territory system leverages existing room graph (no new data structures). BFS radius is precise, mathematically sound, enables spatial reasoning without complex state machines
+- Pack awareness simplified from full role system (200+ LOC complex) to stagger model (80 LOC simple). 80% gameplay impact, 20% code cost tradeoff justified for Phase 4 scope
+- Web obstacles kept binary (NPC block) avoiding trap FSM complexity. Aligns with Level 1 scope; escape mechanics deferred to Phase 5+
+- All three systems interconnect: pack + territory create coordinated threats; webs provide environmental leverage; stress pressures player into difficult decisions (fight wounded vs rest to heal)
+
+**Committed:** Phase 4 WAVE-5 design docs complete; all acceptance criteria met; ready for team review (Chalmers) and finalization
+
+---
+
+## Previous Work: WAVE-0 — Phase 4 Architecture Documentation (2026-08-16)
 
 **Phase 4 WAVE-0 Deliverables:**
 - **Created `docs/architecture/engine/butchery-system.md`** (17.5 KB, ~400 lines)

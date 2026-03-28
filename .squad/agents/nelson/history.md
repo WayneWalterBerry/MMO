@@ -1093,3 +1093,61 @@ Created TDD validation tests for 4 new creatures (cat, wolf, spider, bat):
 
 **Result:** 30/30 tests pass (15 each file). No test count decrease.
 **Pre-existing failure:** `verbs/test-combat-verbs.lua` has 1 unrelated failure (`carve` alias → `slash` not wired).
+
+### WAVE-5 — Pack Tactics + Territorial Tests + Final LLM Walkthrough
+
+**Date:** 2026-08-16
+**Triggered by:** Phase 4 WAVE-5 final wave — behavior tests + walkthrough.
+
+**Files created:**
+- `test/creatures/test-pack-tactics.lua` — 4 unit tests (TDD red phase: 0/4 pass)
+  1. Alpha selection: highest-health wolf becomes alpha (Q4 resolved: Option B)
+  2. Stagger attacks: alpha attacks first, others wait 1 turn delay
+  3. Single wolf: lone wolf attacks normally, no stagger penalty
+  4. Defensive retreat: wolf at <20% health attempts to flee
+- `test/creatures/test-territorial.lua` — 5 unit tests (TDD red phase: 1/5 pass)
+  1. Wolf marks territory: wolf enters room → territory-marker placed
+  2. Territory BFS radius: marker with radius 2 affects rooms within 2 exits
+  3. Own territory patrol: wolf encountering own marker stays (patrol/guard)
+  4. Foreign territory response: high-aggression challenges, low-aggression avoids
+  5. Smell detection (Q5): marker detectable via smell only, NOT via look ✅ PASSES
+
+**TDD Red Phase Results:**
+- Pack tactics: 0/4 pass — `engine.creatures.pack-tactics` module not yet built (Bart's track)
+- Territorial: 1/5 pass — `engine.creatures.territorial` module not yet built; test 5 passes using mock contract validation
+- Both test files registered in test runner, run without crash
+- **No regressions:** Pre-existing failures unchanged (5 files: silk-crafting, predator-prey, spider-web, territorial, combat-verbs)
+
+**Final LLM Walkthrough Results:**
+
+| Step | Command Sequence | Result |
+|------|-----------------|--------|
+| 1. Kill rat | `hit rat` | ✅ Combat works, rat dies, "The sight of death shakes you" (stress) |
+| 2. Cook rat | `get rat` → `cook rat` (near brazier) | ✅ "You hold the rat over the flames. The fur singes away..." |
+| 3. Eat cooked rat | `eat rat` | ✅ "Gamey and tough, with a smoky char." Nutrition works. |
+| 4. Kill spider | `hit spider` (with candle holder) | ✅ Spider dies, drops 2x silk-bundle |
+| 5. Butcher spider | `butcher spider` | ✅ Tool check works: "You need a knife to butcher this." |
+| 6. Butcher rat | `butcher rat` | ✅ Size check works: "There's nothing useful to carve from this corpse." |
+| 7. Get silk bundle | `get silk bundle` | ❌ Disambiguation failure: "Which do you mean: a bundle of spider silk or a bundle of spider silk?" |
+| 8. Craft silk bandage | `craft silk bandage` | ❌ "You don't know how to craft that." — Recipe not wired yet |
+| 9. Use poultice (healing) | `get poultice` → `use poultice` | ✅ Stops bleeding, heals |
+| 10. Witness death → stress | Kill any creature | ✅ "The sight of death shakes you." appears on every kill |
+| 11. Sleep + time advance | `sleep for 1 hour` / `sleep until dawn` | ✅ Time advances correctly (2:04→3:04→6:00 AM) |
+| 12. Rest in bedroom | `go up` → `rest` / `sleep` | ✅ Works when no bleeding injury |
+| 13. Kill wolf | Cannot reach hallway (door barred) | ⏳ Not testable — no route to wolf from bedroom |
+| 14. Butcher wolf with knife | Cannot reach knife or wolf | ⏳ Not testable — requires storage-cellar access |
+| 15. Spider venom | Spider bites during combat | ✅ "The numbness creeps past your knee" — poison ticks work |
+| 16. Bleeding during sleep | Sleep while bleeding | ✅ Fatal: "You drift deeper into sleep... You never wake up." |
+
+**Bugs Found:**
+- **BUG-SILK-DISAMBIG:** Two identical silk-bundles dropped by spider cannot be picked up individually — parser says "Which do you mean?" with no way to differentiate. Need ordinal support ("first silk bundle") or auto-select.
+- **BUG-CRAFT-RECIPE:** `craft silk bandage` returns "You don't know how to craft that." — silk crafting recipes not wired into craft verb yet (Smithers' track).
+- **BUG-BRASS-KEY-PADLOCK:** Brass key found under rug doesn't unlock cellar's iron-bound door. Unlock says "You can't unlock a heavy iron-bound door." — key/lock matching may need wiring.
+
+**Key Observations:**
+- Phase 4 combat loop (fight → cook → eat → heal) works for rat
+- Butchery verb exists and validates tool requirement + corpse size
+- Stress system triggers on creature death
+- Wolf is unreachable from bedroom (hallway door barred, cellar door padlocked) — wolf combat/butchery untestable in current walkthrough
+- Spider venom + bleeding are lethal during sleep — player must heal before resting
+- Creature AI behaviors work: spider flees when rat dies, rat bolts from combat

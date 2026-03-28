@@ -1006,3 +1006,20 @@ espawn block between combat metadata and death_state in each file -- logical pla
 - WAVE-4 GUIDs were found in decisions.md (D-PHASE4-GUIDS table), NOT in bart-phase4-guids.md inbox file. The Scribe had already merged them. Always check decisions.md first.
 - Embedding collision audit keywords must be respected: silk-rope gets NO bare "rope", silk-bandage gets NO bare "bandage" — these collide with existing objects (rope-coil, bandage).
 - crafted_from metadata on objects is declarative (for engine/Smithers to consume); the actual crafting verb handler reads these fields at runtime.
+
+### Phase 4 WAVE-5: Territorial Behavior (Territory Marker + Wolf Update)
+
+**Task:** Create territory-marker invisible object and update wolf.lua with territorial behavior metadata. Execute WAVE-5 of Phase 4 NPC combat implementation.
+
+**What was built:**
+1. **`territory-marker.lua`** — Invisible scent marker placed in rooms by wolves. GUID: {60189a1c-892c-478f-be8a-086fe8128cbb} (from decisions.md D-PHASE4-GUIDS table). Template: small-item. Material: nil (non-physical scent). invisible=true, hidden=true, searchable=false. NOT portable (size=0, weight=0). Categories: invisible, scent, creature-made. Q5 resolved: detectable via SMELL only ("A musky, animal scent lingers here."). Tracks: owner (creature GUID), timestamp (game time), radius (default 2 hops). room_presence=nil (never shown in room descriptions). Creator tracking field for runtime.
+2. **`wolf.lua` update** — Replaced flat `territorial=true` / `territory="hallway"` with structured territorial metadata table: `behavior.territorial = { marks_territory=true, mark_object="territory-marker", mark_radius=2, mark_duration="1 day" }`. Matches plan spec exactly.
+3. **Test updates** — Updated test/creatures/test-wolf.lua test 19: now validates `behavior.territorial` is a table with `marks_territory=true` and `mark_object="territory-marker"` (was checking `territorial==true`). Updated test/objects/test-material-audit.lua: invisible objects (invisible=true) are now exempt from material requirement and registry validation — prevents false failure on non-physical objects like scent markers.
+
+**Tests:** Both new Lua files parse clean. Wolf test (27/27 pass). Material audit (6/6 pass). Full suite: 6 pre-existing failures (crafting, predator-prey, spider-web, territorial engine dispatch, injuries, combat-verbs) — all Nelson's TDD tests for unimplemented engine features. Down from 8 failures before (fixed test-material-audit and test-wolf).
+
+**Patterns learned:**
+- Invisible/non-physical objects (material=nil) need explicit exemption in material audit tests — use `invisible=true` flag as the exemption trigger.
+- When converting a flat boolean field (territorial=true) to a structured table, update all downstream tests that assert on the old shape.
+- WAVE-5 GUIDs also found in decisions.md (D-PHASE4-GUIDS table), same as WAVE-4 — bart-phase4-guids.md inbox file never existed.
+- For scent/invisible objects: room_presence=nil, hidden=true, searchable=false, invisible=true is the complete "unfindable" pattern. Player detection is SMELL-only via on_smell.

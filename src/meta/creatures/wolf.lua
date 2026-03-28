@@ -84,11 +84,15 @@ return {
         flee_threshold = 20,
         wander_chance = 25,
         settle_chance = 40,
-        territorial = true,
-        territory = "hallway",
         nocturnal = false,
         home_room = nil,
         prey = {"rat", "cat", "bat"},
+        territorial = {
+            marks_territory = true,
+            mark_object = "territory-marker",
+            mark_radius = 2,
+            mark_duration = "1 day",
+        },
     },
 
     -- Drives
