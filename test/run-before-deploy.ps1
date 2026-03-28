@@ -18,6 +18,29 @@ $RepoRoot  = Split-Path -Parent $ScriptDir
 Write-Host "=== Pre-Deploy Gate ==="
 Write-Host ""
 
+# --- Step 0: Mutation Edge Check (informational) ---
+Write-Host "Step 0: Mutation edge check..."
+$edgeCheck = Join-Path $RepoRoot "scripts\mutation-edge-check.lua"
+if (Test-Path $edgeCheck) {
+    Push-Location $RepoRoot
+    try {
+        & $luaExe $edgeCheck
+        # Don't fail on known broken edges — they're tracked as issues
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Edge check found broken edges (tracked as issues — not blocking deploy)." -ForegroundColor Yellow
+        } else {
+            Write-Host "Edge check passed." -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "Warning: Could not run edge check - $($_.Exception.Message)" -ForegroundColor Yellow
+    } finally {
+        Pop-Location
+    }
+} else {
+    Write-Host "Warning: mutation-edge-check.lua not found — skipping." -ForegroundColor Yellow
+}
+Write-Host ""
+
 # --- Step 1: Run unit tests ---
 Write-Host "Step 1: Running parser unit tests..."
 $luaExe = "lua"

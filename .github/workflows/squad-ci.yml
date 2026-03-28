@@ -24,6 +24,10 @@ jobs:
       - name: Install Lua
         run: sudo apt-get update && sudo apt-get install -y lua5.4
 
+      - name: Mutation Edge Check
+        continue-on-error: true
+        run: lua scripts/mutation-edge-check.lua
+
       - name: Run tests (shard ${{ matrix.shard }})
         run: lua test/run-tests.lua --bench --shard ${{ matrix.shard }}
 
