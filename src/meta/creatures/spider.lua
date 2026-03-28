@@ -228,9 +228,6 @@ return {
         on_listen = "Nothing. The web vibrates faintly in the air.",
         on_taste = "Dry shell and acrid venom. Your tongue goes numb.",
 
-        -- Death byproducts (silk drops on death)
-        byproducts = { "silk-bundle" },
-
         -- Butchery products (Phase 4 WAVE-1)
         butchery_products = {
             requires_tool = "butchering",

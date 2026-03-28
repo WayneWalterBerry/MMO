@@ -248,7 +248,6 @@ local death_states = {
         on_listen = "Dry crackling if you shift it.",
         on_taste = "Bitter and crunchy. Inedible.",
         reshape_narration = "The spider's abdomen splits, spilling a tangle of silk.",
-        byproducts = { "silk-bundle" },
     },
     rat = {
         template = "small-item",

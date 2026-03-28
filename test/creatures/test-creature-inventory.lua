@@ -271,12 +271,12 @@ test("14. cat has no inventory field", function()
     h.assert_nil(cat_def.inventory, "cat should not have inventory")
 end)
 
--- 15. Spider has no inventory (silk is byproduct, not inventory)
-test("15. spider has no inventory — silk is death_state byproduct", function()
+-- 15. Spider has no inventory (silk comes from loot_table.always, not inventory)
+test("15. spider has no inventory — silk is loot_table drop", function()
     h.assert_truthy(ok_spider, "spider.lua must load")
-    h.assert_nil(spider_def.inventory, "spider should not have inventory (silk is byproduct)")
-    h.assert_truthy(spider_def.death_state and spider_def.death_state.byproducts,
-        "spider silk should come from death_state.byproducts, not inventory")
+    h.assert_nil(spider_def.inventory, "spider should not have inventory (silk is loot_table drop)")
+    h.assert_truthy(spider_def.loot_table and spider_def.loot_table.always,
+        "spider silk should come from loot_table.always, not inventory")
 end)
 
 ---------------------------------------------------------------------------
