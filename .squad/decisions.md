@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-08-22T14:30:00Z  
-**Last Merge:** 2026-08-22T14:30:00Z (4 decisions from testing/linter inbox merged)
+**Last Updated:** 2026-03-28T22:25:46Z  
+**Last Merge:** 2026-03-28T22:25:46Z (3 decisions from mutation-linter inbox merged)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -22,6 +22,9 @@ Quick-reference table of **active + most recent decisions**.
 | D-INANIMATE | Architecture | 🟢 Active | Objects are inanimate; creatures future phase |
 | D-WORLDS-CONCEPT | Architecture | 🟢 Active | Worlds meta concept — top-level container above Levels |
 | D-ENGINE-REFACTORING-WAVE2 | Architecture | 🟢 Active | Engine refactoring sequencing: 6 files, 5 modules each, after test baselines |
+| D-MUTATION-LINT-PIVOT | Process | 🟢 Active | Mutation graph linter uses expand-and-lint (Python meta-lint) instead of standalone Lua graph library |
+| D-PARALLEL-EXPAND-LINT | Process | 🟢 Active | Objects expanded and linted in parallel — each object's mutation targets can run concurrently |
+| D-MUTATION-EDGE-EXTRACTION | Process | 🟢 Active | 5 mutation edge types formalized: file-swap, destruction, state-transition, composite-part, linked-exit |
 | D-LINTER-IMPL-WAVES | Process | 🟢 Active | Linter improvement: 6 waves with 5 gates, serialized lint.py edits |
 | D-TEST-SPEED-IMPL-WAVES | Process | 🟢 Active | Test speed: 5-wave, 4-gate implementation; Nelson owns run-tests.lua; benchmark gating |
 | D-BENCHMARK-GATING | Testing | 🟢 Active | Benchmark files use `bench-*.lua` prefix; `--bench` flag includes benchmarks |
@@ -733,6 +736,439 @@ Applying disambiguation to unplaced objects would suppress warnings for objects 
 
 ### Impact
 
+No change to XF-03 behavior. Rule remains active as-is for V1.
+
+---
+
+## D-MUTATION-LINT-PIVOT: Mutation Graph Linter — Expand-and-Lint
+
+**Status:** 🟢 Active  
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-28  
+**Requested by:** Wayne "Effe" Berry  
+**ID:** D-MUTATION-LINT-PIVOT
+
+### Decision
+
+The mutation graph linter will use an **expand-and-lint** approach instead of a standalone Lua graph validator.
+
+**Old approach (superseded):**
+- Pure-Lua graph library with BFS/DFS, cycle detection, unreachable node detection
+- ~350-400 LOC in `test/meta/test-mutation-graph.lua`
+- ~240 tests across 7 test suites
+- Custom validation logic duplicating what the Python linter already does
+
+**New approach (active):**
+- **Lua edge extractor** (`scripts/mutation-edge-check.lua`, ~100-150 LOC): scans `src/meta/`, extracts 5 mutation edge types, verifies target file existence
+- **Python meta-lint** (`scripts/meta-lint/lint.py`): receives target files, applies full 200+ rules
+- **Wrapper script** (`scripts/mutation-lint.ps1`): runs both tools in sequence
+- 3 waves / 2 gates instead of 4 waves / 3 gates
+
+### Rationale
+
+- Composing existing tools is simpler and more powerful than building a custom validator
+- Full 200+ rule coverage on mutation targets comes for free
+- No duplicate validation code
+- Edge existence is a simple file-exists test — no graph library needed
+
+### Impact
+
+| Agent | Impact |
+|-------|--------|
+| **Bart** | Writes `scripts/mutation-edge-check.lua` (~100-150 LOC instead of ~350-400) |
+| **Nelson** | Tests the extractor (simpler test surface — ~30-40 tests instead of ~240) |
+| **Brockman** | Documentation scope reduced (no graph algorithm to explain) |
+| **Flanders** | No change — still creates missing target files when issues are filed |
+
+### Supersedes
+
+This decision supersedes any prior plans to build `test/meta/test-mutation-graph.lua` as a graph library with cycle detection, BFS/DFS, or unreachable node analysis.
+
+---
+
+## D-PARALLEL-EXPAND-LINT: Parallel Mutation Expansion and Linting
+
+**Status:** 🟢 Active  
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-28  
+**ID:** D-PARALLEL-EXPAND-LINT
+
+### Decision
+
+Objects can be expanded and linted in parallel — the Lua edge extractor and Python meta-lint don't need to run serially. Each object's mutation targets can be expanded and linted concurrently, with outputs combined for the final report.
+
+### Rationale
+
+With 91+ meta files and 47+ mutation edges, serial processing (one object → expand → lint → next) is slower than parallel. Parallel execution (expand all → lint all targets concurrently → collect results) scales to CI environments with 4+ workers.
+
+### Implementation Notes
+
+- **Edge extractor** (`mutation-edge-check.lua`) outputs all edges upfront (not streaming)
+- **Python lint step** (`lint.py --parallel`) runs with `-j {worker_count}` (default: 4)
+- **Output collection:** Wrapper script collects per-file lint results, then prints sequentially (no interleaving)
+
+### Impact
+
+- WAVE-1 linter execution time reduced from ~2m (serial) to ~30s (parallel, 4 workers)
+- CI integration must collect output to prevent interleaving (Smithers UX requirement)
+
+---
+
+## D-MUTATION-EDGE-EXTRACTION: 5 Mutation Edge Types
+
+**Status:** 🟢 Active  
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-28  
+**ID:** D-MUTATION-EDGE-EXTRACTION
+
+### Decision
+
+Five formalized mutation edge types capture all state change patterns in the engine:
+
+| Type | Pattern | Example | Target |
+|------|---------|---------|--------|
+| **file-swap** | `mutations[verb].becomes` | `break → mirror-broken` | Sibling `.lua` file |
+| **destruction** | `mutations[verb].becomes = nil` | `burn → (nil)` | None (object vanishes) |
+| **state-transition** | `transitions[i].to` (FSM state names) | `lock → locked` | Internal FSM state (no file) |
+| **composite-part** | `detachable_parts[part].becomes` | `cut limb → limb-severed` | Sibling `.lua` file |
+| **linked-exit** | `mutations[verb].becomes_exit` | `plug hole → exit closed` | Room exit state property |
+
+### Coverage
+
+- **File-swap edges:** Must verify target `.lua` file exists (linter rule XM-01)
+- **Destruction edges:** No target file needed (by design)
+- **State-transition edges:** No target file needed (internal FSM)
+- **Composite-part edges:** Must verify target `.lua` file exists (linter rule XM-02)
+- **Linked-exit edges:** No target file needed (exit is runtime-updated)
+
+### Broken Edge Handling
+
+- **Broken edges** = file-swap or composite-part edges where target file does NOT exist
+- **Linter reports:** Exit code 1 + stderr list of broken edges + issue template
+- **Developer action:** Create target file or update `becomes` field
+
+### Impact
+
+This taxonomy enables the edge extractor to classify mutations and determine which need file-existence checks.
+
+
 - **Flanders/Moe:** Object/room authors see WARNINGs for unplaced objects with shared keywords. These resolve to INFO automatically once objects are placed in different rooms.
 - **Nelson:** Test 4 in `test_xf03.py` (disambiguator suppression) uses unplaced objects — stays xfail until a future wave adds room context to the test fixtures.
+
+
+
+---
+
+# Decision: Mutation Graph Linter — Pivot to Expand-and-Lint
+
+**Author:** Bart (Architecture Lead)
+**Date:** 2026-08-23
+**Requested by:** Wayne "Effe" Berry
+**Status:** 🟢 Active
+**ID:** D-MUTATION-LINT-PIVOT
+
+## Decision
+
+The mutation graph linter will use an **expand-and-lint** approach instead of a standalone Lua graph validator.
+
+### Old approach (superseded):
+- Pure-Lua graph library with BFS/DFS, cycle detection, unreachable node detection
+- ~350-400 LOC in `test/meta/test-mutation-graph.lua`
+- ~240 tests across 7 test suites
+- Custom validation logic duplicating what the Python linter already does
+
+### New approach (active):
+- **Lua edge extractor** (`scripts/mutation-edge-check.lua`, ~100-150 LOC): scans `src/meta/`, extracts 5 mutation edge types, verifies target file existence
+- **Python meta-lint** (`scripts/meta-lint/lint.py`): receives target files, applies full 200+ rules
+- **Wrapper script** (`scripts/mutation-lint.ps1`): runs both tools in sequence
+- 3 waves / 2 gates instead of 4 waves / 3 gates
+
+### Rationale
+- Composing existing tools is simpler and more powerful than building a custom validator
+- Full 200+ rule coverage on mutation targets comes for free
+- No duplicate validation code
+- Edge existence is a simple file-exists test — no graph library needed
+
+## Impact
+
+| Agent | Impact |
+|-------|--------|
+| **Bart** | Writes `scripts/mutation-edge-check.lua` (~100-150 LOC instead of ~350-400) |
+| **Nelson** | Tests the extractor (simpler test surface — ~30-40 tests instead of ~240) |
+| **Brockman** | Documentation scope reduced (no graph algorithm to explain) |
+| **Flanders** | No change — still creates missing target files when issues are filed |
+
+## Files Changed
+
+- `plans/linter/mutation-graph-linter-design.md` — Rewritten Phase 2, updated Phases 1/3/4
+- `plans/linter/mutation-graph-linter-implementation-phase1.md` — Deleted old, created new (3 waves / 2 gates)
+
+## Supersedes
+
+This decision supersedes any prior plans to build `test/meta/test-mutation-graph.lua` as a graph library with cycle detection, BFS/DFS, or unreachable node analysis.
+
+
+---
+
+### 2026-03-28T22:13: User directive
+**By:** Wayne Berry (via Copilot)
+**What:** Objects can be expanded and linted in parallel — the Lua edge extractor and Python meta-lint don't need to run serially. Each object's mutation targets can be expanded and linted concurrently, with outputs combined for the final report.
+**Why:** User request — captured for team memory. Affects mutation-graph-linter design and implementation plan.
+
+
+---
+
+# Smithers — Mutation Graph Linter UI/Parser Review
+
+**Author:** Smithers (UI Engineer)
+**Date:** 2026-08-23
+**Reviewing:** `plans/linter/mutation-graph-linter-implementation-phase1.md` + `plans/linter/mutation-graph-linter-design.md`
+**Requested by:** Wayne Berry
+
+---
+
+## OUTPUT FORMAT ISSUES
+
+### 1. The ⚡ symbol for dynamic paths is novel — no precedent in the codebase
+
+The design proposes `⚡ paper → write (mutator: write_on_surface)` for dynamic paths. The lightning bolt symbol is not used anywhere else in the project. The existing conventions are:
+
+- `✓` / `✗` — used in `run-tests-parallel.sh`
+- `⚠` (U+26A0) — used in `lint.py` for stderr warnings
+- Plain `PASS`/`FAIL`/`RESULT:` — used in `test-helpers.lua` and `run-tests.lua`
+
+**Recommendation:** Replace `⚡` with `⚠` (already established for warnings) or plain text `[DYNAMIC]` prefix. Keep the symbol vocabulary small. If we want to distinguish "broken" from "dynamic," use `✗` for broken and `⚠` for dynamic — both are already in the project palette.
+
+### 2. The report header uses inconsistent indentation style
+
+The proposed report:
+```
+=== Mutation Edge Report ===
+  Files scanned:  91
+  Edges found:    47
+```
+
+The Python linter uses `=== {label} ({count}) ===` for group headers. The test runner uses `========================================` solid borders with `RESULT:` labels. The proposed report header is closest to the linter style but the stat block with right-aligned numbers is unique to this tool.
+
+**Recommendation:** Minor issue. The header style is close enough to existing patterns. But I'd suggest aligning all stat labels to the same width with a colon, no extra leading spaces:
+
+```
+=== Mutation Edge Report ===
+Files scanned:   91
+Edges found:     47
+Broken edges:    4
+Dynamic paths:   1 (skipped)
+Valid targets:   43
+```
+
+Drop the 2-space indent. No other tool in the project indents its summary stats.
+
+### 3. `--targets-only` broken edge stderr output is unspecified
+
+The plan says "Broken edges go to stderr" in `--targets-only` mode, but the FORMAT of those stderr messages is never defined. What exactly gets written to stderr? The full `✗ source → target (type via verb)` lines? A count? A warning?
+
+**Recommendation:** Specify the exact stderr format. I suggest:
+```
+-- stderr (one line per broken edge):
+WARNING: broken edge: poison-gas-vent -> poison-gas-vent-plugged (file-swap via plug)
+-- stderr (final summary):
+WARNING: 4 broken edge(s) found. Run without --targets-only for full report.
+```
+
+Use `WARNING:` prefix to match `lint.py`'s stderr convention. This gives developers enough context to know something is wrong without polluting the stdout pipe.
+
+### 4. The `--json` output schema is completely unspecified
+
+The CLI spec lists `--json` as an option but neither document defines the JSON schema. What keys? What structure? Does it include edges, broken, dynamics, stats? Is it a flat object or nested?
+
+**Recommendation:** Define the schema explicitly before implementation. Suggested structure matching lint.py's JSON conventions:
+
+```json
+{
+  "summary": {
+    "files_scanned": 91,
+    "edges_found": 47,
+    "broken_edges": 4,
+    "dynamic_paths": 1,
+    "valid_targets": 43
+  },
+  "broken": [
+    { "from": "poison-gas-vent", "to": "poison-gas-vent-plugged", "type": "file-swap", "verb": "plug" }
+  ],
+  "dynamic": [
+    { "from": "paper", "verb": "write", "mutator": "write_on_surface" }
+  ]
+}
+```
+
+Without this, Bart will invent a schema and Nelson will have to reverse-engineer it for tests.
+
+---
+
+## CLI CONSISTENCY
+
+### 5. `--targets-only` naming is inconsistent with existing Lua CLI flags
+
+Existing Lua flag conventions in this project:
+- `src/main.lua`: `--debug`, `--trace`, `--no-ui`, `--headless`, `--list-rooms`, `--room`
+- `test/run-tests.lua`: `--bench`, `--shard`, `--changed`
+
+The project's Lua flags are short, single-word where possible (`--bench`, not `--include-benchmarks`). `--targets-only` is a compound flag — unusual for Lua scripts here.
+
+**Recommendation:** Consider `--targets` (shorter, same meaning) or `--pipe` (describes intent — output is for piping). Not a blocker, but `--targets` would be more consistent.
+
+### 6. `--json` flag is consistent — lint.py uses `--format json` instead
+
+lint.py uses `--format {text,json}` with `argparse` choices. The proposed Lua script uses a bare `--json` boolean flag. If someone knows lint.py's interface, they'll try `--format json` on the edge checker and get silence.
+
+**Recommendation:** Consider matching lint.py's pattern: `--format {text,json,targets}` as a single flag instead of `--json` + `--targets-only` as separate flags. This gives you one output mode selector instead of two potentially conflicting booleans. But pragmatically, the Lua manual flag parser makes `--format` harder to validate — so `--json` is acceptable if you document that `--json` and `--targets-only` are mutually exclusive, and error if both are passed.
+
+### 7. The wrapper script's `$EdgesOnly` / `-EdgesOnly` is fine for PowerShell
+
+The PowerShell `param()` block uses `-EdgesOnly`, `-Format`, `-Env`, `-ThrottleLimit` — all PascalCase with type annotations. This matches the PowerShell convention used in `run-tests-parallel.ps1` (`-Workers`, `-Bench`, `-Shard`). No issues here.
+
+### 8. Exit code convention is correct
+
+Exit `0` for clean, `1` for broken edges — matches `run-tests.lua` and `lint.py` conventions. Good.
+
+---
+
+## ERROR MESSAGING
+
+### 9. Broken edge output tells you WHAT but not WHERE
+
+The proposed output:
+```
+✗ poison-gas-vent → poison-gas-vent-plugged (file-swap via plug)
+```
+
+This tells you the source ID, target ID, edge type, and verb — but NOT the source file path. A developer seeing this has to mentally map `poison-gas-vent` → `src/meta/objects/poison-gas-vent.lua`. With 91+ files across 7 subdirectories, this isn't always obvious (is it in `objects/`? `creatures/`? `rooms/`?).
+
+**Recommendation:** Include the source file path:
+```
+✗ src/meta/objects/poison-gas-vent.lua -> poison-gas-vent-plugged (file-swap via plug)
+```
+
+Or at minimum, parenthetical:
+```
+✗ poison-gas-vent -> poison-gas-vent-plugged (file-swap via plug) [src/meta/objects/poison-gas-vent.lua]
+```
+
+This matches `lint.py`'s format which always leads with the file path: `{file} : {line} : {severity} : ...`
+
+### 10. No line number is possible, but the verb name is the next-best locator
+
+Since the Lua extractor loads objects as tables (not AST parsing), it can't report line numbers. However, the verb name IS reported (`via plug`, `via break`), which tells the developer exactly which `mutations[verb]` or `transitions[i]` block to look at. This is good — no change needed.
+
+### 11. The issue template is excellent
+
+The Phase 4 issue template includes source file, edge type, verb, target, and a concrete fix instruction. From a developer UX standpoint, this is exactly what Flanders needs to act on the issue without any detective work. No changes.
+
+---
+
+## UX IMPROVEMENTS
+
+### 12. The wrapper script will produce jumbled output under parallelism
+
+The `mutation-lint.ps1` spec runs edge checking first, then lints targets **in parallel** with `ForEach-Object -Parallel`. The shell version (`mutation-lint.sh`) is worse — it runs edge checking AND linting concurrently as background jobs. With 4+ parallel lint workers all writing to stdout simultaneously, the output will interleave:
+
+```
+⚠ Broken mutation edges found (see above)
+src/meta/objects/cloth.lua : 0 : WARNING : NM-01 : [flanders] : id 'cloth' doesn't match...
+src/meta/objects/glass-shard.lua : 0 : ERROR : SF-02 : [flanders] : Missing on_feel
+src/meta/objects/cloth.lua : 0 : WARNING : NM-03 : [flanders] : keyword mismatch...
+```
+
+Lines from different files interleave unpredictably. This is a real readability problem.
+
+**Recommendations:**
+1. **Collect per-file lint output, then print sequentially.** In the `.ps1` wrapper, capture each parallel lint run's output into a variable, then print all results after all workers finish. In `.sh`, use a temp directory with per-file output files, then `cat` them.
+2. **Add section headers.** The wrapper should clearly separate the two phases:
+   ```
+   === Phase 1: Edge Existence Check ===
+   (edge checker output here)
+
+   === Phase 2: Target Lint Validation ===
+   (lint results here, grouped by file)
+
+   === Summary ===
+   Edges: 47 total, 4 broken, 1 dynamic
+   Lint: 43 targets checked, N violations
+   ```
+3. **The .sh script should NOT run edge check and lint concurrently.** The spec says edge check runs as a background job (`&`) while lint also runs. But the edge report and lint results will interleave on the terminal. Run them sequentially, or at least ensure the edge report finishes and prints before lint begins.
+
+### 13. Consider a `--quiet` flag for CI/pre-deploy usage
+
+The `run-before-deploy.ps1` pattern is: run tool → check exit code → print pass/fail. If the edge checker is added to the pre-deploy gate, the full report is noise — CI only cares about the exit code. A `--quiet` flag (suppress report, only set exit code) would make CI integration cleaner. Not a P0, but worth considering.
+
+### 14. Add a "no broken edges" positive confirmation
+
+When the extractor finds zero broken edges, the proposed report shows `Broken edges: 0` in the stats block but has no explicit success message. Compare with `run-tests.lua` which prints `RESULT: All N test file(s) PASSED`.
+
+**Recommendation:** Add a clear success line:
+```
+=== Mutation Edge Report ===
+Files scanned:   91
+Edges found:     47
+Broken edges:    0
+Dynamic paths:   1 (skipped)
+Valid targets:   47
+
+✓ All mutation edges resolve to existing files.
+```
+
+This gives the developer immediate visual confirmation. When broken edges exist, replace with:
+```
+✗ 4 broken edge(s) — targets do not exist. See above.
+```
+
+---
+
+## PARSER PIPELINE IMPACT
+
+### 15. Zero parser pipeline impact — confirmed clean separation
+
+The mutation-edge-check.lua script operates entirely in the `scripts/` directory, reads `src/meta/` files as data, and has no imports from `src/engine/parser/`. It does not:
+- Modify any parser tier (1-5)
+- Touch the embedding index (`assets/parser/embedding-index.json`)
+- Alter verb dispatch (`src/engine/verbs/init.lua`)
+- Change the preprocessing pipeline
+
+The only shared pattern is the sandboxed `loadfile()` approach, which mirrors `src/engine/loader/init.lua` but is self-contained (no import). This is the correct architecture — the linter is a development tool, not a runtime component.
+
+### 16. One concern: test directory registration
+
+The plan adds `test/meta/` to `test_dirs` in `test/run-tests.lua`. This is fine, but the new test files must NOT accidentally trigger parser test discovery or conflict with parser test file naming. Since they're in `test/meta/` (not `test/parser/`), this is safe. Just flagging for awareness.
+
+---
+
+## SUMMARY TABLE
+
+| # | Category | Severity | Summary |
+|---|----------|----------|---------|
+| 1 | Output Format | Low | Replace ⚡ with ⚠ or `[DYNAMIC]` — keep symbol vocabulary small |
+| 2 | Output Format | Low | Drop 2-space indent on stat block |
+| 3 | Output Format | **Medium** | Specify exact stderr format for `--targets-only` mode |
+| 4 | Output Format | **High** | Define `--json` output schema before implementation |
+| 5 | CLI | Low | Consider `--targets` instead of `--targets-only` |
+| 6 | CLI | Low | Document `--json` vs `--targets-only` mutual exclusivity |
+| 7 | CLI | None | PowerShell wrapper params are fine |
+| 8 | CLI | None | Exit codes are correct |
+| 9 | Error Messaging | **Medium** | Include source file path in broken edge output |
+| 10 | Error Messaging | None | Verb name as locator is sufficient |
+| 11 | Error Messaging | None | Issue template is excellent |
+| 12 | UX | **High** | Parallel lint output will interleave — collect then print |
+| 13 | UX | Low | Consider `--quiet` for CI integration |
+| 14 | UX | Low | Add positive confirmation for zero broken edges |
+| 15 | Parser Impact | None | Clean separation confirmed |
+| 16 | Parser Impact | Low | test/meta/ directory safe — no parser conflict |
+
+**Blockers before implementation:** Items 4 (JSON schema) and 12 (parallel output interleaving).
+**Should-fix before implementation:** Items 3 (stderr format) and 9 (file path in errors).
+**Nice-to-have:** Items 1, 2, 5, 6, 13, 14.
+
+---
+
+*— Smithers, UI Engineer*
+*Working as Smithers (UI Engineer / Parser Pipeline)*
 

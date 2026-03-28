@@ -53,3 +53,14 @@
 - **`--bench` flag:** Added to `test/run-tests.lua`. Parses CLI args, discovers `bench-*.lua` in a second pass per directory, shows "(including benchmarks)" in header. Backward compatible — default behavior unchanged.
 - **Verification:** Without `--bench`: 255 files. With `--bench`: 257 files (+2 bench). Header message correct. All 255 correctness tests pass.
 - **Key fact:** `test-bm25-deep.lua` looks like it could be a benchmark by name but is 100% correctness testing (asserts on specific verb/noun/score values). Don't rename it.
+
+### Mutation Graph Linter — Test Plan Review (2026-08-23)
+- Reviewed `plans/linter/mutation-graph-linter-implementation-phase1.md` test specs and gate criteria.
+- **`test/meta/` does NOT exist yet.** Not in `test_dirs` array (lines 36-60 of `test/run-tests.lua`). Plan correctly identifies both tasks.
+- **`test-helpers.lua` lacks `assert_gt`/`assert_gte`.** Only has `assert_eq`, `assert_truthy`, `assert_nil`, `assert_no_error`. Integration tests needing `> 20 edges` or `> 80 files` must use `assert_truthy(count > N, msg)` workaround.
+- **`on_tool_use.when_depleted` has ZERO real objects.** 6 objects have `on_tool_use` but none use `when_depleted`. Mechanism 5 is purely theoretical. Tests need synthetic fixtures.
+- **Actual file count is 206, not ~91+.** Plan says "Files scanned > 80 (currently ~91+)" — the threshold is fine but the documented count is very wrong.
+- **`source_to_tests` in run-tests.lua (line 137) skips `scripts/`.** Changes to `scripts/mutation-edge-check.lua` won't trigger `test/meta/` tests via `--changed` flag. Needs a mapping entry.
+- **`test/linter/` exists with 11 Python pytest files** — no naming conflict with Lua `test/meta/` tests.
+- **Current test file count: 258** (before adding meta tests).
+- **Key subdirs under src/meta/ not mentioned in plan:** `worlds/` (5 files), `materials/` (32 files) — scanner must handle these but plan doesn't test them specifically.
