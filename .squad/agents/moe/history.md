@@ -473,6 +473,21 @@ Built all 5 new room .lua files in `src/meta/world/`:
 
 ---
 
+### Fix #283 + #284: Place healing-poultice and antidote-vial in Level 1 rooms
+
+**Date:** 2026-08
+**Task:** Two medical/cure objects existed in `src/meta/objects/` but were not placed in any room — invisible to players.
+
+**Placements:**
+- **Healing poultice** (GUID `fcd722b7-27d2-42cb-baf5-86e66cf2fc07`) → `start-room.lua` nightstand drawer `contents` array. Thematic: medical supplies kept near the bed. Sits alongside the matchbox.
+- **Antidote vial** (GUID `87ec6b50-d0eb-4a1c-ae34-8b200625ccd0`) → `deep-cellar.lua` offering bowl `contents` on the stone altar. Thematic: ancient cure left as an offering, near the spiders that inflict venom.
+
+**Pattern used:** Standard deep-nesting `contents` entries matching existing instance format.
+**Validation:** Both `.lua` files parse cleanly. Room changes are additive data only — no engine logic touched.
+**Commit:** `e8bdbee` on `main`. Closes #283, #284.
+
+---
+
 ## Archives
 
 - `history-archive-2026-03-20T22-40Z-moe.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): world builder onboarding, room architecture, map design, level 1 expansion
