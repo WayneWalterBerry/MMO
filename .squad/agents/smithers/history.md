@@ -48,3 +48,9 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 - `history-archive.md` — Entries before 2026-07-13 (2026-03-23 to 2026-03-29)
 
 ## Learnings
+
+### 2026-07 — Phase 4 Silk Wiring Bugs (2 fixes)
+
+**Bug 1: Identical-item disambiguation bypass** — `_try_room_scored()` in helpers.lua fired disambiguation when multiple objects with the same `id` tied on adjective score (e.g., 3 silk-bundles on the floor from killed spiders). Added an `all_same_id` check after tie detection: if every top-scoring match shares the same base `id`, return the first one. Fungible items don't need disambiguation.
+
+**Bug 2: Lua pattern dash in crafting ingredient match** — `obj.id:match("^" .. ingredient.id)` silently failed for any hyphenated id like "silk-bundle" because `-` is a lazy quantifier in Lua patterns. Replaced all 6 occurrences in crafting.lua (craft handler + sew handler) with `string.find(obj.id, ingredient.id, 1, true) == 1` for plain-string prefix matching. **Lesson:** Never use raw Lua `match()` with user-facing object IDs that contain dashes — always use `string.find` with `plain=true`.

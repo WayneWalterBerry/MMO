@@ -88,7 +88,7 @@ function M.register(handlers)
                     local hand = ctx.player.hands[i]
                     if hand then
                         local obj = _hobj(hand, ctx.registry)
-                        if obj and obj.id:match("^" .. ingredient.id) then
+                        if obj and obj.id:find(ingredient.id, 1, true) == 1 then
                             local dominated = false
                             for _, c in ipairs(consumed) do
                                 if c.guid == obj.guid or c.id == obj.id then dominated = true; break end
@@ -99,7 +99,7 @@ function M.register(handlers)
                         if not found and obj and obj.container and obj.contents then
                             for _, item_id in ipairs(obj.contents) do
                                 local item = ctx.registry:get(item_id)
-                                if item and item.id:match("^" .. ingredient.id) then
+                                if item and item.id:find(ingredient.id, 1, true) == 1 then
                                     local dominated = false
                                     for _, c in ipairs(consumed) do
                                         if c.guid == item.guid or c.id == item.id then dominated = true; break end
@@ -114,7 +114,7 @@ function M.register(handlers)
                 if not found then
                     for _, obj_id in ipairs(ctx.current_room.contents or {}) do
                         local obj = ctx.registry:get(obj_id)
-                        if obj and obj.id:match("^" .. ingredient.id) then
+                        if obj and obj.id:find(ingredient.id, 1, true) == 1 then
                             local dominated = false
                             for _, c in ipairs(consumed) do
                                 if c.guid == obj.guid or c.id == obj.id then dominated = true; break end
@@ -245,7 +245,7 @@ function M.register(handlers)
                 local hand = ctx.player.hands[i]
                 if hand then
                     local obj = _hobj(hand, ctx.registry)
-                    if obj and obj.id:match("^" .. need_id) and not available[hand_id] then
+                    if obj and obj.id:find(need_id, 1, true) == 1 and not available[hand_id] then
                         available[hand_id] = obj
                         consumed_objs[#consumed_objs + 1] = obj
                         found = true
@@ -255,7 +255,7 @@ function M.register(handlers)
                     if not found and obj and obj.container and obj.contents then
                         for _, item_id in ipairs(obj.contents) do
                             local item = ctx.registry:get(item_id)
-                            if item and item.id:match("^" .. need_id) and not available[item_id] then
+                            if item and item.id:find(need_id, 1, true) == 1 and not available[item_id] then
                                 available[item_id] = item
                                 consumed_objs[#consumed_objs + 1] = item
                                 found = true
@@ -270,7 +270,7 @@ function M.register(handlers)
             if not found then
                 for _, obj_id in ipairs(ctx.current_room.contents or {}) do
                     local obj = ctx.registry:get(obj_id)
-                    if obj and obj.id:match("^" .. need_id) and not available[obj_id] then
+                    if obj and obj.id:find(need_id, 1, true) == 1 and not available[obj_id] then
                         available[obj_id] = obj
                         consumed_objs[#consumed_objs + 1] = obj
                         found = true
