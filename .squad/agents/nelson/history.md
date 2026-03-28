@@ -45,3 +45,11 @@
 - **Key pattern:** lint.py resolves project root from `Path(__file__).resolve().parents[2]`, NOT cwd. Tests must use `--config` to isolate from project `.meta-check.json`. The `lint_runner` fixture handles this.
 - `conftest.py` uses `_load_sibling()` importlib pattern (same as lint.py) for module imports.
 - Tests use subprocess to call lint.py with `--format json --no-cache`, parse JSON output, filter by rule_id.
+
+### Test Speed WAVE-0 + WAVE-1: Benchmark Gating (2026-08-22)
+- **Baseline:** 255 test files, ~180s wall clock, 1 pre-existing failure (pre-rename).
+- **Audit results:** `test-inverted-index.lua` → BENCHMARK (100-iter timing loop, mixed with correctness equivalence tests). `test-tier2-benchmark.lua` → BENCHMARK (parser accuracy benchmark, 550 lines). `test-bm25-deep.lua` → CORRECTNESS (pure assertion-based: verb/noun matching, score thresholds, edge cases, known bug docs, zero timing code). Only the first two were renamed.
+- **Renames:** `test-inverted-index.lua` → `bench-inverted-index.lua`, `test-tier2-benchmark.lua` → `bench-tier2-benchmark.lua`. Used `git mv` for history preservation.
+- **`--bench` flag:** Added to `test/run-tests.lua`. Parses CLI args, discovers `bench-*.lua` in a second pass per directory, shows "(including benchmarks)" in header. Backward compatible — default behavior unchanged.
+- **Verification:** Without `--bench`: 255 files. With `--bench`: 257 files (+2 bench). Header message correct. All 255 correctness tests pass.
+- **Key fact:** `test-bm25-deep.lua` looks like it could be a benchmark by name but is 100% correctness testing (asserts on specific verb/noun/score values). Don't rename it.
