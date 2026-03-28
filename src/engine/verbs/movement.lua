@@ -536,6 +536,36 @@ function M.register(handlers)
         end
     end
     handlers["goto"] = handlers["teleport"]
+
+    ---------------------------------------------------------------------------
+    -- EXITS — list available exits from the current room (#318)
+    ---------------------------------------------------------------------------
+    handlers["exits"] = function(ctx, noun)
+        local room = ctx.current_room
+        local exit_lines = {}
+        for dir, exit in pairs(room.exits or {}) do
+            local e = type(exit) == "string"
+                and { name = dir, hidden = false }
+                or exit
+            if not e.hidden then
+                local state = ""
+                if e.open == false and e.locked then
+                    state = " (locked)"
+                elseif e.open == false then
+                    state = " (closed)"
+                end
+                exit_lines[#exit_lines + 1] =
+                    "  " .. dir .. ": " .. (e.name or dir) .. state
+            end
+        end
+        if #exit_lines > 0 then
+            table.sort(exit_lines)
+            print("Exits:")
+            print(table.concat(exit_lines, "\n"))
+        else
+            print("There are no visible exits.")
+        end
+    end
 end
 
 return M

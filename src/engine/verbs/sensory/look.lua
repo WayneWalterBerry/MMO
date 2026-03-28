@@ -330,6 +330,8 @@ function M.register(handlers)
         end
 
         -- "look X" ΓåÆ examine (shorthand for "look at X")
+        -- #342: Strip leading articles for consistency with "look at X" path
+        local look_target = noun:gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
         local blocked2 = vision_blocked_by_worn(ctx)
         if blocked2 then
             print("You can't see anything with your vision blocked.")
@@ -337,10 +339,10 @@ function M.register(handlers)
         end
         if not has_some_light(ctx) then
             -- Bug #181: delegate to examine dark path instead of generic error
-            handlers["examine"](ctx, noun)
+            handlers["examine"](ctx, look_target)
             return
         end
-        local obj = find_visible(ctx, noun)
+        local obj = find_visible(ctx, look_target)
         if not obj then
             err_not_found(ctx)
             return

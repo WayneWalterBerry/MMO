@@ -548,6 +548,21 @@ function verbs.create()
         handlers["slay"]   = handlers["attack"]
         handlers["murder"] = handlers["attack"]
 
+        -- #331: Helper to check for dead creatures in room contents
+        local function check_dead_creature(ctx, keyword)
+            local room = type(ctx.current_room) == "table" and ctx.current_room or nil
+            if not room or not room.contents then return false end
+            local kw = keyword:lower()
+                :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+            for _, obj_id in ipairs(room.contents) do
+                local obj = ctx.registry and ctx.registry.get and ctx.registry:get(obj_id)
+                if obj and (obj._state == "dead" or obj.alive == false) and kw_match(obj, kw) then
+                    return true
+                end
+            end
+            return false
+        end
+
         -- #358: Extend stab/jab/pierce: try creature combat first, fall through to self-infliction
         local original_stab = handlers["stab"]
         handlers["stab"] = function(ctx, noun)
@@ -556,6 +571,11 @@ function verbs.create()
                 local creature = find_creature(ctx, first_word)
                 if creature and creature.alive ~= false and creature._state ~= "dead" then
                     return handlers["attack"](ctx, noun)
+                end
+                -- #331: dead creature check before falling through
+                if check_dead_creature(ctx, first_word) then
+                    print("It's already dead.")
+                    return
                 end
             end
             if original_stab then return original_stab(ctx, noun) end
@@ -573,6 +593,11 @@ function verbs.create()
                 if creature and creature.alive ~= false and creature._state ~= "dead" then
                     return handlers["attack"](ctx, noun)
                 end
+                -- #331: dead creature check before falling through
+                if check_dead_creature(ctx, first_word) then
+                    print("It's already dead.")
+                    return
+                end
             end
             if original_hit then return original_hit(ctx, noun) end
             print("Hit what?")
@@ -588,6 +613,12 @@ function verbs.create()
         handlers["whack"]    = handlers["hit"]
         handlers["headbutt"] = handlers["hit"]
         handlers["kick"]     = handlers["hit"]
+        handlers["stomp"]    = handlers["hit"]
+        handlers["trample"]  = handlers["hit"]
+        handlers["stamp"]    = handlers["hit"]
+        handlers["squash"]   = handlers["hit"]
+        handlers["crush"]    = handlers["hit"]
+        handlers["squish"]   = handlers["hit"]
 
         -- strike: preserve fire.lua match-striking, add creature combat fallback
         local original_strike = handlers["strike"]
@@ -597,6 +628,11 @@ function verbs.create()
                 local creature = find_creature(ctx, first_word)
                 if creature and creature.alive ~= false and creature._state ~= "dead" then
                     return handlers["attack"](ctx, noun)
+                end
+                -- #331: dead creature check before falling through
+                if check_dead_creature(ctx, first_word) then
+                    print("It's already dead.")
+                    return
                 end
             end
             if original_strike then return original_strike(ctx, noun) end
@@ -609,6 +645,11 @@ function verbs.create()
                 local creature = find_creature(ctx, first_word)
                 if creature and creature.alive ~= false and creature._state ~= "dead" then
                     return handlers["attack"](ctx, noun)
+                end
+                -- #331: dead creature check before falling through
+                if check_dead_creature(ctx, first_word) then
+                    print("It's already dead.")
+                    return
                 end
             end
             print("Swing at what?")

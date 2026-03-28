@@ -523,6 +523,12 @@ function M.register(handlers)
             end
         end
 
+        -- #305: If item has cures (bandage-type), delegate to apply handler
+        if obj.cures and handlers["apply"] then
+            handlers["apply"](ctx, noun)
+            return
+        end
+
         -- FSM path: check for a "use" transition
         if obj.states then
             local transitions = fsm_mod.get_transitions(obj)

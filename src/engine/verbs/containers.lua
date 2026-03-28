@@ -309,7 +309,16 @@ function M.register(handlers)
     handlers["unlock"] = function(ctx, noun)
         if noun == "" then print("Unlock what?") return end
 
-        local obj, loc_type, parent_obj = find_visible(ctx, noun)
+        -- #310: Strip "with X" tool modifier before object lookup
+        local target_noun = noun
+        local with_tool_word = nil
+        local base_match, tool_match = noun:lower():match("^(.-)%s+with%s+(.+)$")
+        if base_match and base_match ~= "" then
+            target_noun = base_match
+            with_tool_word = tool_match
+        end
+
+        local obj, loc_type, parent_obj = find_visible(ctx, target_noun)
         if loc_type == "part" and parent_obj then obj = parent_obj end
 
         if obj then
@@ -354,14 +363,7 @@ function M.register(handlers)
 
             print("You can't unlock " .. (obj.name or "that") .. ".")
         else
-            -- Parse "unlock X with Y" — extract the door keyword
-            local target_noun = noun
-            local base_match = noun:lower():match("^(.-)%s+with%s+")
-            if base_match and base_match ~= "" then
-                target_noun = base_match
-            end
-
-            -- Fallback: try exit doors in room.exits
+            -- Fallback: try exit doors in room.exits (target_noun already stripped above)
             local exit, exit_dir = find_exit_by_keyword(ctx, target_noun)
             if exit then
                 if not exit.locked then
@@ -398,7 +400,16 @@ function M.register(handlers)
     handlers["lock"] = function(ctx, noun)
         if noun == "" then print("Lock what?") return end
 
-        local obj, loc_type, parent_obj = find_visible(ctx, noun)
+        -- #310: Strip "with X" tool modifier before object lookup
+        local target_noun = noun
+        local with_tool_word = nil
+        local base_match, tool_match = noun:lower():match("^(.-)%s+with%s+(.+)$")
+        if base_match and base_match ~= "" then
+            target_noun = base_match
+            with_tool_word = tool_match
+        end
+
+        local obj, loc_type, parent_obj = find_visible(ctx, target_noun)
         if loc_type == "part" and parent_obj then obj = parent_obj end
 
         if obj then
@@ -443,8 +454,8 @@ function M.register(handlers)
 
             print("You can't lock " .. (obj.name or "that") .. ".")
         else
-            -- Fallback: try exit doors in room.exits
-            local exit, exit_dir = find_exit_by_keyword(ctx, noun)
+            -- Fallback: try exit doors in room.exits (target_noun already stripped above)
+            local exit, exit_dir = find_exit_by_keyword(ctx, target_noun)
             if exit then
                 if exit.locked then
                     print("It is already locked.")
