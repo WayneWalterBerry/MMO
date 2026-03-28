@@ -64,3 +64,6 @@
 - **`test/linter/` exists with 11 Python pytest files** — no naming conflict with Lua `test/meta/` tests.
 - **Current test file count: 258** (before adding meta tests).
 - **Key subdirs under src/meta/ not mentioned in plan:** `worlds/` (5 files), `materials/` (32 files) — scanner must handle these but plan doesn't test them specifically.
+
+- **Cross-Agent Mutation Linter Review (2026-03-28):** Nine-agent review wave on mutation-graph-linter implementation plan. Cross-agent infrastructure concerns for Nelson: (1) **Gil CI gaps:** GitHub Actions runners default to Python 3.8 or 3.10, NOT 3.9. WAVE-0 pre-flight must add `setup-python@v4` action or tests will fail. (2) **Python environment validation:** mutation-lint.ps1 assumes Python is on PATH — needs version check + graceful error if 3.9 unavailable. (3) **PowerShell 7 compat:** GitHub Actions uses PS7 but `.ps1` may not explicitly specify version guard. Need `-Version 7.0` check or explicit `pwsh` binary call. Nelson's test infrastructure must validate these environment prereqs before running WAVE-1 tests. 12 test improvements identified (negative edge cases, deep nesting coverage, fixture isolation, regression tests on dynamic path skipping, parallel output interleaving verification). Lesson: environment setup is as critical as test logic — pre-flight gates prevent false negatives in CI.
+
