@@ -142,12 +142,56 @@ function M.register(handlers)
             ctx.registry:remove(obj.id)
         end
 
-        -- Spawn results
+        -- Spawn results into player hands (fall back to room if full)
         local spawns = {}
         for _ = 1, recipe.result.quantity do
             spawns[#spawns + 1] = recipe.result.id
         end
-        spawn_objects(ctx, spawns)
+
+        local placed_any_in_hand = false
+        for _, spawn_id in ipairs(spawns) do
+            local source = ctx.object_sources and ctx.object_sources[spawn_id]
+            local spawn_obj
+            if source then
+                spawn_obj = ctx.loader.load_source(source)
+                if spawn_obj then
+                    spawn_obj = ctx.loader.resolve_template(spawn_obj, ctx.templates)
+                end
+            end
+            if not spawn_obj then
+                spawn_obj = {
+                    id = spawn_id,
+                    name = spawn_id,
+                    portable = true,
+                    on_feel = "A crafted " .. spawn_id .. ".",
+                }
+            end
+
+            -- Deduplicate ID if already registered
+            local actual_id = spawn_id
+            if ctx.registry:get(spawn_id) then
+                local n = 2
+                while ctx.registry:get(spawn_id .. "-" .. n) do n = n + 1 end
+                actual_id = spawn_id .. "-" .. n
+            end
+            spawn_obj.id = actual_id
+            ctx.registry:register(actual_id, spawn_obj)
+
+            -- Place in hand if possible, otherwise drop to room
+            local slot = nil
+            if ctx.player.hands[1] == nil then slot = 1
+            elseif ctx.player.hands[2] == nil then slot = 2 end
+
+            if slot then
+                spawn_obj.location = "player"
+                ctx.player.hands[slot] = spawn_obj
+                placed_any_in_hand = true
+            else
+                local room = ctx.current_room
+                spawn_obj.location = room.id
+                room.contents[#room.contents + 1] = actual_id
+            end
+        end
 
         print(recipe.narration)
     end

@@ -86,7 +86,7 @@ return {
         settle_chance = 40,
         nocturnal = false,
         home_room = nil,
-        prey = {"rat", "cat", "bat"},
+        prey = {"player", "rat", "cat", "bat"},
         territorial = {
             marks_territory = true,
             mark_object = "territory-marker",
@@ -157,8 +157,8 @@ return {
     },
 
     -- Health
-    health = 40,
-    max_health = 40,
+    health = 22,
+    max_health = 22,
     alive = true,
 
     -- Body zones
@@ -173,10 +173,10 @@ return {
     -- Combat metadata
     combat = {
         size = "medium",
-        speed = 7,
+        speed = 5,
         natural_weapons = {
-            { id = "bite", type = "pierce", material = "tooth-enamel", zone = "head", force = 8, target_pref = "arms", message = "clamps its jaws onto" },
-            { id = "claw", type = "slash", material = "keratin", zone = "forelegs", force = 4, message = "rakes its claws across" },
+            { id = "bite", type = "pierce", material = "tooth-enamel", zone = "head", force = 5, target_pref = "arms", message = "clamps its jaws onto" },
+            { id = "claw", type = "slash", material = "keratin", zone = "forelegs", force = 3, message = "rakes its claws across" },
         },
         natural_armor = {
             { material = "hide", coverage = { "body", "head" }, thickness = 2 },

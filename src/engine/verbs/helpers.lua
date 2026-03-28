@@ -515,11 +515,15 @@ local function _try_room_scored(kw, reg, room, ctx)
     -- Identical items bypass: when all top-scoring matches share the same
     -- base id (e.g. multiple silk-bundles from killed spiders), just pick
     -- the first one — no disambiguation needed for fungible items.
+    -- Strip loot/craft/numeric suffixes to compare base IDs (#362).
+    local function _base_id(id)
+        return id:gsub("%-loot%-%d+$", ""):gsub("%-craft%-%d+$", ""):gsub("-%d+$", "")
+    end
     local top_score = matches[1].score
     local all_same_id = true
-    local first_id = matches[1].obj.id
+    local first_id = _base_id(matches[1].obj.id)
     for _, m in ipairs(matches) do
-        if m.score == top_score and m.obj.id ~= first_id then
+        if m.score == top_score and _base_id(m.obj.id) ~= first_id then
             all_same_id = false
             break
         end
