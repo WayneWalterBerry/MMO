@@ -2,10 +2,19 @@
 -- Discovers and runs all test-*.lua files under test subdirectories.
 -- Returns exit code 1 if any test file fails.
 --
--- Usage: lua test/run-tests.lua
+-- Usage: lua test/run-tests.lua [--bench]
+--   --bench   Also discover and run bench-*.lua benchmark files
 -- Must be run from the repository root (C:\Users\wayneb\source\repos\MMO).
 
 local SEP = package.config:sub(1, 1) -- \ on Windows, / on Unix
+
+-- Parse CLI flags
+local include_bench = false
+for _, a in ipairs(arg or {}) do
+    if a == "--bench" then
+        include_bench = true
+    end
+end
 
 -- Set package path so test files can require their helpers
 local repo_root = "."
@@ -17,6 +26,9 @@ package.path = repo_root .. SEP .. "test" .. SEP .. "parser" .. SEP .. "?.lua;"
 
 print("========================================")
 print("  MMO Test Suite")
+if include_bench then
+    print("  (including benchmarks)")
+end
 print("========================================")
 
 -- Directories to scan for test files
@@ -72,6 +84,30 @@ for _, test_dir in ipairs(test_dirs) do
             end
         end
         handle:close()
+    end
+
+    -- Discover bench-*.lua files when --bench is set
+    if include_bench then
+        local bench_cmd
+        if is_windows then
+            bench_cmd = 'dir /b "' .. test_dir .. '\\bench-*.lua" 2>nul'
+        else
+            bench_cmd = 'ls "' .. test_dir .. '"/bench-*.lua 2>/dev/null'
+        end
+        local bench_handle = io.popen(bench_cmd)
+        if bench_handle then
+            for line in bench_handle:lines() do
+                local fname = line:match("([^/\\]+)$") or line
+                if fname:match("^bench%-") and fname:match("%.lua$") then
+                    local subdir = test_dir:match("([^/\\]+)$")
+                    test_entries[#test_entries + 1] = {
+                        filepath = test_dir .. SEP .. fname,
+                        display = subdir .. "/" .. fname,
+                    }
+                end
+            end
+            bench_handle:close()
+        end
     end
 end
 
