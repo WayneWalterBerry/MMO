@@ -65,6 +65,12 @@ function M.score_actions(creature, context, helpers)
         scores[#scores + 1] = { action = "attack", score = attack_score }
     end
 
+    -- Create object: score when creature has creates_object behavior
+    if behavior.creates_object then
+        local create_score = behavior.creates_object.priority or 15
+        scores[#scores + 1] = { action = "create_object", score = create_score }
+    end
+
     for _, entry in ipairs(scores) do
         entry.score = entry.score + math.random() * 2
     end
@@ -221,6 +227,48 @@ function M.execute_action(context, creature, action, helpers)
             local sound = st and st.on_listen
             if sound then
                 messages[#messages + 1] = sound
+            end
+        end
+
+    elseif action == "create_object" then
+        local obj_spec = (creature.behavior or {}).creates_object
+        if obj_spec then
+            -- Cooldown check (os.time-based; avoids coupling to presentation layer)
+            if obj_spec.cooldown then
+                local now = os.time()
+                if creature._last_creation and (now - creature._last_creation) < obj_spec.cooldown then
+                    obj_spec = nil
+                end
+            end
+            if obj_spec then
+                -- Condition check (e.g., max N objects per room)
+                local proceed = true
+                if obj_spec.condition then
+                    proceed = obj_spec.condition(creature, context, helpers)
+                end
+                if proceed then
+                    local spec = obj_spec.object_def or {}
+                    local instance = {}
+                    for k, v in pairs(spec) do instance[k] = v end
+                    local uid = (creature.id or "creature") .. "-obj-" .. tostring(os.time()) .. "-" .. tostring(math.random(1000, 9999))
+                    instance.id = instance.id and (instance.id .. "-" .. uid) or uid
+                    instance.creator = creature.guid or creature.id
+                    -- Register in registry and place in creature's room
+                    if context.registry and type(context.registry.register) == "function" then
+                        context.registry:register(instance.id, instance)
+                    end
+                    local room = helpers.get_room(context, creature_loc)
+                    if room then
+                        room.contents = room.contents or {}
+                        room.contents[#room.contents + 1] = instance.id
+                    end
+                    instance.location = creature_loc
+                    creature._last_creation = os.time()
+                    -- Narration (only if player is present)
+                    if obj_spec.narration and creature_loc == player_room then
+                        messages[#messages + 1] = obj_spec.narration
+                    end
+                end
             end
         end
 

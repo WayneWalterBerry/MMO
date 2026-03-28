@@ -111,6 +111,25 @@
 
 ## Learnings
 
+### Phase 4 WAVE-4: create_object Action + NPC Obstacle Check (2026-08-17)
+
+**Added `create_object` creature action to `src/engine/creatures/actions.lua` (~40 LOC):**
+- Metadata-driven: creature declares `behavior.creates_object` with `object_def`, `cooldown`, `condition`, `narration`, `priority`
+- Cooldown uses `os.time()` (real seconds) — no coupling to presentation layer game-time
+- Condition function receives `(creature, context, helpers)` for full room/registry queries
+- Shallow-copies `object_def`, stamps unique ID, sets `instance.creator = creature.guid`, registers in registry, places in `room.contents`
+- Scoring: `create_object` action scored at `creates_object.priority` (default 15)
+- Narration emitted only when player is in same room
+
+**Added NPC obstacle check to `src/engine/creatures/navigation.lua` (~20 LOC):**
+- `room_has_npc_obstacle(context, room_id, get_room_fn)` scans target room contents for `obstacle.blocks_npc_movement = true`
+- Integrated into `get_valid_exits()` — all NPC movement (wander, flee, bait-chase) respects obstacles
+- Player movement unaffected (obstacle check only runs in creature navigation pipeline)
+
+**0 regressions introduced.** Pre-existing failures: 3 files (test-spider-web, test-material-migration, test-combat-verbs). Other working-tree failures from concurrent squad member changes (Flanders/Smithers/Nelson).
+
+**Decision filed:** D-CREATE-OBJECT-ACTION
+
 ### Phase 4 Plan Synthesis (2026-08-16)
 
 **Wrote `plans/npc-combat/npc-combat-implementation-phase4.md` — 6-wave plan (1164 lines):**
@@ -131,6 +150,8 @@
 - **In-place creature death reshape vs. file-swap mutation:**Wayne directive (2026-03-27) established that creatures must NOT have separate dead-creature files. The `death_state` metadata block lives inside the creature file itself. On death, `reshape_instance()` transforms the instance in-place — switches template, overwrites properties, deregisters from creature tick, registers as room object. This is stronger D-14 than file-swap mutation: the creature code declares ALL its possible shapes (living + dead). `mutation.mutate()` is reserved for genuine file-swap scenarios (e.g., cooking dead-rat → cooked-rat-meat.lua, where the cooked meat is a truly different object type).
 - **Template switching pattern: creature → small-item/furniture on death:** The `death_state.template` field controls what the creature becomes. Small creatures (rat, cat, spider, bat) become "small-item" (portable). Large creatures (wolf) become "furniture" (not portable). The engine doesn't hardcode sizes — the creature file declares the target template. This is Principle 8: objects declare behavior, engine executes.
 - **`reshape_instance()` engine function design:** Different from `mutation.mutate()` in three key ways: (1) no new file loaded — same instance transforms via metadata overlay, (2) must explicitly nil creature-only fields (behavior, drives, reactions, combat, body_tree) to prevent stale data leaking into the reshaped object, (3) must deregister from creature tick AND register as room object — the instance changes category, not just properties. GUID is preserved — the reshaped instance IS the same object, just in a different shape.
+- **`create_object` cooldown uses `os.time()`, not game-time:** The creature subsystem (`engine/creatures/`) has no dependency on `engine/ui/presentation.lua` which computes game time from `ctx.game_start_time + time_offset`. Using `os.time()` keeps the coupling clean. Creature metadata can express cooldowns in real seconds. If game-time cooldowns are needed later, the presentation module should expose a utility function that creatures can optionally call.
+- **NPC obstacle check belongs in `navigation.get_valid_exits()`, not `move_creature()`:** Filtering at the exit-validation level means all movement types (wander, flee, bait-chase) automatically respect obstacles without each action handler needing to check. The obstacle is in the *target* room (blocks entry), not the source room (blocks exit).
 - **Territorial dual-path needed:** Tests call `score_actions()` in isolation (not through `creature_tick()`), so territorial aggression boost must be in `score_actions` directly, not just in `creature_tick`. Fear reduction can stay in `creature_tick` since it affects subsequent ticks.
 - **Stimulus routing matters for testability:** Tests monkey-patch `creatures.emit_stimulus` to track emissions. Using `stimulus.emit_creature_attacked()` directly bypasses the intercept. Always route through the module's public `emit_stimulus` function.
 - **attack_pattern ≠ stance:** Creature metadata uses `combat.behavior.attack_pattern` (opportunistic/sustained/ambush/hit_and_run/random), not `stance`. The `npc-behavior` module maps these to engine stances (aggressive/defensive/balanced) via `PATTERN_TO_STANCE` table.

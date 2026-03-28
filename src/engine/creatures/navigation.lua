@@ -87,6 +87,26 @@ function M.is_exit_passable(context, exit, creature)
 end
 
 ---------------------------------------------------------------------------
+-- room_has_npc_obstacle(context, room_id, get_room_fn) -> bool
+-- Checks if a room contains any object with obstacle.blocks_npc_movement.
+-- Used to prevent NPC movement into rooms with blocking obstacles (webs, etc).
+---------------------------------------------------------------------------
+function M.room_has_npc_obstacle(context, room_id, get_room_fn)
+    local room = get_room_fn(context, room_id)
+    if not room or not room.contents then return false end
+    local reg = context.registry
+    if not reg then return false end
+    local get = type(reg.get) == "function" and reg.get or nil
+    for _, obj_id in ipairs(room.contents) do
+        local obj = get and reg:get(obj_id)
+        if obj and obj.obstacle and obj.obstacle.blocks_npc_movement then
+            return true
+        end
+    end
+    return false
+end
+
+---------------------------------------------------------------------------
 -- get_valid_exits(context, room_id, creature, get_room_fn) -> exits[]
 ---------------------------------------------------------------------------
 function M.get_valid_exits(context, room_id, creature, get_room_fn)
@@ -97,7 +117,10 @@ function M.get_valid_exits(context, room_id, creature, get_room_fn)
     for dir, exit in pairs(room.exits) do
         local passable, target = M.is_exit_passable(context, exit, creature)
         if passable and target then
-            valid[#valid + 1] = { direction = dir, target = target }
+            -- NPC obstacle check: block entry into rooms with NPC-blocking obstacles
+            if not M.room_has_npc_obstacle(context, target, get_room_fn) then
+                valid[#valid + 1] = { direction = dir, target = target }
+            end
         end
     end
     return valid
