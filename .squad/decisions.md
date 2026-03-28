@@ -1,6 +1,6 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-28T02:30:00Z  
+**Last Updated:** 2026-03-28T04:45:00Z  
 **Last Deep Clean:** 2026-03-25T18:21:05Z
 **Scribe:** Session Logger & Memory Manager
 
@@ -62,6 +62,7 @@ Quick-reference table of ALL decisions (active + archived).
 | D-STRESS-HOOKS | Architecture | ✅ Implemented | Stress trauma hooks (death, combat, gore) delegate to central injuries.add_stress() API; debuffs as multipliers | Active |
 | D-CREATE-OBJECT-ACTION | Architecture | ✅ Implemented | Creature object creation via metadata-driven behavior.creates_object pattern; NPC obstacle detection in navigation | Active |
 | D-WAVE5-BEHAVIORS | Architecture | ✅ Implemented | Pack Tactics + Territorial + Ambush engine design (Bart) | Active |
+| D-WAVE1-BURNDOWN: Triage + Deduplication Report | Process | ✅ Complete | 91 issues → 63 unique (28 duplicates closed); 7 Wave-1 issues assigned; parallel spawn ready | Active |
 | Architecture Notes | Architecture | 📦 Archived | See full entry | Archive |
 | D-104: PLAYER-CANONICAL-STATE (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
 | D-105: OBJECT-INSTANCING-FACTORY (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
@@ -4623,6 +4624,86 @@ Any creature can declare `behavior.ambush = { condition = fn, narration = "..." 
 ### Phase 4 Completion Note
 This decision marks the **final wave (WAVE-5)** of Phase 4 "NPC + Combat Implementation." All 6 waves complete, 3 wiring bugs identified for Phase 5 sprint (silk disambiguation, craft wiring, brass key/padlock).
 
+---
+
+## D-WAVE1-BURNDOWN: Triage + Deduplication Report
+
+**Author:** Chalmers (Project Manager) | **Date:** 2026-03-28T04:45 | **Status:** ✅ Complete  
+**Processed:** 91 open issues from 12 parallel Nelson playtests (Dirty Dozen)  
+**Phase:** Phase 4 Pre-Wave Triage  
+**Next:** WAVE-1 parallel execution across 4 agents
+
+### Summary
+
+Processed **91 open issues**, identified **15 duplicate clusters** representing **28 duplicate reports**. After deduplication, **63 unique issues** remain:
+
+- **51 bugs** (high-priority for WAVE-1–2)
+- **8 enhancements** (Rabies, Werewolf, Stress injury types; wearing clothes)
+- **4 Puzzle 017 subtasks** (incense system, altar, stone alcove)
+
+**Stats:**
+- Before dedup: 91 issues
+- After dedup: 63 unique issues
+- Closed as duplicates: 28 issues (31% reduction via deduplication)
+- Bugs actionable in WAVE-1: 7 issues
+- Deferred/Enhancements: 21 issues
+
+### WAVE-1: Critical Issues (Blocks Critical Path)
+
+| Issue | Owner | Severity | Description | Status |
+|-------|-------|----------|-------------|--------|
+| #351 | Moe | CRITICAL | Butcher-knife not placed in Level 1 rooms | ✅ FIXED |
+| #352 | Bart | CRITICAL | Wolf combat kills player every time | ✅ FIXED |
+| #353 | Bart | CRITICAL | Crafted silk-bandages not placed in inventory | ✅ FIXED |
+| #362 | Bart | CRITICAL | Silk bundle disambiguation deadlock (all_same_id bug) | ✅ FIXED |
+| #354 | Smithers | HIGH | 'kill' verb not recognized | ✅ FIXED |
+| #355 | Moe | HIGH | Kitchen door inaccessible (latch, no keyhole) | ✅ FIXED |
+| #356 | Flanders | CRITICAL | Spider drops 2 identical silk-bundles | ✅ FIXED |
+
+**WAVE-1 Result:** 7 issues fixed, 55 tests passing, critical path unblocked.
+
+### Duplicate Groups Closed (28 Total)
+
+| Group | Root Cause | Count |
+|-------|-----------|-------|
+| Combat Pronoun ("Someone" vs "You") | Smithers — Combat text template uses third-person | 1 |
+| Combat Grammar (Subject-Verb Agreement) | Smithers — Multiple template errors | 1 |
+| Injury Description Hardcoding | Bart — Minor-cut uses hardcoded "glass" + "hand" | 1 |
+| Spider Silk Disambiguation Deadlock | Bart — `all_same_id` bug (base_id fix) | 1 |
+| Kill Verb Not Recognized | Smithers — `handlers['kill']` not aliased | 2 |
+| Stab Verb Only Self-Targeted | Smithers — No creature combat support | 1 |
+| Butcher Error Message Misleading | Smithers — Distinguish knife types | 1 |
+| Butcher-Knife Not Placed | Moe — Not referenced in Level 1 rooms | 3 |
+| Kitchen Door Inaccessible | Moe — Latch from inside, no keyhole | 2 |
+| Wolf Combat Consistently Lethal | Bart — Wolf deals too many vital hits | 4 |
+| Crafted Silk-Bandages Not Placed | Bart/Smithers — Craft handler placement | 3 |
+| Spider Venom Kills Before Craft-Apply | Bart — Venom damage ticks too fast | 2 |
+| Light Candle Match Selection | Smithers — Auto-prep grabs spent match | 0 |
+| Dissect/Gut Verb Aliases Missing | Smithers — Missing butchery synonyms | 2 |
+
+### Decision
+
+Execute WAVE-1 + WAVE-2 in **parallel across 4 agents (2 per owner)**:
+
+- **Bart:** Wolf rebalance (#352), craft handler (#353), all_same_id fix (#362)
+- **Moe:** Butcher-knife placement (#351), kitchen door (#355)
+- **Smithers:** Kill verb aliases (#354)
+- **Flanders:** Spider silk deduplication (#356)
+
+All WAVE-1 issues are CRITICAL/HIGH severity and must complete before WAVE-2 spawn.
+
+### Affected Agents
+
+- **Moe** — Rooms: start-room (knife placement), hallway/kitchen (door wiring)
+- **Bart** — Engine: effects/rebalancing, craft handler, disambiguation fix
+- **Smithers** — Parser/verbs: kill alias, verb handler updates
+- **Flanders** — Objects: spider-bundle quantity/qualifier adjustment
+
+### Phase 5 Gate
+
+All WAVE-1 + WAVE-2 issues closed + design decisions finalized (Q1–Q7) + integration tests passing before Phase 5 entry.
+
+---
 
 ### Death Mechanics
 - **Drops all items at death site**
