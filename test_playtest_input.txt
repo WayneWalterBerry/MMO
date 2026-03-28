@@ -1,0 +1,9 @@
+feel around
+search nightstand
+take matchbox
+take match
+light match
+light candle
+take candle
+look around
+feel around
