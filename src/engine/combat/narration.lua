@@ -31,8 +31,12 @@ local tissue_words = {
     organ = "organ",
 }
 
-local function zone_text(zone)
+local function zone_text(zone, body_tree)
     if not zone then return "body" end
+    -- #369/#337: Use creature-specific zone names when available (Principle 8)
+    if body_tree and body_tree[zone] and body_tree[zone].names then
+        return pick(body_tree[zone].names)
+    end
     local list = zone_words[zone]
     if list then return pick(list) end
     return zone
@@ -166,7 +170,7 @@ function M.generate(result, light)
         attacker = actor_name(result.attacker),
         verb = action_verb(result),
         target_possessive = possessive(defender_name),
-        zone = zone_text(result.zone),
+        zone = zone_text(result.zone, defender.body_tree),
         material = material_text(result.material_name or (result.weapon and result.weapon.material)),
         tissue = tissue_text(result.tissue_hit),
     }
@@ -262,7 +266,7 @@ local function witness_visual(result)
     local data = {
         attacker = actor_name(attacker),
         defender = actor_name(defender),
-        zone = zone_text(result.zone),
+        zone = zone_text(result.zone, defender.body_tree),
         material = material_text(result.material_name or (result.weapon and result.weapon.material)),
         tissue = tissue_text(result.tissue_hit),
     }

@@ -159,11 +159,14 @@ return {
     max_health = 3,
     alive = true,
 
-    -- Body zones
+    -- Body zones (spider-specific anatomy — no human zones per #369/#337)
     body_tree = {
-        cephalothorax = { size = 1, vital = true, tissue = { "chitin", "flesh" } },
-        abdomen       = { size = 1, vital = true, tissue = { "chitin", "flesh", "organ" } },
-        legs          = { size = 1, vital = false, tissue = { "chitin" }, on_damage = { "reduced_movement" } },
+        cephalothorax = { size = 1, vital = true, tissue = { "chitin", "flesh" },
+            names = { "cephalothorax", "head cluster", "fused head" } },
+        abdomen       = { size = 1, vital = true, tissue = { "chitin", "flesh", "organ" },
+            names = { "abdomen", "bulbous abdomen", "swollen belly" } },
+        legs          = { size = 1, vital = false, tissue = { "chitin" }, on_damage = { "reduced_movement" },
+            names = { "leg", "bristled leg", "spindly leg", "front leg" } },
     },
 
     -- Combat metadata

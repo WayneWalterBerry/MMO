@@ -138,12 +138,16 @@ return {
     max_health = 5,
     alive = true,
 
-    -- Body zones (WAVE-4: combat data layer)
+    -- Body zones (WAVE-4: combat data layer — rat-specific names per #337)
     body_tree = {
-        head = { size = 1, vital = true, tissue = { "hide", "flesh", "bone" } },
-        body = { size = 3, vital = true, tissue = { "hide", "flesh", "bone", "organ" } },
-        legs = { size = 2, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" } },
-        tail = { size = 1, vital = false, tissue = { "hide", "flesh" }, on_damage = { "balance_loss" } },
+        head = { size = 1, vital = true, tissue = { "hide", "flesh", "bone" },
+            names = { "head", "skull", "snout" } },
+        body = { size = 3, vital = true, tissue = { "hide", "flesh", "bone", "organ" },
+            names = { "body", "flank", "belly", "side" } },
+        legs = { size = 2, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" },
+            names = { "leg", "haunches", "hind leg" } },
+        tail = { size = 1, vital = false, tissue = { "hide", "flesh" }, on_damage = { "balance_loss" },
+            names = { "tail" } },
     },
 
     -- Combat metadata (WAVE-4)

@@ -164,11 +164,16 @@ return {
 
     -- Body zones
     body_tree = {
-        head     = { size = 2, vital = true,  tissue = { "hide", "flesh", "bone" } },
-        body     = { size = 5, vital = true,  tissue = { "hide", "flesh", "bone", "organ" } },
-        forelegs = { size = 3, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" } },
-        hindlegs = { size = 3, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" } },
-        tail     = { size = 1, vital = false, tissue = { "hide", "flesh" } },
+        head     = { size = 2, vital = true,  tissue = { "hide", "flesh", "bone" },
+            names = { "head", "skull", "muzzle", "jaw" } },
+        body     = { size = 5, vital = true,  tissue = { "hide", "flesh", "bone", "organ" },
+            names = { "body", "flank", "side", "ribs" } },
+        forelegs = { size = 3, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" },
+            names = { "foreleg", "front leg", "shoulder" } },
+        hindlegs = { size = 3, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" },
+            names = { "hind leg", "haunch", "hip" } },
+        tail     = { size = 1, vital = false, tissue = { "hide", "flesh" },
+            names = { "tail" } },
     },
 
     -- Combat metadata
