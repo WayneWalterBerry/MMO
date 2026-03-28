@@ -1523,3 +1523,28 @@ Updated all plan files to reflect Phase 2 NPC+Combat completion:
 #### Testing
 - All 11 loot tests pass (7 unit in test-loot-engine.lua, 4 integration in test-loot-integration.lua).
 - 3 pre-existing test file failures (test-death-drops, test-creature-inventory, test-combat-verbs) caused by Flanders' wolf/spider inventory→loot_table conversion, not engine changes. Nelson needs to update those tests.
+
+## Learnings (Phase 4 WAVE-3: Stress Injury System — Trauma Hooks + Debuffs)
+
+### Architecture Decisions
+- **Stress is additive, not an injury instance.** Unlike physical injuries (which are objects in player.injuries[]), stress uses a simple counter (player.stress) with threshold-based levels. This is intentional — stress accumulates across multiple trauma events and doesn't stack like separate injury instances.
+- **Hooks are minimal.** Each integration point (death.lua, combat/init.lua, butchery.lua) calls injuries.add_stress(player, trigger_name) with a single line. All stress logic (thresholds, effects, narration) lives in injuries/init.lua. No stress logic embedded in caller code (Principle 8).
+- **Debuffs applied via multipliers.** Attack penalty converts to force reduction (15% per point, floor 0.3). Movement penalty is a probability of failure (20% = 20% chance movement blocked). Flee bias auto-selects flee in headless mode; hints in interactive.
+- **is_safe_room uses creature aggression.** Q2 resolution: any room without hostile (aggression > 0) alive creatures qualifies as safe for stress cure. Separate from cure_stress which accepts an optional ctx for test-compatible room checking.
+- **Stress metadata in meta/injuries/stress.lua (Flanders).** The engine reads triggers, levels, and effects from the definition file. If the file doesn't exist, all stress hooks are no-ops (pcall + nil guards throughout).
+- **Forward-declared load_stress_def and _stress_def at module top** so the list function and stress API can both reference them regardless of definition order.
+
+### Files Modified
+| File | Change |
+|------|--------|
+| src/engine/injuries/init.lua | +175 LOC: stress API (add_stress, get_stress_level, get_stress_effects, cure_stress, is_safe_room), narration tables, list integration |
+| src/engine/creatures/death.lua | +17 LOC: witness_creature_death trauma hook in handle_creature_death |
+| src/engine/combat/init.lua | +13 LOC: near_death_combat trauma hook in run_combat |
+| src/engine/combat/resolution.lua | +8 LOC: stress attack_penalty in resolve_damage |
+| src/engine/verbs/butchery.lua | +6 LOC: witness_gore trauma hook after butchery |
+| src/engine/verbs/init.lua | +36 LOC: flee_bias in prompt_stance, movement_penalty in attempt_flee |
+| src/engine/verbs/movement.lua | +11 LOC: movement_penalty stumble chance in handle_movement |
+
+### Testing
+- Zero new regressions. 1 pre-existing test file failure (test-combat-verbs: carve→slash routing) unchanged from before WAVE-3.
+- Movement test file (test-movement-verbs.lua) has 21 pre-existing failures due to portal-only movement code — NOT caused by WAVE-3.
