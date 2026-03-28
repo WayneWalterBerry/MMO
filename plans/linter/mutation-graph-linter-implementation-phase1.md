@@ -15,9 +15,9 @@
 
 | Wave | Status | Gate | Status |
 |------|--------|------|--------|
-| WAVE-0: Lua Edge Extractor | ⏳ Pending | GATE-0 | ⏳ |
-| WAVE-1: Meta-Lint Integration | ⏳ Pending | GATE-1 | ⏳ |
-| WAVE-2: Full Run + Docs + Issues | ⏳ Pending | — | — |
+| WAVE-0: Lua Edge Extractor | ✅ Complete | GATE-0 | ✅ Pass |
+| WAVE-1: Meta-Lint Integration | ✅ Complete | GATE-1 | ✅ Pass |
+| WAVE-2: Full Run + Docs + Issues | ✅ Complete | — | — |
 
 ---
 

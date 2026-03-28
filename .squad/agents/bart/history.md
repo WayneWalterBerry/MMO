@@ -45,8 +45,10 @@
 3. Linter improvement (WAVE-1 through WAVE-6) requires serialized lint.py edits - only one agent per wave can touch the bottleneck file.
 4. Two-phase FSM tick system (timers + state checks) is robust but adds complexity to testing edge cases.
 5. Material properties and object nesting syntax remain the two most frequently referenced patterns in design.
+6. **WAVE-1 Mutation Linter Wrappers:** Implemented PowerShell and shell wrapper scripts for mutation-lint pipeline. PS7 uses ForEach-Object -Parallel with collected output to avoid interleaving (Smithers blocker #2); PS5 falls back to sequential. Shell uses xargs -P with temp dir collection. Both wrappers pre-check Python availability (exit 2 if missing unless -EdgesOnly flag). Key pattern: parallel execution, sequential output display — respects D-MUTATION-LINT-PARALLEL decision.
+7. **WAVE-2 JSON Output Mode:** Added `--json` flag to mutation-edge-check.lua (pure Lua JSON output, no dependencies). Updated .squad/skills/mutation-graph-lint/SKILL.md with invocation signature. Enables scripted tooling integration. Commit: e1efa39.
 
----
+
 
 ## Archives
 

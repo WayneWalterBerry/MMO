@@ -7,8 +7,23 @@
 - **My role:** Own the web build pipeline, deploys to GitHub Pages, and all web-specific code (HTML/CSS/JS/adapter)
 - **Key skill:** `.squad/skills/web-publish/SKILL.md` — the deploy process bible
 - **Live site:** https://waynewalterberry.github.io/play/ (unlisted, direct URL only)
-- **Pages repo:** `../WayneWalterBerry.github.io` (separate repo, `play/` directory)
+- **Pages repo:** `../WayneWalterBery.github.io` (separate repo, `play/` directory)
 
 ## Learnings
 
 - **2026-03-28:** Full deploy completed. Build: 72 engine files + 204 meta files (141 objects, 7 rooms). 211 files copied to Pages repo. Commit `2f5f7af`. All four critical files (index.html, bootstrapper.js, game-adapter.lua, engine.lua.gz) verified on GitHub via API. Pages status: built. Cache-bust timestamp: `20260328041230`. New files this deploy: `stress.lua` (injury), `silk.lua` (material), 18 new object files.
+
+- **WAVE-2 CI Integration (2026-08-23):** 
+  - **Deliverable 1:** `.github/workflows/squad-ci.yml` — GitHub Actions workflow
+    - Job: `mutation-lint` (runs on push to main + PR)
+    - Triggers: `mutation-edge-check` + tests via pre-deploy gate
+    - Exit code: 0 (all targets pass lint), non-zero (failures)
+  - **Deliverable 2:** `test/run-before-deploy.ps1` — PowerShell pre-deployment gate
+    - Runs `scripts/mutation-lint.ps1` (mutation-edge-check + lint.py)
+    - Runs `lua test/run-tests.lua` (full test suite)
+    - Sequential execution — must pass both to deploy
+  - **Deliverable 3:** `.gitattributes` — normalize line endings (CRLF/LF consistency)
+    - Prevents CI line-ending failures across platforms
+  - **Deliverable 4:** Updated `.squad/agents/gil/history.md` — session append
+  - **Session commit:** 8cb7181 (ci: WAVE-2 mutation edge check in CI + pre-deploy gate)
+  - **Key decisions:** Pre-deploy gate MUST run before push (prevents CI failures). `.gitattributes` normalized all shell scripts (*.sh) to LF, PowerShell (*.ps1) to CRLF.

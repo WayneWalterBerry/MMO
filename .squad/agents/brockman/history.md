@@ -32,6 +32,31 @@
 | Decision Log | ✅ Active | decisions.md (canonical source); inbox workflow established |
 | Newspaper | 🟡 On Hold | Per D-NO-NEWSPAPER-PENDING directive (resume Phase 5) |
 | Testing Docs | ✅ Complete | Framework, patterns, directory structure, pre-deploy gates |
+| Mutation-Graph Linting Docs | ✅ Complete | docs/testing/mutation-graph-linting.md + motivation section (WAVE-2) |
+
+## Key Deliverables
+
+### WAVE-2 Mutation Graph Linter Documentation (2026-08-23)
+
+- **Deliverable 1:** `docs/testing/mutation-graph-linting.md` — comprehensive user guide (85+ lines)
+  - Motivation section (why expand-and-lint instead of custom Lua graph library)
+  - Installation + setup (Python 3.9+, verify PATH)
+  - Quick start (run mutation-lint.ps1 / mutation-lint.sh)
+  - JSON output mode (--json flag reference)
+  - Understanding broken edges (5 types, edge list format)
+  - GitHub issues workflow (broken edge triage)
+  - CI integration (squad-ci.yml, pre-deploy gate)
+
+- **Deliverable 2:** `.squad/skills/mutation-graph-lint/SKILL.md` — skill file for squad registry
+  - Skill name: `mutation-graph-lint`
+  - Invocation: `--json` output mode specification
+  - Use case: scripted tooling integration + CI gates
+
+- **Deliverable 3:** Updated `plans/linter/mutation-graph-linter-implementation-phase1.md` status tracker
+  - All 3 waves marked ✅ Complete
+  - Both gates marked ✅ Pass
+
+- **Session commit:** c69bc65 (docs: WAVE-2 mutation-graph linting documentation)
 
 ## Archives
 

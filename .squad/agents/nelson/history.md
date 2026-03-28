@@ -85,3 +85,16 @@
 - **`run_command()` helper:** Uses `io.popen(cmd .. " 2>&1")` to capture both stdout and stderr. Returns output string + success boolean. Essential for cross-platform command execution.
 - **All 257 test files pass** including the new integration test. No regressions.
 
+### WAVE-2 JSON Tests + Issue Filing (2026-08-23)
+- Added 11 JSON output tests (Suite 8) to `test/meta/test-edge-extractor.lua` — total now 58 tests across 8 suites.
+- **`--json` already implemented by Bart.** Tests run live, not SKIPped. SKIP logic retained for backward compatibility.
+- **`broken_targets` is 2, not 4.** Task spec said 4 but Bart's JSON counts unique target IDs (wood-splinters + poison-gas-vent-plugged = 2). Adjusted test to match implementation.
+- **JSON test coverage:** structure validation (summary/broken/dynamic keys), summary count assertions (files_scanned > 150, edges_found > 40, broken_edges == 5, broken_targets == 2, dynamic_paths >= 1), broken edge content (poison-gas-vent-plugged, wood-splinters), dynamic path content (paper.lua).
+- **GitHub issues filed (3):**
+  - #403 — `[mutation-lint] Create poison-gas-vent-plugged.lua mutation target` (squad:flanders)
+  - #404 — `[mutation-lint] Create wood-splinters.lua spawn target` (squad:flanders)
+  - #405 — `[mutation-lint] courtyard-kitchen-door wood-splinters spawn routes to Moe (room boundary)` (squad:🏗️ moe)
+- bedroom-hallway-door-south → wood-splinters NOT filed as separate issue (same target as #404, noted in body).
+- **All 257 test files pass** after WAVE-2 additions. No regressions.
+- **Workstream 1 complete.** WAVE-0, GATE-0, WAVE-1, GATE-1, WAVE-2 all passed. Session log: 2026-03-28T23-33-01Z-mutation-graph-linter-complete.md. Commit: 6b96bd8.
+
