@@ -52,3 +52,29 @@
 - **Stress Tests:** 6/6 pass ✓
 - **Lint Status:** TR-01, INJ-11/13/15/20/58, TD-02 all fixed ✓
 - **Regression:** Zero new failures; pre-existing parser/search failures unrelated to these changes
+
+## Session: Test Suite Speed Audit
+
+### Task
+Wayne requested a full audit of the test suite for speed optimization opportunities.
+
+### Key Findings
+- **261 test files**, 91,356 total lines, 312.3s total sequential execution time
+- **Top 10 slowest files account for 82.7% of total time** (258.3s)
+- **Two files dominate:** `test-inverted-index.lua` (79.5s benchmark) and `run-tests.lua` (148.8s orchestrator)
+- **43 files exceed 500 lines** — largest is `test-fsm-comprehensive.lua` at 1,473 lines
+- **Nightstand gating tests are duplicated** (`test-container-gating.lua` vs `test-container-gating-pass028.lua`)
+- **Inventory tests overlap** (`test-inventory.lua` vs `test-containment-comprehensive.lua`)
+- **Tests are parallelism-unsafe** — file-scoped handlers, no `package.loaded` cleanup, no teardown hooks
+- **3,000–5,000 lines of duplicated boilerplate** across files (`capture_output`, `make_ctx`, etc.)
+
+### Recommendations (by impact)
+1. **Tag 3 benchmark files as opt-in** → saves 88s (54% of test time)
+2. **Parallelize pure-function tests** (parser/pipeline, objects, sensory, ui) → saves ~40s
+3. **Extract shared test helpers** to `test/common.lua` → reduces maintenance burden
+4. **Merge nightstand gating duplicates** → cleaner coverage
+5. **Split 5 slow+large files** (armor-interceptor, npc-combat, inventory, combat-integration, fsm-comprehensive)
+
+### Output
+- Full report written to `temp/test-audit-report.md`
+- No test files modified (audit only)
