@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-07-20T14:12:00Z  
-**Last Merge:** 2026-07-20T14:12:00Z (2 decisions from Wave 3-4 inbox merged)
+**Last Updated:** 2026-07-20T14:30:00Z  
+**Last Merge:** 2026-07-20T14:30:00Z (4 decisions from Wave 3-4 inbox merged)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -29,6 +29,8 @@ Quick-reference table of **active + most recent decisions**.
 | D-TESTFIRST | Testing | 🟢 Active | Test-first directive for all bug fixes |
 | D-EXIT-DOOR-RESOLUTION | Architecture | 🟢 Active | Exit door fallback pattern for verb handlers (Smithers) |
 | D-CREATE-OBJECT-TEMPLATE | Architecture | 🟢 Active | Spider web uses template instantiation + max_per_room (Flanders) |
+| D-TEMP-DIR-DIRECTIVE | Process | 🟢 Active | Temp files → temp/ directory; keep repo root clean |
+| D-SURFACE-OBJECT-NARRATION | Architecture | ✅ Implemented | Surface object undirected narration fix (#394, Flanders) |
 | D-CREATURE-ZONE-NAMES | Architecture | ✅ Implemented | Creature-specific body zone narration names; engine-side zone_text(zone, body_tree) |
 | D-TERRITORY-SENSORY-FIXES | Architecture | ✅ Implemented | Territory marker registration, narration cleanup, sensory deduplication |
 | D-WAVE1-BUTCHERY-CREATURES-SPLIT | Architecture | ✅ Implemented | creatures/init.lua split to actions.lua; -190 LOC headroom |
