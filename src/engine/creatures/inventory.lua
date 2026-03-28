@@ -10,6 +10,51 @@ local VALID_WORN_SLOTS = { head = true, torso = true, arms = true, legs = true, 
 local MAX_HANDS = 2
 
 ---------------------------------------------------------------------------
+-- Helpers
+---------------------------------------------------------------------------
+
+local function normalize_guid(guid)
+    if type(guid) ~= "string" then return guid end
+    return guid:gsub("^%{(.-)%}$", "%1")
+end
+
+local function deep_copy(orig)
+    if type(orig) ~= "table" then return orig end
+    local copy = {}
+    for k, v in pairs(orig) do copy[k] = deep_copy(v) end
+    return copy
+end
+
+-- Resolve an inventory item GUID to a live object, instantiating from
+-- base_classes on demand if the item isn't pre-registered (#280).
+local function resolve_item_guid(guid, context)
+    local registry = context and context.registry
+
+    -- Try registry GUID index first
+    if registry and type(registry.find_by_guid) == "function" then
+        local obj = registry:find_by_guid(guid)
+        if obj then return obj end
+    end
+
+    -- On-demand: instantiate from base_classes (keyed by normalized GUID)
+    local base_classes = context and context.base_classes
+    if base_classes then
+        local norm = normalize_guid(guid)
+        local base = base_classes[norm]
+        if base then
+            local instance = deep_copy(base)
+            if registry and type(registry.register) == "function" then
+                local item_id = instance.id or norm
+                registry:register(item_id, instance)
+            end
+            return instance
+        end
+    end
+
+    return nil
+end
+
+---------------------------------------------------------------------------
 -- Validation (INV-01 through INV-03)
 ---------------------------------------------------------------------------
 
@@ -74,10 +119,10 @@ function M.validate(creature, registry)
 end
 
 ---------------------------------------------------------------------------
--- Death drop: scatter inventory items to room floor
+-- Death drop: scatter inventory items to room floor (#280)
 ---------------------------------------------------------------------------
 
-function M.drop_on_death(creature, room, registry)
+function M.drop_on_death(creature, room, context)
     local inv = creature.inventory
     if not inv then return {} end
 
@@ -100,16 +145,14 @@ function M.drop_on_death(creature, room, registry)
         end
     end
 
-    -- Instantiate each item as room-floor object
+    -- Resolve each GUID and place item on the room floor
     if room and #dropped > 0 then
         room.contents = room.contents or {}
         for _, guid in ipairs(dropped) do
-            if registry and type(registry.get) == "function" then
-                local item = registry:get(guid)
-                if item then
-                    item.location = room.id
-                    room.contents[#room.contents + 1] = item.id or guid
-                end
+            local item = resolve_item_guid(guid, context)
+            if item then
+                item.location = room.id
+                room.contents[#room.contents + 1] = item.id or guid
             end
         end
     end

@@ -117,8 +117,18 @@ function M.register(handlers)
             local presences = {}
             local seen_presences = {}
             local seen_ids = {}
+            -- Build set of carried object IDs so held items don't appear in room
+            local carried = {}
+            if ctx.player and ctx.player.hands then
+                local ok, all_ids = pcall(get_all_carried_ids, ctx)
+                if ok then
+                    for _, cid in ipairs(all_ids) do
+                        carried[cid] = true
+                    end
+                end
+            end
             for _, obj_id in ipairs(room.contents or {}) do
-                if not seen_ids[obj_id] and not embedded[obj_id] then
+                if not seen_ids[obj_id] and not embedded[obj_id] and not carried[obj_id] then
                     seen_ids[obj_id] = true
                     local obj = ctx.registry:get(obj_id)
                     if obj and not obj.hidden then

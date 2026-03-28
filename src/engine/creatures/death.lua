@@ -9,6 +9,58 @@ local M = {}
 
 local inventory_ok, inventory = pcall(require, "engine.creatures.inventory")
 if not inventory_ok then inventory = nil end
+local fsm_ok, fsm_mod = pcall(require, "engine.fsm")
+if not fsm_ok then fsm_mod = nil end
+
+---------------------------------------------------------------------------
+-- Helpers
+---------------------------------------------------------------------------
+
+local function normalize_guid(guid)
+    if type(guid) ~= "string" then return guid end
+    return guid:gsub("^%{(.-)%}$", "%1")
+end
+
+local function deep_copy(orig)
+    if type(orig) ~= "table" then return orig end
+    local copy = {}
+    for k, v in pairs(orig) do copy[k] = deep_copy(v) end
+    return copy
+end
+
+-- Resolve a byproduct object by id, loading on-demand if needed (#281).
+local function resolve_byproduct(bp_id, context)
+    local reg = context and context.registry
+    if reg and type(reg.get) == "function" then
+        local obj = reg:get(bp_id)
+        if obj then return obj end
+    end
+
+    -- On-demand: load from object_sources (keyed by id)
+    local sources = context and context.object_sources
+    local ldr = context and context.loader
+    if sources and sources[bp_id] and ldr and type(ldr.load_source) == "function" then
+        local def = ldr.load_source(sources[bp_id])
+        if def then
+            if reg then reg:register(bp_id, def) end
+            return def
+        end
+    end
+
+    -- Fallback: search base_classes for matching id
+    local base_classes = context and context.base_classes
+    if base_classes then
+        for _, def in pairs(base_classes) do
+            if def.id == bp_id then
+                local copy = deep_copy(def)
+                if reg then reg:register(bp_id, copy) end
+                return copy
+            end
+        end
+    end
+
+    return nil
+end
 
 -- reshape_instance(instance, death_state, registry, room)
 -- Transforms a live creature instance into a dead object instance in-place.
@@ -48,12 +100,27 @@ function M.reshape_instance(instance, death_state, registry, room)
         instance.initial_state = death_state.initial_state or "fresh"
         instance._state = instance.initial_state
         instance.transitions = death_state.transitions
+        -- Start the spoilage timer so timed_events fire
+        if fsm_mod and registry then
+            fsm_mod.start_timer(registry, instance.id or instance.guid)
+        end
     end
 
-    -- Register as room object so containment/search/look can find it
+    -- Ensure reshaped creature is in room.contents exactly once (#285).
+    -- The creature may already be present from initial placement; avoid duplicates.
     if room then
         room.contents = room.contents or {}
-        room.contents[#room.contents + 1] = instance.id or instance.guid
+        local entry_id = instance.id or instance.guid
+        local already_present = false
+        for _, eid in ipairs(room.contents) do
+            if eid == entry_id then
+                already_present = true
+                break
+            end
+        end
+        if not already_present then
+            room.contents[#room.contents + 1] = entry_id
+        end
     end
 
     -- Clear creature-only metadata (no longer animate)
@@ -78,20 +145,21 @@ function M.handle_creature_death(creature, context, room)
 
     M.reshape_instance(creature, ds, context and context.registry, room)
 
-    -- Instantiate byproducts to room floor (e.g., spider silk)
+    -- Instantiate byproducts to room floor, loading on-demand if needed (#281)
     if ds.byproducts and room then
         room.contents = room.contents or {}
-        local reg = context and context.registry
         for _, bp_id in ipairs(ds.byproducts) do
-            if reg and type(reg.get) == "function" and reg:get(bp_id) then
-                room.contents[#room.contents + 1] = bp_id
+            local bp_obj = resolve_byproduct(bp_id, context)
+            if bp_obj then
+                bp_obj.location = room.id
+                room.contents[#room.contents + 1] = bp_obj.id or bp_id
             end
         end
     end
 
-    -- WAVE-2: drop inventory items to room floor
+    -- WAVE-2: drop inventory items to room floor (#280)
     if inventory then
-        inventory.drop_on_death(creature, room, context and context.registry)
+        inventory.drop_on_death(creature, room, context)
     end
 
     -- Reshape narration (printed after combat death text)

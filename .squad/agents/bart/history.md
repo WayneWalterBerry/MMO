@@ -1400,3 +1400,54 @@ Updated all plan files to reflect Phase 2 NPC+Combat completion:
 
 **Files changed:** plans/npc-combat/npc-combat-implementation-phase4.md (v1.0 → v1.1)
 **Decision written:** .squad/decisions/inbox/bart-phase4-fixes.md
+
+---
+
+## 2026-03-27 — Fix: Creature Loader + Combat Defender (#279, #291, #292)
+
+**Task:** Fix two critical blockers breaking all creature gameplay.
+
+**Bug 1 — Creatures not loading in rooms (web, #279/#292):**
+- **Root cause:** Web JIT loader only searched `meta/objects/{guid}.lua`. Creature files lived in `meta/creatures/` and were copied by filename (not GUID-renamed). Also, `creature.lua` template was missing from TEMPLATE_FILES.
+- **Fix (3-pronged):**
+  1. `web/build-meta.ps1`: Added creatures to GUID-rename special handling (like objects)
+  2. `web/game-adapter.lua`: `load_object()` falls back to `meta/creatures/{guid}.lua`
+  3. `web/game-adapter.lua`: Added `creature.lua` and `portal.lua` to TEMPLATE_FILES
+
+**Bug 2 — Creatures cannot damage player (#291):**
+- **Root cause:** Player had no `health` field. `R.update()` in `resolution.lua` checks `if not defender.health` and early-returns — so combat damage was silently skipped for all creature→player attacks.
+- **Fix:** Added `health = 100` to player state in `src/main.lua`. Added `health`, `max_health`, `injuries`, `body_tree`, `combat` to web adapter player (were entirely missing).
+
+**Verification:**
+- Creature bite (force=2, pierce) → severity=HIT, 3 damage, player health 100→97
+- All 9 creature verb tests pass (was 8/9 before — test 8 now passes)
+- Zero new regressions in full test suite (1 pre-existing room-override failure from Lua goto keyword)
+- Build-meta produces 5 GUID-renamed creature files
+
+**Files changed:** `src/main.lua`, `web/game-adapter.lua`, `web/build-meta.ps1`
+**Commit:** `a0322cf`
+
+---
+
+## 2026-03-27 — Fix death/reshape bugs (#280, #281, #285)
+
+**Requested by:** Wayne Berry
+
+### #280: Gnawed-bone never drops on wolf death
+- **Root cause:** `drop_on_death()` used `registry:get(guid)` — looks up by id, not GUID. Inventory items (stored as GUIDs) were never pre-registered in the registry.
+- **Fix:** Changed `drop_on_death()` to accept full context. Uses `find_by_guid()` and falls back to on-demand instantiation from `context.base_classes`.
+
+### #281: Silk-bundle never spawns on spider death
+- **Root cause:** Byproduct system checked `reg:get(bp_id)` which returned nil — silk-bundle was never registered (not in any room's instances).
+- **Fix:** Added `resolve_byproduct()` helper that loads from `context.object_sources` or `context.base_classes` on demand.
+
+### #285: Duplicate dead wolf entities after reshape
+- **Root cause:** `reshape_instance()` unconditionally appended creature id to `room.contents`, but creature was already there from init placement.
+- **Fix:** Added dedup check before appending to `room.contents`.
+
+### Additional
+- Fixed `goto` keyword in `loop/init.lua` (Lua 5.4 reserves `goto`; changed to `["goto"]`).
+
+**Files changed:** `src/engine/creatures/death.lua`, `src/engine/creatures/inventory.lua`, `src/engine/loop/init.lua`
+**Tests:** All creature tests pass (death-drops: 15/15, reshape: 21/21, inventory: 15/15). Only pre-existing failure: `integration/test-room-override.lua`.
+**Commit:** 8a5ef58

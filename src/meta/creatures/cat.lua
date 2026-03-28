@@ -231,21 +231,21 @@ return {
             fresh = {
                 description = "A freshly killed cat. The blood is still wet on its grey fur.",
                 room_presence = "A dead cat lies crumpled on the floor.",
-                duration = 30,
+                timed_events = { { delay = 30, event = "timer_expired", to_state = "bloated" } },
             },
             bloated = {
                 description = "The cat's body has swollen, its belly taut with gas. The fur is slick.",
                 room_presence = "A bloated cat carcass lies on the floor, reeking.",
                 on_smell = "The sweet, cloying stench of decay.",
                 food = { cookable = false },
-                duration = 40,
+                timed_events = { { delay = 40, event = "timer_expired", to_state = "rotten" } },
             },
             rotten = {
                 description = "The cat is a matted ruin of fur and exposed tissue. Flies circle.",
                 room_presence = "A rotting cat carcass festers on the floor.",
                 on_smell = "Overwhelming rot. Your eyes water.",
                 food = { cookable = false, edible = false },
-                duration = 60,
+                timed_events = { { delay = 60, event = "timer_expired", to_state = "bones" } },
             },
             bones = {
                 description = "A scatter of cat bones, picked clean.",
@@ -256,9 +256,9 @@ return {
             },
         },
         transitions = {
-            { from = "fresh", to = "bloated", verb = "_tick", condition = "timer_expired" },
-            { from = "bloated", to = "rotten", verb = "_tick", condition = "timer_expired" },
-            { from = "rotten", to = "bones", verb = "_tick", condition = "timer_expired" },
+            { from = "fresh", to = "bloated", trigger = "auto", condition = "timer_expired" },
+            { from = "bloated", to = "rotten", trigger = "auto", condition = "timer_expired" },
+            { from = "rotten", to = "bones", trigger = "auto", condition = "timer_expired" },
         },
 
         transfer_contents = true,

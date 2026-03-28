@@ -351,7 +351,7 @@ function loop.run(context)
         -- Tier 4: "back"/"return" handle their own noun semantics
         back = true, ["return"] = true,
         -- #288: goto/teleport should never inherit a context noun
-        goto = true, teleport = true,
+        ["goto"] = true, teleport = true,
         -- Drop/put verbs inherit noun correctly from their own grammar
         drop = true,
         -- BUG-105b: Bare "examine" (no noun) should prompt the player, not

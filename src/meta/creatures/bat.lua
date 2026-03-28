@@ -216,21 +216,21 @@ return {
             fresh = {
                 description = "A freshly killed bat. The wings are still pliable.",
                 room_presence = "A dead bat lies on the floor, wings spread like crumpled parchment.",
-                duration = 25,
+                timed_events = { { delay = 25, event = "timer_expired", to_state = "bloated" } },
             },
             bloated = {
                 description = "The bat's tiny body has swollen, wings stretched taut over distended flesh.",
                 room_presence = "A bloated bat carcass lies on the floor.",
                 on_smell = "The sweet stench of tiny decay.",
                 food = { cookable = false },
-                duration = 35,
+                timed_events = { { delay = 35, event = "timer_expired", to_state = "rotten" } },
             },
             rotten = {
                 description = "The bat is a shriveled husk, wings torn and matted with decay.",
                 room_presence = "A rotting bat carcass shrivels on the floor.",
                 on_smell = "A concentrated, sour rot.",
                 food = { cookable = false, edible = false },
-                duration = 50,
+                timed_events = { { delay = 50, event = "timer_expired", to_state = "bones" } },
             },
             bones = {
                 description = "A tiny scatter of bat bones, thin as needles.",
@@ -241,9 +241,9 @@ return {
             },
         },
         transitions = {
-            { from = "fresh", to = "bloated", verb = "_tick", condition = "timer_expired" },
-            { from = "bloated", to = "rotten", verb = "_tick", condition = "timer_expired" },
-            { from = "rotten", to = "bones", verb = "_tick", condition = "timer_expired" },
+            { from = "fresh", to = "bloated", trigger = "auto", condition = "timer_expired" },
+            { from = "bloated", to = "rotten", trigger = "auto", condition = "timer_expired" },
+            { from = "rotten", to = "bones", trigger = "auto", condition = "timer_expired" },
         },
     },
 }
