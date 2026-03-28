@@ -3,8 +3,8 @@
 **Author:** Bart (Architecture Lead)  
 **Requested by:** Wayne "Effe" Berry  
 **Date:** 2026-07-28  
-**Revised:** 2026-08-23 (pivot to expand-and-lint approach per Wayne's direction)  
-**Status:** PLAN — Ready for implementation  
+**Revised:** 2026-08-23 (pivot to expand-and-lint approach per Wayne's direction; team review additions)  
+**Status:** PLAN — Ready for implementation
 
 ---
 
@@ -31,7 +31,28 @@ This is simpler AND more powerful than the original graph-library approach:
 
 ---
 
-## Phase 1: Documentation
+## Motivation [Brockman #1]
+
+**Why static analysis instead of runtime validation?**
+
+The mutation engine (`src/engine/mutation/init.lua`) resolves target files at runtime — when a player performs an action that triggers a mutation. If the target file doesn't exist, the player gets a runtime error (or silent failure) during gameplay. This is the worst possible time to discover a missing file.
+
+Static analysis catches these problems before anyone plays:
+- **Author-time:** When Flanders creates an object with `becomes = "broken-vase"` but never creates `broken-vase.lua`
+- **Merge-time:** When a PR deletes or renames a target file without updating all references
+- **Pre-deploy:** As a gate check before pushing to production
+
+The expand-and-lint approach adds a second validation layer: not only must target files *exist*, they must also pass the full 200+ rule meta-lint. A target file with a missing `on_feel` field or invalid GUID would pass the edge-existence check but fail the lint check — catching a class of bugs that pure graph validation would miss.
+
+**Real-world example trace [Brockman #2]:**
+```
+1. Player: "plug vent with cloth"
+2. Engine: looks up mutations["plug"] on poison-gas-vent.lua
+3. Engine: finds becomes = "poison-gas-vent-plugged"
+4. Engine: tries to load src/meta/objects/poison-gas-vent-plugged.lua
+5. Engine: FILE NOT FOUND → runtime error
+```
+The edge checker catches this at step 2-3, statically, without running the game.
 
 ### Deliverable
 `docs/testing/mutation-graph-linting.md`
@@ -42,7 +63,7 @@ This is simpler AND more powerful than the original graph-library approach:
    - **Edge existence:** Every mutation target resolves to an existing `.lua` file
    - **Target validity:** Every target file passes the full Python meta-lint ruleset (200+ rules)
 
-   Covers 5 mutation edge mechanisms:
+   Covers **12 mutation edge mechanisms** (5 original + 7 creature-specific [Flanders]):
 
    | Mechanism | Data Path | Example |
    |-----------|-----------|---------|
@@ -51,6 +72,13 @@ This is simpler AND more powerful than the original graph-library approach:
    | Spawns (transition) | `transitions[].spawns` | `mirror.lua` break → `{"glass-shard"}` |
    | Crafting | `crafting[verb].becomes` | `cloth.lua` sew → `terrible-jacket` |
    | Tool depletion | `on_tool_use.when_depleted` | (None currently exist — future-proof) |
+   | Loot (always) | `loot_table.always[].template` | `wolf.lua` → `gnawed-bone` |
+   | Loot (weighted) | `loot_table.on_death[].item.template` | `wolf.lua` → `silver-coin` |
+   | Loot (variable) | `loot_table.variable[].template` | `wolf.lua` → `copper-coin` |
+   | Loot (conditional) | `loot_table.conditional.{key}[].template` | `wolf.lua` fire_kill → `charred-hide` |
+   | Corpse cooking | `death_state.crafting[verb].becomes` | `rat.lua` → `cooked-rat-meat` |
+   | Butchery | `death_state.butchery_products.products[].id` | `wolf.lua` → `wolf-meat`, `wolf-bone`, `wolf-hide` |
+   | Creates object | `behavior.creates_object.template` | `spider.lua` → `spider-web` |
 
    Note: FSM `transitions[].mutate` entries are NOT edges — they're in-place property patches on the same node. They're already validated by the Python linter as structural fields.
 
@@ -89,7 +117,7 @@ This is simpler AND more powerful than the original graph-library approach:
 
 5. **Integration** — Two usage modes:
    - **Standalone:** `lua scripts/mutation-edge-check.lua` — reports broken edges, prints target files
-   - **Piped:** `lua scripts/mutation-edge-check.lua --targets-only | python scripts/meta-lint/lint.py -` — or pass targets via xargs/foreach
+   - **Piped:** `lua scripts/mutation-edge-check.lua --targets | python scripts/meta-lint/lint.py -` — or pass targets via xargs/foreach
 
 ---
 
@@ -97,7 +125,7 @@ This is simpler AND more powerful than the original graph-library approach:
 
 ### File: `scripts/mutation-edge-check.lua`
 
-A standalone Lua script (~100-150 LOC) that extracts mutation edges and verifies target file existence. NOT a test file — it's a script that can be run directly or piped to the Python linter.
+A standalone Lua script (~130-190 LOC) that extracts mutation edges from 12 mechanisms and verifies target file existence. NOT a test file — it's a script that can be run directly or piped to the Python linter.
 
 ### Dependencies
 - Pure Lua file I/O (`io.popen` for directory listing, `loadfile` for loading `.lua` objects)
@@ -184,40 +212,100 @@ end
 if obj.on_tool_use and obj.on_tool_use.when_depleted then
     table.insert(edges, { from = obj.id, to = obj.on_tool_use.when_depleted, type = "tool-depletion", verb = "use" })
 end
+
+-- 5. Loot table — 4 sub-patterns [Flanders]
+if obj.loot_table then
+    if obj.loot_table.always then
+        for _, entry in ipairs(obj.loot_table.always) do
+            if entry.template then
+                table.insert(edges, { from = obj.id, to = entry.template, type = "loot-always", verb = "kill" })
+            end
+        end
+    end
+    if obj.loot_table.on_death then
+        for _, entry in ipairs(obj.loot_table.on_death) do
+            if entry.item and entry.item.template then
+                table.insert(edges, { from = obj.id, to = entry.item.template, type = "loot-weighted", verb = "kill" })
+            end
+        end
+    end
+    if obj.loot_table.variable then
+        for _, entry in ipairs(obj.loot_table.variable) do
+            if entry.template then
+                table.insert(edges, { from = obj.id, to = entry.template, type = "loot-variable", verb = "kill" })
+            end
+        end
+    end
+    if obj.loot_table.conditional then
+        for method, entries in pairs(obj.loot_table.conditional) do
+            for _, entry in ipairs(entries) do
+                if entry.template then
+                    table.insert(edges, { from = obj.id, to = entry.template, type = "loot-conditional", verb = "kill:" .. method })
+                end
+            end
+        end
+    end
+end
+
+-- 6. Creature-spawned objects [Flanders]
+if obj.behavior and obj.behavior.creates_object and obj.behavior.creates_object.template then
+    table.insert(edges, { from = obj.id, to = obj.behavior.creates_object.template, type = "creates-object", verb = "behavior" })
+end
+
+-- 7. death_state recursive pass [Flanders]
+if obj.death_state then
+    if obj.death_state.crafting then
+        for verb, recipe in pairs(obj.death_state.crafting) do
+            if recipe.becomes then
+                table.insert(edges, { from = obj.id, to = recipe.becomes, type = "corpse-cooking", verb = verb })
+            end
+        end
+    end
+    if obj.death_state.butchery_products and obj.death_state.butchery_products.products then
+        for _, product in ipairs(obj.death_state.butchery_products.products) do
+            if product.id then
+                table.insert(edges, { from = obj.id, to = product.id, type = "butchery", verb = "butcher" })
+            end
+        end
+    end
+end
 ```
+
+**Note:** Circular chains (A→B→A) are irrelevant — the extractor checks each edge independently, not chains [Nelson #14].
 
 ### Output Modes
 
-The script supports two output modes via CLI flags:
+The script supports two output modes via CLI flags (note: `--json` deferred to WAVE-2 [Smithers blocker #1]):
 
 1. **Default (full report):** `lua scripts/mutation-edge-check.lua`
    ```
    === Mutation Edge Report ===
-     Files scanned:  91
-     Edges found:    47
-     Broken edges:   4
-     Dynamic paths:  1 (skipped)
-     Valid targets:  43
+   Files scanned:   206
+   Edges found:     66
+   Broken targets:  4 (5 edge entries)
+   Dynamic paths:   1 (skipped)
+   Valid targets:   62
 
    Broken edges:
-     ✗ poison-gas-vent → poison-gas-vent-plugged (file-swap via plug)
-     ✗ bedroom-hallway-door-north → wood-splinters (spawn-transition via break)
-     ✗ bedroom-hallway-door-south → wood-splinters (spawn-transition via break)
-     ✗ courtyard-kitchen-door → wood-splinters (spawn-transition via break)
+     ✗ src/meta/objects/poison-gas-vent.lua -> poison-gas-vent-plugged (file-swap via plug)
+     ✗ src/meta/objects/bedroom-hallway-door-north.lua -> wood-splinters (spawn-transition via break)
+     ✗ src/meta/objects/bedroom-hallway-door-south.lua -> wood-splinters (spawn-transition via break)
+     ✗ src/meta/rooms/courtyard-kitchen-door.lua -> wood-splinters (spawn-transition via break) [×2 edges]
 
    Dynamic paths (not followed):
-     ⚡ paper → write (mutator: write_on_surface)
+     ⚠ paper -> write (mutator: write_on_surface)
+
+   ✗ 4 broken target(s) — files do not exist. See above.
    ```
 
-2. **Targets only:** `lua scripts/mutation-edge-check.lua --targets-only`
+2. **Targets only:** `lua scripts/mutation-edge-check.lua --targets`
    ```
-   src/meta/objects/poison-gas-vent-plugged.lua
    src/meta/objects/cloth.lua
    src/meta/objects/glass-shard.lua
    src/meta/objects/terrible-jacket.lua
    ...
    ```
-   Outputs one file path per line — only valid (existing) targets. Broken edges go to stderr. Designed for piping to Python linter.
+   Outputs one file path per line — only valid (existing) targets. Broken edges go to stderr in `WARNING:` format [Smithers #3]. Designed for piping to Python linter.
 
 ### Parallel Execution
 
@@ -239,10 +327,10 @@ lua scripts/mutation-edge-check.lua
 
 # 2. Full parallel validation: edges + lint rules on all targets
 # Unix — parallel linting with 4 workers
-lua scripts/mutation-edge-check.lua --targets-only | xargs -P 4 -I {} python scripts/meta-lint/lint.py {}
+lua scripts/mutation-edge-check.lua --targets | xargs -P 4 -I {} python scripts/meta-lint/lint.py {}
 
 # 3. Windows — parallel linting with PowerShell 7
-lua scripts/mutation-edge-check.lua --targets-only | ForEach-Object -Parallel { python scripts/meta-lint/lint.py $_ } -ThrottleLimit 4
+lua scripts/mutation-edge-check.lua --targets | ForEach-Object -Parallel { python scripts/meta-lint/lint.py $_ } -ThrottleLimit 4
 ```
 
 Wrapper scripts (`scripts/mutation-lint.ps1` / `scripts/mutation-lint.sh`) run both steps with parallel linting and combine the outputs into a single report.
@@ -253,16 +341,27 @@ Same pattern as the original design — mirrors `src/engine/loader/init.lua`:
 
 ```lua
 local function safe_load(filepath)
-    local fn, err = loadfile(filepath)
-    if not fn then return nil, err end
-
     local env = {
+        -- Must match engine/loader/init.lua make_sandbox()
         math = math, string = string, table = table,
-        pairs = pairs, ipairs = ipairs, tostring = tostring,
-        tonumber = tonumber, type = type, print = function() end,
+        pairs = pairs, ipairs = ipairs, next = next, select = select,
+        tostring = tostring, tonumber = tonumber, type = type,
+        unpack = unpack or table.unpack, error = error, pcall = pcall,
+        -- Script-specific stubs (not in engine sandbox)
+        print = function() end,
         require = function() return {} end,
     }
-    setfenv(fn, env)  -- Lua 5.1
+
+    -- Version-branching: same pattern as engine/loader/init.lua lines 70-76
+    local fn, err
+    if _VERSION == "Lua 5.1" then
+        fn, err = loadfile(filepath)
+        if fn then setfenv(fn, env) end
+    else
+        fn, err = loadfile(filepath, "t", env)
+    end
+    if not fn then return nil, err end
+
     local ok, result = pcall(fn)
     if not ok then return nil, result end
     if type(result) ~= "table" then return nil, "did not return a table" end
@@ -333,7 +432,7 @@ source: "earned — mutation edge extractor + meta-lint integration"
 ```bash
 # Full parallel run: extract + lint concurrently
 # Unix
-lua scripts/mutation-edge-check.lua --targets-only | xargs -P 4 -I {} python scripts/meta-lint/lint.py {} > lint-results.txt &
+lua scripts/mutation-edge-check.lua --targets | xargs -P 4 -I {} python scripts/meta-lint/lint.py {} > lint-results.txt &
 lua scripts/mutation-edge-check.lua > edge-results.txt &
 wait
 # Combine: edge-results.txt + lint-results.txt → final report
@@ -403,7 +502,7 @@ Lint violations on target files are reported as separate issues, using the same 
 1. `lua scripts/mutation-edge-check.lua` runs and reports all edges + broken edges
 2. All 4 known broken edges are detected and reported
 3. `paper.lua`'s dynamic mutation is flagged, not followed
-4. `--targets-only` output pipes cleanly to `python scripts/meta-lint/lint.py`
+4. `--targets` output pipes cleanly to `python scripts/meta-lint/lint.py`
 5. Full 200+ rule coverage applies to every mutation target
 6. GitHub issues filed for every broken edge
 7. Skill doc created for reuse
