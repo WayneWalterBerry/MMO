@@ -341,8 +341,9 @@ injuries.try_heal = cure.try_heal
 ---------------------------------------------------------------------------
 function injuries.list(player)
     local has_injuries = player.injuries and #player.injuries > 0
-    local has_stress = (player.stress or 0) > 0
-        and injuries.get_stress_level(player) ~= nil
+    local stress_val = player.stress or 0
+    local stress_level = injuries.get_stress_level(player)
+    local has_stress = stress_val > 0
 
     if not has_injuries and not has_stress then
         print("You feel fine. No injuries to speak of.")
@@ -381,17 +382,20 @@ function injuries.list(player)
         ::continue_list::
     end
 
-    -- Stress (WAVE-3): show current stress level description
+    -- Stress: show level description or sub-threshold feedback
     if has_stress then
-        local def = load_stress_def()
-        local level_name = injuries.get_stress_level(player)
-        if def and def.levels and level_name then
-            for _, lvl in ipairs(def.levels) do
-                if lvl.name == level_name then
-                    print("  " .. lvl.description)
-                    break
+        if stress_level then
+            local def = load_stress_def()
+            if def and def.levels then
+                for _, lvl in ipairs(def.levels) do
+                    if lvl.name == stress_level then
+                        print("  " .. lvl.description)
+                        break
+                    end
                 end
             end
+        else
+            print("  You feel a growing unease.")
         end
     end
 end
