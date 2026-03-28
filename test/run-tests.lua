@@ -57,6 +57,7 @@ local test_dirs = {
     repo_root .. SEP .. "test" .. SEP .. "stress",
     repo_root .. SEP .. "test" .. SEP .. "crafting",
     repo_root .. SEP .. "test" .. SEP .. "engine",
+    repo_root .. SEP .. "test" .. SEP .. "meta",
 }
 
 -- Source-to-test mapping for --changed flag
@@ -73,6 +74,7 @@ local source_to_tests = {
     ["src/meta/injuries/"]      = {"injuries"},
     ["src/engine/effects.lua"]  = {"verbs", "integration"},
     ["src/engine/display.lua"]  = {"ui"},
+    ["scripts/mutation-edge-check.lua"] = {"meta"},
     -- Engine core changes → run everything (nil = run all)
     ["src/engine/registry/"]    = nil,
     ["src/engine/loader/"]      = nil,
@@ -158,6 +160,7 @@ end
 -- Each named shard maps to the directory basenames it covers.
 -- Subdirectories (e.g., parser/pipeline) are matched via parent_name.
 -- "other" catches everything not covered by any named shard.
+-- NOTE: test/meta falls in "other" shard (mutation-graph linter tests).
 local shard_groups = {
     parser    = {"parser"},
     verbs     = {"verbs"},
