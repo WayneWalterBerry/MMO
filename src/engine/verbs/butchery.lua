@@ -188,7 +188,9 @@ function M.register(handlers)
     end
 
     -- Verb aliases
-    handlers["carve"]   = handlers["butcher"]
+    if not handlers["carve"] then
+        handlers["carve"] = handlers["butcher"]
+    end
     handlers["skin"]    = handlers["butcher"]
     handlers["fillet"]  = handlers["butcher"]
     handlers["dissect"] = handlers["butcher"]
