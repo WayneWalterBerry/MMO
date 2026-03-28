@@ -503,10 +503,15 @@ function verbs.create()
             local target_zone = words[2]
 
             local creature = find_creature(ctx, creature_word)
-            if not creature then
+            if not creature and not ctx.disambiguation_prompt then
                 -- Try full noun as creature name (multi-word: "giant rat")
                 creature = find_creature(ctx, noun)
                 target_zone = nil
+            end
+
+            -- #344: If disambiguation was triggered, return early
+            if ctx.disambiguation_prompt then
+                return
             end
 
             if creature then

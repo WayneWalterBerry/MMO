@@ -396,18 +396,19 @@ function R.update(result, _opts)
         defender.alive = false
         result.defender_dead = true
 
+        -- #345/#370: Use "The" + id for death narration (capitalized, definite article)
+        local death_id = defender.id or "creature"
+        local default_death = "The " .. death_id .. " is dead."
+
         -- Pull death description from creature's dead state definition
         local dead_state = defender.states and defender.states.dead
         if dead_state then
             if dead_state.room_presence then
                 defender.room_presence = dead_state.room_presence
             end
-            result.death_narration = dead_state.description
-                or (defender.name and (defender.name .. " is dead."))
-                or "The creature is dead."
+            result.death_narration = dead_state.description or default_death
         else
-            result.death_narration = (defender.name and (defender.name .. " is dead."))
-                or "The creature is dead."
+            result.death_narration = default_death
         end
     end
 

@@ -205,11 +205,94 @@ function M.register(handlers)
     handlers["light"] = function(ctx, noun)
         if noun == "" then print("Light what?") return end
 
+        -- #313: helper to check if object has a lightable FSM transition
+        local function is_lightable(o)
+            if not o then return false end
+            if o.states and o.transitions then
+                for _, t in ipairs(o.transitions) do
+                    if t.verb == "light" then return true end
+                    if t.verb == "strike" then return true end
+                    if t.aliases then
+                        for _, a in ipairs(t.aliases) do
+                            if a == "light" then return true end
+                        end
+                    end
+                end
+            end
+            if type(o.mutations) == "table" then
+                for k, _ in pairs(o.mutations) do
+                    if k == "light" then return true end
+                end
+            end
+            return false
+        end
+
         -- Allow lighting things even in darkness (you can feel what you hold)
         local obj = find_in_inventory(ctx, noun)
         if not obj then
             obj = find_visible(ctx, noun)
         end
+
+        -- #313: If found object is not lightable, check parts for a nested lightable item
+        -- e.g. "light candle" finds candle-holder (name contains "candle") but the
+        -- actual candle is a part — redirect to the nested candle
+        if obj and not is_lightable(obj) then
+            local kw = noun:lower()
+                :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+            -- Check parts of the found object itself
+            if obj.parts then
+                for _, part in pairs(obj.parts) do
+                    if matches_keyword(part, kw) then
+                        local live = part.id and ctx.registry:get(part.id)
+                        if live and is_lightable(live) then
+                            obj = live; break
+                        end
+                    end
+                end
+            end
+            -- Also check parts of other held items
+            if not is_lightable(obj) then
+                for i = 1, 2 do
+                    local hand = ctx.player.hands[i]
+                    if hand then
+                        local held = _hobj(hand, ctx.registry)
+                        if held and held ~= obj and held.parts then
+                            for _, part in pairs(held.parts) do
+                                if matches_keyword(part, kw) then
+                                    local live = part.id and ctx.registry:get(part.id)
+                                    if live and is_lightable(live) then
+                                        obj = live; break
+                                    end
+                                end
+                            end
+                        end
+                        if is_lightable(obj) then break end
+                    end
+                end
+            end
+        end
+
+        -- #313: Also check parts of held items when no object found at all
+        if not obj then
+            local kw = noun:lower()
+                :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+            for i = 1, 2 do
+                local hand = ctx.player.hands[i]
+                if hand then
+                    local held = _hobj(hand, ctx.registry)
+                    if held and held.parts then
+                        for _, part in pairs(held.parts) do
+                            if matches_keyword(part, kw) then
+                                local live = part.id and ctx.registry:get(part.id)
+                                if live then obj = live; break end
+                            end
+                        end
+                    end
+                    if obj then break end
+                end
+            end
+        end
+
         if not obj then
             print("You don't have anything like that.")
             return

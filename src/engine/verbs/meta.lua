@@ -515,6 +515,14 @@ function M.register(handlers)
             return
         end
 
+        -- #329: If item has cures (healing item), block use when player has no injuries
+        if obj.cures then
+            if not ctx.player.injuries or #ctx.player.injuries == 0 then
+                print("You don't have any injuries to treat.")
+                return
+            end
+        end
+
         -- FSM path: check for a "use" transition
         if obj.states then
             local transitions = fsm_mod.get_transitions(obj)

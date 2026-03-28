@@ -139,8 +139,16 @@ local function render(template, data)
     local text = template:gsub("{(.-)}", function(key)
         return data[key] or ""
     end)
-    -- #290: Collapse duplicate prepositions from verb+template overlap
+    -- #290/#338: Collapse preposition overlap when verb phrase already ends
+    -- with a preposition that clashes with the template's following preposition
     text = text:gsub("into into", "into")
+    text = text:gsub("into toward", "toward")
+    text = text:gsub("into at", "at")
+    text = text:gsub("onto into", "into")
+    text = text:gsub("onto toward", "toward")
+    text = text:gsub("onto at", "at")
+    text = text:gsub("across across", "across")
+    text = text:gsub("across toward", "toward")
     return text
 end
 
