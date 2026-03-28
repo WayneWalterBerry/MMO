@@ -29,8 +29,8 @@ return {
     initial_state = "injected",
 
     on_inflict = {
-        initial_damage = 2,
-        damage_per_tick = 2,
+        initial_damage = 1,
+        damage_per_tick = 1,
         message = "Sharp pain flares from the bite. A burning numbness begins to spread.",
     },
 
@@ -46,11 +46,11 @@ return {
             on_look = "Two small puncture marks, ringed with angry red. The swelling is spreading.",
             on_smell = "A faint chemical tang rises from the wound.",
 
-            damage_per_tick = 2,
+            damage_per_tick = 1,
 
             timed_events = {
-                { event = "transition", delay = 1080, to_state = "spreading" },
-                -- 1080 seconds = 3 ticks. Venom spreads quickly.
+                { event = "transition", delay = 1800, to_state = "spreading" },
+                -- 1800 seconds = 5 ticks. Gives player time to find antivenom.
             },
         },
 
@@ -62,15 +62,15 @@ return {
             on_look = "Dark veins radiate from the bite. Your hands shake. Your gait is unsteady.",
             on_smell = "Cold sweat with an acrid chemical undertone.",
 
-            damage_per_tick = 3,
+            damage_per_tick = 2,
 
             restricts = {
                 movement = true,
             },
 
             timed_events = {
-                { event = "transition", delay = 1800, to_state = "paralysis" },
-                -- 1800 seconds = 5 ticks. Escalation to full paralysis.
+                { event = "transition", delay = 2160, to_state = "paralysis" },
+                -- 2160 seconds = 6 ticks. Escalation to full paralysis.
             },
         },
 
@@ -130,7 +130,7 @@ return {
             trigger = "auto",
             condition = "timer_expired",
             message = "The numbness creeps past your knee. Your legs feel like they belong to someone else.",
-            mutate = { damage_per_tick = 3 },
+            mutate = { damage_per_tick = 2 },
         },
         {
             from = "spreading", to = "paralysis",

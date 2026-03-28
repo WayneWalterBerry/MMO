@@ -44,6 +44,13 @@ return {
 
     provides_tool = {"cutting_edge", "injury_source"},
 
+    combat = {
+        type = "edged",
+        force = 2,
+        message = "slashes",
+        two_handed = false,
+    },
+
     on_cut = {
         damage = 3,
         injury_type = "minor-cut",

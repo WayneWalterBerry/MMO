@@ -10,6 +10,7 @@ return {
     weight = 0.3,
     categories = {"metal", "small", "treasure"},
     portable = true,
+    provides_tool = "silver-key",
 
     name = "a small silver key",
     description = "A small key of tarnished silver, its bow wrought in the shape of a cross -- or perhaps a sword. The bit is delicate, almost ornamental, but the teeth are precisely cut. This is no common key -- it was made for a special lock.",

@@ -71,6 +71,29 @@ return {
         nocturnal = true,
         home_room = nil,
         web_builder = true,
+
+        -- WAVE-4: Creature-created objects (spider spins webs)
+        creates_object = {
+            template = "spider-web",
+            cooldown = "30 minutes",
+            condition = function(creature, ctx)
+                local webs = ctx.room:find_by_template("spider-web")
+                return #webs < 2
+            end,
+            narration = "The spider spins a web in the corner.",
+        },
+
+        -- WAVE-4: Ambush behavior near web
+        web_ambush = {
+            priority = 0.8,
+            condition = function(creature, ctx)
+                local webs = ctx.room:find_by_template("spider-web")
+                for _, web in ipairs(webs) do
+                    if web.trapped_creature then return true end
+                end
+                return false
+            end,
+        },
     },
 
     -- Drives
@@ -167,6 +190,17 @@ return {
         },
     },
 
+    -- Loot table (WAVE-2)
+    loot_table = {
+        always = {
+            { template = "silk-bundle" },
+        },
+        on_death = {
+            { item = { template = "spider-fang" }, weight = 10 },
+            { item = nil, weight = 90 },
+        },
+    },
+
     -- Respawn metadata (WAVE-5)
     respawn = {
         timer = 80,
@@ -194,7 +228,19 @@ return {
         on_listen = "Nothing. The web vibrates faintly in the air.",
         on_taste = "Dry shell and acrid venom. Your tongue goes numb.",
 
-        -- Death byproducts (silk drops on death)
-        byproducts = { "silk-bundle" },
+        -- Butchery products (Phase 4 WAVE-1)
+        butchery_products = {
+            requires_tool = "butchering",
+            duration = "2 minutes",
+            products = {
+                { id = "spider-meat", quantity = 1 },
+                { id = "silk-bundle", quantity = 1 },
+            },
+            narration = {
+                start = "You carefully slice open the spider's abdomen, avoiding the venom sac...",
+                complete = "You extract a small lump of pale meat and a wad of silk from the spider's body.",
+            },
+            removes_corpse = true,
+        },
     },
 }

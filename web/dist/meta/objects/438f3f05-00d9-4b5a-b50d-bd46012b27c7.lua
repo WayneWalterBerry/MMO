@@ -10,6 +10,7 @@ return {
     weight = 0.5,
     categories = {"metal", "small"},
     portable = true,
+    provides_tool = "iron-key",
 
     name = "a heavy iron key",
     description = "A heavy iron key, nearly black with age and pitted with rust. The bow is a simple ring, large enough to thread a finger through. The bit is thick and crude -- clearly made for a heavy lock. This key means business.",

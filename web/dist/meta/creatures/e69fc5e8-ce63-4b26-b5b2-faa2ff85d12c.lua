@@ -84,11 +84,15 @@ return {
         flee_threshold = 20,
         wander_chance = 25,
         settle_chance = 40,
-        territorial = true,
-        territory = "hallway",
         nocturnal = false,
         home_room = nil,
-        prey = {"rat", "cat", "bat"},
+        prey = {"player", "rat", "cat", "bat"},
+        territorial = {
+            marks_territory = true,
+            mark_object = "territory-marker",
+            mark_radius = 2,
+            mark_duration = "1 day",
+        },
     },
 
     -- Drives
@@ -153,8 +157,8 @@ return {
     },
 
     -- Health
-    health = 40,
-    max_health = 40,
+    health = 22,
+    max_health = 22,
     alive = true,
 
     -- Body zones
@@ -169,10 +173,10 @@ return {
     -- Combat metadata
     combat = {
         size = "medium",
-        speed = 7,
+        speed = 5,
         natural_weapons = {
-            { id = "bite", type = "pierce", material = "tooth-enamel", zone = "head", force = 8, target_pref = "arms", message = "clamps its jaws onto" },
-            { id = "claw", type = "slash", material = "keratin", zone = "forelegs", force = 4, message = "rakes its claws across" },
+            { id = "bite", type = "pierce", material = "tooth-enamel", zone = "head", force = 5, target_pref = "arms", message = "clamps its jaws onto" },
+            { id = "claw", type = "slash", material = "keratin", zone = "forelegs", force = 3, message = "rakes its claws across" },
         },
         natural_armor = {
             { material = "hide", coverage = { "body", "head" }, thickness = 2 },
@@ -187,11 +191,23 @@ return {
         },
     },
 
-    -- Inventory (WAVE-2)
-    inventory = {
-        hands = {},
-        worn = {},
-        carried = { "{b8db1d83-9c05-401c-ae7b-67c31b98d6fc}" },
+    -- Loot table (WAVE-2 — replaces fixed inventory)
+    loot_table = {
+        always = {
+            { template = "gnawed-bone" },
+        },
+        on_death = {
+            { item = { template = "silver-coin" }, weight = 20 },
+            { item = { template = "torn-cloth" }, weight = 30 },
+            { item = nil, weight = 50 },
+        },
+        variable = {
+            { template = "copper-coin", min = 0, max = 3 },
+        },
+        conditional = {
+            fire_kill = { { template = "charred-hide" } },
+            poison_kill = { { template = "tainted-meat" } },
+        },
     },
 
     -- Respawn metadata (WAVE-5)
@@ -226,6 +242,22 @@ return {
             raw = true,
             edible = false,
             cookable = false,
+        },
+
+        -- Butchery products (Phase 4 WAVE-1)
+        butchery_products = {
+            requires_tool = "butchering",
+            duration = "5 minutes",
+            products = {
+                { id = "wolf-meat", quantity = 3 },
+                { id = "wolf-bone", quantity = 2 },
+                { id = "wolf-hide", quantity = 1 },
+            },
+            narration = {
+                start = "You begin carving the wolf carcass with your knife. Blood and fur fly.",
+                complete = "You finish butchering the wolf. Three cuts of meat, two bones, and a pelt lie at your feet.",
+            },
+            removes_corpse = true,
         },
 
         -- Container (large corpse can hold 5 items)

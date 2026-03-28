@@ -13,6 +13,13 @@ return {
     portable = true,
     material = "brass",
 
+    combat = {
+        type = "blunt",
+        force = 4,
+        message = "cracks",
+        two_handed = false,
+    },
+
     -- Initial state (with_candle)
     name = "a brass candle holder",
     description = "A tarnished brass candle holder, its base wide and heavy enough to stand steady on any surface. A tallow candle sits firmly in the socket, held upright by a ring of melted wax. Drippings cascade down the stem in frozen rivulets.",

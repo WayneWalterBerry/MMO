@@ -21,6 +21,13 @@ return {
 
     provides_tool = {"blunt_weapon", "weight", "hammer"},
 
+    combat = {
+        type = "blunt",
+        force = 3,
+        message = "bashes",
+        two_handed = false,
+    },
+
     on_look = function(self)
         return self.description
     end,

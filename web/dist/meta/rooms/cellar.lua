@@ -18,6 +18,18 @@ return {
         { id = "cellar-bedroom-trapdoor-up", type_id = "{c915adfa-df5c-40bb-987f-751be2cc7525}" },
         { id = "cellar-storage-door-north", type_id = "{cd7f2d60-8528-4a7f-9236-0bfaad8c399d}" },
         { id = "cellar-rat", type_id = "{071e73f6-535e-42cb-b981-ebf85c27356f}" },
+        { id = "cellar-spider", type_id = "{f67e3d8b-ecab-41a4-9f3e-79da4c5374ae}",
+            placement = {
+                position = "floor",
+                wall = "south",
+                near = "barrel",
+                web_zones = {"barrel-side-corner", "torch-bracket-corner"},
+                blocked_zones = {"near-brazier", "exits"},
+                max_webs = 2,
+                avoids = { brazier = "if_lit" },
+                prefers = "dark_corners",
+            },
+        },
         { id = "cellar-brazier", type_id = "{22b77e90-8407-427a-a272-6b88277ba1fc}" },
     },
 

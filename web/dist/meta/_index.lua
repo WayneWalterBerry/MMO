@@ -9,7 +9,8 @@ return {
     "minor-cut",
     "poisoned-nightshade",
     "rabies",
-    "spider-venom"
+    "spider-venom",
+    "stress"
   },
   levels = {
     "level-01"
@@ -36,6 +37,7 @@ return {
     "organ",
     "paper",
     "plant",
+    "silk",
     "silver",
     "skin",
     "steel",
