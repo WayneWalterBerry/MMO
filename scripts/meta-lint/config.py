@@ -41,6 +41,47 @@ sys.modules.setdefault("rule_registry", rule_registry)
 _spec.loader.exec_module(rule_registry)
 
 
+# ---------------------------------------------------------------------------
+# Environment profiles — per-level/sandbox rule overrides
+# ---------------------------------------------------------------------------
+
+ENVIRONMENTS: Dict[str, Dict] = {
+    "level-01": {
+        "profile": "strict",
+        "disable": [],
+    },
+    "level-02": {
+        "profile": "moderate",
+        "disable": ["XF-03"],
+    },
+    "sandbox": {
+        "profile": "permissive",
+        "disable": ["S-12", "S-13", "XR-05"],
+    },
+}
+
+
+def get_environment(name: str) -> Optional[Dict]:
+    """Return an environment profile by name, or None if unknown."""
+    return ENVIRONMENTS.get(name)
+
+
+def apply_environment(cfg: "CheckConfig", env_name: str) -> "CheckConfig":
+    """Disable rules specified by an environment profile.
+
+    Raises ValueError for unknown environment names.
+    """
+    env = get_environment(env_name)
+    if env is None:
+        raise ValueError(
+            f"Unknown environment '{env_name}'. "
+            f"Valid environments: {', '.join(sorted(ENVIRONMENTS))}"
+        )
+    for rule_id in env.get("disable", []):
+        cfg.rules[rule_id] = RuleConfig(enabled=False)
+    return cfg
+
+
 # Per-rule configuration defaults.  Rules can declare structured parameters
 # here; user overrides in .meta-check.json are merged on top at load time.
 DEFAULT_RULE_CONFIG: Dict[str, Dict] = {

@@ -2385,6 +2385,7 @@ def main() -> int:
     parser_cli.add_argument("--init-config", action="store_true", help="Generate default .meta-check.json and exit")
     parser_cli.add_argument("--by-owner", action="store_true", help="Group text output by squad member owner")
     parser_cli.add_argument("--no-cache", action="store_true", help="Disable incremental caching (full re-scan)")
+    parser_cli.add_argument("--env", default=None, help="Environment profile (e.g. level-01, level-02, sandbox)")
     parser_cli.add_argument("--fix", action="store_true", help="Mark safe-fixable violations (fix_safety=safe)")
     parser_cli.add_argument("--unsafe-fixes", action="store_true", help="Mark ALL fixable violations (safe + unsafe)")
 
@@ -2417,6 +2418,13 @@ def main() -> int:
     else:
         _active_config = config_mod.load_config(root)
 
+    if args.env:
+        try:
+            config_mod.apply_environment(_active_config, args.env)
+        except ValueError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
+
     routing_overrides = getattr(_active_config, 'squad_routing', None)
     _squad_router = squad_routing_mod.SquadRouter(routing_overrides)
 
@@ -2434,6 +2442,7 @@ def main() -> int:
     cache_hits = 0
     cache_misses = 0
     file_hashes: Dict[str, str] = {}
+    cached_file_keys: Set[str] = set()
 
     any_file_changed = False
     for path in lua_files:
@@ -2450,23 +2459,23 @@ def main() -> int:
         file_key = str(path)
         h = file_hashes[file_key]
 
-        if use_cache and not any_file_changed:
-            cached = cache.get_cached(file_key, h)
-            if cached is not None:
-                cache_hits += 1
-                for cv in cached:
-                    violations.append(Violation(
-                        file=cv["file"], line=cv["line"],
-                        severity=cv["severity"], rule_id=cv["rule_id"],
-                        message=cv["message"],
-                        fixable=cv.get("fixable", False),
-                        fix_safety=cv.get("fix_safety"),
-                        owner=cv.get("owner", _squad_router.owner_for(cv["rule_id"])),
-                    ))
-                parsed = _parse_file(path, [])
-                if parsed:
-                    parsed_files.append(parsed)
-                continue
+        cached = cache.get_cached(file_key, h) if use_cache else None
+        if cached is not None:
+            cache_hits += 1
+            cached_file_keys.add(file_key)
+            for cv in cached:
+                violations.append(Violation(
+                    file=cv["file"], line=cv["line"],
+                    severity=cv["severity"], rule_id=cv["rule_id"],
+                    message=cv["message"],
+                    fixable=cv.get("fixable", False),
+                    fix_safety=cv.get("fix_safety"),
+                    owner=cv.get("owner", _squad_router.owner_for(cv["rule_id"])),
+                ))
+            parsed = _parse_file(path, [])
+            if parsed:
+                parsed_files.append(parsed)
+            continue
 
         cache_misses += 1
         parsed = _parse_file(path, violations)
@@ -2475,7 +2484,7 @@ def main() -> int:
 
     for parsed in parsed_files:
         file_key = str(parsed.path)
-        if use_cache and not any_file_changed and cache.get_cached(file_key, file_hashes.get(file_key, "")) is not None:
+        if file_key in cached_file_keys:
             continue
         _validate_file(parsed, materials, violations)
 

@@ -7,6 +7,9 @@ On re-run, unchanged files skip single-file validation.
 Cross-file rules (XF-*, XR-*, GUID-*, EXIT-*, LV-40) always re-run
 because any file change can alter cross-file results.
 
+Specific cross-file rules (EXIT-03, CREATURE-019, CREATURE-020) are
+also invalidated when any file changes.
+
 Cache file: .meta-lint-cache.json in project root.
 """
 
@@ -14,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set
@@ -22,7 +26,11 @@ CROSS_FILE_RULE_PREFIXES = frozenset({
     "XF-", "XR-", "GUID-", "EXIT-", "LV-40",
 })
 
-CACHE_VERSION = 1
+CROSS_FILE_EXACT_RULES = frozenset({
+    "EXIT-03", "CREATURE-019", "CREATURE-020",
+})
+
+CACHE_VERSION = 2
 CACHE_FILENAME = ".meta-lint-cache.json"
 
 
@@ -33,6 +41,8 @@ def _hash_file(path: Path) -> str:
 
 
 def is_cross_file_rule(rule_id: str) -> bool:
+    if rule_id in CROSS_FILE_EXACT_RULES:
+        return True
     return any(rule_id.startswith(prefix) for prefix in CROSS_FILE_RULE_PREFIXES)
 
 
@@ -40,6 +50,7 @@ def is_cross_file_rule(rule_id: str) -> bool:
 class CacheEntry:
     file_hash: str
     violations: List[dict]
+    timestamp: str = ""
 
 
 @dataclass
@@ -55,7 +66,10 @@ class LintCache:
 
     def update(self, file_path: str, file_hash: str, violations: List[dict]) -> None:
         single_file = [v for v in violations if not is_cross_file_rule(v.get("rule_id", ""))]
-        self.entries[file_path] = CacheEntry(file_hash=file_hash, violations=single_file)
+        ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        self.entries[file_path] = CacheEntry(
+            file_hash=file_hash, violations=single_file, timestamp=ts,
+        )
 
     def invalidate(self, file_path: str) -> None:
         self.entries.pop(file_path, None)
@@ -79,6 +93,7 @@ def load_cache(project_root: Path) -> LintCache:
             entries[file_path] = CacheEntry(
                 file_hash=entry_data["file_hash"],
                 violations=entry_data["violations"],
+                timestamp=entry_data.get("timestamp", ""),
             )
         return LintCache(version=CACHE_VERSION, entries=entries)
     except (json.JSONDecodeError, KeyError, TypeError):
@@ -90,7 +105,11 @@ def save_cache(project_root: Path, cache: LintCache) -> None:
     data = {
         "version": cache.version,
         "entries": {
-            fp: {"file_hash": e.file_hash, "violations": e.violations}
+            fp: {
+                "file_hash": e.file_hash,
+                "violations": e.violations,
+                "timestamp": e.timestamp,
+            }
             for fp, e in cache.entries.items()
         },
     }

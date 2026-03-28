@@ -24,13 +24,16 @@ from typing import Dict, List, Optional, Tuple
 
 
 _DEFAULT_ROUTING: Dict[str, str] = {
-    "S-*":        "Bart",
+    "S-*":        "Smithers",
+    "SI-*":       "Flanders",
     "PARSE-*":    "Bart",
     "G-*":        "Bart",
     "FSM-*":      "Bart",
     "TR-*":       "Bart",
     "SN-*":       "Bart",
     "TD-*":       "Bart",
+    "D-*":        "Smithers",
+    "T-*":        "Smithers",
     "INJ-*":      "Flanders",
     "MD-*":       "Flanders",
     "MAT-*":      "Flanders",
@@ -41,6 +44,7 @@ _DEFAULT_ROUTING: Dict[str, str] = {
     "GUID-*":     "Bart",
     "EXIT-*":     "Sideshow Bob",
     "CREATURE-*": "Flanders",
+    "LOOT-*":     "Flanders",
 }
 
 
