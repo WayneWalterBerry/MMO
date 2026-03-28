@@ -28,6 +28,19 @@ jobs:
         continue-on-error: true
         run: lua scripts/mutation-edge-check.lua
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+
+      - name: Install lint dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Meta-lint validation
+        continue-on-error: true
+        run: python scripts/meta-lint/lint.py src/meta/ --format text
+
       - name: Run tests (shard ${{ matrix.shard }})
         run: lua test/run-tests.lua --bench --shard ${{ matrix.shard }}
 
