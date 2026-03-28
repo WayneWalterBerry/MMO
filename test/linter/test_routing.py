@@ -28,6 +28,7 @@ import importlib.util as _ilu
 def _load_mod(name):
     spec = _ilu.spec_from_file_location(name, SCRIPTS_DIR / f"{name}.py")
     mod = _ilu.module_from_spec(spec)
+    sys.modules.setdefault(name, mod)
     spec.loader.exec_module(mod)
     return mod
 

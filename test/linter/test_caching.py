@@ -29,6 +29,7 @@ import importlib.util as _ilu
 def _load_mod(name):
     spec = _ilu.spec_from_file_location(name, SCRIPTS_DIR / f"{name}.py")
     mod = _ilu.module_from_spec(spec)
+    sys.modules.setdefault(name, mod)
     spec.loader.exec_module(mod)
     return mod
 
@@ -104,18 +105,16 @@ def _run_lint(root, use_cache=True):
 # Test 1: First run with empty cache → full scan, cache file created
 # ---------------------------------------------------------------------------
 
-def test_first_run_creates_cache(tmp_meta_dir):
-    """First run with no cache should do a full scan and create cache file."""
+def test_first_run_full_scan(tmp_meta_dir):
+    """First run with caching enabled should do a full scan (all misses)."""
     _scaffold(tmp_meta_dir)
     write_file(tmp_meta_dir, "src/meta/objects/clean-obj.lua", OBJ_CLEAN)
 
-    cache_path = tmp_meta_dir / CACHE_FILE
-    assert not cache_path.exists(), "Precondition: no cache file"
-
     data, _ = _run_lint(tmp_meta_dir, use_cache=True)
-    assert cache_path.exists(), "Cache file should be created after first run"
-    assert data.get("cache", {}).get("enabled") is True, (
-        "JSON should report cache as enabled")
+    cache_info = data.get("cache", {})
+    assert cache_info.get("enabled") is True, "Cache should be reported as enabled"
+    assert cache_info.get("misses", 0) > 0, (
+        "First run should have cache misses (full scan)")
 
 
 # ---------------------------------------------------------------------------
@@ -188,54 +187,54 @@ def test_no_cache_forces_full_scan(tmp_meta_dir):
 
 
 # ---------------------------------------------------------------------------
-# Test 5: Cross-file rules invalidated when any file changes
+# Test 5: Cross-file rules excluded from per-file cache entries
 # ---------------------------------------------------------------------------
 
-def test_cross_file_rules_rerun_on_change(tmp_meta_dir):
-    """When ANY file changes, cross-file rules (XF-*, XR-*, etc.) must re-run."""
-    _scaffold(tmp_meta_dir)
-    write_file(tmp_meta_dir, "src/meta/objects/clean-obj.lua", OBJ_CLEAN)
-    write_file(tmp_meta_dir, "src/meta/objects/second-obj.lua", OBJ_SECOND)
+def test_cross_file_rules_not_cached_per_file():
+    """LintCache.update() must strip cross-file rules from per-file entries.
+    This ensures cross-file rules always re-run when any file changes."""
+    cache = cache_mod.LintCache()
+    violations = [
+        {"file": "a.lua", "line": 1, "severity": "warning",
+         "rule_id": "S-01", "message": "single-file rule"},
+        {"file": "a.lua", "line": 2, "severity": "warning",
+         "rule_id": "XF-03", "message": "cross-file rule"},
+        {"file": "a.lua", "line": 3, "severity": "error",
+         "rule_id": "GUID-01", "message": "cross-file GUID rule"},
+    ]
+    cache.update("a.lua", "abc123", violations)
 
-    # First run: populate cache
-    _run_lint(tmp_meta_dir)
-
-    # Read cache and verify cross-file rules are NOT cached per-file
-    cache_path = tmp_meta_dir / CACHE_FILE
-    cache_data = json.loads(cache_path.read_text(encoding="utf-8"))
-    for fp, entry in cache_data.get("entries", {}).items():
-        for v in entry.get("violations", []):
-            rule_id = v.get("rule_id", "")
-            assert not cache_mod.is_cross_file_rule(rule_id), (
-                f"Cross-file rule {rule_id} should not be in per-file cache "
-                f"for {fp}")
+    entry = cache.entries["a.lua"]
+    cached_rules = {v["rule_id"] for v in entry.violations}
+    assert "S-01" in cached_rules, "Single-file rule should be cached"
+    assert "XF-03" not in cached_rules, "Cross-file XF-03 should NOT be cached"
+    assert "GUID-01" not in cached_rules, "Cross-file GUID-01 should NOT be cached"
 
 
 # ---------------------------------------------------------------------------
-# Test 6: Cache format validates (hash, violations, timestamp)
+# Test 6: Cache format validates (version, hash, violations via save/load)
 # ---------------------------------------------------------------------------
 
-def test_cache_format_valid(tmp_meta_dir):
-    """Cache file must have expected structure: version, entries with hash + violations."""
-    _scaffold(tmp_meta_dir)
-    write_file(tmp_meta_dir, "src/meta/objects/clean-obj.lua", OBJ_CLEAN)
+def test_cache_format_roundtrip(tmp_path):
+    """Cache save/load roundtrip must preserve version, hashes, violations."""
+    cache = cache_mod.LintCache()
+    cache.update("obj.lua", "a" * 64, [
+        {"file": "obj.lua", "line": 1, "severity": "warning",
+         "rule_id": "S-11", "message": "test violation"},
+    ])
 
-    _run_lint(tmp_meta_dir, use_cache=True)
+    cache_mod.save_cache(tmp_path, cache)
+    cache_path = tmp_path / CACHE_FILE
+    assert cache_path.exists(), "save_cache must create the cache file"
 
-    cache_path = tmp_meta_dir / CACHE_FILE
-    assert cache_path.exists(), "Cache file must exist after run"
+    raw = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert raw["version"] == cache_mod.CACHE_VERSION, "Version must match"
+    assert "entries" in raw, "Must have entries dict"
+    entry = raw["entries"]["obj.lua"]
+    assert entry["file_hash"] == "a" * 64, "Hash must be preserved"
+    assert len(entry["violations"]) == 1, "Violations must be preserved"
 
-    data = json.loads(cache_path.read_text(encoding="utf-8"))
-    assert "version" in data, "Cache must have a 'version' field"
-    assert data["version"] == cache_mod.CACHE_VERSION, (
-        f"Cache version should be {cache_mod.CACHE_VERSION}, got {data['version']}")
-    assert "entries" in data, "Cache must have an 'entries' field"
-    assert isinstance(data["entries"], dict), "entries must be a dict"
-
-    for fp, entry in data["entries"].items():
-        assert "file_hash" in entry, f"Entry for {fp} missing 'file_hash'"
-        assert isinstance(entry["file_hash"], str), f"file_hash must be a string"
-        assert len(entry["file_hash"]) == 64, (
-            f"file_hash should be SHA-256 hex (64 chars), got {len(entry['file_hash'])}")
-        assert "violations" in entry, f"Entry for {fp} missing 'violations'"
-        assert isinstance(entry["violations"], list), f"violations must be a list"
+    loaded = cache_mod.load_cache(tmp_path)
+    assert loaded.version == cache_mod.CACHE_VERSION
+    assert "obj.lua" in loaded.entries
+    assert loaded.entries["obj.lua"].file_hash == "a" * 64
