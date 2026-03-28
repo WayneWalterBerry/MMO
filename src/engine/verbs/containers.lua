@@ -235,9 +235,49 @@ function M.register(handlers)
     handlers["unlock"] = function(ctx, noun)
         if noun == "" then print("Unlock what?") return end
 
-        -- Check objects (FSM-managed locks, e.g. portal objects)
-        local obj = find_visible(ctx, noun)
+        local obj, loc_type, parent_obj = find_visible(ctx, noun)
+        if loc_type == "part" and parent_obj then obj = parent_obj end
+
         if obj then
+            if obj.states then
+                local transitions = fsm_mod.get_transitions(obj)
+                local target_trans
+                for _, t in ipairs(transitions) do
+                    if t.verb == "unlock" then target_trans = t; break end
+                    if t.aliases then
+                        for _, alias in ipairs(t.aliases) do
+                            if alias == "unlock" then target_trans = t; break end
+                        end
+                        if target_trans then break end
+                    end
+                end
+                if target_trans then
+                    if target_trans.requires_tool then
+                        local tool = find_tool_in_inventory(ctx, target_trans.requires_tool)
+                        if not tool then
+                            tool = find_visible_tool(ctx, target_trans.requires_tool)
+                        end
+                        if not tool then
+                            print("You don't have the right key.")
+                            return
+                        end
+                    end
+                    local trans, err = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {})
+                    if trans then
+                        print(trans.message or ("You unlock " .. (obj.name or obj.id) .. "."))
+                    else
+                        print("You can't unlock " .. (obj.name or "that") .. ".")
+                    end
+                else
+                    if obj._state and obj._state ~= "locked" then
+                        print("It isn't locked.")
+                    else
+                        print("You can't unlock " .. (obj.name or "that") .. ".")
+                    end
+                end
+                return
+            end
+
             print("You can't unlock " .. (obj.name or "that") .. ".")
         else
             err_not_found(ctx)
@@ -250,9 +290,49 @@ function M.register(handlers)
     handlers["lock"] = function(ctx, noun)
         if noun == "" then print("Lock what?") return end
 
-        -- Check objects (FSM-managed locks, e.g. portal objects)
-        local obj = find_visible(ctx, noun)
+        local obj, loc_type, parent_obj = find_visible(ctx, noun)
+        if loc_type == "part" and parent_obj then obj = parent_obj end
+
         if obj then
+            if obj.states then
+                local transitions = fsm_mod.get_transitions(obj)
+                local target_trans
+                for _, t in ipairs(transitions) do
+                    if t.verb == "lock" then target_trans = t; break end
+                    if t.aliases then
+                        for _, alias in ipairs(t.aliases) do
+                            if alias == "lock" then target_trans = t; break end
+                        end
+                        if target_trans then break end
+                    end
+                end
+                if target_trans then
+                    if target_trans.requires_tool then
+                        local tool = find_tool_in_inventory(ctx, target_trans.requires_tool)
+                        if not tool then
+                            tool = find_visible_tool(ctx, target_trans.requires_tool)
+                        end
+                        if not tool then
+                            print("You don't have the right key.")
+                            return
+                        end
+                    end
+                    local trans, err = fsm_mod.transition(ctx.registry, obj.id, target_trans.to, {})
+                    if trans then
+                        print(trans.message or ("You lock " .. (obj.name or obj.id) .. "."))
+                    else
+                        print("You can't lock " .. (obj.name or "that") .. ".")
+                    end
+                else
+                    if obj._state and obj._state == "locked" then
+                        print("It is already locked.")
+                    else
+                        print("You can't lock " .. (obj.name or "that") .. ".")
+                    end
+                end
+                return
+            end
+
             print("You can't lock " .. (obj.name or "that") .. ".")
         else
             err_not_found(ctx)

@@ -14,6 +14,7 @@ return {
     categories = {"metal", "small"},
     portable = true,
     material = "brass",
+    provides_tool = "brass-key",
 
     location = nil,
 

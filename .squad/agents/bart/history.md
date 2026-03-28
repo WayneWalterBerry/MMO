@@ -28,3 +28,7 @@
 - Tool resolution: capabilities (not tool IDs)
 - Sensory verbs work in darkness
 - Skills: double-dispatch gating (skill gate + tool gate)
+
+## Learnings
+
+- **Brass Key/Padlock Fix (Phase 4 walkthrough bug):** The `unlock` and `lock` verb handlers in `engine/verbs/containers.lua` were stubs — they found the target object but always printed "You can't unlock that" without attempting FSM transitions. Fixed by implementing full FSM transition logic (matching the `open`/`close` pattern) with `requires_tool` capability checks. Additionally, all three key objects (brass-key, iron-key, silver-key) lacked `provides_tool` fields, so `find_tool_in_inventory()` could never match them. Added `provides_tool = "{key-id}"` to each. Two-bug fix: engine verb handler + object metadata. Bidirectional portal sync already handled by `fsm.transition()` calling `sync_bidirectional()`.
