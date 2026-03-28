@@ -187,11 +187,23 @@ return {
         },
     },
 
-    -- Inventory (WAVE-2)
-    inventory = {
-        hands = {},
-        worn = {},
-        carried = { "{b8db1d83-9c05-401c-ae7b-67c31b98d6fc}" },
+    -- Loot table (WAVE-2 — replaces fixed inventory)
+    loot_table = {
+        always = {
+            { template = "gnawed-bone" },
+        },
+        on_death = {
+            { item = { template = "silver-coin" }, weight = 20 },
+            { item = { template = "torn-cloth" }, weight = 30 },
+            { item = nil, weight = 50 },
+        },
+        variable = {
+            { template = "copper-coin", min = 0, max = 3 },
+        },
+        conditional = {
+            fire_kill = { { template = "charred-hide" } },
+            poison_kill = { { template = "tainted-meat" } },
+        },
     },
 
     -- Respawn metadata (WAVE-5)

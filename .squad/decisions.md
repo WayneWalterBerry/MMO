@@ -6135,3 +6135,70 @@ Both modules stay **well under 500** through all of Phase 4.
 **Test impact:** Run full creature behavior test suite after extraction.
 
 
+
+---
+
+## D-LOOT-ENGINE: Loot Table Engine Architecture
+
+**Author:** Bart (Architect) | **Date:** 2026-08-17 | **Status:** ✅ Implemented (WAVE-2) | **Affects:** Flanders (creature objects), Nelson (tests), Smithers (parser/narration)
+
+### Decision
+
+Loot table engine (src/engine/creatures/loot.lua) uses the same 3-tier template resolution as esolve_byproduct in death.lua — registry → object_sources → base_classes. Each instantiated drop gets a unique id ({template}-loot-{N}) via a module-level counter.
+
+### Key Choices
+
+1. **Capture-before-reshape** — creature.loot_table is captured before eshape_instance() runs. Rolls use the captured data, not the post-reshape creature. Defensive against future reshape changes.
+
+2. **Room-floor placement** — Loot drops go directly to oom.contents, same as byproducts and inventory drops. No corpse-container nesting.
+
+3. **Kill method resolution** — death_context.kill_method reads from context.kill_method OR context.last_combat_method. Combat system can set either; loot engine is agnostic.
+
+4. **Corpse cleanup** — creature.loot_table is nilled after drops are processed. Dead objects don't carry stale loot metadata.
+
+5. **Graceful degradation** — pcall-guarded require. If loot module fails to load, death path works exactly as before (inventory drops + byproducts only).
+
+### Impact
+
+- Creatures with loot_table field get probabilistic drops on death.
+- Creatures without loot_table are completely unaffected.
+- Nelson: 	est-death-drops.lua and 	est-creature-inventory.lua need updating — wolf/spider now use loot_table instead of inventory.
+
+---
+
+## D-LOOT-MATERIAL-COPPER: Loot Object Material & GUID Assignments
+
+**Author:** Flanders | **Date:** 2026-08-17 | **Status:** ✅ Implemented (WAVE-2) | **Context:** Phase 4 WAVE-2 loot table conversion
+
+### copper-coin uses material "brass" (not "copper")
+
+The material registry has no "copper" entry. Brass is a copper alloy and the closest registered material. If a "copper" material is added later, copper-coin.lua should be updated.
+
+### 6 New Loot Object GUIDs
+
+| Object | GUID |
+|--------|------|
+| spider-fang | {453600d7-1c85-4ada-a56d-c4b51f740133} |
+| silver-coin | {6cabc916-46da-429f-8a3f-3689f6eef601} |
+| copper-coin | {6581d541-622f-45b9-8a6e-2de3251c8a62} |
+| torn-cloth | {e1010096-218c-4f0c-9eb0-a6af1c588b88} |
+| charred-hide | {be6704fd-3341-48fe-8e39-86634c2ec2db} |
+| tainted-meat | {8aefbd0d-112c-4209-b124-e38475ad5e38} |
+
+### D-LOOT-TEST-BREAKAGE
+
+Wolf inventory removal breaks 2 test files (10 tests total):
+- 	est/creatures/test-creature-inventory.lua (5 tests) — expects inventory field
+- 	est/creatures/test-death-drops.lua (5 tests) — expects inventory-based drops
+
+**Action needed:** Nelson must update these tests to validate loot_table format instead of inventory.
+
+### D-LOOT-TAINTED-MEAT
+
+tainted-meat has food.on_eat poison metadata. Unlike other loot items (inert small-items), tainted-meat declares ood.on_eat.inflict = "food-poisoning". This requires engine support to process — flagging for Bart.
+
+### Affected Agents
+
+- **Bart** — loot engine integration, tainted-meat food.on_eat processing
+- **Nelson** — test updates for creature-inventory and death-drops
+- **Smithers** — embedding index needs entries for 6 new objects

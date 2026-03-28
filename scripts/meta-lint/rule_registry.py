@@ -268,6 +268,13 @@ _r("EXIT-07",  "warning", "exit-portal", "Portal should have on_feel (P6 darknes
 # ── Cross-Reference (Portal) ────────────────────────────────────────────────
 _r("XR-07",    "warning", "cross-ref",   "Thin exit portal field must resolve to valid object ID")
 
+# ── Loot Table (Phase 4 WAVE-2) ─────────────────────────────────────────────
+_r("LOOT-001", "error",   "loot",        "loot_table must be a table with valid sections")
+_r("LOOT-002", "error",   "loot",        "on_death weights must be > 0 and sum to > 0")
+_r("LOOT-003", "error",   "loot",        "loot_table template refs must resolve to existing objects")
+_r("LOOT-004", "error",   "loot",        "variable min must be <= max, both >= 0")
+_r("LOOT-005", "warning", "loot",        "always items must have template field, no duplicates")
+
 
 def get_rule(rule_id: str) -> Optional[RuleMeta]:
     """Look up rule metadata by ID."""

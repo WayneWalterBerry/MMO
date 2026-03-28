@@ -9,6 +9,8 @@ local M = {}
 
 local inventory_ok, inventory = pcall(require, "engine.creatures.inventory")
 if not inventory_ok then inventory = nil end
+local loot_ok, loot_engine = pcall(require, "engine.creatures.loot")
+if not loot_ok then loot_engine = nil end
 local fsm_ok, fsm_mod = pcall(require, "engine.fsm")
 if not fsm_ok then fsm_mod = nil end
 
@@ -143,6 +145,10 @@ function M.handle_creature_death(creature, context, room)
     if not creature or not creature.death_state then return false end
     local ds = creature.death_state
 
+    -- Capture loot_table before reshape (reshape preserves it, but capture
+    -- defensively so the engine never depends on field survival order).
+    local creature_loot_table = creature.loot_table
+
     M.reshape_instance(creature, ds, context and context.registry, room)
 
     -- Instantiate byproducts to room floor, loading on-demand if needed (#281)
@@ -161,6 +167,21 @@ function M.handle_creature_death(creature, context, room)
     if inventory then
         inventory.drop_on_death(creature, room, context)
     end
+
+    -- WAVE-2: roll loot table and place drops on room floor
+    if loot_engine and creature_loot_table and room then
+        local death_context = {
+            kill_method = context and (context.kill_method or context.last_combat_method),
+        }
+        local drops = loot_engine.roll_loot_table(
+            { loot_table = creature_loot_table }, death_context)
+        if #drops > 0 then
+            loot_engine.instantiate_drops(drops, room, context)
+        end
+    end
+
+    -- Clear loot_table from reshaped corpse (no longer relevant)
+    creature.loot_table = nil
 
     -- Reshape narration (printed after combat death text)
     if ds.reshape_narration then print(ds.reshape_narration) end

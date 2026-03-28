@@ -1504,3 +1504,22 @@ Updated all plan files to reflect Phase 2 NPC+Combat completion:
 - Death reshape delegation moved earlier in init.lua so action_helpers can reference it.
 - morale_helpers.move_creature wraps creature_actions.move_creature with action_helpers -- no circular dependency.
 - Zero test regressions: same 410 passed, same 13 pre-existing failures (verb aliases + lock/unlock -- unrelated to creatures).
+
+## Learnings (Phase 4 WAVE-2: Loot Table Engine)
+
+#### Loot Engine Implementation
+- Created `src/engine/creatures/loot.lua` (~165 LOC) with three public functions: `roll_loot_table()`, `weighted_select()`, `instantiate_drops()`.
+- Four loot categories: `always` (guaranteed), `on_death` (weighted pick-one), `variable` (quantity range), `conditional` (kill-method gated).
+- `instantiate_drops` follows the same 3-tier template resolution pattern as `resolve_byproduct` in death.lua: registry → object_sources → base_classes. Each drop gets a unique id via a counter (`template-loot-N`).
+- `_reset_counter()` exposed for deterministic testing — Nelson's tests use this to get reproducible instance IDs.
+
+#### Death Path Integration
+- Loot table captured BEFORE reshape_instance (defensive — reshape doesn't clear unknown fields, but never depend on field survival order).
+- Loot rolls AFTER inventory drops and byproducts, BEFORE narration. Matches architecture doc pipeline ordering.
+- `creature.loot_table` nilled on corpse after drops — dead objects don't carry loot metadata.
+- pcall-guarded require: `loot_engine` gracefully nil if module not loaded — backward compatible.
+- `death_context.kill_method` pulled from `context.kill_method` or `context.last_combat_method` — combat system sets either.
+
+#### Testing
+- All 11 loot tests pass (7 unit in test-loot-engine.lua, 4 integration in test-loot-integration.lua).
+- 3 pre-existing test file failures (test-death-drops, test-creature-inventory, test-combat-verbs) caused by Flanders' wolf/spider inventory→loot_table conversion, not engine changes. Nelson needs to update those tests.

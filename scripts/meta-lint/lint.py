@@ -1907,6 +1907,99 @@ def _validate_file(parsed: ParsedFile, materials: Dict[str, object], violations:
                 _add_violation(violations, path, _line_for(parsed, "material"), "error", "MAT-02",
                                f"Unknown material '{mat_value}'")
 
+    # ── Loot Table Validation (LOOT-001 through LOOT-005) ──────────────────
+    if parsed.kind == "creature":
+        loot_table_val = fields.get("loot_table")
+        if loot_table_val is not None:
+            loot_tbl = _as_table(loot_table_val)
+            if loot_tbl is None:
+                _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-001",
+                               "loot_table must be a table")
+            else:
+                lt_fields = loot_tbl.fields
+                _valid_sections = {"always", "on_death", "variable", "conditional"}
+                for section_name in lt_fields:
+                    if section_name not in _valid_sections:
+                        _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-001",
+                                       f"Unknown loot_table section '{section_name}'")
+
+                # LOOT-005: always section — template required, no duplicates
+                always_val = lt_fields.get("always")
+                if always_val is not None:
+                    always_tbl = _as_table(always_val)
+                    if always_tbl is None:
+                        _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-001",
+                                       "loot_table.always must be a table")
+                    else:
+                        seen_templates: Set[str] = set()
+                        for entry in always_tbl.array:
+                            if entry.kind == "table":
+                                tmpl = _as_string(entry.value.fields.get("template"))
+                                if tmpl is None:
+                                    _add_violation(violations, path, _line_for(parsed, "loot_table"), "warning", "LOOT-005",
+                                                   "always item missing template field")
+                                else:
+                                    if tmpl in seen_templates:
+                                        _add_violation(violations, path, _line_for(parsed, "loot_table"), "warning", "LOOT-005",
+                                                       f"Duplicate template '{tmpl}' in always section")
+                                    seen_templates.add(tmpl)
+
+                # LOOT-002: on_death section — weights > 0, sum > 0
+                on_death_val = lt_fields.get("on_death")
+                if on_death_val is not None:
+                    on_death_tbl = _as_table(on_death_val)
+                    if on_death_tbl is None:
+                        _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-001",
+                                       "loot_table.on_death must be a table")
+                    else:
+                        weight_sum = 0
+                        for entry in on_death_tbl.array:
+                            if entry.kind == "table":
+                                w_val = entry.value.fields.get("weight")
+                                if w_val is None or _value_kind(w_val) != "number":
+                                    _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-002",
+                                                   "on_death entry missing numeric weight")
+                                elif w_val.value <= 0:
+                                    _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-002",
+                                                   f"on_death weight must be > 0, got {w_val.value}")
+                                else:
+                                    weight_sum += w_val.value
+                        if weight_sum <= 0 and len(on_death_tbl.array) > 0:
+                            _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-002",
+                                           "on_death weights must sum to > 0")
+
+                # LOOT-004: variable section — min <= max, both >= 0
+                variable_val = lt_fields.get("variable")
+                if variable_val is not None:
+                    variable_tbl = _as_table(variable_val)
+                    if variable_tbl is None:
+                        _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-001",
+                                       "loot_table.variable must be a table")
+                    else:
+                        for entry in variable_tbl.array:
+                            if entry.kind == "table":
+                                min_val = entry.value.fields.get("min")
+                                max_val = entry.value.fields.get("max")
+                                if (min_val is not None and _value_kind(min_val) == "number" and
+                                        max_val is not None and _value_kind(max_val) == "number"):
+                                    if min_val.value < 0:
+                                        _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-004",
+                                                       f"variable min must be >= 0, got {min_val.value}")
+                                    if max_val.value < 0:
+                                        _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-004",
+                                                       f"variable max must be >= 0, got {max_val.value}")
+                                    if min_val.value > max_val.value:
+                                        _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-004",
+                                                       f"variable min ({min_val.value}) > max ({max_val.value})")
+
+                # Structural check for conditional section
+                conditional_val = lt_fields.get("conditional")
+                if conditional_val is not None:
+                    conditional_tbl = _as_table(conditional_val)
+                    if conditional_tbl is None:
+                        _add_violation(violations, path, _line_for(parsed, "loot_table"), "error", "LOOT-001",
+                                       "loot_table.conditional must be a table")
+
     if parsed.template == "room":
         description = fields.get("description")
         if description is None:
@@ -2331,6 +2424,65 @@ def main() -> int:
                                    _line_for(parsed, "template"),
                                    "error", "XR-06",
                                    f"Template '{tmpl}' not found in template files")
+
+    # LOOT-003: All template refs in loot_table must resolve to existing objects
+    for parsed in parsed_files:
+        if parsed.kind == "creature":
+            loot_table_val = parsed.fields.get("loot_table")
+            if loot_table_val is None:
+                continue
+            loot_tbl = _as_table(loot_table_val)
+            if loot_tbl is None:
+                continue
+            lt_fields = loot_tbl.fields
+
+            def _check_loot_template(tmpl_id: str) -> None:
+                if tmpl_id not in object_ids:
+                    _add_violation(violations, parsed.path,
+                                   _line_for(parsed, "loot_table"),
+                                   "error", "LOOT-003",
+                                   f"loot_table template '{tmpl_id}' not found in object files")
+
+            always_v = lt_fields.get("always")
+            always_t = _as_table(always_v)
+            if always_t:
+                for entry in always_t.array:
+                    if entry.kind == "table":
+                        t = _as_string(entry.value.fields.get("template"))
+                        if t:
+                            _check_loot_template(t)
+
+            on_death_v = lt_fields.get("on_death")
+            on_death_t = _as_table(on_death_v)
+            if on_death_t:
+                for entry in on_death_t.array:
+                    if entry.kind == "table":
+                        item_v = entry.value.fields.get("item")
+                        if item_v is not None and item_v.kind == "table":
+                            t = _as_string(item_v.value.fields.get("template"))
+                            if t:
+                                _check_loot_template(t)
+
+            variable_v = lt_fields.get("variable")
+            variable_t = _as_table(variable_v)
+            if variable_t:
+                for entry in variable_t.array:
+                    if entry.kind == "table":
+                        t = _as_string(entry.value.fields.get("template"))
+                        if t:
+                            _check_loot_template(t)
+
+            conditional_v = lt_fields.get("conditional")
+            conditional_t = _as_table(conditional_v)
+            if conditional_t:
+                for _method_name, method_val in conditional_t.fields.items():
+                    method_tbl = _as_table(method_val)
+                    if method_tbl:
+                        for entry in method_tbl.array:
+                            if entry.kind == "table":
+                                t = _as_string(entry.value.fields.get("template"))
+                                if t:
+                                    _check_loot_template(t)
 
     # XR-09: Level boundary exit directions exist on rooms (WARNING)
     # Requires room exit data — check if room exits table has the declared direction

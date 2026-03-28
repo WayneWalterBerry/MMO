@@ -672,6 +672,27 @@ This section summarizes 50+ prior sessions covering object design, FSM architect
 - Created `src/meta/creatures/` directory
 - Moved `src/meta/objects/rat.lua` → `src/meta/creatures/rat.lua`
 - **Loader:** Now scans `meta/creatures/` after `meta/objects/`; both feed `base_classes` and `object_sources`
+
+### Phase 4 WAVE-2: Loot Table Conversion
+
+**Task:** Convert wolf and spider fixed inventories to probabilistic loot_table metadata. Create missing loot item objects.
+
+**What was done:**
+1. **wolf.lua** — Replaced `inventory { hands={}, worn={}, carried={gnawed-bone-guid} }` with `loot_table` block: always=gnawed-bone, on_death=20% silver-coin / 30% torn-cloth / 50% nothing, variable=0-3 copper-coin, conditional=fire_kill→charred-hide / poison_kill→tainted-meat.
+2. **spider.lua** — Added `loot_table` block (had no inventory): always=silk-bundle, on_death=10% spider-fang / 90% nothing.
+3. **spider-fang.lua** — Created. small-item, tooth-enamel, poison crafting component. GUID: {453600d7-1c85-4ada-a56d-c4b51f740133}.
+4. **silver-coin.lua** — Created. small-item, silver. GUID: {6cabc916-46da-429f-8a3f-3689f6eef601}.
+5. **copper-coin.lua** — Created. small-item, brass (no "copper" in material registry). GUID: {6581d541-622f-45b9-8a6e-2de3251c8a62}.
+6. **torn-cloth.lua** — Created. small-item, cotton. GUID: {e1010096-218c-4f0c-9eb0-a6af1c588b88}.
+7. **charred-hide.lua** — Created. small-item, hide. GUID: {be6704fd-3341-48fe-8e39-86634c2ec2db}.
+8. **tainted-meat.lua** — Created. small-item, flesh, has food.on_eat poison effect. GUID: {8aefbd0d-112c-4209-b124-e38475ad5e38}.
+
+**Patterns learned:**
+- "copper" is not a registered material — used "brass" for copper-coin instead. Material registry has 31 entries; always verify before using.
+- bart-phase4-guids.md did not exist at time of WAVE-2 — generated fresh GUIDs via PowerShell.
+- Removing `inventory` from wolf breaks `test-creature-inventory.lua` (5 tests) and `test-death-drops.lua` (5 tests) — these tests need Nelson to update for loot_table format.
+- Spider had no inventory field at all — only needed loot_table addition.
+- tainted-meat is the only loot item with gameplay effects (food.on_eat poison) — all others are inert small-items.
 - **Meta-lint:** `_detect_kind()` validates creature files with same rigor as objects (templates, GUIDs, keywords, sensory)
 
 **What This Means for Flanders:**

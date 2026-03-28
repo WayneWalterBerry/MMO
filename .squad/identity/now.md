@@ -4,27 +4,27 @@
 **Last user:** Wayne Berry
 
 ## What We Were Working On
-- Phase 4 WAVE-1 butchery system — COMPLETE (4 agents, 0 blockers, 12 tests pass)
-- Butcher verb (Smithers), butchery objects (Flanders), creatures split (Bart), tests (Nelson)
+- Phase 4 WAVE-2 loot tables engine — COMPLETE (3 agents, 0 blockers, 11 tests pass)
+- Loot engine (Bart), loot objects (Flanders), tests (Nelson)
 - All decisions merged to decisions.md, inbox cleaned
 
 ## Board State
 - Open issues: TBD (check GitHub)
 - Open PRs: 0
-- WAVE-1 Shipped: ✅ All deliverables complete
+- WAVE-2 Shipped: ✅ All deliverables complete
 
-## Next Phase: WAVE-2 Loot Tables
-- Flanders: Create loot-table object instances (5-10 creatures)
-- Chef: Food mutation metadata (creature → food → cook → eat pipeline)
-- Both coordinated via Coordinator, outcome logged to orchestration-log
+## Next Phase: WAVE-3 Stress Injury
+- Nelson: Update 2 creature test files (from WAVE-2 loot_table conversion)
+- Bart: tainted-meat food.on_eat processing support
+- Smithers: Embedding index update for 6 new loot objects
 
-## Still Running (from WAVE-1)
+## Current Tasks
 - Git commit pending (Scribe final step)
 - PR ready after commit
 
 ## Tomorrow's Queue
-1. Verify WAVE-1 git commit pushed
-2. Queue WAVE-2 loot tables agents
-3. Monitor for any WAVE-1 regression reports
-4. Coordinate with Chef on food metadata timing
+1. Verify WAVE-2 git commit pushed
+2. Monitor creature test file updates (Nelson)
+3. Monitor embedding index updates (Smithers)
+4. Flag tainted-meat food.on_eat blockers
 

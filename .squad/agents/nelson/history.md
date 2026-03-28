@@ -54,6 +54,27 @@
 - Dawn Light: ✅ NEW FEATURE — sleep until dawn enables `look` without matches
 - Issue Fixes: ✅ ALL VERIFIED (#2, #3, #4, #5, BUG-065, #72, #78-84)
 
+### Recent Work: Phase 4 WAVE-2 — Loot Table Tests + Meta-Lint (2026-08-16)
+
+**WAVE-2 TDD Delivery — Nelson's Loot Table Tests + Meta-Lint Rules:**
+- Created `test/loot/test-loot-engine.lua` — 7 unit tests
+  - weighted_select: seeded RNG determinism, all-zero weights → nil
+  - roll_loot_table: always drops, weighted drops with seed, variable quantity bounds, conditional kill_method drops, no loot_table backward compat
+- Created `test/loot/test-loot-integration.lua` — 4 integration tests
+  - kill wolf → gnawed-bone always drops + items in room
+  - kill spider → silk-bundle always drops
+  - creature without loot_table → no crash, no drops
+  - kill wolf with fire_kill → charred-hide conditional drop
+- **Result:** 11/11 tests PASS (standalone + test runner)
+- Added LOOT-001 through LOOT-005 to meta-lint (rule_registry.py + lint.py):
+  - LOOT-001: loot_table structure validation (sections must be tables)
+  - LOOT-002: on_death weights must be > 0, sum > 0
+  - LOOT-003: template refs resolve to existing object files (cross-file check)
+  - LOOT-004: variable min <= max, both >= 0
+  - LOOT-005: always items must have template, no duplicates
+- **Meta-lint fires correctly:** wolf.lua and spider.lua show LOOT-003 for not-yet-created loot objects (expected — Flanders' deliverable)
+- **No regressions:** Pre-existing failures unchanged (creature-inventory, death-drops, injuries, combat-verbs not related)
+
 ### Recent Work: Phase 4 WAVE-1 — Butchery Test Suite (2026-03-28)
 
 **WAVE-1 TDD Delivery — Nelson's Butchery Tests:**
@@ -77,6 +98,11 @@
 - Flanders added `butchery_products` to both wolf.lua and spider.lua death_state blocks, matching the spec exactly.
 - `butcher-knife.lua` uses `capabilities` field (not just `provides_tool`), should check both in tests.
 - Test runner may show different results than standalone when previous test files pollute the Lua environment; always validate standalone too.
+- Bart's `loot.lua` `instantiate_drops(drops, room, context)` takes 3 args (not 2 like spec). Uses `resolve_template()` which needs context with `registry`, `object_sources`, `loader`, `base_classes`. Mock registries must have `reg:get()` returning template objects by ID for `resolve_template` to find them.
+- Loot engine renames instantiated drop IDs to `{template}-loot-{N}` format. Tests should use prefix matching, not exact ID comparison.
+- `loot._reset_counter()` exists for deterministic testing — call it before each test to get reproducible loot IDs.
+- Meta-lint LOOT rules: LOOT-001/002/004/005 run in single-file validation; LOOT-003 (template ref resolution) runs in cross-file pass where `object_ids` set is available.
+- Pre-existing test failures (creature-inventory, death-drops, injuries, combat-verbs) are not caused by WAVE-2 — verified 0 regressions from loot test additions.
 
 ## Archives
 

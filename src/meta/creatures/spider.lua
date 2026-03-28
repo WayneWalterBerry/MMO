@@ -167,6 +167,17 @@ return {
         },
     },
 
+    -- Loot table (WAVE-2)
+    loot_table = {
+        always = {
+            { template = "silk-bundle" },
+        },
+        on_death = {
+            { item = { template = "spider-fang" }, weight = 10 },
+            { item = nil, weight = 90 },
+        },
+    },
+
     -- Respawn metadata (WAVE-5)
     respawn = {
         timer = 80,
