@@ -185,6 +185,23 @@ function M.handle_creature_death(creature, context, room)
 
     -- Reshape narration (printed after combat death text)
     if ds.reshape_narration then print(ds.reshape_narration) end
+
+    -- WAVE-3: Trauma hook — player witnessing creature death gains stress
+    if context and context.player then
+        local player = context.player
+        local player_room = player.location
+            or (context.current_room and (type(context.current_room) == "table"
+                and context.current_room.id or context.current_room))
+        local creature_room = creature.location
+            or (room and room.id)
+        if player_room and creature_room and player_room == creature_room then
+            local inj_ok, inj = pcall(require, "engine.injuries")
+            if inj_ok and inj and inj.add_stress then
+                inj.add_stress(player, "witness_creature_death")
+            end
+        end
+    end
+
     return true
 end
 

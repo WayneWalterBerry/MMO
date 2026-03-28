@@ -404,6 +404,19 @@ function M.run_combat(context, attacker, defender)
         if context then context.combat_active = nil end
     end
 
+    -- WAVE-3: Near-death trauma hook — player health dropped below 10% max
+    if context and context.player then
+        local player = context.player
+        local max_hp = player.max_health or 100
+        local cur_hp = player.health or max_hp
+        if cur_hp > 0 and cur_hp < max_hp * 0.1 then
+            local inj_ok, inj = pcall(require, "engine.injuries")
+            if inj_ok and inj and inj.add_stress then
+                inj.add_stress(player, "near_death_combat")
+            end
+        end
+    end
+
     return result
 end
 

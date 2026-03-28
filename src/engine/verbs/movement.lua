@@ -84,6 +84,17 @@ function M.register(handlers)
     }
 
     local function handle_movement(ctx, direction)
+        -- WAVE-3: Stress movement_penalty — chance of stumbling when stressed
+        local inj_ok, inj_mod = pcall(require, "engine.injuries")
+        if inj_ok and inj_mod and inj_mod.get_stress_effects then
+            local effects = inj_mod.get_stress_effects(ctx.player)
+            local penalty = effects.movement_penalty or 0
+            if penalty > 0 and math.random() < penalty then
+                print("Your legs buckle under the weight of panic. You can't move.")
+                return
+            end
+        end
+
         -- Strip common prepositions
         local clean = direction:lower()
             :gsub("^through%s+", "")

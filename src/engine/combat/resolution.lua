@@ -200,6 +200,14 @@ function R.resolve_damage(attacker, defender, weapon, target_zone, response, opt
 
     if R.is_player(attacker) then
         base_force = base_force * (stance_mod.attack or 1.0)
+        -- WAVE-3: Stress attack_penalty — each -1 reduces force by 15%
+        if injuries and injuries.get_stress_effects then
+            local effects = injuries.get_stress_effects(attacker)
+            local penalty = effects.attack_penalty or 0
+            if penalty < 0 then
+                base_force = base_force * math.max(0.3, 1.0 + penalty * 0.15)
+            end
+        end
     elseif stance ~= "balanced" then
         base_force = base_force * (stance_mod.attack or 1.0)
     end

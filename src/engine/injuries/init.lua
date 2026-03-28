@@ -8,6 +8,10 @@ local injuries = {}
 
 local SECONDS_PER_TICK = 360
 
+-- Forward declaration for stress system (WAVE-3)
+local _stress_def = nil
+local load_stress_def  -- forward declaration; defined in stress section
+
 ---------------------------------------------------------------------------
 -- Injury definition loader
 ---------------------------------------------------------------------------
@@ -30,6 +34,7 @@ end
 
 function injuries.clear_cache()
     _cache = {}
+    _stress_def = nil
 end
 
 ---------------------------------------------------------------------------
@@ -305,13 +310,17 @@ injuries.try_heal = cure.try_heal
 -- List injuries (for the `injuries` verb)
 ---------------------------------------------------------------------------
 function injuries.list(player)
-    if not player.injuries or #player.injuries == 0 then
+    local has_injuries = player.injuries and #player.injuries > 0
+    local has_stress = (player.stress or 0) > 0
+        and injuries.get_stress_level(player) ~= nil
+
+    if not has_injuries and not has_stress then
         print("You feel fine. No injuries to speak of.")
         return
     end
 
     print("You examine yourself:")
-    for _, injury in ipairs(player.injuries) do
+    for _, injury in ipairs(player.injuries or {}) do
         -- Skip hidden diseases (not yet symptomatic)
         if injury._hidden then goto continue_list end
 
@@ -337,6 +346,20 @@ function injuries.list(player)
 
         ::continue_list::
     end
+
+    -- Stress (WAVE-3): show current stress level description
+    if has_stress then
+        local def = load_stress_def()
+        local level_name = injuries.get_stress_level(player)
+        if def and def.levels and level_name then
+            for _, lvl in ipairs(def.levels) do
+                if lvl.name == level_name then
+                    print("  " .. lvl.description)
+                    break
+                end
+            end
+        end
+    end
 end
 
 ---------------------------------------------------------------------------
@@ -358,5 +381,176 @@ injuries.remove_treatment = cure.remove_treatment
 injuries.heal = cure.heal
 injuries.apply_healing_interaction = cure.apply_healing_interaction
 injuries.get_restrictions = cure.get_restrictions
+
+---------------------------------------------------------------------------
+-- Stress system (WAVE-3): psychological injury via accumulated trauma
+-- Stress metadata lives in meta/injuries/stress.lua (Principle 8).
+-- Narration owned by Smithers (UI Engineer).
+---------------------------------------------------------------------------
+
+load_stress_def = function()
+    if _stress_def then return _stress_def end
+    -- Check definition cache (supports test injection via register_definition)
+    if _cache["stress"] then
+        _stress_def = _cache["stress"]
+        return _stress_def
+    end
+    local ok, def = pcall(require, "meta.injuries.stress")
+    if ok and def then
+        _stress_def = def
+        return def
+    end
+    return nil
+end
+
+-- Allow tests to inject the stress definition
+function injuries.register_stress_definition(def)
+    _stress_def = def
+end
+
+function injuries.clear_stress_definition()
+    _stress_def = nil
+end
+
+---------------------------------------------------------------------------
+-- Stress narration tables (Smithers — WAVE-3)
+---------------------------------------------------------------------------
+
+local STRESS_TRIGGER_NARRATION = {
+    witness_creature_death = "The sight of death shakes you.",
+    near_death_combat      = "A wave of terror washes over you as death looms close.",
+    witness_gore           = "The gore turns your stomach.",
+}
+
+local STRESS_LEVEL_NARRATION = {
+    shaken      = "Your hands begin to tremble.",
+    distressed  = "Your breathing quickens. Heart pounding.",
+    overwhelmed = "Panic overwhelms you.",
+}
+
+---------------------------------------------------------------------------
+-- Stress: level computation helpers
+---------------------------------------------------------------------------
+
+-- Compute stress level name from numeric stress value and definition.
+local function compute_stress_level(stress_value, def)
+    if not def or not def.levels then return nil end
+    local current_level = nil
+    for _, lvl in ipairs(def.levels) do
+        if stress_value >= lvl.threshold then
+            current_level = lvl.name
+        end
+    end
+    return current_level
+end
+
+-- Return a copy of the effects table for a given stress level name.
+local function get_level_effects(level_name, def)
+    if not level_name or not def or not def.effects then return {} end
+    local fx = def.effects[level_name]
+    if not fx then return {} end
+    local copy = {}
+    for k, v in pairs(fx) do copy[k] = v end
+    return copy
+end
+
+---------------------------------------------------------------------------
+-- Stress API
+---------------------------------------------------------------------------
+
+-- Add stress from a trauma trigger.
+-- Looks up trigger value from stress.lua metadata, adds to player.stress.
+-- Prints trigger-specific narration and level-change narration.
+function injuries.add_stress(player, trigger_name)
+    local def = load_stress_def()
+    if not def or not def.triggers then return end
+    local amount = def.triggers[trigger_name]
+    if not amount then return end
+
+    local old_level = player.stress_level
+
+    player.stress = (player.stress or 0) + amount
+
+    -- Trigger narration
+    local trigger_msg = STRESS_TRIGGER_NARRATION[trigger_name]
+    if trigger_msg then
+        print(trigger_msg)
+    end
+
+    -- Recompute level and effects
+    local new_level = compute_stress_level(player.stress, def)
+    player.stress_level = new_level
+    player.stress_effects = get_level_effects(new_level, def)
+
+    -- Level-change narration (only when crossing a new threshold)
+    if new_level and new_level ~= old_level then
+        local level_msg = STRESS_LEVEL_NARRATION[new_level]
+        if level_msg then
+            print(level_msg)
+        end
+    end
+end
+
+-- Return current stress level name based on accumulated stress vs thresholds.
+-- Returns nil if stress is below the lowest threshold.
+function injuries.get_stress_level(player)
+    local def = load_stress_def()
+    if not def or not def.levels then return nil end
+    local stress = player.stress or 0
+    return compute_stress_level(stress, def)
+end
+
+-- Return the effects table for the player's current stress level.
+-- Returns empty table if no stress or below threshold.
+function injuries.get_stress_effects(player)
+    local def = load_stress_def()
+    if not def or not def.effects then return {} end
+    local level = injuries.get_stress_level(player)
+    if not level then return {} end
+    return get_level_effects(level, def)
+end
+
+-- Cure stress via rest. Accepts optional ctx for safe-room checking.
+-- Checks ctx.room for hostile creatures; cures if safe.
+function injuries.cure_stress(player, ctx)
+    if not player or (player.stress or 0) <= 0 then return false end
+
+    -- Check safe room via ctx.room creatures (test-compatible path)
+    if ctx then
+        local room = ctx.room
+        if room and room.creatures then
+            for _, creature in ipairs(room.creatures) do
+                if creature.hostile and creature.alive ~= false then
+                    return false
+                end
+            end
+        end
+    end
+
+    player.stress = 0
+    player.stress_level = nil
+    player.stress_effects = {}
+
+    print("With rest and safety, the panic slowly fades.")
+    return true
+end
+
+-- Check if a room qualifies as "safe" for stress cure.
+-- Q2 resolved: any room without hostile creatures is safe.
+function injuries.is_safe_room(room, registry)
+    if not room then return false end
+    local creatures_ok, creatures_mod = pcall(require, "engine.creatures")
+    if not creatures_ok or not creatures_mod then return true end
+    local room_id = room.id or room
+    if not registry then return true end
+    local room_creatures = creatures_mod.get_creatures_in_room(registry, room_id)
+    for _, c in ipairs(room_creatures) do
+        if c.alive ~= false and c._state ~= "dead" and c._state ~= "fled" then
+            local aggression = c.behavior and c.behavior.aggression or 0
+            if aggression > 0 then return false end
+        end
+    end
+    return true
+end
 
 return injuries

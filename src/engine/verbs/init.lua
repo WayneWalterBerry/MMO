@@ -246,14 +246,34 @@ function verbs.create()
         }
 
         local function prompt_stance(ctx, is_interrupt, interrupt_reason)
-            if ctx.headless then return "balanced" end
+            -- WAVE-3: Stress flee_bias — in headless mode, stress can auto-select flee
+            if ctx.headless then
+                local inj_ok, inj_mod = pcall(require, "engine.injuries")
+                if inj_ok and inj_mod and inj_mod.get_stress_effects then
+                    local effects = inj_mod.get_stress_effects(ctx.player)
+                    local flee_bias = effects.flee_bias or 0
+                    if flee_bias > 0 and math.random() < flee_bias then
+                        return "flee"
+                    end
+                end
+                return "balanced"
+            end
             if is_interrupt and interrupt_reason then
                 print("[INTERRUPT: " .. (INTERRUPT_MSG[interrupt_reason] or interrupt_reason) .. "]")
             end
+            -- WAVE-3: Stress flee hint in interactive mode
+            local stress_hint = ""
+            local inj_ok2, inj_mod2 = pcall(require, "engine.injuries")
+            if inj_ok2 and inj_mod2 and inj_mod2.get_stress_effects then
+                local effects = inj_mod2.get_stress_effects(ctx.player)
+                if effects.flee_bias and effects.flee_bias > 0 then
+                    stress_hint = " (your instincts scream to flee!)"
+                end
+            end
             if is_interrupt then
-                io.write("Combat stance? > aggressive | defensive | balanced | flee\n> ")
+                io.write("Combat stance? > aggressive | defensive | balanced | flee" .. stress_hint .. "\n> ")
             else
-                io.write("Combat stance? > aggressive | defensive | balanced\n> ")
+                io.write("Combat stance? > aggressive | defensive | balanced" .. stress_hint .. "\n> ")
             end
             io.flush()
             local input = io.read()
@@ -284,6 +304,16 @@ function verbs.create()
                         player_speed = player_speed * 0.7
                         break
                     end
+                end
+            end
+
+            -- WAVE-3: Stress movement_penalty reduces flee speed
+            local inj_ok3, inj_mod3 = pcall(require, "engine.injuries")
+            if inj_ok3 and inj_mod3 and inj_mod3.get_stress_effects then
+                local effects = inj_mod3.get_stress_effects(player)
+                local penalty = effects.movement_penalty or 0
+                if penalty > 0 then
+                    player_speed = player_speed * (1.0 - penalty)
                 end
             end
 

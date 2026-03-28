@@ -154,6 +154,12 @@ function M.register(handlers)
         -- Completion narration
         print(butch.narration.complete)
 
+        -- WAVE-3: Trauma hook — butchery is gory, player witnesses gore
+        local inj_ok, inj_mod = pcall(require, "engine.injuries")
+        if inj_ok and inj_mod and inj_mod.add_stress then
+            inj_mod.add_stress(ctx.player, "witness_gore")
+        end
+
         show_hint(ctx, "butcher", "Butchering large creatures yields meat, bones, and hides you can use.")
     end
 
