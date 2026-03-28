@@ -1,0 +1,740 @@
+### Team Relationships
+- **Bart** = Engine Architect — builds FSM engine, verbs, parser, containment system. My objects DECLARE behavior; Bart's engine EXECUTES it.
+- **CBG (Comic Book Guy)** = Game Designer — audits objects for design quality, proposes mutate opportunities, writes design docs. He reviews my work.
+- **Nelson** = Test Engineer — tests objects in the engine, catches regressions.
+- **Frink** = Researcher — provides CS foundations (ECS, Harel statecharts, DF architecture analysis).
+- **Brockman** = Documentation — writes architecture docs.
+- **Wayne** = Owner — sets directives, approves designs. References Dwarf Fortress as the gold standard.
+### Key Directives
+- Dwarf Fortress property-bag architecture is the reference model (D-DF-ARCHITECTURE)
+- All mutation is in-memory only; .lua files on disk never change at runtime
+- No LLM at runtime (D-19) — everything deterministic and offline
+- Each command tick = 360 game seconds (10 ticks per game hour)
+- Game starts at hour 2 (2 AM), darkness is default starting condition
+---
+## Current Sprint: Unconsciousness Trigger Objects (#162)
+### Latest Work (2026-07-28)
+### #162: Build 4 Unconsciousness Trigger Objects — BUILT ✅
+**Task:** Create 4 environmental objects that cause unconsciousness via the concussion injury type, per CBG's design doc (`docs/design/injuries/unconsciousness-triggers.md`).
+**What was built (4 files in `src/meta/objects/`):**
+1. **`falling-rock-trap.lua`** — Tripwire-triggered boulder drop. Severe concussion, 10–15 turns KO. One-shot (armed → triggered → spent). Disarm path: cut wire with knife. Material: stone.
+2. **`unstable-ceiling.lua`** — Area-effect structural collapse triggered by noise/impact. MOST DANGEROUS: inflicts concussion + crushing-wound simultaneously (25 HP on impact + 2/turn bleed during KO). Permanent (unstable → collapsing → collapsed). Prevention: prop with structural support. Material: wood.
+3. **`poison-gas-vent.lua`** — Chemical sedation from cracked pipe. Minor concussion, 3–5 turns KO. RESETS after wake (active → leaking cycle). Creates room-escape puzzle. Plug with cloth to disable. Material: iron.
+4. **`falling-club-trap.lua`** — Spring-loaded mechanical club simulating "enemy blow" (no NPCs in V1). Moderate concussion, 6–10 turns KO. One-shot. Disarm with thin tool. Spent club detachable as weapon. Material: oak.
+**Each object declares:** GUID, template=furniture, id, name, keywords, causes_unconsciousness=true, injury_type=concussion, unconscious_severity, unconscious_duration, effects_pipeline=true, FSM states with per-state sensory descriptions, transitions with effect + pipeline_effects, self-infliction verbs, disarm/prevention paths, on_feel + on_smell + on_listen + on_taste, unconscious_narration (periodic + wake-up), rejection_messages pool, GOAP prerequisites with warns hints.
+**Engine verification findings:**
+- `injuries.tick()` runs unconditionally during unconsciousness ✅
+- Concussion injury has all required severity levels ✅
+- **GAP for Bart:** `causes_unconsciousness` in effect data is never processed by effects pipeline — needs after-effect interceptor
+- **GAP for Smithers:** Missing verb handlers: `breathe`, `trigger`, `step`
+**TDD results:** 32/39 tests pass. 7 remaining failures are all engine/verb integration — not object definitions. Zero regressions in full suite (3 → 2 failing test files; fixed material-audit by using registered materials: stone/wood instead of granite/timber).
+---
+## Previous Sprint: Effects Pipeline (EP1-EP10) ✅ COMPLETE
+### Previous Work (2026-07-28)
+### Fix #153: Brass Bowl Keyword Collision — FIXED ✅
+**Task:** "brass bowl" keyword matched both brass-spittoon and candle-holder. Fuzzy parser's material matching scored both brass objects when player typed "brass bowl."
+**Root Cause:** brass-spittoon.lua had `"brass bowl"` as an explicit keyword. Combined with fuzzy Tier 5 material matching (`material = "brass"` on candle-holder), both objects surfaced as candidates.
+**What Changed:**
+- **brass-spittoon.lua:** Removed `"brass bowl"` from keywords array. Spittoon still reachable via "spittoon", "brass spittoon", "cuspidor", "spit bowl", "helmet", "improvised helmet".
+- **test-brass-spittoon.lua:** Updated test #13 to assert "brass bowl" is NOT present (was asserting it existed).
+**TDD:** 11 tests in `test/objects/test-keyword-disambiguation.lua` — verifies unique resolution of "spittoon", "candle holder", "brass spittoon", "brass holder", "cuspidor", "candlestick", and confirms zero keyword overlap between the two objects.
+### Fix #124: Object Template Declarations — VERIFIED ✅ (already fixed)
+**Task:** 12 objects reportedly missing `template` field.
+**Finding:** All 83 objects in `src/meta/objects/` already declare valid templates (small-item: 37, furniture: 28, sheet: 10, container: 8). Issue was previously resolved.
+**TDD:** 8 tests in `test/objects/test-object-templates.lua` — scans all 83 object files, validates template field exists, is a string, uses a recognized type (small-item/container/furniture/sheet), and checks id/keywords/name/guid presence. Guards against regression.
+### Fix #155: Ceramic Pot Degradation — FIXED ✅
+**Task:** Ceramic pot (fragility 0.7) never cracked after 8+ self-hits while worn as armor. Nelson-1 playtest.
+**Root Cause:** `covers_location()` in `armor.lua` only checked `item.covers` — but NO wearable objects define a `covers` array. They all use `wear.slot` or `wear_slot`. The armor interceptor never matched any worn items, so `check_degradation()` never ran.
+**What Changed:**
+- **armor.lua:** `covers_location()` now falls back to `wear.slot` / `wear_slot` when `covers` is absent
+- **armor.lua:** Exported `armor.degrade_covering_armor(player, location, damage, impact_type)` API
+- **verbs/init.lua:** Hit verb now calls `armor.degrade_covering_armor()` after inflicting head injury
+**TDD:** 11 tests in `test/armor/test-ceramic-degradation.lua` — covers FSM transitions, protection reduction, and API contract.
+**Side Effect:** This fix also resolved 3 pre-existing failures in `test/search/test-drawer-accessibility.lua` (1 test file failure eliminated from baseline).
+### Fix #134: Tear Cloak To-Hands — FIXED ✅
+**Task:** `tear cloak` destroyed the cloak but produced no cloth in hands — hands empty.
+**Root Cause:** `spawn_objects()` places items in `room.contents`, not player's hands. The tear verb didn't move spawned items after mutation.
+**What Changed:**
+- **verbs/init.lua:** Tear verb now tracks which hand held the object, and after mutation moves spawned items from room to player's hands (fills both hands if 2 spawns)
+- **wool-cloak.lua:** Added narration message to tear mutation
+**TDD:** 7 tests in `test/objects/test-tear-cloak.lua` — covers cloth production, hand placement, cloak destruction, narration, and rip alias.
+**Result:** Full suite: 1 pre-existing failure only (bedroom-door). Zero regressions. Committed c448469.
+### Phase A7: Chamber Pot Material-Derived Armor — IMPLEMENTED ✅
+**Task:** Migrate chamber-pot from hardcoded armor to material-derived protection (Phase A7 from daily plan).
+**What Changed in chamber-pot.lua:**
+- **REMOVED** `provides_armor = 1` from wear table — armor now engine-calculated from `material = "ceramic"`
+- **REMOVED** `reduces_unconsciousness = 1` from top-level — engine derives from material + helmet tag
+- **KEPT** `is_helmet = true` as semantic tag (engine hint, not protection source)
+- **ADDED** `coverage = 0.8` and `fit = "makeshift"` to wear table — modifiers for armor interceptor
+- **ADDED** FSM degradation: `intact` → `cracked` → `shattered` (3 states, 2 transitions via hit/kick/strike/smash)
+- **ADDED** `event_output = { on_wear = "This is going to smell worse than I thought." }` — one-shot flavor text
+**FSM Design:** Follows brass-spittoon pattern. Ceramic is fragile (fragility 0.7), so it progresses to shatter instead of denting. Shattered state spawns ceramic-shard ×2 via mutate on transition (mirrors existing `mutations.shatter` for on_drop).
+**Design Doc Updated:** `docs/objects/chamber-pot.md` — full Phase A7 changelog, removed old hardcoded armor table, added material-derived armor section.
+### event_output Flavor Text — 3 Objects ✅
+**Task:** Add one-shot `event_output.on_wear` flavor text to 3 wearable objects (Bart's event_output system).
+**Objects Updated:**
+1. **wool-cloak.lua** — `"I need to get better outfits. I look like a peasant."`
+2. **chamber-pot.lua** — `"This is going to smell worse than I thought."`
+3. **terrible-jacket.lua** — `"It fits... barely. The sleeves are too short and it smells of mildew."`
+**Pattern:** `event_output = { on_wear = "..." }` — engine reads at verbs/init.lua:5044, prints once, nils out. Pure metadata, no engine changes needed.
+**Result:** 74/74 test files pass (1 pre-existing bedroom-door failure, unrelated). Zero regressions. Committed e6711d8.
+**Decision Filed:** `D-A7-MATERIAL-DERIVED-ARMOR` in inbox — flags impact on Nelson (test assertions), Bart (interceptor must handle ceramic), CBG (brass-spittoon candidate for same migration).
+### Phase D2: Brass Spittoon Object — IMPLEMENTED ✅
+**Task:** Create `src/meta/objects/brass-spittoon.lua` per daily plan Phase D2.
+**What Was Built:**
+- GUID `{b763fdf9-f7d2-4eac-8952-7c03771c5013}` (Windows-generated)
+- Material: `brass` (from registry — hardness 6, fragility 0.1, density 8500)
+- Container: capacity 2, holds small items
+- Wearable helmet: head slot, outer layer, coverage 0.7, fit makeshift, armor 2
+- `is_helmet = true`, `reduces_unconsciousness = 1`
+- FSM: clean → stained → dented (cosmetic degradation only, brass never shatters)
+- Transitions: use/spit (clean→stained), dent/kick/hit/strike (→dented)
+- Full sensory: on_feel, on_smell, on_listen, on_taste, on_smell_worn
+- Mirror/appearance: worn_description for reflection
+- Keywords: spittoon, brass spittoon, brass bowl, cuspidor, spit bowl, helmet, improvised helmet
+- Weight: 4 (appropriate for brass density)
+- Design doc already existed (CBG authored `docs/objects/brass-spittoon.md`), staged with commit
+**Pattern:** Follows chamber-pot.lua for wearable helmet architecture. Key differences: brass material (dents, doesn't shatter), higher armor (2 vs 1), heavier weight (4 vs 3), FSM degradation states instead of shatter mutation.
+### Phase B1: Object-Material Audit — COMPLETE ✅
+**Task:** Audit all objects for material fields, fix missing ones, validate against registry.
+**Results:**
+- **82 objects checked** in `src/meta/objects/`
+- **81 had valid material fields** — all references exist in `src/engine/materials/init.lua`
+- **1 missing: ivy.lua** — added `material = "plant"`
+- **New material added:** `plant` to materials registry (density 500, hardness 2, fragility 0.3, flammability 0.5, flexibility 0.8)
+- **rat.lua:** Already removed per D-INANIMATE decision — no action needed
+- **0 mismatches found** — all material names correctly reference existing registry entries
+- **0 misspellings found** — all material strings valid
+**Test Results:** 78/78 test files pass, 0 regressions.
+### Previous Work (2026-03-24)
+### Manifest Completion Tasks
+- **#79-#80:** Accessibility audit (closed drawer) and put routing verification
+  - Examined FSM state transitions for nightstand drawer
+  - Verified put routing to correct surface layer
+  - Result: ✅ 9 tests pass, no changes needed (engine already correct)
+  
+- **Effects Pipeline Refactors (EP5 & EP8):**
+  - **EP5:** poison-bottle.lua → pipeline pattern (116/116 tests)
+  - **EP8:** bear-trap.lua → pipeline pattern (168/168 tests)
+  - Total: 284 new tests, 0 regressions
+**Status:** ✅ MANIFEST COMPLETION READY FOR MERGE
+## Archives
+- `history-archive-2026-03-20T22-40Z-flanders.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): initial object design, FSM patterns, effects pipeline design, foundational systems
+### Prior Work (2026-03-23)
+- **EP5:** Refactored poison-bottle.lua to pipeline pattern — 116/116 tests pass
+- **EP8:** Refactored bear-trap.lua to pipeline pattern — 0 regressions
+- **Milestone:** 284 new tests, 0 regressions across team delivery
+### Team Coordination
+- Nelson verified poison-bottle (116/116) and authored bear-trap tests (168/168)
+- Marge gate-approved EP4, noted effects.lua unit test gap
+- Bart updated architecture docs v2.0
+- All deliverables documented in `.squad/orchestration-log/2026-03-23T17-20Z-*.md`
+---
+## Archived Sessions Summary (Cumulative Achievements)
+This section summarizes 50+ prior sessions covering object design, FSM architecture, injury systems, and Level 1 object specification. For detailed session logs, see .squad/log/.
+**Key Accomplishments:**
+- Designed & built 37+ Level 1 objects across 5 rooms
+- Implemented 5 injury templates (minor-cut, bleeding, bruised, burn, poisoned-nightshade)
+- Built bandage FSM treatment object with injury targeting architecture
+- Standardized 78 objects with proper GUID format
+- Created comprehensive object & injury documentation (45+ design docs)
+- Established patterns: composite objects, nested containers, FSM injury progression
+- Built poison-bottle upgrade with structured effects & readable parts
+**Object Architecture Mastered:**
+- Code-derived mutable objects (Principle 1) — objects are live Lua tables from immutable source
+- FSM behavior (Principle 3) — all state transitions declared in transitions table
+- Composite objects (Principle 4) — single file defines parent + nested inner objects
+- Sensory space (Principle 6) — state determines perception (dark ≠ lit, blind ≠ seeing)
+- Engine executes metadata (Principle 8) — objects are pure data, engine is generic interpreter
+**Injury System Architecture:**
+- 7 injury types with self-healing, worsening, and treatment mechanics
+- Dual-binding injury targeting (injury ↔ treatment item linkage)
+- Healing interactions per injury type (bandage, poultice, antidote, etc.)
+- Severity-based state progression (active → worsened → critical → fatal/healed)
+- Restriction system (injuries restrict capabilities: climb, run, fight)
+**Materials & Templates:**
+- 4 new materials needed in registry: stone, silver, hemp, bone
+- Template system: container, small-item, furniture, sheet (all documented)
+- Creature objects as pure FSM (rat pattern: hidden→visible→fleeing→gone)
+---
+## Learnings
+### Issue #173: Mirror Object Creation + Vanity Separation
+**#173: Mirror is a SEPARATE instance object placed on_top of the vanity**
+- Created `src/meta/objects/mirror.lua` — standing vanity mirror with gilt frame
+  - GUID: {1b47a68e-33a7-4d27-8065-4bc94b8f149f}, template: small-item (overrides: size=3, weight=2.5, portable=false)
+  - Material: glass, `is_mirror = true`, keywords include "mirror", "looking glass", "reflection", "my reflection"
+  - FSM: intact → cracked (hit) → broken (break, terminal, spawns glass-shard)
+  - All 5 senses: on_feel (cool smooth glass), on_smell, on_listen, on_taste
+  - `on_look_in` for looking INTO the mirror (wavering reflection)
+- Updated `vanity.lua`: removed `is_mirror = true`, removed mirror-specific keywords ("mirror", "looking glass", "reflection", "my reflection", "vanity mirror") to prevent disambiguation conflicts
+- Updated `start-room.lua`: placed mirror on vanity's `on_top` array alongside paper and pen
+- Updated tests: `test-bugfixes-23-31.lua` and `test-hit-unconscious.lua` now test mirror object instead of vanity for is_mirror and reflection keywords
+**Patterns learned:**
+- `break` is a Lua reserved word — must use `["break"]` syntax in table keys (prerequisites, mutations)
+- When extracting a sub-object from a composite, always move the relevant keywords to the new object to avoid disambiguation collisions (same pattern as #153 brass bowl fix)
+- Vanity retains `mirror_shelf` surface and broken-mirror FSM states — those describe the vanity's APPEARANCE after the mirror breaks, future cleanup may align these with the mirror object's state
+### 2026-07-28: Issue #171 — Burlap Sack Capacity + Preposition Fix
+**#171: Sack capacity too small + "on" vs "in" narration bug**
+- `sack.lua`: capacity 4 → 8, added `container_preposition = "in"`
+- `containment/init.lua` line 109: reads `container_preposition` from object (defaults to "on" for backward compat)
+- Error now says "There is not enough room in a burlap sack." instead of "on"
+- Note: touched engine code (Bart's domain) — minimal, backward-compatible change. No existing containers break since default remains "on".
+**Patterns learned:**
+- Containment engine had a hardcoded "on" preposition — any enclosed container (sack, chest, drawer, chamber pot) would benefit from `container_preposition = "in"`. Other container objects should be audited.
+- `capacity` is measured in size units (sum of item `size` fields), not item count. With `contents = {"needle", "thread"}` already occupying size 2, old capacity=4 only left room for 2 more size-1 items.
+### 2026-07-21: Issues #164 + #165 — Trousers + Wearable Curtains
+**#164: Replace wool cloak with trousers in wardrobe**
+- Created `src/meta/objects/trousers.lua` — moth-eaten wool trousers (legs slot, inner layer, makeshift fit)
+- Material: wool (flammability 0.4, meets ≥0.3 burnable requirement)
+- Replaced wool-cloak reference in `start-room.lua` wardrobe contents and `wardrobe.lua` surfaces
+- Kept `wool-cloak.lua` — still referenced by 20+ test files. Retirement deferred.
+**#165: Make curtains portable + wearable**
+- Updated `curtains.lua`: portable=true, weight 4→3, size 4→3
+- Added wear metadata (back slot, outer layer, makeshift), mirror_appearance, event_output.on_wear
+- Added on_listen and on_taste sensory properties
+- Material stays velvet (flammability 0.6) — FSM open/close transitions preserved
+- Curtains are now the heaviest wearable in Room 1 (weight 3, same as blanket/wool-cloak)
+**Patterns learned:**
+- When replacing objects in rooms, check THREE places: room .lua instances, furniture surfaces.inside.contents, and the object definition itself
+- Wool-cloak is deeply embedded in test infrastructure — always grep before retiring objects
+- Velvet qualifies as burnable fabric (flammability 0.6) despite not being "cotton or wool" — the material registry is the source of truth
+### 2026-03-23: Wave2 — Decision Documentation & Cross-Agent Propagation
+**Wave2 Spawn:** Scribe merged all decision documents into decisions.md
+**Decisions Documented:**
+- **D-INJURY001:** Structured effect tables over legacy strings (impacts Bart's effect processing pipeline)
+- **D-INJURY002:** Crushing wound as new injury type (distinct from bleeding/bruised — hybrid immediate+ongoing damage)
+- **D-INJURY003:** Label as non-detachable readable part (enables proper ead label verb support via composite object system)
+- **D-INJURY004:** Bear trap disarm uses guard function (runtime context checks for skill validation, not just tool requirements)
+- **D-INJURY005:** Bear trap self-transitions for safe take (enables custom messages and property mutations in safe states)
+**Cross-Agent Context:**
+- Marge verified all object implementations and injured-system patterns
+- Smithers' parser handles complex multi-step interactions (disarm requires lockpicking + thin tool)
+- Bart will integrate structured effects into effect processing pipeline
+- All 5 injury-system decisions are now canonical and merge-ready
+**Impact Summary:**
+- 3 new objects + 1 new injury type now documented
+- Effect pipeline ready for Bart's integration phase
+- Injury targeting architecture documented in decisions
+- Ready for cross-team execution phase
+### 2026-03-24: Afternoon Wave — Objects Are Inanimate + Deep Nesting Complete
+**Afternoon Wave Decisions Merged:**
+- **D-INANIMATE:** Objects are inanimate; creatures are future work
+  - Removed rat object from meta/objects/
+  - Removed all rat references (storage-cellar, web dist)
+  - Added core principle documentation
+  - Clean, zero broken references — IMPLEMENTED ✅
+- **D-AUDIT-OBJECTS:** Effects Pipeline Compatibility Audit (Bart)
+  - 79 objects inventoried: 2 pipeline-routed, 3 broken, 74 passive
+  - Knife/glass-shard/silver-dagger missing `effects_pipeline = true`
+  - Migration priority: knife (P1), glass-shard (P1), silver-dagger (P2)
+  - ~4.5 hours total work to unblock #50
+- **D-NEW-OBJECTS-PUZZLES:** Objects needed for puzzles 020–031 (Bob)
+  - Priority 1: wax-written-scroll, charcoal, bread-loaf, bait-meat, hand-mirror (using existing patterns)
+  - Priority 2: wooden-barricade, pressure-platform, portcullis, sealed-wall-section, light-beam (need engine features)
+  - Ready to implement Priority 1 objects now
+- **D-WAYNE-REGRESSION-TESTS:** Every bug fix MUST include regression test
+  - Rationale: nightstand search broke 3+ times
+  - Enforcement: process bug if test missing
+  - Impact: Nelson's audit now has all fixes locked with tests
+**Deep Nesting Refactor Complete:**
+- 6 Level 1 rooms converted to deep-nested furniture
+- Pattern: furniture → drawers/slots → contents (3+ levels)
+- All `location=` fields removed
+- Play-test verified: sensory works at all depths
+- Establishes canonical architecture for Level 1 discovery chains
+### 2026-07-26: EP5 — Poison Bottle Effects Pipeline Refactor
+**Task:** Refactor poison-bottle.lua to route through the unified Effects Pipeline (D-EFFECTS-PIPELINE).
+**What Changed:**
+- Added `effects_pipeline = true` flag — signals engine to use `effects.process()` for all effect declarations
+- Added `pipeline_effects` array on drink transition — full atomic pipeline chain (inflict_injury + mutate effects) alongside backward-compatible `effect` + `mutate` blocks
+- Marked `on_taste_effect` as `pipeline_routed = true` — confirms it's consumed by `effects.process()` in the taste verb handler
+- Added GOAP `warns` hints on drink and taste prerequisites per D-EFFECTS-PIPELINE §3.6
+- Updated file header to reference pipeline routing and decision IDs
+**Key Constraint:** 116 regression tests (Nelson) lock down the data structure. Tests access `drink_trans.effect.type` directly (single table format), so `effect` must remain a single structured table — cannot convert to array. `effects.normalize()` handles this correctly (wraps single table in array).
+**Pipeline Integration Points (engine side, already wired by Bart/Smithers):**
+- Drink verb handler: `effects.process(trans.effect, ctx)` at verbs/init.lua:4829
+- Taste verb handler: `effects.process(obj.on_taste_effect, ctx)` at verbs/init.lua:2148
+- FSM mutations: still via `apply_mutations(obj, trans.mutate)` — FSM engine handles these independently
+**Backward Compatibility Strategy:**
+- `effect` (single table) + `mutate` block preserved for current FSM engine
+- `pipeline_effects` (array) available for future atomic processing
+- `effects.normalize()` handles both formats transparently
+**Result:** 116/116 tests pass. Zero regressions. Committed and pushed.
+### 2026-07-26: EP8 — Bear Trap Effects Pipeline Refactor
+**Task:** Refactor bear-trap.lua to route through the unified Effects Pipeline (D-EFFECTS-PIPELINE), following the poison-bottle pattern from EP5.
+**What Changed:**
+- Added `effects_pipeline = true` flag — signals engine to use `effects.process()` for all effect declarations
+- Added `pipeline_effects` arrays on take and touch transitions (set → triggered) — full atomic pipeline chains: inflict_injury + narrate + mutate effects alongside backward-compatible `effect` + `mutate` blocks
+- Marked `on_feel_effect` as `pipeline_routed = true` — confirms it's consumed by `effects.process()` in the feel verb handler
+- Added GOAP `warns` hints on take, touch, and feel prerequisites per D-EFFECTS-PIPELINE §3.6
+- Updated file header to reference pipeline routing, decision IDs (D-EFFECTS-PIPELINE, D-INJURY001, D-INJURY002), and effect routing paths
+**Key Constraint:** Same as EP5 — existing tests access `trans.effect.type` directly (single table format), so `effect` must remain a single structured table. `effects.normalize()` handles this correctly (wraps single table in array).
+**Pipeline Integration Points (engine side, already wired by Bart/Smithers):**
+- Take verb handler: `effects.process(trans.effect, ctx)` — contact trigger on armed trap
+- Touch verb handler: `effects.process(trans.effect, ctx)` — contact trigger on armed trap
+- Feel verb handler: `effects.process(state.on_feel_effect, ctx)` — sensory contact injury
+- Disarm: guard function blocks FSM transition before pipeline processing (no change needed)
+- FSM mutations: still via `apply_mutations(obj, trans.mutate)` — FSM engine handles independently
+**Backward Compatibility Strategy:**
+- `effect` (single table) + `mutate` block preserved for current FSM engine
+- `pipeline_effects` (array) available for future atomic processing
+- `effects.normalize()` handles both formats transparently
+- Safe-take transitions (triggered/disarmed states) untouched — no effects to pipeline
+**Result:** 45/45 test files pass, 0 failures. Zero regressions. Committed f872ed3 and pushed.
+### 2026-07-26: EP-WEAPONS — Knife, Glass-Shard, Silver-Dagger Pipeline Migration
+**Task:** Migrate 3 weapon objects to effects pipeline (#50, #55). Bart's audit found they had injury verbs but lacked `effects_pipeline = true`, causing stab/cut/hit to fail silently.
+**Objects Migrated:**
+1. **knife.lua** — Added `effects_pipeline = true`, `pipeline_effects` on `on_stab` (bleeding, 5dmg) and `on_cut` (minor-cut, 3dmg). Added GOAP warns hints. Added file header with effect routing map.
+2. **glass-shard.lua** — Added `effects_pipeline = true`, `pipeline_effects` on `on_cut` (minor-cut, 3dmg). Upgraded `on_feel_effect` from bare string `"cut"` to structured pipeline table (`inflict_injury`, minor-cut, 1dmg, pipeline_routed=true). Added GOAP warns hints.
+3. **silver-dagger.lua** — Added `effects_pipeline = true`, `pipeline_effects` on `on_stab` (bleeding, 8dmg), `on_cut` (minor-cut, 4dmg), `on_slash` (bleeding, 6dmg). Added GOAP warns hints. Added file header with effect routing map.
+**Injury Types Verified:** All referenced types (`bleeding`, `minor-cut`) exist in `src/meta/injuries/`. No new injury types needed.
+**Backward Compatibility:** All legacy fields (`damage`, `injury_type`, `description`, `pain_description`, `self_damage`) preserved on every verb block. `effects.normalize()` handles both old single-table format and new pipeline_effects arrays.
+**Regression Tests:** 74 new tests in `test/injuries/test-weapon-pipeline.lua`:
+- Data structure validation (pipeline flag, pipeline_effects arrays, source fields)
+- Backward compat checks (legacy fields preserved)
+- GOAP prerequisites present
+- Functional: stab self with knife → bleeding injury
+- Functional: cut self with glass shard → minor-cut injury
+- Functional: stab/slash self with silver dagger → bleeding
+- Functional: injuries appear in `injuries` list output
+- Injury type definitions loadable from disk
+**Result:** 51/51 test files pass (74 new tests, 0 regressions). Committed in 7d1733b and pushed.
+### 2026-07-27: Chamber Pot — Wearable as Improvised Helmet (Issue #54)
+**Task:** Make the ceramic chamber pot wearable on the head as an improvised helmet with minimal protection.
+**What Changed in chamber-pot.lua:**
+- Added `wear_slot = "head"` (top-level) — engine helmet detection in `appearance.lua` and concussion system
+- Added `is_helmet = true` (top-level) — belt-and-suspenders helmet detection
+- Added `reduces_unconsciousness = 1` (top-level) — reduces KO duration by 1 turn on head hits
+- Added `appearance = { worn_description = "A ceramic chamber pot sits absurdly atop your head." }` — consumed by `render_head()` in `engine/player/appearance.lua`
+- Added `on_smell_worn` — worn-state smell feedback metadata for future ambient smell system
+- Added helmet-related keywords: "helmet", "head pot", "improvised helmet"
+- Added file header comment with doc and issue references
+### 2026-07-29: Issue #122 — Bandage Reusable Lifecycle
+**Task:** Enhance bandage.lua with full FSM lifecycle and per-state sensory properties for the clean → applied → soiled → washed → clean cycle. Connects to wash verb (#112).
+**What Changed in bandage.lua:**
+- Upgraded `material` from "fabric" to "linen" — more historically accurate, matches material registry properties (absorbency 0.8, flexibility 0.8)
+- Added "linen" to categories array for material-based search
+- Added `on_listen` and `on_taste` to all three states (clean, applied, soiled) — previously only had on_feel/on_smell
+- Enhanced sensory descriptions per issue spec: copper blood smell (applied), sticky/tacky feel (soiled), white linen cloth (clean)
+- Updated header comment to reference wash verb (#112) and full cycle
+- Updated clean state description to "white linen cloth, tightly rolled"
+**FSM Already Present (no structural changes needed):**
+- 3 states: clean, applied, soiled
+- 3 transitions: apply (clean→applied, requires_target_injury), remove (applied→soiled), wash (soiled→clean, requires_tool water_source)
+- `reusable = true`, `applied_to` field tracks injury binding
+- Wash transition compatible with Smithers' wash verb handler (#112) via `requires_tool = "water_source"`
+**Pattern Notes:**
+- Medical objects follow the sealed→open→empty progression for consumables; bandage is unique as a reusable cycle (clean→applied→soiled→clean)
+- Per-state sensory is the standard pattern (candle, wall-clock both do it) — on_feel is mandatory, on_listen/on_taste are best practice for completeness
+- The wash verb auto-finds water_source in inventory or visible objects, so the bandage doesn't need to know WHERE water is
+**Result:** 118/118 test files pass. Zero regressions. Lua parses clean.
+**Engine Integration Points (no engine changes needed):**
+- Wear verb: `wear.provides_armor = 1` + `wear.wear_quality = "makeshift"` triggers existing comedic narration at verbs/init.lua:4636
+- Appearance/mirror: `appearance.worn_description` read by `engine/player/appearance.lua:114` in `render_head()`
+- Concussion reduction: `reduces_unconsciousness` read at `engine/verbs/init.lua:3841` when head hit detected
+- Slot conflict: standard slot/layer conflict system blocks wearing pot if outer headgear already equipped (engine/verbs/init.lua:4576-4611)
+**Design Doc Updated:** `docs/objects/chamber-pot.md` — full wearable specification, armor stats, appearance/mirror description, Wayne's design intent (real-world object creativity).
+**Result:** 50/50 test files pass, 0 failures. Zero regressions. Committed 011094d and pushed.
+### 2026-07-27: Chest — Two-Handed Oak Container (Issue from CBG Design Doc)
+**Task:** Implement `chest.lua` from CBG's complete design doc at `docs/objects/chest.md`.
+**What Was Built in chest.lua:**
+- GUID `{6cf2ab69-60e5-4c14-9b3a-c559b6037cf4}` (Windows-generated)
+- Material: `oak` (from material registry, Principle 9 satisfied)
+- `size = 5`, `weight = 20`, `portable = true`, `hands_required = 2`
+- FSM: `closed` (default) ↔ `open` — two transitions with narration from CBG's design
+- Container: `capacity = 8`, `max_item_size = 3`, `weight_capacity = 30`
+- Sensory gating: `accessible = false` (closed) / `accessible = true` (open)
+- Per-state sensory properties: `on_look` (function with contents listing), `on_feel` (function with contents detection in open state), `on_smell`, `on_listen`
+- `mutate` on transitions: `keywords = { add = "open" }` / `keywords = { remove = "open" }`
+- Categories: container, furniture, wooden
+- Keywords: chest, trunk, storage, wooden chest, heavy chest, treasure chest
+**Pattern:** Follows drawer.lua exactly — same FSM + container + sensory gating architecture. Key differences: larger capacity (8 vs 2), heavier (20 vs 2), standalone (no `reattach_to`), richer narration per CBG's design.
+**Design Doc Updated:** `docs/objects/chest.md` — status changed from "Design complete; implementation pending" to "🟢 In Game — src/meta/objects/chest.lua". Added implementation credit.
+**Result:** 74/74 test files pass, 0 regressions. Committed 57c38b4 and pushed.
+---
+## CROSS-AGENT UPDATES (2026-03-24T12:41:24Z Spawn Orchestration)
+### D-PLANT-MATERIAL Decision Logged
+- **Status:** Implemented
+- **Material:** `plant` added to registry
+- **Properties:** 500 density, 280 ignition_point, 0.8 flexibility, 0.5 flammability, etc.
+- **Use Case:** ivy.lua now has `material = "plant"` (previously missing in audit)
+- **Future:** Botanical objects (moss, hedges, vines) can reference without engine changes
+- **Cross-Team:** Nelson's material audit validation test should include plant material check
+## CROSS-AGENT UPDATES (2026-03-24T23:25Z Spawn Orchestration Merge)
+**Phase D2+B1 Completion:**
+- ✅ brass-spittoon.lua created (composite/detachable pattern per D-2)
+- ✅ Material audit: 82 objects scanned, 1 fixed (ivy: nil → plant)
+- ✅ Zero regressions: 78/78 test files pass
+- **Material impact:** Plant material now properly registered and referenced
+**Cross-Agent Note:**
+- Smithers' armor interceptor (Phase A4) now uses all 22 materials from registry
+- Material properties (hardness, flexibility, density) that Flanders fixed in audit directly impact armor protection calculations
+- The 1 fixed audit (ivy→plant) ensures armor system sees consistent material data
+**Status:** Phase D2+B1 SHIPPED.
+### Fix #136: Glass Bottle Shatters But Spawns Zero Glass Shards — FIXED ✅
+**Task:** Nelson-3 playtest found wine bottle shatters to "broken" state but spawns no glass shards. Ceramic chamber pot correctly spawns 2 ceramic shards — material fragility contract was broken for glass.
+**Root Cause:** `wine-bottle.lua` had two break transitions (sealed→broken, open→broken) with no `mutate.spawns` field. The `mutations` table was empty `{}`. Chamber pot correctly had `spawns = {"ceramic-shard", "ceramic-shard"}` in both its FSM transition and `mutations.shatter`.
+**What Changed in wine-bottle.lua:**
+- **ADDED** `mutate = { becomes = nil, spawns = {"glass-shard", "glass-shard"} }` to sealed→broken transition
+- **ADDED** `mutate = { becomes = nil, spawns = {"glass-shard", "glass-shard"} }` to open→broken transition
+- **ADDED** `mutations.shatter` block with `spawns = {"glass-shard", "glass-shard"}` and narration (mirrors chamber-pot pattern)
+- **Updated** break transition messages to mention shards
+**glass-shard.lua:** Already existed (effects pipeline object with on_cut injury). No changes needed.
+**Test:** Created `test/objects/test-glass-shards.lua` — 39 tests covering:
+- Glass shard object structure, injury capability, effects pipeline
+- Wine bottle break transitions spawn glass-shard objects (both sealed→broken and open→broken)
+- mutations.shatter exists with correct spawns
+- Material parity: glass shard pattern matches ceramic shard pattern
+**Result:** 39/39 pass. Full suite: 1 pre-existing bedroom-door failure only. Zero regressions.
+### Fix #152: Place Brass Spittoon in a Room — FIXED ✅
+**Task:** Nelson-5 found brass-spittoon.lua exists but isn't placed in any room.
+**What Changed in storage-cellar.lua:**
+- **ADDED** brass spittoon instance to room `instances` table: `{ id = "brass-spittoon", type = "Brass Spittoon", type_id = "{b763fdf9-f7d2-4eac-8952-7c03771c5013}" }`
+- Placed at room level (floor), among other room-level objects (grain sack, oil lantern, rope, crowbar, oil flask)
+- Thematically appropriate: storage cellar is a utilitarian work space where a spittoon would be used
+- Discoverable but not obvious — among clutter on the floor, not prominently on a surface
+**Result:** Zero regressions. Full suite clean (1 pre-existing bedroom-door failure only).
+### Issues #114 + #115: Salve and Nightshade Antidote Objects — CREATED ✅
+**Task:** Create two new consumable objects for the medical/poison system.
+**salve.lua (Issue #114):**
+- Ceramic pot of herbal ointment. FSM: sealed → open → empty.
+- `apply` verb transition (open → empty) with `heal_injury` effect and `requires_target_injury`.
+- Material: ceramic (matches oil-flask pattern for clay vessels).
+- Cures: bleeding, minor-cut, bruise. `healing_boost = 3`.
+- Full sensory properties per state. Apothecary stamp flavor text.
+**nightshade-antidote.lua (Issue #115):**
+- Glass vial of amber cure liquid. FSM: sealed → open → empty + broken.
+- `drink` verb transition (open → empty) with `cure_injury` effect targeting `poisoned-nightshade`.
+- `effects_pipeline = true` with `pipeline_effects` chain (matches poison-bottle pattern).
+- Material: glass. Includes `mutations.shatter` with glass-shard spawn.
+- `antidote_for = "nightshade"` metadata for engine lookup.
+- Pour transition as safe disposal path (no cure effect).
+**Pattern Notes:**
+- Salve follows bandage.lua's `requires_target_injury` pattern for wound-targeting.
+- Antidote follows poison-bottle.lua's effects pipeline and glass fragility patterns.
+- Both use the sealed → open → empty FSM progression standard for consumables.
+**Result:** 117 test files pass, zero regressions.
+### 2026-07-28: Issues #116 + #117 — Candle Holder & Wall Clock Updates
+**Task:** Update candle-holder.lua (issue #116) and wall-clock.lua (issue #117) per Wayne's request.
+**#116 — candle-holder.lua:**
+- Object already existed as a well-formed composite (candle as detachable part, brass material, FSM with_candle/empty states).
+- **Added** `"candelabra"` to keywords array — was the only missing keyword from the issue spec.
+- No structural changes needed — the composite pattern (parts, factory, detach/reattach transitions) was already complete.
+**#117 — wall-clock.lua:**
+- Object already existed with 24-state cyclic FSM (hour_1 through hour_24 with programmatic generation).
+- **Added** `stopped` state — broken clock with motionless pendulum, cracked glass, silent on_listen.
+- **Added** break transitions from every hour state to `stopped` (verbs: break, smash, hit, strike) with keyword/category mutation.
+- **Added** `on_listen` and `on_feel` to each programmatic hour state — previously only existed at top level, not per-state.
+- Updated file header comment to document the stopped state.
+**Pattern Notes:**
+- Wall clock is the only object using `for` loops to generate states/transitions programmatically. The break transitions (24 of them) justified extending this pattern rather than hand-writing each one.
+- Stopped state is terminal — no repair transition. Puzzle designers can add repair if needed later.
+**Result:** 118/118 test files pass. Zero regressions. Both Lua files parse clean.
+---
+## 2026-03-26T15:30Z: NPC Plan Combat Alignment Complete — CBG Coordination
+**What:** Comic Book Guy applied 13 alignment fixes to `plans/npc-system-plan.md` to align with combat system plan. NPC Phase 1 focus shifts from concurrent combat metadata to creature autonomy focus. Combat systems (body_tree, combat table, tissue materials, full combat FSM) deferred to Combat Phase 1.
+**Your Work Ahead:**
+- **Phase 1+:** Extend rat.lua + creature.lua template with `body_tree` and `combat` field stubs (marked Phase 1+)
+- **Combat Phase 1:** Full combat metadata implementation after Combat Phase 1 engine is ready
+- **Tissue Materials:** Coordinate with Combat Phase 1 for extended material set (skin, hide, bone, organ, etc.)
+**Decision Filed:** D-NPC-COMBAT-ALIGNMENT, D-COMBAT-NPC-PHASE-SEQUENCING — decisions.md updated.
+**Impact:** NPC system plan now 100% aligned with combat plan. No conflicts remain.
+---
+### WAVE-1: NPC Foundation (Data Layer) — BUILT ✅
+**Date:** 2026-07-28
+**Requested by:** Wayne Berry
+**Commit:** WAVE-1: creature template, rat object, flesh material
+**3 files created:**
+1. **`src/meta/templates/creature.lua`** — Base template for all animate beings.
+   - GUID: `{bf9f9d4d-7b6d-4f99-801d-f6921a2687cd}`
+   - `animate = true`, FSM states (alive-idle/wander/flee/dead)
+   - Behavior, drives, reactions, movement, awareness tables with defaults
+   - `health = 10`, `max_health = 10`, `size = "small"` default
+   - `on_feel = "Warm, alive."` (mandatory dark sense)
+   - NO body_tree, NO combat table (D-COMBAT-NPC-PHASE-SEQUENCING)
+2. **`src/meta/objects/rat.lua`** — First creature definition.
+   - GUID: `{071e73f6-535e-42cb-b981-ebf85c27356f}`
+   - Template: creature, size: tiny, weight: 0.3, material: flesh
+   - 3 drives: hunger (50, +2/tick), fear (0, -10/tick), curiosity (30, +1/tick)
+   - 4 reactions: player_enters, player_attacks, loud_noise, light_change
+   - 4 FSM states with full sensory descriptions; dead state sets portable=true, animate=false
+   - NO body_tree, NO combat table (WAVE-4)
+3. **`src/meta/materials/flesh.lua`** — Organic tissue material (muscle/fat).
+   - GUID: `{48834c08-5cff-447d-bdcd-aada93a792fe}`
+   - density=1050, hardness=1, flexibility=0.8, fragility=0.7
+**Verification:** All 3 files load via `dofile()`. Game boots cleanly with `--headless`. No errors.
+**Decisions respected:** D-COMBAT-NPC-PHASE-SEQUENCING (no combat metadata), D-14 (code mutation), D-INANIMATE override for creatures.
+**Next:** WAVE-2 (Bart: creature tick engine), WAVE-4 (Flanders: body_tree + combat metadata retrofit).
+---
+## Latest: Creatures Directory Structure (2026-03-26)
+### D-CREATURES-DIRECTORY: Dedicated Directory for Animate Beings ✅ IMPLEMENTED
+**Date:** 2026-03-26T20:30Z  
+**By:** Bart (Architecture)
+**What Changed:**
+- Created `src/meta/creatures/` directory
+- Moved `src/meta/objects/rat.lua` → `src/meta/creatures/rat.lua`
+- **Loader:** Now scans `meta/creatures/` after `meta/objects/`; both feed `base_classes` and `object_sources`
+### Phase 4 WAVE-2: Loot Table Conversion
+**Task:** Convert wolf and spider fixed inventories to probabilistic loot_table metadata. Create missing loot item objects.
+**What was done:**
+1. **wolf.lua** — Replaced `inventory { hands={}, worn={}, carried={gnawed-bone-guid} }` with `loot_table` block: always=gnawed-bone, on_death=20% silver-coin / 30% torn-cloth / 50% nothing, variable=0-3 copper-coin, conditional=fire_kill→charred-hide / poison_kill→tainted-meat.
+2. **spider.lua** — Added `loot_table` block (had no inventory): always=silk-bundle, on_death=10% spider-fang / 90% nothing.
+3. **spider-fang.lua** — Created. small-item, tooth-enamel, poison crafting component. GUID: {453600d7-1c85-4ada-a56d-c4b51f740133}.
+4. **silver-coin.lua** — Created. small-item, silver. GUID: {6cabc916-46da-429f-8a3f-3689f6eef601}.
+5. **copper-coin.lua** — Created. small-item, brass (no "copper" in material registry). GUID: {6581d541-622f-45b9-8a6e-2de3251c8a62}.
+6. **torn-cloth.lua** — Created. small-item, cotton. GUID: {e1010096-218c-4f0c-9eb0-a6af1c588b88}.
+7. **charred-hide.lua** — Created. small-item, hide. GUID: {be6704fd-3341-48fe-8e39-86634c2ec2db}.
+8. **tainted-meat.lua** — Created. small-item, flesh, has food.on_eat poison effect. GUID: {8aefbd0d-112c-4209-b124-e38475ad5e38}.
+**Patterns learned:**
+- "copper" is not a registered material — used "brass" for copper-coin instead. Material registry has 31 entries; always verify before using.
+- bart-phase4-guids.md did not exist at time of WAVE-2 — generated fresh GUIDs via PowerShell.
+- Removing `inventory` from wolf breaks `test-creature-inventory.lua` (5 tests) and `test-death-drops.lua` (5 tests) — these tests need Nelson to update for loot_table format.
+- Spider had no inventory field at all — only needed loot_table addition.
+- tainted-meat is the only loot item with gameplay effects (food.on_eat poison) — all others are inert small-items.
+- **Meta-lint:** `_detect_kind()` validates creature files with same rigor as objects (templates, GUIDs, keywords, sensory)
+**What This Means for Flanders:**
+- Food object templates coming next (via Frink's research)
+- Creature object templates now officially separated from inanimate objects
+- Can define creature-specific templates if needed for Phase 2+
+- Cellar rat location unchanged — room instances still reference rat by GUID (auto-resolve)
+**Commit:** 2b3e426 (all tests pass; only pre-existing #275 unarmed failure)
+### 2026-07-20: WAVE-1 — 4 New Creatures + Chitin Material
+**Task:** Create cat, wolf, spider, bat creature files + chitin material per Phase 2 plan.
+**What was built (5 files):**
+1. **`src/meta/creatures/cat.lua`** — Small predator (15 HP), hunts rats. Claw (slash/keratin/3) + bite (pierce/tooth-enamel/5). States: idle, wander, flee, hunt, dead. Prey: {"rat"}.
+2. **`src/meta/creatures/wolf.lua`** — Medium territorial (40 HP), guards hallway. Bite (pierce/tooth-enamel/8) + claw (slash/keratin/4). Natural hide armor on body/head. States: idle, wander, patrol, aggressive, flee, dead. Prey: {"rat","cat","bat"}.
+3. **`src/meta/creatures/spider.lua`** — Tiny web-builder (3 HP), chitin material. Bite (pierce/tooth-enamel/1) with venom on_hit (60% chance). Chitin armor on cephalothorax/abdomen. States: idle, web-building, flee, dead. Body uses cephalothorax/abdomen/legs (not standard head/body).
+4. **`src/meta/creatures/bat.lua`** — Tiny aerial (3 HP), light-reactive. Bite (pierce/tooth-enamel/1), speed 9. States: roosting, flying, flee, dead. light_change reaction: fear +60, flee.
+5. **`src/meta/materials/chitin.lua`** — Insect exoskeleton (density 600, hardness 5, flexibility 0.2, color "dark brown").
+**Patterns learned:**
+- Spider uses non-standard body_tree zones (cephalothorax/abdomen/legs) — engine body_tree must support arbitrary zone names, not just head/body/legs/tail
+- Wolf is first creature with natural_armor — uses same format as combat.natural_armor array with material/coverage/thickness
+- Bat initial_state is "alive-roosting" not "alive-idle" — FSM supports creature-specific starting states
+- Chitin material follows same structure as bone/hide but adds `color` and `max_edge` fields not present in all materials
+- All creatures follow rat.lua template exactly: guid, template, id, name, keywords, description, sensory, FSM, behavior, drives, reactions, movement, awareness, health, body_tree, combat
+- Pre-assigned GUIDs prevent collision during parallel creature creation
+**Commit:** c770b74 (all tests pass; pre-existing BUG-149/151/152/156 failures unchanged)
+---
+## WAVE-4 Tracks 4A + 4B: Disease Injury Definitions
+### Latest Work (2026-07-28)
+### WAVE-4 4A: Rabies Injury Definition — BUILT ✅
+**Task:** Create `src/meta/injuries/rabies.lua` — first disease-type injury for NPC combat Phase 2.
+**What was built:**
+- `category = "disease"`, `hidden_until_state = "prodromal"` (silent incubation — engine support in 4D)
+- 5-state FSM: `incubating` (15 ticks, 0 dmg) → `prodromal` (10 ticks, 1 dmg/tick, restricts precise_actions) → `furious` (8 ticks, 3 dmg/tick, restricts drink + precise_actions) → `fatal` (terminal, death_message) + `healed` (terminal, cure success)
+- `curable_in = {"incubating", "prodromal"}` — once furious, no cure exists
+- `transmission = { probability = 0.08, via = "bite" }` — low transmission rate per bite
+- `healing_interactions`: healing-poultice works from incubating/prodromal states
+- New disease-specific fields: `hidden_until_state`, `curable_in`, `transmission` (not in existing injury templates — engine must implement in 4D)
+### WAVE-4 4B: Spider Venom Injury Definition — BUILT ✅
+**Task:** Create `src/meta/injuries/spider-venom.lua` — second disease-type injury for NPC combat Phase 2.
+**What was built:**
+- `category = "disease"`, no hidden state (immediate symptoms)
+- 4-state FSM: `injected` (3 ticks, 2 dmg/tick) → `spreading` (5 ticks, 3 dmg/tick, restricts movement) → `paralysis` (8 ticks, 1 dmg/tick, restricts movement + attack + precise_actions) → `healed` (terminal, auto-recovery)
+- `curable_in = {"injected", "spreading"}` — once paralysis sets in, must ride it out (but survives)
+- `transmission = { probability = 1.0, via = "bite" }` — guaranteed delivery per bite
+- `healing_interactions`: antivenom + healing-poultice from injected/spreading states
+- Key design difference from rabies: spider venom is NOT fatal — paralysis auto-resolves after 8 ticks
+### Design Decisions
+- Both files introduce 3 new fields not present in existing injuries: `hidden_until_state`, `curable_in`, `transmission` — these require engine support from Bart (Track 4D)
+- Rabies uses `initial_state = "incubating"` (not "active") to match disease semantics
+- Spider venom auto-heals from paralysis — design choice: venom metabolizes naturally, unlike rabies which is always fatal without cure
+- Healing items: rabies uses healing-poultice (per test plan expectations), spider venom accepts both antivenom and healing-poultice
+**TDD:** All 186 existing test files pass, zero regressions.
+**Commit:** 3746b17
+---
+## WAVE-5 Track 5A: Food Objects (cheese + bread)
+**Date:** 2026-07-30
+**Requested by:** Wayne "Effe" Berry
+**Plan:** `plans/npc-combat-implementation-phase2.md` — WAVE-5, Track 5A
+### What Was Done
+Created two food object definitions for the Food PoC system:
+1. **`src/meta/objects/cheese.lua`** — A wedge of hard yellow cheese
+   - Template: `small-item`, material: `wax` (proxy — no food material in registry)
+   - Keywords: `{"cheese", "wedge", "food"}`
+   - Food metadata: `nutrition=20, bait_value=3, bait_targets={"rat","bat"}`
+   - FSM: `fresh` (30 ticks / 10800s) → `stale` (20 ticks / 7200s) → `spoiled` (terminal)
+   - All sensory fields: `on_feel`, `on_smell`, `on_listen`, `on_taste`
+   - Spoilage mutates keywords (adds "moldy" on spoiled)
+2. **`src/meta/objects/bread.lua`** — A hard crust of dark rye bread
+   - Template: `small-item`, material: `wax` (proxy)
+   - Keywords: `{"bread", "crust", "food"}`
+   - Food metadata: `nutrition=15, bait_value=2, bait_targets={"rat"}`
+   - FSM: `fresh` (20 ticks / 7200s) → `stale` (terminal)
+   - All sensory fields: `on_feel`, `on_smell`, `on_listen`, `on_taste`
+   - Staleness mutates keywords (adds "stale")
+### Design Decisions
+- Used `wax` as material proxy — cheese has a waxy rind and oily texture, making it the best existing material match. Bread also gets `wax` for consistency; a dedicated `organic` or `food` material is future work.
+- Timer delays use seconds (10800/7200) matching the existing FSM convention (candle uses 7200). The 30t/20t spec translates to 30×360=10800s and 20×360=7200s per the tick-to-seconds conversion.
+- Spoiled cheese is `terminal = true` — once spoiled, it cannot be restored. Stale bread is also terminal per the 2-state FSM in the spec.
+- Both objects follow the `food = { ... }` metadata pattern from the plan (D.1), keeping `edible`, `nutrition`, `bait_value`, and `bait_targets` grouped under a single `food` table for engine consumption by Track 5B/5C.
+- Each FSM state has full sensory overrides so the engine can present state-appropriate descriptions in any light condition.
+**TDD:** All 189 existing tests pass, zero regressions. Pre-existing food test failures (`test/food/test-eat-drink.lua`, `test/food/test-bait.lua`) are from other WAVE-5 tracks (5B/5C/5D), not caused by these objects.
+**Commit:** 7569dc3
+### 2026-08: Phase 3 WAVE-1 — death_state Blocks on 5 Creatures + Meat Material
+**Task:** Add `death_state` metadata blocks to all 5 creature files and create the `meat` material. D-14 in-place reshape pattern — creatures declare their own dead form, no separate dead-creature files.
+**Creatures Updated (death_state added):**
+1. **rat.lua** — template: small-item, portable, size: tiny, weight: 0.3. Edible/cookable (becomes cooked-rat-meat). Container capacity 1. Spoilage FSM: fresh(30)→bloated(40)→rotten(60)→bones. transfer_contents = true.
+2. **cat.lua** — template: small-item, portable, size: small, weight: 3.5. Edible/cookable (becomes cooked-cat-meat). Container capacity 2. Spoilage FSM: fresh(30)→bloated(40)→rotten(60)→bones. transfer_contents = true.
+3. **wolf.lua** — template: furniture, NOT portable, size: large, weight: 45. Food category meat but cookable=false (too big, requires butchery Phase 4). Container capacity 5. Spoilage FSM: fresh(40)→bloated(50)→rotten(80)→bones. transfer_contents = true.
+4. **spider.lua** — template: small-item, portable, size: small, weight: 0.5. NOT edible (chitin). NOT a container. byproducts = {"silk-bundle"} (silk drops on death). reshape_narration for silk spill. No spoilage FSM.
+5. **bat.lua** — template: small-item, portable, size: tiny, weight: 0.15. Edible/cookable (becomes cooked-bat-meat). NOT a container. Spoilage FSM: fresh(25)→bloated(35)→rotten(50)→bones.
+**Material Created:**
+- `src/meta/materials/meat.lua` — GUID {94d05bd1-8393-4a54-a21f-7eae6ed503d9} from bart-phase3-guids.md. density=1050, ignition_point=300, hardness=1. All 11 required properties present (flexibility, absorbency, opacity, flammability, conductivity, fragility, value).
+**Tests Updated:**
+- `test/objects/test-material-migration.lua` — count 30→31, added "meat" to EXPECTED_MATERIALS list.
+**Patterns learned:**
+- New materials MUST include all 11 core properties (density, melting_point, ignition_point, hardness, flexibility, absorbency, opacity, flammability, conductivity, fragility, value) — test-material-migration.lua and test-material-properties.lua enforce this strictly.
+- Material count tests are hardcoded — always update expected count when adding materials.
+- death_state follows the exact same structural pattern as the plan example: template, name, description, keywords, room_presence, physical props, sensory (on_feel mandatory), food, crafting, container, spoilage FSM, transfer_contents.
+- Spider is unique: no food, no container, no spoilage — but has byproducts and reshape_narration for silk drop.
+**Commit:** 7c067c9
+---
+## Phase 3 WAVE-2: Loot Objects + Wolf Inventory
+**Date:** 2026-08
+**Task:** Create gnawed-bone and silk-bundle loot objects; add inventory metadata to wolf.lua.
+**Requested by:** Wayne Berry
+**Files Created:**
+1. `src/meta/objects/gnawed-bone.lua` — template: small-item, GUID {b8db1d83-9c05-401c-ae7b-67c31b98d6fc} (from bart-phase3-guids.md). Material: bone. Size: tiny, weight: 0.1. Wolf loot drop.
+2. `src/meta/objects/silk-bundle.lua` — template: small-item, GUID {203f252d-61f6-4533-a379-f5ecb3880de4} (from bart-phase3-guids.md). Material: cotton (proxy — no silk material yet). Size: small, weight: 0.2. Spider death byproduct.
+**Files Modified:**
+3. `src/meta/creatures/wolf.lua` — Added `inventory` block with `carried = { "{b8db1d83-9c05-401c-ae7b-67c31b98d6fc}" }` (gnawed-bone GUID). Hands and worn empty.
+**Tests:** All tests pass except pre-existing failure in test-creature-combat.lua test 8 (creature_died stimulus — nil compare, unrelated to WAVE-2).
+**Patterns learned:**
+- Creature inventory uses direct GUID references (Phase 3 Option A). Loot tables deferred to Phase 4.
+- Spider silk is NOT inventory — it's a death_state byproduct (drops via reshape, not inventory mechanics).
+- Cotton is the proxy material for silk until a silk material is added.
+**Commit:** 436fed7
+---
+## Phase 3 WAVE-3: Food Objects + Food-Poisoning Injury + Cellar Brazier
+**Date:** 2026-08
+**Task:** Execute WAVE-3 — create 5 food objects, 1 injury type, 1 furniture fire source.
+**Requested by:** Wayne Berry
+**Files Created (7 total, all with pre-assigned GUIDs from bart-phase3-guids.md):**
+1. `src/meta/objects/cooked-rat-meat.lua` — template: small-item, GUID {971e819c-8ad2-4f6e-934c-48236d7c5660}. Material: meat. Edible, nutrition=15, heal=3. Keywords: cooked rat, rat meat, cooked meat, meat.
+2. `src/meta/objects/cooked-cat-meat.lua` — template: small-item, GUID {91d7e699-edd7-4fd5-9fcd-7a9df9871571}. Material: meat. Edible, nutrition=20, heal=4. Keywords: cooked cat, cat meat, cooked meat, meat.
+3. `src/meta/objects/cooked-bat-meat.lua` — template: small-item, GUID {59f5622f-c3aa-4471-8137-b04f20a9c46d}. Material: meat. Edible, nutrition=10, heal=2. food.risk="food-poisoning" (10% chance even cooked). Keywords: cooked bat, bat meat, cooked meat, meat.
+4. `src/meta/objects/grain-handful.lua` — template: small-item, GUID {3717e78a-d653-48fe-a12e-8440aae8efaa}. Material: plant. Edible=false, cookable=true. crafting.cook becomes "flatbread" with fire_source. Keywords: grain, handful of grain, barley, raw grain.
+5. `src/meta/objects/flatbread.lua` — template: small-item, GUID {b20bf751-88f9-44c2-97bf-e2d73cb3aa94}. Material: wax (matches bread.lua convention). Edible, nutrition=10, heal=1. Keywords: flatbread, bread, flat bread, cooked grain.
+6. `src/meta/injuries/food-poisoning.lua` — injury type, GUID {103e07e1-0610-474a-b63d-29f7d660a2a8}. Category: disease, severity: moderate. FSM: onset (3 ticks) → nausea (12 ticks, 1 HP/tick DOT, restricts eat + precise_actions) → recovery (5 ticks) → cleared. 20 ticks total. No cure — must run its course. healing_interactions left empty for future WAVE-4 antidote-vial.
+7. `src/meta/objects/cellar-brazier.lua` — template: furniture, GUID {22b77e90-8407-427a-a272-6b88277ba1fc}. Material: iron. provides_tool="fire_source", capabilities={"fire_source"}, casts_light=true, light_radius=2. Portable=false (bolted to floor). initial_state="lit" (permanent in Level 1). Keywords: brazier, iron brazier, fire, coals.
+**Material fix (this session):**
+- grain-handful.lua: changed `material = "grain"` → `material = "plant"` (grain not in material registry; plant is valid proxy).
+- flatbread.lua: changed `material = "grain"` → `material = "wax"` (matches bread.lua convention).
+- Fix resolved test-material-audit.lua and test-material-migration.lua regressions.
+**All 7 objects have full sensory text:** on_feel (mandatory), on_smell, on_listen, on_taste. Food-poisoning injury has on_feel per state.
+**Tests:** Material audit and migration tests now pass (were failing due to unregistered "grain" material). Pre-existing failures unchanged (creature-combat test 8, injuries-comprehensive silver dagger stab).
+**Patterns learned:**
+- Food objects follow bread.lua/cheese.lua pattern: food={edible, nutrition, effects=[{type, amount/message}]}.
+- food.risk + food.risk_chance is the pattern for probabilistic food-poisoning (bat meat).
+- grain-handful uses crafting.cook with becomes/requires_tool/message (same as death_state.crafting.cook on creatures).
+- Food-poisoning injury uses 4-state FSM with auto-transitions only (no verb-triggered cures). Simpler than rabies/nightshade.
+- Cellar brazier is the first always-lit furniture fire source — provides_tool="fire_source" matches torch pattern.
+- "wax" is the conventional proxy material for baked goods (bread.lua precedent). "plant" works for raw grain.
+**Commit:** 82ef2d5 (material fix), bba0d95 (original object creation)
+---
+## Phase 3 WAVE-4: Antidote Vial + Healing Interactions
+**Date:** 2026-08
+**Requested by:** Wayne Berry
+**Branch:** main
+### Work Done
+1. **Created** `src/meta/objects/antidote-vial.lua` — small-item glass vial, cures spider-venom. GUID `{87ec6b50-d0eb-4a1c-ae34-8b200625ccd0}` from Bart's Phase 3 pre-assignment. Keywords: antidote, vial, cure, antidote vial, glass vial. Consumable antidote type.
+2. **Updated** `src/meta/injuries/rabies.lua` — added `success_message` and `fail_message` to existing `healing-poultice` entry in `healing_interactions`.
+3. **Updated** `src/meta/injuries/spider-venom.lua` — added `antidote-vial` entry to `healing_interactions` with `from_states = { "injected", "spreading" }`, success/fail messages. Preserved existing antivenom and healing-poultice entries.
+### Design Notes
+- Task spec referenced `transitions_to = "cured"` and `from_states = { "envenomated", "swelling" }` — corrected to match actual FSM state names (`"healed"`, `"injected"`, `"spreading"`). State names must match what's declared in the injury's `states` table.
+- Antidote-vial follows healing-poultice pattern: `is_consumable = true`, `cures = {"spider-venom"}`, template = "small-item".
+- Room placement TBD by Moe (study shelf or cellar cabinet per WAVE-4 plan).
+**Commit:** b6d1955
+
+
+---
+
+## Phase 3 WAVE-5: Respawn Metadata on 5 Creatures
+
+**Date:** 2026-03
+**Requested by:** Wayne Berry
+**Branch:** main
+
+### Work Done
+
+Added 
+espawn table to all 5 creature files:
+
+| Creature | File | Timer | Home Room | Max Pop |
+|----------|------|-------|-----------|---------|
+| rat | src/meta/creatures/rat.lua | 60 | cellar | 3 |
+| cat | src/meta/creatures/cat.lua | 120 | courtyard | 1 |
+| wolf | src/meta/creatures/wolf.lua | 200 | hallway | 1 |
+| spider | src/meta/creatures/spider.lua | 80 | deep-cellar | 2 |
+| bat | src/meta/creatures/bat.lua | 60 | crypt | 3 |
+
+### Design Notes
+- Inserted 
+espawn block between combat metadata and death_state in each file -- logical placement: combat defines how they fight, respawn defines how they return, death_state defines what they become.
+- All 5 files Lua-parse clean and respawn values load correctly at runtime.
+- Engine respawn logic (reading these tables) is Bart's domain -- this wave is metadata-only.
+
+**Commit:** cbaaa13
+### Phase 4 WAVE-1: Butchery Objects — BUILT ✅ (2026-08-16)
+**Task:** Create all butchery product objects and add butchery metadata to wolf and spider creatures. Execute WAVE-1 of Phase 4 NPC combat implementation.
+**What was built:**
+1. **wolf.lua** — Added `butchery_products` block to `death_state`: 3 wolf-meat, 2 wolf-bone, 1 wolf-hide. Tool: "butchering", duration: "5 minutes", removes_corpse: true.
+2. **spider.lua** — Added `butchery_products` block to `death_state`: 1 spider-meat, 1 silk-bundle. Tool: "butchering", duration: "2 minutes", removes_corpse: true.
+3. **wolf-meat.lua** — Raw cookable meat (GUID from Bart's pre-assignment). FSM: raw → cooked via crafting.cook mutation to cooked-wolf-meat. Material: meat, nutrition: 35, heal: 8.
+4. **cooked-wolf-meat.lua** — Cooked food product (GUID from Bart's pre-assignment). Edible, nutrition 35, heal 8.
+5. **wolf-bone.lua** — Improvised blunt weapon (force 3). Material: bone. provides_tool: blunt_weapon.
+6. **wolf-hide.lua** — Crafting material for future armor repairs. Material: hide.
+7. **butcher-knife.lua** — Tool with capabilities: butchering + cutting. Keywords per Smithers audit: "butcher knife", "carving knife", "butchering knife" (no bare "knife"). Material: steel.
+8. **spider-meat.lua** — Edible with 30% spider-venom risk. Material: meat. Nutrition 8, heal 2.
+9. **gnawed-bone.lua** — Removed "wolf bone" keyword, added "bone fragment" per Smithers embedding collision audit.
+**GUIDs used (from bart-phase4-guids.md):** wolf-meat, cooked-wolf-meat, wolf-bone, wolf-hide, butcher-knife all used pre-assigned GUIDs. spider-meat required a new GUID ({6b7c8bb2-71b1-4ac6-a57e-8a23536d3054}) — gap in Bart's pre-assignment, filed in decision inbox.
+**Tests:** All 9 files Lua-parse clean. Full test suite: 3 failures — butchery/test-butcher-verb (engine verb handler issue in helpers.lua, Smithers domain), injuries/test-injuries-comprehensive (pre-existing), verbs/test-combat-verbs (pre-existing, caused by Smithers' carve→butcher rerouting in crafting.lua). Zero regressions from object definitions.
+### Phase 4 WAVE-3: Stress Injury Type
+**Task:** Create `src/meta/injuries/stress.lua` — third injury category (psychological), completing the injury triad: physical, disease, psychological.
+**What was built:**
+- **`stress.lua`** — Threshold-based accumulator injury (not FSM-progression like physical injuries).
+  - GUID: {18c87fad-5f27-435f-9802-b914e238207f} (PowerShell-generated — bart-phase4-guids.md still does not exist)
+  - Category: `psychological` (new category alongside physical and disease)
+  - 3 severity levels: shaken (threshold 3), distressed (threshold 6), overwhelmed (threshold 10)
+  - v1.1 thresholds raised per CBG review — single kill must NOT cripple player
+  - Effects: shaken (-1 atk), distressed (-2 atk, 0.2 flee_bias), overwhelmed (-2 atk, 0.3 flee_bias, 0.2 move_penalty)
+  - v1.1 overwhelmed debuffs reduced — hindrance, not wall
+  - Cure: rest method, 2 hours game time, requires safe_room (no hostile creatures)
+  - Triggers: witness_creature_death (+1), near_death_combat (+2), witness_gore (+1)
+  - player_first_kill explicitly NOT included (v1.1: victory rewards, not punishes)
+**Patterns learned:**
+- Stress injury uses a `levels` + `effects` + `triggers` structure, NOT the FSM states/transitions/timed_events pattern used by physical/disease injuries. New category = new metadata shape.
+- Matched file conventions: header comment with pattern description, section separators (═══), consistent field ordering (identity → levels → effects → cure → triggers).
+- Nelson's TDD tests (`test/stress/`) test engine functions (`add_stress`, `cure_stress`, `get_stress_effects`) that Bart hasn't implemented yet — those failures are expected and not caused by stress.lua definition.
+- bart-phase4-guids.md STILL does not exist at WAVE-3 — same pattern as WAVE-2, generate fresh GUIDs via PowerShell.
+### Phase 4 WAVE-4: Spider Ecology (Web Creation + Silk Crafting)
+**Task:** Create spider-web, silk-rope, silk-bandage objects and update spider.lua with creates_object + web_ambush behavior. Execute WAVE-4 of Phase 4 NPC combat implementation.
+**What was built:**
+1. **`spider-web.lua`** — Creature-spawned environmental obstacle. GUID: {bb5699b3-e027-4b43-b9cf-3acc183091b9} (from decisions.md). Template: small-item. Material: silk. NPC movement blocker (obstacle.blocks_npc_movement=true, player_passable=true). Not portable. Categories: obstacle, silk, creature-made. Creator tracking field for runtime. on_feel: "Tacky, clinging strands."
+2. **`silk-rope.lua`** — Craftable tool from 2x silk-bundle. GUID: {47571952-19a9-4b7b-9b6d-744c842f1bc2}. Template: small-item. Material: silk. Keywords: {"silk rope", "spider rope"} (NO bare "rope" per Smithers embedding collision audit). provides_tool: {"rope", "binding"}. Immediate Level 1 use: tie rope to hook (courtyard well puzzle).
+3. **`silk-bandage.lua`** — Craftable single-use healing item from 1x silk-bundle (yields 2). GUID: {7ffb6862-4cb1-4312-bfc0-ddd444abbd40}. Template: small-item. Material: silk. Keywords: {"silk bandage", "silk dressing"} (NO bare "bandage" per Smithers audit). Dual-purpose: instant +5 HP AND stops active bleeding. FSM: unused → used (terminal, consumed). is_consumable=true, reusable=false.
+4. **`spider.lua` update** — Added creates_object behavior (template: spider-web, 30 min cooldown, max 2 webs per room condition) and web_ambush behavior (priority 0.8, checks for trapped creatures near webs).
+5. **`silk.lua` material** — Created new material definition in src/meta/materials/. GUID: {f084946a-ac61-49bd-aa78-dc93f5aa7bfe}. Properties: density 300, ignition 230, flammability 0.6, flexibility 0.9, value 5 (higher than cotton/linen — spider silk is premium).
+6. **`silk-bundle.lua` fix** — Changed material from "cotton" to "silk" (was using wrong material since silk didn't exist as a registered material before).
+7. **Test updates** — Updated test/objects/test-material-migration.lua: material count 31→32, added "silk" to EXPECTED_MATERIALS list.
+**GUIDs:** All three WAVE-4 object GUIDs sourced from decisions.md D-PHASE4-GUIDS table (lines ~6053-6055). Silk material GUID generated fresh via PowerShell.
+**Tests:** All 4 Lua files parse clean. Material audit and migration tests pass (0 failures). Remaining test failures (crafting/test-silk-crafting, creatures/test-spider-web) are Nelson's pre-written tests for engine features not yet implemented by Bart/Smithers — not caused by object definitions. verbs/test-combat-verbs pre-existing failure unchanged.
+**Patterns learned:**
+- When adding objects with a new material, ALWAYS create the material definition in src/meta/materials/ first. The material audit test validates every object's material against the registry.
+- silk-bundle.lua was using material="cotton" as a placeholder before silk existed as a registered material — always fix upstream objects when adding the correct material.
+- WAVE-4 GUIDs were found in decisions.md (D-PHASE4-GUIDS table), NOT in bart-phase4-guids.md inbox file. The Scribe had already merged them. Always check decisions.md first.
+- Embedding collision audit keywords must be respected: silk-rope gets NO bare "rope", silk-bandage gets NO bare "bandage" — these collide with existing objects (rope-coil, bandage).
+- crafted_from metadata on objects is declarative (for engine/Smithers to consume); the actual crafting verb handler reads these fields at runtime.
+### Phase 4 WAVE-5: Territorial Behavior (Territory Marker + Wolf Update)
+**Task:** Create territory-marker invisible object and update wolf.lua with territorial behavior metadata. Execute WAVE-5 of Phase 4 NPC combat implementation.
+**What was built:**
+1. **`territory-marker.lua`** — Invisible scent marker placed in rooms by wolves. GUID: {60189a1c-892c-478f-be8a-086fe8128cbb} (from decisions.md D-PHASE4-GUIDS table). Template: small-item. Material: nil (non-physical scent). invisible=true, hidden=true, searchable=false. NOT portable (size=0, weight=0). Categories: invisible, scent, creature-made. Q5 resolved: detectable via SMELL only ("A musky, animal scent lingers here."). Tracks: owner (creature GUID), timestamp (game time), radius (default 2 hops). room_presence=nil (never shown in room descriptions). Creator tracking field for runtime.
+2. **`wolf.lua` update** — Replaced flat `territorial=true` / `territory="hallway"` with structured territorial metadata table: `behavior.territorial = { marks_territory=true, mark_object="territory-marker", mark_radius=2, mark_duration="1 day" }`. Matches plan spec exactly.
+3. **Test updates** — Updated test/creatures/test-wolf.lua test 19: now validates `behavior.territorial` is a table with `marks_territory=true` and `mark_object="territory-marker"` (was checking `territorial==true`). Updated test/objects/test-material-audit.lua: invisible objects (invisible=true) are now exempt from material requirement and registry validation — prevents false failure on non-physical objects like scent markers.
+**Tests:** Both new Lua files parse clean. Wolf test (27/27 pass). Material audit (6/6 pass). Full suite: 6 pre-existing failures (crafting, predator-prey, spider-web, territorial engine dispatch, injuries, combat-verbs) — all Nelson's TDD tests for unimplemented engine features. Down from 8 failures before (fixed test-material-audit and test-wolf).
+**Patterns learned:**
+- Invisible/non-physical objects (material=nil) need explicit exemption in material audit tests — use `invisible=true` flag as the exemption trigger.
+- When converting a flat boolean field (territorial=true) to a structured table, update all downstream tests that assert on the old shape.
+- WAVE-5 GUIDs also found in decisions.md (D-PHASE4-GUIDS table), same as WAVE-4 — bart-phase4-guids.md inbox file never existed.
+- For scent/invisible objects: room_presence=nil, hidden=true, searchable=false, invisible=true is the complete "unfindable" pattern. Player detection is SMELL-only via on_smell.

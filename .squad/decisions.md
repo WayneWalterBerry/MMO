@@ -6319,3 +6319,12 @@ tainted-meat has food.on_eat poison metadata. Unlike other loot items (inert sma
 - **Bart** — loot engine integration, tainted-meat food.on_eat processing
 - **Nelson** — test updates for creature-inventory and death-drops
 - **Smithers** — embedding index needs entries for 6 new objects
+
+
+## Merged from Inbox (2026-03-27T21:14:29Z)
+
+### 2026-03-28T04:10:00Z: User directive
+**By:** Wayne Berry (via Copilot)
+**What:** Don't name architecture and design docs after phases. They describe the current state of the system, not the phase that built them. Example of what NOT to do: phase-4-loot-specification.md. Instead use: loot-tables.md.
+**Why:** User request — captured for team memory
+

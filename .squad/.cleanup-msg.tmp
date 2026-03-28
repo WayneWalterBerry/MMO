@@ -1,0 +1,9 @@
+GOODNIGHT: Deep clean .squad/ directory (Scribe maintenance)
+
+- Merged 1 inbox decision file into decisions.md
+- Compressed 13 oversized agent history.md files (>12KB) to core context, archived old entries
+- Archived 37 orchestration logs older than 7 days to _archive/ subdirectory
+- Verified decisions.md and agent histories within maintenance thresholds
+
+Scribe: memory management, index pruning, log rotation complete.
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
