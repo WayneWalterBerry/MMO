@@ -997,6 +997,21 @@ function M.register(handlers)
                     end
                 end
             end
+            -- Scan creatures in the room
+            local cr_ok, cr_mod = pcall(require, "engine.creatures")
+            if cr_ok and cr_mod and cr_mod.get_creatures_in_room then
+                local room_creatures = cr_mod.get_creatures_in_room(reg, room.id)
+                for _, creature in ipairs(room_creatures) do
+                    if not creature.hidden then
+                        local state_smell = creature.states and creature.states[creature._state]
+                            and creature.states[creature._state].on_smell
+                        local smell_text = state_smell or creature.on_smell
+                        if smell_text then
+                            found[#found + 1] = { name = creature.name or creature.id, smell = smell_text }
+                        end
+                    end
+                end
+            end
             -- Also check player hands
             for i = 1, 2 do
                 local hand = ctx.player.hands[i]
@@ -1096,6 +1111,21 @@ function M.register(handlers)
                                     found[#found + 1] = { name = item.name or item.id, sound = item.on_listen }
                                 end
                             end
+                        end
+                    end
+                end
+            end
+            -- Scan creatures in the room
+            local cr_ok, cr_mod = pcall(require, "engine.creatures")
+            if cr_ok and cr_mod and cr_mod.get_creatures_in_room then
+                local room_creatures = cr_mod.get_creatures_in_room(reg, room.id)
+                for _, creature in ipairs(room_creatures) do
+                    if not creature.hidden then
+                        local state_listen = creature.states and creature.states[creature._state]
+                            and creature.states[creature._state].on_listen
+                        local listen_text = state_listen or creature.on_listen
+                        if listen_text then
+                            found[#found + 1] = { name = creature.name or creature.id, sound = listen_text }
                         end
                     end
                 end

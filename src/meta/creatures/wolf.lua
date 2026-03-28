@@ -272,21 +272,21 @@ return {
             fresh = {
                 description = "A freshly killed wolf. The blood is still warm, pooling beneath the body.",
                 room_presence = "A dead wolf sprawls across the floor, blood pooling beneath it.",
-                timed_events = { { delay = 40, event = "timer_expired", to_state = "bloated" } },
+                timed_events = { { delay = 7200, event = "timer_expired", to_state = "bloated" } },
             },
             bloated = {
                 description = "The wolf's body has swollen grotesquely, its belly distended with gas. The stench is terrible.",
                 room_presence = "A bloated wolf carcass sprawls across the floor, reeking.",
                 on_smell = "A wall of decay. The sweet-sick stench of bloating flesh.",
                 food = { cookable = false },
-                timed_events = { { delay = 50, event = "timer_expired", to_state = "rotten" } },
+                timed_events = { { delay = 10800, event = "timer_expired", to_state = "rotten" } },
             },
             rotten = {
                 description = "The wolf is a putrid mass of matted fur and exposed tissue. The floor beneath is stained dark.",
                 room_presence = "A rotting wolf carcass festers on the floor.",
                 on_smell = "Overwhelming rot. You can taste it in the air.",
                 food = { cookable = false, edible = false },
-                timed_events = { { delay = 80, event = "timer_expired", to_state = "bones" } },
+                timed_events = { { delay = 14400, event = "timer_expired", to_state = "bones" } },
             },
             bones = {
                 description = "A large scatter of wolf bones, picked clean. The skull grins with yellowed fangs.",

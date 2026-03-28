@@ -221,21 +221,21 @@ return {
             fresh = {
                 description = "A freshly killed rat. The blood is still wet.",
                 room_presence = "A dead rat lies crumpled on the floor.",
-                timed_events = { { delay = 30, event = "timer_expired", to_state = "bloated" } },
+                timed_events = { { delay = 3600, event = "timer_expired", to_state = "bloated" } },
             },
             bloated = {
                 description = "The rat's body has swollen, its belly distended with gas.",
                 room_presence = "A bloated rat carcass lies on the floor, reeking.",
                 on_smell = "The sweet, cloying stench of decay.",
                 food = { cookable = false },
-                timed_events = { { delay = 40, event = "timer_expired", to_state = "rotten" } },
+                timed_events = { { delay = 7200, event = "timer_expired", to_state = "rotten" } },
             },
             rotten = {
                 description = "The rat is a putrid mess of matted fur and exposed tissue.",
                 room_presence = "A rotting rat carcass festers on the floor.",
                 on_smell = "Overwhelming rot. Your eyes water.",
                 food = { cookable = false, edible = false },
-                timed_events = { { delay = 60, event = "timer_expired", to_state = "bones" } },
+                timed_events = { { delay = 14400, event = "timer_expired", to_state = "bones" } },
             },
             bones = {
                 description = "A tiny scatter of cleaned rat bones.",

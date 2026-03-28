@@ -181,9 +181,28 @@ function verbs.create()
             local room_id = type(ctx.current_room) == "table"
                 and ctx.current_room.id or ctx.current_room
             local creatures = cr_mod.get_creatures_in_room(ctx.registry, room_id)
+            -- #344: Collect all matching creatures for disambiguation
+            local matches = {}
             for _, c in ipairs(creatures) do
-                if kw_match(c, kw) then return c end
+                if kw_match(c, kw) then matches[#matches + 1] = c end
             end
+            if #matches == 0 then return nil end
+            if #matches == 1 then return matches[1] end
+            -- All same base id → fungible, return first
+            local all_same = true
+            for i = 2, #matches do
+                if matches[i].id ~= matches[1].id then
+                    all_same = false; break
+                end
+            end
+            if all_same then return matches[1] end
+            -- Different creatures: prompt disambiguation
+            local names = {}
+            for _, c in ipairs(matches) do
+                names[#names + 1] = c.name or c.id
+            end
+            print("Which one? " .. table.concat(names, ", ") .. "?")
+            ctx.disambiguation_prompt = names
             return nil
         end
 
@@ -393,7 +412,6 @@ function verbs.create()
 
                 -- Creature death
                 if result.defender_dead or (creature.health and creature.health <= 0) then
-                    local death_name = creature.name or "The creature"
                     local cr_ok2, cr_mod = pcall(require, "engine.creatures")
                     local room = type(ctx.current_room) == "table" and ctx.current_room or nil
                     if not (cr_ok2 and cr_mod.handle_creature_death
@@ -403,7 +421,9 @@ function verbs.create()
                         creature.portable = true
                         creature.alive = false
                     end
-                    print(death_name .. " is dead!")
+                    -- #345/#370: Use "The" + id for death message (capitalized, definite article)
+                    local death_id = creature.id or "creature"
+                    print("The " .. death_id .. " is dead!")
                     return
                 end
 
@@ -443,10 +463,12 @@ function verbs.create()
                 end
 
                 -- Creature morale break / flee threshold
-                if creature.combat and creature.combat.flee_threshold then
-                    local max_hp = creature.combat.max_health or creature.health or 10
+                local flee_threshold = creature.combat and creature.combat.behavior
+                    and creature.combat.behavior.flee_threshold
+                if flee_threshold then
+                    local max_hp = creature.max_health or creature.health or 10
                     local hp_pct = (creature.health or 10) / max_hp
-                    if hp_pct <= creature.combat.flee_threshold then
+                    if hp_pct <= flee_threshold then
                         print((creature.name or "The creature") .. " turns and flees!")
                         creature._state = "fled"
                         if cr_ok and cr_mod and cr_mod.emit_stimulus then
@@ -495,6 +517,22 @@ function verbs.create()
                 emit_combat_stimulus(ctx, creature.id)
                 run_combat_encounter(ctx, creature, target_zone)
                 return
+            end
+
+            -- #331: Check for dead creatures matching keyword before "don't see" message
+            local room_id = type(ctx.current_room) == "table"
+                and ctx.current_room.id or ctx.current_room
+            local room = type(ctx.current_room) == "table" and ctx.current_room or nil
+            if room and room.contents then
+                local kw = noun:lower()
+                    :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+                for _, obj_id in ipairs(room.contents) do
+                    local obj = ctx.registry and ctx.registry.get and ctx.registry:get(obj_id)
+                    if obj and (obj._state == "dead" or obj.alive == false) and kw_match(obj, kw) then
+                        print("It's already dead.")
+                        return
+                    end
+                end
             end
 
             print("You don't see that here to attack.")
