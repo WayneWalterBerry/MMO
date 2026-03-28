@@ -67,3 +67,12 @@
 
 - **Cross-Agent Mutation Linter Review (2026-03-28):** Nine-agent review wave on mutation-graph-linter implementation plan. Cross-agent infrastructure concerns for Nelson: (1) **Gil CI gaps:** GitHub Actions runners default to Python 3.8 or 3.10, NOT 3.9. WAVE-0 pre-flight must add `setup-python@v4` action or tests will fail. (2) **Python environment validation:** mutation-lint.ps1 assumes Python is on PATH — needs version check + graceful error if 3.9 unavailable. (3) **PowerShell 7 compat:** GitHub Actions uses PS7 but `.ps1` may not explicitly specify version guard. Need `-Version 7.0` check or explicit `pwsh` binary call. Nelson's test infrastructure must validate these environment prereqs before running WAVE-1 tests. 12 test improvements identified (negative edge cases, deep nesting coverage, fixture isolation, regression tests on dynamic path skipping, parallel output interleaving verification). Lesson: environment setup is as critical as test logic — pre-flight gates prevent false negatives in CI.
 
+### WAVE-0 Edge Extractor Tests (2026-08-23)
+- Built `test/meta/test-edge-extractor.lua` — 47 tests across 7 suites for `scripts/mutation-edge-check.lua`.
+- **Module loading trick:** Bart's script uses all-local functions and calls `main()` + `os.exit()` at the bottom. Can't `require()` it. Solution: read source, strip trailing `main()`, append return table exporting locals, load the modified chunk. Works cleanly.
+- **`scan_meta_root` returns 2 values** (`files, subdirs`). Don't try to parse subdirectory names from filepaths — use the second return value.
+- **`main()` doesn't return data.** Wrote `run_pipeline()` wrapper that calls the 4 extracted functions (scan, safe_load, extract_edges, resolve_target) in sequence and returns structured results for assertions.
+- **Actual counts confirmed:** 206 files, 66 edges (47 original + 19 creature), 5 broken edges (wood-splinters ×4, poison-gas-vent-plugged ×1), 1 dynamic path (paper.lua write).
+- **Registered `test/meta` in run-tests.lua:** added to `test_dirs`, `source_to_tests` mapping for `scripts/mutation-edge-check.lua`, and shard note ("other" shard).
+- **All 256 test files pass** including the new one. No regressions.
+

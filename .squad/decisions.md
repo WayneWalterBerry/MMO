@@ -1172,3 +1172,78 @@ The plan adds `test/meta/` to `test_dirs` in `test/run-tests.lua`. This is fine,
 *— Smithers, UI Engineer*
 *Working as Smithers (UI Engineer / Parser Pipeline)*
 
+
+---
+
+## D-MUTATION-CYCLES-V2: Multi-Hop Chain Validation (Future Work)
+
+**Author:** Bart (Architect)
+**Date:** 2026-08-23
+**Status:** 📋 Documented (Future Phase 2)
+**Triggered by:** CBG review of mutation-graph-linter-implementation-phase1.md
+
+---
+
+### Decision
+
+Multi-hop chain validation (A→B→C complete chain checking) is **deferred to Phase 2** of the mutation graph linter. Phase 1 validates only single-hop edges (does the immediate target file exist?).
+
+### Context
+
+CBG (Comic Book Guy) raised that the current extractor checks each edge independently but does not follow chains. For example, if A→B→C, Phase 1 verifies B exists and C exists, but does not verify the full chain is reachable. This is sufficient for Phase 1 because:
+
+1. Each target file is independently linted by the Python meta-lint (200+ rules)
+2. Circular chains (A→B→A) are irrelevant — the extractor doesn't follow chains (Nelson #14)
+3. The known broken edges are all single-hop (missing target file)
+
+### Phase 2 Scope (when implemented)
+
+- BFS/DFS traversal from every mutation source
+- Detect unreachable nodes (objects that are mutation targets but have no path from any room-placed object)
+- Detect orphaned chains (A→B→C where B is broken, making C unreachable)
+- Report chain depth statistics
+
+### Affects
+
+- scripts/mutation-edge-check.lua — future extension
+- plans/linter/mutation-graph-linter-design.md — Phase 2 section (to be written)
+
+---
+
+## D-MUTATION-LINT-PARALLEL: Parallel Lint with Sequential Output
+
+**Author:** Bart (Architect)
+**Date:** 2026-08-23
+**Status:** 🟢 Active
+**Triggered by:** Team review of mutation-graph-linter-implementation-phase1.md
+
+---
+
+### Decision
+
+The mutation-lint wrapper scripts (mutation-lint.ps1, mutation-lint.sh) run the Python meta-lint **in parallel per-file** but **collect and display output sequentially** with section headers.
+
+### Context
+
+Smithers (blocker #2) identified that parallel lint workers writing to stdout simultaneously would produce interleaved, unreadable output. The original plan ran edge-checking and linting concurrently with no output collection.
+
+### Rules
+
+1. **Phase 1 (Edge Check)** runs first and completes before Phase 2 begins — no concurrent stdout from both tools.
+2. **Phase 2 (Lint)** runs lint workers in parallel (PS7 -Parallel / Unix xargs -P) but captures each worker's output into a per-file buffer.
+3. After all workers complete, results are printed sequentially with --- {filepath} --- section headers.
+4. **PS7 required** for PowerShell parallel execution. PS5 falls back to sequential with a warning (Gil #4).
+5. Both wrapper scripts print phase headers: === Phase 1: Edge Existence Check === and === Phase 2: Target Lint Validation ===.
+
+### Rationale
+
+- Parallel lint is ~4× faster than sequential for 40+ target files
+- Sequential output collection preserves readability — each file's violations are grouped together
+- PS7 fallback ensures the scripts work on older Windows installations (just slower)
+- Shell double-scan (~1s overhead for two lua scripts/mutation-edge-check.lua invocations) is accepted as negligible vs lint runtime
+
+### Affects
+
+- scripts/mutation-lint.ps1 — Bart (WAVE-1)
+- scripts/mutation-lint.sh — Bart (WAVE-1)
+- Integration tests — Nelson (WAVE-1)
