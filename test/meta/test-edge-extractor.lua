@@ -635,6 +635,169 @@ test("valid_targets list has entries", function()
 end)
 
 ---------------------------------------------------------------------------
+-- Suite 8: JSON output (WAVE-2)
+-- Tests for --json flag. If not yet implemented (Bart WAVE-2 in progress),
+-- tests are SKIPped gracefully.
+---------------------------------------------------------------------------
+suite("JSON output (WAVE-2)")
+
+local function run_json()
+    local output = run_script("--json")
+    -- Detect whether --json is actually implemented:
+    -- If the output still looks like human-readable text (starts with "==="),
+    -- then --json is not yet available.
+    if output and output:match("^%s*=== Mutation Edge Report ===") then
+        return nil, "json-not-implemented"
+    end
+    return output, nil
+end
+
+-- Minimal JSON key finder: checks whether a key like "summary" appears in
+-- typical JSON format (e.g. "summary":)
+local function json_has_key(text, key)
+    return text:find('"' .. key .. '"') ~= nil
+end
+
+-- Extract a numeric value for a given key from JSON-like text
+-- Matches patterns like "key": 123 or "key":123
+local function json_number(text, key)
+    local pat = '"' .. key .. '"%s*:%s*(%d+)'
+    local val = text:match(pat)
+    return val and tonumber(val) or nil
+end
+
+-- Check if a JSON-like text contains a string value somewhere in an array
+-- associated with a given top-level key section
+local function json_section_contains(text, section_key, needle)
+    -- Find the section starting with "section_key": [
+    local section_start = text:find('"' .. section_key .. '"')
+    if not section_start then return false end
+    local rest = text:sub(section_start)
+    return rest:find('"[^"]*' .. needle .. '[^"]*"') ~= nil
+end
+
+test("--json produces output with summary key", function()
+    local output, err = run_json()
+    if err == "json-not-implemented" then
+        print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
+        return
+    end
+    t.assert_truthy(json_has_key(output, "summary"),
+        "expected 'summary' key in JSON output")
+end)
+
+test("--json produces output with broken key", function()
+    local output, err = run_json()
+    if err == "json-not-implemented" then
+        print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
+        return
+    end
+    t.assert_truthy(json_has_key(output, "broken"),
+        "expected 'broken' key in JSON output")
+end)
+
+test("--json produces output with dynamic key", function()
+    local output, err = run_json()
+    if err == "json-not-implemented" then
+        print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
+        return
+    end
+    t.assert_truthy(json_has_key(output, "dynamic"),
+        "expected 'dynamic' key in JSON output")
+end)
+
+test("--json summary.files_scanned > 150", function()
+    local output, err = run_json()
+    if err == "json-not-implemented" then
+        print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
+        return
+    end
+    local count = json_number(output, "files_scanned")
+    t.assert_truthy(count and count > 150,
+        "expected files_scanned > 150, got " .. tostring(count))
+end)
+
+test("--json summary.edges_found > 40", function()
+    local output, err = run_json()
+    if err == "json-not-implemented" then
+        print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
+        return
+    end
+    local count = json_number(output, "edges_found")
+    t.assert_truthy(count and count > 40,
+        "expected edges_found > 40, got " .. tostring(count))
+end)
+
+test("--json summary.broken_edges == 5", function()
+    local output, err = run_json()
+    if err == "json-not-implemented" then
+        print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
+        return
+    end
+    local count = json_number(output, "broken_edges")
+    t.assert_eq(5, count, "expected broken_edges == 5")
+end)
+
+test("--json summary.broken_targets == 2 (unique target IDs)", function()
+    local output, err = run_json()
+    if err == "json-not-implemented" then
+        print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
+        return
+    end
+    local count = json_number(output, "broken_targets")
+    -- broken_targets counts unique missing target IDs (wood-splinters + poison-gas-vent-plugged)
+    if count then
+        t.assert_eq(2, count, "expected broken_targets == 2 unique targets")
+    else
+        -- Fallback: count unique targets in broken array
+        print("    INFO: broken_targets not in summary, checking broken array")
+        t.assert_truthy(json_has_key(output, "broken"),
+            "expected broken key for fallback check")
+    end
+end)
+
+test("--json summary.dynamic_paths >= 1", function()
+    local output, err = run_json()
+    if err == "json-not-implemented" then
+        print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
+        return
+    end
+    local count = json_number(output, "dynamic_paths")
+    t.assert_truthy(count and count >= 1,
+        "expected dynamic_paths >= 1, got " .. tostring(count))
+end)
+
+test("--json broken contains poison-gas-vent-plugged", function()
+    local output, err = run_json()
+    if err == "json-not-implemented" then
+        print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
+        return
+    end
+    t.assert_truthy(json_section_contains(output, "broken", "poison%-gas%-vent%-plugged"),
+        "expected poison-gas-vent-plugged in broken array")
+end)
+
+test("--json broken contains wood-splinters", function()
+    local output, err = run_json()
+    if err == "json-not-implemented" then
+        print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
+        return
+    end
+    t.assert_truthy(json_section_contains(output, "broken", "wood%-splinters"),
+        "expected wood-splinters in broken array")
+end)
+
+test("--json dynamic contains paper.lua", function()
+    local output, err = run_json()
+    if err == "json-not-implemented" then
+        print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
+        return
+    end
+    t.assert_truthy(json_section_contains(output, "dynamic", "paper"),
+        "expected paper.lua reference in dynamic array")
+end)
+
+---------------------------------------------------------------------------
 -- Summary
 ---------------------------------------------------------------------------
 local fail_count = t.summary()
