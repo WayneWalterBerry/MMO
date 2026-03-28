@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-28T04:50:00Z  
-**Last Merge:** 2026-03-28T04:50:00Z (2 decisions from Wave 1 inbox merged)
+**Last Updated:** 2026-07-20T14:12:00Z  
+**Last Merge:** 2026-07-20T14:12:00Z (2 decisions from Wave 3-4 inbox merged)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -29,6 +29,8 @@ Quick-reference table of **active + most recent decisions**.
 | D-TESTFIRST | Testing | 🟢 Active | Test-first directive for all bug fixes |
 | D-EXIT-DOOR-RESOLUTION | Architecture | 🟢 Active | Exit door fallback pattern for verb handlers (Smithers) |
 | D-CREATE-OBJECT-TEMPLATE | Architecture | 🟢 Active | Spider web uses template instantiation + max_per_room (Flanders) |
+| D-CREATURE-ZONE-NAMES | Architecture | ✅ Implemented | Creature-specific body zone narration names; engine-side zone_text(zone, body_tree) |
+| D-TERRITORY-SENSORY-FIXES | Architecture | ✅ Implemented | Territory marker registration, narration cleanup, sensory deduplication |
 | D-WAVE1-BUTCHERY-CREATURES-SPLIT | Architecture | ✅ Implemented | creatures/init.lua split to actions.lua; -190 LOC headroom |
 | D-WAVE1-BURNDOWN | Process | ✅ Complete | Triaged 54 issues, 39 Wave 3 ready, 15 deferred to Phase 5 |
 | D-WAVE5-BEHAVIORS | Architecture | ✅ Implemented | Pack tactics, territorial, ambush behavior engine design |
@@ -505,7 +507,64 @@ Thin wrapper preserves public API and auto-registers built-ins.
 
 ---
 
-**For older decisions, design discussions, and completed Phase 3 work, see `decisions-archive.md`.**
+---
+
+## D-CREATURE-ZONE-NAMES: Creature-Specific Body Zone Narration
+
+**Status:** ✅ Implemented  
+**Author:** Flanders (Object & Injury Systems Engineer)  
+**Date:** 2026-07-20  
+**Issues:** #369, #337  
+**Phase:** Wave 3 (Parallel Fix)
+
+### Decision
+
+Modified `src/engine/combat/narration.lua::zone_text()` to accept an optional `body_tree` parameter. If the zone has a `names` array, `zone_text()` picks narration from those instead of the default hardcoded `zone_words` table.
+
+### Implementation
+
+1. **Object-side:** Added `names` array to each body_tree zone in creature metadata (all 5 creatures: spider, rat, wolf, cat, bat)
+2. **Engine-side:** 6-line change to `narration.lua`; fallback path unchanged
+3. **Principle 8 Compliance:** Objects declare behavior (names); engine executes it generically
+
+### Impact
+
+- All creatures now narrate anatomically correct zone names (spider "cephalothorax" instead of "chest")
+- 13 TDD tests validate creature narration
+- Zero regressions (255/255 test files pass)
+
+---
+
+## D-TERRITORY-SENSORY-FIXES: Territory Markers + Narration Cleanup
+
+**Status:** ✅ Implemented  
+**Author:** Flanders (Object & Injury Systems Engineer)  
+**Date:** 2026-07-20  
+**Issues:** #296, #312, #323, #338, #346  
+**Phase:** Wave 4 (Parallel Fix)
+
+### Cross-Domain Changes
+
+| File | Domain | Change | Reason |
+|------|--------|--------|--------|
+| `src/engine/creatures/territorial.lua` | Bart | Territory markers use unique ids (`territory-marker-{uid}`) instead of shared id | Shared id caused registry overwrite |
+| `src/engine/creatures/init.lua` | Bart | `_last_marked_room` only set on successful mark | Previous failure-set prevented retry |
+| `src/engine/combat/narration.lua` | Bart | `material_text("tooth-enamel")` returns clean subset; `render()` removes dangling prepositions | Raw material names leaked into prose |
+| `src/engine/verbs/sensory/smell.lua` | Smithers | Added `seen_ids` deduplication; state-aware sensory text | Creatures appeared twice; missing FSM state awareness |
+| `src/engine/verbs/sensory/listen.lua` | Smithers | Same as smell.lua | Same root cause |
+
+### Metadata Changes
+
+- `src/meta/rooms/cellar.lua`: Added cellar-spider-web instance
+- `src/meta/creatures/wolf.lua`: Added behavior.lingering_scent metadata
+
+### Impact
+
+- Territory markers now persistent + retrievable
+- Creature narration clean (no dangling prepositions, no raw material names)
+- Sensory deduplication prevents creature double-reporting
+- 21 TDD tests validate all fixes
+- Zero regressions (255/255 test files pass)
 
 ---
 
