@@ -915,3 +915,49 @@ Created TDD validation tests for 4 new creatures (cat, wolf, spider, bat):
 **Regression check:** Full suite — **1 pre-existing failure** (`test-creature-combat.lua` test 8: creature_died stimulus nil compare, known since WAVE-2). Both new test files pass clean. Zero new regressions.
 
 **Commit:** `b855f3b` — "Phase 3 WAVE-5: respawn TDD tests (25 tests)"
+
+### Learnings: `goto` Admin Command (Debug/Teleport Tool)
+
+**Recorded by:** Nelson (Tester)  
+**Date:** 2026-03 (Smithers delivery)
+
+**Command:** `goto` (alias: `teleport`)  
+**File:** `src/engine/verbs/movement.lua`  
+**Tests:** `test/verbs/test-goto.lua` (7 tests)
+
+**What it does:**
+- Teleports player to any room by ID while keeping current inventory
+- Triggers full room-enter mechanic: auto-look, visited tracking, room entry hooks
+- Usage: `goto cellar`, `goto crypt`, `goto hallway`, etc.
+- Error handling: Invalid room → "No room called 'xyz' exists.", no arg → usage hint
+
+**Why this matters for LLM testing:**
+- **Eliminates manual navigation paths** — test rooms instantly instead of `go north, go down, go down`
+- **Headless one-liners:** `echo "goto cellar\nattack rat\nlook" | lua src/main.lua --headless`
+- **Multi-room test flows:** Jump between locations without path dependencies (e.g., kill→cook→eat loops)
+- **Regression test speed:** Quickly setup state in specific rooms without traversal
+
+**Key test scenarios:**
+- Valid room teleport (keeps inventory)
+- Invalid room error message
+- No argument usage hint
+- Alias `teleport` works identically
+- Entry hooks fire (visited tracking, room-level effects)
+- Chains with other commands in headless mode
+
+**Note for future LLM sessions:** This command is a **massive time-saver** for automated testing. Always include it in headless test chains to avoid path-dependency brittleness.
+
+## Learnings
+
+### Phase 4 WAVE-0 Baseline (2026-03-28)
+
+**What:** Executed WAVE-0 of Phase 4 NPC Combat implementation — established test baseline and registered new test directories.
+
+**Results:**
+- PHASE-3-FINAL-COUNT: **207 test files**
+- Registered 3 new empty directories in `test/run-tests.lua`: `test/butchery/`, `test/loot/`, `test/stress/`
+- Post-registration regression: 207 files found, all passing — 0 regressions
+- `injuries/test-injuries-comprehensive.lua` is flaky (failed first run, passed second) — pre-existing, not caused by this change
+- Decision recorded at `.squad/decisions/inbox/nelson-phase4-baseline.md`
+
+**Key insight:** The test runner gracefully handles empty directories — `dir /b` returns nothing and moves on. No placeholder files needed.

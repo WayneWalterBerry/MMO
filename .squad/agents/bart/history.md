@@ -1470,3 +1470,25 @@ Updated all plan files to reflect Phase 2 NPC+Combat completion:
 
 **Files changed:** `src/meta/creatures/rat.lua`, `src/meta/creatures/bat.lua`, `src/meta/creatures/cat.lua`, `src/meta/creatures/wolf.lua`, `src/engine/verbs/sensory.lua`
 **Tests:** All 207 test files pass. Pre-existing failure: `integration/test-room-override.lua`.
+
+### Session — Phase 4 WAVE-0 Pre-Flight
+**Date:** 2026-08-16
+**Requested by:** Wayne Berry
+
+## Learnings
+
+#### LOC Audit Findings (Post-Phase 3)
+- **15 engine modules** currently exceed 500 LOC. Most are pre-existing debt (parser, verbs/helpers, verbs/sensory).
+- **creatures/init.lua at 546** is the only over-500 module that Phase 4 directly grows. Filed split proposal: extract score_actions, move_creature, ind_bait, 	ry_bait, xecute_action into creatures/actions.lua (~170 LOC). Reduces init.lua to ~375 LOC.
+- **Phase 3 LOC estimates were off:** Plan estimated crafting.lua at ~430 (actual: 184), survival.lua at ~365 (actual: 302), combat/init.lua at ~445 (actual: 410). All lower than expected — good news.
+- The helpers table pattern (passing dependencies as a table) is well-established in the creatures subsystem and should be used for the actions.lua extraction.
+
+#### GUID Pre-Assignment
+- Generated 19 GUIDs for Phase 4 objects. gnawed-bone already existed from Phase 3.
+- silk-bundle.lua exists but is Phase 3 asset, not Phase 4.
+- No wolf-* product objects exist yet (wolf-meat, wolf-bone, wolf-hide all NEW).
+- No coin objects exist yet (copper-coin, silver-coin both NEW).
+
+#### Architecture Decision
+- Filed art-creatures-split.md: Extract action execution into creatures/actions.lua before WAVE-1.
+- Filed art-phase4-guids.md: 19 GUIDs + LOC budget (~1,540 LOC, ±25% variance).

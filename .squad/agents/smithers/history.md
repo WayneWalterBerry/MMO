@@ -50,7 +50,22 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 ## Learnings
 
 
-### P1-P5 Tier 2 Parser Improvements — 144/147 (98.0%) Benchmark
+### Phase 4 WAVE-0: Embedding Collision Audit + Narration Pipeline Design
+
+**What shipped:** Two WAVE-0 deliverables for Phase 4 pre-flight.
+
+**Embedding Collision Audit:** Scanned 11,131 embedding phrases and all object keyword lists for 10 Phase 4 keywords. Found 3 HIGH-risk collisions (knife/butcher-knife, rope/silk-rope, bandage/silk-bandage — each has 117 existing phrases blocking the bare keyword), 3 MEDIUM-risk (bone/gnawed-bone keyword overlap, meat 4-way ambiguity, hide verb/noun homograph), and 4 clear entries (web, butcher, craft, silk).
+
+**Key rule established:** Phase 4 objects MUST use adjective-first disambiguation (`{adjective} {noun}` as primary keyword). Bare single-word keywords are reserved for the FIRST object of that type. Critical finding: gnawed-bone.lua claims "wolf bone" keyword which directly collides with incoming wolf-bone — must be removed when wolf-bone ships.
+
+**Narration Pipeline Design:** Designed `ctx.narrate(source, type, message, opts)` convention with 10 sources, 8 message types, 4-stage pipeline (Collect → Batch → Format → Display), and incremental migration strategy (stub in WAVE-1, full pipeline by WAVE-3). Documented at `docs/architecture/ui/narration-pipeline.md`. Pending Bart co-sign.
+
+**Files created:**
+- `.squad/decisions/inbox/smithers-embedding-audit.md` — Full audit with per-keyword analysis and action items
+- `docs/architecture/ui/narration-pipeline.md` — Narration pipeline interface design
+
+
+### P1-P5 Tier 2 Parser Improvements— 144/147 (98.0%) Benchmark
 
 **What shipped:** Five parser improvements to the Tier 2 embedding matcher, taking the benchmark from 134/147 (91.2%) to 144/147 (98.0%). Branch: `squad/parser-p1-noun-gate`.
 
@@ -646,3 +661,31 @@ ew_budget(cap) / create_budget(cap) factory returns {count, cap, overflow_emitte
 - goto same room — no crash
 
 **Commit:** 5aa5066 — "feat: goto admin command for room teleportation (debug)"
+
+### Session — Fix 4 Bugs: goto + combat text (#287, #288, #289, #290)
+
+**Date:** 2025-07-25
+**Requested by:** Wayne Berry
+
+**#287: goto bedroom fails (room ID is start-room)**
+- `goto` handler in `movement.lua` only did exact `ctx.rooms[target_id]` lookup
+- Added fallback: iterates all rooms, matches by `room.name` (substring) and `room.keywords` (exact)
+- `goto bedroom` now finds `start-room` via its keywords `{"bedroom", "room", "chamber", "bedchamber"}`
+
+**#288: goto with no argument gets polluted by parser context**
+- Tier 4 context window in `loop/init.lua` re-injected `last_noun` into bare `goto`
+- Added `goto = true, teleport = true` to `no_noun_verbs` table — prevents context injection
+- Bare `goto` now correctly prints "Goto where? Usage: goto <room-name>"
+
+**#289: Combat says "Someone" instead of "You"**
+- `actor_name()` in `narration.lua` checked `name:lower() == "you"` but player has `id = "player"`
+- Added `is_player` check: `if actor.id == "player" or actor.is_player then return "You" end`
+- Player combat narration now reads "You punch..." / "You kick..." as intended
+
+**#290: Duplicate "into into" in bite narration**
+- Creature weapons (rat, bat, cat, spider) have `message = "sinks its teeth into"`
+- Templates like `"{attacker} {verb} into {zone}..."` produced "sinks its teeth into into your arm"
+- Added post-render dedup in `render()`: `text:gsub("into into", "into")`
+
+**Tests:** All 7 goto tests pass, all 22 narration tests pass, no regressions introduced.
+**Commit:** 37a72ed — "fix: goto keyword search + combat text polish (#287, #288, #289, #290)"

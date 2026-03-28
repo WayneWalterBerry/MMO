@@ -57,13 +57,29 @@ Estimated waves: {M}
 
 **Do NOT ask permission to start.** Present the plan and immediately begin Wave 1.
 
-### Step 3 — Execute Waves
+### Step 3 — Execute Waves (TDD-First)
+
+**⚠️ TDD IS MANDATORY.** Every bug fix MUST follow the TDD cycle:
+1. **Write a failing test first** that reproduces the bug
+2. **Run the test** — confirm it fails (proves the bug exists)
+3. **Fix the code** — make the test pass
+4. **Run all tests** — confirm zero regressions
+
+This is not optional. Agents that skip the failing test step are doing it wrong. The test is PROOF the bug existed and PROOF the fix works. Include this instruction in every agent spawn prompt:
+
+```
+TDD REQUIRED: For each bug you fix:
+1. Write a test that FAILS reproducing the bug
+2. Fix the code so the test PASSES
+3. Run full test suite — zero regressions
+The test file goes in the appropriate test/ directory.
+```
 
 For each wave:
 1. **Spawn all wave agents in parallel** (background mode) — spawn MULTIPLE instances of the same agent if they are working on different files with no conflicts (e.g., two Flanders fixing two different objects, two Nelson fixing two different test files)
-2. **Collect results** as agents complete
+2. **Collect results** as agents complete — verify each agent wrote tests
 3. **Log any issues that couldn't be fixed** — create follow-up issues if needed
-4. **Close fixed issues** via `gh issue close {number}` with a comment referencing the commit
+4. **Close fixed issues** via `gh issue close {number}` with a comment referencing the commit AND the test file
 5. **Commit and push after EVERY wave:**
    ```
    git add -A && git commit -m "burndown wave {N}: {brief summary of fixes}
@@ -135,7 +151,6 @@ Once Marge approves all closures, trigger the **test-pass** skill:
 
 ## Anti-Patterns
 
-- **Don't fix design issues in a burndown.** Feature requests (#261-263 disease types) are design work, not bug fixes. Defer them.
 - **Don't skip Marge.** She catches 10-20% of "fixes" that are actually incomplete.
 - **Don't run test-pass before Marge approves.** The test pass should run on verified-clean code.
 - **Don't serialize when you can parallelize.** If 4 agents can work simultaneously, use 4 agents.

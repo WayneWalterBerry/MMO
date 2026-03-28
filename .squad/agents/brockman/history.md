@@ -1,6 +1,51 @@
 # Brockman — History (Summarized)
 
-## Recent Work: WAVE-5 — Phase 3 Design Documentation (2026-08-16)
+## Recent Work: WAVE-0 — Phase 4 Architecture Documentation (2026-08-16)
+
+**Phase 4 WAVE-0 Deliverables:**
+- **Created `docs/architecture/engine/butchery-system.md`** (17.5 KB, ~400 lines)
+  - Complete architecture for corpse-to-product conversion via knife tool
+  - Metadata spec: `butchery_products` block with requires_tool, duration, products array, narration, removes_corpse flag
+  - Verb handler pseudocode: resolve corpse → tool check → time advance (5 min) → instantiate products → optional corpse removal
+  - Integration: death reshape dependency, registry instantiation, room placement, FSM tick advancement (Option B decision)
+  - Tool capability check (not object-ID): player:find_tool_with_capability("butchering")
+  - Testing strategy: 6 tests covering verb resolution, tool requirement, product instantiation, non-butcherable objects
+  - Example: wolf produces 3 meat, 2 bone, 1 hide
+  - Known limitations documented: no partial butchery, no tool wear/durability, no skill progression (all Phase 5+)
+
+- **Created `docs/architecture/engine/loot-tables.md`** (21.9 KB, ~500 lines)
+  - Complete loot table engine specification: probabilistic creature drops via weighted rolls
+  - Metadata spec: always (100% drops), on_death (weighted roll), variable (qty range), conditional (kill_method)
+  - Weighted selection algorithm: normalize weights, cumulative search, deterministic with math.randomseed(42)
+  - Instantiation flow: roll_loot_table() → weighted_select() → instantiate_drops() → room:add_object()
+  - Testing strategy: 8 tests covering weights, distributions, determinism, integration (kill → drops appear)
+  - Meta-lint rules: LOOT-001 through LOOT-005 (structure, weights, templates, quantity, kill methods)
+  - Example: wolf always drops gnawed-bone, 20% silver-coin, 30% torn-cloth, 50% nothing, 0-3 copper-coins
+  - Deterministic testing with fixed seed prevents flaky tests
+  - Decision rationale: why weighted (vs fixed), why room-floor (vs corpse container), why separate module
+
+**Key Principles Documented:**
+- Principle 8: "Engine executes metadata." All butchery/loot logic defined in creature.lua, engine reads and applies
+- D-14 (True Code Mutation): Butchery doesn't swap files; death reshape creates corpse in-place, butchery consumes it
+- Metadata-driven: No creature-specific verb code. One butcher handler serves all creatures via declarative specs
+- Deterministic RNG: Loot tests use math.randomseed(42) for reproducible sequences (no flaky tests)
+- Time advancement (Option B): Butchery costs game time, triggering FSM ticks, spoilage, respawns (strategic depth)
+
+**Learnings:**
+- Butchery bridges two domain transitions: (1) furniture (non-portable corpse) → multiple small-items (portable), (2) creature death pattern → crafting input
+- Capability-based tool check ("butchering") scales: knife, cleaver, dagger all work without verb code changes
+- Loot tables replace fixed Phase 3 inventory: each creature death now unique (variety), but deterministic for testing
+- Metadata blocks for butchery + loot keep death handler simple and generic; details authored in creature files
+- Time advancement during butchery creates emergent gameplay: player manages spoilage/respawns while processing corpse
+- Weighted roll algorithm (cumulative search) is industry-standard (Diablo, Dark Souls); normalizing weights simplifies authoring
+- Room-floor loot placement (vs corpse container) avoids "search corpse" verb complexity and aligns with Phase 3 behavior
+- Both docs align with existing engine docs style: problem statement → architecture diagram → metadata spec → implementation checklist
+
+**Committed:** Phase 4 WAVE-0 architecture docs reviewed, ready for WAVE-1 code assignments
+
+---
+
+## Previous Work: WAVE-5 — Phase 3 Design Documentation (2026-08-16)
 
 **Phase 3 WAVE-5 Design Docs Delivery:**
 - **Completed `docs/design/food-system.md`** (2,432 words, ~10 KB)

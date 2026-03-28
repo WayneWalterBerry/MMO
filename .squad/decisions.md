@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-27T13:30:00Z  
-**Last Deep Clean:** 2026-03-25T18:21:05Z  
+**Last Updated:** 2026-03-28T01:19:00Z  
+**Last Deep Clean:** 2026-03-25T18:21:05Z
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -52,6 +52,10 @@ Quick-reference table of ALL decisions (active + archived).
 | D-EXIT01-LINT-GAP | Testing/Tooling | ✅ Implemented | EXIT-01 now validates portal targets; boundary portal handling documented | Active |
 | D-KITCHEN-DOOR-TRAVERSAL | Architecture | ✅ Implemented | courtyard-kitchen-door blocked until manor-kitchen exists in Level 2 | Active |
 | D-MUTATION-GRAPH-LINTER | Testing | 🟡 In Progress | Comprehensive linter plan written; dynamic discovery of all .lua files under src/meta/ | Active |
+| D-PHASE4-WAVE0-LOC-AUDIT | Architecture | ✅ Complete | Phase 4 LOC audit complete; creatures/init.lua split planned; 19 GUIDs assigned; 1,540 LOC budget | Active |
+| D-PHASE4-WAVE0-TEST-BASELINE | Testing | ✅ Complete | Phase 3 baseline: 207 tests; 3 new dirs registered (butchery/loot/stress); 0 regressions | Active |
+| D-PHASE4-WAVE0-EMBEDDING-AUDIT | Architecture | ✅ Complete | 3 HIGH collisions (knife/rope/bandage); adjective-first resolution; narration pipeline designed | Active |
+| D-CREATURES-ACTIONS-SPLIT | Architecture | 🟡 Planned | Extract score_actions/move_creature/execute_action from creatures/init.lua to creatures/actions.lua (split before W1) | Active |
 | Architecture Notes | Architecture | 📦 Archived | See full entry | Archive |
 | D-104: PLAYER-CANONICAL-STATE (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
 | D-105: OBJECT-INSTANCING-FACTORY (Wave 9 — Burndown) | Architecture | 📦 Archived | See full entry | Archive |
@@ -5836,5 +5840,157 @@ echo "command1\ncommand2\n..." | lua src/main.lua --headless
 - `src/engine/verbs/init.lua` (verb registration module)
 - `.squad/decisions.md` (D-HEADLESS, D-VERBS-REFACTOR-2026-03-24)
 
+---
+
+## D-PHASE4-WAVE0-LOC-AUDIT: Phase 4 LOC Audit & GUID Pre-Assignment
+
+**Author:** Bart (Architecture Lead) | **Date:** 2026-03-28 | **Status:** ✅ COMPLETE
+
+### Overview
+
+Phase 4 pre-flight LOC audit across all engine modules relevant to Phase 4 scope. Identified creatures/init.lua as critical (546 LOC, exceeds 500 ceiling). 19 new GUIDs pre-assigned for Phase 4 objects. 
+
+### Key Findings
+
+**Modules over 500 LOC (full inventory):**
+- creatures/init.lua: **546** ⚠️ **Phase 4 will grow this** — split required before W1
+- All others pre-existing debt from Phase 1–3
+
+**Phase 4 LOC Budget:** ~1,540 total across 5 waves (±25% variance acceptable)
+
+**Split Plan:** Extract score_actions, move_creature, execute_action from creatures/init.lua → creatures/actions.lua (~170 LOC)
+- Reduces init.lua from 546 → ~375 LOC (safe)
+- Creates home for Phase 4 behavior additions (W5 pack tactics)
+- Execution: Before WAVE-1 starts
+
+### GUIDs Pre-Assigned (19 Total)
+
+| Object | GUID | Category | Wave |
+|--------|------|----------|------|
+| wolf-meat | {c2027139-6127-4020-9272-f707333290c9} | Butchery product | W1 |
+| wolf-bone | {7e7a979b-57bc-4661-838d-074fcb49ce4c} | Butchery product | W1 |
+| wolf-hide | {67c38c8b-53a6-4de9-85e9-24e9ffe86503} | Butchery product | W1 |
+| wolf-pelt | {a575cddc-feaf-441b-a05d-31f30ef2f967} | Crafted mutation | W1 |
+| cooked-wolf-meat | {58ab2833-46cd-4e16-b0db-38132ce83884} | Mutation target | W1 |
+| butcher-knife | {9e8ab074-0888-42ab-b871-af7e39e59598} | Tool | W1 |
+| stress | {05c343ce-8f8c-406a-80ef-b271bc4dd89b} | Injury type | W3 |
+| spider-web | {bb5699b3-e027-4b43-b9cf-3acc183091b9} | Trap object | W4 |
+| silk-rope | {47571952-19a9-4b7b-9b6d-744c842f1bc2} | Craftable | W4 |
+| silk-bandage | {7ffb6862-4cb1-4312-bfc0-ddd444abbd40} | Craftable | W4 |
+| territory-marker | {60189a1c-892c-478f-be8a-086fe8128cbb} | Behavior marker | W5 |
+| wolf-pack-alpha | {3181034d-e70f-48ab-abc5-ccf942924850} | Behavior marker | W5 |
+| wolf-pack-beta | {00dc19b2-7d81-4ab8-bfbb-8a2117fbf08a} | Behavior marker | W5 |
+| spider-fang | {d0edbc79-c45f-424c-ad3c-ed816cbc617a} | Loot drop | W2 |
+| charred-hide | {ce775db0-7951-4fc0-a3df-5a02d00d7dd9} | Conditional loot | W2 |
+| tainted-meat | {eee2cc13-59ab-42a0-a79a-4e212b6f101b} | Conditional loot | W2 |
+| copper-coin | {ca003244-7b69-44c2-a42d-27ac59a6e33b} | Common loot | W2 |
+| silver-coin | {140b01c3-1fc9-4868-81c2-33b546add92b} | Rare loot | W2 |
+| torn-cloth | {e76bd60b-2055-4a63-bf97-6463d7fde9ec} | Common loot | W2 |
+
+**All Phase 4 agents MUST use these GUIDs. No ad-hoc generation during waves.**
+
+---
+
+## D-PHASE4-WAVE0-TEST-BASELINE: Phase 3→4 Test Baseline Locked
+
+**Author:** Nelson (QA Engineer) | **Date:** 2026-03-28 | **Status:** ✅ COMPLETE
+
+### Baseline
+
+- **Phase 3 Final Test Count:** 207 test files
+- **New Directories Registered:** test/butchery/, test/loot/, test/stress/
+- **Regression Check:** All tests pass after registration (0 regressions)
+- **Notes:** injuries/test-injuries-comprehensive.lua showed intermittent failure on first run but passed on regression check — flagged as flaky (pre-existing, not Phase 4 cause)
+
+### Tracking
+
+This baseline is locked for Phase 4 regression analysis. All new Phase 4 tests increment from this count.
+
+---
+
+## D-PHASE4-WAVE0-EMBEDDING-AUDIT: Embedding Collision Audit & Resolution
+
+**Author:** Smithers (UI Engineer) | **Date:** 2026-03-28 | **Status:** ✅ COMPLETE
+
+### Summary
+
+Embedding index audit checked Phase 4 keywords against 11,131 existing embedding phrases. Identified 3 HIGH collision risks.
+
+### 🔴 HIGH Collisions
+
+1. **knife / butcher-knife**
+   - Existing `knife` owns 117 embedding phrases
+   - Action: butcher-knife keywords = {"butcher knife", "carving knife"} (NO bare "knife")
+   - Add ~39 new butcher-knife phrases to index
+
+2. **rope / silk-rope**
+   - Existing `rope-coil` owns 117 embedding phrases
+   - Action: silk-rope keywords = {"silk rope", "spider rope"} (NO bare "rope")
+   - Add ~39 new silk-rope phrases to index
+
+3. **bandage / silk-bandage**
+   - Existing `bandage` owns 117 embedding phrases
+   - Action: silk-bandage keywords = {"silk bandage", "silk dressing"} (NO bare "bandage")
+   - Add ~39 new silk-bandage phrases to index
+
+### 🟡 MEDIUM Collisions
+
+- **bone / gnawed-bone vs wolf-bone:** gnawed-bone claims "wolf bone" keyword. When wolf-bone ships (W1), remove "wolf bone" from gnawed-bone → "bone fragment"
+- **meat — 4-way disambiguation:** 3 existing meats + wolf-meat. Consider disambiguation prompt in parser Tier 4 context window
+
+### 🟢 CLEAR
+
+- web, butcher, craft, silk, hide (verb/noun homograph flagged for future)
+
+### Resolution Strategy
+
+**Phase 4 object keywords MUST follow adjective-first disambiguation:**
+- New objects use `{adjective} {noun}` as primary keyword (e.g., "butcher knife", not "knife")
+- Bare single-word keywords reserved for FIRST object of that type
+- If bare keyword becomes ambiguous (both in room), parser triggers disambiguation prompt
+- gnawed-bone "wolf bone" keyword removed when wolf-bone ships
+
+### Embedding Index Update Plan
+
+When Phase 4 objects created, add ~195 new phrases:
+- butcher-knife: ~39 phrases
+- wolf-meat: ~39 phrases
+- wolf-bone: ~39 phrases
+- wolf-hide: ~39 phrases
+- spider-web: ~39 phrases
+
+---
+
+## D-CREATURES-ACTIONS-SPLIT: creatures/init.lua → creatures/actions.lua Extraction
+
+**Author:** Bart (Architecture Lead) | **Date:** 2026-03-28 | **Status:** 🟡 PLANNED (Execute before W1)
+
+### Problem
+
+creatures/init.lua currently 546 LOC (exceeds 500 LOC ceiling). Phase 4 will add behavior code (W5 pack tactics, territory, ambush). Without split, module reaches ~700+ LOC by W5.
+
+### Solution
+
+Extract action execution and scoring logic into `src/engine/creatures/actions.lua`:
+- **Extract:** score_actions (~55 LOC), move_creature (~22 LOC), find_bait (~10 LOC), try_bait (~21 LOC), execute_action (~149 LOC)
+- **Result:** init.lua 546 → ~375 LOC; actions.lua: 0 → ~170 LOC
+- **Pattern:** Pass dependencies via helpers table (consistent with navigation/stimulus delegation)
+
+### LOC Projection (Post-Split)
+
+| Wave | init.lua | actions.lua | Total |
+|------|----------|-------------|-------|
+| Post-split | 375 | 170 | 545 |
+| W1 (butchery) | 385 | 170 | 555 |
+| W2 (loot) | 400 | 170 | 570 |
+| W5 (behaviors) | 420 | 250 | 670 |
+
+Both modules stay **well under 500** through all of Phase 4.
+
+### Execution
+
+**Owner:** Bart | **When:** Before WAVE-1 kickoff | **Risk:** Low (pure refactor, no behavior changes)
+
+**Test impact:** Run full creature behavior test suite after extraction.
 
 
