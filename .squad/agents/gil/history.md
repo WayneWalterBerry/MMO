@@ -11,6 +11,28 @@
 
 ## Learnings
 
+### 2026-03-27: Deploy — Bugfix wave (13 issues)
+- **Timestamp:** 2026-03-27T17:38Z
+- **Status:** ✅ COMPLETE — Deployed to GitHub Pages
+- **Pages commit:** `2c2348d` (main branch, 14 files changed, +234 −61 lines)
+- **Engine bundle:** 265.7 KB compressed (1798.8 KB raw), 67 engine files + 1 asset file
+- **Meta files:** 186 total (125 objects, 7 rooms, 7 templates, 1 level, 31 materials, 10 injuries, 5 creatures)
+- **Cache-bust stamp:** `20260327173805` stamped into `bootstrapper.js` and `index.html`
+- **Total files deployed:** 193
+- **Tests:** 207/207 test files passed before build
+- **What shipped:**
+  - Creature loader fixed — rat, cat, wolf, spider, bat all load (creatures renamed by GUID in deploy)
+  - Player health field — creatures can now damage the player
+  - Death drops work (bone, silk)
+  - Spoilage FSM timer fires correctly
+  - Combat text fixed ("You" not "Someone")
+  - goto searches keywords
+  - Poultice + antidote placed in Level 1 rooms
+- **Deploy method:** Used `web/deploy.ps1` — clean run, LF/CRLF warnings only
+- **Verification:** All 3 key files confirmed on GitHub API (bootstrapper.js, engine.lua.gz, game-adapter.lua)
+- ⚠️ Engine bundle grew from 152.3 KB → 265.7 KB (+113 KB) — 67 engine files now (was 41). Creature system + expanded verbs added significant code.
+- ⚠️ Meta files jumped from 103 → 186 — creatures (5), new objects (42 new), materials (+8), injuries (+3).
+
 ### 2026-03-24: Issue #123 — Web Build Materials Verification
 - **Timestamp:** 2026-03-24T13:11Z
 - **Status:** ✅ FIXED — Materials now load in browser
@@ -368,3 +390,22 @@
 - **Pre-deploy gate:** `run-before-deploy.ps1` had pre-existing test failures (BUG-151–163, parser edge cases, search/container state tests) — all pre-existing, none caused by Phase 3 changes. Built directly via `deploy.ps1`.
 - **Push issue:** `git push` hung due to VS Code askpass credential helper not being connected in CLI session. Workaround: used token-in-URL approach via `gh auth token`. Worth noting for future CLI deploys outside VS Code.
 - **Verified on GitHub:** Files confirmed via `gh api`, commit SHA matches, site loads at https://waynewalterberry.github.io/play/
+
+### 2026-03-27: Deploy #2 — goto admin command, playtest reports, dirty-dozen skill
+- **Timestamp:** 2026-03-27T16:57Z
+- **Status:** ✅ COMPLETE — Deployed to GitHub Pages
+- **Pages commit:** `ceaa1b7` (main branch, 6 files changed, +69 −6 lines)
+- **Engine bundle:** 264.4 KB compressed (1793.5 KB raw), 67 engine files + 1 asset file
+- **Meta files:** 186 total (125 objects, 7 rooms, 7 templates, 1 level, 10 injuries, 31 materials, 5 creatures)
+- **Cache-bust stamp:** `20260327165735` stamped into `bootstrapper.js` and `index.html`
+- **Embedding vectors:** `embedding-vectors.json.gz` 4813.6 KB (4337 entries, version `82be9354743ec21b`), lazy-loaded via IndexedDB
+- **Embedding index:** 884 KB (stripped vectors)
+- **Total files deployed:** 193
+- **What shipped:**
+  - `goto` admin command (teleport between rooms for debugging/playtesting)
+  - Playtest report improvements
+  - Dirty-dozen skill additions
+- **Deploy method:** Used `web/deploy.ps1` — clean run, LF/CRLF warnings only (no errors)
+- **Push:** Clean push, no credential issues (session already authenticated)
+- **Verified on GitHub:** All 4 key files confirmed via `gh api` (bootstrapper.js, engine.lua.gz, game-adapter.lua, index.html). Commit SHA `ceaa1b7` matches.
+- **Build notes:** Engine bundle unchanged from prior deploy (264.1 → 264.4 KB, +0.3 KB — negligible). Meta count unchanged at 186. This was a light deploy — primarily engine-side verb additions, no new objects or templates.
