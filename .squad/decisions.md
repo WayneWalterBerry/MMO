@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-28T14:50:00Z  
-**Last Merge:** 2026-03-28T14:50:00Z (11 decisions from inbox merged)
+**Last Updated:** 2026-03-28T04:50:00Z  
+**Last Merge:** 2026-03-28T04:50:00Z (2 decisions from Wave 1 inbox merged)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -27,6 +27,8 @@ Quick-reference table of **active + most recent decisions**.
 | D-HIRING-DEPT | General | 🟢 Active | All new hires must have department assignment |
 | D-WAYNE-CODE-REVIEW-DIRECTIVE | Process | 🟢 Active | Mandatory code review before pull requests |
 | D-TESTFIRST | Testing | 🟢 Active | Test-first directive for all bug fixes |
+| D-EXIT-DOOR-RESOLUTION | Architecture | 🟢 Active | Exit door fallback pattern for verb handlers (Smithers) |
+| D-CREATE-OBJECT-TEMPLATE | Architecture | 🟢 Active | Spider web uses template instantiation + max_per_room (Flanders) |
 | D-WAVE1-BUTCHERY-CREATURES-SPLIT | Architecture | ✅ Implemented | creatures/init.lua split to actions.lua; -190 LOC headroom |
 | D-WAVE1-BURNDOWN | Process | ✅ Complete | Triaged 54 issues, 39 Wave 3 ready, 15 deferred to Phase 5 |
 | D-WAVE5-BEHAVIORS | Architecture | ✅ Implemented | Pack tactics, territorial, ambush behavior engine design |
@@ -504,3 +506,56 @@ Thin wrapper preserves public API and auto-registers built-ins.
 ---
 
 **For older decisions, design discussions, and completed Phase 3 work, see `decisions-archive.md`.**
+
+---
+
+## D-EXIT-DOOR-RESOLUTION: Smithers — Exit Door Fallback Pattern
+
+**Status:** 🟢 Active  
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-28  
+**Affects:** Bart, Moe, Flanders, verb handlers  
+
+### Decision
+
+Any verb handler that acts on doors (open, close, lock, unlock, knock, bash, etc.) **MUST** search oom.exits as a fallback after ind_visible() returns nil. Exit doors are NOT registry objects — they live as plain tables in oom.exits[direction].
+
+Use ind_exit_by_keyword(ctx, noun) from ngine.verbs.helpers.search to resolve exits by direction name, keyword, name substring, or target room id. Returns (exit_table, direction_key) or (nil, nil).
+
+### Rationale
+
+Issues #387 and #388 revealed that exit doors were completely invisible to verb handlers because ind_visible() only searches the registry. This caused 43 test failures across movement, open, close, unlock, and lock verbs.
+
+### Impact
+
+- New verb handlers that interact with doors must include the exit fallback pattern
+- Portal objects (D-PORTAL-ARCHITECTURE) are separate — they ARE registry objects and get found by ind_visible(). This fallback is only for legacy oom.exits entries.
+- Fixes committed in 031b27d (Smithers)
+
+---
+
+## D-CREATE-OBJECT-TEMPLATE: Flanders — Template Instantiation for Creature Objects
+
+**Status:** 🟢 Active  
+**Author:** Flanders (Object Designer)  
+**Date:** 2026-03-28  
+**Affects:** Bart (engine), all creature designers  
+
+### Context
+
+The xecute_action("create_object") handler in src/engine/creatures/actions.lua previously used obj_spec.object_def (an inline object table) to build instances. Creature metadata like the spider specified 	emplate = "spider-web" instead, which was ignored. The handler also lacked support for max_per_room.
+
+### Decision
+
+1. When creates_object.template is set, the engine now calls egistry:instantiate(template) to create a proper deep-copy with a new GUID.
+2. creates_object.max_per_room is enforced natively by counting objects in the room whose id starts with the template name.
+3. object_def path is preserved as fallback for inline definitions.
+
+### Impact
+
+- Creature authors should use 	emplate (referencing an object in src/meta/objects/) rather than object_def for created objects.
+- max_per_room is now a first-class declarative field — no need for condition functions.
+- Bart: please review the ctions.lua changes when convenient. Flanders crossed into engine territory to unblock #379.
+- Generic capability added to engine (not object-specific logic per Principle 8)
+- Fixes committed in 4827a5e (Flanders)
+
