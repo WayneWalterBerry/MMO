@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-07-20T14:30:00Z  
-**Last Merge:** 2026-07-20T14:30:00Z (4 decisions from Wave 3-4 inbox merged)
+**Last Updated:** 2026-08-22T14:30:00Z  
+**Last Merge:** 2026-08-22T14:30:00Z (4 decisions from testing/linter inbox merged)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -23,6 +23,10 @@ Quick-reference table of **active + most recent decisions**.
 | D-WORLDS-CONCEPT | Architecture | 🟢 Active | Worlds meta concept — top-level container above Levels |
 | D-ENGINE-REFACTORING-WAVE2 | Architecture | 🟢 Active | Engine refactoring sequencing: 6 files, 5 modules each, after test baselines |
 | D-LINTER-IMPL-WAVES | Process | 🟢 Active | Linter improvement: 6 waves with 5 gates, serialized lint.py edits |
+| D-TEST-SPEED-IMPL-WAVES | Process | 🟢 Active | Test speed: 5-wave, 4-gate implementation; Nelson owns run-tests.lua; benchmark gating |
+| D-BENCHMARK-GATING | Testing | 🟢 Active | Benchmark files use `bench-*.lua` prefix; `--bench` flag includes benchmarks |
+| D-WAVE1-ALREADY-IMPLEMENTED | Testing | ✅ Complete | WAVE-1 regression tests pass; GATE-1 ready |
+| D-XF03-UNPLACED-OBJECTS | Testing | 🟢 Active | Unplaced objects retain WARNING-level XF-03; disambiguation requires room context |
 | D-ENGINE-REFACTORING-REVIEW | General | 🟢 Active | Ongoing engine architecture review |
 | D-HIRING-DEPT | General | 🟢 Active | All new hires must have department assignment |
 | D-WAYNE-CODE-REVIEW-DIRECTIVE | Process | 🟢 Active | Mandatory code review before pull requests |
@@ -619,4 +623,116 @@ The xecute_action("create_object") handler in src/engine/creatures/actions.lua 
 - Bart: please review the ctions.lua changes when convenient. Flanders crossed into engine territory to unblock #379.
 - Generic capability added to engine (not object-specific logic per Principle 8)
 - Fixes committed in 4827a5e (Flanders)
+
+---
+
+## D-TEST-SPEED-IMPL-WAVES: Test Speed Implementation Plan
+
+**Status:** 🟢 Active  
+**Author:** Bart (Architect)  
+**Date:** 2026-08-22  
+
+### Decision
+
+Test speed improvement follows a 5-wave, 4-gate implementation plan covering design phases 1–3.
+
+**Key architecture decisions affecting other agents:**
+
+1. **Nelson owns ALL `run-tests.lua` modifications.** No other agent touches this file. Nelson adds `--bench` (WAVE-1), `--shard` (WAVE-2), and `--changed` (WAVE-4) flags sequentially.
+
+2. **Parallel runner is a SEPARATE file.** `test/run-tests-parallel.ps1` (Windows) and `test/run-tests-parallel.sh` (Unix) are new files. `run-tests.lua` remains the serial fallback — no structural changes.
+
+3. **Benchmark files use `bench-*` naming convention.** Rename `test-inverted-index.lua` → `bench-inverted-index.lua` (and similar). Runner skips `bench-*` by default; `--bench` flag includes them.
+
+4. **CI uses 6 named shards:** `parser`, `verbs`, `creatures`, `rooms`, `search`, `other`. The `--shard` flag in `run-tests.lua` filters by directory name. `other` is a catch-all for everything not in a named shard.
+
+5. **Three files maintain test directory lists** (run-tests.lua, .ps1, .sh). When adding a new test directory, all three must be updated. Shared config extraction deferred.
+
+6. **CI auto-issues are per-shard** (not one mega-issue). Labels: `bug`, `ci-failure`, `squad:nelson`. `ci-failure` label must be created if it doesn't exist.
+
+### Affects
+
+- **Nelson:** Primary implementer for run-tests.lua changes
+- **Gil:** CI workflow owner (squad-ci.yml)
+- **Brockman:** Documentation deliverables in WAVE-3 and WAVE-4
+- **Marge:** Gate verification at every gate
+- **All agents adding test directories:** Must update 3 files
+
+---
+
+## D-BENCHMARK-GATING: Benchmark Gating Convention
+
+**Status:** 🟢 Active  
+**Author:** Nelson (Tester)  
+**Date:** 2026-08-22  
+
+### Decision
+
+- Benchmark files use `bench-*.lua` prefix (not `test-*`).
+- `lua test/run-tests.lua` skips benchmarks by default.
+- `lua test/run-tests.lua --bench` includes benchmarks.
+- `test-bm25-deep.lua` is classified as CORRECTNESS (not a benchmark) despite the name — it asserts on expected verb/noun values, not speed.
+
+### Rationale
+
+Two files consumed ~65s of the ~180s test suite (inverted-index + tier2-benchmark). Gating them behind `--bench` drops default developer runtime by ~36%. The naming convention (`bench-*`) is grep-able, requires no config files, and matches the plan in `plans/testing/test-speed-implementation-phase1.md`.
+
+### Impact
+
+- **Nelson/Marge:** Default test runs are faster. Use `--bench` for full regression.
+- **Gil (CI):** CI can run `--bench` on nightly, skip on PR checks for speed.
+- **All agents:** New performance-only test files should use `bench-` prefix.
+
+---
+
+## D-WAVE1-ALREADY-IMPLEMENTED: WAVE-1 Fixes Already Implemented
+
+**Status:** ✅ Complete  
+**Author:** Nelson (Tester)  
+**Date:** 2026-07-29  
+
+### Context
+
+While building WAVE-0/WAVE-1 test infrastructure per the linter improvement plan, discovered that WAVE-1 code changes for both XF-03 (#190) and XR-05 (#196) are **already implemented** in `lint.py` and `config.py`:
+
+- **XF-03:** Room-aware keyword collision filtering, disambiguator detection, cross-room severity downgrade, and `get_rule_config()` API are live.
+- **XR-05:** Template material="generic" suppression is live. XR-05b object-level detection works.
+- **config.py:** `DEFAULT_RULE_CONFIG` with `XF-03.allowed_shared` and `XF-03.cross_room_severity` exists. `CheckConfig.get_rule_config()` method exists.
+
+### Decision
+
+All 8 WAVE-1 regression tests pass against the current codebase. **GATE-1 can be evaluated now** — no further code changes needed for WAVE-1.
+
+### Impact
+
+- Smithers: No WAVE-1 work remaining on lint.py
+- Bart: No WAVE-1 work remaining on config.py
+- Coordinator: Can skip WAVE-1 implementation and proceed to GATE-1 evaluation
+
+---
+
+## D-XF03-UNPLACED-OBJECTS: XF-03 Unplaced Object Handling
+
+**Status:** 🟢 Active  
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-07-21  
+**Issues:** #190 (XF-03 false positives)
+
+### Decision
+
+Objects not placed in any room (no GUID referenced in room instances) retain WARNING-level XF-03 severity for shared keywords. Disambiguation logic only applies to objects with confirmed same-room placement.
+
+### Rationale
+
+Three-tier XF-03 severity requires room context:
+1. **Cross-room (INFO):** Both objects confirmed in different rooms
+2. **Same-room (disambiguation):** Both objects confirmed sharing a room
+3. **Unplaced (WARNING):** Either object lacks room assignment → conservative
+
+Applying disambiguation to unplaced objects would suppress warnings for objects still being authored. Keeping WARNING ensures keyword collisions are visible until room placement confirms the context.
+
+### Impact
+
+- **Flanders/Moe:** Object/room authors see WARNINGs for unplaced objects with shared keywords. These resolve to INFO automatically once objects are placed in different rooms.
+- **Nelson:** Test 4 in `test_xf03.py` (disambiguator suppression) uses unplaced objects — stays xfail until a future wave adds room context to the test fixtures.
 
