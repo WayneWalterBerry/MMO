@@ -71,6 +71,29 @@ return {
         nocturnal = true,
         home_room = nil,
         web_builder = true,
+
+        -- WAVE-4: Creature-created objects (spider spins webs)
+        creates_object = {
+            template = "spider-web",
+            cooldown = "30 minutes",
+            condition = function(creature, ctx)
+                local webs = ctx.room:find_by_template("spider-web")
+                return #webs < 2
+            end,
+            narration = "The spider spins a web in the corner.",
+        },
+
+        -- WAVE-4: Ambush behavior near web
+        web_ambush = {
+            priority = 0.8,
+            condition = function(creature, ctx)
+                local webs = ctx.room:find_by_template("spider-web")
+                for _, web in ipairs(webs) do
+                    if web.trapped_creature then return true end
+                end
+                return false
+            end,
+        },
     },
 
     -- Drives

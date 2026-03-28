@@ -1,0 +1,15 @@
+return {
+    guid = "{f084946a-ac61-49bd-aa78-dc93f5aa7bfe}",
+    name = "silk",
+    density = 300,
+    melting_point = nil,
+    ignition_point = 230,
+    hardness = 1,
+    flexibility = 0.9,
+    absorbency = 0.6,
+    opacity = 0.3,
+    flammability = 0.6,
+    conductivity = 0.0,
+    fragility = 0.1,
+    value = 5,
+}

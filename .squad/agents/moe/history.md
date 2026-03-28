@@ -488,6 +488,28 @@ Built all 5 new room .lua files in `src/meta/world/`:
 
 ---
 
+### Phase 4 WAVE-4: Place Spider in Cellar Room
+
+**Date:** 2026-08
+**Task:** Place cellar spider per WAVE-4 spatial spec from `plans/npc-combat/npc-combat-implementation-phase4.md` (lines 778-788).
+
+**Changes:**
+- `src/meta/rooms/cellar.lua`: Added `cellar-spider` instance (GUID `{f67e3d8b-ecab-41a4-9f3e-79da4c5374ae}`) with full `placement` metadata table encoding the spatial spec:
+  - Position: floor, south wall, near barrel
+  - Web zones: barrel-side-corner, torch-bracket-corner
+  - Blocked zones: near-brazier, exits (heat source avoidance + exit clearance)
+  - Max webs: 2
+  - Avoids brazier if lit; prefers dark corners
+- Spider coexists with existing `cellar-rat` — both are room-level creature instances
+- Spider NOT added to `deep-cellar.lua` or `storage-cellar.lua` (per spec constraint)
+- Deep-cellar already had `deep-cellar-spider` from WAVE-1 — that's a separate placement, left untouched
+
+**Pattern used:** Extended the standard `{ id = "room-creature", type_id = "{guid}" }` pattern with a `placement` metadata table. This is the first creature instance with spatial constraint metadata — follows Principle 8 (objects declare behavior via metadata, engine executes). The placement table gives the engine data to position the spider and constrain its web-building zones without any engine-specific room code.
+
+**Tests:** Zero new failures. 5 pre-existing failures (silk material not registered, spider-web creation not implemented, known playtest bugs) — all unrelated to this change.
+
+---
+
 ## Archives
 
 - `history-archive-2026-03-20T22-40Z-moe.md` — Full archive (2026-03-18 to 2026-03-20T22:40Z): world builder onboarding, room architecture, map design, level 1 expansion

@@ -1,6 +1,7 @@
 -- engine/verbs/crafting.lua
 -- Retains: sew/stitch/mend handlers.
 -- Write/inscribe moved to cooking.lua; put/place moved to placement.lua (Phase 3 WAVE-0).
+-- WAVE-4: craft/make/create handlers (recipe-ID dispatch).
 local H = require("engine.verbs.helpers")
 
 local _hobj = H._hobj
@@ -15,6 +16,26 @@ local has_some_light = H.has_some_light
 
 local M = {}
 
+---------------------------------------------------------------------------
+-- Recipe table — Tier 1 recipe-ID dispatch (Phase 4 WAVE-4)
+-- Player types `craft silk-rope` — noun IS the recipe ID.
+-- `craft X from Y` syntax deferred to Phase 5.
+---------------------------------------------------------------------------
+local crafting_recipes = {
+    ["silk-rope"] = {
+        ingredients = { { id = "silk-bundle", quantity = 2 } },
+        requires_tool = nil,
+        result = { id = "silk-rope", quantity = 1 },
+        narration = "You twist the silk bundles together into a strong, lightweight rope.",
+    },
+    ["silk-bandage"] = {
+        ingredients = { { id = "silk-bundle", quantity = 1 } },
+        requires_tool = nil,
+        result = { id = "silk-bandage", quantity = 2 },
+        narration = "You tear the silk into strips suitable for bandaging wounds.",
+    },
+}
+
 function M.register(handlers)
     -- Delegate write/inscribe to cooking module
     local cooking = require("engine.verbs.cooking")
@@ -27,6 +48,112 @@ function M.register(handlers)
     -- Delegate butcher/carve/skin/fillet to butchery module
     local butchery = require("engine.verbs.butchery")
     butchery.register(handlers)
+
+    ---------------------------------------------------------------------------
+    -- CRAFT / MAKE / CREATE — recipe-ID dispatch (WAVE-4)
+    -- Player types `craft silk-rope`. Noun = recipe ID from crafting_recipes.
+    ---------------------------------------------------------------------------
+    handlers["craft"] = function(ctx, noun)
+        if noun == "" then
+            print("Craft what? (Try: craft silk-rope)")
+            return
+        end
+
+        local recipe_id = noun:lower()
+            :gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+
+        local recipe = crafting_recipes[recipe_id]
+        if not recipe then
+            print("You don't know how to craft that.")
+            return
+        end
+
+        -- Check tool requirement
+        if recipe.requires_tool then
+            local tool = find_tool_in_inventory(ctx, recipe.requires_tool)
+            if not tool then
+                print("You need the right tool to craft " .. recipe_id .. ".")
+                return
+            end
+        end
+
+        -- Gather ingredients from inventory
+        local consumed = {}
+        for _, ingredient in ipairs(recipe.ingredients) do
+            local remaining = ingredient.quantity
+            for _ = 1, ingredient.quantity do
+                local found = nil
+                -- Search hands
+                for i = 1, 2 do
+                    local hand = ctx.player.hands[i]
+                    if hand then
+                        local obj = _hobj(hand, ctx.registry)
+                        if obj and obj.id:match("^" .. ingredient.id) then
+                            local dominated = false
+                            for _, c in ipairs(consumed) do
+                                if c.guid == obj.guid or c.id == obj.id then dominated = true; break end
+                            end
+                            if not dominated then found = obj; break end
+                        end
+                        -- Check bag contents
+                        if not found and obj and obj.container and obj.contents then
+                            for _, item_id in ipairs(obj.contents) do
+                                local item = ctx.registry:get(item_id)
+                                if item and item.id:match("^" .. ingredient.id) then
+                                    local dominated = false
+                                    for _, c in ipairs(consumed) do
+                                        if c.guid == item.guid or c.id == item.id then dominated = true; break end
+                                    end
+                                    if not dominated then found = item; break end
+                                end
+                            end
+                        end
+                    end
+                end
+                -- Search room contents
+                if not found then
+                    for _, obj_id in ipairs(ctx.current_room.contents or {}) do
+                        local obj = ctx.registry:get(obj_id)
+                        if obj and obj.id:match("^" .. ingredient.id) then
+                            local dominated = false
+                            for _, c in ipairs(consumed) do
+                                if c.guid == obj.guid or c.id == obj.id then dominated = true; break end
+                            end
+                            if not dominated then found = obj; break end
+                        end
+                    end
+                end
+                if found then
+                    consumed[#consumed + 1] = found
+                    remaining = remaining - 1
+                else
+                    break
+                end
+            end
+            if remaining > 0 then
+                print("You don't have enough " .. ingredient.id .. " to craft " .. recipe_id .. ".")
+                return
+            end
+        end
+
+        -- Consume ingredients
+        for _, obj in ipairs(consumed) do
+            remove_from_location(ctx, obj)
+            ctx.registry:remove(obj.id)
+        end
+
+        -- Spawn results
+        local spawns = {}
+        for _ = 1, recipe.result.quantity do
+            spawns[#spawns + 1] = recipe.result.id
+        end
+        spawn_objects(ctx, spawns)
+
+        print(recipe.narration)
+    end
+
+    handlers["make"] = handlers["craft"]
+    handlers["create"] = handlers["craft"]
 
     ---------------------------------------------------------------------------
     -- SEW {material} WITH {tool} -- crafting verb (requires sewing skill)

@@ -54,6 +54,25 @@
 - Dawn Light: ✅ NEW FEATURE — sleep until dawn enables `look` without matches
 - Issue Fixes: ✅ ALL VERIFIED (#2, #3, #4, #5, BUG-065, #72, #78-84)
 
+### Recent Work: Phase 4 WAVE-4 — Spider Web + Silk Crafting Tests (2026-08-16)
+
+**WAVE-4 TDD Delivery — Nelson's Spider Web + Silk Crafting Tests:**
+- Created `test/creatures/test-spider-web.lua` — 4 unit tests
+  - spider creates web via creates_object behavior after cooldown
+  - web blocks NPC movement (obstacle.blocks_npc_movement = true)
+  - player passes through web (passable, obstacle.player_passable = true)
+  - max 2 webs per room (spider doesn't create third web)
+- Created `test/crafting/test-silk-crafting.lua` — 4 unit tests
+  - craft silk-rope: 2x silk-bundle → 1x silk-rope
+  - craft silk-bandage: 1x silk-bundle → 2x silk-bandage
+  - craft without ingredients: error message, no output
+  - silk-bandage heals: +5 HP + stops bleeding (dual-purpose)
+- Created `test/crafting/` directory, registered in `test/run-tests.lua`
+- **TDD Red Phase Results:** 6/8 PASS, 2 expected failures:
+  - test 1 (web creation): needs Bart's create_object engine action
+  - test 4 (bandage healing): needs Flanders' silk-bandage.lua definition
+- **No regressions:** Existing test suite unaffected
+
 ### Recent Work: Phase 4 WAVE-2 — Loot Table Tests + Meta-Lint (2026-08-16)
 
 **WAVE-2 TDD Delivery — Nelson's Loot Table Tests + Meta-Lint Rules:**
@@ -93,7 +112,12 @@
 
 ## Learnings
 
-- The `butchery.lua` verb handler uses `find_visible` from helpers, not a simple `registry:find_by_keyword`. Mock contexts need real `room.contents` arrays with IDs that map to `reg:get()`.
+- WAVE-4 spider-web tests: obstacle validation (blocks_npc_movement, player_passable) can be tested directly from the object definition when the engine action doesn't exist yet — fall through to definition-level assertions.
+- WAVE-4 crafting tests: recipes may live in `engine.verbs.crafting` or `engine.verbs` (craft verb). Tests should try both paths with pcall guards.
+- silk-bandage healing is dual-purpose (HP + stops bleeding). Tests must verify both effects. The `use_effect` field on the object drives the engine behavior — test the contract, not engine internals.
+- Max-web-per-room test (test 4) passes vacuously in TDD red phase because tick doesn't create webs yet. Will properly gate-check when Bart's create_object lands.
+- Created `test/crafting/` directory and registered it in `test/run-tests.lua` — new test directories must be added to the `test_dirs` array.
+- The `butchery.lua` verb handleruses `find_visible` from helpers, not a simple `registry:find_by_keyword`. Mock contexts need real `room.contents` arrays with IDs that map to `reg:get()`.
 - `object_sources` + `loader` fields are checked before use in butchery.lua (line 115), so mock contexts without them work fine for the tool-check and narration paths.
 - Flanders added `butchery_products` to both wolf.lua and spider.lua death_state blocks, matching the spec exactly.
 - `butcher-knife.lua` uses `capabilities` field (not just `provides_tool`), should check both in tests.

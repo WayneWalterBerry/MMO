@@ -731,3 +731,33 @@ ew_budget(cap) / create_budget(cap) factory returns {count, cap, overflow_emitte
 **Registration:** crafting.lua delegates to butchery.lua (same pattern as cooking/placement delegation).
 
 **Tests:** 4/4 butchery TDD tests pass. No regressions (2 pre-existing failures in injuries/combat unchanged).
+
+### Phase 4 WAVE-4: Craft Verb Extensions + Weapon Combat Metadata
+**Date:** 2025-07-25
+**Requested by:** Wayne Berry
+
+**Task 1 — Craft Verb Handler:** Added `craft`/`make`/`create` handlers to `src/engine/verbs/crafting.lua` using Tier 1 recipe-ID dispatch. Player types `craft silk-rope` — noun IS the recipe ID. Handler validates ingredients from player inventory/room, consumes them, spawns results via `spawn_objects()`. Two recipes added:
+- `silk-rope`: 2× silk-bundle → 1× silk-rope ("You twist the silk bundles together into a strong, lightweight rope.")
+- `silk-bandage`: 1× silk-bundle → 2× silk-bandage ("You tear the silk into strips suitable for bandaging wounds.")
+
+Recipe table is module-level (`crafting_recipes`), extensible for future recipes. `craft X from Y` syntax deferred to Phase 5 per decision.
+
+**Task 2 — Embedding Index:** Added 12 new phrases (IDs 11512-11523) — 3 verb aliases (craft, make, create) × 2 surface forms (natural "a silk rope" + ID "silk-rope") × 2 items. All entries map verb="craft" per Tier 2 dispatch.
+
+**Task 3 — Weapon Combat Metadata:** Added `combat` tables to 4 weapon-like objects missing them:
+- `cobblestone.lua` — blunt, force=3, "bashes" (light improvised weapon, matches wolf-bone)
+- `crowbar.lua` — blunt, force=5, "smashes" (heavy iron, highest blunt force)
+- `candle-holder.lua` — blunt, force=4, "cracks" (brass, medium weight)
+- `glass-shard.lua` — edged, force=2, "slashes" (fragile, low force but sharp)
+
+Pattern follows existing combat metadata: `{ type, force, message, two_handed }`. The `reach` field was NOT added — no existing weapons use it yet (future Phase 5 extension).
+
+**Files modified:**
+- `src/engine/verbs/crafting.lua` — craft/make/create handlers + recipe table
+- `src/assets/parser/embedding-index.json` — 12 new craft/make/create phrases
+- `src/meta/objects/cobblestone.lua` — combat metadata
+- `src/meta/objects/crowbar.lua` — combat metadata
+- `src/meta/objects/candle-holder.lua` — combat metadata
+- `src/meta/objects/glass-shard.lua` — combat metadata
+
+**Tests:** 0 new regressions. 3 pre-existing test file failures unchanged (spider-web/creatures, integration playtest-bugs, verb-handler WIP tests).

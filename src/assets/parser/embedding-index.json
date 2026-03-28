@@ -69065,6 +69065,78 @@
       "text": "fillet a moth-eaten wool cloak",
       "verb": "butcher",
       "noun": "wool-cloak"
+    },
+    {
+      "id": 11512,
+      "text": "craft a silk rope",
+      "verb": "craft",
+      "noun": "silk-rope"
+    },
+    {
+      "id": 11513,
+      "text": "make a silk rope",
+      "verb": "craft",
+      "noun": "silk-rope"
+    },
+    {
+      "id": 11514,
+      "text": "create a silk rope",
+      "verb": "craft",
+      "noun": "silk-rope"
+    },
+    {
+      "id": 11515,
+      "text": "craft silk-rope",
+      "verb": "craft",
+      "noun": "silk-rope"
+    },
+    {
+      "id": 11516,
+      "text": "make silk-rope",
+      "verb": "craft",
+      "noun": "silk-rope"
+    },
+    {
+      "id": 11517,
+      "text": "create silk-rope",
+      "verb": "craft",
+      "noun": "silk-rope"
+    },
+    {
+      "id": 11518,
+      "text": "craft a silk bandage",
+      "verb": "craft",
+      "noun": "silk-bandage"
+    },
+    {
+      "id": 11519,
+      "text": "make a silk bandage",
+      "verb": "craft",
+      "noun": "silk-bandage"
+    },
+    {
+      "id": 11520,
+      "text": "create a silk bandage",
+      "verb": "craft",
+      "noun": "silk-bandage"
+    },
+    {
+      "id": 11521,
+      "text": "craft silk-bandage",
+      "verb": "craft",
+      "noun": "silk-bandage"
+    },
+    {
+      "id": 11522,
+      "text": "make silk-bandage",
+      "verb": "craft",
+      "noun": "silk-bandage"
+    },
+    {
+      "id": 11523,
+      "text": "create silk-bandage",
+      "verb": "craft",
+      "noun": "silk-bandage"
     }
   ],
   "model": "TaylorAI/gte-tiny",

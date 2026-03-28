@@ -7,7 +7,7 @@ return {
     keywords = {"silk", "spider silk", "web silk", "silk bundle", "bundle"},
     description = "A tangled mass of spider silk, still sticky in places. The strands catch the light with an oily sheen.",
 
-    material = "cotton",
+    material = "silk",
     size = "small",
     weight = 0.2,
     portable = true,

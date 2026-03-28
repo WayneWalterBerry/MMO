@@ -981,3 +981,28 @@ espawn block between combat metadata and death_state in each file -- logical pla
 - Matched file conventions: header comment with pattern description, section separators (═══), consistent field ordering (identity → levels → effects → cure → triggers).
 - Nelson's TDD tests (`test/stress/`) test engine functions (`add_stress`, `cure_stress`, `get_stress_effects`) that Bart hasn't implemented yet — those failures are expected and not caused by stress.lua definition.
 - bart-phase4-guids.md STILL does not exist at WAVE-3 — same pattern as WAVE-2, generate fresh GUIDs via PowerShell.
+
+### Phase 4 WAVE-4: Spider Ecology (Web Creation + Silk Crafting)
+
+**Task:** Create spider-web, silk-rope, silk-bandage objects and update spider.lua with creates_object + web_ambush behavior. Execute WAVE-4 of Phase 4 NPC combat implementation.
+
+**What was built:**
+
+1. **`spider-web.lua`** — Creature-spawned environmental obstacle. GUID: {bb5699b3-e027-4b43-b9cf-3acc183091b9} (from decisions.md). Template: small-item. Material: silk. NPC movement blocker (obstacle.blocks_npc_movement=true, player_passable=true). Not portable. Categories: obstacle, silk, creature-made. Creator tracking field for runtime. on_feel: "Tacky, clinging strands."
+2. **`silk-rope.lua`** — Craftable tool from 2x silk-bundle. GUID: {47571952-19a9-4b7b-9b6d-744c842f1bc2}. Template: small-item. Material: silk. Keywords: {"silk rope", "spider rope"} (NO bare "rope" per Smithers embedding collision audit). provides_tool: {"rope", "binding"}. Immediate Level 1 use: tie rope to hook (courtyard well puzzle).
+3. **`silk-bandage.lua`** — Craftable single-use healing item from 1x silk-bundle (yields 2). GUID: {7ffb6862-4cb1-4312-bfc0-ddd444abbd40}. Template: small-item. Material: silk. Keywords: {"silk bandage", "silk dressing"} (NO bare "bandage" per Smithers audit). Dual-purpose: instant +5 HP AND stops active bleeding. FSM: unused → used (terminal, consumed). is_consumable=true, reusable=false.
+4. **`spider.lua` update** — Added creates_object behavior (template: spider-web, 30 min cooldown, max 2 webs per room condition) and web_ambush behavior (priority 0.8, checks for trapped creatures near webs).
+5. **`silk.lua` material** — Created new material definition in src/meta/materials/. GUID: {f084946a-ac61-49bd-aa78-dc93f5aa7bfe}. Properties: density 300, ignition 230, flammability 0.6, flexibility 0.9, value 5 (higher than cotton/linen — spider silk is premium).
+6. **`silk-bundle.lua` fix** — Changed material from "cotton" to "silk" (was using wrong material since silk didn't exist as a registered material before).
+7. **Test updates** — Updated test/objects/test-material-migration.lua: material count 31→32, added "silk" to EXPECTED_MATERIALS list.
+
+**GUIDs:** All three WAVE-4 object GUIDs sourced from decisions.md D-PHASE4-GUIDS table (lines ~6053-6055). Silk material GUID generated fresh via PowerShell.
+
+**Tests:** All 4 Lua files parse clean. Material audit and migration tests pass (0 failures). Remaining test failures (crafting/test-silk-crafting, creatures/test-spider-web) are Nelson's pre-written tests for engine features not yet implemented by Bart/Smithers — not caused by object definitions. verbs/test-combat-verbs pre-existing failure unchanged.
+
+**Patterns learned:**
+- When adding objects with a new material, ALWAYS create the material definition in src/meta/materials/ first. The material audit test validates every object's material against the registry.
+- silk-bundle.lua was using material="cotton" as a placeholder before silk existed as a registered material — always fix upstream objects when adding the correct material.
+- WAVE-4 GUIDs were found in decisions.md (D-PHASE4-GUIDS table), NOT in bart-phase4-guids.md inbox file. The Scribe had already merged them. Always check decisions.md first.
+- Embedding collision audit keywords must be respected: silk-rope gets NO bare "rope", silk-bandage gets NO bare "bandage" — these collide with existing objects (rope-coil, bandage).
+- crafted_from metadata on objects is declarative (for engine/Smithers to consume); the actual crafting verb handler reads these fields at runtime.
