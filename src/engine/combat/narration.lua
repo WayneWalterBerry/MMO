@@ -49,9 +49,9 @@ end
 
 local function material_text(material_name)
     if not material_name then return "weapon" end
-    -- #363: Use singular/mass-noun forms to avoid subject-verb disagreement
+    -- #338: Natural weapon materials should use weapon names, not raw material names
     if material_name == "tooth-enamel" then
-        return pick({ "tooth", "tooth-enamel", "enamel", "fang" })
+        return pick({ "tooth", "fang" })
     end
     if material_name == "keratin" then
         return pick({ "keratin claws", "claws", "keratin" })
@@ -153,6 +153,18 @@ local function render(template, data)
     text = text:gsub("onto at", "at")
     text = text:gsub("across across", "across")
     text = text:gsub("across toward", "toward")
+    -- #338: Remove dangling prepositions before sentence-ending punctuation
+    text = text:gsub(" into%.", ".")
+    text = text:gsub(" into;", ";")
+    text = text:gsub(" into,", ",")
+    text = text:gsub(" onto%.", ".")
+    text = text:gsub(" onto;", ";")
+    text = text:gsub(" onto,", ",")
+    text = text:gsub(" across%.", ".")
+    text = text:gsub(" across;", ";")
+    -- #338: Fix mid-sentence capitalization after conjunctions/prepositions
+    text = text:gsub(" as A ", " as a ")
+    text = text:gsub(" as The ", " as the ")
     return text
 end
 

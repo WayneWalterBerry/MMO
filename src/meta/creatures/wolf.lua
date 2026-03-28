@@ -94,6 +94,10 @@ return {
             mark_duration = "1 day",
         },
         territory = "hallway",
+        lingering_scent = {
+            on_smell = "A faint predator's musk lingers in the air — a wolf was here recently.",
+            duration = 5,
+        },
     },
 
     -- Drives

@@ -208,7 +208,7 @@ test("1. wolf marks territory — wolf enters room → territory-marker placed",
     -- Verify: a territory-marker object should now exist in the room
     local found_marker = false
     for _, obj in ipairs(reg:list()) do
-        if obj.id == "territory-marker"
+        if (obj.id == "territory-marker" or (type(obj.id) == "string" and obj.id:find("^territory%-marker")))
             and (obj.location == "hallway" or obj.territory) then
             found_marker = true
             -- Verify marker is owned by this wolf
@@ -223,7 +223,7 @@ test("1. wolf marks territory — wolf enters room → territory-marker placed",
     if not found_marker then
         for _, ref in ipairs(room.contents or {}) do
             local obj = reg:get(ref)
-            if obj and obj.id == "territory-marker" then
+            if obj and (obj.id == "territory-marker" or (type(obj.id) == "string" and obj.id:find("^territory%-marker"))) then
                 found_marker = true
                 break
             end

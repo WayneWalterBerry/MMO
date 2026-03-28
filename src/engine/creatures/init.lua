@@ -221,8 +221,10 @@ function M.creature_tick(context, creature)
                 end
             end
             if not already_marked then
-                territorial.mark_territory(creature, context)
-                creature._last_marked_room = creature_loc
+                local marker = territorial.mark_territory(creature, context)
+                if marker then
+                    creature._last_marked_room = creature_loc
+                end
             end
         end
     end

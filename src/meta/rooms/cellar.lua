@@ -30,6 +30,7 @@ return {
                 prefers = "dark_corners",
             },
         },
+        { id = "cellar-spider-web", type_id = "{bb5699b3-e027-4b43-b9cf-3acc183091b9}" },
         { id = "cellar-brazier", type_id = "{22b77e90-8407-427a-a272-6b88277ba1fc}" },
     },
 

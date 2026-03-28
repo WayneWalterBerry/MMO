@@ -21,10 +21,21 @@ function M.register(handlers)
             -- Sweep objects for individual sounds
             local reg = ctx.registry
             local found = {}
+            local seen_ids = {}
             for _, obj_id in ipairs(room.contents or {}) do
                 local obj = reg:get(obj_id)
                 if obj and not obj.hidden and obj.on_listen then
-                    found[#found + 1] = { name = obj.name or obj.id, sound = obj.on_listen }
+                    -- For animate objects, prefer state-specific sensory text
+                    local listen_text = obj.on_listen
+                    if obj.animate and obj.states and obj._state then
+                        local st = obj.states[obj._state]
+                        if st and st.on_listen then
+                            listen_text = st.on_listen
+                        end
+                    end
+                    found[#found + 1] = { name = obj.name or obj.id, sound = listen_text }
+                    seen_ids[obj.id or obj_id] = true
+                    if obj.guid then seen_ids[obj.guid] = true end
                 end
                 if obj and obj.surfaces then
                     for _, zone in pairs(obj.surfaces) do
@@ -39,17 +50,21 @@ function M.register(handlers)
                     end
                 end
             end
-            -- Scan creatures in the room
+            -- Scan creatures in the room (deduplicating against objects already found)
             local cr_ok, cr_mod = pcall(require, "engine.creatures")
             if cr_ok and cr_mod and cr_mod.get_creatures_in_room then
                 local room_creatures = cr_mod.get_creatures_in_room(reg, room.id)
                 for _, creature in ipairs(room_creatures) do
-                    if not creature.hidden then
+                    if not creature.hidden
+                        and not seen_ids[creature.id]
+                        and not seen_ids[creature.guid] then
                         local state_listen = creature.states and creature.states[creature._state]
                             and creature.states[creature._state].on_listen
                         local listen_text = state_listen or creature.on_listen
                         if listen_text then
                             found[#found + 1] = { name = creature.name or creature.id, sound = listen_text }
+                            seen_ids[creature.id] = true
+                            if creature.guid then seen_ids[creature.guid] = true end
                         end
                     end
                 end

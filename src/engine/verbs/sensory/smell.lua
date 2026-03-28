@@ -22,10 +22,21 @@ function M.register(handlers)
             -- Sweep objects for individual smells
             local reg = ctx.registry
             local found = {}
+            local seen_ids = {}
             for _, obj_id in ipairs(room.contents or {}) do
                 local obj = reg:get(obj_id)
                 if obj and not obj.hidden and obj.on_smell then
-                    found[#found + 1] = { name = obj.name or obj.id, smell = obj.on_smell }
+                    -- For animate objects, prefer state-specific sensory text
+                    local smell_text = obj.on_smell
+                    if obj.animate and obj.states and obj._state then
+                        local st = obj.states[obj._state]
+                        if st and st.on_smell then
+                            smell_text = st.on_smell
+                        end
+                    end
+                    found[#found + 1] = { name = obj.name or obj.id, smell = smell_text }
+                    seen_ids[obj.id or obj_id] = true
+                    if obj.guid then seen_ids[obj.guid] = true end
                 end
                 if obj and obj.surfaces then
                     for _, zone in pairs(obj.surfaces) do
@@ -40,17 +51,21 @@ function M.register(handlers)
                     end
                 end
             end
-            -- Scan creatures in the room
+            -- Scan creatures in the room (deduplicating against objects already found)
             local cr_ok, cr_mod = pcall(require, "engine.creatures")
             if cr_ok and cr_mod and cr_mod.get_creatures_in_room then
                 local room_creatures = cr_mod.get_creatures_in_room(reg, room.id)
                 for _, creature in ipairs(room_creatures) do
-                    if not creature.hidden then
+                    if not creature.hidden
+                        and not seen_ids[creature.id]
+                        and not seen_ids[creature.guid] then
                         local state_smell = creature.states and creature.states[creature._state]
                             and creature.states[creature._state].on_smell
                         local smell_text = state_smell or creature.on_smell
                         if smell_text then
                             found[#found + 1] = { name = creature.name or creature.id, smell = smell_text }
+                            seen_ids[creature.id] = true
+                            if creature.guid then seen_ids[creature.guid] = true end
                         end
                     end
                 end

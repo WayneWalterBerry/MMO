@@ -58,3 +58,18 @@
 **Cross-domain note:** Touched `src/engine/combat/narration.lua` (Bart's domain) — added `body_tree` parameter to `zone_text()` and threaded it through `generate()` and `witness_visual()`. Minimal change, no behavioral change to fallback path. Decision filed to `.squad/decisions/inbox/flanders-creature-zone-names.md`.
 
 **Lesson:** When creature zones share names with human zones (e.g., "legs"), the narration system needs creature-specific overrides. The `names` field pattern works well — objects provide their vocabulary, engine picks from it.
+
+### 2026-07-20: Bug Fix Batch — Issues #296, #312, #323, #338, #346
+
+**Spider web ghost (#296):** The cellar room had the spider creature but no spider-web object instance. The spider's `room_presence` described a web, but players couldn't interact with it. Fix: added `cellar-spider-web` instance to `src/meta/rooms/cellar.lua` referencing the existing `spider-web.lua` definition. Lesson: room_presence text must always have a corresponding interactable object — narrative flavor without game objects breaks immersion.
+
+**Territory markers never created (#312):** Two bugs: (1) `mark_territory()` registered all markers under the shared id `"territory-marker"`, so the real registry (which keys by id) overwrote previous markers. Room contents referenced markers by guid, but `reg:get(guid)` returns nil. (2) `creature_tick()` set `_last_marked_room` even when marking failed, preventing retry. Fix: unique ids per marker (`"territory-marker-{uid}"`), room contents use registration id, `_last_marked_room` only set on success. Lesson: always use unique registration ids in the registry. The real registry's `get()` only checks `_objects[id]`, not the guid index.
+
+**Wolf scent vanishes (#323):** Related to #312 — territory markers provide persistent scent. Added `behavior.lingering_scent` metadata to wolf.lua for future non-territorial scent trail support. With #312 fixed, the wolf now leaves detectable scent markers in rooms it visits.
+
+**Garbled spider bite narration (#338):** Three issues in `narration.lua`: (1) `material_text("tooth-enamel")` returned raw material names ("enamel", "tooth-enamel") — fixed to only return weapon names ("tooth", "fang"). (2) `render()` didn't clean dangling prepositions before punctuation — added cleanup patterns. (3) Mid-sentence capitalization ("as A large") — added fixup. Lesson: natural weapon `message` fields that end with prepositions (e.g., "sinks its fangs into") need render-level fixups because some templates place `{verb}` at sentence boundaries.
+
+**Ambient scan excludes rat (#346):** Two issues in smell.lua/listen.lua: (1) No deduplication — creatures in both `room.contents` and `get_creatures_in_room()` appeared twice. (2) Object loop didn't check FSM state-specific sensory text for animate objects. Fix: added `seen_ids` dedup set and state-aware sensory text in the object loop.
+
+**Cross-domain note:** Touched `territorial.lua`, `creatures/init.lua` (Bart), `narration.lua` (Bart), `smell.lua`/`listen.lua` (Smithers). Decision filed to `.squad/decisions/inbox/flanders-territory-narration-sensory-fixes.md`.
+

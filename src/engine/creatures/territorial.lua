@@ -34,6 +34,7 @@ end
 ---------------------------------------------------------------------------
 local function is_marker(obj)
     if obj.id == "territory-marker" then return true end
+    if type(obj.id) == "string" and obj.id:find("^territory%-marker") then return true end
     if obj.territory then return true end
     return false
 end
@@ -70,9 +71,11 @@ function M.mark_territory(creature, ctx)
     local loc = creature.location
     if not loc then return nil end
 
+    -- Each marker gets a unique id so multiple markers coexist in the registry
+    local uid = (creature.guid or creature.id) .. "-mark-" .. tostring(os.time()) .. "-" .. tostring(math.random(1000, 9999))
     local marker = {
-        id = "territory-marker",
-        guid = (creature.guid or creature.id) .. "-mark-" .. tostring(os.time()) .. "-" .. tostring(math.random(1000, 9999)),
+        id = "territory-marker-" .. uid,
+        guid = uid,
         template = "small-item",
         name = "a territorial scent mark",
         keywords = { "scent", "mark", "territory marker" },
@@ -100,7 +103,7 @@ function M.mark_territory(creature, ctx)
         },
     }
 
-    -- Register in registry
+    -- Register in registry under unique id
     local reg = ctx.registry
     if type(reg.register) == "function" then
         reg:register(marker.id, marker)
@@ -110,11 +113,11 @@ function M.mark_territory(creature, ctx)
         reg._objects[marker.guid] = marker
     end
 
-    -- Add to room contents
+    -- Add to room contents using the registration id (matches reg:get key)
     local room = get_room(ctx, loc)
     if room then
         room.contents = room.contents or {}
-        room.contents[#room.contents + 1] = marker.guid
+        room.contents[#room.contents + 1] = marker.id
     end
 
     return marker
@@ -241,21 +244,26 @@ function M.expire_markers(ctx, duration_hours)
     end
 
     for _, marker in ipairs(to_remove) do
-        -- Remove from registry
+        -- Remove from registry using both id and guid to handle all marker formats
         local reg = ctx.registry
         if type(reg.remove) == "function" then
-            reg:remove(marker.guid)
+            reg:remove(marker.id)
+            if marker.guid and marker.guid ~= marker.id then
+                if type(reg.get) == "function" and reg:get(marker.guid) then
+                    reg:remove(marker.guid)
+                end
+            end
         elseif reg._objects then
-            reg._objects[marker.guid] = nil
-            if marker.id then reg._objects[marker.id] = nil end
+            reg._objects[marker.id] = nil
+            if marker.guid then reg._objects[marker.guid] = nil end
         end
 
-        -- Remove from room contents
+        -- Remove from room contents (by id or guid, matching how it was added)
         if marker.location then
             local room = get_room(ctx, marker.location)
             if room and room.contents then
                 for i = #room.contents, 1, -1 do
-                    if room.contents[i] == marker.guid then
+                    if room.contents[i] == marker.id or room.contents[i] == marker.guid then
                         table.remove(room.contents, i)
                     end
                 end
