@@ -19,6 +19,7 @@ How to decide who handles what.
 | UI & text presentation | Smithers | Text output formatting, room description rendering, error messages, help system, player feedback UX |
 | Parser pipeline & NLU | Smithers | Parser tiers 1-5, verb recognition, noun resolution, disambiguation, GOAP UX, command parsing |
 | Web builds & deploys | Gil | Build pipeline, GitHub Pages deploy, web/index.html, bootstrapper.js, game-adapter.lua, browser bugs |
+| Linting & code quality | Wiggum | meta-lint rules, mutation-edge-check, lint.py, wrapper scripts, CI lint steps, lint config, rule registry |
 | Code review | Chalmers | Review PRs, check quality, suggest improvements |
 | Async issue work (bugs, tests, small features) | @copilot 🤖 | Well-defined tasks matching capability profile |
 | Session logging | Scribe | Automatic — never needs routing |

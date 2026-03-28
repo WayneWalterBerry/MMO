@@ -95,6 +95,14 @@
       "created_at": "2026-03-22T19:46:00Z",
       "legacy_named": false,
       "status": "active"
+    },
+    "wiggum": {
+      "persistent_name": "Wiggum",
+      "universe": "The Simpsons",
+      "role": "Linter Engineer",
+      "created_at": "2026-03-28T23:35:00Z",
+      "legacy_named": false,
+      "status": "active"
     }
   }
 }
