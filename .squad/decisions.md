@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-28T13:00:00Z  
-**Last Merge:** 2026-03-28T13:00:00Z (4 decisions from inbox)  
+**Last Updated:** 2026-03-28T14:50:00Z  
+**Last Merge:** 2026-03-28T14:50:00Z (11 decisions from inbox merged)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -255,6 +255,251 @@ Every bug fix must include regression tests verifying the fix. TDD workflow:
 **Status:** 🟢 Active
 
 For automated testing, always use `--headless` mode to disable TUI, suppress prompts, emit `---END---` delimiters.
+
+---
+
+---
+
+## D-HELPERS-SPLIT-PHASE3: Modularization of verbs/helpers.lua
+
+**Status:** ✅ Implemented  
+**Author:** Bart (Architect)  
+**Date:** 2026-03-28  
+**Phase:** Phase 3 Engine Refactoring (Wave 1)
+
+**Decision:** Split `src/engine/verbs/helpers.lua` (1634 LOC) into focused modules under `src/engine/verbs/helpers/`:
+- `core.lua` — shared dependencies, time/light helpers
+- `inventory.lua` — hands, part detach/reattach, inventory weight
+- `search.lua` — keyword matching, find_visible, search subroutines
+- `tools.lua` — tool capability lookup, charge handling
+- `mutation.lua` — container access, mutations, spatial movement
+- `combat.lua` — self-infliction, try_fsm_verb
+- `portal.lua` — portal lookup, bidirectional sync
+
+**Outcome:** Re-export layer maintains API compatibility; all 1634 lines split with zero behavior change.
+
+---
+
+## D-PREPROCESS-SPLIT-PHASE3: Modularization of parser/preprocess.lua
+
+**Status:** ✅ Implemented  
+**Author:** Bart (Architect)  
+**Date:** 2026-03-28  
+**Phase:** Phase 3 Engine Refactoring (Wave 1)
+
+**Decision:** Split `src/engine/parser/preprocess.lua` (1282 LOC) into focused submodules:
+- Data structures
+- Word helpers
+- Core parsing
+- Phrase transforms
+- Compound actions
+- Movement transforms
+- Command splitting
+
+**Constraints:** Zero behavior changes; preserve public API; maintain pipeline ordering and test expectations.
+
+---
+
+## D-SENSORY-SPLIT-PHASE3: Modularization of verbs/sensory.lua
+
+**Status:** ✅ Implemented  
+**Author:** Bart (Architect)  
+**Date:** 2026-03-28  
+**Phase:** Phase 3 Engine Refactoring (Wave 1)
+
+**Decision:** Split `src/engine/verbs/sensory.lua` (1113 LOC) into focused modules under `src/engine/verbs/sensory/`:
+- look.lua
+- touch.lua
+- search.lua
+- smell.lua
+- taste.lua
+- listen.lua
+
+**Constraints:** Zero behavior changes; preserve verb registration and aliasing; maintain output text and order.
+
+---
+
+## D-TRAVERSE-EFFECTS-SPLIT-PHASE3: Modularization of traverse_effects.lua
+
+**Status:** ✅ Implemented  
+**Author:** Bart (Architect)  
+**Date:** 2026-03-28  
+**Phase:** Phase 3 Engine Refactoring (Wave 1)
+
+**Decision:** Split `src/engine/traverse_effects.lua` into:
+- `engine/traverse_effects/registry.lua` — registry + processing
+- `engine/traverse_effects/effects.lua` — built-in handlers
+
+Thin wrapper preserves public API and auto-registers built-ins.
+
+**Constraints:** Zero behavior changes; preserve handler registration and processing semantics.
+
+---
+
+## D-WORLDS-IMPL-PLAN: Worlds Phase 1 Engine Implementation
+
+**Status:** 🟢 Active  
+**Author:** Bart (Architect)  
+**Date:** 2026-03-28  
+**Phase:** Phase 3 (Worlds Phase 1)
+
+**Decision:** Implement Phase 1 Worlds architecture per D-WORLDS-PLAN and CBG's design spec:
+
+1. **New module:** `src/engine/world/init.lua` — World discovery, loading, selection, starting-level resolution
+2. **Zero fallback:** No world files = FATAL error (fail fast)
+3. **Metadata placement:** World table on `context.world`, NOT in registry
+4. **One-directional:** World → Level only; Levels do NOT reference parent World
+5. **Dependency injection:** Zero require() calls in world.lua; all deps passed as parameters
+6. **Level dir resolution:** Use `level_dir` parameter to construct level file paths
+
+**Implementation impact:**
+- **main.lua:** ~30 lines added, ~15 removed
+- **context:** Gains `world` field
+- **Tests:** 21 new tests across 2 files
+
+**Affects:**
+- **Nelson:** Tests gate Phase 1 acceptance
+- **Smithers, Moe, Flanders, Bob:** Phase 2 content design uses world theme
+
+---
+
+## D-WORLDS-DESIGN: Worlds Design Plan
+
+**Status:** 🟢 Active  
+**Author:** Comic Book Guy (Creative Director)  
+**Date:** 2026-03-28  
+**Category:** Design / Architecture
+
+**Summary:** The Worlds Design Plan (`plans/worlds/worlds-design.md`) defines the complete roadmap for integrating Worlds into the game.
+
+**Key Decisions:**
+1. Three-phase rollout: Phase 1 (engine boots from World), Phase 2 (theme integration), Phase 3 (multi-world design)
+2. Phase 1 scope deliberately minimal — zero visible player change
+3. Fail fast, not fallback
+4. World boot logic in new module (`engine/world/init.lua`)
+5. World NOT registered in registry
+6. One-directional: World → Level only
+7. Theme is design guidance only (not consumed by engine in V1)
+8. Theme files merge via deep_merge
+
+**Affects:** Bart (engine), Nelson (tests), Brockman (docs), Smithers (context), Moe/Flanders/Bob (content)
+
+---
+
+## D-WORLDS-LUA-IMPL: Flanders — World .lua Implementation
+
+**Status:** ✅ Implemented  
+**Author:** Flanders (Object & Injury Systems Engineer)  
+**Date:** 2026-03-28  
+**Phase:** Phase 3 (Worlds Phase 1)
+
+**Decision:** Created first World definition file and supporting infrastructure per CBG's spec.
+
+**Files created:**
+| File | Purpose |
+|------|---------|
+| `src/meta/worlds/world-01.lua` | World 1 "The Manor" — full definition with theme, level references, starting room |
+| `src/meta/templates/world.lua` | Base world template with empty defaults |
+| `src/meta/worlds/themes/` | Directory for future theme subsection files |
+
+**Key details:**
+- GUID: `fbfaf0de-c263-4c05-b827-209fac43bb20`
+- starting_room: `start-room` (matches level-01.lua)
+- Theme: Fully populated per spec
+- theme_files: Placeholder comments for manor-architecture.lua, manor-creatures.lua, manor-history.lua
+
+**Affects:** Bart (engine boot discovery), Moe (room theme constraints), Bob (puzzle design constraints)
+
+---
+
+## DIRECTIVE-2026-03-28T1332Z: User Directive — Test Baseline Discovery
+
+**Status:** 🟢 Active  
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-28
+
+**Directive:** All pre-existing test failures discovered during engine code review baselines must be logged as separate GitHub issues. Don't waste the discovery effort. Update the engine-code-review skill to include this as a standard step.
+
+---
+
+## DIRECTIVE-2026-03-28T1444Z: User Directive — Test Baseline Before Refactor
+
+**Status:** 🟢 Active  
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-28
+
+**Directive:** Engine code review skill must log ALL pre-existing test failures as GitHub issues during the first baseline test pass, then STOP. Do not continue to the refactor phase. This allows the caller to run work-down-issues skill to get the baseline to zero bugs before refactoring.
+
+**Rationale:** Earned lesson — Bart spent 80+ minutes debugging because the baseline had 90 pre-existing failures mixed in with his work. Baseline is meaningless if contaminated by pre-existing bugs.
+
+---
+
+## D-ISSUE-PRIORITIES: Issue Priority Triage — Pre-Refactor Baseline
+
+**Status:** 🟢 Active  
+**Author:** Marge (Test Manager)  
+**Date:** 2026-03-28  
+**Category:** Process / Quality
+
+**Summary:** All 17 open issues (#8–#24) from Nelson's pre-refactor test baseline have been triaged, prioritized, and labeled.
+
+**Priority assignment:**
+| Priority | Issues | Count |
+|----------|--------|-------|
+| CRITICAL | #8, #9 | 2 |
+| HIGH | #10, #11, #12, #20, #24 | 5 |
+| MEDIUM | #14, #15, #16, #17, #18, #19, #22 | 7 |
+| LOW | #13, #21, #23 | 3 |
+
+**Key findings:**
+- #8 and #9 CRITICAL (movement + door interaction foundational)
+- #20 and #24 share root cause (require path fix — quick win)
+- No refactoring starts until CRITICALs resolved
+- Quick wins: #14, #15, #16, #18, #20/#24
+
+**Team assignment:**
+- **Bart:** 6 issues (#10, #14, #17, #20, #21, #24)
+- **Smithers:** 8 issues (#8, #9, #11, #12, #13, #15, #19, #22, #23)
+- **Flanders:** 3 issues (#16, #18)
+
+---
+
+## D-TEST-BASELINE: Nelson — Pre-Refactor Test Baseline Established
+
+**Status:** 🟢 Active  
+**Author:** Nelson (Tester)  
+**Date:** 2026-03-28  
+**Phase:** Engine Code Review — Phase 2
+
+**Decision:** Pre-refactor test baseline is established. No refactoring should begin until Bart reviews this baseline.
+
+**Baseline numbers:**
+| Metric | Before | After (with new tests) |
+|--------|--------|----------------------|
+| Test files | 243 | 245 (+3 new) |
+| Passed | 6,704 | 6,770 |
+| Failed | 87 | 86 |
+| Total assertions | 6,791 | 6,856 |
+
+**Pre-existing failures (4 files):** silk-crafting, predator-prey, spider-web, combat-verbs (predate this work).
+
+**New test files:**
+1. `test/verbs/test-helpers-api.lua` — 74 assertions on helpers.lua public API
+2. `test/verbs/test-sensory-verbs.lua` — 37 assertions on sensory verb handlers
+3. `test/verbs/test-acquisition-verbs.lua` — 28 assertions on take/get/drop handlers
+
+**High-risk modules for refactoring:**
+| Module | Lines | Risk |
+|--------|-------|------|
+| verbs/helpers.lua | 1,634 | **Now covered** (74 tests) |
+| verbs/sensory.lua | 1,113 | **Now covered** (37 tests) |
+| verbs/acquisition.lua | 792 | **Now covered** (28 tests) |
+| verbs/fire.lua | 725 | Partial (existing test-fire-verbs.lua) |
+| loop/init.lua | 624 | **Uncovered** — hard to unit test |
+| verbs/meta.lua | 543 | **Uncovered** |
+| verbs/equipment.lua | 482 | **Uncovered** |
+
+**Critical note:** Do NOT modify these 3 new test files during refactoring. They exist to catch behavioral regressions.
 
 ---
 
