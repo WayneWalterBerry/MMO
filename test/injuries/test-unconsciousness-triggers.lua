@@ -659,6 +659,10 @@ test("gas vent can knock player out twice in succession", function()
     h.assert_truthy(gas_ok and verbs_ok, "gas vent + verbs must load")
     local handlers = verbs_mod.create()
 
+    -- #402: Reset shared gas_def state (earlier tests may have changed it
+    -- via fsm.transition, which now correctly mutates state)
+    gas_def._state = "leaking"
+
     -- First KO
     local ctx = make_ctx({
         registry_data = { ["poison-gas-vent"] = gas_def },
