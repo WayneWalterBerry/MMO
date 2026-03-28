@@ -156,7 +156,7 @@ test("goto with empty noun prints usage", function()
         handlers["goto"](ctx, "")
     end)
     eq("bedroom", ctx.current_room.id, "Should stay in bedroom")
-    h.assert_truthy(output:find("Goto where"),
+    h.assert_truthy(output:find("Teleport where"),
         "Should print usage hint")
 end)
 

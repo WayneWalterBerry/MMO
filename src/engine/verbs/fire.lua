@@ -727,7 +727,7 @@ function M.register(handlers)
             if hint then
                 print("The " .. hint .. " isn't lit. Try 'light " .. hint .. "' first.")
             else
-                print("You'll need a flame. You could light a match, if you had one.")
+                print("You have no flame. You could light a match, if you had one.")
             end
             return
         end

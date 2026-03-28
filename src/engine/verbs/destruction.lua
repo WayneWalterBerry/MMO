@@ -89,6 +89,17 @@ function M.register(handlers)
                     if trans then
                         print(trans.message or ("You break " .. (obj.name or obj.id) .. "."))
                         if trans.spawns then spawn_objects(ctx, trans.spawns) end
+                        -- #386: sync linked exit state after FSM transition
+                        if obj.linked_exit and obj.linked_passage_id then
+                            local exit = ctx.current_room.exits[obj.linked_exit]
+                            if exit and exit.passage_id == obj.linked_passage_id
+                               and exit.mutations and exit.mutations["break"]
+                               and exit.mutations["break"].becomes_exit then
+                                for k, v in pairs(exit.mutations["break"].becomes_exit) do
+                                    exit[k] = v
+                                end
+                            end
+                        end
                     else
                         print("You can't break " .. (obj.name or "that") .. ".")
                     end

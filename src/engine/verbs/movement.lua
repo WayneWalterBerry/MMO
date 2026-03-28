@@ -452,11 +452,11 @@ function M.register(handlers)
     end
 
     ---------------------------------------------------------------------------
-    -- GOTO {room-id} — admin/debug teleport command
+    -- TELEPORT {room-id} — admin/debug teleport command (#368)
     ---------------------------------------------------------------------------
-    handlers["goto"] = function(ctx, noun)
+    handlers["teleport"] = function(ctx, noun)
         if not noun or noun == "" then
-            print("Goto where? Usage: goto <room-name>")
+            print("Teleport where? Usage: teleport <room-name>")
             return
         end
 
@@ -535,7 +535,7 @@ function M.register(handlers)
             end
         end
     end
-    handlers["teleport"] = handlers["goto"]
+    handlers["goto"] = handlers["teleport"]
 end
 
 return M
