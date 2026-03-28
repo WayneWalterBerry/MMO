@@ -40,6 +40,9 @@ return {
             room_presence = "A panicked rat zigzags across the floor.",
             on_listen = "Frantic squeaking and the scrabble of claws.",
         },
+        ["*"] = {
+            description = "A rat in an undefined state.",
+        },
         dead = {
             description = "A dead rat lies on its side, legs splayed. Its fur is matted with blood.",
             room_presence = "A dead rat lies crumpled on the floor.",

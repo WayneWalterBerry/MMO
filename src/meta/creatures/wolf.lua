@@ -50,6 +50,9 @@ return {
             room_presence = "A wounded wolf limps toward the exit.",
             on_listen = "Rapid panting and the scramble of claws on stone.",
         },
+        ["*"] = {
+            description = "A wolf in an undefined state.",
+        },
         dead = {
             description = "The wolf lies on its side, tongue lolling. Its amber eyes stare at nothing. Blood pools beneath the thick coat.",
             room_presence = "A dead wolf sprawls across the floor.",

@@ -112,3 +112,30 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 **Bug 20: 'unbar door' says 'You aren't holding that' (#322, 5 assertions)** — `unbar` was not registered as a verb handler. Player input fell through to Tier 2 semantic matching which misrouted to the `drop` handler, producing the misleading "You aren't holding that" error. Added `handlers["unbar"]`, `handlers["bar"]`, and aliases `"lift bar"`, `"remove bar"` to `traps.lua` using the existing `fsm_interact()` pattern (same as breathe/trigger/step). FSM transitions on portal objects (e.g., `bedroom-hallway-door-south.lua`) already declared `verb = "unbar"` — the new handler correctly routes to `try_fsm_verb()`. **Lesson:** Every verb that appears in FSM `transitions.verb` fields must have a registered handler, or Tier 2 semantic matching will misroute it. The `fsm_interact` pattern in traps.lua is the correct generic handler for FSM-only verbs.
 
 **Bug 21: Disambiguation for identical items gives no way to differentiate (#299, 3 assertions)** — `_try_room_scored()` in search.lua only added direction qualifiers for doors with identical names (#309 fix). Non-door objects with the same display name showed identical strings: "Which do you mean: a tallow candle or a tallow candle?". Added ordinal fallback: when `has_dupes` is true and `_door_direction()` returns nil, prepend ordinals ("the first", "the second", etc.) to produce "Which do you mean: the first tallow candle or the second tallow candle?". The existing fungible-item bypass (all_same_id from #362) still auto-selects the first item for truly identical objects like silk-bundles. **Lesson:** Disambiguation prompts must always provide visually distinct options. Direction qualifiers work for doors; ordinals are the universal fallback for any objects sharing a name.
+
+### 2026-07 — Tier 2 Benchmark Expansion: 147 → 200 Tests (31 new failures)
+
+**Task:** Wayne directive — benchmark at 100% means "we can never get better." Expanded from 147 to 200 test cases across 5 new aspirational categories designed to find the parser's real limits.
+
+**Result:** 169/200 (84.5%) — 31 failing cases identify concrete parser improvement opportunities.
+
+**New categories added (53 cases total):**
+
+- **G: Complex multi-object interactions (11 cases, 7 fail)** — Prepositional phrases with multiple game nouns. Key failures: BM25 picks wrong noun in "put X on Y" (nightstand wins over key), "cut X with Y" (knife wins over cloth), and "take X from Y" (matchbox wins over match). Non-indexed verbs like "hide", "wrap", "stuff" either misroute ("stuff" → "snuff" via typo match) or fail to score.
+
+- **H: Ambiguous pronouns/references (11 cases, 8 fail)** — Pronouns stripped as stop words leave bare verbs below threshold. "put it there", "open the first one", "examine the other one" all score 0.0. "give me the key" also fails (0.0) — "give" has no index presence. Surprise: "use this on that" incorrectly matches "ignite portrait" (score 5.4) via residual "use" token matching. "yes the candle" incorrectly matches "drop candle" (score 4.1) via "let go of" phrase.
+
+- **I: Natural language variations (11 cases, 11 fail)** — Hardest category. Slang ("lemme", "gonna", "yo", "im"), txtspeak ("u"), question forms ("where is", "how do I"), and heavy typos ("breka", "srch", "exmne") all produce 0.0 scores. Even mild variation "whats in the nightstand" misroutes to "examine" instead of "search". The P6 unknown-lead-word guard rejects all inputs where the first token is foreign to the index.
+
+- **J: Context-dependent commands (10 cases, 1 fail)** — Most pass correctly as no-match (the parser correctly rejects "again", "undo", "wait", "go back"). One fail: "what about the candle" routes to "help" (via "what can i do" phrase) instead of expected "examine".
+
+- **K: Adversarial/tricky inputs (10 cases, 4 fail)** — Negation is the critical weakness: "don't open the door" → "don trap-door" (score 8.3), "don't drop the knife" → "don knife" (score 10.3) — the parser matches "don't" to the "don" (clothing) verb. "what if I eat the key" → "help" via "what can i do". "is it possible to open the wardrobe" → "open wardrobe" (score 7.0) — correct action but wrong intent.
+
+**Improvement roadmap from failures:**
+1. **Multi-noun disambiguation** (G): Need first-noun-is-target heuristic for "V X prep Y" patterns
+2. **Verb synonym expansion** (G/H): "hide"→"put", "give"→"get", "stuff"→"put", "show"→"look"
+3. **Slang/contraction preprocessing** (I): "lemme"→"let me", "gonna"→"going to", "im"→"I'm", "u"→"you", "whats"→"what is"
+4. **Question-form routing** (I/J): "where is X"→"look X", "how do I X"→X
+5. **Negation detection** (K): Must detect "don't"/"stop"/"not" before stripping and reject or flag
+6. **Heavy typo tolerance** (I): Current typo correction requires >4 char words; short mangled tokens fail
+7. **P6 guard too aggressive** (I): Rejects valid inputs when lead word is unknown slang/contraction

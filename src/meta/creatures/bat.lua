@@ -40,6 +40,17 @@ return {
             room_presence = "A panicked bat careens wildly through the air.",
             on_listen = "Frantic squeaking and the frenzied beat of wings.",
         },
+        ["alive-idle"] = {
+            description = "A small bat hangs quietly, at rest.",
+            room_presence = "A bat clings to the ceiling.",
+        },
+        ["alive-wander"] = {
+            description = "A bat flutters about.",
+            room_presence = "A bat flutters through the air.",
+        },
+        ["*"] = {
+            description = "A bat in an undefined state.",
+        },
         dead = {
             description = "A dead bat lies on the floor, wings crumpled and splayed. Its tiny mouth hangs open.",
             room_presence = "A dead bat lies on the floor, wings spread like crumpled parchment.",

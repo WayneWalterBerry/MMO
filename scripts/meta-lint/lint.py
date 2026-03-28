@@ -387,8 +387,8 @@ CATEGORY_KEYWORDS = frozenset({
     "consumable", "fixture", "decoration", "wearable",
 })
 
-KNOWN_INJURY_CATEGORIES = {"physical", "environmental", "toxin", "unconsciousness"}
-KNOWN_DAMAGE_TYPES = {"over_time", "one_time"}
+KNOWN_INJURY_CATEGORIES = {"physical", "environmental", "toxin", "unconsciousness", "disease", "mental"}
+KNOWN_DAMAGE_TYPES = {"over_time", "one_time", "mental"}
 KNOWN_RESTRICT_ACTIONS = {"climb", "run", "jump", "fight", "grip", "focus"}
 KNOWN_INJURY_FIELDS = {
     "guid", "id", "name", "category", "description", "damage_type",

@@ -3,7 +3,7 @@
 -- Creatures are objects with behavior metadata evaluated by the creature tick.
 
 return {
-    guid = "{bf9f9d4d-7b6d-4f99-801d-f6921a2687cd}",
+    guid = "bf9f9d4d-7b6d-4f99-801d-f6921a2687cd",
     id = "creature",
     name = "a creature",
     keywords = {},

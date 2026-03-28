@@ -40,6 +40,13 @@ return {
             room_presence = "A spider scrambles toward the nearest crevice.",
             on_listen = "A frantic skittering across stone.",
         },
+        ["alive-wander"] = {
+            description = "A spider crawls about.",
+            room_presence = "A spider crawls along the wall.",
+        },
+        ["*"] = {
+            description = "A spider in an undefined state.",
+        },
         dead = {
             description = "A dead spider lies curled on its back, legs drawn inward. Its web sags, abandoned.",
             room_presence = "A dead spider lies curled beneath a sagging web.",

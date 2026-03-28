@@ -4,12 +4,17 @@
 -- This benchmark is designed to find the parser's REAL limits.
 --
 -- Categories:
+--   F: Core sanity (standard phrasings that MUST work)
 --   A: Ambiguous inputs (same words, different intent)
 --   B: Creative/unusual phrasings players actually type
 --   C: Edge cases and stress tests
 --   D: State-dependent disambiguation
 --   E: Negative/impossible inputs (valid structure, nonsense target)
---   F: Core sanity (standard phrasings that MUST work)
+--   G: Complex multi-object interactions (prepositional phrases, tool modifiers)
+--   H: Ambiguous pronouns/references (bare pronouns, ordinals, deictics)
+--   I: Natural language variations (slang, contractions, txtspeak, heavy typos)
+--   J: Context-dependent commands (repetition, undo, meta-references)
+--   K: Adversarial/tricky inputs (negation, hypotheticals, non-commands)
 
 package.path = "src/?.lua;" .. package.path
 
@@ -365,6 +370,166 @@ bench_no_match("E", "dance around the room")
 -- Verb that exists but object doesn't
 bench_no_match("E", "burn the dragon")
 bench_no_match("E", "open the portal")
+
+
+-- =========================================================================
+-- CATEGORY G: Complex Multi-Object Interactions
+-- Inputs with two or more game-world nouns. The parser must identify the
+-- correct PRIMARY target object despite competing noun signals.
+-- Most of these use prepositional phrases ("X with Y", "X on Y") that
+-- the BM25 scorer was not designed to disambiguate.
+-- =========================================================================
+t.suite("Category G: Complex Multi-Object Interactions")
+
+-- Prepositional target: "key" is the object, "nightstand" is destination
+bench("G", "put the key on the nightstand",            "put",    "brass-key")
+-- Tool modifier: "candle" is the target, "match" is the tool
+bench("G", "light the candle with the match",          "ignite", "candle")
+-- Tool modifier: "cloth" is the target, "knife" is the tool
+bench("G", "cut the cloth with the knife",             "cut",    "cloth")
+-- Source extraction: "needle" is the target, "pillow" is the source
+bench("G", "take the needle out of the pillow",        "take",   "needle")
+-- Destination: "candle" is the target, "nightstand" is destination
+bench("G", "place the candle on the nightstand",       "place",  "candle")
+-- Compound command: only the FIRST action should resolve at Tier 2
+bench("G", "drop the knife and pick up the pen",       "drop",   "knife")
+-- Multi-noun conjunction: first object should win
+bench("G", "get both the pen and the pencil",          "get",    "pen")
+-- Non-indexed verb synonym: "stuff" should resolve to "put"
+bench("G", "stuff the rag into the sack",              "put",    "rag")
+-- Non-indexed verb synonym: "hide" should resolve to "put"
+bench("G", "hide the brass key under the rug",         "put",    "brass-key")
+-- Source extraction with container: "match" target, "matchbox" source
+bench("G", "take the match from inside the matchbox",  "take",   "match")
+-- Non-indexed verb: "wrap" should resolve to "put"
+bench("G", "wrap the cloth around the knife handle",   "put",    "cloth")
+
+
+-- =========================================================================
+-- CATEGORY H: Ambiguous Pronouns and References
+-- Players use pronouns ("it", "that"), ordinals ("first one"), and
+-- deictic references ("there", "this") that require context the
+-- embedding matcher does not have. Pronouns are stop-words so they
+-- vanish during tokenization, leaving bare verbs with no noun signal.
+-- =========================================================================
+t.suite("Category H: Ambiguous Pronouns/References")
+
+-- Pronoun "it" is a stop word — leaves bare verb "take"
+bench_verb_only("H", "take it",                        "take")
+-- Pronoun "that" is a stop word — leaves bare verb "drop"
+bench_verb_only("H", "drop that",                      "drop")
+-- "it" + "there" both stop words — leaves bare verb "put"
+bench_verb_only("H", "put it there",                   "put")
+-- Ordinal reference: "first" and "one" carry no object signal
+bench_verb_only("H", "open the first one",             "open")
+-- Adjective reference: "other" + "one" carry no object signal
+bench_verb_only("H", "examine the other one",          "examine")
+-- "this", "that" are stop words; "use" not in index — total wash
+bench_no_match("H", "use this on that")
+-- Deictic: "one" + "left" carry no object signal
+bench_verb_only("H", "pick the one on the left",       "pick")
+-- Non-indexed verb "give" should resolve to "get" equivalent
+bench("H", "give me the key",                          "get",    "brass-key")
+-- Non-indexed verb "show" should resolve to "look" equivalent
+bench("H", "show me the candle",                       "look",   "candle")
+-- "do" + "that" are stop words; "other" + "door" remain but verb is gone
+bench_verb_only("H", "do that to the other door",      "open")
+-- "yes" is a stop word — leaves only "candle" (no verb token)
+bench_no_match("H", "yes the candle")
+
+
+-- =========================================================================
+-- CATEGORY I: Natural Language Variations
+-- Colloquialisms, contractions, txtspeak, incomplete sentences, and
+-- heavy typos that a real mobile player might actually type.
+-- The parser should eventually handle all of these gracefully.
+-- =========================================================================
+t.suite("Category I: Natural Language Variations")
+
+-- Contraction without apostrophe: "whats" is not in any phrase
+bench("I", "whats in the nightstand",                  "search", "nightstand")
+-- Slang contraction: "lemme" = "let me" — not a stop word
+bench("I", "lemme see the knife",                      "look",   "knife")
+-- Interjection + slang: "yo" and "check" not indexed
+bench("I", "yo check this rag out",                    "examine","rag")
+-- Slang future: "gonna" not a stop word, blocks verb resolution
+bench("I", "gonna grab the blanket",                   "grab",   "blanket")
+-- Txtspeak contraction: "im" not a stop word
+bench("I", "im looking for the key",                   "look",   "brass-key")
+-- Txtspeak: "u" not expanded to "you"
+bench("I", "can u open the wardrobe",                  "open",   "wardrobe")
+-- Question form with no game verb: "where" + "is" not indexed
+bench("I", "where is the knife",                       "look",   "knife")
+-- Question form: "how" not indexed, "do"/"i" are stop words
+bench("I", "how do i open this window",                "open",   "window")
+-- Double typo: "breka" (edit distance 2 from "break"), "windo" (missing o)
+bench("I", "breka the windo",                          "break",  "window")
+-- Heavy typos: both verb and noun mangled
+bench("I", "srch nighstand",                           "search", "nightstand")
+-- Very heavy typos: almost unrecognizable
+bench("I", "exmne nife",                               "examine","knife")
+
+
+-- =========================================================================
+-- CATEGORY J: Context-Dependent Commands
+-- Commands that only make sense with prior interaction history.
+-- Tier 2 has no context window — these should all fail to match,
+-- proving that context-awareness (Tier 4+) is needed.
+-- =========================================================================
+t.suite("Category J: Context-Dependent Commands")
+
+-- Bare repetition command — no semantic content
+bench_no_match("J", "again")
+-- "do" and "that" are stop words; only "again" survives
+bench_no_match("J", "do that again")
+-- Meta-command not in any phrase index
+bench_no_match("J", "undo")
+-- Temporal command not indexed
+bench_no_match("J", "wait")
+-- "go" is a stop word; only "back" survives — not a direction
+bench_no_match("J", "go back")
+-- Cancel intent — no game content
+bench_no_match("J", "never mind")
+-- "same" + "thing" (stop word) + "but" (stop word) + "key" — has a noun but no verb
+bench_no_match("J", "same thing but with the key")
+-- Meta-reference to prior action
+bench_no_match("J", "repeat last command")
+-- Meta-reference with no object
+bench_no_match("J", "do the opposite")
+-- Conversational aside — "what" + "about" not indexed as verbs
+bench("J", "what about the candle",                    "examine","candle")
+
+
+-- =========================================================================
+-- CATEGORY K: Adversarial/Tricky Inputs
+-- Negation, hypotheticals, questions, and meta-language that the parser
+-- should NOT execute as commands. The danger: stop-word stripping removes
+-- "not"/"don't" and leaves the affirmative command intact.
+-- These test whether the parser can distinguish intent from action.
+-- =========================================================================
+t.suite("Category K: Adversarial/Tricky Inputs")
+
+-- NEGATION: "don't" survives stop-word stripping but "not" is stripped
+-- After tokenization: ["don't", "open", "door"] — parser sees "open door"
+bench_no_match("K", "don't open the door")
+-- Same negation pattern with different verb
+bench_no_match("K", "don't drop the knife")
+-- Imperative negation: "stop" not indexed, "hitting" partial match to "strike"
+bench_no_match("K", "stop hitting the bed")
+-- Fictional intent: "pretend" not indexed, "break window" matches strongly
+bench_no_match("K", "pretend to break the window")
+-- Past-tense musing: "was" + "thinking" not stop words, "knife" is noun
+bench_no_match("K", "I was just thinking about the knife")
+-- Hypothetical: "what" not indexed, "if" is stop word, "eat key" matches
+bench_no_match("K", "what if I eat the key")
+-- Polite question that IS a real command — should resolve
+bench("K", "can I look at the candle",                 "look",   "candle")
+-- Wordy question: "is" + "possible" are stop words, "open wardrobe" matches
+bench_no_match("K", "is it possible to open the wardrobe")
+-- Non-game verb "tell" not indexed, "about" not indexed
+bench_no_match("K", "tell me about the nightstand")
+-- Non-game verb "describe" not indexed
+bench_no_match("K", "describe the room")
 
 
 -- =========================================================================
