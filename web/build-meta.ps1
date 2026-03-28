@@ -77,8 +77,27 @@ if (Test-Path $objectDir) {
     }
 }
 
+# --- Creatures: special handling — rename by GUID (like objects) ---
+$creatureDir = Join-Path $MetaRoot "creatures"
+if (Test-Path $creatureDir) {
+    $creatureFiles = Get-ChildItem -Path $creatureDir -File -Filter "*.lua" | Sort-Object Name
+    $counts["creatures"] = 0
+    foreach ($file in $creatureFiles) {
+        $content = Get-Content $file.FullName -Raw
+        if ($content -match 'guid\s*=\s*"\{?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\}?"') {
+            $guid = $Matches[1]
+            $dest = Join-Path $MetaOut "creatures\$guid.lua"
+            Copy-Item $file.FullName $dest
+            $counts["creatures"]++
+        } else {
+            $warnings += "No GUID found in creature $($file.Name) -- skipping"
+            Write-Warning "No GUID found in creature $($file.Name) -- skipping"
+        }
+    }
+}
+
 # --- All other directories: copy as-is ---
-$specialDirs = @("objects")
+$specialDirs = @("objects", "creatures")
 foreach ($srcName in $srcDirs) {
     if ($specialDirs -contains $srcName) { continue }
     $srcPath = Join-Path $MetaRoot $srcName

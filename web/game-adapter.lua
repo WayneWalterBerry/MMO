@@ -48,7 +48,7 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-27 15:34"
+local BUILD_TIMESTAMP = "2026-03-27 17:18"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -320,7 +320,7 @@ local ok, err = pcall(function()
     log_debug("Loading Templates...")
     local TEMPLATE_FILES = {
         "small-item.lua", "room.lua", "container.lua",
-        "furniture.lua", "sheet.lua",
+        "furniture.lua", "sheet.lua", "creature.lua", "portal.lua",
     }
     for _, fname in ipairs(TEMPLATE_FILES) do
         local source = fetch_text("meta/templates/" .. fname)
@@ -362,7 +362,11 @@ local ok, err = pcall(function()
     local function load_object(guid)
         local normalized_guid = normalize_guid(guid)
         if base_classes[normalized_guid] then return base_classes[normalized_guid], true, 0 end
+        -- Try objects first, then creatures
         local source, was_cached = fetch_text("meta/objects/" .. normalized_guid .. ".lua")
+        if not source then
+            source, was_cached = fetch_text("meta/creatures/" .. normalized_guid .. ".lua")
+        end
         if not source then return nil, false, 0 end
         local content_len = #source
         local def = loader.load_source(source)
@@ -586,8 +590,28 @@ local ok, err = pcall(function()
         worn     = {},
         skills   = {},
         location = start_room_id,
+        max_health = 100,
+        health = 100,
+        injuries = {},
         state    = { bloody = false, poisoned = false, has_flame = 0 },
         visited_rooms = { [start_room_id] = true },  -- canonical visited-rooms tracking (#104)
+        body_tree = {
+            head  = { size = 1, vital = true,  tissue = { "skin", "flesh", "bone" } },
+            torso = { size = 4, vital = true,  tissue = { "skin", "flesh", "bone", "organ" } },
+            arms  = { size = 2, vital = false, tissue = { "skin", "flesh", "bone" }, on_damage = { "weapon_drop", "reduced_attack" } },
+            hands = { size = 1, vital = false, tissue = { "skin", "flesh", "bone" }, on_damage = { "weapon_drop" } },
+            legs  = { size = 2, vital = false, tissue = { "skin", "flesh", "bone" }, on_damage = { "reduced_movement", "prone" } },
+            feet  = { size = 1, vital = false, tissue = { "skin", "flesh", "bone" }, on_damage = { "reduced_movement" } },
+        },
+        combat = {
+            size = "medium",
+            speed = 4,
+            natural_weapons = {
+                { id = "punch", type = "blunt", material = "bone", zone = "arms", force = 2, message = "punches" },
+                { id = "kick", type = "blunt", material = "bone", zone = "legs", force = 3, message = "kicks" },
+            },
+            natural_armor = nil,
+        },
     }
 
     -------------------------------------------------------------------

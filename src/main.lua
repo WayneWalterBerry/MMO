@@ -337,6 +337,7 @@ local player = {
     skills = {},             -- learned skills (future use)
     location = start_room_id,
     max_health = 100,        -- base maximum health
+    health = 100,            -- current health (combat decrements; injuries also derive from max_health)
     injuries = {},           -- active injury instances (health is derived from this)
     consciousness = {        -- consciousness state machine (conscious/unconscious/waking)
         state = "conscious",
