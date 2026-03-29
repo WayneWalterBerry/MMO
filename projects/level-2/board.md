@@ -8,46 +8,75 @@
 
 ## Next Steps (Prioritized)
 
-| Priority | Task | Owner | Status | Gate |
-|----------|------|-------|--------|------|
-| **P0** | Design review: CBG to draft Level 2 vision document (themes, difficulty progression, new mechanics) | CBG | ⏳ Pending | GATE-0 (vision approved) |
-| **P0** | World planning: Moe to map Level 2 room layout (room count, connections, environment style) | Moe | ⏳ Pending | GATE-0 (layout approved) |
-| **P1** | Creature design: Flanders to propose new creature types for escalated intelligence | Flanders | ⏳ Pending | GATE-1 (creature spec ready) |
-| **P1** | Portal completion: Lisa working on #205 (hallway → level-2 staircase boundary portal) | Lisa | 📋 In Progress | GATE-1 (portal TDD passes) |
+| Priority | Task | Owner | Status | Directive Source |
+|----------|------|-------|--------|---------|
+| **P0** | **LOCKED: Moe to detail room topology** — Implement Level 2 room map per Wayne's directives: Mausoleum (start) → 8–12 garden rooms → Gatehouse (exit). Coordinate courtyard placement, weather integration, window portal prerequisites. | Moe | ⏳ Pending | Wayne design lock |
+| **P0** | **LOCKED: CBG to document Level 2 vision** — Confirm difficulty curve (slightly harder than L1), creature mix (natural + one supernatural), puzzle escalation vs Level 1. Update vision doc with weather mechanics, game-time lighting, and two-way travel design. | CBG | ⏳ Pending | Wayne design lock |
+| **P1** | **Window mechanic implementation** — Flanders: Add `sheet-tied` mutation to sheet object. Moe: Implement `show_destination_on_look` for window portals. Bart: Formalize `on_look` pattern in portal template. | Flanders, Moe, Bart | ⏳ Pending | Copilot decision: window-look-through + sheet-puzzle |
+| **P1** | **Creature design lock** — Flanders to spec natural creatures + one supernatural element. Coordinate with Moe on creature distributions in garden area. | Flanders | ⏳ Pending | Wayne scope lock |
 | **P2** | Infrastructure gate: Ensure Level 1 stability (T0 bugs fixed, 257 tests green) | Marge + Nelson | 📋 In Progress | GATE-1 (zero regressions) |
 
 ---
 
 ## Overall Status
 
-🟡 **Planning Phase** — Waiting for design + world layout approvals. No code work starts until CBG vision doc and Moe room map are locked. Infrastructure dependencies (#203-208 portal TDD, Level 1 stability) on track.
+🟢 **Design LOCKED** — Wayne's design directives finalized 2026-03-29. Scope, topology, portal mechanics, weather, and creature mix all confirmed. Moe now works from concrete specifications. CBG and Flanders have clear targets. Ready to move rapidly to GATE-0 (topology detail + vision doc) and then infrastructure validation (GATE-1).
 
 ---
 
-## Scope — What Level 2 Includes
+## Scope — What Level 2 Includes (LOCKED per Wayne's Decisions)
 
-### New Areas
-- **New wing of the manor** (or new area entirely — TBD by design team in GATE-0)
-- **Room count:** TBD by Moe after world planning (estimated 8–12 rooms based on expansion scope)
-- **Environment style:** TBD (current leading concepts: deeper cellar, garden exterior, library wing, attic — awaiting CBG vision)
+### Theme & Setting
+- **Exterior setting:** Garden & grounds surrounding a manor estate
+- **Freestanding structures:** Mausoleum (Level 2 start), greenhouse, stables, gatehouse, hedge maze (no hedge maze exit)
+- **Environment:** Natural outdoor threats (weather, creatures) + one supernatural element
+- **Room count:** 8–12 rooms (confirmed)
+- **Lighting:** Game-time dependent — player navigates with dynamic day/night cycle using existing game clock
 
-### Creature Intelligence Escalation
-- **Smarter behaviors:** Improved pack tactics, territorial intelligence, ambush patterns (follows Phase 5 creature behavior engine)
-- **New creature types:** TBD by Flanders (examples in-scope: larger predators, multi-part creatures, creatures with tool use)
-- **Difficulty curve:** Harder than Level 1, consistent with Phase 5 NPC combat scope
+### Topography (LOCKED)
+**Vertical sequence:**
+1. Level 1 Room 7 → Staircase UP → **Mausoleum** (Level 2 entry)
+2. Mausoleum → **Garden & grounds** (8–12 rooms of exploration)
+3. **Gatehouse** → Level 3 (Village)
 
-### New Puzzle Chains
-- **Sideshow Bob to design:** Escalated puzzle complexity, multi-room dependencies, creature interactions
-- **Objects needed:** New inventory items, containers, mechanisms (locked by world layout)
+**Shortcuts:**
+- Level 1 bedroom window (via sheet puzzle) → Courtyard (Level 2)
+- Courtyard: Hub connecting manor and garden (placement TBD by Moe)
+
+### Weather System (Mechanical)
+- **Rain:** Extinguishes fire-based light sources
+- **Wind:** Muffles sounds (affects `on_listen` descriptions)
+- **Fog:** Limits visibility (affects visual range, `on_look` clarity)
+- All weather mechanics integrated into room descriptions and object effects
+
+### Creature Mix
+- **Natural creatures:** Appropriate to garden setting (as designed by Flanders)
+- **One supernatural element:** TBD by Flanders (examples: ghost, phantom, other non-humanoid entity)
+- **No Phase 5 humanoids in Level 2** (werewolves, NPCs deferred to Phase 5+)
+
+### Portal System — Window Mechanics
+- **Window look-through:** Player can LOOK at bedroom window, see Level 2 courtyard (teaser mechanic)
+- **Window traversal:** Requires sheet-as-rope puzzle to unlock
+  - Sheet must be tied/attached to window before exit allowed
+  - Player discovers sheet, returns to window, solves simple puzzle, gains shortcut
+  - GOAP prerequisite: `exit window requires sheet-tied`
+
+### Puzzle Chains
+- **Sheet + window puzzle:** Simple, discoverable, unlocks shortcut
+- **Garden area puzzles:** Escalated complexity vs Level 1, multi-room dependencies (Sideshow Bob to design)
+- **Creature interactions:** Puzzle elements involving natural + supernatural creatures
 
 ### New Objects + Materials
-- **Objects:** Flanders to propose ~15–25 new objects per Level 2 area (scope TBD)
-- **Materials:** Standard materials (stone, iron, wood, tallow, wool, leather); no new material types in MVP
+- **Objects:** ~15–25 new objects per Level 2 area (Flanders)
+- **Existing objects repurposed:** Sheet (Level 1 bed sheet with `sheet-tied` mutation), window (existing portal mechanics)
+- **Materials:** Standard (stone, iron, wood, tallow, wool, leather) — no new material types in MVP
+- **Mutations:** Sheet gains `sheet-tied` state variant (Flanders action item)
 
-### Portal System Integration
-- **Level 1 → Level 2 boundary:** Hallway staircase (#205) implemented by Lisa (portal TDD refactor)
-- **Portal unification:** All portals (doors, stairs, archways) follow unified system per #203-208
-- **No multiplayer in MVP:** Single-player only (Rift mechanics deferred to Phase 6+)
+### Portal System Integration (LOCKED)
+- **Level 1 → Level 2 boundary:** Room 7 staircase → Mausoleum (portal TDD #205)
+- **Two-way travel:** Player can return to Level 1 via staircase (no one-way trap)
+- **Portal unification:** All portals follow unified system per #203-208
+- **No multiplayer in MVP:** Single-player only
 
 ---
 
@@ -72,33 +101,89 @@
 
 ---
 
-## Open Questions (Blockers for Vision Lock)
+## Wayne's Design Directives (LOCKED)
 
-1. **What is Level 2's theme?**
-   - Manor wing (library, attic, storage)?
-   - Basement depth (catacombs, crypts)?
-   - Garden / exterior (fresh air, outdoor threats)?
-   - Combination (mixed environments)?
+**By:** Wayne "Effe" Berry  
+**Decided:** 2026-03-29  
+**Status:** 🔒 FINAL — All team members bound by these decisions
 
-2. **How many rooms?** (Impacts level design complexity, puzzle chains, creature variety)
-   - Estimate: 8–12 rooms (vs Level 1's 7)
-   - Branching factor: linear chain, grid, or hub-and-spoke?
+### Theme & Scope
+- **Setting:** Garden & grounds (exterior, greenhouse, hedge maze, stables possible)
+- **Room count:** 8–12 rooms (vs Level 1's 7)
+- **Difficulty:** Slightly harder than Level 1 endgame (escalated puzzle complexity, mix of natural + one supernatural creature element)
+- **Creatures:** Mix of natural + one supernatural element (no Phase 5 humanoid NPCs in Level 2 — those deferred to Phase 5+)
+- **Lighting:** Game-time dependent — if 2 AM it's dark, noon it's daylight (uses game clock)
+- **Weather:** Mechanical and ACTIVE
+  - Rain extinguishes fire
+  - Wind muffles sounds
+  - Fog limits visibility
+- **Two-way travel:** Full connection to Level 1 (player can return via staircase)
 
-3. **What new creature types?** (Impacts Flanders' object design)
-   - Larger predators (bears, boars)?
-   - Multi-part creatures (swarms, hives)?
-   - Intelligent creatures (crows, humanoid outlines)?
-   - Deferred creatures (werewolves, humanoids — Phase 5+ scope per D-WAYNE-PHASE5-DECISIONS)?
+### Level Topology (SUPERSEDES all prior versions)
 
-4. **Difficulty curve:** How much harder than Level 1?
-   - Creature intelligence: Pack tactics only, or territorial + ambush?
-   - Puzzle gates: Single-object solutions (like Level 1), or multi-room chains?
-   - Time pressure: Do creatures hunt more aggressively? Poison more lethal?
+**Vertical Axis:**
+- Level 1 Room 7 → staircase UP → Mausoleum (Level 2 START)
+- Mausoleum: Freestanding structure in the garden where player emerges from Level 1
+- Garden & grounds: 8–12 rooms of exterior exploration
+- Gatehouse: At estate boundary → Level 3 (Village)
 
-5. **Boundary design:** What is the narrative crossing from Level 1 → Level 2?
-   - Staircase descends (deeper manor)?
-   - Door opens (new wing)?
-   - Portal effect (magical transition)?
+**NO hedge maze exit, NO moorland, NO Level 4 gate in Level 2**
+
+### Portal Mechanics & Shortcuts
+
+**Bedroom Window Shortcut (complex puzzle gate):**
+- Bedroom window in Level 1 → Courtyard (Level 2)
+- Requires SHEET (already exists in Level 1 as bed sheet) as makeshift rope
+- Player must LEAVE/TIE/USE sheet at window before traversal allowed
+- GOAP prerequisite: `exit window` requires `sheet attached to window`
+- Flanders action: Mutate sheet to `sheet-tied` state (or equivalent)
+- Sideshow Bob action: Acknowledge this as mini-puzzle in puzzle spec
+- Moe action: Window portal checks for sheet prerequisite before allowing exit
+
+**Window Look-Through Viewport (reusable mechanic):**
+- Players can LOOK AT bedroom window and see Level 2 courtyard description
+- Uses existing portal `on_look` mechanic — no engine changes
+- Pattern: Any transparent portal (windows, grates, archways) can optionally show destination room description
+- Template flag: `show_destination_on_look = true` for opt-in behavior
+- Design intent: "I can see it but can't reach it yet" teaser design — builds anticipation before puzzle unlock
+- Applies to: Windows, grates, archways with line-of-sight (NOT doors or solid portals)
+
+**Courtyard Placement:**
+- Courtyard is connective tissue between manor and garden
+- Part of Level 2 or directly connected to garden (Moe to place in topology)
+- Accessible via: Level 1 bedroom window shortcut (puzzle-gated) OR by exploring garden normally
+
+### Key Structures
+
+- **Mausoleum:** Level 2 arrival point (from Level 1) — NOT a Level 3 gate
+- **Gatehouse:** Level 2 exit to Level 3 (Village) — primary exit from Level 2
+- **Courtyard:** Hub connective to manor and garden
+
+---
+
+## Design Directive Assignments (for Moe)
+
+| Directive | Owner | Action | Gate |
+|-----------|-------|--------|------|
+| Topology lock (8–12 rooms, mausoleum start, gatehouse exit) | Moe | Design room map per LOCKED topology | GATE-0 |
+| Weather mechanics (rain, wind, fog) | Moe (coordinates with Bart for FX) | Integrate weather into room descriptions + effects | GATE-2 |
+| Game-time lighting | Moe (coordinates with Bart for time system) | Light objects respond to game clock (2 AM dark, noon bright) | GATE-2 |
+| Courtyard placement | Moe | Decide: isolated room or garden hub? Map connections | GATE-0 |
+| Window portal prerequisites | Moe (with Flanders) | Window checks for sheet tie before allowing exit | GATE-2 |
+| Bedroom window look-through | Moe | Implement `show_destination_on_look = true` on window portal | GATE-1 |
+
+---
+
+## ✅ Resolved Questions
+
+✅ **Theme:** Garden & grounds exterior (locked)  
+✅ **Rooms:** 8–12 rooms (locked)  
+✅ **Difficulty:** Slightly harder than Level 1 (locked)  
+✅ **Creatures:** Natural + one supernatural element (locked)  
+✅ **Lighting/Weather:** Mechanical, game-time dependent (locked)  
+✅ **Topology:** Mausoleum → garden → gatehouse (locked)  
+✅ **Shortcuts:** Window + sheet puzzle to courtyard (locked)  
+✅ **Boundary:** Staircase up from Level 1 Room 7 (locked)
 
 ---
 
