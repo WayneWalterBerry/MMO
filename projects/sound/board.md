@@ -1,5 +1,11 @@
 # Sound Project Board
 
+**Owner:** 🏗️ Bart (Architecture Lead) + ⚙️ Gil (Web Engineer)
+**Last Updated:** 2026-03-29
+**Overall Status:** 📋 DESIGNED — Plans complete, implementation not started
+
+---
+
 ## Next Steps (Prioritized)
 
 | Priority | Task | Owner | Status |

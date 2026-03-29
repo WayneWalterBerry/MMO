@@ -12,19 +12,20 @@ Prioritized by impact. These are the remaining unimplemented items from the desi
 
 | # | Task | Est. Impact | Effort | Status | Notes |
 |---|------|-------------|--------|--------|-------|
-| 1 | **Soft cosine re-ranker** | +3-5% accuracy | 3-5 days | ⏳ Not Started | `word_similarity.lua` data exists but scoring function not wired into `match()`. Needs `soft_cosine_score()` in embedding_matcher + hybrid BM25+soft weighting. |
-| 2 | **MaxSim token matching** | +2-3% accuracy | 2-3 days | ⏳ Not Started | ColBERT-inspired per-token best-match aggregation. Threshold reserved (HYBRID=0.20) but no scoring function. A/B test vs soft cosine. |
-| 3 | **Hybrid scoring weights** | +1-2% accuracy | 1 day | ⏳ Not Started | BM25 + soft cosine/MaxSim weighted combination. Decision D1 needed: 70/30 vs 50/50 ratio. |
+| 1 | **MaxSim re-ranker** | +3-5% accuracy | 2-3 days | 🟢 Unblocked (D3) | Implement `maxsim_score()` consuming `word_similarity.lua`. Two-stage: BM25 retrieves top-50, MaxSim re-ranks. |
+| 2 | **Noun synonym expansion** | +1-2% accuracy | 2 days | 🟢 Unblocked (D2) | Add 2-3 synonyms per noun to `synonym_table.lua`. Conservative scope per D2. |
+| 3 | **Hybrid scoring integration** | +1-2% accuracy | 1 day | 🟢 Unblocked (D1) | Wire MaxSim as Stage 2 re-ranker with 70/30 BM25-heavy blend. |
 | 4 | **Adaptive weighting (BM25F)** | +1-2% accuracy | 3-5 days | ⏳ Not Started | Separate verb/noun field weights in BM25 scoring. Design doc §4.8. |
-| 5 | **Noun synonym expansion** | +1-2% accuracy | 2 days | ⏳ Not Started | `synonym_table.lua` currently only maps verbs. Noun synonyms (candle→taper, lamp→lantern) not implemented. |
-| 6 | **"match match" edge case** (P6) | +1 case | 1 day | ⏳ Not Started | Duplicate-word input resolves incorrectly. Benchmark case C-97. |
-| 7 | **Fengari performance profiling** | 0% accuracy | 2 days | ⏳ Not Started | Profile soft cosine O(n²) in browser. Fallback to MaxSim if too slow. |
+| 5 | **"match match" edge case** (P6) | +1 case | 1 day | ⏳ Not Started | Duplicate-word input resolves incorrectly. Benchmark case C-97. |
+| 6 | **Fengari performance profiling** | 0% accuracy | 2 days | ⏳ Not Started | Profile MaxSim in browser. Soft cosine fallback documented if needed. |
 
-**Blocked / Needs Decision:**
-- D1: Hybrid scoring weights (BM25 + soft cosine ratio) — Wayne to decide
-- D2: Synonym expansion scope (2-3 vs 5 synonyms per term) — Wayne to decide
-- D3: Soft cosine vs MaxSim (or both A/B test) — Wayne to decide
-- D4: Phase 3 target (stop at current 91% or push to 95%?) — Wayne to decide
+**Decisions Resolved (Frink research, 2026-03-29):**
+- D1: Hybrid scoring weights → **70/30 BM25-heavy, two-stage pipeline** (BM25 retrieves top-50, MaxSim re-ranks). Short queries favor lexical precision.
+- D2: Synonym expansion scope → **2-3 per noun (conservative)**. Lu et al. research; no synonym-caused failures in remaining 13; drift risk above 3.
+- D3: Soft cosine vs MaxSim → **MaxSim first, soft cosine as fallback**. Simpler, debuggable, noise-robust, equivalent accuracy at 2-4 token scale.
+- D4: Accuracy target → **93% (~137/147), then beta + reassess**. 3 more cases achievable; diminishing returns above 93%; real player data > benchmarks.
+
+See `.squad/decisions/inbox/frink-parser-scoring.md` for full reasoning.
 
 ---
 
@@ -38,7 +39,7 @@ Prioritized by impact. These are the remaining unimplemented items from the desi
 | Phase 3 (context boost + state tiebreaker) | 85% | ~89% | 60-case suite |
 | Issue #242-244 fixes | — | 89% | 147-case expanded |
 | Typo tightening | — | **91.2%** | **134/147** |
-| Soft cosine / MaxSim (Phase 2 design) | 93-95%? | ⏳ | — |
+| Soft cosine / MaxSim (Phase 2 design) | **93%** (D4) | ⏳ | ~137/147 target |
 
 **Remaining failures:** 13/147 cases across 6 categories (see design doc §Remaining Failures).
 
@@ -105,9 +106,9 @@ Full audit of design doc planned improvements vs. actual implementation.
 | Item | Design Ref | Status | Evidence |
 |------|-----------|--------|----------|
 | Word similarity matrix (data) | §4.4 | ✅ Done | `word_similarity.lua`: 257 LOC, verb synonym pairs + semantic groupings |
-| Soft cosine scoring function | §4.4 | ⏳ Not Started | No `soft_cosine_score()` in embedding_matcher. Threshold reserved (HYBRID=0.20) |
-| MaxSim token matching | §4.5 | ⏳ Not Started | No `maxsim_score()` function. Threshold reserved (HYBRID=0.20) |
-| Hybrid BM25 + soft scoring | §4.4 | ⏳ Not Started | `scoring_mode` detection exists in init.lua but no soft/maxsim code path |
+| Soft cosine scoring function | §4.4 | 📋 Fallback (D3) | Documented as fallback if MaxSim insufficient. `word_similarity.lua` data ready. |
+| MaxSim token matching | §4.5 | 🟢 Unblocked (D3) | Primary re-ranker per D3. Implement `maxsim_score()` consuming sparse matrix. |
+| Hybrid BM25 + soft scoring | §4.4 | 🟢 Unblocked (D1) | 70/30 BM25-heavy, two-stage pipeline per D1. |
 
 ### Phase 3: Advanced Techniques (Design §4.6-4.8) — ⚠️ PARTIAL
 
