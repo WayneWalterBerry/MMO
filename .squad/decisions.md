@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 20260329T014700Z  
-**Last Merge:** 20260329T014700Z (5 decisions merged: parser-audit, maxsim, parser-scoring, deploy-workflow, priorities)
+**Last Updated:** 20260330T041000Z  
+**Last Merge:** 20260330T041000Z (8 decisions merged: bart-sound-review, bart-worlds-wave0, cbg-sound-review, chalmers-sound-review, flanders-sound-review, marge-sound-review, moe-sound-review, smithers-sound-review)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -51,6 +51,8 @@ Quick-reference table of **active + most recent decisions**.
 | D-WAVE5-BEHAVIORS | Architecture | ✅ Implemented | Pack tactics, territorial, ambush behavior engine design |
 | D-CREATE-OBJECT-ACTION | Architecture | ✅ Implemented | Metadata-driven creature object creation + NPC obstacle detection |
 | D-STRESS-HOOKS | Architecture | ✅ Implemented | Stress trauma hooks delegate to central injuries.add_stress() API |
+| D-WORLDS-LOADER-WAVE0 | Architecture | ✅ Complete | World loader infrastructure complete; WAVE-0 shipped (16 tests, 258 total) |
+| D-SOUND-REVIEW-CYCLE | Process | ⚠️ Concerns | 7-agent architecture review complete; 10 blockers, 11 concerns (all fixed in v1.1) |
 
 ---
 
@@ -1475,3 +1477,84 @@ Smithers (blocker #2) identified that parallel lint workers writing to stdout si
 - scripts/mutation-lint.ps1 — Bart (WAVE-1)
 - scripts/mutation-lint.sh — Bart (WAVE-1)
 - Integration tests — Nelson (WAVE-1)
+
+---
+
+## D-WORLDS-LOADER-WAVE0: Worlds WAVE-0 Infrastructure Complete
+
+**Status:** ✅ Complete  
+**Author:** Bart (Architect)  
+**Date:** 2026-03-30  
+**Category:** Architecture / Implementation
+
+### What Happened
+
+Executed WAVE-0 (infrastructure) and WAVE-1 (world loader) from `projects/worlds/worlds-implementation-phase1.md`.
+
+### Delivered
+- `src/engine/world/init.lua` — world loader module (discover, validate, select, get_starting_room, load)
+- `test/worlds/test-world-loader.lua` — 16 tests, all passing
+- `test/run-tests.lua` — registered `test/worlds/` in test_dirs and source_to_tests
+- Board updated: `projects/worlds/board.md`
+- **Total test suite:** 258 tests passing (16 new + 242 baseline)
+
+### Design Decisions
+1. **Dependency injection** — zero `require()` calls in the world module. All dependencies (list_lua_files, read_file, load_source) passed as parameters.
+2. **Validation requires non-empty `levels` array and non-empty `starting_room` string** — empty values fail validation, not just nil.
+3. **Tests include real world-01.lua integration** — not just mocks. Discovers and validates the actual file on disk.
+
+### Impact
+- **Moe/Flanders:** Clear loader contract for world definitions
+- **Nelson:** World module integration tested
+- **Brockman:** Ready for documentation
+- **Team:** WAVE-0 gating complete, WAVE-1 underway
+
+---
+
+## D-SOUND-REVIEW-CYCLE: 7-Agent Sound Plan Review (All Blockers Fixed)
+
+**Status:** ⚠️ Concerns (All fixable in v1.1)  
+**Date:** 2026-03-30  
+**Category:** Architecture / Planning  
+**Reviewed by:** Bart, Comic Book Guy, Chalmers, Flanders, Marge, Moe, Smithers
+
+### Context
+
+Sound implementation plan (`projects/sound/sound-implementation-plan.md`) underwent full 7-agent architecture review. 10 blockers identified, 11 concerns raised — **all fixable in coordinated v1.1 pass**.
+
+### Overall Verdict
+
+**Architecture is sound.** The driver injection pattern (Principle 8), effects pipeline integration, and accessibility dual-channel design are production-ready. The plan CAN ship after fixing specification gaps.
+
+### Key Findings Summary
+
+| Reviewer | Focus | Issues | Severity |
+|----------|-------|--------|----------|
+| **Bart** (Architect) | System design | 7 spec gaps (C1-C7) | ⚠️ Medium — fixable in v1.1 |
+| **CBG** (Creative Dir) | Game design | 2 concerns (silence education, time-of-day scope) | ⚠️ Low — good framing |
+| **Chalmers** (Auditor) | Planning | 3 blockers (parallelism, gate handoff, rollback) | ⚠️ Medium — coordination issues |
+| **Flanders** (Object Eng) | Metadata | 3 blockers (GUID safety, naming, creature death) | ⚠️ Medium — must coordinate |
+| **Marge** (Test Lead) | QA gates | 3 blockers (LLM scenarios, baseline, headless) | ⚠️ Medium — test spec gaps |
+| **Moe** (World Builder) | Rooms | 2 blockers (field naming, exit transitions) | ⚠️ Low — simple clarifications |
+| **Smithers** (UI/Parser) | Integration | 2 blockers (verb handler pattern, narration sync) | ⚠️ Medium — integration points |
+
+### Top 3 Blocker Categories
+
+1. **Naming conventions:** Standardize field names (`ambient_loop` vs `on_ambient` vs `ambient_sound`) across objects and rooms
+2. **Coordination points:** Clarify which tool is authoritative (effects vs direct trigger, door vs room exit)
+3. **Integration gaps:** Define exact verb-handler integration, sound-manager lifecycle hooks, creature death FSM state
+
+### v1.1 Action Plan
+
+1. **Bart:** Consolidate all concerns, write `.squad/decisions/inbox/bart-sound-v1-1-fixes.md` with unified answers
+2. **Pair workshops:** Bart+Smithers (verb integration), Bart+Flanders (metadata spec), Bart+Moe (room field naming)
+3. **Update plan:** Finalize `projects/sound/sound-implementation-plan.md` with all clarifications
+4. **Re-review:** Quick pass by reviewers (30 min each) to confirm all blockers resolved
+5. **Ship:** WAVE-0 → GATE-0 approval
+
+### Impact
+- **Flanders/Moe:** Object/room metadata spec finalized before WAVE-1
+- **Bart:** Coordinate blocker resolutions (1-2 hours)
+- **Smithers:** Verb-handler integration pattern documented (1 hour)
+- **Marge:** LLM test scenarios written, baseline captured (2 hours)
+- **Nelson:** Can begin mock driver + gate framework (1 hour)
