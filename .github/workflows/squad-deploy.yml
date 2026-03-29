@@ -10,18 +10,16 @@
 #
 # ─── SECRET SETUP ───────────────────────────────────────────────────────────
 #
-#   This workflow requires a Personal Access Token (PAT) stored as a
-#   repository secret named PAGES_DEPLOY_TOKEN.
+#   This workflow requires an SSH deploy key for cross-repo push access.
 #
 #   To configure:
-#     1. Go to https://github.com/settings/tokens
-#     2. Create a fine-grained PAT with:
-#        - Repository access: WayneWalterBerry/WayneWalterBerry.github.io
-#        - Permissions: Contents (read & write)
-#     3. Go to the MMO repo → Settings → Secrets and variables → Actions
-#     4. Add a new repository secret:
-#        - Name:  PAGES_DEPLOY_TOKEN
-#        - Value: <paste the PAT>
+#     1. Generate an SSH key pair:  ssh-keygen -t ed25519 -C "mmo-deploy"
+#     2. Add the PUBLIC key as a deploy key (write access) on:
+#        WayneWalterBerry/WayneWalterBerry.github.io → Settings → Deploy keys
+#     3. Add the PRIVATE key as a repository secret on the MMO repo:
+#        MMO → Settings → Secrets and variables → Actions
+#        - Name:  PAGES_DEPLOY_KEY
+#        - Value: <paste the private key>
 #
 # ────────────────────────────────────────────────────────────────────────────
 
@@ -86,12 +84,15 @@ jobs:
             Write-Host "WARNING: Could not extract BUILD_TIMESTAMP from bootstrapper.js"
           }
 
+      # SSH agent handles auth for both clone and push
+      - name: Setup SSH for Pages deploy
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PAGES_DEPLOY_KEY }}
+
       # Clone the Pages repo and deploy built files
       - name: Clone Pages repo
-        run: |
-          git clone --depth 1 \
-            "https://x-access-token:${{ secrets.PAGES_DEPLOY_TOKEN }}@github.com/WayneWalterBerry/WayneWalterBerry.github.io.git" \
-            pages-repo
+        run: git clone --depth 1 git@github.com:WayneWalterBerry/WayneWalterBerry.github.io.git pages-repo
 
       - name: Copy files to Pages repo
         shell: pwsh
