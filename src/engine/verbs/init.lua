@@ -18,6 +18,7 @@ function verbs.create()
     local movement = require("engine.verbs.movement")
     local meta = require("engine.verbs.meta")
     local traps = require("engine.verbs.traps")
+    local options = require("engine.verbs.options")
 
     sensory.register(handlers)
     acquisition.register(handlers)
@@ -31,6 +32,7 @@ function verbs.create()
     movement.register(handlers)
     meta.register(handlers)
     traps.register(handlers)
+    options.register(handlers)
 
     ---------------------------------------------------------------------------
     -- WAVE-3: CATCH / GRAB / SNATCH — creature interaction verb
