@@ -10,7 +10,9 @@ return {
     description = "You stand at the foot of a narrow stone stairway in a low-ceilinged cellar. The walls are rough-hewn granite, slick with moisture that catches what little light there is. An iron brazier squats against the far wall, its basin blackened with old ash. Water drips somewhere in the darkness, a slow and patient rhythm. The air is cold and heavy, thick with the smell of damp earth, old stone, and something faintly metallic. Cobwebs hang in thick curtains from the ceiling, swaying in a draft you cannot feel.",
     short_description = "A cold, damp cellar of rough stone and dripping water.",
 
-    on_smell = "Damp earth, cold stone, and something faintly metallic -- iron, perhaps, or old blood. The air is thick and stale, as if it has not moved in a very long time.",
+    ambient_loop = "ambient/water-drip",
+
+    on_smell= "Damp earth, cold stone, and something faintly metallic -- iron, perhaps, or old blood. The air is thick and stale, as if it has not moved in a very long time.",
 
     instances = {
         { id = "barrel",         type = "Barrel",         type_id = "c3e8f1a2-b4d7-4596-8e23-f9a1b6c5d402" },
