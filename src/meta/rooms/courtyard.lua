@@ -10,6 +10,8 @@ return {
     description = "You stand in a cobblestone courtyard enclosed by the manor's stone walls on all four sides. Above, the sky is open — stars scattered like ice chips across a deep black field, and a half-moon casting silver light over everything. A stone well stands at the center, its iron winch creaking faintly in the breeze. Ivy smothers the east wall in a dark, dense curtain. The air is cold and damp and smells of rain, wet stone, and chimney smoke from somewhere above. High on the south wall, far above your reach, you can see the bedroom window — a dark rectangle in the moonlight.",
     short_description = "A moonlit cobblestone courtyard with a stone well at its center.",
 
+    goal = { verb = "go", noun = "east", label = "find another way into the manor" },
+
     ambient_loop = "ambient/courtyard-wind",
 
     on_feel= "Uneven ground underfoot — cobblestones, cold and slick with moisture. The air is sharp and open — no walls pressing close, no ceiling above. For the first time, you feel SPACE — open sky, moving air, the chill of night. Your feet splash in puddles between the stones. You reach out: to your left, a stone wall, cold and rough, draped in something leafy and thick — ivy. Ahead, your hands find a circular stone rim at waist height — a well, its lip worn smooth by centuries of rope and bucket. The wind carries the smell of rain and chimney smoke.",
