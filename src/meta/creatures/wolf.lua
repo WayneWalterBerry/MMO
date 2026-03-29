@@ -113,6 +113,13 @@ return {
             threat = 2,
             attack = 3,
         },
+        ambush = {
+            trigger_on_proximity = true,
+            damage_bonus = 1.5,
+            can_rehide = false,
+            detect_on_listen = "You hear low, deliberate breathing from the shadows — something is waiting.",
+            narration = "A grey shape explodes from the darkness, fangs bared!",
+        },
         lingering_scent = {
             on_smell = "A faint predator's musk lingers in the air — a wolf was here recently.",
             duration = 5,

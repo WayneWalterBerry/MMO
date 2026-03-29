@@ -104,14 +104,16 @@ function M.register(handlers)
                 local room_creatures = cr_mod.get_creatures_in_room(ctx.registry, room.id)
                 local creature_presences = {}
                 for _, c in ipairs(room_creatures) do
-                    local st = c.states and c.states[c._state]
-                    local text = st and st.room_presence
-                    if not text then
-                        text = "There is " .. (c.name or c.id) .. " here."
-                    end
-                    if not seen_presences[text] then
-                        seen_presences[text] = true
-                        creature_presences[#creature_presences + 1] = text
+                    if not c.hidden then
+                        local st = c.states and c.states[c._state]
+                        local text = st and st.room_presence
+                        if not text then
+                            text = "There is " .. (c.name or c.id) .. " here."
+                        end
+                        if not seen_presences[text] then
+                            seen_presences[text] = true
+                            creature_presences[#creature_presences + 1] = text
+                        end
                     end
                 end
                 if #creature_presences > 0 then

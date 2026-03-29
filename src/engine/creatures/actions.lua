@@ -171,6 +171,15 @@ function M.execute_action(context, creature, action, helpers)
            and creature._state ~= "dead" then
             creature._state = "alive-idle"
         end
+        -- Re-hide: ambush creatures reset when player leaves room
+        local ambush = (creature.behavior or {}).ambush
+        if ambush and ambush.can_rehide and creature._ambush_sprung then
+            if creature_loc ~= player_room then
+                creature._ambush_sprung = false
+                creature._ambush_bonus_used = false
+                creature.hidden = true
+            end
+        end
 
     elseif action == "wander" then
         local exits = helpers.get_valid_exits(context, creature_loc, creature)
@@ -348,7 +357,34 @@ function M.execute_action(context, creature, action, helpers)
             if creature._state and creature._state ~= "dead" then
                 creature._state = "alive-hunt"
             end
+            -- Surprise damage: ambush first-strike bonus (metadata-driven, Principle 8)
+            local ambush_boosted = false
+            if creature._ambush_sprung and not creature._ambush_bonus_used then
+                local ambush = (creature.behavior or {}).ambush
+                local multiplier = (ambush and ambush.damage_bonus) or 1.5
+                local weapons = creature.combat and creature.combat.natural_weapons
+                if weapons then
+                    for _, w in ipairs(weapons) do
+                        w._original_force = w.force
+                        w.force = (w.force or 1) * multiplier
+                    end
+                    ambush_boosted = true
+                end
+                creature._ambush_bonus_used = true
+            end
             local result = combat.run_combat(context, creature, target)
+            -- Restore weapon forces after ambush strike
+            if ambush_boosted then
+                local weapons = creature.combat and creature.combat.natural_weapons
+                if weapons then
+                    for _, w in ipairs(weapons) do
+                        if w._original_force then
+                            w.force = w._original_force
+                            w._original_force = nil
+                        end
+                    end
+                end
+            end
             local room_id = creature_loc or player_room
             -- Emit creature_attacked stimulus via helpers for testability
             if room_id then

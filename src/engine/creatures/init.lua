@@ -336,6 +336,7 @@ function M.creature_tick(context, creature)
 
     -- 2a. Ambush check: creature with behavior.ambush stays hidden until trigger
     if behavior.ambush and not creature._ambush_sprung then
+        creature.hidden = true
         local ambush = behavior.ambush
         local should_spring = false
         if type(ambush.condition) == "function" then
@@ -344,10 +345,19 @@ function M.creature_tick(context, creature)
             local player_room = get_player_room_id(context)
             should_spring = creature_loc == player_room
         end
+        -- Pack ambush coordination: if alpha sprung, this member springs too
+        if not should_spring and behavior.pack_animal and creature_loc then
+            local pack = pack_tactics.get_pack_in_room(context.registry, creature_loc, creature)
+            if #pack > 1 then
+                pack_tactics.coordinate_ambush(pack, context)
+                should_spring = creature._ambush_sprung
+            end
+        end
         if not should_spring then
             return messages
         end
         creature._ambush_sprung = true
+        creature.hidden = false
         local player_room = get_player_room_id(context)
         if creature_loc == player_room and ambush.narration then
             messages[#messages + 1] = ambush.narration
@@ -448,6 +458,38 @@ function M.score_actions(creature, context)
 end
 function M.execute_action(context, creature, action)
     return creature_actions.execute_action(context, creature, action, action_helpers)
+end
+
+---------------------------------------------------------------------------
+-- Ambush detection API: verb handlers call this when player listens/searches.
+-- Reveals hidden ambush creatures in the player's room if detectable.
+-- Returns array of revealed creature descriptions (or empty).
+---------------------------------------------------------------------------
+function M.detect_ambush(context, sense)
+    local revealed = {}
+    if not context or not context.registry then return revealed end
+    local player_room = get_player_room_id(context)
+    if not player_room then return revealed end
+
+    for _, obj in ipairs(list_objects(context.registry)) do
+        if obj.animate and obj.hidden and obj._state ~= "dead" then
+            local ambush = obj.behavior and obj.behavior.ambush
+            if ambush and get_location(context.registry, obj) == player_room then
+                local detect_key = "detect_on_" .. (sense or "listen")
+                if ambush[detect_key] then
+                    obj._ambush_sprung = true
+                    obj.hidden = false
+                    local hint = ambush[detect_key]
+                    if type(hint) == "string" then
+                        revealed[#revealed + 1] = hint
+                    else
+                        revealed[#revealed + 1] = (obj.name or "something") .. " reveals itself!"
+                    end
+                end
+            end
+        end
+    end
+    return revealed
 end
 
 -- check_morale(creature) -> true if health/max_health < flee_threshold

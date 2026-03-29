@@ -216,4 +216,33 @@ function M.transfer_territory(dead_alpha, pack, context)
     return new_alpha
 end
 
+---------------------------------------------------------------------------
+-- WAVE-4: Pack Ambush Coordination
+-- When alpha springs its ambush, all pack members spring simultaneously.
+-- Reads behavior.ambush from each member (Principle 8).
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- coordinate_ambush(pack, context) -> bool
+-- If the alpha has sprung, spring all ambush-capable pack members.
+---------------------------------------------------------------------------
+function M.coordinate_ambush(pack, context)
+    if not pack or #pack < 2 then return false end
+    local alpha = M.select_alpha(pack, context)
+    if not alpha then return false end
+    if not alpha._ambush_sprung then return false end
+
+    local coordinated = false
+    for _, member in ipairs(pack) do
+        if member.guid ~= alpha.guid
+           and (member.behavior or {}).ambush
+           and not member._ambush_sprung then
+            member._ambush_sprung = true
+            member.hidden = false
+            coordinated = true
+        end
+    end
+    return coordinated
+end
+
 return M
