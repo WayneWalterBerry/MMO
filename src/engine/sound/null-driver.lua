@@ -5,6 +5,7 @@
 -- never needs to nil-check individual methods.
 
 local M = {}
+M.name = "null"
 
 function M:load(filename, callback)
     if callback then callback(filename, nil) end
