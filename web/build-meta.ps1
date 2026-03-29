@@ -159,4 +159,37 @@ Write-Host "  Generated meta/_index.lua manifest"
 $objectCount = if ($counts["objects"]) { $counts["objects"] } else { 0 }
 $roomCount = if ($counts["rooms"]) { $counts["rooms"] } else { 0 }
 Write-Host "Meta built ($timestamp) -> $objectCount objects, $roomCount rooms, $total total"
+
+# --- Sound assets: copy assets/sounds/ to dist/sounds/ ---
+$soundSrc = Join-Path $RepoRoot "assets\sounds"
+$soundOut = Join-Path $OutDir "sounds"
+
+if (Test-Path $soundSrc) {
+    $soundFiles = Get-ChildItem -Path $soundSrc -File -Filter "*.opus" -Recurse
+    if ($soundFiles.Count -gt 0) {
+        # Clean stale sound output
+        if (Test-Path $soundOut) {
+            Remove-Item -Recurse -Force $soundOut
+        }
+
+        $soundCount = 0
+        foreach ($file in $soundFiles) {
+            # Preserve category subdirectory structure
+            $relPath = $file.FullName.Substring($soundSrc.Length + 1)
+            $destPath = Join-Path $soundOut $relPath
+            $destDir = Split-Path -Parent $destPath
+            if (-not (Test-Path $destDir)) {
+                New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+            }
+            Copy-Item $file.FullName $destPath
+            $soundCount++
+        }
+        Write-Host "  Sounds:      $soundCount .opus files -> dist/sounds/"
+    } else {
+        Write-Host "  Sounds:      0 .opus files found (directory exists, no assets yet)"
+    }
+} else {
+    Write-Host "  Sounds:      skipped (assets/sounds/ not found)"
+}
+
 Write-Host "Done."
