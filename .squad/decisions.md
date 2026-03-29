@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-29T22:33:40Z  
-**Last Merge:** 2026-03-29T22:33:40Z (7 decisions merged: 4 existing + 3 options build phases)
+**Last Updated:** 2026-03-29T16:57:20Z  
+**Last Merge:** 2026-03-29T16:57:20Z (8 decisions merged: Wyatt's World spawn manifesto)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -68,6 +68,11 @@ Quick-reference table of **active + most recent decisions**.
 | D-OPTIONS-B5 | Parser | ✅ Verified | "help me" NOT in options aliases — stays mapped to help verb; 10-alias options system final |
 | D-OPTIONS-ANTISPOILER | Design | 🟢 Active | 3-tier escalating specificity (Standard→Context→Mercy) + puzzle exemption system (3-tier flags) |
 | D-OPTIONS-PLAN-V1 | Planning | 🟢 Active | Options plan v1.0 — GATE-1 READY; 5 phases defined, 12 blockers resolved, quantitative GATE-5 thresholds |
+| D-WYATT-WORLD | Design | 🟢 Active | New world: MrBeast Challenge Arena, 7 rooms, E-rated, single-room puzzles, 3rd grade reading level |
+| D-WYATT-PLAN | Architecture | 🟢 Active | Wyatt's World implementation plan v2.1: 4 waves, 3 gates, 15 TDD files, all blockers resolved |
+| D-WYATT-GUIDS | Planning | 🟢 Active | GUID pre-assignment block: 1 world + 7 rooms + 1 level + ~70 objects. Sequential use, no collision risk |
+| D-RATING-SYSTEM | Architecture | 🟢 Active | Content rating system: E-rated worlds block combat/self-harm verbs at engine level (hard blocks) |
+| D-RATING-TWO-LAYER | Architecture | 🟢 Active | Two-layer rating enforcement: engine-enforced (hard blocks) + design-enforced (soft guidelines) |
 
 ---
 
@@ -2384,5 +2389,273 @@ Fixed 4 of 12 blockers + updated plan to v1.0 with all questions resolved:
 - **GATE-1 READY:** 2026-08-02
 - **Implementation window:** Phase 1 starts 2026-08-05 (after merge/approval)
 - **GATE-5 target:** End of Phase 5 (~2026-08-16)
+
+---
+
+## D-WYATT-WORLD: Wyatt's World — MrBeast Challenge Arena
+
+**Status:** 🟢 Active  
+**Author:** Comic Book Guy (Creative Director)  
+**Date:** 2026-08-22  
+**Category:** Design / New World  
+**Affected:** Moe (rooms), Flanders (objects), Sideshow Bob (puzzles), Smithers (parser), Nelson (testing), Gil (web)
+
+### Summary
+
+Wyatt's World is a standalone world built for Wyatt (age 10) themed around MrBeast's YouTube brand. 7 rooms, hub-and-spoke layout, single-room puzzles, 3rd grade reading level, 5th grade puzzle difficulty. E-rated (no combat, injury, darkness, or danger).
+
+### Key Design Decisions
+
+1. **Hub-and-spoke layout:** MrBeast's Challenge Studio is the central hub. 6 challenge rooms branch off. Every room connects back to the hub. Player can't get lost.
+2. **Single-room puzzles only:** No multi-room dependency chains. Every puzzle solvable with only items and clues in that room.
+3. **3rd grade reading level:** 8–12 word sentences, simple vocabulary, active voice, present tense.
+4. **No darkness, injury, poison, or danger:** All senses safe. TASTE never harms. No horror content.
+5. **Reading IS the puzzle:** Every challenge's core mechanic is careful reading — signs, labels, recipes, letters, riddles.
+6. **Failure is funny:** Wrong answers produce silly sounds and encouraging hints, never punishment.
+7. **Same engine, different content:** Uses identical verb/FSM/mutation/containment systems. Only theme and tone differ from The Manor.
+8. **~70 objects** across 5 categories: challenge props, prizes, brand items, reading/clue objects, set dressing.
+9. **Modern era aesthetic:** Plastic, metal, glass, cardboard, bright colors. Forbidden: stone, bone, tallow, iron, gothic materials.
+
+### Rooms (7 total)
+
+| Room | Hub? | Puzzle | Difficulty |
+|------|------|--------|-----------|
+| MrBeast's Challenge Studio | ✓ Hub | Press correct button after reading sign | ★ |
+| The Feastables Factory | Spoke | Sort chocolates by flavor into bins | ★★ |
+| The Money Vault | Spoke | Calculate totals, enter safe code | ★★ |
+| The Beast Burger Kitchen | Spoke | Build burger in recipe order | ★★★ |
+| The Last to Leave Room | Spoke | Find 3 fake objects by reading descriptions | ★★★ |
+| The Riddle Arena | Spoke | Solve 3 riddles, interact with answer objects | ★★★★ |
+| The Grand Prize Vault | Spoke | Extract numbers from letter, enter code | ★★★★ |
+
+### Full Specification
+
+Full design document: `projects/wyatt-world/design.md`
+
+### Impact
+
+- **Moe:** Build 7 room .lua files + world .lua. Hub room id = `beast-studio`.
+- **Flanders:** ~70 object definitions with kid-friendly sensory descriptions. No weapon/armor templates.
+- **Sideshow Bob:** 7 self-contained puzzles with hint escalation.
+- **Smithers:** No parser changes. Simple keywords only. Kid-friendly error messages.
+- **Nelson:** Test zero-harm invariant (no injury, darkness, or poison). Test hub connectivity. Test puzzle isolation.
+- **Gil:** Web deployment (no special build changes).
+
+### Rationale
+
+This world proves the engine can serve radically different audiences using the same mechanics. If the verb/object/FSM system works for both gothic horror AND a kids' MrBeast game show, the engine architecture is validated for multi-world expansion.
+
+---
+
+## D-WYATT-PLAN: Wyatt's World Implementation Plan v2.1
+
+**Status:** 🟢 Active  
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-08-22 (v2.0), 2026-08-23 (v2.1 fixes)  
+**Category:** Architecture / Planning  
+**Affected:** All agents — Bart (WAVE-0 engine), Moe (WAVE-1a rooms), Flanders (WAVE-1b objects), Sideshow Bob (WAVE-1c puzzles), Nelson (WAVE-1d testing), Smithers (WAVE-2a parser), Gil (WAVE-3c web)
+
+### Summary
+
+Comprehensive implementation plan for Wyatt's World. 4 waves, 3 gates, 15 TDD files, ~6,050 estimated LOC. All blockers resolved in v2.1.
+
+### Four Waves
+
+- **WAVE-0 (Bart):** Multi-world loader upgrade + `--world <id>` CLI flag
+- **WAVE-1 (Parallel):** Content authoring
+  - WAVE-1a (Moe): 7 rooms + world .lua file
+  - WAVE-1b (Flanders): ~70 objects + level file
+  - WAVE-1c (Sideshow Bob): 7 puzzle specs + hint escalation
+  - WAVE-1d (Nelson): Test scaffolding
+- **WAVE-2 (Smithers):** Parser polish + object narration
+- **WAVE-3 (All):** Web deploy + final audit
+
+### Three Gates
+
+- **GATE-0:** Multi-world boot verified
+- **GATE-1:** Content loads, 7 rooms connected, puzzles isolated, E-rating enforced
+- **GATE-2:** All puzzles solvable, sensory coverage 100%, reading level certified
+- **GATE-3:** Web deployment, reading-level sign-off, final regression
+
+### Test Files (15 TDD)
+
+- `test-world-loader.lua` — Multi-world loading
+- `test-multi-world-boot.lua` — Boot regression
+- `test-wyatt-rooms.lua` — Content loading
+- `test-wyatt-objects.lua` — Object GUID uniqueness
+- `test-wyatt-hub-connectivity.lua` — Hub-and-spoke topology
+- `test-wyatt-sensory-coverage.lua` — All senses available
+- `test-wyatt-safety-audit.lua` — No darkness/injury/poison
+- `test-wyatt-e-rating-blocks.lua` — Combat verbs blocked
+- 7 per-puzzle tests (`test-wyatt-studio-puzzle.lua` through `test-wyatt-grand-prize.lua`)
+
+### Key Implementation Decisions
+
+1. **Multi-world engine in WAVE-0:** World loader's `select()` upgraded to handle 2+ worlds. Mandatory engine change.
+2. **`content_root` convention:** Each world .lua file gains optional `content_root` field. If nil, use legacy paths. If set, load from subdirectory.
+3. **`--world <id>` CLI flag:** Required when 2+ worlds exist. Auto-select when 1 world (backward compat).
+4. **Player-state scoreboard:** Track puzzle completion in `player.state.puzzles_completed = {}`. Recommended, to be confirmed by Bob + Flanders.
+5. **GUID pre-assignment:** Bart reserves GUID block for all Wyatt objects (1 world + 7 rooms + 1 level + ~70 objects) to prevent collisions during parallel authoring.
+
+### Blockers Fixed (v2.1)
+
+1. ✅ **Content Root Convention:** Multi-world loader now supports per-world `content_root` field
+2. ✅ **GUID Collision:** Pre-assigned block of ~80 GUIDs (bart-wyatt-guids.md)
+3. ✅ **E-Rating Enforcement:** Engine blocks combat/self-harm verbs, test gate G2-8 added
+
+### Concerns Fixed (v2.1 — 12 total)
+
+All 12 concerns from team review resolved:
+- Risk register expanded (6 risks with mitigations)
+- Success criteria clarified
+- Test file structure formalized (15 TDD files)
+- Object catalog fully specified (5 categories, ~70 objects)
+- Reading-level audit gates added (WAVE-2 auto-scan + GATE-3 manual audit)
+- Web regression explicitly covered (GATE-3)
+- Cross-agent coordination documented
+- Backward compatibility (The Manor) confirmed in regression tests
+
+### Impact
+
+- **Bart:** Executes WAVE-0 (engine loader upgrade, main.lua refactoring, E-rating enforcement)
+- **Moe:** WAVE-1a rooms blocked on GATE-0
+- **Flanders:** WAVE-1b objects + level file blocked on GATE-0
+- **Bob:** WAVE-1c puzzle specs blocked on GATE-0
+- **Nelson:** WAVE-1d test scaffolding blocked on GATE-0
+- **Smithers:** WAVE-2a parser polish blocked on GATE-1
+- **Gil:** WAVE-3c web deploy blocked on GATE-2
+
+### Full Specification
+
+`projects/wyatt-world/plan.md` (v2.1, final)
+
+---
+
+## D-WYATT-GUIDS: Wyatt's World GUID Pre-Assignment Block
+
+**Status:** 🟢 Active  
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-08-23  
+**Category:** Planning / GUID Management  
+**Purpose:** Prevent GUID collisions during parallel authoring (WAVE-1). Moe and Flanders use ONLY GUIDs from this block. No independent GUID generation.
+
+### Rules
+
+1. **Sequential assignment:** Use GUIDs in order from each category. Don't skip or shuffle.
+2. **No reuse:** Each GUID is used exactly once.
+3. **Overflow:** If a category runs out, take from the Overflow pool (end of list).
+4. **Format:** Windows `{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}` — curly braces included.
+
+### GUID Blocks
+
+**World Definition (1 GUID)**
+- W1: `{6F129CCE-4798-446D-9CD8-198B36F04EF0}` — wyatt-world.lua (Bart)
+
+**Room GUIDs (7 GUIDs — Moe)**
+- R1: `{2CC1419B-3F68-44DD-BDA6-A5627650C410}` — MrBeast's Challenge Studio (beast-studio.lua)
+- R2: `{D4B094DA-842B-4011-B9A0-BE0007825BE4}` — The Feastables Factory (feastables-factory.lua)
+- R3: `{4DB5FAE6-6FB1-4CDA-9292-FC76B0B50581}` — The Money Vault (money-vault.lua)
+- R4: `{17873274-B097-4669-B4D5-2B6524579835}` — The Beast Burger Kitchen (beast-burger-kitchen.lua)
+- R5: `{C9E72A2F-E1AD-465C-A4E0-9AE69816F752}` — The Last to Leave Room (last-to-leave.lua)
+- R6: `{611A8C30-3C89-4018-B143-5448F383D9E1}` — The Riddle Arena (riddle-arena.lua)
+- R7: `{803085D7-5E49-4AAC-A035-391148E7AB5C}` — The Grand Prize Vault (grand-prize-vault.lua)
+
+**Level GUID (1 GUID — Flanders)**
+- L1: `{440AC83D-D479-4832-A2F2-482FC4E5014A}` — Level 01 — MrBeast's Challenge Arena (level-01.lua)
+
+**Object GUIDs (~70 GUIDs — Flanders)**
+- Challenge Props (~25): Big red button, colored buttons, dials, bins, conveyor, safe, podium, plates, etc.
+- Prize Items (~8): Trophy, coupons, medals, confetti, cash
+- Brand Items (~10): Feastables bars (5 flavors), burger components, merch, play button
+- Reading/Clue Objects (~12): Welcome sign, letter, labels, recipe card, riddle boards, scoreboard
+- Set Dressing (~15): Screens, cameras, speakers, banners, spotlights, streamers
+
+**Total:** ~80 GUIDs (1 world + 7 rooms + 1 level + ~70 objects) — fully pre-assigned, zero collision risk.
+
+### Usage Rules
+
+- Moe: Use Room GUIDs (R1–R7) sequentially
+- Flanders: Use Level GUID (L1) and Object GUIDs (O1–O70+) sequentially
+- No trading or reordering
+- If you need an extra GUID not in your category, escalate to Bart (overflow pool exists)
+
+---
+
+## D-RATING-SYSTEM: Content Rating System
+
+**Status:** 🟢 Active  
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-08-23  
+**Category:** Architecture / Safety  
+**Affects:** All future worlds, verb dispatch, engine enforcement
+
+### Decision
+
+Implement a world-level rating system that blocks restricted verbs at the engine level for E-rated worlds.
+
+### E-Rated Restrictions
+
+- **Self-harm verbs** blocked: `self-injure`, `self-harm`, `hurt-self`, etc.
+- **Combat verbs** blocked: `attack`, `fight`, `harm`, `kill`, `injure`, `combat`, etc.
+- **Injury system** mechanically disabled (no damage calculations)
+- **Poison system** disabled (taste always safe)
+- **Darkness** optional (designer's choice, but no penalty for darkness in E-rated worlds)
+
+### Implementation Points
+
+1. **World .lua declares rating:** `rating = "E"` field in world definition
+2. **Engine dispatch checks rating:** `context.world.rating` checked before verb execution
+3. **Blocked verb behavior:** Returns safe error message ("That's not part of this world.") to player
+4. **Design enforcement:** Designers should not create restricted-verb content in E-rated worlds, but engine blocks at dispatch layer for safety
+
+### Wyatt's World Application
+
+- Rating: `E` (kids' content)
+- Restricted verbs automatically unavailable
+- No combat, injury, or self-harm mechanics possible
+- All sensory interactions safe by design
+
+### Future Expansion
+
+Other ratings possible (T, M, etc.) with different restriction sets, but E-rating is the first.
+
+---
+
+## D-RATING-TWO-LAYER: Two-Layer Rating Enforcement
+
+**Status:** 🟢 Active  
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-08-23  
+**Category:** Architecture / Design  
+**Affects:** World design, object metadata, engine dispatch
+
+### Decision
+
+Content rating enforcement operates on **two layers:**
+
+1. **Engine-enforced (Hard blocks):** Combat, self-harm, injury system verbs are mechanically blocked at verb dispatch
+2. **Design-enforced (Soft guidelines):** Designers apply constraints: no poisons, no scary darkness, no hostile creatures
+
+### Why Two Layers
+
+- **Hard blocks** prevent accidental inclusion of forbidden verbs (safety first)
+- **Soft guidelines** guide creative direction (tone, aesthetics, themes)
+- **Combined approach** catches both technical violations (verb dispatch) and design violations (object creation)
+
+### Wyatt's World Application
+
+- **Engine layer:** Combat/self-harm verbs blocked; players cannot access them
+- **Design layer:** Flanders avoids poison, gothic materials, and hostile creatures when creating objects
+
+### Compliance Matrix
+
+| Restriction | Engine Block | Design Guidance |
+|------------|--------------|-----------------|
+| Combat verbs | ✅ Hard-blocked | Objects designed without combat properties |
+| Self-harm verbs | ✅ Hard-blocked | No self-harm props (knives, poison, etc.) |
+| Injury system | ✅ Disabled | No injury objects |
+| Poison | ✅ Can't activate | Never used in taste descriptions |
+| Darkness | ⚠️ Optional | Designer decides (ok if non-punitive) |
+| Hostile creatures | ⚠️ Not blocked | Objects designed as friendly/neutral only |
 
 ---
