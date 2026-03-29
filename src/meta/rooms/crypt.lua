@@ -30,7 +30,11 @@ return {
 
     instances = {
         -- Sarcophagi (south wall, west to east: 1, 2, 3)
-        { id = "sarcophagus-1",    type = "Stone Sarcophagus", type_id = "f46656fd-02ca-4549-bb0d-e2366c6a43da" },
+        { id = "sarcophagus-1",    type = "Stone Sarcophagus", type_id = "f46656fd-02ca-4549-bb0d-e2366c6a43da",
+            contents = {
+                { id = "burial-jewelry",   type = "Burial Jewelry",    type_id = "626db614-fc42-45ba-ab2f-a636088f2c46" },
+            },
+        },
         { id = "sarcophagus-2",    type = "Stone Sarcophagus", type_id = "f46656fd-02ca-4549-bb0d-e2366c6a43da",
             contents = {
                 { id = "bronze-ring",      type = "Bronze Ring",       type_id = "d4f18a63-9e27-4c85-b790-3a6e2f8d1c04" },
@@ -61,6 +65,9 @@ return {
 
         -- Wall inscription (east wall, back of crypt)
         { id = "wall-inscription", type = "Wall Inscription",  type_id = "959a08fd-057e-4cf6-b80e-c419d184bcc1" },
+
+        -- Atmospheric
+        { id = "skull",            type = "Human Skull",       type_id = "afb5c50c-a82b-414b-8d1c-9ab50e6ad454" },
         { id = "crypt-deep-cellar-archway-east", type_id = "{d9124959-350d-4172-9844-d6d390461dd5}" },
         { id = "crypt-bat", type_id = "{52e32931-84dc-4a3d-a2cf-04cf79d61f4c}" },
     },
