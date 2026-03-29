@@ -1860,3 +1860,80 @@ Complete level transition topology locked for Levels 1–4+. This is the binding
 - **Lisa:** Issue #205 scope change (hallway staircase = upper floors)
 - **Level 2 board:** Full topology integrated
 - **Level 3 planning:** Mausoleum gate is the entry point
+
+---
+
+## 2026-08-02: Options Project Team Review Ceremony — 12 Blockers, Architecture Approved
+
+**By:** Squad (Coordinator) — consolidating 5 reviewer reports  
+**Date:** 2026-03-29T21-13-50Z (reviewed 2026-08-02)  
+**Category:** Architecture Review / Implementation Planning  
+**Status:** ⚠️ CONCERNS — 12 blockers identified, all addressable
+
+### Summary
+
+Five-agent team review (Bart, Smithers, Moe, Nelson, Sideshow Bob) of the Options project — a goal-driven hint system for stuck players. The **Approach C hybrid architecture** (goal suggestions + sensory suggestions + dynamic actions + GOAP integration) was **unanimously approved**. However, **12 blockers across 6 categories** must be resolved before GATE-1 approval.
+
+### Verdicts
+
+| Reviewer | Verdict | Blockers |
+|----------|---------|----------|
+| Bart (Architecture) | ⚠️ CONCERNS | 2 (API contracts, context window decision) |
+| Smithers (Parser/UI) | ⚠️ CONCERNS | 4 ("help me" collision, numeric precedence, numbered exits, Phase 4 tests) |
+| Moe (World Builder) | ✅ APPROVE | 0 (3 defer to Phase 5) |
+| Nelson (QA) | ⚠️ CONCERNS | 4 (Phase 5 spec contradiction, performance test, GATE-5 criteria, empty room) |
+| Sideshow Bob (Puzzle Master) | ⚠️ CONCERNS | 2 (anti-spoiler gaps, puzzle exemption system) |
+
+### 12 Consolidated Blockers
+
+#### Architecture (4)
+- **B1:** API contracts missing (option table structure, context requirements) — Bart adds to architecture (30 min)
+- **B2:** Context window decision unresolved (stable A, rotate B, hybrid C) — Wayne decides
+- **B3:** Anti-spoiler Rule 5 punishes stuck players — replace with escalating specificity (Bob/Bart, 1 hour)
+- **B4:** No puzzle room exemption system — add `options_disabled`, `options_mode`, `options_delay` (Bob/Moe, 1 hour)
+
+#### Parser/UI (3)
+- **B5:** "help me" collides with help verb — remove from options aliases (Smithers, 15 min)
+- **B6:** Numeric object names precedence undefined — clarify: pending_options active when exists (Smithers/Bart, 15 min)
+- **B7:** Numbered exits conflict undocumented — reserve numeric input, prohibit "go 1" (Bart, 15 min)
+
+#### Test/Specification (4)
+- **B8:** Phase 5 tests reference `room.hints` (architecture uses `room.goal`) — rewrite specs (Kirk, 30 min)
+- **B9:** Performance budget (<50ms) not testable — add `test/options/test-performance.lua` (Bart/Nelson, 30 min)
+- **B10:** GATE-5 criteria subjective — define "All 7 CRITICAL scenarios pass, no HIGH/CRITICAL bugs" (Kirk, 15 min)
+- **B11:** Empty room edge case uncovered — add test + design decision (Bart, 30 min)
+
+#### Meta (1)
+- **B12:** Goal completion detection unclear (action-based vs state-based) — clarify in architecture (Bart, 30 min)
+
+### Key Highlights
+
+✅ **Architecture unanimously approved** — Approach C is the right design  
+✅ **GOAP reuse praised** — smart engineering, battle-tested existing code  
+✅ **Sensory-first priority** preserves core dark-room gameplay  
+✅ **Parser integration clean** — Tier 1 dispatch, no pipeline changes  
+✅ **Room design impact minimal** — 2.5-3.5 hours workload, no field conflicts  
+✅ **Bob proposed 3-tier exemption system** — excellent design addition  
+✅ **Nelson provided comprehensive test matrix** — 12-scenario spec vs vague 5
+
+### Next Steps
+
+1. Bart — add API contracts to architecture (B1), clarify goal completion detection (B12) — 1 hour
+2. Wayne — decide context window behavior (B2)
+3. Bob + Bart — revise anti-spoiler rules + exemption system (B3, B4) — 2 hours
+4. Smithers — remove "help me" alias, document numeric precedence (B5, B6, B7) — 30 min
+5. Kirk — fix Phase 5 test refs, quantify GATE-5, add test scenario matrix (B8, B10) — 1 hour
+6. Nelson — add performance test to Phase 1, empty room test, expand LLM scenarios (B9, B11) — 1 hour
+7. **GATE-1 READY** — after all fixes complete
+
+**Estimated fix time: 1 day** (parallel work across 4 agents)
+
+**Related documents:**
+- `.squad/decisions/inbox/bart-options-review.md` — Detailed architecture findings
+- `.squad/decisions/inbox/smithers-options-review.md` — Parser/UI analysis
+- `.squad/decisions/inbox/moe-options-review.md` — Room metadata assessment
+- `.squad/decisions/inbox/nelson-options-review.md` — QA and test coverage
+- `.squad/decisions/inbox/bob-options-review.md` — Anti-spoiler and puzzle integrity
+- `.squad/decisions/inbox/squad-options-review-ceremony.md` — Full ceremony transcript
+
+**Status:** APPROVE with mandatory blocker fixes before GATE-1

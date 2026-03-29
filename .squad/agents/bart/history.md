@@ -112,6 +112,14 @@
 13. **Movement has 4 room transition paths:** go-back, portal, legacy exit, teleport. All needed sound hooks independently — no shared helper. Future refactor opportunity: extract `change_room(ctx, old_room, new_room)` helper.
 14. **Effects pipeline as canonical sound path:** The `play_sound` effect handler is the single entry point from object metadata. Direct `trigger()` calls only happen from engine internals (FSM, mutation, verb dispatch). This keeps the dual-path concern (C2) cleanly resolved.
 
+## Latest Activity
+
+**Options Review Ceremony (2026-08-02):**
+- Reviewed Options project architecture and plan as Architecture Lead
+- Verdict: ⚠️ CONCERNS (2 blockers: API contracts + context window decision)
+- 5 findings identified; all addressable before GATE-1
+- See `.squad/decisions/inbox/bart-options-review.md` for full review
+
 ## Archives
 
 - Prior detailed session logs: .squad/log/

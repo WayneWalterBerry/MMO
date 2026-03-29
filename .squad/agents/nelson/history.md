@@ -98,6 +98,14 @@
 - **All 257 test files pass** after WAVE-2 additions. No regressions.
 - **Workstream 1 complete.** WAVE-0, GATE-0, WAVE-1, GATE-1, WAVE-2 all passed. Session log: 2026-03-28T23-33-01Z-mutation-graph-linter-complete.md. Commit: 6b96bd8.
 
+### Options Review Ceremony (2026-08-02)
+
+- Reviewed Options project as QA Engineer
+- Verdict: ⚠️ CONCERNS (4 blockers: Phase 5 test refs, performance budget, GATE-5 criteria, empty room edge case)
+- 15 findings identified; 7 non-blocking gaps
+- Provided comprehensive test matrix: 12-scenario LLM walkthrough spec (vs vague 5)
+- See `.squad/decisions/inbox/nelson-options-review.md` for full review
+
 ### CI Cross-Platform Fix (#409) (2026-03-30)
 - Fixed 3 test files failing on Ubuntu CI (GitHub Actions run #23701384193). All pass on Windows.
 - **Failed jobs:** `test (other)` — 2 files; `test (rooms)` — 1 file.

@@ -14,3 +14,15 @@
 - **Bart** (Architect) — engine capabilities and constraints; wrote containment, room exits, dynamic descriptions docs
 - **Nelson** (Tester) — tests puzzles for solvability and edge cases
 - **Brockman** (Documentation) — can delegate doc writing to him, but puzzle docs are my responsibility
+
+---
+
+## Latest Activity
+
+**Options Review Ceremony (2026-08-02):**
+- Reviewed Options project as Puzzle Designer
+- Verdict: ⚠️ CONCERNS (2 blockers: anti-spoiler gaps, puzzle exemption system)
+- Identified critical gaps in Rules 2 & 4 (discovery vs progress conflict, object state leakage)
+- Proposed 3-tier exemption system (disabled, restricted, delayed)
+- Recommended 7-rule anti-spoiler rewrite with Rules 6 & 7 (undiscovered exits, hidden capabilities)
+- See `.squad/decisions/inbox/bob-options-review.md` for full review

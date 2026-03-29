@@ -66,3 +66,15 @@
 - MAT-03 warnings (material by name) are Flanders' concern, not blocking
 - XF-03 keyword overlap between stairs portals is expected — parser handles disambiguation by room context
 - EXIT-03 (bidirectional partner check) only works when linting the full `src/meta/objects/` directory
+
+---
+
+## Latest Activity
+
+**Options Review Ceremony (2026-08-02):**
+- Reviewed Options project as World & Level Builder
+- Verdict: ✅ APPROVE with concerns (0 blockers, 3 concerns, 6 approvals)
+- Mapped all 7 Level 1 room goals: 2 multi-phase, 4 single, 1 no-goal
+- Validated Phase 5 workload estimate (2.5-3.5 hours)
+- See `.squad/decisions/inbox/moe-options-review.md` for full review
+- Key concerns: goal completion detection semantics, deep-cellar priority, linter validation

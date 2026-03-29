@@ -83,6 +83,14 @@ Implemented two-stage hybrid scoring pipeline per Frink's D1/D3 decisions:
 
 ---
 
+## Latest Activity
+
+**Options Review Ceremony (2026-08-02):**
+- Reviewed Options project as Parser/UI Engineer
+- Verdict: ⚠️ CONCERNS (4 blockers: "help me" collision, numeric precedence, numbered exits, Phase 4 test gaps)
+- Identified 22 findings including critical UX edge cases
+- See `.squad/decisions/inbox/smithers-options-review.md` for full review
+
 ## Archives
 
 - Prior detailed session logs: .squad/log/
