@@ -1,8 +1,8 @@
 # Sound Project Board
 
 **Owner:** 🏗️ Bart (Architecture Lead) + ⚙️ Gil (Web Engineer) + 📊 Kirk (PM)  
-**Last Updated:** 2026-03-29T14:22Z  
-**Overall Status:** 🟢 WAVE-4/5 COMPLETE ✅ — Sound manager (21-method API) + Web Audio driver with synthetic fallback + all 7 room ambients + 20+ object sound metadata + full engine integration (FSM, verbs, mutations, room transitions, effects) + 266-test suite. **MVP implementation DONE. Awaiting real audio assets to ship (Phase 1).**
+**Last Updated:** 2026-03-29T16:30Z  
+**Overall Status:** 🟢 WAVE-4/5 COMPLETE ✅ — Sound manager (21-method API) + Web Audio driver with synthetic fallback + all 7 room ambients + 20+ object sound metadata + full engine integration (FSM, verbs, mutations, room transitions, effects) + 266-test suite. **MVP implementation DONE. WAVE-NEXT: Real audio asset sourcing & deployment (8 concrete execution tasks added to board).**
 
 **Documentation:** See `projects/sound/design.md` (unified design reference) and `projects/sound/plan.md` (unified execution plan).
 
@@ -12,7 +12,7 @@
 
 | Priority | Task | Owner | Status |
 |----------|------|-------|--------|
-| **P0** | **PHASE 1: Real Audio Assets from Free Libraries (MVP)** | CBG (sourcing), Gil (build/deploy) | ⏳ In Progress — Source 12–15 sound files from free libraries (Zapsplat, BBC Sound Effects, OpenGameArt) using concrete shopping list. No self-generated sounds. See `projects/sound/plan.md` WAVE-1 for details. |
+| **P0** | **WAVE-NEXT: Source & Deploy Real Audio Assets (Execution Phase)** | Wayne (manual), Gil, Moe, Flanders, Nelson | 🔴 TODO — Get free audio files into game via Zapsplat/BBC/OpenGameArt, compress, wire up object/room metadata, deploy to web. 8 concrete tasks below. |
 | **P1** | **WAVE-0** — Sound manager module + platform drivers | Bart, Gil, Nelson | ✅ Done (Bart: init.lua + null-driver + defaults; Gil: web bridge; Nelson: test scaffolding) |
 | **P2** | **WAVE-1** — Object metadata + room ambients + asset sourcing | Flanders, Moe, CBG, Nelson | ✅ Done (Flanders: 20 files, Moe: 7 rooms, CBG: design complete, sourcing pending) |
 | **P3** | **WAVE-2 Track 2A** — Engine hooks (FSM, verb, mutation, room, effects, loader) | Bart | ✅ Done (12 hooks, +70 lines, 260/260 tests pass) |
@@ -21,6 +21,50 @@
 | **P4** | **WAVE-4** — Web Audio driver + synthetic fallback | Gil | ✅ Done (web/audio-driver.js + src/engine/sound/web-driver.lua, deployed, fallback tones working) |
 | **P5** | **WAVE-5** — Room ambient declarations (all 7 rooms) | Moe | ✅ Done (7 rooms, 260 tests pass) |
 | **P6** | **WAVE-3** — Build pipeline + deploy + documentation | Gil, Brockman | ⏳ In Progress — build-sounds.ps1 pipeline ready. Docs refresh pending. |
+
+---
+
+## WAVE-NEXT: Concrete Execution Tasks (Sourcing → Deploy)
+
+### Context
+Wayne requested: *"Now that we know where the free sounds are, is it on the board to get them into the game? They should be written as files to the web site and lazy loaded by the engine."*
+
+**Answer:** YES — below are 8 actionable tasks to download from free libraries (Zapsplat, BBC, OpenGameArt), compress, wire up metadata, and deploy to web. Step 1 is **MANUAL** (human browsing + CAPTCHA). Steps 2–8 are **AUTOMATABLE** once files are in `assets/sounds/`.
+
+### Execution Roadmap
+
+| # | Task | Owner | Status | Effort | Details |
+|---|------|-------|--------|--------|---------|
+| **1** | Download 12–15 MVP sounds from Zapsplat/BBC/OpenGameArt | Wayne (manual) | 🔴 TODO | 2–3 hrs | Use shopping list search terms from `projects/sound/plan.md` WAVE-1 (water-drip, wolf-growl, door-creak, etc.). Prioritize CC0 license. Download highest quality (WAV or FLAC). Store in `assets/sounds/{category}/{name}.wav`. |
+| **2** | Convert WAV → OGG Opus @ 48kbps | Gil | 🔴 TODO | 1–2 hrs | Run `ffmpeg -i input.wav -c:a libopus -b:a 48k -ac 1 output.opus` for each file. Validate <100KB per file; total <300KB. **Requirement:** ffmpeg installed locally. |
+| **3** | Place files in `web/dist/sounds/{category}/` | Gil | 🔴 TODO | 30 min | Copy `.opus` files to web build directory. Categories: `ambient/`, `creatures/`, `objects/`, `combat/`. Create directory structure. |
+| **4** | Update `web/build-sounds.ps1` copy step | Gil | 🔴 TODO | 1 hr | Add glob patterns to copy `.opus` files from `assets/sounds/` to `web/dist/sounds/` during build. Verify build pipeline runs without errors. |
+| **5** | Update room `ambient_loop` values to match filenames | Moe | 🔴 TODO | 30 min | Edit `src/meta/world/*.lua` files. Map existing placeholders (e.g., `ambient_loop = "water-drip"`) to downloaded filenames (e.g., `ambient_loop = "ambient/water-drip"`). Verify all 7 rooms reference valid files. |
+| **6** | Update object/creature sound metadata to match filenames | Flanders | 🔴 TODO | 1–2 hrs | Edit `src/meta/objects/*.lua` files. Verify `sounds` table keys match downloaded filenames. Example: `sounds = { on_verb_open = "object/door-creak" }`. Regex-verify no dangling references. |
+| **7** | Test lazy loading in browser | Nelson | 🔴 TODO | 1 hr | Build + deploy. Verify each sound loads on first use (Network tab shows fetch). Run headless: `echo "look\nfeel wolf\nlisten" | lua src/main.lua --headless`. Verify no sound errors in console. Full test suite passes (266 tests). |
+| **8** | Deploy to GitHub Pages (web) | Gil | 🔴 TODO | 30 min | Run `web-publish` skill. Ensure new `.opus` files copied to Pages repo. Verify web version loads sounds correctly. Commit to both MMO and MMO-Pages repos. |
+
+### Key Points
+
+**Step 1 is HUMAN-ONLY:**
+- Zapsplat requires account creation + CAPTCHA per download
+- AI agents cannot complete CAPTCHA or create accounts
+- Wayne or designated human browses, downloads, stores files in `assets/sounds/`
+- Once files are in repo, Steps 2–8 are automatable
+
+**Design Principles Upheld:**
+- ✅ Text is canonical, sound is additive (all metadata pre-existed)
+- ✅ Lazy loading (sounds fetch on first use, not at startup)
+- ✅ Pre-compressed (OGG Opus @ 48kbps, ~230 KB total MVP)
+- ✅ Web-first (files on GitHub Pages, not bundled with engine)
+
+**Shopping List Reference:**
+See `projects/sound/plan.md` lines 157–173 for concrete search terms:
+- `water-drip-cave-cellar` (Zapsplat, ambient)
+- `wolf-growl-snarl` (Zapsplat, creature)
+- `wooden-door-creak-open` (Zapsplat/BBC, object)
+- `match-strike-light-ignite` (Zapsplat, object)
+- ...14 total items, all CC0-preferred
 
 ---
 
