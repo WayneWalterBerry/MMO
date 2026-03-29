@@ -272,4 +272,68 @@ function M.expire_markers(ctx, duration_hours)
     end
 end
 
+---------------------------------------------------------------------------
+-- detect_intrusion(creature, ctx) -> nil | "warning" | "threat" | "attack"
+-- Escalation when player enters a territorial creature's territory.
+-- Reads behavior.intrusion_escalation for thresholds (default: 1/2/3).
+-- Tracks creature._intrusion_turns (reset when player leaves territory).
+---------------------------------------------------------------------------
+function M.detect_intrusion(creature, ctx)
+    if not creature or not ctx then return nil end
+    local behavior = creature.behavior or {}
+    if not behavior.territorial then return nil end
+
+    local territory = behavior.territory or behavior.home_territory
+    if not territory then return nil end
+
+    -- Determine territory rooms: simple string = single room, table = list
+    local territory_rooms = {}
+    if type(territory) == "table" then
+        for _, r in ipairs(territory) do territory_rooms[r] = true end
+    else
+        territory_rooms[territory] = true
+    end
+
+    -- Where is the player?
+    local player_room
+    if ctx.current_room then
+        player_room = type(ctx.current_room) == "table" and ctx.current_room.id or ctx.current_room
+    end
+    if not player_room then return nil end
+
+    -- Where is the creature?
+    local creature_loc = creature.location
+    if not creature_loc then return nil end
+
+    -- Only react if creature is in the same room as the player
+    if creature_loc ~= player_room then
+        creature._intrusion_turns = nil
+        return nil
+    end
+
+    -- Is the player in the creature's territory?
+    if not territory_rooms[player_room] then
+        creature._intrusion_turns = nil
+        return nil
+    end
+
+    -- Increment intrusion counter
+    creature._intrusion_turns = (creature._intrusion_turns or 0) + 1
+
+    -- Read escalation thresholds from metadata (Principle 8)
+    local esc = behavior.intrusion_escalation or {}
+    local warn_at   = esc.warning or 1
+    local threat_at = esc.threat  or 2
+    local attack_at = esc.attack  or 3
+
+    if creature._intrusion_turns >= attack_at then
+        return "attack"
+    elseif creature._intrusion_turns >= threat_at then
+        return "threat"
+    elseif creature._intrusion_turns >= warn_at then
+        return "warning"
+    end
+    return nil
+end
+
 return M

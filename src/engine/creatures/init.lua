@@ -269,6 +269,29 @@ function M.creature_tick(context, creature)
         end
     end
 
+    -- 0d. Territorial intrusion detection: escalate warning → threat → attack
+    if behavior.territorial then
+        local intrusion = territorial.detect_intrusion(creature, context)
+        if intrusion then
+            local player_room = get_player_room_id(context)
+            if intrusion == "warning" then
+                -- Emit territorial warning (growl/hiss) — gives player a turn to retreat
+                local warn_react = creature.reactions and creature.reactions.intrusion_warning
+                if warn_react and warn_react.message and creature_loc == player_room then
+                    messages[#messages + 1] = warn_react.message
+                end
+                if creature._state == "alive-idle" or creature._state == "alive-wander" then
+                    creature._state = "alive-patrol"
+                end
+            elseif intrusion == "threat" then
+                creature._state = "alive-aggressive"
+            elseif intrusion == "attack" then
+                creature._state = "alive-aggressive"
+                creature._forced_action = "attack"
+            end
+        end
+    end
+
     -- 1. Update drives
     update_drives(creature)
 
@@ -345,9 +368,15 @@ function M.creature_tick(context, creature)
         end
     end
 
-    -- 3. Score and select best action (with pack stagger)
+    -- 3. Score and select best action (with pack stagger + forced override)
     local scored = creature_actions.score_actions(creature, context, action_helpers)
     local best = scored[1]
+
+    -- Forced action override (territorial intrusion escalation)
+    if creature._forced_action then
+        best = { action = creature._forced_action, score = 999 }
+        creature._forced_action = nil
+    end
     if best then
         -- Pack stagger: if attacking and pack present, only alpha attacks this turn
         if best.action == "attack" and creature_loc then

@@ -48,6 +48,8 @@ local display     = require("engine.display")
 local ui          = require("engine.ui")
 local ui_status   = require("engine.ui.status")
 local presentation = require("engine.ui.presentation")
+local sound_mgr    = require("engine.sound")
+local null_driver  = require("engine.sound.null-driver")
 
 -- Install word-wrapping print before any game output
 display.install()
@@ -383,6 +385,10 @@ if debug_mode then
     parser_instance.diagnostic = true
 end
 
+-- Sound manager: null driver for CLI (no audio), debug logging when --debug
+local sm = sound_mgr.new()
+sm:init(null_driver, { debug = debug_mode })
+
 local context = {
     registry       = reg,
     current_room   = room,
@@ -400,6 +406,7 @@ local context = {
     ui             = ui_active and ui or nil,
     headless       = headless,
     debug          = debug_mode,
+    sound_manager  = sm,
 }
 
 ---------------------------------------------------------------------------

@@ -48,8 +48,8 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-29 06:47"
-local BUILD_VERSION = "17a9a61"
+local BUILD_TIMESTAMP = "2026-03-29 06:58"
+local BUILD_VERSION = "e3b5b9a"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -294,6 +294,8 @@ local ok, err = pcall(function()
     local ui_status    = require("engine.ui.status")
     local presentation = require("engine.ui.presentation")
     local loop         = require("engine.loop")
+    local sound_mgr    = require("engine.sound")
+    local null_driver  = require("engine.sound.null-driver")
 
     -- Install word-wrapping (wraps our DOM print — adds line-break logic)
     display.install()
@@ -623,6 +625,10 @@ local ok, err = pcall(function()
     -------------------------------------------------------------------
     -- Game context
     -------------------------------------------------------------------
+    -- Sound manager: null driver so debug logging fires even without audio
+    local sm = sound_mgr.new()
+    sm:init(null_driver, { debug = DEBUG_MODE })
+
     local context = {
         registry        = reg,
         current_room    = room,
@@ -638,6 +644,9 @@ local ok, err = pcall(function()
         game_start_time = os.time(),
         game_start_hour = presentation.GAME_START_HOUR,
         ui              = nil,  -- set below after context creation
+        headless        = false,
+        debug           = DEBUG_MODE,
+        sound_manager   = sm,
 
         -- JS bridge: open URL in a new browser tab (for "report bug")
         open_url        = function(url)

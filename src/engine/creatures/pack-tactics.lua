@@ -182,4 +182,38 @@ function M.check_pack_morale(pack, context)
     return "hold"
 end
 
+---------------------------------------------------------------------------
+-- WAVE-3: Territory Transfer
+-- When alpha dies, next-healthiest pack member inherits territory.
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- transfer_territory(dead_alpha, pack, context)
+-- Reassigns behavior.territory from dead_alpha to new alpha.
+-- Territory markers stay in place — new alpha claims same territory.
+---------------------------------------------------------------------------
+function M.transfer_territory(dead_alpha, pack, context)
+    if not dead_alpha or not pack or #pack == 0 then return nil end
+    local territory = dead_alpha.behavior and
+        (dead_alpha.behavior.territory or dead_alpha.behavior.home_territory)
+    if not territory then return nil end
+
+    -- Filter out the dead alpha and any dead/fled members
+    local candidates = {}
+    for _, m in ipairs(pack) do
+        if m.guid ~= dead_alpha.guid
+           and m._state ~= "dead" and m._state ~= "alive-flee" then
+            candidates[#candidates + 1] = m
+        end
+    end
+    if #candidates == 0 then return nil end
+
+    local new_alpha = M.select_alpha(candidates, context)
+    if not new_alpha then return nil end
+
+    new_alpha.behavior = new_alpha.behavior or {}
+    new_alpha.behavior.territory = territory
+    return new_alpha
+end
+
 return M

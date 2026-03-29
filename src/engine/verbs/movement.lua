@@ -479,6 +479,10 @@ function M.register(handlers)
         end
 
         local target_id = noun:lower():gsub("^%s+", ""):gsub("%s+$", "")
+            :gsub("^to%s+the%s+", "")
+            :gsub("^to%s+", "")
+            :gsub("^into%s+", "")
+            :gsub("^in%s+", "")
         local target_room = ctx.rooms and ctx.rooms[target_id]
 
         -- #287: Fall back to keyword/name search across all rooms
@@ -504,7 +508,7 @@ function M.register(handlers)
         end
 
         if not target_room then
-            print("No room called '" .. noun .. "' exists.")
+            print("No room called '" .. target_id .. "' exists.")
             return
         end
 

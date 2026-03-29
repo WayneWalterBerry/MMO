@@ -108,6 +108,11 @@ return {
             mark_duration = "1 day",
         },
         territory = "hallway",
+        intrusion_escalation = {
+            warning = 1,
+            threat = 2,
+            attack = 3,
+        },
         lingering_scent = {
             on_smell = "A faint predator's musk lingers in the air — a wolf was here recently.",
             duration = 5,
@@ -167,6 +172,11 @@ return {
             action = "aggressive",
             fear_delta = 30,
             message = "The wolf snarls, enraged by the fall of its packmate!",
+        },
+        intrusion_warning = {
+            action = "patrol",
+            fear_delta = 0,
+            message = "The wolf's hackles rise and a deep, rumbling growl fills the passage — a territorial warning.",
         },
     },
 
