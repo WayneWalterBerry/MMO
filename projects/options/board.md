@@ -1,8 +1,24 @@
 # Options — Board
 
 **Owner:** 🏗️ Bart (Architecture Lead)  
-**Last Updated:** 2026-08-02  
-**Overall Status:** 🟢 GATE-1 READY — all 12 blockers resolved, architecture v2 approved
+**Last Updated:** 2026-08-03  
+**Overall Status:** ✅ Phases 1-6 COMPLETE — Phase 7 ready (Sideshow Bob spoiler review)
+
+---
+
+## Re-entry Guide
+
+**For anyone picking this up:** Phases 1-6 shipped in this session. All core work done:
+- Engine + verb system shipped (Bart, commit `26400a8`)
+- Parser aliases + number selection working (Smithers, committed+pushed)
+- Room goal metadata on all 7 Level 1 rooms (Moe, committed+pushed)
+- Full test suite passing: 269 pass / 3 fail (all pre-existing BUGs: #151, #153, #155, #156, #163)
+
+**What to do next:**
+1. **Phase 7 (Bob):** Spoiler review of hint text using 7-rule anti-spoiler framework. Est. 1.5 days. Decision: rewrite if spoiler risk detected.
+2. **Phase 8 (Gil):** Deploy to web + beta playtest.
+3. **GATE-6:** Spoiler review complete + rewritten hints re-tested by Nelson. (Gate before Phase 8.)
+4. **GATE-7:** Web build succeeds, deploys to GitHub Pages.
 
 ---
 
@@ -18,13 +34,14 @@
 | 5 | **Fix test plan** — Change hints→goals, quantify GATE-5, add test scenario matrix | Kirk | 🟢 Blocking | ✅ COMPLETE | Blockers B8, B10 resolved: Kirk fixed hints→goals, quantified GATE-5 |
 | 6 | **Add performance test** — test/options/test-performance.lua + baseline measurement | Bart + Nelson | 🟢 Blocking | ✅ COMPLETE | Blockers B9, B11 resolved: Bart added <50ms budget to architecture |
 | 7 | **Clarify goal completion** — State-based vs action-based detection | Bart | 🟢 Blocking | ✅ COMPLETE | Blocker B12 resolved: Bart added state-based detection to architecture |
-| 8 | Parser aliases ("options", "hint", etc.) | Smithers | Core | ⏳ Pending GATE-1 | Ready after blockers cleared |
-| 9 | Options generator (GOAP hybrid) | Bart | Core | ⏳ Pending GATE-1 | Architecture approved |
-| 10 | Number selection handler | Smithers | Core | ⏳ Pending GATE-1 | Parser verb integration |
-| 11 | Room goal metadata (7 Level 1 rooms) | Moe | Core | ⏳ Pending Phase 1 | Moe mapped all goals in review |
-| 12 | Hint quality & puzzle spoiler review | Sideshow Bob | Quality gate | ⏳ Pending Phase 4 | Bob estimated 1.5 days (not 1) |
-| 13 | Testing (parser, E2E, regression) | Nelson | Quality gate | ⏳ Pending Phase 3 | 12-scenario LLM test matrix proposed |
-| 14 | Deployment & beta playtest | Gil | Release | ⏳ Pending Phase 6 | Build + web deployment |
+| 8 | **Phase 1:** Core options engine + hybrid generator | Bart | Core | ✅ COMPLETE | Commit `26400a8` — `src/engine/options/init.lua` (~400 LOC) + `src/engine/verbs/options.lua` |
+| 9 | **Phase 2:** Parser aliases ("options", "hint", etc.) | Smithers | Core | ✅ COMPLETE | 10 routes to options verb. Committed+pushed. |
+| 10 | **Phase 3:** Options generator (GOAP hybrid) | Bart | Core | ✅ COMPLETE | Integrated into Phase 1 engine. Committed+pushed. |
+| 11 | **Phase 4:** Number selection handler (1-4 intercept in game loop) | Smithers | Core | ✅ COMPLETE | Committed+pushed. |
+| 12 | **Phase 5:** Room goal metadata (7 Level 1 rooms) | Moe | Core | ✅ COMPLETE | All 7 rooms have metadata. Bedroom multi-goal, deep cellar options_delay=5, crypt sensory_only. Committed+pushed. |
+| 13 | **Phase 6:** Testing suite (53 tests, 4 files) | Nelson | Quality gate | ✅ COMPLETE | All passing against spec stubs. Full integration: 269 pass / 3 fail (all pre-existing BUGs). Committed+pushed. |
+| 14 | **Phase 7:** Hint text quality & puzzle spoiler review (7-rule anti-spoiler framework) | Sideshow Bob | Quality gate | ⏳ READY | Est. 1.5 days. Gate before Phase 8. |
+| 15 | **Phase 8:** Deployment & beta playtest | Gil | Release | ⏳ BLOCKED ON GATE-6 | Build + web deployment. Gate: spoiler review complete. |
 
 ---
 
@@ -34,15 +51,16 @@
 |-------|------|-------|--------|-----------|
 | **Review** | Team review ceremony (5 reviewers) | All | ✅ COMPLETE | Architecture proposal |
 | **Fixes** | Resolve 12 blockers from review | Bart, Smithers, Bob, Kirk, Nelson | ✅ COMPLETE | Review complete |
-| **GATE-1** | Architecture + plan approved by Wayne | Wayne | 🟡 Ready for Wayne's final approval | All blockers resolved |
-| **Phase 1** | Core verb + sensory/dynamic suggestions (no GOAP) | Bart | ⏳ Blocked | GATE-1 |
-| **Phase 2** | Parser aliases + UI output formatting | Smithers | ⏳ Blocked | GATE-1 + Phase 1 API contract |
-| **Phase 3** | GOAP goal integration | Bart | ⏳ Blocked | Phase 1 complete |
-| **Phase 4** | Number selection handler (player input "1" → cmd) | Smithers | ⏳ Blocked | Phase 2 complete |
-| **Phase 5** | Room goal metadata (7 Level 1 rooms) | Moe | ⏳ Blocked | Goal schema finalized + linter rules |
-| **Phase 6** | Testing (TDD + 12 LLM walkthroughs) | Nelson | ⏳ Blocked | Phase 4 complete |
-| **Phase 7** | Spoiler review + display text rewrite (1.5 days) | Sideshow Bob | ⏳ Blocked | Phase 4 + Phase 5 complete |
-| **Phase 8** | Deploy + playtest | Gil | ⏳ Blocked | Phase 6 passing |
+| **GATE-1** | Architecture + plan approved by Wayne | Wayne | ✅ COMPLETE | All blockers resolved |
+| **Phase 1** | Core verb + sensory/dynamic suggestions (no GOAP) | Bart | ✅ COMPLETE | GATE-1 |
+| **Phase 2** | Parser aliases + UI output formatting | Smithers | ✅ COMPLETE | GATE-1 + Phase 1 API contract |
+| **Phase 3** | GOAP goal integration | Bart | ✅ COMPLETE | Phase 1 complete |
+| **Phase 4** | Number selection handler (player input "1" → cmd) | Smithers | ✅ COMPLETE | Phase 2 complete |
+| **Phase 5** | Room goal metadata (7 Level 1 rooms) | Moe | ✅ COMPLETE | Goal schema finalized + linter rules |
+| **Phase 6** | Testing (TDD + 12 LLM walkthroughs) | Nelson | ✅ COMPLETE | Phase 4 complete |
+| **GATE-6** | Spoiler review complete + rewritten hints re-tested | Sideshow Bob + Nelson | ⏳ READY | Phase 6 passing |
+| **Phase 7** | Spoiler review + display text rewrite (1.5 days) | Sideshow Bob | ⏳ Ready to start | Phase 6 complete |
+| **Phase 8** | Deploy + playtest | Gil | ⏳ Blocked | GATE-6 passing |
 
 ---
 

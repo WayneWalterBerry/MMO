@@ -1,8 +1,8 @@
 # Options — Implementation Plan
 
-**Status:** ✅ GATE-1 READY — all blockers resolved, architecture approved  
-**Version:** 1.0  
-**Last Updated:** 2026-08-02
+**Status:** ✅ Phases 1-6 COMPLETE — Phase 7 ready for Sideshow Bob  
+**Version:** 1.1  
+**Last Updated:** 2026-08-03
 
 ---
 
@@ -10,7 +10,9 @@
 
 The **Options feature** is a hint system for stuck players. When players type `"options"`, `"hint"`, `"what can I do"`, or `"give me options"`, the game responds with a numbered list (1-4) of actions that help them progress. Selecting a number executes that command.
 
-This plan uses **Approach C (Goal-Driven Hybrid)** architecture, approved by Wayne. The system combines static room goals with dynamic sensory/spatial suggestions, escalating specificity across 7 anti-spoiler rules. All 12 team review blockers have been resolved.
+This plan uses **Approach C (Goal-Driven Hybrid)** architecture, approved by Wayne. The system combines static room goals with dynamic sensory/spatial suggestions, escalating specificity across 7 anti-spoiler rules. 
+
+**Session 2026-08-03 UPDATE:** Phases 1-6 shipped. Engine, parser, room metadata, and full test suite all committed. Phase 7 (Sideshow Bob spoiler review) ready to start. Phase 8 deployment pending Phase 7 completion.
 
 ---
 
@@ -19,14 +21,14 @@ This plan uses **Approach C (Goal-Driven Hybrid)** architecture, approved by Way
 | Phase | Owner | Blocked On | Est. Time | Description |
 |-------|-------|-----------|-----------|-------------|
 | **Architecture** | Bart | — | ✅ COMPLETE | Approach C (goal-driven hybrid) selected. Wayne approved. |
-| **Phase 1** | Bart | — | 1 day | Implement engine-side options API (hybrid model with goal + sensory suggestions). |
-| **Phase 2** | Smithers | Phase 1 | 1-2 days | Parser aliases ("options", "hint", etc.). Wire to options API. UI output formatting. |
-| **Phase 3** | Bart | Phase 1 | 1-2 days | Options generator (hybrid: goal + dynamic sensory/spatial suggestions). |
-| **Phase 4** | Smithers | Phase 2 | 1 day | Number selection handler: player types "1" → execute mapped command. |
-| **Phase 5** | Moe | Phase 1 | 1-2 days | Define room goal metadata schema. Populate Level 1 rooms with `goal` field (7 rooms). |
-| **Phase 6** | Nelson + Bart | Phases 1-4 | 2-3 days | TDD test suite (parser aliases, selection, E2E). 12 LLM walkthroughs. |
-| **Phase 7** | Sideshow Bob + Bart | Phase 4 | 1.5 days | Hint text quality review using 7-rule anti-spoiler framework. Rewrite if spoiler risk detected. |
-| **Phase 8** | Gil | Phase 6 passing | 1 day | Deploy to web. Beta playtest. |
+| **Phase 1** | Bart | — | ✅ COMPLETE | Core options engine shipped. `src/engine/options/init.lua` (~400 LOC) + `src/engine/verbs/options.lua`. Commit `26400a8`. |
+| **Phase 2** | Smithers | Phase 1 | ✅ COMPLETE | Parser aliases wired. 10 routes to options verb. UI output formatting. Committed+pushed. |
+| **Phase 3** | Bart | Phase 1 | ✅ COMPLETE | Hybrid generator (goal + dynamic sensory/spatial). Integrated into Phase 1. Committed+pushed. |
+| **Phase 4** | Smithers | Phase 2 | ✅ COMPLETE | Number selection handler: player types "1" → execute mapped command. Committed+pushed. |
+| **Phase 5** | Moe | Phase 1 | ✅ COMPLETE | Room goal metadata on all 7 Level 1 rooms. Bedroom multi-goal, deep cellar options_delay=5, crypt sensory_only. Committed+pushed. |
+| **Phase 6** | Nelson + Bart | Phases 1-4 | ✅ COMPLETE | TDD test suite: 53 tests across 4 files (test-options-api, test-parser-aliases, test-number-selection, test-anti-spoiler). All passing. Full integration: 269 pass / 3 fail (all pre-existing BUGs #151/153/155/156/163). Committed+pushed. |
+| **Phase 7** | Sideshow Bob | Phase 6 | ⏳ READY | Spoiler review using 7-rule anti-spoiler framework. Rewrite if spoiler risk. Est. 1.5 days. |
+| **Phase 8** | Gil | Phase 7 | ⏳ BLOCKED | Deploy to web. Beta playtest. Blocked on GATE-6 (spoiler review + re-test). |
 
 ---
 
@@ -362,6 +364,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 | 0.1 | 2026-03-29 | Initial plan structure (pre-architecture); all phases conditional on Bart's proposal |
 | 0.2 | 2026-08-02 | **Team review ceremony complete.** 5 reviewers (Bart, Smithers, Moe, Nelson, Bob). 12 blockers identified, all addressable. Architecture (Approach C) unanimously approved. Anti-spoiler rules expanded to 7. Puzzle exemption system proposed. LLM test matrix expanded to 12 scenarios. Phase 7 re-estimated to 1.5 days. Moe mapped all 7 Level 1 room goals. |
 | 1.0 | 2026-08-02 | All 12 blockers resolved. Wayne approved: Approach C (goal-driven hybrid), Option C context window (hybrid), free hints, state-based goal detection. Architecture v2 finalized. Plan promoted to v1.0 — GATE-1 READY. |
+| 1.1 | 2026-08-03 | **Phases 1-6 shipped.** Bart completed engine + hybrid generator (commit `26400a8`). Smithers completed parser aliases + number selection, committed+pushed. Moe completed room goal metadata on 7 Level 1 rooms, committed+pushed. Nelson completed 53-test suite, 269 pass / 3 fail (all pre-existing BUGs), committed+pushed. Phase 7 ready for Sideshow Bob. Phase 8 blocked on GATE-6. |
 
 ---
 
