@@ -71,4 +71,18 @@
 - 8-field theme structure fully captures world identity
 - The Manor theme for V1 is complete and consistent across all 3 levels
 
+### Wyatt's World Design (2026-08-22)
+- Created `projects/wyatt-world/design.md` — complete creative vision for a standalone Mr. Beast themed world.
+- **7 rooms**, hub-and-spoke layout. Hub = MrBeast's Challenge Studio. 6 challenge rooms branch off via cardinal directions + up/down stairs.
+- **Target player:** Wyatt (age 10). 3rd grade reading level vocabulary, 5th grade puzzle difficulty.
+- **Tone:** Bright, fun, exciting, generous, silly. NOT scary, dark, or harmful. No darkness mechanic, no injury, no poison.
+- **Puzzle philosophy:** Single-room, self-contained. Reading IS the puzzle. Failure is funny not punishing. 1–3 minute solve times.
+- **7 puzzles:** Sign reading (★), chocolate sorting (★★), math counting (★★), recipe following (★★★), spot-the-difference observation (★★★), riddle solving (★★★★), hidden-number reading comprehension (★★★★).
+- **~70 objects** estimated across 5 categories: challenge props, prizes, brand items, reading/clue objects, set dressing.
+- **Engine compatibility:** Same engine, same verbs, same FSM/mutation/containment — only content differs. All senses safe. TASTE never harms.
+- **Writing style guide:** 8–12 word sentences, active voice, present tense, excited/encouraging tone, MrBeast catchphrases.
+- **World .lua shape** provided for Moe: template = "world", id = "wyatt-world", modern era, bright color palette, forbidden gothic materials.
+- Decision filed: `D-WYATT-WORLD` in `.squad/decisions/inbox/comic-book-guy-wyatt-world.md`.
+- Commit: `e2a8a7a` on main.
+
 ## Recent Updates
