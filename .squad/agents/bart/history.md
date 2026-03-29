@@ -94,6 +94,24 @@
     - Board updated: WAVE-0 Bart track ✅ Done. Gil (web bridge) and Nelson (mock driver scaffolding) tracks still pending for full GATE-0.
     - Key design choices: OOP with metatables (`M.new()` + colon methods), volume 0.0–1.0 (not 0–100), pcall wraps all driver calls, concurrency limits enforced via eviction (oldest-first for oneshots, lowest-priority for ambients).
 
+11. **Sound WAVE-2 Track 2A — Engine Event Hooks (2026-08-01):**
+    - Executed WAVE-2 Track 2A per sound-implementation-plan.md v1.1. Wired 12 hook points across 9 files, 70 insertions.
+    - **FSM hook** (`fsm/init.lua`): `context.sound_manager:trigger(obj, "on_state_" .. target_state)` after successful transition. Nil-safe via `if context and context.sound_manager`.
+    - **Verb dispatch hook** (`loop/init.lua`): `context.sound_manager:trigger(nil, "on_verb_" .. verb)` after successful handler dispatch. Generic pattern — one line covers all 31+ verbs.
+    - **Mutation hook** (`mutation/init.lua`): Added optional `ctx` 6th parameter. Sequence: `stop_by_owner(old_id)` → `trigger(old, "on_mutate")` → `reg:register()` → `scan_object(new_obj)`. Updated 3 callers (helpers/mutation.lua, cooking.lua, helpers/tools.lua) to pass ctx.
+    - **Movement hooks** (`verbs/movement.lua`): `exit_room(old)` before text, `enter_room(new)` after text. Applied at all 4 room transition code paths (go-back, portal, legacy exit, teleport).
+    - **Effects pipeline** (`effects.lua`): Registered `play_sound` effect type — canonical sound dispatch path. Supports `key` (trigger resolution) and `filename` (direct play) modes.
+    - **Loader hook** (`loader/init.lua`): Added `loader.scan_for_sounds(sound_manager, obj)` utility for post-registration scanning.
+    - Full suite: 260 test files, all passing. Zero regressions.
+    - Commit: 2669e5e.
+    - Key patterns: nil-safe guards (`if ctx.sound_manager then`), text-first/sound-concurrent ordering, effects pipeline as canonical path (no direct trigger from verb handlers), mutation ctx threading for sound lifecycle.
+
+## Learnings
+
+12. **Mutation ctx threading:** `mutation.mutate()` had no context access. Added optional 6th `ctx` parameter — backward compatible (nil = no sound hooks). This pattern will recur for any future cross-cutting concern that needs runtime context in mutation.
+13. **Movement has 4 room transition paths:** go-back, portal, legacy exit, teleport. All needed sound hooks independently — no shared helper. Future refactor opportunity: extract `change_room(ctx, old_room, new_room)` helper.
+14. **Effects pipeline as canonical sound path:** The `play_sound` effect handler is the single entry point from object metadata. Direct `trigger()` calls only happen from engine internals (FSM, mutation, verb dispatch). This keeps the dual-path concern (C2) cleanly resolved.
+
 ## Archives
 
 - Prior detailed session logs: .squad/log/
