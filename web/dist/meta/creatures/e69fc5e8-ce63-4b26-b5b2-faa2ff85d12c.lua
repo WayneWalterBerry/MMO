@@ -98,6 +98,9 @@ return {
         nocturnal = false,
         home_room = nil,
         prey = {"player", "rat", "cat", "bat"},
+        pack_animal = true,
+        pack_morale_bonus = 0.05,
+        call_pack_range = 1,
         territorial = {
             marks_territory = true,
             mark_object = "territory-marker",
@@ -105,6 +108,18 @@ return {
             mark_duration = "1 day",
         },
         territory = "hallway",
+        intrusion_escalation = {
+            warning = 1,
+            threat = 2,
+            attack = 3,
+        },
+        ambush = {
+            trigger_on_proximity = true,
+            damage_bonus = 1.5,
+            can_rehide = false,
+            detect_on_listen = "You hear low, deliberate breathing from the shadows — something is waiting.",
+            narration = "A grey shape explodes from the darkness, fangs bared!",
+        },
         lingering_scent = {
             on_smell = "A faint predator's musk lingers in the air — a wolf was here recently.",
             duration = 5,
@@ -154,6 +169,21 @@ return {
             action = "evaluate",
             fear_delta = 5,
             message = "The wolf's amber eyes flash in the sudden light. It does not flinch.",
+        },
+        pack_call = {
+            action = "move_to_caller",
+            fear_delta = -5,
+            message = "A howl echoes through the passage. The wolf's ears prick up.",
+        },
+        pack_member_died = {
+            action = "aggressive",
+            fear_delta = 30,
+            message = "The wolf snarls, enraged by the fall of its packmate!",
+        },
+        intrusion_warning = {
+            action = "patrol",
+            fear_delta = 0,
+            message = "The wolf's hackles rise and a deep, rumbling growl fills the passage — a territorial warning.",
         },
     },
 

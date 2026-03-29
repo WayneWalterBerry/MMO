@@ -10,7 +10,9 @@ return {
     description = "A long, narrow vault stretches before you, its barrel-vaulted ceiling disappearing into shadow at both ends. Heavy oak shelves line both walls from floor to ceiling, most sagging under the weight of years. Dust covers everything — the flagstone floor, the collapsed crates, the remnants of rope and sacking scattered like shed skin. The air tastes of old wood, stale grain, and the sweet-sour tang of decay. Something scurries in the darkness beyond the reach of your light.",
     short_description = "A dusty storage vault with sagging shelves and the sound of rats.",
 
-    on_feel = "A long space. Your outstretched hands find wooden shelves on both sides — rough, splintery, sagging. The floor is stone under a layer of grit and something that crunches underfoot — old straw? Broken glass? The air is cold but drier than the cellar behind you. Dust tickles your nose. You smell old grain, wood rot, and something sweetly rotten. From deeper in the room: a scratching sound, small and quick, like tiny claws on stone.",
+    ambient_loop = "ambient/storage-drip",
+
+    on_feel= "A long space. Your outstretched hands find wooden shelves on both sides — rough, splintery, sagging. The floor is stone under a layer of grit and something that crunches underfoot — old straw? Broken glass? The air is cold but drier than the cellar behind you. Dust tickles your nose. You smell old grain, wood rot, and something sweetly rotten. From deeper in the room: a scratching sound, small and quick, like tiny claws on stone.",
 
     on_smell = "Stale grain — the ghost of flour and barley, long turned to dust and mold. Old wood, dried out and crumbling. The sweet-sour smell of fruit or vegetables that rotted years ago and left their essence in the stone. And beneath it all, the sharp, musky tang of rodent: droppings, fur, and the faint ammonia of urine in corners.",
 
