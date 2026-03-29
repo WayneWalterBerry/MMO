@@ -37,6 +37,21 @@
 
 ## Learnings
 
+### 2026-08-17: Food Board Audit
+
+**Task:** Audit food implementation, verify Kirk's "90% done, 4 raw-meat objects missing" claim.
+
+**Finding:** The claim was wrong. Phase 1 food system is functionally complete with 0 blocking gaps:
+- `wolf-meat.lua` already existed (raw wolf meat from butchery). Not missing.
+- `raw-rat-meat.lua`, `raw-bat-meat.lua`, `raw-cat-meat.lua` are NOT NEEDED. Small creatures (rat, bat, cat) use the corpse-as-raw-meat pattern: their `death_state` includes `food = { raw = true, cookable = true }` and `crafting.cook = { becomes = "cooked-{type}-meat" }`. The cook verb reads these directly from the reshaped corpse. This matches CBG's Option A recommendation.
+- Board also undercounted: 14 food objects (not 10), 11 test files (not 9).
+
+**Lesson:** Two distinct creature→food pathways exist and both are implemented:
+1. **Small creatures (rat/bat/cat):** kill → dead corpse (IS the raw meat) → cook → cooked meat. No separate raw-meat .lua file.
+2. **Large creatures (wolf/spider):** kill → dead corpse → butcher with tool → raw products (wolf-meat.lua, spider-meat.lua) → cook → cooked meat.
+
+The `death_state.crafting.cook` field on creature definitions is the key mechanism for pathway 1. Always check creature death_state before assuming a standalone raw-meat object is needed.
+
 ### 2025-07-21: Bug Fix Batch — Issues #380, #378, #379
 
 **Wolf territory (#380):** The wolf had `behavior.territorial` (a table with marking config) but was missing `behavior.territory = "hallway"` — the string field the engine uses for home-room comparison. Lesson: `territorial` (config) and `territory` (room-id) are separate fields.
