@@ -1125,3 +1125,25 @@ Created TDD validation tests for 4 new creatures (cat, wolf, spider, bat):
 - Wolf is unreachable from bedroom (hallway door barred, cellar door padlocked) — wolf combat/butchery untestable in current walkthrough
 - Spider venom + bleeding are lethal during sleep — player must heal before resting
 - Creature AI behaviors work: spider flees when rat dies, rat bolts from combat
+
+
+---
+
+# Archive of nelson History
+
+Archived on 2026-03-29 15:09:11 UTC
+Original file size: 13.4 KB
+
+---
+
+### CI Cross-Platform Fix (#409) (2026-03-30)
+- Fixed 3 test files failing on Ubuntu CI (GitHub Actions run #23701384193). All pass on Windows.
+- **Failed jobs:** `test (other)` — 2 files; `test (rooms)` — 1 file.
+- **Fix 1: `test/objects/test-tear-cloak.lua`** — `load_templates()` and `build_object_sources()` used `dir /b` unconditionally (Windows-only). Added `if is_windows then dir else ls` branching + basename extraction from `ls` output. 4 assertion failures → 0.
+- **Fix 2: `test/sensory/test-senses-comprehensive.lua`** — Linux branch in on_feel audit used `ls "dir"/test-*.lua` instead of `ls "dir"/*.lua`. Wrong glob pattern meant 0 object files found → `total == 0` → "Should find object files" assertion failed. Fixed glob + added basename extraction.
+- **Fix 3: `src/main.lua` → `list_lua_files()`** — Function returned full paths on Linux (`ls -1` output includes directory) but all callers prepended directory again → double path → file not found → no rooms loaded. `test/integration/test-room-override.lua` CLI test hit this: `--room hallway` → "room 'hallway' not found, Available rooms: (empty)". Fixed by extracting basename with `line:match("([^/\\]+)$")`.
+- **Root cause pattern:** `ls` returns full paths while `dir /b` returns filenames only. Any code that passes `ls` output to `dir .. SEP .. fname` creates a broken double-path on Linux.
+- **Pre-existing failure:** `test/injuries/test-injuries-comprehensive.lua` fails in full suite (passes standalone) — not related to this change, existed before.
+- Commit: 4ac7c59.
+
+

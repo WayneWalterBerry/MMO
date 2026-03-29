@@ -1491,3 +1491,32 @@ Updated all plan files to reflect Phase 2 NPC+Combat completion:
 - Territorial: 5/5 tests pass (mark placement, BFS radius, own-territory patrol, foreign response, smell detection Q5)
 - Full suite: 4 test file failures (all pre-existing: silk-crafting, predator-prey, spider-web, combat-verbs). Down from 8 baseline — cleared test-wolf.lua and test-material-audit.lua as side effects.
 - Zero new regressions.
+
+
+---
+
+# Archive of bart History
+
+Archived on 2026-03-29 15:09:11 UTC
+Original file size: 13.4 KB
+
+---
+
+## Latest Activity
+
+**Options Architecture v2 — Blockers Resolved (2026-08-02):**
+- Resolved all 6 blockers from review ceremony
+- **B1 (API Contracts):** Added section 4.0 defining `OptionEntry` table structure, context requirements, and `OptionsResult` return type
+- **B6 (Numeric Object Names):** Added precedence rule to section 4.3 — `pending_options` only active after `options` verb, numeric objects work normally otherwise
+- **B7 (Numeric Exits):** Added collision avoidance paragraph — numbers 1-4 reserved for option selection only when `pending_options` active
+- **B9 (Performance Budget):** Added section 4.4.1 — <50ms total (30ms GOAP, 10ms sensory, 10ms dynamic), graceful degradation if GOAP exceeds budget
+- **B11 (Empty Room):** Added section 4.4.2 — fallback to generic exploration prompts, never returns empty list
+- **B12 (State-Based Goals):** Added goal completion detection subsection in 4.5 — goals complete when postcondition state is true, not when action is attempted
+- Architecture now approved by Wayne for implementation
+
+## Archives
+
+- Prior detailed session logs: .squad/log/
+- Linked decisions: .squad/decisions.md (search 'D-*' keys)
+
+
