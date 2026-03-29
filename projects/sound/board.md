@@ -4,9 +4,9 @@
 
 | Priority | Task | Owner | Status |
 |----------|------|-------|--------|
-| **P0** | Full team review of implementation plan (per implementation-plan skill Pattern 5) | Bart, CBG, Smithers, Flanders, Moe, Gil, Nelson | ⏳ Not started |
-| **P0b** | Fix all blockers found in team review → plan v2.0 | Plan author + reviewers | ⏳ Blocked by P0 |
-| **P0c** | Wayne final approval of reviewed plan | Wayne | ⏳ Blocked by P0b |
+| **P0** | Full team review of implementation plan (per implementation-plan skill Pattern 5) | CBG, Marge, Chalmers, Flanders, Smithers, Moe | ⏳ Not started |
+| **P0b** | Fix all blockers found in team review → plan v2.0 | Bart (author) + reviewers | ⏳ Blocked by P0 |
+| **P0c** | Wayne final review (documentation gaps, missing deliverables) | Wayne | ⏳ Blocked by P0b |
 | **P1** | **WAVE-0** — Sound manager module + platform drivers | Bart, Gil, Nelson | ⏳ Blocked by P0c |
 | **P2** | **WAVE-1** — Object metadata + room ambients + asset sourcing | Flanders, Moe, CBG, Nelson | ⏳ Pending |
 | **P3** | **WAVE-2** — Event integration + engine hooks | Bart, Smithers, Nelson | ⏳ Pending |
