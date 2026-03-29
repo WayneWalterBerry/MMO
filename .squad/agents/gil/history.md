@@ -38,3 +38,26 @@
   - **Cache-busting:** BUILD_TIMESTAMP printed to Actions log for verification
   - **No-op guard:** Skips push if no files changed (idempotent deploys)
   - **Key pattern:** Uses `git clone --depth 1` with x-access-token auth for cross-repo push
+
+- **2026-03-28 Full Deploy (Manual):** 
+   - **Trigger:** Wayne "Effe" Berry — "Gil Deploy"
+   - **Status:** ✓ SUCCESS
+   - **Pipeline execution:**
+     1. `lua test/run-tests.lua` — All 257 tests PASSED
+     2. `powershell -File test/run-before-deploy.ps1` — Pre-deploy gate PASSED (mutation lint + tests)
+     3. `powershell -File web/build-engine.ps1` — Engine bundle built (290.8 KB .gz, 1960.2 KB raw)
+     4. `powershell -File web/build-meta.ps1` — Meta files built (208 total: 143 objects, 7 rooms, 5 creatures, 11 injuries, 32 materials, 8 templates, 1 level, 1 world)
+   - **Deploy checklist (215 files total):**
+     - ✓ index.html (6.3 KB) — CSS + DOM + boot script
+     - ✓ bootstrapper.js (22.2 KB) — JS engine
+     - ✓ game-adapter.lua (33.1 KB) — Lua↔browser bridge
+     - ✓ engine.lua.gz (297.8 KB) — Engine bundle compressed
+     - ✓ embedding-vectors.json.gz (4.8 MB) — Lazy-load embeddings for Tier 2 parsing
+     - ✓ meta/* (209 files) — Object/room/creature/injury definitions by GUID
+   - **GitHub commit:** `e9a023c` (pushed to `WayneWalterBerry/WayneWalterBerry.github.io` main)
+   - **BUILD_TIMESTAMP:** `2026-03-28 18:11` (stamped in bootstrapper.js, game-adapter.lua)
+   - **CACHE_BUST:** `20260328181100` (query string: `?v=20260328181100`)
+   - **Live verification:**
+     - Index: https://waynewalterberry.github.io/play/
+     - Debug URL: https://waynewalterberry.github.io/play/?debug
+     - Commit hash & timestamp visible in debug output on page load
