@@ -88,7 +88,9 @@ local function list_lua_files(dir)
         for line in p:lines() do
             line = line:match("^%s*(.-)%s*$")  -- trim
             if line and line:match("%.lua$") then
-                files[#files + 1] = line
+                -- ls returns full paths; dir /b returns filenames only — normalize
+                local fname = line:match("([^/\\]+)$") or line
+                files[#files + 1] = fname
             end
         end
         p:close()

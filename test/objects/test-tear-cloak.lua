@@ -70,13 +70,22 @@ local function make_registry(initial_objects)
 end
 
 --- Load templates from src/meta/templates/ (needed for resolve_template)
+local is_windows = SEP == "\\"
+
 local function load_templates()
     local dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "templates" .. SEP
     local templates = {}
-    local handle = io.popen('dir /b "' .. dir .. '*.lua" 2>nul')
+    local list_cmd
+    if is_windows then
+        list_cmd = 'dir /b "' .. dir .. '*.lua" 2>nul'
+    else
+        list_cmd = 'ls "' .. dir .. '"*.lua 2>/dev/null'
+    end
+    local handle = io.popen(list_cmd)
     if handle then
         for line in handle:lines() do
-            local path = dir .. line
+            local fname = line:match("([^/\\]+)$") or line
+            local path = dir .. fname
             local f = io.open(path, "r")
             if f then
                 local source = f:read("*a")
@@ -97,10 +106,17 @@ end
 local function build_object_sources(templates)
     local dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP
     local sources = {}
-    local handle = io.popen('dir /b "' .. dir .. '*.lua" 2>nul')
+    local list_cmd
+    if is_windows then
+        list_cmd = 'dir /b "' .. dir .. '*.lua" 2>nul'
+    else
+        list_cmd = 'ls "' .. dir .. '"*.lua 2>/dev/null'
+    end
+    local handle = io.popen(list_cmd)
     if handle then
         for line in handle:lines() do
-            local path = dir .. line
+            local fname = line:match("([^/\\]+)$") or line
+            local path = dir .. fname
             local f = io.open(path, "r")
             if f then
                 local source = f:read("*a")

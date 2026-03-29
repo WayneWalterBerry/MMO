@@ -1163,13 +1163,14 @@ test("every object file has on_feel property", function()
     if SEP == "\\" then
         list_cmd = 'dir /b "' .. dir .. '\\*.lua" 2>nul'
     else
-        list_cmd = 'ls "' .. dir .. '"/test-*.lua 2>/dev/null'
+        list_cmd = 'ls "' .. dir .. '"/*.lua 2>/dev/null'
     end
     local handle = io.popen(list_cmd)
     local missing = {}
     local total = 0
     if handle then
-        for f in handle:lines() do
+        for line in handle:lines() do
+            local f = line:match("([^/\\]+)$") or line
             total = total + 1
             local path = dir .. SEP .. f
             local ok, obj = pcall(dofile, path)
