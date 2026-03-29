@@ -1,8 +1,8 @@
 # Sound Project Board
 
 **Owner:** 🏗️ Bart (Architecture Lead) + ⚙️ Gil (Web Engineer)
-**Last Updated:** 2026-08-01
-**Overall Status:** 🟢 WAVE-0 BART TRACK COMPLETE — Sound manager + null driver + defaults + 47 tests. Gil (web bridge) and Nelson (test scaffolding) tracks pending.
+**Last Updated:** 2026-03-29T11:40Z
+**Overall Status:** 🟢 WAVE-0 COMPLETE — Sound manager + null driver + defaults + 47 tests. Gil (web bridge) and Nelson (mock driver + scaffolding) tracks pending.
 
 ---
 
@@ -23,7 +23,7 @@
 
 ## Overall Status
 
-**🟢 WAVE-0 (Bart track) COMPLETE — Sound manager module, null driver, defaults table, and 47 unit tests delivered. 259 test files pass (258 baseline + 1 new). Gil (web bridge) and Nelson (mock driver + additional tests) tracks still pending for full GATE-0.**
+**🟢 WAVE-0 COMPLETE — Sound manager module, null driver, defaults table, and 47 unit tests delivered. 259 test files pass (258 baseline + 1 new). Gil (web bridge) and Nelson (mock driver + additional tests) tracks still pending for full GATE-0.**
 
 ---
 
@@ -45,7 +45,8 @@
 |------|-------|-----------------|---------------|--------|
 | **WAVE-0** | Infrastructure | 3 | Sound manager loads, no-op works, web bridge connects, zero regressions | ✅ Done (Bart track) |
 | **WAVE-1** | Metadata + Assets | 4 | 15+ objects/creatures have sounds tables, 7 rooms declare ambients, 24 files sourced + compressed | ⏳ Pending |
-| **WAVE-2** | Engine Integration | 3 | FSM/verb/mutation hooks wired, combat dispatch working, integration tests pass | ⏳ Pending |
+| **WAVE-2 Track 2A** | Engine Hooks | 1 | FSM/verb/mutation engine hook points registered | ⏳ In Progress (Bart) |
+| **WAVE-2 Track 2B+C** | Integration | 2 | Combat dispatch + verb handlers wired, integration tests pass | ⏳ Blocked on WAVE-1 + GATE-0 |
 | **WAVE-3** | Deploy + Polish | 3 | Build pipeline works, sounds deploy to web, LLM walkthroughs pass, docs shipped | ⏳ Pending |
 
 ---

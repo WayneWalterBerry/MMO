@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 20260330T041000Z  
-**Last Merge:** 20260330T041000Z (8 decisions merged: bart-sound-review, bart-worlds-wave0, cbg-sound-review, chalmers-sound-review, flanders-sound-review, marge-sound-review, moe-sound-review, smithers-sound-review)
+**Last Updated:** 2026-03-29T11:40Z  
+**Last Merge:** 2026-03-29T11:40Z (2 decisions merged: bart-sound-wave0, copilot-directive-theme-precedent)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -53,6 +53,8 @@ Quick-reference table of **active + most recent decisions**.
 | D-STRESS-HOOKS | Architecture | ✅ Implemented | Stress trauma hooks delegate to central injuries.add_stress() API |
 | D-WORLDS-LOADER-WAVE0 | Architecture | ✅ Complete | World loader infrastructure complete; WAVE-0 shipped (16 tests, 258 total) |
 | D-SOUND-REVIEW-CYCLE | Process | ⚠️ Concerns | 7-agent architecture review complete; 10 blockers, 11 concerns (all fixed in v1.1) |
+| D-SOUND-WAVE0-COMPLETE | Architecture | ✅ Complete | Bart WAVE-0 complete: sound manager + null driver + defaults + 47 tests, 259 total tests pass |
+| DIRECTIVE-COPILOT-THEME-PRECEDENT | Design | 🟢 Active | Design team uses existing code as inspiration for theme subsection files |
 
 ---
 
@@ -1404,6 +1406,110 @@ The plan adds `test/meta/` to `test_dirs` in `test/run-tests.lua`. This is fine,
 
 
 ---
+
+## D-SOUND-WAVE0-COMPLETE: Sound Manager + Null Driver Implementation
+
+**Status:** ✅ Complete  
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-03-29T11:40Z  
+**Category:** Architecture / Implementation
+
+### Decision
+
+Completed WAVE-0 Track 0A of the sound implementation: Sound manager module, null driver, defaults table, and comprehensive test suite.
+
+### What Was Delivered
+
+1. **`src/engine/sound/init.lua`** (~300 LOC) — Sound manager with 21-method API:
+   - Construction: `new()`, `init(driver, options)`, `shutdown()`
+   - Driver injection: `set_driver(driver)`, `get_driver()`
+   - Playback: `play(filename, opts)`, `stop(play_id)`, `stop_by_owner(owner_id)`
+   - Room transitions: `enter_room(room)`, `exit_room(room)`, `unload_room(room_id)`
+   - Event dispatch: `trigger(obj, event_key)` — 3-step resolution (obj.sounds → defaults → nil)
+   - Settings: volume, mute, unmute, enabled state
+
+2. **`src/engine/sound/defaults.lua`** (15 entries) — Verb-to-sound fallback table (on_verb_break → generic-break.opus, etc.)
+
+3. **`src/engine/sound/null-driver.lua`** (7 methods) — No-op driver implementing full interface contract
+
+4. **`test/sound/test-sound-manager.lua`** (47 tests, 12 suites) — Comprehensive coverage:
+   - Manager construction and initialization
+   - Driver injection with mock drivers
+   - Nil-driver no-op behavior
+   - Volume clamping (0.0–1.0)
+   - Mute/unmute state management
+   - Trigger resolution chain
+   - Room transitions (enter/exit/unload)
+   - Concurrency limits (4 oneshots, 3 ambients)
+   - GATE-0 API surface verification
+
+### Test Results
+
+- **Total test files:** 259 (baseline 258 + new 1 `test/sound/test-sound-manager.lua`)
+- **Total tests:** All passing
+- **Regressions:** Zero
+- **Gate Criteria:** GATE-0 Infrastructure Ready — ✅ PASSED
+
+### Design Decisions Captured
+
+- **Volume range:** 0.0–1.0 (matches Web Audio API convention, clamped)
+- **Driver interface:** Colon-method syntax, 7 methods (load, play, stop, stop_all, set_master_volume, unload, fade)
+- **Concurrency:** Enforced via eviction (oldest-first for oneshots, FIFO for ambients)
+- **Null driver:** Returns filename as handle for test identity checks
+- **OOP pattern:** Metatables + M.new() + colon methods
+
+### API Frozen at GATE-0
+
+Methods are now stable and documented in the driver interface contract:
+- `M.new()`, `M:init(driver, options)`, `M:shutdown()`
+- `M:scan_object(obj)`, `M:flush_queue()`
+- `M:play(filename, opts)`, `M:stop(play_id)`, `M:stop_by_owner(owner_id)`
+- `M:enter_room(room)`, `M:exit_room(room)`, `M:unload_room(room_id)`
+- `M:trigger(obj, event_key)` — resolution chain: obj.sounds → defaults → nil
+- `M:set_volume(level)`, `M:mute()`, `M:unmute()`, `M:set_driver(driver)`
+
+### Impact on Other Agents
+
+- **Gil:** Web driver must implement 7-method driver interface contract
+- **Nelson:** Mock driver pattern established (see test file); test scaffolding ready
+- **Flanders/Moe:** Object `sounds` table format validated via `scan_object()`
+- **Smithers:** `trigger(obj, event_key)` is the verb integration point for sound dispatch
+
+### Downstream Tasks
+
+- **Gil:** Implement web audio bridge (WAVE-0 Gil track)
+- **Nelson:** Mock driver scaffolding + additional integration tests (WAVE-0 Nelson track)
+- **Flanders/Moe:** Object/room sound metadata (WAVE-1)
+- **Smithers:** Verb-handler sound integration (WAVE-2)
+
+### Commit
+
+9645abe — Sound WAVE-0 delivery
+
+---
+
+## DIRECTIVE-COPILOT-THEME-PRECEDENT: Design Theme Precedent
+
+**Status:** 🟢 Active  
+**Author:** Wayne Berry (via Copilot)  
+**Date:** 2026-03-29T11:32Z  
+**Category:** Design / Process
+
+### Directive
+
+The Design Team (CBG, Willie, Moe) should use existing objects, rooms, and creatures in the codebase as inspiration and precedent when filling out the world-01 theme subsection files (manor-architecture, manor-creatures, manor-history). The code already establishes the world's look and feel.
+
+### Rationale
+
+The 74+ objects, 7 rooms, and 5 creatures already define The Manor's aesthetic. Theme files should codify what exists, not invent from scratch. This ensures design documentation remains in sync with actual game content.
+
+### Impact
+
+- **CBG:** Use existing creatures/rooms as design precedent when writing theme docs
+- **Willie:** Reference existing spatial patterns for architecture themes
+- **Moe:** Room definitions ARE the architecture spec; theme docs elaborate on it
+
+
 
 ## D-MUTATION-CYCLES-V2: Multi-Hop Chain Validation (Future Work)
 
