@@ -43,6 +43,27 @@
 
 ## Learnings
 
+### Room Goal Metadata (Options Phase 5)
+
+**Pattern:** Each room declares a `goal` (or `goals` array) for the GOAP planner to generate contextual hints.
+
+**Schema:** `goal = { verb = "...", noun = "...", label = "..." }` — verb+noun for GOAP planning, label for narrator framing. Multi-objective rooms use `goals` array with `priority` field.
+
+**Decisions made:**
+- Bedroom gets `goals` array (priority 1: light candle, priority 2: go north) + `options_delay = 3`
+- Deep cellar gets `goal = pull chain` + `options_delay = 5` (atmospheric room, give player time)
+- Crypt gets `options_mode = "sensory_only"` (sacred space, preserve mood)
+- Cellar goal matches architecture doc example exactly: `{ verb = "go", noun = "north", label = "find a way forward" }`
+- All other rooms get single `goal` with `verb = "go"` toward the main progression exit
+
+**Anti-spoiler principle:** Labels describe HIGH-LEVEL objectives ("find a way out", "discover the chamber's secret"), never specific steps. GOAP figures out the prerequisite chain.
+
+**Exemption flags used:**
+- `options_delay` — bedroom (3 turns) and deep cellar (5 turns) to encourage exploration before hinting
+- `options_mode = "sensory_only"` — crypt only, to protect the atmospheric tomb experience
+
+---
+
 ### Portal Unification Pattern (Issue #203)
 
 **Pattern:** Inline exit tables → paired portal objects. Each room-to-room connection gets two `.lua` files (one per side) sharing a `bidirectional_id`.
