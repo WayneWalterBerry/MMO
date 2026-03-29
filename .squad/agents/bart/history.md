@@ -76,6 +76,24 @@
    - Board updated: WAVE-0 ✅ Done, WAVE-1 loader ✅ Done. Remaining: WAVE-1 data (Flanders), WAVE-2 boot, WAVE-3 docs.
    - Note: world-01.lua already existed in `src/meta/worlds/` (built by Moe previously). Template `world.lua` also already exists. The plan's WAVE-1 references "the-manor.lua" but the actual file is "world-01.lua" with `id = "world-1"` — no rename needed, the loader is generic.
 
+10. **Sound WAVE-0 — Sound Manager + Null Driver + Defaults (2026-08-01):**
+    - Executed WAVE-0 Track 0A per sound-implementation-plan.md v1.1, approved by Wayne.
+    - Created `src/engine/sound/init.lua` (~300 LOC): Full sound manager with 21-method API surface.
+      - Construction: `new()`, `init(driver, options)`, `shutdown()`
+      - Driver injection: `set_driver(driver)`, `get_driver()`
+      - Object scanning: `scan_object(obj)`, `flush_queue()`
+      - Playback: `play(filename, opts)`, `stop(play_id)`, `stop_by_owner(owner_id)`
+      - Room transitions: `enter_room(room)`, `exit_room(room)`, `unload_room(room_id)`
+      - Event dispatch: `trigger(obj, event_key)` — 3-step resolution chain (obj.sounds → defaults → nil)
+      - Settings: `set_volume(level)`, `get_volume()`, `set_enabled(bool)`, `mute()`, `unmute()`, `is_muted()`, `is_enabled()`
+    - Created `src/engine/sound/defaults.lua`: 15-entry verb-to-sound fallback table (on_verb_break → generic-break.opus, etc.)
+    - Created `src/engine/sound/null-driver.lua`: Pure no-op driver implementing full driver interface (load, play, stop, stop_all, set_master_volume, unload, fade).
+    - Created `test/sound/test-sound-manager.lua`: 47 tests across 12 suites covering module load, construction, driver injection, nil-driver no-op, mock driver playback, volume clamping, mute/unmute, set_enabled, scan_object, trigger resolution chain, room transitions, concurrency limits (4 oneshots, 3 ambients), null driver integration, GATE-0 API surface verification.
+    - Registered `test/sound/` in `test/run-tests.lua` (test_dirs + source_to_tests mapping).
+    - Full suite: 259 test files, all passing (258 baseline + 1 new). Zero regressions.
+    - Board updated: WAVE-0 Bart track ✅ Done. Gil (web bridge) and Nelson (mock driver scaffolding) tracks still pending for full GATE-0.
+    - Key design choices: OOP with metatables (`M.new()` + colon methods), volume 0.0–1.0 (not 0–100), pcall wraps all driver calls, concurrency limits enforced via eviction (oldest-first for oneshots, lowest-priority for ambients).
+
 ## Archives
 
 - Prior detailed session logs: .squad/log/

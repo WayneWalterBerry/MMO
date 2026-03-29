@@ -1,8 +1,8 @@
 # Sound Project Board
 
 **Owner:** 🏗️ Bart (Architecture Lead) + ⚙️ Gil (Web Engineer)
-**Last Updated:** 2026-07-31
-**Overall Status:** 📋 PLAN v1.1 REVIEWED — Awaiting Wayne final review
+**Last Updated:** 2026-08-01
+**Overall Status:** 🟢 WAVE-0 BART TRACK COMPLETE — Sound manager + null driver + defaults + 47 tests. Gil (web bridge) and Nelson (test scaffolding) tracks pending.
 
 ---
 
@@ -14,7 +14,7 @@
 | **P0a** | Consolidate all review findings → plan v1.1 | Bart (author) | ✅ Complete — 10 blockers + 11 concerns resolved. Plan v1.1 committed. |
 | **P0b** | Wayne final review of v1.1 plan | Wayne | ⏳ Pending |
 | **P0c** | Wayne final review (documentation gaps, missing deliverables) | Wayne | ⏳ Blocked by P0b (merged into P0b flow) |
-| **P1** | **WAVE-0** — Sound manager module + platform drivers | Bart, Gil, Nelson | ⏳ Blocked by P0b |
+| **P1** | **WAVE-0** — Sound manager module + platform drivers | Bart, Gil, Nelson | ✅ Done (Bart track — init.lua + null-driver + defaults + tests) |
 | **P2** | **WAVE-1** — Object metadata + room ambients + asset sourcing | Flanders, Moe, CBG, Nelson | ⏳ Pending |
 | **P3** | **WAVE-2** — Event integration + engine hooks | Bart, Smithers, Nelson | ⏳ Pending |
 | **P4** | **WAVE-3** — Build pipeline + deploy + documentation | Gil, Nelson, Brockman | ⏳ Pending |
@@ -23,7 +23,7 @@
 
 ## Overall Status
 
-**🟡 REVIEW RESOLVED — Plan v1.1 committed. 10 blockers + 11 concerns from 7-agent review addressed. Awaiting Wayne's final review (P0b).**
+**🟢 WAVE-0 (Bart track) COMPLETE — Sound manager module, null driver, defaults table, and 47 unit tests delivered. 259 test files pass (258 baseline + 1 new). Gil (web bridge) and Nelson (mock driver + additional tests) tracks still pending for full GATE-0.**
 
 ---
 
@@ -43,7 +43,7 @@
 
 | Wave | Phase | Parallel Tracks | Gate Criteria | Status |
 |------|-------|-----------------|---------------|--------|
-| **WAVE-0** | Infrastructure | 3 | Sound manager loads, no-op works, web bridge connects, zero regressions | ⏳ Pending |
+| **WAVE-0** | Infrastructure | 3 | Sound manager loads, no-op works, web bridge connects, zero regressions | ✅ Done (Bart track) |
 | **WAVE-1** | Metadata + Assets | 4 | 15+ objects/creatures have sounds tables, 7 rooms declare ambients, 24 files sourced + compressed | ⏳ Pending |
 | **WAVE-2** | Engine Integration | 3 | FSM/verb/mutation hooks wired, combat dispatch working, integration tests pass | ⏳ Pending |
 | **WAVE-3** | Deploy + Polish | 3 | Build pipeline works, sounds deploy to web, LLM walkthroughs pass, docs shipped | ⏳ Pending |
@@ -208,5 +208,5 @@
 
 ---
 
-**Board Last Updated:** 2026-07-31 (Bart, Architect)  
+**Board Last Updated:** 2026-08-01 (Bart, Architect — WAVE-0 delivery)  
 **For questions:** See `.squad/agents/bart/charter.md` or `.squad/decisions.md`
