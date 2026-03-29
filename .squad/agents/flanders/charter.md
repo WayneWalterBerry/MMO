@@ -16,10 +16,7 @@ Object & Injury Systems Designer, Programmer, and Builder — the specialist ded
 - Create injury design docs in `docs/design/injuries/` describing injury mechanics, causes, and puzzle interactions
 - Assign Windows GUIDs to injury types to maintain consistency with the metadata identity system
 - Ensure injuries are JIT-loadable and follow the same architecture as object metadata
-- **Design creature/NPC objects** using the `creature` template (see `plans/npc-system-plan.md`)
-- Define creature behavior metadata: drives, reactions, states, senses — all as pure data (Principle 8)
-- Creatures are objects with `animate = true` — they follow ALL standard object rules plus creature-specific fields
-- First creature to build: **rat** (Phase 1 of NPC plan)
+- **Design creature/NPC objects** — HANDED OFF TO WILLIE. Willie now owns `src/meta/creatures/`. Flanders creates creature *products* (items that drop from creatures, like bones/hides) but Willie designs the creatures themselves.
 
 ## Boundaries
 - Does NOT modify engine code (`src/engine/`) — that's Bart's domain

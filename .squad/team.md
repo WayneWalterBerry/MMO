@@ -26,6 +26,7 @@
 | 🧪 Nelson | QA Engineer | 🧪 Test | .squad/agents/nelson/charter.md | Active |
 | 📝 Brockman | Documentation | 📝 Docs | .squad/agents/brockman/charter.md | Active |
 | 🏗️ Chalmers | Plan Auditor | 📋 Operations | .squad/agents/chalmers/charter.md | Active |
+| 🌿 Willie | Creature Designer | 🎨 Design | .squad/agents/willie/charter.md | Active |
 | 🔍 Wiggum | Linter Engineer | ⚙️ Engineering | .squad/agents/wiggum/charter.md | Active |
 | 📋 Scribe | Session Logger | 📋 Operations | .squad/agents/scribe/charter.md | 🔄 Monitor |
 | 🔄 Ralph | Work Monitor | 📋 Operations | — | 🔄 Monitor |
