@@ -44,3 +44,16 @@
 - Conservative synonym expansion (2-3 per term) is backed by Lu et al. (2015) and validated by the project's own verb synonym system. Aggressive expansion introduces semantic drift that hurts precision more than it helps recall.
 - The 13 remaining benchmark failures (91.2%) are predominantly disambiguation and false-positive issues, not missing-synonym issues. This means re-ranking improvements will yield more gains than vocabulary expansion.
 - Real player data from beta playtesting will be 10x more valuable than synthetic benchmarks for guiding the 93% → 95% push.
+
+### 2025-07-18: Mr. Beast Research for Wyatt's World
+
+**Task:** Research Mr. Beast (Jimmy Donaldson) content, characters, challenges, aesthetic, and educational angles for a themed text adventure world for Wyatt (age 10).
+
+**Deliverable:** `projects/wyatt-world/research-mrbeast.md` — comprehensive research brief covering 7 topics: biography, famous challenges, visual aesthetic, crew/characters, catchphrases/language, games/products, and educational angles. Includes vocabulary list, character reference sheet, 10 room concept seeds, and design recommendations.
+
+**Key findings:**
+- MrBeast's content maps cleanly to text adventure mechanics: inventory puzzles (spending sprees), endurance/patience rooms (last to leave), multi-step scavenger hunts, risk-vs-reward decision points, and rule-following challenges (Squid Game recreations).
+- The "Beast Gang" (Chandler, Karl, Nolan, Tareq) each have distinct personalities that translate well to NPC archetypes: Chandler = comedic helper, Karl = enthusiastic guide, Nolan = rival/challenger, Tareq = tool/hint provider.
+- Educational angles are strong: money math (counting big prizes, budgets), reading comprehension (clue-reading, following instructions), strategy/decision-making (risk vs reward), and teamwork/values (philanthropy themes).
+- 3rd-grade reading level vocabulary aligns with MrBeast's own language style — simple, direct, action-oriented sentences with high energy.
+- The bright, color-coded warehouse aesthetic translates well to room descriptions even in text form — color = function is a consistent design language.
