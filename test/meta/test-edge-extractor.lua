@@ -484,30 +484,30 @@ test("resolve_target returns nil for missing target", function()
     t.assert_nil(result, "expected nil for missing target")
 end)
 
-test("full run detects >= 4 broken edge entries", function()
+test("full run detects 0 broken edge entries (all targets created)", function()
     local result = run_pipeline()
     t.assert_truthy(result and result.broken,
         "expected result with broken field")
-    t.assert_truthy(#result.broken >= 4,
-        "expected >= 4 broken edges, got " .. #result.broken)
+    t.assert_eq(0, #result.broken,
+        "expected 0 broken edges, got " .. #result.broken)
 end)
 
-test("broken edges include poison-gas-vent-plugged", function()
+test("poison-gas-vent-plugged resolves as valid target", function()
     local result = run_pipeline()
     local found = false
-    for _, b in ipairs(result.broken) do
-        if b.target == "poison-gas-vent-plugged" then found = true; break end
+    for _, v in ipairs(result.valid_targets) do
+        if v.target == "poison-gas-vent-plugged" then found = true; break end
     end
-    t.assert_truthy(found, "expected poison-gas-vent-plugged in broken edges")
+    t.assert_truthy(found, "expected poison-gas-vent-plugged in valid_targets")
 end)
 
-test("broken edges include wood-splinters", function()
+test("wood-splinters resolves as valid target", function()
     local result = run_pipeline()
     local found = false
-    for _, b in ipairs(result.broken) do
-        if b.target == "wood-splinters" then found = true; break end
+    for _, v in ipairs(result.valid_targets) do
+        if v.target == "wood-splinters" then found = true; break end
     end
-    t.assert_truthy(found, "expected wood-splinters in broken edges")
+    t.assert_truthy(found, "expected wood-splinters in valid_targets")
 end)
 
 ---------------------------------------------------------------------------
@@ -553,9 +553,9 @@ test("default mode produces human-readable report", function()
     t.assert_truthy(output and #output > 0, "expected non-empty output")
 end)
 
-test("default mode exits with code 1 (broken edges exist)", function()
+test("default mode exits with code 0 (no broken edges)", function()
     local output, code = run_script()
-    t.assert_truthy(code == 1, "expected exit code 1 for broken edges, got " .. tostring(code))
+    t.assert_truthy(code == 0, "expected exit code 0 (no broken edges), got " .. tostring(code))
 end)
 
 test("--targets mode outputs file paths", function()
@@ -563,7 +563,7 @@ test("--targets mode outputs file paths", function()
     t.assert_truthy(output and output:find("%.lua"), "expected .lua file paths in --targets output")
 end)
 
-test("--targets mode sends broken edges to stderr as WARNING:", function()
+test("--targets mode produces no WARNING when 0 broken edges", function()
     -- Run with stderr separated: redirect stdout to nul, capture stderr
     local is_windows = package.config:sub(1, 1) == "\\"
     local cmd
@@ -577,7 +577,7 @@ test("--targets mode sends broken edges to stderr as WARNING:", function()
     local pipe = io.popen(cmd)
     local stderr_output = pipe:read("*a")
     pipe:close()
-    t.assert_truthy(stderr_output:find("WARNING"), "expected WARNING in stderr for broken edges")
+    t.assert_truthy(not stderr_output:find("WARNING"), "expected no WARNING in stderr (0 broken edges)")
 end)
 
 test("report includes summary footer", function()
@@ -728,32 +728,24 @@ test("--json summary.edges_found > 40", function()
         "expected edges_found > 40, got " .. tostring(count))
 end)
 
-test("--json summary.broken_edges == 5", function()
+test("--json summary.broken_edges == 0", function()
     local output, err = run_json()
     if err == "json-not-implemented" then
         print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
         return
     end
     local count = json_number(output, "broken_edges")
-    t.assert_eq(5, count, "expected broken_edges == 5")
+    t.assert_eq(0, count, "expected broken_edges == 0")
 end)
 
-test("--json summary.broken_targets == 2 (unique target IDs)", function()
+test("--json summary.broken_targets == 0 (all targets resolved)", function()
     local output, err = run_json()
     if err == "json-not-implemented" then
         print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
         return
     end
     local count = json_number(output, "broken_targets")
-    -- broken_targets counts unique missing target IDs (wood-splinters + poison-gas-vent-plugged)
-    if count then
-        t.assert_eq(2, count, "expected broken_targets == 2 unique targets")
-    else
-        -- Fallback: count unique targets in broken array
-        print("    INFO: broken_targets not in summary, checking broken array")
-        t.assert_truthy(json_has_key(output, "broken"),
-            "expected broken key for fallback check")
-    end
+    t.assert_eq(0, count, "expected broken_targets == 0")
 end)
 
 test("--json summary.dynamic_paths >= 1", function()
@@ -767,24 +759,19 @@ test("--json summary.dynamic_paths >= 1", function()
         "expected dynamic_paths >= 1, got " .. tostring(count))
 end)
 
-test("--json broken contains poison-gas-vent-plugged", function()
+test("--json broken array is empty (all targets resolved)", function()
     local output, err = run_json()
     if err == "json-not-implemented" then
         print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
         return
     end
-    t.assert_truthy(json_section_contains(output, "broken", "poison%-gas%-vent%-plugged"),
-        "expected poison-gas-vent-plugged in broken array")
-end)
-
-test("--json broken contains wood-splinters", function()
-    local output, err = run_json()
-    if err == "json-not-implemented" then
-        print("    SKIP: --json not yet implemented — Bart WAVE-2 in progress")
-        return
-    end
-    t.assert_truthy(json_section_contains(output, "broken", "wood%-splinters"),
-        "expected wood-splinters in broken array")
+    t.assert_truthy(json_has_key(output, "broken"),
+        "expected 'broken' key in JSON output")
+    -- poison-gas-vent-plugged and wood-splinters should NOT appear in broken
+    t.assert_truthy(not json_section_contains(output, "broken", "poison%-gas%-vent%-plugged"),
+        "poison-gas-vent-plugged should not be in broken array (target exists)")
+    t.assert_truthy(not json_section_contains(output, "broken", "wood%-splinters"),
+        "wood-splinters should not be in broken array (target exists)")
 end)
 
 test("--json dynamic contains paper.lua", function()
