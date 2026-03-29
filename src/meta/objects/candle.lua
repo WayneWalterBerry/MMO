@@ -18,6 +18,15 @@ return {
     description = "A stubby tallow candle with a blackened wick curling like a burnt finger. It is not lit.",
     on_feel = "A smooth wax cylinder, slightly greasy. It tapers to a blackened wick at the top.",
     on_smell = "Faintly waxy -- old tallow and a memory of smoke.",
+    on_listen = "Silent. Wax and wick.",
+
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_state_lit = "candle-ignite.opus",
+        on_verb_blow = "candle-blow.opus",
+        on_verb_extinguish = "candle-blow.opus",
+    },
+
     casts_light = false,
 
     location = nil,
@@ -44,6 +53,7 @@ return {
             description = "A stubby tallow candle with a blackened wick curling like a burnt finger. It is not lit.",
             on_feel = "A smooth wax cylinder, slightly greasy. It tapers to a blackened wick at the top.",
             on_smell = "Faintly waxy -- old tallow and a memory of smoke.",
+            on_listen = "Silent. Wax and wick.",
             casts_light = false,
 
             on_look = function(self)

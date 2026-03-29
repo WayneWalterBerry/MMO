@@ -35,6 +35,15 @@ return {
     on_listen = "You press your ear to the oak. From beyond: silence at first, then the faint scratching of something small — rats? The faint creak of shelving under its own weight.",
     on_taste = "Iron and wood. The metallic tang of the padlock stains your tongue.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_traverse = "door-groan-iron.opus",
+        on_verb_open = "door-open-iron.opus",
+        on_verb_close = "door-close-iron.opus",
+        on_verb_unlock = "padlock-unlock.opus",
+        on_verb_lock = "padlock-lock.opus",
+    },
+
     initial_state = "locked",
     _state = "locked",
 

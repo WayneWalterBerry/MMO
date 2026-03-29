@@ -35,6 +35,13 @@ return {
     on_listen = "From beyond the door: the drip of water in the cellar. The cellar's cold emptiness hums with the silence of stone.",
     on_taste = "Iron and old oak. The same gritty taste from either side.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_traverse = "door-groan-iron.opus",
+        on_verb_open = "door-open-iron.opus",
+        on_verb_close = "door-close-iron.opus",
+    },
+
     initial_state = "locked",
     _state = "locked",
 

@@ -35,6 +35,11 @@ return {
     on_listen = "You press your ear to the oak. Silence from beyond — the complete silence of a sealed room. No creaking, no settling. Just dust and stillness.",
     on_taste = "Smooth oak and beeswax polish. Well-maintained wood.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_traverse = "door-creak-oak.opus",
+    },
+
     initial_state = "locked",
     _state = "locked",
 

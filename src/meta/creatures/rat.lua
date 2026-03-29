@@ -21,6 +21,13 @@ return {
     on_listen = "Skittering claws on stone. An occasional high-pitched squeak.",
     on_taste = "You'd have to catch it first. And then you'd regret it.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        ambient_loop = "rat-idle.opus",
+        ["on_state_alive-wander"] = "rat-scurry.opus",
+        ["on_state_alive-flee"] = "rat-squeak.opus",
+    },
+
     -- FSM
     initial_state = "alive-idle",
     _state = "alive-idle",
@@ -50,7 +57,7 @@ return {
             animate = false,
             on_feel = "Cooling fur over a limp body. The tail hangs like wet string.",
             on_smell = "Blood and musk. The sharp copper of death.",
-            on_listen = "Nothing. Absolutely nothing.",
+            on_listen = "The rat is motionless. No breath, no sound.",
             on_taste = "Fur and blood. You immediately regret this decision.",
         },
     },
@@ -195,7 +202,7 @@ return {
         -- Sensory (on_feel mandatory — primary dark sense)
         on_feel = "Cooling fur over a limp body. The tail hangs like wet string.",
         on_smell = "Blood and musk. The sharp copper of death.",
-        on_listen = "Nothing. Absolutely nothing.",
+        on_listen = "The rat is motionless. No breath, no sound.",
         on_taste = "Fur and blood. You immediately regret this decision.",
 
         -- Food properties

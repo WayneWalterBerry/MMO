@@ -21,6 +21,13 @@ return {
     on_listen = "A low, rumbling purr that stops the instant you move. Then silence.",
     on_taste = "You'd lose a finger trying.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        ambient_loop = "cat-purr.opus",
+        ["on_state_alive-hunt"] = "cat-stalk.opus",
+        ["on_state_alive-flee"] = "cat-hiss.opus",
+    },
+
     -- FSM
     initial_state = "alive-idle",
     _state = "alive-idle",
@@ -55,7 +62,7 @@ return {
             animate = false,
             on_feel = "Cooling fur over a limp body. The claws are still extended.",
             on_smell = "Blood and warm fur. The musk is already fading.",
-            on_listen = "Nothing. The purr is gone.",
+            on_listen = "The cat is motionless. No breath, no sound.",
             on_taste = "Fur and blood. No.",
         },
     },
@@ -205,7 +212,7 @@ return {
         -- Sensory (on_feel mandatory — primary dark sense)
         on_feel = "Soft fur over a limp body, already cooling. The claws are still extended, pricking your fingers.",
         on_smell = "Blood and warm fur. The musk is already fading.",
-        on_listen = "Nothing. The purr is gone.",
+        on_listen = "The cat is motionless. No breath, no sound.",
         on_taste = "Fur and blood. No.",
 
         -- Food properties

@@ -18,6 +18,14 @@ return {
     description = "A small wooden match with a bulbous red-brown tip. The head is slightly rough to the touch and smells faintly of sulphur. Unlit and inert -- it needs a striker surface to ignite.",
     on_feel = "A small wooden stick with a bulbous, slightly rough tip.",
     on_smell = "Faintly sulfurous.",
+    on_listen = "Silent. Just a small stick.",
+
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_verb_light = "match-strike.opus",
+        on_verb_strike = "match-strike.opus",
+    },
+
     casts_light = false,
 
     location = nil,
@@ -35,6 +43,7 @@ return {
             description = "A small wooden match with a bulbous red-brown tip. The head is slightly rough to the touch and smells faintly of sulphur. Unlit and inert -- it needs a striker surface to ignite.",
             on_feel = "A small wooden stick with a bulbous, slightly rough tip.",
             on_smell = "Faintly sulfurous.",
+            on_listen = "Silent. Just a small stick.",
             casts_light = false,
         },
 
