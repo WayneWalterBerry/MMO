@@ -27,3 +27,14 @@
   - **Deliverable 4:** Updated `.squad/agents/gil/history.md` — session append
   - **Session commit:** 8cb7181 (ci: WAVE-2 mutation edge check in CI + pre-deploy gate)
   - **Key decisions:** Pre-deploy gate MUST run before push (prevents CI failures). `.gitattributes` normalized all shell scripts (*.sh) to LF, PowerShell (*.ps1) to CRLF.
+
+- **Deploy Workflow (squad-deploy.yml):**
+  - **Deliverable:** `.github/workflows/squad-deploy.yml` — auto-deploy on merge to main
+  - **Trigger:** `push` to `main` (fires after PR merge)
+  - **Jobs:** `test` (sharded, mirrors squad-ci.yml) → `build-and-deploy` (pwsh build scripts → Pages push)
+  - **Deploy target:** `WayneWalterBerry/WayneWalterBerry.github.io` repo, `play/` directory
+  - **Secret required:** `PAGES_DEPLOY_TOKEN` — fine-grained PAT with Contents (read+write) on the Pages repo
+  - **Deploy checklist files:** index.html, bootstrapper.js, game-adapter.lua, web/dist/* (per SKILL.md)
+  - **Cache-busting:** BUILD_TIMESTAMP printed to Actions log for verification
+  - **No-op guard:** Skips push if no files changed (idempotent deploys)
+  - **Key pattern:** Uses `git clone --depth 1` with x-access-token auth for cross-repo push

@@ -1,0 +1,133 @@
+# ============================================================================
+# Deploy to GitHub Pages — squad-deploy.yml
+# ============================================================================
+#
+# Triggers on push to main (fires after PR merge). Runs the full test suite,
+# builds engine + meta bundles, and deploys to the GitHub Pages site at:
+#   https://waynewalterberry.github.io/play/
+#
+# DEPLOY TARGET: WayneWalterBerry/WayneWalterBerry.github.io (separate repo)
+#
+# ─── SECRET SETUP ───────────────────────────────────────────────────────────
+#
+#   This workflow requires a Personal Access Token (PAT) stored as a
+#   repository secret named PAGES_DEPLOY_TOKEN.
+#
+#   To configure:
+#     1. Go to https://github.com/settings/tokens
+#     2. Create a fine-grained PAT with:
+#        - Repository access: WayneWalterBerry/WayneWalterBerry.github.io
+#        - Permissions: Contents (read & write)
+#     3. Go to the MMO repo → Settings → Secrets and variables → Actions
+#     4. Add a new repository secret:
+#        - Name:  PAGES_DEPLOY_TOKEN
+#        - Value: <paste the PAT>
+#
+# ────────────────────────────────────────────────────────────────────────────
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Job 1: Run tests — don't deploy broken code ──────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [parser, verbs, creatures, rooms, search, other]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua
+        run: sudo apt-get update && sudo apt-get install -y lua5.4
+
+      - name: Mutation Edge Check
+        continue-on-error: true
+        run: lua scripts/mutation-edge-check.lua
+
+      - name: Run tests (shard ${{ matrix.shard }})
+        run: lua test/run-tests.lua --bench --shard ${{ matrix.shard }}
+
+  # ── Job 2: Build and deploy to GitHub Pages ──────────────────────────────
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout MMO repo
+        uses: actions/checkout@v4
+
+      - name: Install Lua
+        run: sudo apt-get update && sudo apt-get install -y lua5.4
+
+      # Build scripts are PowerShell — pwsh is pre-installed on GitHub runners
+      - name: Build engine bundle
+        shell: pwsh
+        run: ./web/build-engine.ps1
+
+      - name: Build meta files
+        shell: pwsh
+        run: ./web/build-meta.ps1
+
+      # Print BUILD_TIMESTAMP for verification in Actions logs
+      - name: Verify BUILD_TIMESTAMP
+        shell: pwsh
+        run: |
+          $content = Get-Content web/bootstrapper.js -Raw
+          if ($content -match 'BUILD_TIMESTAMP\s*[:=]\s*[''"]?(\d+)[''"]?') {
+            Write-Host "BUILD_TIMESTAMP: $($Matches[1])"
+          } else {
+            Write-Host "WARNING: Could not extract BUILD_TIMESTAMP from bootstrapper.js"
+          }
+
+      # Clone the Pages repo and deploy built files
+      - name: Clone Pages repo
+        run: |
+          git clone --depth 1 \
+            "https://x-access-token:${{ secrets.PAGES_DEPLOY_TOKEN }}@github.com/WayneWalterBerry/WayneWalterBerry.github.io.git" \
+            pages-repo
+
+      - name: Copy files to Pages repo
+        shell: pwsh
+        run: |
+          $playDir = "pages-repo/play"
+
+          # Create play/ directory if it doesn't exist
+          New-Item -ItemType Directory -Path $playDir -Force | Out-Null
+
+          # Copy critical top-level files (index.html, bootstrapper.js, game-adapter.lua)
+          foreach ($f in @("index.html", "bootstrapper.js", "game-adapter.lua")) {
+            $dest = Join-Path $playDir $f
+            if (Test-Path $dest) { Remove-Item $dest -Force }
+            Copy-Item "web/$f" $playDir/
+            Write-Host "Copied: $f"
+          }
+
+          # Copy all built/dist files (engine bundle, meta files, etc.)
+          Copy-Item web/dist/* $playDir/ -Recurse -Force
+          Write-Host "Copied: web/dist/* -> $playDir/"
+
+          # Summary
+          $fileCount = (Get-ChildItem $playDir -Recurse -File).Count
+          Write-Host "Total files in play/: $fileCount"
+
+      - name: Commit and push to Pages repo
+        working-directory: pages-repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add play/
+          # Only commit if there are changes
+          if git diff --cached --quiet; then
+            echo "No changes to deploy — skipping push."
+          else
+            git commit -m "deploy: update web playtest build from ${{ github.sha }}"
+            git push
+            echo "Deploy pushed to WayneWalterBerry.github.io/play/"
+          fi
