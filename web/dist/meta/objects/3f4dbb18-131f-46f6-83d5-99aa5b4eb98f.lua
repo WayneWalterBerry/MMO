@@ -35,6 +35,13 @@ return {
     on_listen = "From beyond: the faint scratching of rats in the storage vault. On this side: the deep silence of the vaulted chamber.",
     on_taste = "Iron and old oak. The same ancient taste.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_traverse = "door-groan-iron.opus",
+        on_verb_open = "door-open-iron.opus",
+        on_verb_close = "door-close-iron.opus",
+    },
+
     initial_state = "locked",
     _state = "locked",
 

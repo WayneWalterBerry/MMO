@@ -24,6 +24,13 @@ return {
     on_listen = "Silence. Your reflection stares back, mouthing nothing.",
     on_taste = "Cold and flat. Glass. You leave a tongue-print and regret your choices.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_verb_break = "glass-shatter.opus",
+        on_mutate = "mirror-crack.opus",
+        on_verb_hit = "glass-crack.opus",
+    },
+
     on_look_in = "Your reflection stares back from the warped glass, mimicking your movements with an unsettling half-second delay. In the old glass, your face looks slightly wrong — as though someone wearing your skin is looking back from the other side.",
 
     location = nil,

@@ -399,6 +399,7 @@ local context = {
     game_start_hour = presentation.GAME_START_HOUR,
     ui             = ui_active and ui or nil,
     headless       = headless,
+    debug          = debug_mode,
 }
 
 ---------------------------------------------------------------------------

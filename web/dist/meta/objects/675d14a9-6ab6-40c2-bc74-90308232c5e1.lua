@@ -21,6 +21,13 @@ return {
     on_feel = "Cold brass frame, a glass chimney on one side. A small hinged door. The reservoir inside is dry -- rough metal. A carry ring on top.",
     on_smell = "Old metal and the ghost of lamp oil.",
     on_listen = "Creaks slightly when lifted -- the hinged door swings.",
+
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_state_lit = "lantern-ignite.opus",
+        on_verb_break = "glass-shatter.opus",
+    },
+
     casts_light = false,
 
     location = nil,

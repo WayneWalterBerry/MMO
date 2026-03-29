@@ -35,6 +35,15 @@ return {
     on_listen = "Silence from beyond. A deeper, more profound silence than the cellar behind you — as if the space beyond absorbs sound. No rats. No dripping.",
     on_taste = "Iron and ancient oak. The metal tastes older, cruder than the padlock on the other door.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_traverse = "door-groan-iron.opus",
+        on_verb_open = "door-open-iron.opus",
+        on_verb_close = "door-close-iron.opus",
+        on_verb_unlock = "lock-grind-iron.opus",
+        on_verb_lock = "lock-grind-iron.opus",
+    },
+
     initial_state = "locked",
     _state = "locked",
 

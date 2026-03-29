@@ -37,6 +37,7 @@ function M.new()
     self._ambients = {}       -- ordered list of active ambient play_ids
     self._object_sounds = {}  -- obj_id → { event_key → filename }
     self._next_id = 1         -- monotonic play-id counter
+    self._debug = false       -- debug logging flag
     return self
 end
 
@@ -52,6 +53,17 @@ function M:init(driver, options)
         if options.enabled ~= nil then
             self._enabled = options.enabled
         end
+        if options.debug then
+            self._debug = true
+        end
+    end
+    if self._debug then
+        local dname = "nil (headless)"
+        if driver then
+            dname = driver.name or "unknown"
+        end
+        print("[sound] driver: " .. dname)
+        print("[sound] init: manager ready")
     end
 end
 
@@ -97,13 +109,19 @@ function M:scan_object(obj)
     local id = obj.guid or obj.id
     if not id then return end
     local map = {}
+    local count = 0
     for key, filename in pairs(obj.sounds) do
         map[key] = filename
+        count = count + 1
         if not self._loaded[filename] then
             self._queue[#self._queue + 1] = filename
         end
     end
     self._object_sounds[id] = map
+    if self._debug then
+        local label = obj.id or id
+        print("[sound] scan: " .. label .. " → " .. count .. " sound keys")
+    end
 end
 
 --- Trigger async load for all queued files.
@@ -166,6 +184,10 @@ function M:play(filename, opts)
         return nil
     end
     if not self._driver.play then return nil end
+
+    if self._debug then
+        print("[sound] play: " .. tostring(filename))
+    end
 
     opts = opts or {}
     local is_loop = opts.loop or false
@@ -242,6 +264,11 @@ end
 --- Start room ambients and object ambients when entering a room.
 function M:enter_room(room)
     if not room or not self._driver then return end
+    if self._debug then
+        local rid = room.id or room.guid or "?"
+        local amb = (room.sounds and room.sounds.ambient) or "(no ambient)"
+        print("[sound] enter_room: " .. rid .. " → " .. amb)
+    end
     if room.sounds and room.sounds.ambient then
         self:play(room.sounds.ambient, { loop = true, owner_id = room.guid or room.id })
     end
@@ -250,6 +277,10 @@ end
 --- Stop non-portable sounds when exiting a room.
 function M:exit_room(room)
     if not room then return end
+    if self._debug then
+        local rid = room.id or room.guid or "?"
+        print("[sound] exit_room: " .. rid)
+    end
     local room_id = room.guid or room.id
     if room_id then
         self:stop_by_owner(room_id)
@@ -294,11 +325,14 @@ function M:trigger(obj, event_key)
 
     local filename = nil
     local owner_id = nil
+    local obj_label = (obj and (obj.id or obj.guid)) or "nil"
+    local source = nil -- tracks resolution path for debug
 
     -- Step 1: object-specific sound
     if obj and obj.sounds and obj.sounds[event_key] then
         filename = obj.sounds[event_key]
         owner_id = obj.guid or obj.id
+        source = "object"
     end
 
     -- Step 1b: state-qualified ambient lookup
@@ -307,16 +341,31 @@ function M:trigger(obj, event_key)
         if obj.sounds[state_key] then
             filename = obj.sounds[state_key]
             owner_id = obj.guid or obj.id
+            source = "object-state"
         end
     end
 
     -- Step 2: defaults fallback
     if not filename then
         filename = defaults[event_key]
+        if filename then source = "default" end
     end
 
     -- Step 3: silent
-    if not filename then return nil end
+    if not filename then
+        if self._debug then
+            print("[sound] trigger: " .. obj_label .. " " .. event_key .. " → (silent)")
+        end
+        return nil
+    end
+
+    if self._debug then
+        if source == "default" then
+            print("[sound] trigger: " .. obj_label .. " " .. event_key .. " → default: " .. filename)
+        else
+            print("[sound] trigger: " .. obj_label .. " " .. event_key .. " → " .. filename)
+        end
+    end
 
     local is_loop = event_key:find("^ambient") ~= nil
     return self:play(filename, { loop = is_loop, owner_id = owner_id })

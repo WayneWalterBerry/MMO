@@ -21,6 +21,13 @@ return {
     on_listen = "High-pitched chittering, almost beyond hearing. The soft flutter of restless wings.",
     on_taste = "You'd have to catch it mid-flight. You can't.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        ambient_loop = "bat-chitter.opus",
+        ["on_state_alive-flying"] = "bat-wings.opus",
+        ["on_state_alive-flee"] = "bat-screech.opus",
+    },
+
     -- FSM
     initial_state = "alive-roosting",
     _state = "alive-roosting",
@@ -58,7 +65,7 @@ return {
             animate = false,
             on_feel = "Papery wings, already stiffening. The fur is impossibly soft. No heartbeat.",
             on_smell = "Guano and cooling flesh.",
-            on_listen = "Nothing. The chittering has stopped.",
+            on_listen = "The bat is motionless. No breath, no sound.",
             on_taste = "Thin fur and tiny bones. Bitter.",
         },
     },
@@ -204,7 +211,7 @@ return {
         -- Sensory (on_feel mandatory — primary dark sense)
         on_feel = "Papery wings, already stiffening. The fur is impossibly soft. No heartbeat.",
         on_smell = "Guano and cooling flesh. A faint musk.",
-        on_listen = "Nothing. The chittering has stopped.",
+        on_listen = "The bat is motionless. No breath, no sound.",
         on_taste = "Thin fur and tiny bones. Bitter.",
 
         -- Food properties

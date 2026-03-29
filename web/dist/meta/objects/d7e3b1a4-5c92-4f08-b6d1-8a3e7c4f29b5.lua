@@ -42,6 +42,12 @@ return {
     on_smell = "Rust and old blood. This trap has a history.",
     on_listen = "A faint metallic creak. The springs are straining, coiled tight.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_state_triggered = "trap-snap.opus",
+        on_verb_disarm = "trap-disarm.opus",
+    },
+
     location = nil,
 
     -- FSM

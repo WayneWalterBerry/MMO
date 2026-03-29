@@ -35,6 +35,14 @@ return {
     on_listen = "The door creaks faintly in the wind. From beyond: the tick of cooling metal, the occasional drip of something — condensation, perhaps, from a cold flue. An empty kitchen.",
     on_taste = "Weathered wood, damp and slightly salty from rain. The grain is rough against your tongue.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_traverse = "door-creak-wood.opus",
+        on_verb_open = "door-scrape-wood.opus",
+        on_verb_close = "door-close-wood.opus",
+        on_verb_break = "door-splinter-wood.opus",
+    },
+
     initial_state = "locked",
     _state = "locked",
 

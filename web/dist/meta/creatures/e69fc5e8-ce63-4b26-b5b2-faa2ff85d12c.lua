@@ -21,6 +21,14 @@ return {
     on_listen = "A low, sustained growl. The click of claws on stone. Measured breathing.",
     on_taste = "It would taste you first.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        ambient_loop = "wolf-growl.opus",
+        ["on_state_alive-aggressive"] = "wolf-snarl.opus",
+        ["on_state_alive-flee"] = "wolf-whimper.opus",
+        ["on_state_alive-patrol"] = "wolf-patrol.opus",
+    },
+
     -- FSM
     initial_state = "alive-idle",
     _state = "alive-idle",
@@ -60,7 +68,7 @@ return {
             animate = false,
             on_feel = "Coarse fur, already cooling. The massive jaw hangs slack. The growl is gone.",
             on_smell = "Blood and wet fur. The territorial musk is fading.",
-            on_listen = "Nothing. The growl has stopped.",
+            on_listen = "The wolf is motionless. No breath, no sound.",
             on_taste = "Rank meat and matted fur.",
         },
     },
@@ -246,7 +254,7 @@ return {
         -- Sensory (on_feel mandatory — primary dark sense)
         on_feel = "Coarse fur, already cooling. The massive jaw hangs slack. The body is heavy, immovable.",
         on_smell = "Blood and wet fur. The territorial musk is fading fast.",
-        on_listen = "Nothing. The growl has stopped.",
+        on_listen = "The wolf is motionless. No breath, no sound.",
         on_taste = "Rank meat and matted fur. You spit blood.",
 
         -- Food properties (too big to cook whole — requires butchery, Phase 4)

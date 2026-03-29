@@ -43,6 +43,9 @@ return {
             },
         },
 
+        -- === Wall Clock ===
+        { id = "wall-clock",              type = "Wall Clock",    type_id = "c5bae682-b7ee-451d-b1cf-ceeb74d6b83d" },
+
         -- === South portal (bedroom-hallway door, hallway side) ===
         { id = "bedroom-hallway-door-south", type_id = "{a47ce304-4425-4bd0-a9e9-224b7c8baa8c}" },
         { id = "hallway-deep-cellar-stairs-down", type_id = "{becc667f-877b-49e7-bee0-32fc49d48af6}" },

@@ -64,6 +64,7 @@ return {
             on_knock = "A deep, dull thud. No one answers.",
             on_push = "The door doesn't budge. The iron bar holds from the other side.",
             on_pull = "It doesn't move. The hinges open inward, and the bar holds fast.",
+            blocked_message = "They locked me in, this is a trick they must play on newbies, good thing there are other ways out of this room...",
         },
 
         unbarred = {

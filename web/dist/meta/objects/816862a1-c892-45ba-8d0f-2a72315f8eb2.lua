@@ -19,6 +19,13 @@ return {
     on_feel = "Warm wooden shaft, smooth from use. The head radiates intense heat -- don't touch that end.",
     on_smell = "Burning pitch and smoke. Sharp, resinous, and slightly acrid. A working smell.",
     on_listen = "Crackling and spitting. The pitch pops and hisses. A low roar from the flame.",
+
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_state_lit = "torch-ignite.opus",
+        ambient_lit = "torch-crackle.opus",
+    },
+
     casts_light = true,
     light_radius = 4,
     provides_tool = "fire_source",

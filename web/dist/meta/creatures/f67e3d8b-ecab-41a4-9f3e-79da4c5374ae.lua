@@ -21,6 +21,13 @@ return {
     on_listen = "Faint scratching, like tiny claws on stone.",
     on_taste = "Bitter chitin and a sharp, chemical sting on your tongue.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        ambient_loop = "spider-skitter.opus",
+        ["on_state_alive-web-building"] = "spider-silk.opus",
+        ["on_state_alive-flee"] = "spider-scurry.opus",
+    },
+
     -- FSM
     initial_state = "alive-idle",
     _state = "alive-idle",
@@ -54,7 +61,7 @@ return {
             animate = false,
             on_feel = "Dry, brittle legs that crumble at the touch. The body is hollow-light.",
             on_smell = "A faint chemical bitterness. Dry chitin.",
-            on_listen = "Nothing. The web vibrates faintly in the air.",
+            on_listen = "The spider is motionless. No breath, no sound.",
             on_taste = "Dry shell and acrid venom. Your tongue goes numb.",
         },
     },
@@ -232,7 +239,7 @@ return {
         -- Sensory (on_feel mandatory — primary dark sense)
         on_feel = "Dry, brittle legs that crumble at the touch. A hard chitin shell, hollow-light.",
         on_smell = "A faint chemical bitterness. Dry chitin and musty silk.",
-        on_listen = "Nothing. The web vibrates faintly in the air.",
+        on_listen = "The spider is motionless. No breath, no sound.",
         on_taste = "Dry shell and acrid venom. Your tongue goes numb.",
 
         -- Butchery products (Phase 4 WAVE-1)

@@ -36,6 +36,15 @@ return {
     on_listen = "You press your ear to the oak. Cold silence from the bedroom beyond. No sound, no movement. Just still air and stone.",
     on_taste = "You press your tongue to the oak. Dry, gritty wood grain and the metallic bite of iron. It tastes of age.",
     on_knock = "You rap your knuckles against the oak. A deep, dull thud. The sound carries through to the room beyond. No one answers.",
+
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_traverse = "door-creak-oak.opus",
+        on_verb_open = "door-open-oak.opus",
+        on_verb_close = "door-close-oak.opus",
+        on_verb_break = "door-splinter-oak.opus",
+        on_verb_unbar = "bar-lift-iron.opus",
+    },
     on_push = "You push against the door. The iron bar holds it shut from this side. Lift the bar first.",
     on_pull = "The door opens inward, away from you. Push, don't pull — but first, lift the bar.",
 

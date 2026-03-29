@@ -35,6 +35,11 @@ return {
     on_listen = "From beyond: the occasional creak of wood. The tick of something cooling — a stove, perhaps, or a pot left on an ember. No voices, no clattering. A kitchen abandoned mid-task.",
     on_taste = "The wood tastes faintly of grease and wood smoke. Kitchen residue.",
 
+    -- Sound events (WAVE-1 Track 1A)
+    sounds = {
+        on_traverse = "door-creak-oak.opus",
+    },
+
     initial_state = "locked",
     _state = "locked",
 
