@@ -210,7 +210,7 @@ function M.register(handlers)
     -- REPORT BUG — opens a pre-filled GitHub issue URL
     ---------------------------------------------------------------------------
     handlers["report_bug"] = function(ctx, noun)
-        -- Build transcript text from recent output (last 50 exchanges)
+        -- Build transcript text from recent output (last 100 exchanges)
         local transcript = ctx.transcript or {}
         local lines = {}
         for _, entry in ipairs(transcript) do
@@ -260,14 +260,21 @@ function M.register(handlers)
 
         local timestamp = os.date and os.date("%Y-%m-%d %H:%M") or "unknown"
         local title = "[Bug Report] " .. room_name .. " - " .. timestamp
-        local body = "## Bug Report\n\n"
+        -- GitHub issue body limit is 65535 chars; truncate transcript if needed
+        local MAX_BODY = 65535
+        local header = "## Bug Report\n\n"
             .. "**Level:** " .. level_name .. "\n"
             .. "**Room:** " .. room_name .. "\n"
             .. "**Build:** " .. build_timestamp .. "\n\n"
             .. "### What happened?\n"
             .. "_[Please describe the bug here]_\n\n"
-            .. "### Session Transcript (last " .. #transcript .. " lines)\n\n"
-            .. "```\n" .. transcript_text .. "```\n"
+            .. "### Session Transcript (last " .. #transcript .. " exchanges)\n\n"
+        local footer = "```\n"
+        local budget = MAX_BODY - #header - #footer - 10
+        if #transcript_text > budget then
+            transcript_text = "...(truncated)\n" .. transcript_text:sub(-budget)
+        end
+        local body = header .. "```\n" .. transcript_text .. footer
 
         local url = "https://github.com/WayneWalterBerry/MMO/issues/new"
             .. "?title=" .. url_encode(title)
