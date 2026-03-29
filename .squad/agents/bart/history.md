@@ -50,6 +50,14 @@
 
 
 
+**Sound System Architecture Review (2026-07-31):**
+- Reviewed `projects/sound/sound-implementation-plan.md` v1.0 as Architecture Lead (Pattern 5 team review).
+- Verdict: ⚠️ Concerns — 7 spec gaps, 0 blockers. Plan is architecturally sound.
+- Key findings: C1 terminal driver blocking (os.execute), C2 dual integration path ambiguity (effects vs direct trigger), C3 crossfade not in driver contract, C4 board/plan parallelism contradiction, C5 .ogg/.opus extension mismatch, C6 sound key resolution chain unspecified, C7 scan_object lifecycle timing unclear.
+- Confirmed all 12 engine hook points are realistic against current codebase (fsm.transition L225, effects.register, mutation.mutate L53, loop.run L468).
+- Review written to `.squad/decisions/inbox/bart-sound-review.md`. Board updated.
+- Commit: d5962c6.
+
 ## Archives
 
 - Prior detailed session logs: .squad/log/
