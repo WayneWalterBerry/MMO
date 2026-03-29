@@ -2,20 +2,20 @@
 
 **Owner:** 🔍 Wiggum (Linter Engineer)
 **Last Updated:** 2026-03-29
-**Overall Status:** 🚀 EXECUTING — 5/6 waves complete, GATE-4 blocking
+**Overall Status:** ✅ COMPLETE — All 6 waves done, 74/74 tests passing
 **Plan:** `plans/linter/linter-improvement-implementation-phase1.md`
 
 ---
 
 ## Next Steps
 
-**Test Score:** 70/74 pytest passing (94%)
+**Test Score:** 74/74 pytest passing (100%)
 
-| Priority | Task | Blocker | Owner |
-|----------|------|---------|-------|
-| P0 | Fix 4 CREATURE validation bugs (CREATURE-003, 004, 007, 008) in lint.py | Closes GATE-4 | Wiggum |
-| P1 | Update linter board after GATE-4 passes → mark all waves complete | Blocked by P0 | Wiggum |
-| P2 | Mutation-graph Phase 2 deferred | Future work | — |
+| Priority | Task | Status | Owner |
+|----------|------|--------|-------|
+| P0 | Monitor for new lint rule needs as engine evolves | 🔄 Ongoing | Wiggum |
+| P1 | Mutation-graph Phase 2 (deferred — revisit when edges > 150 or chains > 2 hops) | 📋 Backlog | — |
+| P2 | Add creature-specific validation rules as Willie builds more creatures | 📋 Backlog | Flanders |
 
 ---
 
@@ -27,7 +27,7 @@
 | WAVE-1 | Bug Fixes A (#190 XF-03, #196 XR-05) | ✅ Done | GATE-1 | Smithers |
 | WAVE-2 | Bug Fix B (#195 MD-19) + Fix-Safety Audit | ✅ Done | GATE-2 | Flanders |
 | WAVE-3 | Fix Classification + CLI (`--fix`) | ✅ Done | GATE-3 | Smithers |
-| WAVE-4 | EXIT-* Verification + CREATURE-* Implementation | ⚠️ Partial (27 rules, EXIT 6/6 ✅, CREATURE 4 bugs) | GATE-4 | Bart |
+| WAVE-4 | EXIT-* Verification + CREATURE-* Implementation | ✅ Done (34 rules, EXIT 6/6 ✅, CREATURE 13/13 ✅) | GATE-4 | Bart |
 | WAVE-5 | Env Variants + Routing + Caching | ✅ Done | GATE-5 | Bart |
 
 **Constraint:** Only ONE agent edits `lint.py` per wave (serialized bottleneck).
@@ -50,7 +50,7 @@
 |----------|-------|--------|------|
 | Existing 306 rules | V1 (144) + V2 (162) | ✅ Production | — |
 | EXIT-01 through EXIT-07 | 7 portal rules | ✅ Verification done (6/6 tests) | WAVE-4 |
-| CREATURE-001 through CREATURE-020 | 20 creature rules | ⚠️ 27 registered, 4 validation bugs (003, 004, 007, 008) | WAVE-4 |
+| CREATURE-001 through CREATURE-020 | 20 creature rules | ✅ All 13 passing (validation bugs fixed) | WAVE-4 |
 | Fix-safety classification | All 220 rules | ✅ All classified + metadata applied | WAVE-2/3 |
 | Environment profiles (dev/prod) | Config system | ✅ --env flag working | WAVE-5 |
 | Squad routing (owner per violation) | All rules | ✅ squad_routing working | WAVE-5 |
@@ -93,8 +93,8 @@
 | WAVE-1 | WAVE-0 (pytest scaffold) | ✅ GATE-0 |
 | WAVE-2 | GATE-1 | ✅ GATE-1 |
 | WAVE-3 | GATE-2 | ✅ GATE-2 |
-| WAVE-4 | GATE-3 | ✅ GATE-3 (blocked by 4 CREATURE bugs) |
-| WAVE-5 | GATE-4 | ✅ GATE-4 (waiting on CREATURE fix) |
+| WAVE-4 | GATE-3 | ✅ GATE-3 |
+| WAVE-5 | GATE-4 | ✅ GATE-4 (CREATURE bugs fixed) |
 
 ---
 
