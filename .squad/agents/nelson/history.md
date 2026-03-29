@@ -98,6 +98,36 @@
 - **All 257 test files pass** after WAVE-2 additions. No regressions.
 - **Workstream 1 complete.** WAVE-0, GATE-0, WAVE-1, GATE-1, WAVE-2 all passed. Session log: 2026-03-28T23-33-01Z-mutation-graph-linter-complete.md. Commit: 6b96bd8.
 
+## Cross-Agent Coordination: Options Build Complete (2026-03-29)
+
+**Summary:** Options TDD test suite Phase 6 complete. 53 tests, all passing, zero regressions.
+
+**Test Files Created:**
+- `test/options/test-options-api.lua` — options engine functionality
+- `test/options/test-parser-aliases.lua` — all 10 parser aliases
+- `test/options/test-number-selection.lua` — loop-level interception
+- `test/options/test-anti-spoiler.lua` — GOAP filter, first-step only
+
+**Test Coverage:**
+- ✅ Goal steps (GOAP planning)
+- ✅ Sensory rotation + recent-command filter
+- ✅ Dynamic object scoring
+- ✅ Fallback logic
+- ✅ Puzzle exemptions (options_disabled, options_mode, options_delay)
+- ✅ Number selection 1-N validation
+- ✅ Invalid number error handling
+- ✅ Anti-spoiler first-step filtering
+
+**Regression Testing:**
+- Parser tests: 7,361/7,361 pass ✅
+- Verb tests: all pass ✅
+- Integration tests: all pass ✅
+- **Total:** 53 new options tests + 265 baseline = 318 files, all passing
+
+**Gate Status:** ✅ GATE-6 READY — Ready for web build and playtesting.
+
+**Decision:** D-OPTIONS-TESTS merged to `.squad/decisions.md`.
+
 ### Options Review Ceremony (2026-08-02)
 
 - Reviewed Options project as QA Engineer

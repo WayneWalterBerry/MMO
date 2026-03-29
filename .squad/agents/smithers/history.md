@@ -91,6 +91,25 @@ Implemented two-stage hybrid scoring pipeline per Frink's D1/D3 decisions:
 
 ---
 
+## Cross-Agent Coordination: Options Build Complete (2026-03-29)
+
+**Summary:** Options parser (Phase 2+4) now live. 10 aliases + loop number selection. Zero regressions.
+
+| Phase | Agent | Work | Status |
+|-------|-------|------|--------|
+| 2+4 | Smithers | Parser aliases (10 routes: questions, idioms, verbs) + number intercept | ✅ 7,361 tests pass |
+| 1+3 | Bart | Core options engine | ✅ Commit 26400a8 |
+| 5 | Moe | Room goal metadata | ✅ |
+| 6 | Nelson | TDD suite (53 tests) | ✅ |
+
+**Files modified:**
+- `src/engine/parser/preprocess/data.lua` — KNOWN_VERBS + IDIOM_TABLE
+- `src/engine/parser/preprocess/phrases.lua` — transform_questions
+- `src/engine/parser/idioms.lua` — "give me a hint" → options
+- `src/engine/loop/init.lua` — number intercept + no_noun_verbs
+
+**Decision:** D-OPTIONS-ALIASES, D-OPTIONS-NUMBER-INTERCEPT merged to `.squad/decisions.md`.
+
 ## Latest Activity
 
 **Options Parser Aliases + Number Selection (Phase 2+4):**

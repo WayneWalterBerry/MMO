@@ -95,6 +95,19 @@
     - Key design choices: OOP with metatables (`M.new()` + colon methods), volume 0.0–1.0 (not 0–100), pcall wraps all driver calls, concurrency limits enforced via eviction (oldest-first for oneshots, lowest-priority for ambients).
 
 11. **Sound WAVE-2 Track 2A — Engine Event Hooks (2026-08-01):**
+
+## Cross-Agent Coordination: Options Build Complete (2026-03-29)
+
+**Summary:** All 4 phases of options system delivered and tested. System ready for deployment.
+
+| Phase | Agent | Deliverable | Commit/Status |
+|-------|-------|-------------|----------------|
+| 1+3 | Bart | Core options engine (~400 LOC), hybrid generator | 26400a8 ✅ |
+| 2+4 | Smithers | Parser aliases (10 routes), number selection | ✅ |
+| 5 | Moe | Room goal metadata (7 rooms) | ✅ |
+| 6 | Nelson | TDD suite (53 tests) | ✅ |
+
+**Decision archive:** D-OPTIONS-ENGINE-HYBRID, D-OPTIONS-ALIASES, D-ROOM-GOALS, D-OPTIONS-TESTS merged to `.squad/decisions.md`.
     - Executed WAVE-2 Track 2A per sound-implementation-plan.md v1.1. Wired 12 hook points across 9 files, 70 insertions.
     - **FSM hook** (`fsm/init.lua`): `context.sound_manager:trigger(obj, "on_state_" .. target_state)` after successful transition. Nil-safe via `if context and context.sound_manager`.
     - **Verb dispatch hook** (`loop/init.lua`): `context.sound_manager:trigger(nil, "on_verb_" .. verb)` after successful handler dispatch. Generic pattern — one line covers all 31+ verbs.

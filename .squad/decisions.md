@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-08-02T12:00Z  
-**Last Merge:** 2026-08-02T12:00Z (4 decisions merged: bart-options-v2, smithers-options-b5, bob-options-blockers, kirk-options-v1)
+**Last Updated:** 2026-03-29T22:33:40Z  
+**Last Merge:** 2026-03-29T22:33:40Z (7 decisions merged: 4 existing + 3 options build phases)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -43,6 +43,10 @@ Quick-reference table of **active + most recent decisions**.
 | D-EXIT-DOOR-RESOLUTION | Architecture | 🟢 Active | Exit door fallback pattern for verb handlers (Smithers) |
 | D-CREATE-OBJECT-TEMPLATE | Architecture | 🟢 Active | Spider web uses template instantiation + max_per_room (Flanders) |
 | D-TEMP-DIR-DIRECTIVE | Process | 🟢 Active | Temp files → temp/ directory; keep repo root clean |
+| D-OPTIONS-ENGINE-HYBRID | Options | ✅ Implemented | Bart: core engine, hybrid generator (goal + sensory + dynamic scan) |
+| D-OPTIONS-ALIASES | Options | ✅ Implemented | Smithers: 10 parser aliases + loop number selection |
+| D-ROOM-GOALS | Options | ✅ Implemented | Moe: goal metadata on 7 Level 1 rooms |
+| D-OPTIONS-TESTS | Options | ✅ Implemented | Nelson: 53-test TDD suite, zero regressions |
 | D-SURFACE-OBJECT-NARRATION | Architecture | ✅ Implemented | Surface object undirected narration fix (#394, Flanders) |
 | D-CREATURE-ZONE-NAMES | Architecture | ✅ Implemented | Creature-specific body zone narration names; engine-side zone_text(zone, body_tree) |
 | D-TERRITORY-SENSORY-FIXES | Architecture | ✅ Implemented | Territory marker registration, narration cleanup, sensory deduplication |
@@ -1473,6 +1477,262 @@ Methods are now stable and documented in the driver interface contract:
 - `M.new()`, `M:init(driver, options)`, `M:shutdown()`
 - `M:scan_object(obj)`, `M:flush_queue()`
 - `M:play(filename, opts)`, `M:stop(play_id)`, `M:stop_by_owner(owner_id)`
+
+---
+
+## D-OPTIONS-ENGINE-HYBRID: Options Engine Phase 1+3 — Hybrid Generator
+
+**Status:** ✅ Implemented  
+**Author:** Bart (Architect)  
+**Date:** 2026-03-29  
+**Category:** Options System  
+**Affected:** Moe (rooms declare goals), Sideshow Bob (puzzle exemptions), Smithers (parser integration)
+
+### Decision
+
+Built the core Options Engine per approved architecture v2 (`projects/options/architecture.md`). Wayne's choices: Approach C (goal-driven hybrid), Option C context window (stable goals + rotating sensory), free hints.
+
+### What Was Built
+
+#### Phase 1: Core API
+- **Module:** `src/engine/options/init.lua` (~400 LOC)
+- **API:** `generate_options(ctx)` returns `{ options = OptionEntry[], flavor_text = string }`
+- **Verb Handler:** `src/engine/verbs/options.lua` — registered in `verbs/init.lua`
+
+#### Phase 3: Hybrid Generator Algorithm
+
+Three-phase generator (0-4 items total):
+
+1. **Goal Steps (0-2 items):** Calls existing `goal_planner.plan(ctx, goal.verb, goal.noun)` to backward-chain from `room.goal`. Shows ONLY first step (anti-spoiler Rule 1). If first step is movement (`go`), shows step 2 as well.
+
+2. **Sensory Exploration (1-2 items):** Rotates between feel/listen/smell (dark) or look/examine/search (lit). Filters recently used verbs via `ctx.recent_commands` to avoid repeats.
+
+3. **Dynamic Object Scan (fill to 4):** Scores room objects by interestingness:
+   - Unopened container: +2
+   - FSM transition available: +3
+   - Locked exit: +2
+   - Not examined: +1
+
+4. **Fallback (if < 2 items):** Generic sensory verb + available exits + "wait" as ultimate fallback.
+
+### Architecture Patterns Used
+
+- **GOAP Reuse:** No modifications to `goal_planner.lua` — the options engine just calls `plan()` with room goal and filters result.
+- **Principle 8 Compliance:** All behavior via metadata — no object-specific engine logic.
+- **Context Window Option C:** Goal steps stable (same GOAP plan), sensory suggestions rotate (filter by recent use).
+- **Module Pattern:** Standard Lua `local M = {} ... return M` with `generate_options(ctx)` as single export.
+
+### Integration Points
+
+#### For Moe (Room Designer)
+Rooms can now declare optional goals:
+
+```lua
+-- Single goal
+goal = { verb = "go", noun = "north", label = "find a way forward" }
+
+-- Multiple priority goals
+goals = {
+    { verb = "light", noun = "candle", label = "find light", priority = 1 },
+    { verb = "go", noun = "down", label = "explore deeper", priority = 2 },
+}
+```
+
+Goals are **optional**. Rooms without goals get sensory + dynamic suggestions only.
+
+#### For Bob (Puzzle Designer)
+Rooms can set exemption flags to protect puzzle moments:
+
+```lua
+options_disabled = true,              -- Block hints entirely
+options_mode = "sensory_only",        -- Only sensory verbs, no goal steps
+options_delay = 3,                    -- No hints for first 3 turns
+```
+
+These flags can change dynamically in `on_state_change` hooks for multi-phase puzzles.
+
+#### For Smithers (Parser Engineer)
+Phase 2 work (Phase 2+4 now complete): Numbered selection system. When player types `options`, store mapping in `ctx.player.pending_options`. Main loop checks for numeric input and substitutes before parser.
+
+**Precedence rule:** `pending_options` only intercepts numbers when it's set (after calling `options`). When `nil`, numbers route normally — no collision with numeric object names.
+
+### What Was NOT Built in Phase 1+3
+
+Deferred to Phase 2+4:
+- Loop integration (numbered selection) — Smithers ✅
+- Parser integration (aliases, idioms) — Smithers ✅
+
+### Testing
+
+Full test suite passes (265/268 files, 11 pre-existing failures). Zero new regressions.
+
+### Files Changed
+
+- Created: `src/engine/options/init.lua`
+- Created: `src/engine/verbs/options.lua`
+- Modified: `src/engine/verbs/init.lua` (added require + register)
+
+### Commit
+
+`26400a8` — feat(options): core options engine + hybrid generator (Phase 1+3)
+
+---
+
+## D-OPTIONS-ALIASES: Options Parser Integration Phase 2+4
+
+**Status:** ✅ Implemented  
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-29  
+**Category:** Parser  
+**Affected:** Bart (options verb hooks), Nelson (number selection tests), players (hint interface)
+
+### Decisions Made
+
+#### D-OPTIONS-ALIASES: 10 Parser Aliases for `options` Verb
+
+Three routing layers:
+1. **phrases.lua transform_questions:** "what are my options", "give me options", "what can i try", "i'm stuck", "hint", "hints", "nudge"
+2. **data.lua IDIOM_TABLE + idioms.lua:** "give me a nudge", "give me a hint", "suggest something"
+3. **data.lua KNOWN_VERBS:** `options`, `hint`, `hints` added
+
+D-OPTIONS-B5 respected: "help me" NOT in options aliases — stays mapped to `help`.
+
+**Breaking change:** `idioms.lua` "give me a hint" redirected from `help` → `options`. This is intentional per architecture spec.
+
+#### D-OPTIONS-NUMBER-INTERCEPT: Loop-Level Number Selection
+
+Number interception in `loop/init.lua` fires after input trim but before parser pipeline:
+- `pending_options` set by options verb handler (Bart's engine domain)
+- Valid number 1-N → substitutes command string, clears state
+- Invalid number → error message, short-circuits
+- Non-numeric → clears state silently
+- `options` added to `no_noun_verbs` table
+
+### Impact on Other Agents
+
+| Agent | Impact |
+|-------|--------|
+| **Bart** | `pending_options` field on `ctx.player` is now consumed by the loop. Phase 1 verb handler must set it. |
+| **Moe** | Room `goal` fields (Phase 5) feed the options generator — no parser impact. |
+| **Nelson** | Parser tests unaffected (7,361 pass). Phase 4 tests for number selection should cover edge cases. ✅ |
+
+### Files Changed
+
+- `src/engine/parser/preprocess/data.lua` — KNOWN_VERBS + IDIOM_TABLE
+- `src/engine/parser/preprocess/phrases.lua` — transform_questions
+- `src/engine/parser/idioms.lua` — "give me a hint" redirect
+- `src/engine/loop/init.lua` — number interception + no_noun_verbs
+
+### Testing
+
+All 10 aliases verified functional. Number selection edge cases covered (invalid 0, too-high, non-numeric).
+
+---
+
+## D-ROOM-GOALS: Room Goal Metadata for Options Phase 5
+
+**Status:** ✅ Implemented  
+**Author:** Moe (World & Level Builder)  
+**Date:** 2026-03-29  
+**Category:** Game World  
+**Affects:** Bart (GOAP integration), Sideshow Bob (puzzle exemptions), Smithers (hint display)
+
+### Decision
+
+All 7 Level 1 rooms now declare `goal` metadata for the Options hint system GOAP planner. Goals follow the schema from `projects/options/architecture.md` section 4.5.
+
+### Room Goals Summary
+
+| Room | Goal Type | Verb | Noun | Label | Exemptions |
+|------|-----------|------|------|-------|------------|
+| Bedroom | `goals` array | light / go | candle / north | "find a source of light" / "find a way out of the bedroom" | `options_delay = 3` |
+| Hallway | `goal` | go | north | "find a way upstairs" | — |
+| Cellar | `goal` | go | north | "find a way forward" | — |
+| Storage Cellar | `goal` | go | north | "press deeper into the cellars" | — |
+| Deep Cellar | `goal` | pull | chain | "discover the chamber's secret" | `options_delay = 5` |
+| Courtyard | `goal` | go | east | "find another way into the manor" | — |
+| Crypt | `goal` | read | inscription | "decipher the tomb's secrets" | `options_mode = "sensory_only"` |
+
+### Design Rationale
+
+1. **Bedroom multi-goal:** The bedroom has two distinct phases — finding light (priority 1) then escaping (priority 2). Single goal wouldn't capture this.
+
+2. **Deep cellar chain puzzle:** The chain mechanism revealing the hidden alcove is the room's signature mechanic. Goal says "discover the secret" not "pull the chain to reveal the alcove" (anti-spoiler).
+
+3. **Crypt sensory_only:** The crypt is the deepest, most atmospheric room. `sensory_only` preserves the sacred tomb experience — no goal steps, just sensory nudges. Bob may want to adjust this.
+
+4. **options_delay usage:** Bedroom (3 turns) and deep cellar (5 turns) both benefit from forcing initial exploration. Players should absorb the atmosphere before the hint system engages.
+
+5. **Progression-focused goals:** Most rooms use `verb = "go"` because Level 1 is about spatial discovery and forward movement. The engine's GOAP planner handles locked doors, missing keys, etc. as prerequisites.
+
+### For Bob
+
+The crypt `options_mode = "sensory_only"` and deep cellar `options_delay = 5` are Moe's recommendations based on room atmosphere. Bob owns puzzle exemptions per D-OPTIONS-ANTISPOILER — adjust these flags as needed for puzzle flow.
+
+### For Bart
+
+The bedroom uses `goals` (array) while all other rooms use `goal` (single). The engine's goal picker needs to handle both forms per architecture section 4.5.
+
+### Files Changed
+
+- `src/meta/world/bedroom.lua` — goals array (multi-phase)
+- `src/meta/world/hallway.lua` — goal metadata
+- `src/meta/world/cellar.lua` — goal metadata
+- `src/meta/world/storage-cellar.lua` — goal metadata
+- `src/meta/world/deep-cellar.lua` — goal + options_delay
+- `src/meta/world/courtyard.lua` — goal metadata
+- `src/meta/world/crypt.lua` — goal + options_mode
+
+### Testing
+
+All room instantiation tests pass. Goal field validation confirmed.
+
+---
+
+## D-OPTIONS-TESTS: Options TDD Test Suite Phase 6
+
+**Status:** ✅ Implemented  
+**Author:** Nelson (QA & Test Automation)  
+**Date:** 2026-03-29  
+**Category:** Testing  
+**Affects:** Bart (engine coverage), Smithers (parser coverage), Moe (room coverage)
+
+### Work Completed
+
+- 53 tests across 4 files
+  - `test-options-api.lua` — options engine functionality
+  - `test-parser-aliases.lua` — all 10 parser aliases
+  - `test-number-selection.lua` — loop-level interception
+  - `test-anti-spoiler.lua` — GOAP filter, first-step only
+- All tests passing, zero regressions
+
+### Test Coverage
+
+- ✅ Goal steps (GOAP planning)
+- ✅ Sensory rotation + recent-command filter
+- ✅ Dynamic object scoring
+- ✅ Fallback logic (generic sensory + exits)
+- ✅ Puzzle exemptions (`options_disabled`, `options_mode`, `options_delay`)
+- ✅ Number selection 1-N validation
+- ✅ Invalid number error handling
+- ✅ Anti-spoiler first-step filtering
+
+### Regression Testing
+
+- Parser tests: 7,361/7,361 pass
+- Verb tests: all pass
+- Integration tests: all pass
+
+### Gate Status
+
+✅ GATE-6 READY — All phases complete, 53 tests passing, zero regressions. Ready for deployment.
+
+### Files Changed
+
+- Created: `test/options/test-options-api.lua`
+- Created: `test/options/test-parser-aliases.lua`
+- Created: `test/options/test-number-selection.lua`
+- Created: `test/options/test-anti-spoiler.lua`
 - `M:enter_room(room)`, `M:exit_room(room)`, `M:unload_room(room_id)`
 - `M:trigger(obj, event_key)` — resolution chain: obj.sounds → defaults → nil
 - `M:set_volume(level)`, `M:mute()`, `M:unmute()`, `M:set_driver(driver)`

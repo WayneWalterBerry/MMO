@@ -64,6 +64,29 @@
 
 ---
 
+## Cross-Agent Coordination: Options Build Complete (2026-03-29)
+
+**Summary:** Room goal metadata Phase 5 complete. All 7 Level 1 rooms declare goals for hint system.
+
+| Room | Goal | Verb + Noun | Exemptions | Status |
+|------|------|------------|------------|--------|
+| Bedroom | Multi-goal | light/go + candle/north | `options_delay=3` | ✅ |
+| Hallway | Single | go + north | — | ✅ |
+| Cellar | Single | go + north | — | ✅ |
+| Storage Cellar | Single | go + north | — | ✅ |
+| Deep Cellar | Single | pull + chain | `options_delay=5` | ✅ |
+| Courtyard | Single | go + east | — | ✅ |
+| Crypt | Single | read + inscription | `options_mode="sensory_only"` | ✅ |
+
+**Coordination:**
+- Bart's GOAP engine calls `goal_planner.plan()` on these goals (Phase 1+3 ✅)
+- Smithers' parser routes "hint", "options", "what can I try?" to verb (Phase 2+4 ✅)
+- Nelson's TDD suite validates anti-spoiler first-step filtering (Phase 6 ✅)
+
+**Decision:** D-ROOM-GOALS merged to `.squad/decisions.md`.
+
+---
+
 ### Portal Unification Pattern (Issue #203)
 
 **Pattern:** Inline exit tables → paired portal objects. Each room-to-room connection gets two `.lua` files (one per side) sharing a `bidirectional_id`.
