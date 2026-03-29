@@ -58,6 +58,14 @@
 - Review written to `.squad/decisions/inbox/bart-sound-review.md`. Board updated.
 - Commit: d5962c6.
 
+9. **Sound Plan v1.1 Consolidation (2026-07-31):**
+   - Consolidated ALL findings from 7-agent team review (Bart, CBG, Marge, Chalmers, Flanders, Smithers, Moe) per implementation-plan skill Pattern 6.
+   - Resolved 10 blockers: LLM test scenarios defined (Marge), regression baseline protocol (Marge), headless coverage on all gates (Marge), CBG parallelism clarified (Chalmers), GATE-0 interface contract freeze (Chalmers), WAVE-3 rollback plan (Chalmers), GUID pre-assignment protocol (Flanders), field naming convention standardized (Flanders+Moe), creature death state lifecycle (Flanders), verb integration pattern specified (Smithers).
+   - Resolved 11 concerns: terminal driver io.popen() fix (C1), effects pipeline canonical path (C2), driver fade params (C3), board/plan parallelism reconciled (C4), .opus standardized (C5), sound key resolution chain (C6), scan_object lifecycle (C7), narration timing (Smithers), time-of-day Phase 2 (CBG), dead creature on_listen (CBG), gate failure escalation (Chalmers+Marge).
+   - New plan sections: Gate Failure Escalation Protocol, Phase 2 Deferred Scope, dependency graph with WAVE-2 partial overlap.
+   - Board updated: P0a ✅ complete, P0b set to Wayne final review.
+   - Commit: 3bd51f1.
+
 8. **Worlds WAVE-0 + WAVE-1 Loader (2026-03-30):**
    - Executed WAVE-0: Created `test/worlds/` directory, registered in `test/run-tests.lua` (test_dirs + source_to_tests mapping).
    - Executed WAVE-1 (loader portion): Built `src/engine/world/init.lua` with 5 functions: discover(), validate(), select(), get_starting_room(), load().
