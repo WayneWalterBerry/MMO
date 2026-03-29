@@ -10,9 +10,10 @@
 
 | Priority | Task | Owner | Status | Directive Source |
 |----------|------|-------|--------|---------|
-| **P0** | **LOCKED: Moe to detail room topology** — Implement Level 2 room map per Wayne's directives: Mausoleum (start) → 8–12 garden rooms → Gatehouse (exit). Coordinate courtyard placement, weather integration, window portal prerequisites. | Moe | ⏳ Pending | Wayne design lock |
+| **P0** | 📄 **Design Reference Created** — `projects/level-2/design.md` captures all of Wayne's locked decisions. Moe's working reference for room topology, portals, weather, creatures, and mechanics. | Moe | ✅ Complete | Wayne design lock session |
+| **P0** | **LOCKED: Moe to detail room topology** — Implement Level 2 room map per Wayne's directives: Mausoleum (start) → 8–12 garden rooms → Gatehouse (exit). Coordinate courtyard placement, weather integration, window portal prerequisites. Reference: `projects/level-2/design.md` section 12 (open questions for Moe). | Moe | ⏳ In Progress | Wayne design lock |
 | **P0** | **LOCKED: CBG to document Level 2 vision** — Confirm difficulty curve (slightly harder than L1), creature mix (natural + one supernatural), puzzle escalation vs Level 1. Update vision doc with weather mechanics, game-time lighting, and two-way travel design. | CBG | ⏳ Pending | Wayne design lock |
-| **P1** | **Window mechanic implementation** — Flanders: Add `sheet-tied` mutation to sheet object. Moe: Implement `show_destination_on_look` for window portals. Bart: Formalize `on_look` pattern in portal template. | Flanders, Moe, Bart | ⏳ Pending | Copilot decision: window-look-through + sheet-puzzle |
+| **P1** | **Window mechanic implementation** — Flanders: Add `sheet-tied` mutation to sheet object. Moe: Implement `show_destination_on_look` for window portals. Bart: Formalize `on_look` pattern in portal template. (Details in design.md section 5, 6) | Flanders, Moe, Bart | ⏳ Pending | Copilot decision: window-look-through + sheet-puzzle |
 | **P1** | **Creature design lock** — Flanders to spec natural creatures + one supernatural element. Coordinate with Moe on creature distributions in garden area. | Flanders | ⏳ Pending | Wayne scope lock |
 | **P2** | Infrastructure gate: Ensure Level 1 stability (T0 bugs fixed, 257 tests green) | Marge + Nelson | 📋 In Progress | GATE-1 (zero regressions) |
 
