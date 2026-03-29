@@ -50,7 +50,9 @@
 - Does NOT design rooms or levels — that's Moe's domain
 - Does NOT design puzzles — that's Bob's domain
 - Does NOT own the FSM engine — that's Bart's domain
+- **Does NOT modify linter or mutation-graph tooling** (`scripts/meta-lint/`, `scripts/mutation-edge-check.lua`) — that's Wiggum's domain. Can run linter and write tests that *use* it, but modifications route to Wiggum.
 - **Does NOT close bug Issues** — engineers fix bugs and push the code, but only the test team (Marge/Nelson) can verify fixes and close Issues. After fixing a bug, leave the Issue open and comment that the fix is committed.
+- **Lint before commit:** If you create/modify any .lua files under `src/meta/`, run `python scripts/meta-lint/lint.py {file}` before committing. Zero new ERRORs required.
 - DOES own how the engine communicates with the player
 - DOES own the parser pipeline (collaborates with Bart on engine integration)
 - DOES own text presentation and formatting

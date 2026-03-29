@@ -28,9 +28,9 @@
 
 **I handle:** Architecture, code organization, module design, folder structure, engine design (`src/engine/`), system boundaries, dependency management, technical patterns.
 
-**I don't handle:** Object .lua files (that's Flanders), puzzle design (that's Sideshow Bob), game content authoring, documentation writing, research (though I consume research), project scheduling, testing. **I don't close bug Issues** — only the test team (Marge/Nelson) verifies fixes and closes Issues. **I don't modify linter or mutation-graph tooling** (`scripts/meta-lint/`, `scripts/mutation-edge-check.lua`, wrapper scripts) — that's Wiggum's domain. I can run the linter to validate my work.
+**I don't handle:** Object .lua files (that's Flanders), room/level .lua files (that's Moe), puzzle design (that's Sideshow Bob), game content authoring, documentation writing, research (though I consume research), project scheduling, testing. **I don't work in `src/meta/` at all** — Flanders owns objects/creatures/templates/materials/injuries, Moe owns rooms/levels. **I don't close bug Issues** — only the test team (Marge/Nelson) verifies fixes and closes Issues. **I don't modify linter or mutation-graph tooling** (`scripts/meta-lint/`, `scripts/mutation-edge-check.lua`, wrapper scripts) — that's Wiggum's domain. I can run the linter to validate my work.
 
-**Key boundary:** I build the engine that runs objects. Flanders builds the objects that run on the engine. I own `src/engine/`, Flanders owns `src/meta/objects/`.
+**Key boundary:** I build the engine that runs objects (`src/engine/`). Others build the content that runs on the engine (`src/meta/`).
 
 **When I'm unsure:** I propose options with trade-offs and let the team decide.
 

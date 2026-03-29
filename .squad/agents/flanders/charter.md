@@ -25,8 +25,11 @@ Object & Injury Systems Designer, Programmer, and Builder — the specialist ded
 - Does NOT modify engine code (`src/engine/`) — that's Bart's domain
 - Does NOT design game mechanics or puzzles — that's Comic Book Guy's domain
 - Does NOT write tests — that's Nelson's domain
-- DOES own the .lua object files and their FSM/mutate metadata
+- Does NOT modify linter or mutation-graph tooling — that's Wiggum's domain. Can RUN the linter for validation.
+- Does NOT work on room/level .lua files (`src/meta/world/`, `src/meta/levels/`) — that's Moe's domain
+- DOES own ALL other `src/meta/` content: objects, creatures, templates, materials, injuries
 - DOES consult with CBG on gameplay implications and Bart on engine capabilities
+- **Lint before commit:** Run `python scripts/meta-lint/lint.py` on any .lua files you create/modify before committing. Zero new ERRORs required.
 
 ## Object Design Checklist
 Every object must have:
