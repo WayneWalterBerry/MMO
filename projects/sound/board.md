@@ -10,7 +10,7 @@
 
 | Priority | Task | Owner | Status |
 |----------|------|-------|--------|
-| **P0** | Full team review of implementation plan (per implementation-plan skill Pattern 5) | CBG, Marge, Chalmers, Flanders, Smithers, Moe | ⏳ Not started |
+| **P0** | Full team review of implementation plan (per implementation-plan skill Pattern 5) | CBG, Marge, Chalmers, Flanders, Smithers, Moe | 🟡 In progress — **Bart: ⚠️ Done** (7 concerns, 0 blockers; see `.squad/decisions/inbox/bart-sound-review.md`) |
 | **P0b** | Fix all blockers found in team review → plan v2.0 | Bart (author) + reviewers | ⏳ Blocked by P0 |
 | **P0c** | Wayne final review (documentation gaps, missing deliverables) | Wayne | ⏳ Blocked by P0b |
 | **P1** | **WAVE-0** — Sound manager module + platform drivers | Bart, Gil, Nelson | ⏳ Blocked by P0c |
