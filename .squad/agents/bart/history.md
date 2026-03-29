@@ -111,14 +111,19 @@
 12. **Mutation ctx threading:** `mutation.mutate()` had no context access. Added optional 6th `ctx` parameter — backward compatible (nil = no sound hooks). This pattern will recur for any future cross-cutting concern that needs runtime context in mutation.
 13. **Movement has 4 room transition paths:** go-back, portal, legacy exit, teleport. All needed sound hooks independently — no shared helper. Future refactor opportunity: extract `change_room(ctx, old_room, new_room)` helper.
 14. **Effects pipeline as canonical sound path:** The `play_sound` effect handler is the single entry point from object metadata. Direct `trigger()` calls only happen from engine internals (FSM, mutation, verb dispatch). This keeps the dual-path concern (C2) cleanly resolved.
+15. **Options architecture blockers resolved:** Fixed 6 blockers (B1/B6/B7/B9/B11/B12) in `projects/options/architecture.md` v2. Key additions: API contracts define `OptionEntry` structure and context requirements, numeric precedence rule ensures object names like "2" work when `pending_options` is nil, performance budget <50ms with graceful GOAP degradation, empty room fallback returns generic prompts never empty list, state-based goal detection (not action-based) ensures failed actions don't count as goal completion. Wayne approved Approach C (goal-driven hybrid), Option C context window (stable goals + rotating sensory), free hints, state-based goals.
 
 ## Latest Activity
 
-**Options Review Ceremony (2026-08-02):**
-- Reviewed Options project architecture and plan as Architecture Lead
-- Verdict: ⚠️ CONCERNS (2 blockers: API contracts + context window decision)
-- 5 findings identified; all addressable before GATE-1
-- See `.squad/decisions/inbox/bart-options-review.md` for full review
+**Options Architecture v2 — Blockers Resolved (2026-08-02):**
+- Resolved all 6 blockers from review ceremony
+- **B1 (API Contracts):** Added section 4.0 defining `OptionEntry` table structure, context requirements, and `OptionsResult` return type
+- **B6 (Numeric Object Names):** Added precedence rule to section 4.3 — `pending_options` only active after `options` verb, numeric objects work normally otherwise
+- **B7 (Numeric Exits):** Added collision avoidance paragraph — numbers 1-4 reserved for option selection only when `pending_options` active
+- **B9 (Performance Budget):** Added section 4.4.1 — <50ms total (30ms GOAP, 10ms sensory, 10ms dynamic), graceful degradation if GOAP exceeds budget
+- **B11 (Empty Room):** Added section 4.4.2 — fallback to generic exploration prompts, never returns empty list
+- **B12 (State-Based Goals):** Added goal completion detection subsection in 4.5 — goals complete when postcondition state is true, not when action is attempted
+- Architecture now approved by Wayne for implementation
 
 ## Archives
 

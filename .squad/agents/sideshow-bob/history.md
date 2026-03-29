@@ -26,3 +26,30 @@
 - Proposed 3-tier exemption system (disabled, restricted, delayed)
 - Recommended 7-rule anti-spoiler rewrite with Rules 6 & 7 (undiscovered exits, hidden capabilities)
 - See `.squad/decisions/inbox/bob-options-review.md` for full review
+
+**B3+B4 Blockers Fixed (2026-08-02):**
+- Rewrote section 4.7 (Anti-Spoiler Rules) with 7-rule escalating specificity framework
+- Replaced "diminishing novelty" (Rule 5) with 3-tier escalation: Standard → Context Clues → Mercy Mode
+- Added Rule 6 (mercy mode philosophy) and Rule 7 (puzzle room overrides)
+- Added new section 4.8 (Puzzle Room Exemptions) with 3-tier flag system
+- Renumbered original 4.8 → 4.9 (Clearing Pending Options)
+
+---
+
+## Learnings
+
+**Anti-spoiler rewrite (Rule 5 escalation):**
+- Old system: sarcastic message after 3 requests ("try DOING something")
+- New system: 3-tier escalation based on `ctx.options_request_count`
+- Standard (1-2 requests): general sensory, no goal exposure
+- Context Clues (3-4 requests): goal-directed hints with narrative framing
+- Mercy Mode (5+ requests): direct command format ("Try: unlock padlock with key")
+- Counter resets on: room change, goal completion, executing any listed command
+- Philosophy: help stuck players progressively, never punish them for asking
+
+**Puzzle exemption system (3 flags):**
+- `options_disabled = true`: blocks ALL options, returns refusal message — use for 2-3 climactic moments per level max
+- `options_mode = "sensory_only"`: locks escalation at Standard tier, no goal/dynamic scan — best for atmospheric puzzle rooms
+- `options_delay = N`: blocks options for first N turns in room — encourages exploration before hinting
+- Per-phase exemptions: flags can change via `on_state_change` hook as puzzle progresses
+- Design sweet spot: `sensory_only` mode protects "aha!" moments while keeping players supported

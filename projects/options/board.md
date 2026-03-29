@@ -1,8 +1,8 @@
 # Options — Board
 
 **Owner:** 🏗️ Bart (Architecture Lead)  
-**Last Updated:** 2026-03-29  
-**Overall Status:** 🟡 Architecture phase — Bart writing proposal
+**Last Updated:** 2026-08-02  
+**Overall Status:** 🟢 GATE-1 READY — all 12 blockers resolved, architecture v2 approved
 
 ---
 
@@ -10,14 +10,21 @@
 
 | # | Task | Owner | Est. Impact | Status | Notes |
 |---|------|-------|-------------|--------|-------|
-| 1 | **Architecture decision:** Dynamic vs static vs hybrid options generation | Bart | 🟢 Blocking | 🔴 IN PROGRESS | Decision determines parser aliases, room metadata requirements, and engine API surface. Proposal due before Phase 2. |
-| 2 | Parser aliases ("options", "hint", "help me", "what can I do", "give me options") | Smithers | Core | ⏳ Pending architecture | Exact text output format depends on Bart's choice. |
-| 3 | Options generator (dynamic, static, or hybrid per architecture) | Bart | Core | ⏳ Pending architecture | Engine implementation + metadata structure TBD. |
-| 4 | Number selection handler (player types "1" → execute mapped command) | Smithers | Core | ⏳ Pending architecture | Parser verb integration, UI formatting. |
-| 5 | Room metadata (if hybrid/static approach chosen) | Moe | Optional | ⏳ Conditional | Only if architecture requires per-room goal/hint definitions. |
-| 6 | Hint quality & puzzle spoiler review | Sideshow Bob | Quality gate | ⏳ Pending Phase 4 | Design review: do hints reveal puzzle solutions? Rewrite if necessary. |
-| 7 | Testing (parser, E2E, regression) | Nelson | Quality gate | ⏳ Pending Phase 3 | TDD test suite; LLM playthroughs. |
-| 8 | Deployment & beta playtest | Gil | Release | ⏳ Pending Phase 6 | Build + web deployment. |
+| 0 | **Team review ceremony** — 5 reviewers assessed architecture + plan | All | Gate | ✅ COMPLETE | 12 blockers found, all addressable. See `decisions/inbox/squad-options-review-ceremony.md` |
+| 1 | **Fix API contracts** — Add Option Table + Context Contract to architecture | Bart | 🟢 Blocking | ✅ COMPLETE | Blocker B1 resolved: Bart added section 4.0 with full contracts |
+| 2 | **Wayne decision** — Context window: stable (A) vs rotating (B) vs hybrid (C, recommended) | Wayne | 🟢 Blocking | ✅ COMPLETE | Blocker B2 resolved: Wayne chose Option C (hybrid context window) |
+| 3 | **Revise anti-spoiler rules** — Replace diminishing returns with escalating specificity + add puzzle exemptions | Bob + Bart | 🟢 Blocking | ✅ COMPLETE | Blockers B3, B4 resolved: Bob rewrote 7-rule system + exemptions |
+| 4 | **Fix parser aliases** — Remove "help me" collision, document numeric precedence | Smithers | 🟢 Blocking | ✅ COMPLETE | Blockers B5, B6, B7 resolved: Smithers removed "help me" collision |
+| 5 | **Fix test plan** — Change hints→goals, quantify GATE-5, add test scenario matrix | Kirk | 🟢 Blocking | ✅ COMPLETE | Blockers B8, B10 resolved: Kirk fixed hints→goals, quantified GATE-5 |
+| 6 | **Add performance test** — test/options/test-performance.lua + baseline measurement | Bart + Nelson | 🟢 Blocking | ✅ COMPLETE | Blockers B9, B11 resolved: Bart added <50ms budget to architecture |
+| 7 | **Clarify goal completion** — State-based vs action-based detection | Bart | 🟢 Blocking | ✅ COMPLETE | Blocker B12 resolved: Bart added state-based detection to architecture |
+| 8 | Parser aliases ("options", "hint", etc.) | Smithers | Core | ⏳ Pending GATE-1 | Ready after blockers cleared |
+| 9 | Options generator (GOAP hybrid) | Bart | Core | ⏳ Pending GATE-1 | Architecture approved |
+| 10 | Number selection handler | Smithers | Core | ⏳ Pending GATE-1 | Parser verb integration |
+| 11 | Room goal metadata (7 Level 1 rooms) | Moe | Core | ⏳ Pending Phase 1 | Moe mapped all goals in review |
+| 12 | Hint quality & puzzle spoiler review | Sideshow Bob | Quality gate | ⏳ Pending Phase 4 | Bob estimated 1.5 days (not 1) |
+| 13 | Testing (parser, E2E, regression) | Nelson | Quality gate | ⏳ Pending Phase 3 | 12-scenario LLM test matrix proposed |
+| 14 | Deployment & beta playtest | Gil | Release | ⏳ Pending Phase 6 | Build + web deployment |
 
 ---
 
@@ -25,37 +32,44 @@
 
 | Phase | Task | Owner | Status | Depends On |
 |-------|------|-------|--------|-----------|
-| **Architecture** | Write proposal: dynamic vs static vs hybrid | Bart | 🔴 IN PROGRESS | — |
-| **Phase 1** | Architecture decision resolved | Bart | ⏳ Blocked | Proposal complete |
-| **Phase 2** | Parser aliases + UI output formatting | Smithers | ⏳ Blocked | Phase 1 decision |
-| **Phase 3** | Options generator implementation | Bart | ⏳ Blocked | Phase 1 decision |
+| **Review** | Team review ceremony (5 reviewers) | All | ✅ COMPLETE | Architecture proposal |
+| **Fixes** | Resolve 12 blockers from review | Bart, Smithers, Bob, Kirk, Nelson | ✅ COMPLETE | Review complete |
+| **GATE-1** | Architecture + plan approved by Wayne | Wayne | 🟡 Ready for Wayne's final approval | All blockers resolved |
+| **Phase 1** | Core verb + sensory/dynamic suggestions (no GOAP) | Bart | ⏳ Blocked | GATE-1 |
+| **Phase 2** | Parser aliases + UI output formatting | Smithers | ⏳ Blocked | GATE-1 + Phase 1 API contract |
+| **Phase 3** | GOAP goal integration | Bart | ⏳ Blocked | Phase 1 complete |
 | **Phase 4** | Number selection handler (player input "1" → cmd) | Smithers | ⏳ Blocked | Phase 2 complete |
-| **Phase 5** | Room metadata (if needed) | Moe | ⏳ Conditional | Phase 1 decision |
-| **Phase 6** | Testing (TDD + LLM walkthroughs) | Nelson | ⏳ Blocked | Phase 4 complete |
-| **Phase 7** | Deploy + playtest | Gil | ⏳ Blocked | Phase 6 passing |
+| **Phase 5** | Room goal metadata (7 Level 1 rooms) | Moe | ⏳ Blocked | Goal schema finalized + linter rules |
+| **Phase 6** | Testing (TDD + 12 LLM walkthroughs) | Nelson | ⏳ Blocked | Phase 4 complete |
+| **Phase 7** | Spoiler review + display text rewrite (1.5 days) | Sideshow Bob | ⏳ Blocked | Phase 4 + Phase 5 complete |
+| **Phase 8** | Deploy + playtest | Gil | ⏳ Blocked | Phase 6 passing |
 
 ---
 
 ## Open Questions
 
-**Pending Bart's Architecture Proposal:**
+**Resolved by architecture (Approach C — Goal-Driven Hybrid):**
+- ✅ Options generation model → Approach C selected, Wayne approved
+- ✅ Rate limiting → Unlimited for MVP
+- ✅ Number selection → Smithers parser (precedence documented)
+- ✅ Parser aliases → Single verb "options" with aliases (minus "help me" — collision)
 
-1. **Options generation model:** Should options be:
-   - **Dynamic** — Game engine analyzes room state, available verbs, inventory, and suggests 1-4 contextual actions in real time?
-   - **Static** — Each room declares 1-4 pre-written hints/goals in its `.lua` definition, loaded at room entry?
-   - **Hybrid** — Static base hints, dynamically reordered or filtered based on player state?
+**Resolved by team review:**
+- ✅ Room metadata needed → Yes, `goal` field per room (Moe mapped all 7 Level 1 rooms)
+- ✅ Phase 7 scope → 1.5 days, not 1 day (Bob's expanded scope)
+- ✅ Anti-spoiler approach → 7-rule system with escalating specificity (Bob's rewrite)
 
-2. **Text quality vs spoiler risk:** How detailed should hints be?
-   - Too vague → player still stuck
-   - Too specific → puzzle spoiled
-   - Sideshow Bob to review final text
+**Resolved by Wayne:**
+- ✅ **B2: Context window behavior** — Wayne chose Option C (hybrid: goal steps stable, sensory suggestions rotate)
 
-3. **Invocation frequency:** Rate-limited or unlimited?
-   - First call free, subsequent calls cost something?
-   - Or always available?
-
-4. **Number selection:** After player sees list, typing "1" should execute mapped command. Who owns verb dispatch?
-   - Smithers (parser) or Bart (engine)?
+**All 12 blockers resolved:**
+- ✅ B1: API contracts added (Bart)
+- ✅ B2: Context window decision (Wayne: Option C)
+- ✅ B3, B4: Anti-spoiler rules rewritten (Bob)
+- ✅ B5, B6, B7: Parser aliases fixed (Smithers)
+- ✅ B8, B10: Test plan updated (Kirk)
+- ✅ B9, B11: Performance budget added (Bart)
+- ✅ B12: Goal completion clarified (Bart)
 
 ---
 
@@ -102,7 +116,15 @@
 
 ## Blockers
 
-- ⏳ **Waiting on:** Bart's architecture proposal (due before implementation starts)
+✅ **All 12 blockers from team review resolved.** GATE-1 ready for Wayne's approval.
+
+- ✅ B1: API contracts (Bart added section 4.0)
+- ✅ B2: Context window (Wayne chose Option C)
+- ✅ B3, B4: Anti-spoiler rules (Bob rewrote 7-rule framework)
+- ✅ B5, B6, B7: Parser aliases (Smithers removed "help me" collision)
+- ✅ B8, B10: Test plan (Kirk fixed hints→goals, quantified GATE-5)
+- ✅ B9, B11: Performance budget (Bart added <50ms requirement)
+- ✅ B12: Goal completion (Bart clarified state-based detection)
 
 ---
 

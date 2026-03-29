@@ -3,7 +3,8 @@
 **Author:** Bart (Architect)  
 **Requested by:** Wayne "Effe" Berry  
 **Date:** 2026-08-02  
-**Status:** Draft — awaiting review
+**Status:** Approved — v2 (post-review, blockers resolved)  
+**Wayne's Decisions:** Approach C (goal-driven hybrid), Option C context window (stable goals + rotating sensory), free hints, state-based goal detection
 
 ---
 
@@ -179,6 +180,47 @@ narrative direction of authored content.
 
 ## 4. Technical Design
 
+### 4.0 API Contracts
+
+This section defines the interface contracts between the options system and the rest of the engine.
+
+#### Option Table Structure
+
+Each option entry returned by the system follows this structure:
+
+```lua
+---@class OptionEntry
+---@field command string    -- executable command string (e.g., "feel", "open door north")
+---@field display string    -- player-facing display text (e.g., "Feel around for objects in the darkness")
+---@field source  string    -- "goal" | "sensory" | "dynamic" — which generation phase produced this
+```
+
+The `source` field enables debugging and metrics but is not shown to the player. It allows us to track whether players prefer goal-driven vs. exploratory suggestions.
+
+#### Context Requirements
+
+The options generator requires these fields from the context table:
+
+- **`ctx.current_room`** — room table with optional `goal` (or `goals` array), `contents`, `exits`
+- **`ctx.player`** — player table with `inventory`, `location`, `pending_options`
+- **`ctx.light_level`** — current illumination state (dark/dim/lit)
+- **`ctx.recent_commands`** — last N commands from context window (for rotation)
+- **`ctx.options_request_count`** — number of times options requested in current room (for escalating specificity)
+
+The `options_request_count` resets when the player changes rooms. It's used to detect repeated requests without action ("You ponder your situation... again").
+
+#### Return Type
+
+The `generate_options()` function returns:
+
+```lua
+---@class OptionsResult
+---@field options OptionEntry[]  -- 1-4 entries, ordered by priority
+---@field flavor_text string     -- narrator framing line ("You consider your situation...")
+```
+
+The `flavor_text` rotates or escalates based on `options_request_count`. After 3+ requests in the same room without state change, the narrator becomes more direct: "Perhaps you should try actually DOING something..."
+
 ### 4.1 Verb Handler
 
 New verb: `options` — registered in `meta.lua` alongside `help`, `inventory`, `time`.
@@ -261,6 +303,18 @@ This is clean because:
 - `pending_options` is cleared on any non-numeric input (player types something else →
   options expire)
 - No special state machine needed — it's a one-shot lookup table
+
+#### Precedence Rule
+
+**`pending_options` is ONLY active after the player calls the `options` verb.** When `pending_options` is `nil` (the default state), numeric input passes through to the normal parser unchanged. This means objects with numeric names (e.g., an object called "2") work normally — the options system never intercepts input unless the player explicitly requested options.
+
+This precedence ensures that numeric object names don't collide with the numbered selection system. The engine only treats numeric input as option selection when the player has an active options window.
+
+#### Collision Avoidance
+
+Rooms with numbered exits (if any) are handled by the same precedence rule: when `pending_options` is active, numbers 1-4 are reserved for option selection. When inactive, numbers route normally. If a room genuinely uses "1", "2" etc. as exit names, the player must type something other than the bare number to use those exits while options are pending (e.g., "go 1" instead of just "1").
+
+**Documentation note:** Numeric input is reserved for option selection ONLY during the active options window. Once the player types a number and the command executes (or types any non-numeric input), `pending_options` is cleared and numeric inputs return to normal parser behavior. This keeps the collision window minimal — only the brief period between calling `options` and acting on one of the suggestions.
 
 ### 4.4 Options Generation Algorithm
 
@@ -349,6 +403,49 @@ if not obj._examined              then score = score + 1 end
 
 Top-scored candidates fill remaining slots.
 
+#### 4.4.1 Performance Budget
+
+Options generation (all three phases combined) MUST complete in **<50ms** on the reference hardware. This is the baseline for `test/options/test-performance.lua`. 
+
+The 50ms budget breaks down roughly as:
+- Phase 1 (GOAP planning): up to 30ms
+- Phase 2 (sensory suggestions): up to 10ms
+- Phase 3 (dynamic scan): up to 10ms
+
+If GOAP planning for a room goal exceeds 30ms, the goal phase is skipped for that call and only sensory+dynamic suggestions are returned (graceful degradation, not failure). The system logs a warning but the player sees no error — they simply get exploratory suggestions instead of goal-directed ones.
+
+This performance constraint ensures the `options` verb feels instant. Players invoking help systems expect immediate feedback; a laggy hint system breaks immersion. The 50ms threshold is based on human perception of instant response (typically <100ms).
+
+**Implementation note:** Use `os.clock()` to measure phase durations. If Phase 1 times out, set a flag on the room object to skip GOAP for the next N requests (backoff pattern) rather than retrying every time.
+
+#### 4.4.2 Edge Case: Empty Room / No Suggestions
+
+When a room has:
+- No `goal` defined
+- No interesting objects (nothing with state transitions, no containers, no unexplored items)
+- No scored candidates from the dynamic scan
+
+The system returns generic exploration prompts:
+1. "Look around" (if lit) / "Feel around" (if dark)  
+2. "Listen carefully"
+3. Available exits: "Head <direction>" for each open/unlocked exit
+
+If even those aren't applicable (no exits, nothing to sense — shouldn't happen but defensive code), return a single option: 
+
+```lua
+{ command = "wait", display = "Wait and see what happens...", source = "fallback" }
+```
+
+with flavor text: 
+
+```
+"Nothing obvious comes to mind..."
+```
+
+This prevents the options system from ever returning an empty list. An empty list would be a UI failure — the player invoked help and got nothing. Even a trivial suggestion ("wait") is better than silence. It signals "the system is working, but there genuinely isn't much to do here."
+
+**Design rationale:** Empty rooms are rare but possible (e.g., a cleared-out room post-puzzle, a pure narrative beat room). The fallback ensures the system never crashes or returns `nil`.
+
 ### 4.5 Room Goal Metadata
 
 Rooms MAY declare a `goal` field. It's optional — rooms without goals still get
@@ -378,6 +475,42 @@ goals = {
 The engine picks the highest-priority unmet goal. Once a goal's verb+noun succeeds
 (the candle is lit), it falls through to the next. This handles multi-objective rooms
 like the bedroom (light → explore → exit).
+
+#### Goal Completion Detection
+
+Goals use **state-based completion detection** (not action-based). A goal is "complete" when its postcondition state is true in the game world, NOT when the player attempts the action.
+
+**Example:** Goal `{ verb = "go", noun = "north" }` is complete when `player.location` has changed to the room north of the current one. Merely typing "go north" while the door is locked does NOT complete the goal — the state didn't change.
+
+This matters because:
+- Failed actions (locked door, too dark, missing tool) don't count as goal completion
+- The options system continues suggesting goal steps until the state actually changes
+- Multi-priority goals (the `goals` array) fall through only when state confirms completion
+
+**Implementation:** After each game tick, check `goal_complete(ctx, goal)` → returns true if the goal's postcondition holds. Use existing state-query infrastructure from the FSM tick.
+
+For common goal types:
+- `{ verb = "go", noun = "north" }` → complete when `ctx.player.location.id ~= starting_room_id`
+- `{ verb = "light", noun = "candle" }` → complete when `candle._state == "lit"`
+- `{ verb = "take", noun = "key" }` → complete when `find_in_inventory(ctx.player, "key") ~= nil`
+- `{ verb = "unlock", noun = "door" }` → complete when `door.locked == false`
+
+The `goal_complete()` function is generic — it queries the current game state and compares it to the goal's intent. This keeps goal definitions simple (just verb+noun) while the engine handles verification.
+
+**Edge case:** If a goal cannot be verified via state query (e.g., a one-time narrative event), it can include an explicit `complete_when` function:
+
+```lua
+goal = {
+    verb = "read",
+    noun = "letter",
+    label = "discover the secret",
+    complete_when = function(ctx)
+        return ctx.player.flags.read_secret_letter == true
+    end
+}
+```
+
+This is an escape hatch for goals that don't map cleanly to FSM state or inventory checks. Use sparingly — prefer state-based detection whenever possible.
 
 ### 4.6 Presentation
 
@@ -420,18 +553,72 @@ templates that read naturally:
 
 ### 4.7 Anti-Spoiler Rules
 
-1. **One step ahead, never two.** Only show the immediate next action, not the full
-   GOAP plan chain
-2. **No hidden objects.** Don't suggest interacting with objects the player hasn't
-   discovered (check `obj.hidden` and whether player has "seen" or "felt" the object)
-3. **Sensory before specific.** In darkness, suggest "feel around" before "take the
-   key from under the rug" — let the player discover objects through play
-4. **Exits over solutions.** Suggest exploring exits before suggesting puzzle solutions
-5. **Diminishing novelty.** If player asks `options` 3+ times in the same room without
-   acting, the narrator hints more directly: "Perhaps you should try actually DOING
-   something..." — gentle push toward action, not more information
+The options system helps stuck players without destroying discovery. Seven rules govern what suggestions are exposed and when:
 
-### 4.8 Clearing Pending Options
+1. **One step ahead, never two.** Only show the immediate next GOAP step from the plan chain. Never reveal the full prerequisite sequence — the player should discover each step through play, not be handed the entire solution upfront.
+
+2. **No hidden objects.** Don't suggest interacting with objects the player hasn't discovered yet. Check `obj.hidden` and whether the player has "seen" (in light) or "felt" (in darkness) the object. Undiscovered objects stay off the options list until the player finds them through exploration.
+
+3. **Sensory before specific.** In darkness, suggest "feel around" before "take the key from under the rug." General sensory exploration comes first; object-specific actions emerge after discovery. This preserves the tactile exploration loop that defines the dark-room experience.
+
+4. **Exits over solutions.** Suggest exploring exits before suggesting puzzle solutions. Movement options (doors, stairs, passages) take priority over manipulation verbs. The player should know they *can* leave before being nudged toward complex interactions. Exception: when the room goal is explicitly "escape this room" and exits are locked, puzzle hints take precedence.
+
+5. **Escalating specificity.** Options responses escalate in directness based on `ctx.options_request_count` (number of times the player has requested options in the current room without making progress):
+
+| Tier | Request Count | Behavior | Example |
+|------|--------------|----------|---------|
+| **Standard** | 1st–2nd | General sensory suggestions. No goal steps exposed. Encourage exploration. | "Feel around for objects in the darkness" |
+| **Context Clues** | 3rd–4th | Include goal-directed hints with narrative framing. Indirect nudges toward the next step. | "Something about the padlock catches your attention..." |
+| **Mercy Mode** | 5th+ | Direct, explicit guidance. No more cryptic hints — the player is genuinely stuck and deserves clear help. | "Try: unlock padlock with key" |
+
+The escalation counter (`ctx.options_request_count`) resets when the player:
+- Moves to a different room
+- Successfully completes a goal step (detected via state change — e.g., object transitions from `locked` to `open`, or FSM state changes)
+- Executes any command from the options list (even if it fails — they tried, so reset the counter and give them fresh context)
+
+6. **Mercy mode is not a spoiler.** When a player has asked for options 5+ times in the same room without progress, they are stuck. Giving them the answer at that point respects their time and keeps the game moving. Mercy mode text should be helpful and direct, never condescending or sarcastic. Format: `"Try: <command>"` — clear, actionable, no ambiguity. The player shouldn't feel punished for asking; they should feel helped.
+
+7. **Puzzle room overrides.** Rooms with `options_disabled`, `options_mode`, or `options_delay` flags (see section 4.8) override the default escalation behavior. A puzzle room set to `options_mode = "sensory_only"` never escalates past Standard tier, regardless of request count. A room with `options_disabled = true` returns a refusal message ("You need to figure this one out yourself.") at all tiers, blocking the system entirely. These flags let puzzle designers protect climactic moments while keeping the options system useful everywhere else.
+
+### 4.8 Puzzle Room Exemptions
+
+Some rooms — particularly climactic puzzle moments — should limit or disable the options system to preserve dramatic tension and protect "aha!" moments. Rooms can set exemption flags in their metadata alongside the `goal` field.
+
+**Three Tiers of Exemption:**
+
+| Flag | Value | Behavior | Use Case |
+|------|-------|----------|----------|
+| `options_disabled` | `true` | Options verb returns: "You need to figure this one out yourself." All tiers blocked, including Mercy Mode. No hints at any request count. | Climactic puzzle moments, boss encounters, dramatic reveals where struggle IS the intended experience |
+| `options_mode` | `"sensory_only"` | Only sensory suggestions shown (feel, listen, smell, look). No goal steps, no dynamic object scan. Escalating specificity stays locked at Standard tier. | Exploration rooms, atmospheric set pieces, rooms where the journey IS the point — preserve mood without abandoning the player |
+| `options_delay` | `N` (integer, turns) | Options verb unavailable for first N turns after entering room. Returns: "Give it a moment... look around first." After N turns, normal behavior (all tiers, full escalation). | Encourage initial exploration before hinting. Good for first entry into a new area — let the player get their bearings |
+
+**Metadata example:**
+
+```lua
+-- A climactic puzzle room (final challenge before escape)
+options_disabled = true,
+goal = { verb = "solve", noun = "riddle", label = "unravel the mystery" },
+
+-- An atmospheric exploration room (sensory immersion priority)
+options_mode = "sensory_only",
+goal = { verb = "go", noun = "east", label = "find the garden path" },
+
+-- A room that rewards exploration first (delay before hints)
+options_delay = 3,
+goal = { verb = "light", noun = "torch", label = "illuminate the chamber" },
+```
+
+**Per-phase exemptions:** For multi-step puzzles, exemption flags can change dynamically as the puzzle progresses. The room's `on_state_change` hook can modify these flags in response to player actions. Example progression:
+
+1. **Phase 1 (entry):** `options_delay = 5` — force exploration for 5 turns, no hints available
+2. **Phase 2 (first clue found):** Switch to `options_mode = "sensory_only"` — guide with atmosphere, but don't reveal the solution
+3. **Phase 3 (second clue found):** Remove all flags — full hints available, including Mercy Mode for the final step
+
+This lets puzzle designers create escalating support: strict at first (preserve discovery), lenient at the end (prevent frustration).
+
+**Design guideline (Sideshow Bob's recommendation):** Use `options_disabled` sparingly — reserve it for the 2-3 most dramatic puzzle moments per level. Players who are genuinely stuck with no hints at all will get frustrated and may quit. `options_mode = "sensory_only"` is the sweet spot for most puzzle rooms: it keeps the atmospheric nudges and exploration guidance flowing while protecting the puzzle's core "aha!" moment. Use `options_delay` liberally for new areas — 3-5 turn delays give players time to look around without feeling abandoned.
+
+### 4.9 Clearing Pending Options
 
 `pending_options` is cleared when:
 - Player types a number and the command executes
@@ -613,5 +800,11 @@ Here the system prioritizes containers and unexplored surfaces because the room 
 
 ---
 
-*This proposal is an architecture document. Implementation requires Wayne's approval
-on the approach before code is written.*
+## Version History
+
+- **v1.0** (2026-08-02): Initial draft proposing three approaches
+- **v2.0** (2026-08-02): Blockers resolved post-review ceremony. Wayne approved Approach C (goal-driven hybrid), Option C context window (stable goals + rotating sensory), free hints, state-based goal detection. Added API contracts (B1), numeric precedence rules (B6/B7), performance budget <50ms (B9), empty room fallback (B11), state-based goal completion (B12).
+
+---
+
+*This architecture document is approved. Implementation proceeds per the phases defined in Section 8.*

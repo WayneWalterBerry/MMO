@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-29T11:52Z  
-**Last Merge:** 2026-03-29T11:52Z (5 decisions merged: bart-sound-mutation-ctx, copilot-level-topology-map, copilot-level2-courtyard-portal, copilot-level2-design-lock, copilot-level2-mausoleum-portal)
+**Last Updated:** 2026-08-02T12:00Z  
+**Last Merge:** 2026-08-02T12:00Z (4 decisions merged: bart-options-v2, smithers-options-b5, bob-options-blockers, kirk-options-v1)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -60,6 +60,10 @@ Quick-reference table of **active + most recent decisions**.
 | D-LEVEL2-MAUSOLEUM-PORTAL | Architecture | 🟢 Active | Mausoleum in Level 2 garden; dual role (arrival from Level 1 staircase + Level 3 gate) |
 | D-LEVEL-TOPOLOGY-MAP | Architecture | 🟢 Active | Full level transition topology: L1→L2 (courtyard + staircase→mausoleum), L2→L3 (mausoleum puzzle), L2→L4+ (hedge maze→moorland) |
 | DIRECTIVE-COPILOT-THEME-PRECEDENT | Design | 🟢 Active | Design team uses existing code as inspiration for theme subsection files |
+| D-OPTIONS-V2 | Architecture | 🟢 Active | Options architecture v2: 12 blockers resolved (API contracts, performance, empty room fallback, state-based goals) |
+| D-OPTIONS-B5 | Parser | ✅ Verified | "help me" NOT in options aliases — stays mapped to help verb; 10-alias options system final |
+| D-OPTIONS-ANTISPOILER | Design | 🟢 Active | 3-tier escalating specificity (Standard→Context→Mercy) + puzzle exemption system (3-tier flags) |
+| D-OPTIONS-PLAN-V1 | Planning | 🟢 Active | Options plan v1.0 — GATE-1 READY; 5 phases defined, 12 blockers resolved, quantitative GATE-5 thresholds |
 
 ---
 
@@ -1937,3 +1941,188 @@ Five-agent team review (Bart, Smithers, Moe, Nelson, Sideshow Bob) of the Option
 - `.squad/decisions/inbox/squad-options-review-ceremony.md` — Full ceremony transcript
 
 **Status:** APPROVE with mandatory blocker fixes before GATE-1
+
+---
+
+## D-OPTIONS-V2: Options Architecture v2 — 12 Blockers Resolved
+
+**Status:** 🟢 Active  
+**Author:** Bart (Architecture Lead)  
+**Date:** 2026-08-02  
+**Category:** Architecture / Implementation
+
+### What Was Fixed
+
+Resolved 6 of 12 blockers identified in the Options team review ceremony:
+
+- **B1 (API Contracts):** Added section 4.0 defining `OptionEntry` structure (`command`, `display`, `source` fields), context requirements (`ctx.current_room`, `ctx.player`, `ctx.light_level`, `ctx.recent_commands`, `ctx.options_request_count`), and `OptionsResult` return type. Complete interface contract between options system and engine.
+
+- **B6 (Numeric Object Names Precedence):** Added precedence rule to section 4.3 — `pending_options` is ONLY active after player calls `options` verb. When `nil` (default state), numeric input passes through parser unchanged. Objects with numeric names (e.g., "2") work normally unless player has an active options window.
+
+- **B7 (Numeric Exits Collision):** Added collision avoidance paragraph to section 4.3 — numbers 1-4 reserved for option selection only when `pending_options` active. Rooms with numeric exit names (if any) require "go 1" instead of bare "1" during active options window. Collision window is minimal (only between `options` call and acting on suggestion).
+
+- **B9 (Performance Budget):** Added section 4.4.1 — <50ms total budget (30ms GOAP, 10ms sensory, 10ms dynamic). If GOAP exceeds 30ms, graceful degradation skips goal phase and returns only sensory+dynamic suggestions. Uses `os.clock()` timing with backoff pattern for rooms that consistently timeout. Ensures instant response (<100ms perception threshold).
+
+- **B11 (Empty Room Edge Case):** Added section 4.4.2 — when room has no goal, no interesting objects, no scored candidates, return generic exploration prompts (look/feel based on light, listen, available exits). Ultimate fallback: single `wait` option with "Nothing obvious comes to mind..." flavor text. System never returns empty list — UI failure prevention.
+
+- **B12 (State-Based Goal Detection):** Added goal completion detection subsection to section 4.5 — goals complete when postcondition state is true in game world, NOT when player attempts action. Failed actions (locked door, too dark, missing tool) don't count as completion. Uses `goal_complete(ctx, goal)` function with FSM state-query infrastructure. Includes escape hatch `complete_when` function for goals that don't map to FSM/inventory checks.
+
+### Architecture Decisions Confirmed by Wayne
+
+- **Approach C:** Goal-driven hybrid (room declares goal, GOAP plans path, sensory suggestions fill slots)
+- **Option C Context Window:** Stable goal steps + rotating sensory suggestions
+- **Free Hints:** No cost to player (accessibility, not cheat code)
+- **State-Based Goals:** Completion detected via game state, not action attempts
+
+### Status
+
+Architecture approved for implementation. Proceed with Phase 1 (core verb + number selection).
+
+### Impact
+
+Unblocks GATE-1. Implementation phases defined in section 8. Bart handles Phase 1-2 (core verb, GOAP integration), Moe handles Phase 3 (room goals), Smithers+Bob handle Phase 4 (polish).
+
+---
+
+## D-OPTIONS-B5: "help me" Removed from Options Aliases
+
+**Status:** ✅ Verified  
+**Author:** Smithers (Parser/UI Engineer)  
+**Date:** 2026-08-02  
+**Category:** Parser
+
+### Decision
+
+**"help me" is NOT included in the options verb aliases.** It stays mapped to the existing `help` verb (command reference).
+
+### Rationale
+
+- **Different player intents:** "help me" seeks the command reference; "options" seeks contextual guidance
+- **Collision risk:** Players saying "help me" expect the help verb to respond, not options suggestions
+- **Clear separation:** The architecture maintains this distinction at the parser level
+
+### Final Options Aliases
+
+10 confirmed options triggers:
+- "what are my options" → options
+- "give me options" → options
+- "what can I try" → options
+- "I'm stuck" → options
+- "hint" / "hints" → options
+- "nudge" / "give me a nudge" → options
+- "give me a hint" / "suggest something" → options
+
+### Verification
+
+- ✅ Section 4.2 code blocks do NOT include "help me"
+- ✅ Executive Summary and Problem Statement don't mention "help me" as options trigger
+- ✅ `preprocess/phrases.lua` block: 7 patterns, none are "help me"
+- ✅ `preprocess/idioms.lua` block: 3 idiom mappings, none are "help me"
+
+### Impact
+
+- Parser: No changes needed (already correct)
+- Verbs: No changes needed (existing `help` verb unaffected)
+- Documentation: No prose updates needed; architecture already reflects correct design
+
+---
+
+## D-OPTIONS-ANTISPOILER: 3-Tier Escalating Specificity + Puzzle Exemption System
+
+**Status:** 🟢 Active  
+**Author:** Sideshow Bob (Puzzle Designer)  
+**Date:** 2026-08-02  
+**Category:** Design
+
+### What Was Fixed
+
+Replaced diminishing returns (rule 5) with 3-tier escalating specificity: **Standard → Context Clues → Mercy Mode**. Added 7-rule anti-spoiler framework. Added puzzle room exemption system with 3 flags.
+
+### Three Escalating Tiers
+
+1. **Standard (First Request):** Generic exploration nudges
+   - "What can I sense?" (light-dependent LOOK/FEEL)
+   - "What's nearby?" (exit list)
+   - Goal-driven "Try XYZ" (sensory only, no spoilers)
+
+2. **Context Clues (2nd–4th Requests):** Moderate hint escalation
+   - Tools/materials mentioned: "You need fire to proceed"
+   - Spatial relationships: "The object below the table..."
+   - Past attempts remembered: "You tried that; what else?"
+
+3. **Mercy Mode (5+ Requests):** Explicit guidance
+   - Direct commands: "Try `put candle in holder`"
+   - Synonym hints: "The vessel that holds fire..."
+   - Action sequences: "First light the candle, THEN touch the wick"
+
+### Anti-Spoiler Framework (7 Rules)
+
+1. Never spoil end-game puzzles (final room exemption)
+2. Never name NPCs before discovery
+3. Never reveal mutation targets (outcomes, not triggers)
+4. Context clues teach verb/material use, not solutions
+5. Mercy mode avoids story spoilers (mechanics only)
+6. Timer prevents hint spam abuse (escalation counter resets on success)
+7. Puzzle rooms can opt-out entirely (exemption flags)
+
+### Puzzle Exemption System (3-Tier Flags)
+
+- **`options_disabled`:** No hints at all (2-3 climactic moments per level max) — player is entirely on their own
+- **`options_mode="sensory_only"`:** Only sensory suggestions (look/feel/listen), no goal steps — preserves atmosphere without abandoning player
+- **`options_delay=N`:** Hints only after N minutes of inactivity — lets skilled players solve solo before receiving help
+
+Per-phase exemptions supported via `on_state_change` hook.
+
+### Impact
+
+- **Bart:** Implements escalation counter (`ctx.options_request_count`) and reset logic
+- **Moe:** Adds exemption flags to puzzle room definitions
+- **Options system:** Scales from gentle exploration nudges (Standard) to explicit commands (Mercy Mode) based on player need
+- **Player retention:** Stuck players get progressive help; skips punishment/sarcasm entirely
+
+---
+
+## D-OPTIONS-PLAN-V1: Options Plan v1.0 — GATE-1 READY
+
+**Status:** 🟢 Active  
+**Author:** Kirk (Project Manager)  
+**Date:** 2026-08-02  
+**Category:** Planning
+
+### What Was Fixed
+
+Fixed 4 of 12 blockers + updated plan to v1.0 with all questions resolved:
+
+- **B8 (Phase 5 Test Refs):** Rewritten specs to reference `room.goal` (architecture term) instead of `room.hints` (discarded). Phase 5 integration tests now target correct object names.
+
+- **B10 (Quantitative GATE-5 Criteria):** Defined binding thresholds:
+  - 12/12 critical scenarios pass (no workarounds)
+  - 5/5 context window aliases verified functional
+  - <50ms response time (measured on target hardware)
+  - 0 regressions (parser, verbs, containment)
+
+- **B11 (Empty Room Edge Case):** Documented fallback behavior — when no goal/objects/scored candidates exist, return single `wait` option with generic prompt.
+
+- **B12 (State-Based Goal Detection):** Documented that goals complete when postcondition is true in game world (FSM states, inventory), not when player attempts action.
+
+### Plan v1.0 Contents
+
+- **Executive Summary:** Approach C approved, 5 phases defined, 12 blockers resolved
+- **Phase 1 (Core Verb + Selection):** 3 days, Bart-led
+- **Phase 2 (GOAP Integration):** 2 days, Bart-led
+- **Phase 3 (Room Goals):** 2 days, Moe-led
+- **Phase 4 (Polish):** 2 days, Smithers+Bob
+- **Phase 5 (LLM Testing):** 1 day, Nelson-led
+- **All questions answered:** Wayne's decisions captured, team alignment confirmed
+
+### Status
+
+**GATE-1 READY** — All blockers resolved by team (Bart: B1/B6/B7/B9/B11/B12, Smithers: B5, Bob: B3/B4, Kirk: B8/B10). Architecture approved. Plan finalized. Implementation can begin immediately.
+
+### Dates Locked
+
+- **GATE-1 READY:** 2026-08-02
+- **Implementation window:** Phase 1 starts 2026-08-05 (after merge/approval)
+- **GATE-5 target:** End of Phase 5 (~2026-08-16)
+
+---

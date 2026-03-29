@@ -1,16 +1,16 @@
-# Options — Implementation Plan (Preliminary)
+# Options — Implementation Plan
 
-**Status:** ⏳ Pending architecture decision (Bart)  
-**Version:** 0.1 (pre-architecture, provisional phase list)  
-**Last Updated:** 2026-03-29
+**Status:** ✅ GATE-1 READY — all blockers resolved, architecture approved  
+**Version:** 1.0  
+**Last Updated:** 2026-08-02
 
 ---
 
 ## Executive Summary
 
-The **Options feature** is a hint system for stuck players. When players type `"options"`, `"hint"`, `"help me"`, `"what can I do"`, or `"give me options"`, the game responds with a numbered list (1-4) of actions that help them progress. Selecting a number executes that command.
+The **Options feature** is a hint system for stuck players. When players type `"options"`, `"hint"`, `"what can I do"`, or `"give me options"`, the game responds with a numbered list (1-4) of actions that help them progress. Selecting a number executes that command.
 
-This plan establishes **phase structure and team roles**. The detailed implementation design depends on **Bart's architecture decision** (dynamic vs static vs hybrid options generation). Until Bart completes the architecture proposal, exact file paths, code contracts, and testing specs remain provisional.
+This plan uses **Approach C (Goal-Driven Hybrid)** architecture, approved by Wayne. The system combines static room goals with dynamic sensory/spatial suggestions, escalating specificity across 7 anti-spoiler rules. All 12 team review blockers have been resolved.
 
 ---
 
@@ -18,63 +18,39 @@ This plan establishes **phase structure and team roles**. The detailed implement
 
 | Phase | Owner | Blocked On | Est. Time | Description |
 |-------|-------|-----------|-----------|-------------|
-| **Architecture** | Bart | — | 1-2 days | Decide: dynamic vs static vs hybrid options generation. Write proposal. |
-| **Phase 1** | Bart | Architecture | 1 day | Implement engine-side options API (whatever model Bart recommends). |
-| **Phase 2** | Smithers | Architecture | 1-2 days | Parser aliases ("options", "hint", etc.). Wire to options API. UI output formatting. |
-| **Phase 3** | Bart | Phase 1 | 1-2 days | Options generator (dynamic state analysis OR static room data OR hybrid). |
+| **Architecture** | Bart | — | ✅ COMPLETE | Approach C (goal-driven hybrid) selected. Wayne approved. |
+| **Phase 1** | Bart | — | 1 day | Implement engine-side options API (hybrid model with goal + sensory suggestions). |
+| **Phase 2** | Smithers | Phase 1 | 1-2 days | Parser aliases ("options", "hint", etc.). Wire to options API. UI output formatting. |
+| **Phase 3** | Bart | Phase 1 | 1-2 days | Options generator (hybrid: goal + dynamic sensory/spatial suggestions). |
 | **Phase 4** | Smithers | Phase 2 | 1 day | Number selection handler: player types "1" → execute mapped command. |
-| **Phase 5** | Moe | Architecture | 1-2 days | **Conditional:** If hybrid/static approach, define room metadata schema. Populate Level 1 rooms with goal/hints. |
-| **Phase 6** | Nelson + Bart | Phases 1-4 | 2-3 days | TDD test suite (parser aliases, selection, E2E). LLM walkthroughs. |
-| **Phase 7** | Sideshow Bob + Bart | Phase 4 | 1 day | Hint text quality review. Rewrite if spoiler risk detected. |
+| **Phase 5** | Moe | Phase 1 | 1-2 days | Define room goal metadata schema. Populate Level 1 rooms with `goal` field (7 rooms). |
+| **Phase 6** | Nelson + Bart | Phases 1-4 | 2-3 days | TDD test suite (parser aliases, selection, E2E). 12 LLM walkthroughs. |
+| **Phase 7** | Sideshow Bob + Bart | Phase 4 | 1.5 days | Hint text quality review using 7-rule anti-spoiler framework. Rewrite if spoiler risk detected. |
 | **Phase 8** | Gil | Phase 6 passing | 1 day | Deploy to web. Beta playtest. |
 
 ---
 
-## Key Questions (For Bart's Architecture Proposal)
-
-Before implementation starts, Bart must decide:
+## Key Questions — ALL RESOLVED
 
 ### 1. Options Generation Model
-
-**Option A: Dynamic** — Engine analyzes room state at runtime and suggests contextual actions.
-- Pros: Always relevant to current state; no metadata authoring needed
-- Cons: Complex engine logic; may suggest irrelevant actions if heuristics are wrong
-- Examples: ["examine bookshelf", "look for clues", "try to climb"]
-
-**Option B: Static** — Each room declares 1-4 pre-written hints in its `.lua` file.
-- Pros: Controlled, authoritative, no spoiler risk from engine heuristics
-- Cons: Metadata burden on Moe; must write for every room
-- Examples: Hard-coded in `start-room.lua`: `hints = {"look at mirror", "examine dresser", ...}`
-
-**Option C: Hybrid** — Static base hints + dynamic filtering/reordering based on player state.
-- Pros: Balance of control and relevance; author-approved text, adaptive ordering
-- Cons: Most complex; requires both engine logic and metadata schema
-- Examples: Room declares `hints = [...]`, engine reorders by player inventory, location, progress
-
-**Recommended:** Option A (dynamic) for initial MVP — easier to ship fast, avoids metadata cost. Fallback to Option B (static) if engine logic is fragile. Upgrade to Option C (hybrid) post-beta if needed.
+✅ **Approach C (Goal-Driven Hybrid)** — Wayne approved  
+Room declares `goal` field (verb + noun + label). Engine supplements with dynamic sensory/spatial suggestions. Hybrid approach balances authorial control with contextual relevance.
 
 ### 2. Text Quality & Spoiler Risk
-
-- How detailed should hints be? (vague vs specific vs step-by-step)
-- **Gate:** Sideshow Bob reviews all hint text before Phase 7 ship. If spoiler risk → rewrite.
+✅ **7-rule anti-spoiler framework with escalating specificity**  
+Bob rewrote spoiler rules: avoid puzzle answers, use sensory language, escalate from vague → specific. Puzzle exemption system for intentionally direct hints (e.g., tutorial rooms).
 
 ### 3. Rate Limiting
-
-- Unlimited calls to "options", or cost/cooldown?
-- **Recommendation:** Unlimited for MVP. Revisit after playtest.
+✅ **Free / unlimited for MVP**  
+No cost or cooldown. Re-evaluate after beta playtest if abuse detected.
 
 ### 4. Number Selection
-
-- Player types "1" to execute option 1. Who owns this verb dispatch?
-- Option A: Smithers adds "1" as a verb alias (simplest)
-- Option B: Bart adds special handling in engine verb dispatcher
-- **Recommendation:** Smithers alias (reuse existing parser infrastructure).
+✅ **Smithers parser — numeric input intercepted in main loop**  
+When `pending_options` is active, numbers 1-4 bypass standard verb dispatch. Invalid numbers (0, 5, -1) rejected with error message.
 
 ### 5. Parser Aliases
-
-- Trigger words: "options", "hint", "help me", "what can I do", "give me options" — all map to same verb?
-- Or separate verbs per alias?
-- **Recommendation:** Single verb "options" with 5 aliases (consolidate in parser).
+✅ **Single verb "options" with aliases** (minus "help me" — collision with help verb)  
+Aliases: "options", "hint", "what can I do", "give me options". Embedding matcher handles variations.
 
 ---
 
@@ -87,7 +63,7 @@ Before implementation starts, Bart must decide:
 | Phase 2 | **Smithers** | Architecture | `src/engine/parser/init.lua` (verb aliases) + `src/engine/ui/init.lua` (output formatting) | Hook verb "options" to Bart's API. Format 1-4 items in numbered list. |
 | Phase 3 | **Bart** | Phase 1 | `src/engine/options/*.lua` (depends on model) | Generator logic (dynamic analysis, OR static loader, OR hybrid orchestrator). |
 | Phase 4 | **Smithers** | Phase 2 | `src/engine/verbs/init.lua` (selection verb) | Add verb handler: player types "1" → `options.execute_selection(1)`. |
-| Phase 5 | **Moe** | Architecture | `src/meta/rooms/*.lua` (if static/hybrid) | Add `goals` or `hints` field to each room def. Level 1 only for MVP. |
+| Phase 5 | **Moe** | Architecture | `src/meta/rooms/*.lua` | Add `goal` field to each room def (verb + noun + label). Level 1 only for MVP. |
 | Phase 6 | **Nelson** | Phases 1-4 | `test/options/test-*.lua` | TDD suite: alias matching, selection dispatch, E2E walkthroughs. Deterministic seeds. |
 | Phase 7 | **Sideshow Bob** | Phase 4 | Audit hint text + `notes/options-spoiler-review.md` | Read all generated/authored hints. Flag spoilers. Rewrite if necessary. |
 | Phase 8 | **Gil** | Phase 6 passing | Web build pipeline | Deploy to GitHub Pages. Coordinate playtest setup. |
@@ -209,31 +185,27 @@ Before implementation starts, Bart must decide:
 
 ---
 
-### Phase 5: Room Metadata (Moe) — CONDITIONAL
+### Phase 5: Room Metadata (Moe)
 
-**Goal:** If Phase 1 chose static or hybrid, define room schema and populate Level 1.
+**Goal:** Define room goal schema and populate Level 1 rooms (hybrid approach requires `goal` field).
 
-**Only needed if architecture decision is Option B or Option C.**
-
-**If proceeding:**
-- Add `goals` or `hints` field to room template in `src/meta/templates/room.lua`
+**Tasks:**
+- Add `goal` field to room template in `src/meta/templates/room.lua`
 - Edit each Level 1 room: `src/meta/rooms/level-01/*.lua` → add field:
   ```lua
-  hints = {
-      "examine the mirror",
-      "look for light source",
-      "try to open the dresser",
+  goal = {
+      verb = "examine",
+      noun = "mirror",
+      label = "Look at the mirror"
   }
   ```
-- Linter validation: ensure hints are valid game verbs (lint.py rule)
+- Linter validation: ensure goal verb/noun are valid game commands (lint.py rule)
 - 7 Level 1 rooms × ~30 min per room = ~3.5 hours
-
-**If Option A (dynamic) chosen:** This phase is skipped; move to Phase 6.
 
 **Tests (TDD):**
 - `test/options/test-phase5-metadata.lua`
-- Verify room.hints structure matches schema
-- Verify all hints are valid, executable commands
+- Verify room.goal structure matches schema (verb, noun, label fields required)
+- Verify all goals are valid, executable commands
 - Verify no spoiler language (Sideshow Bob review replaces any found)
 
 ---
@@ -303,10 +275,10 @@ echo -e "look\noptions\n1\noptions" | lua src/main.lua --headless
 | Gate | Criteria | Owners | Approves |
 |------|----------|--------|----------|
 | **GATE-1** | Architecture proposal complete, all 5 questions answered, no blockers | Bart | Wayne |
-| **GATE-2** | Phase 2 parser aliases working, all 5 trigger words → "options" verb | Smithers + Nelson | Wayne |
+| **GATE-2** | Phase 2 parser aliases working, all trigger words → "options" verb | Smithers + Nelson | Wayne |
 | **GATE-3** | Phase 3 generator produces 1-4 valid, non-duplicate suggestions | Bart + Nelson | Wayne |
 | **GATE-4** | Phase 4 number selection works (player types "1" → executes) | Smithers + Nelson | Wayne |
-| **GATE-5** | Phase 6 test suite passes + no regressions + LLM walkthroughs OK | Nelson + Marge | Wayne |
+| **GATE-5** | (1) 12/12 LLM walkthrough scenarios pass, (2) 5/5 parser alias tests pass, (3) all number selection tests pass (1-4 valid, 0/5/-1 rejected), (4) <50ms per options call, (5) zero regressions in existing test suite | Nelson + Marge | Wayne |
 | **GATE-6** | Phase 7 spoiler review done, no puzzle leaks, rewritten hints re-tested | Sideshow Bob + Nelson | Wayne |
 | **GATE-7** | Web build succeeds, deploys to GitHub Pages | Gil | Wayne |
 
@@ -369,13 +341,17 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 
 ---
 
-## Pending Questions (Awaiting Bart)
+## Pending Questions
 
-- [ ] Architecture proposal written (GATE-1 blocker)
-- [ ] Parser alias trigger words finalized
-- [ ] Rate limiting policy decided
-- [ ] Room metadata schema (if needed)
-- [ ] Performance budget set (e.g., <50ms per call)
+✅ **All key questions resolved** — see Key Questions section above.
+
+- ✅ Architecture: Approach C (goal-driven hybrid) — Wayne approved
+- ✅ Parser aliases: Single verb "options" with 4 aliases (minus "help me")
+- ✅ Rate limiting: Free / unlimited for MVP
+- ✅ Room metadata: `goal` field (verb, noun, label) required per room
+- ✅ Performance budget: <50ms per options call
+- ✅ Context window: Option C (hybrid — goal steps stable, sensory suggestions rotate)
+- ✅ Goal completion: State-based detection (not action-based)
 
 ---
 
@@ -384,8 +360,8 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
 | Version | Date | Changes |
 |---------|------|---------|
 | 0.1 | 2026-03-29 | Initial plan structure (pre-architecture); all phases conditional on Bart's proposal |
-| 0.2 | [TBD] | Architecture decision captured; phases 1-3 detailed |
-| 1.0 | [TBD] | All phases detailed + GATE-1 approved |
+| 0.2 | 2026-08-02 | **Team review ceremony complete.** 5 reviewers (Bart, Smithers, Moe, Nelson, Bob). 12 blockers identified, all addressable. Architecture (Approach C) unanimously approved. Anti-spoiler rules expanded to 7. Puzzle exemption system proposed. LLM test matrix expanded to 12 scenarios. Phase 7 re-estimated to 1.5 days. Moe mapped all 7 Level 1 room goals. |
+| 1.0 | 2026-08-02 | All 12 blockers resolved. Wayne approved: Approach C (goal-driven hybrid), Option C context window (hybrid), free hints, state-based goal detection. Architecture v2 finalized. Plan promoted to v1.0 — GATE-1 READY. |
 
 ---
 

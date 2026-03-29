@@ -66,3 +66,24 @@ The bug-report-lifecycle skill describes the player-centric workflow for issues 
 **Stability = Priority Tier 0** (per Wayne's priorities). Work-down-issues is how the team systematically converts GitHub issue backlog into zero actionable bugs. Kirk's job: coordinate issue burndown, track waves, manage Marge verification gate, ensure test-pass runs before closure. This is the structured operational rhythm that keeps the game playable for players and unblocks feature work.
 
 The wave-based approach lets Kirk see real-time progress (Wave 1: 4 issues → Wave 2: 3 issues remaining), parallelize without file conflicts, and ensure TDD rigor prevents regression. Marge is the quality gate Kirk enforces — no issue passes until verified fixed.
+
+### Options v1.0 and GATE-1 READY (2026-08-02)
+
+**What I did:**
+Updated Options plan.md to v1.0 and board.md to GATE-1 READY status. Fixed B8 (changed all `room.hints` references to `room.goal` in Phase 5 section, updated code examples to use `goal = { verb, noun, label }` format). Fixed B10 (replaced subjective GATE-5 criteria "Nelson approves walkthrough UX" with quantitative thresholds: 12/12 LLM scenarios, 5/5 parser aliases, number selection tests, <50ms performance, zero regressions).
+
+**Major updates:**
+- Version changed from 0.2 to 1.0, status changed to "GATE-1 READY — all blockers resolved, architecture approved"
+- Executive Summary updated to definitively state Approach C (goal-driven hybrid), removed provisional language
+- Key Questions section: marked ALL 5 questions as RESOLVED with Wayne's decisions
+- Phase 5: removed "CONDITIONAL" tag, made definitive — hybrid approach requires `goal` field
+- Phase Overview table: removed "Blocked On: Architecture" from all phases
+- Pending Questions: replaced entire section with "All key questions resolved"
+- Version History: added v1.0 entry documenting all blocker resolutions
+- Board: Overall Status changed to "GATE-1 READY", all 7 blocker items marked COMPLETE
+- Board: Fixes phase marked COMPLETE, GATE-1 phase marked "Ready for Wayne's final approval"
+- Board: Open Questions updated with all 12 blockers marked resolved
+- Board: Blockers section updated to show all 12 resolved
+
+**Why it matters:**
+All 12 blockers from team review are now resolved. Wayne approved all architecture decisions (Approach C, Option C context window, free hints, state-based goal detection). The plan is now definitive rather than conditional — ready for Wayne's GATE-1 approval to begin implementation.
