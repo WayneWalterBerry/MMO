@@ -51,16 +51,7 @@
 | WAVE-3 | Salt preservation | 6 files | 258+ |
 | WAVE-4 | Integration walkthrough | 2 files | 270+ (stretch 300+) |
 
-### Linter Improvement (per linter plan)
-
-| Wave | Test Files | Framework |
-|------|-----------|-----------|
-| WAVE-0 | conftest.py, helpers.py, fixtures/ | pytest |
-| WAVE-1 | test_xf03.py, test_xr05.py | pytest |
-| WAVE-2 | test_md19.py | pytest |
-| WAVE-3 | test_fix_safety.py, test_cli_flags.py | pytest |
-| WAVE-4 | test_exit_rules.py, test_creature_rules.py | pytest |
-| WAVE-5 | test_environments.py, test_routing.py, test_caching.py | pytest |
+> **Linter test work** (pytest scaffold, rule tests) is tracked in `projects/linter/board.md` — Wiggum's domain.
 
 ---
 
