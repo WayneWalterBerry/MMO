@@ -48,8 +48,8 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-29 06:58"
-local BUILD_VERSION = "e3b5b9a"
+local BUILD_TIMESTAMP = "2026-03-29 07:31"
+local BUILD_VERSION = "6da0ff6"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -296,6 +296,7 @@ local ok, err = pcall(function()
     local loop         = require("engine.loop")
     local sound_mgr    = require("engine.sound")
     local null_driver  = require("engine.sound.null-driver")
+    local web_driver   = require("engine.sound.web-driver")
 
     -- Install word-wrapping (wraps our DOM print — adds line-break logic)
     display.install()
@@ -625,9 +626,17 @@ local ok, err = pcall(function()
     -------------------------------------------------------------------
     -- Game context
     -------------------------------------------------------------------
-    -- Sound manager: null driver so debug logging fires even without audio
+    -- Sound manager: use Web Audio driver when JS bridge is available,
+    -- fall back to null driver if Web Audio API is missing
     local sm = sound_mgr.new()
-    sm:init(null_driver, { debug = DEBUG_MODE })
+    local sound_driver = null_driver
+    local driver_available = pcall(function()
+        return window._soundAvailable and window:_soundAvailable()
+    end)
+    if driver_available then
+        sound_driver = web_driver
+    end
+    sm:init(sound_driver, { debug = DEBUG_MODE })
 
     local context = {
         registry        = reg,
