@@ -269,7 +269,7 @@ function M.register(handlers)
             .. "### Session Transcript (last " .. #transcript .. " lines)\n\n"
             .. "```\n" .. transcript_text .. "```\n"
 
-        local url = "https://github.com/WayneWalterBerry/MMO-Issues/issues/new"
+        local url = "https://github.com/WayneWalterBerry/MMO/issues/new"
             .. "?title=" .. url_encode(title)
             .. "&body=" .. url_encode(body)
 
