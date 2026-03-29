@@ -86,7 +86,11 @@ M.IDIOM_TABLE = {
 
     -- === META ===
     { pattern = "^check%s+my%s+pockets$",       replacement = "inventory",      category = "meta" },
-    { pattern = "^give%s+me%s+a%s+hint$",       replacement = "help",           category = "meta" },
+
+    -- === OPTIONS / HINTS ===
+    { pattern = "^give%s+me%s+a%s+hint$",       replacement = "options",        category = "options" },
+    { pattern = "^give%s+me%s+a%s+nudge$",      replacement = "options",        category = "options" },
+    { pattern = "^suggest%s+something$",         replacement = "options",        category = "options" },
 }
 
 --- match(text) -> result_text, matched_bool

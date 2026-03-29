@@ -54,6 +54,10 @@ data.IDIOM_TABLE = {
     { pattern = "^sleep%s+to%s+(.+)$",             replacement = "sleep until %1" },
     { pattern = "^sleep%s+til%s+(.+)$",            replacement = "sleep until %1" },
     { pattern = "^sleep%s+till%s+(.+)$",           replacement = "sleep until %1" },
+    -- Options / hint system aliases
+    { pattern = "^give%s+me%s+a%s+nudge$",         replacement = "options" },
+    { pattern = "^give%s+me%s+a%s+hint$",          replacement = "options" },
+    { pattern = "^suggest%s+something$",           replacement = "options" },
 }
 
 data.HIT_SYNONYMS = { smack=true, bang=true, slap=true, whack=true }
@@ -104,7 +108,8 @@ data.KNOWN_VERBS = {
     up = true, down = true, n = true, s = true, e = true, w = true,
     -- meta
     inventory = true, i = true, time = true, set = true, adjust = true,
-    help = true, wait = true, pass = true, use = true, utilize = true,
+    help = true, options = true, hint = true, hints = true, nudge_verb = true,
+    wait = true, pass = true, use = true, utilize = true,
     apply = true, treat = true, appearance = true, quit = true,
 }
 

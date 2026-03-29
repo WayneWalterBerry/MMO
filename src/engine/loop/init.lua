@@ -198,6 +198,30 @@ function loop.run(context)
     trimmed = trimmed:gsub("%?+$", ""):match("^%s*(.-)%s*$")
     if trimmed == "" then goto continue end
 
+    -- ═══ OPTIONS NUMBER SELECTION ═══
+    -- When pending_options is active (player just called "options"), intercept
+    -- numeric input 1-N and substitute the corresponding command string.
+    -- Architecture: section 4.3 — precedence rule keeps numbers normal otherwise.
+    do
+      local player = context.player
+      if player and player.pending_options then
+        local num = tonumber(trimmed)
+        if num then
+          if player.pending_options[num] then
+            trimmed = player.pending_options[num].command
+            player.pending_options = nil
+          else
+            print("Please choose a number between 1 and " .. #player.pending_options .. ".")
+            if context.headless then io.write("---END---\n"); io.flush() end
+            goto continue
+          end
+        else
+          -- Non-numeric input clears pending options
+          player.pending_options = nil
+        end
+      end
+    end
+
     -- BUG-105/106: Direct transform for common help/confusion phrases.
     -- Safety net: preprocess.natural_language() handles these patterns, but
     -- the live game reportedly hangs on them. This early bailout guarantees
@@ -340,7 +364,7 @@ function loop.run(context)
       -- Verbs that operate on the room (no noun expected) are excluded.
       local no_noun_verbs = {
         look = true, feel = true, smell = true, listen = true, taste = true,
-        inventory = true, i = true, help = true, time = true, quit = true,
+        inventory = true, i = true, help = true, options = true, time = true, quit = true,
         sleep = true, rest = true, nap = true, wait = true, score = true,
         report_bug = true, injuries = true, injury = true, wounds = true, health = true, appearance = true,
         -- Direction verbs should never inherit a context noun

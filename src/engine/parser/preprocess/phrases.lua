@@ -162,6 +162,17 @@ function phrases.transform_questions(text)
         return "health"
     end
 
+    -- Options / hint patterns (D-OPTIONS-B5: "help me" stays mapped to help)
+    if text:match("^what%s+are%s+my%s+options")
+        or text:match("^give%s+me%s+options")
+        or text:match("^what%s+can%s+i%s+try")
+        or text:match("^i'?m%s+stuck")
+        or text == "hint"
+        or text == "hints"
+        or text == "nudge" then
+        return "options"
+    end
+
     if text:match("^what%s+is%s+around")
         or text:match("^what'?s%s+around")
         or text:match("^what%s+do%s+i%s+see")
