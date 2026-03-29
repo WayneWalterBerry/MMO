@@ -38,3 +38,31 @@
 **Related decision docs:**
 - `docs/design/worlds.md` — Full specification (28 KB)
 - `.squad/decisions.md` — Decision D-WORLDS-CONCEPT (full context)
+
+---
+
+## Learnings
+
+### Portal Unification Pattern (Issue #203)
+
+**Pattern:** Inline exit tables → paired portal objects. Each room-to-room connection gets two `.lua` files (one per side) sharing a `bidirectional_id`.
+
+**Key files for deep-cellar ↔ hallway stairway:**
+- `src/meta/objects/deep-cellar-hallway-stairs-up.lua` (deep cellar side, direction: up)
+- `src/meta/objects/hallway-deep-cellar-stairs-down.lua` (hallway side, direction: down)
+- `test/rooms/test-portal-deep-cellar-hallway.lua` (61 TDD tests)
+
+**Open stairway conventions:**
+- Always-open portals: `initial_state = "open"`, `_state = "open"`, single `open` state, no transitions
+- Wind traverse: `on_traverse.wind_effect` with `extinguishes`, `spares`, and three message fields
+- Room exits use thin references: `{ portal = "portal-id" }` — no inline target/open/locked fields
+
+**Room wiring:**
+- Portal objects go in `instances` array (with type_id GUID)
+- Exit table uses `{ portal = "portal-id" }` to delegate to the object
+- Naming convention: `{from-room}-{to-room}-{feature}-{direction}` (e.g., `deep-cellar-hallway-stairs-up`)
+
+**Linter notes:**
+- MAT-03 warnings (material by name) are Flanders' concern, not blocking
+- XF-03 keyword overlap between stairs portals is expected — parser handles disambiguation by room context
+- EXIT-03 (bidirectional partner check) only works when linting the full `src/meta/objects/` directory
