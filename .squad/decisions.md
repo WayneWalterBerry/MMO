@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-29T11:40Z  
-**Last Merge:** 2026-03-29T11:40Z (2 decisions merged: bart-sound-wave0, copilot-directive-theme-precedent)
+**Last Updated:** 2026-03-29T11:52Z  
+**Last Merge:** 2026-03-29T11:52Z (5 decisions merged: bart-sound-mutation-ctx, copilot-level-topology-map, copilot-level2-courtyard-portal, copilot-level2-design-lock, copilot-level2-mausoleum-portal)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -54,6 +54,11 @@ Quick-reference table of **active + most recent decisions**.
 | D-WORLDS-LOADER-WAVE0 | Architecture | ✅ Complete | World loader infrastructure complete; WAVE-0 shipped (16 tests, 258 total) |
 | D-SOUND-REVIEW-CYCLE | Process | ⚠️ Concerns | 7-agent architecture review complete; 10 blockers, 11 concerns (all fixed in v1.1) |
 | D-SOUND-WAVE0-COMPLETE | Architecture | ✅ Complete | Bart WAVE-0 complete: sound manager + null driver + defaults + 47 tests, 259 total tests pass |
+| D-SOUND-MUTATION-CTX | Architecture | 🟢 Active | `mutation.mutate()` accepts optional ctx parameter for sound lifecycle hooks |
+| D-LEVEL2-DESIGN-LOCK | Design | 🟢 Active | Level 2: 7 parameters locked (garden theme, 8-12 rooms, gradual difficulty, weather system, etc.) |
+| D-LEVEL2-COURTYARD-PORTAL | Architecture | 🟢 Active | Level 2 entry: Courtyard portal to garden (not staircase); staircase → mausoleum |
+| D-LEVEL2-MAUSOLEUM-PORTAL | Architecture | 🟢 Active | Mausoleum in Level 2 garden; dual role (arrival from Level 1 staircase + Level 3 gate) |
+| D-LEVEL-TOPOLOGY-MAP | Architecture | 🟢 Active | Full level transition topology: L1→L2 (courtyard + staircase→mausoleum), L2→L3 (mausoleum puzzle), L2→L4+ (hedge maze→moorland) |
 | DIRECTIVE-COPILOT-THEME-PRECEDENT | Design | 🟢 Active | Design team uses existing code as inspiration for theme subsection files |
 
 ---
@@ -1664,3 +1669,194 @@ Sound implementation plan (`projects/sound/sound-implementation-plan.md`) underw
 - **Smithers:** Verb-handler integration pattern documented (1 hour)
 - **Marge:** LLM test scenarios written, baseline captured (2 hours)
 - **Nelson:** Can begin mock driver + gate framework (1 hour)
+
+---
+
+## D-SOUND-MUTATION-CTX: mutation.mutate() Context Parameter
+
+**Status:** 🟢 Active  
+**Author:** Bart (Architect)  
+**Date:** 2026-03-29T11:52Z  
+**Category:** Architecture / Engine  
+**Phase:** Sound WAVE-2 Track 2A
+
+### Decision
+
+\mutation.mutate(reg, ldr, object_id, new_source, templates, ctx)\ now accepts an optional 6th \ctx\ parameter. When provided and \ctx.sound_manager\ is non-nil, the mutation sequence fires sound lifecycle hooks in this order:
+
+1. \stop_by_owner(old_id)\ — stop sounds emitted by the old object
+2. \	rigger(old, "on_mutate")\ — fire the mutation sound event
+3. \eg:register()\ — swap the object in registry
+4. \scan_object(new_obj)\ — scan replacement for new sound declarations
+
+### Rationale
+
+Mutation had no access to runtime context. Sound hooks need the sound manager, which lives on \ctx\. The optional parameter is backward compatible — existing callers that don't pass \ctx\ get nil, and all sound hooks are nil-guarded. This follows the fire-and-forget pattern: sound failures never crash the game.
+
+### Implementation
+
+- **src/engine/mutation/init.lua** — Added \ctx\ parameter, conditional hook dispatch
+- **src/engine/verbs/init.lua** — All verb handlers that call \perform_mutation()\ now pass \ctx\
+- **Zero behavior change** — Mutations work identically whether ctx is passed or not
+
+### Affected Agents
+
+- **Flanders:** Object mutation definitions (\ecomes\ field) — no change needed, but \on_mutate\ sound key is now live for sound dispatch
+- **Smithers:** Verb handlers that call \perform_mutation()\ — already updated to pass \ctx\
+- **Nelson:** Integration tests should verify mutation sound lifecycle (stop old, trigger event, scan new)
+
+---
+
+## D-LEVEL2-DESIGN-LOCK: Level 2 Design Parameters
+
+**Status:** 🟢 Active  
+**Author:** Wayne \"Effe\" Berry (via Copilot)  
+**Date:** 2026-03-29T11:45Z  
+**Category:** Design / Planning
+
+### Summary
+
+Level 2 design parameters finalized after Q&A with design team. All 7 parameters are binding — design and content work must stay within these constraints.
+
+### Parameters Locked
+
+| # | Parameter | Decision | Rationale |
+|----|-----------|----------|-----------|
+| 1 | **Theme** | Garden & grounds (greenhouse, hedge maze, stables) | Exterior transition from manor interior; natural progression |
+| 2 | **Size** | 8-12 rooms (medium expansion) | More exploration than Level 1 (7 rooms) without bloat |
+| 3 | **Difficulty** | Gradual progression from Level 1 endgame | No major mechanic jumps; learning curve continues smoothly |
+| 4 | **Creatures** | Mix of natural (owls, snakes, foxes, insects) + one supernatural | Grounded exploration + mystery element |
+| 5 | **Lighting** | Time-of-day dependent (actual game clock) | First exterior level; natural light finally matters at noon |
+| 6 | **Weather** | Mechanical, not cosmetic (rain extinguishes fire, wind carries sound, fog limits visibility) | New engine subsystem; adds environmental challenge |
+| 7 | **Travel** | Two-way (player can freely return to Level 1 via portal) | No level-locking; exploration is player-driven |
+
+### Impact
+
+- **Moe:** 8-12 rooms, courtyard expansion, garden hub layout
+- **Flanders:** 20+ garden objects (plants, furniture, interactive elements) + 6-8 creature types
+- **CBG:** Design synthesis, validate map flow against constraints
+- **Bart:** Implement weather subsystem (new engine work)
+- **Sideshow Bob:** Mausoleum puzzle design within garden theme
+- **Nelson:** Integration tests for weather system + Level 2 smoke tests
+
+---
+
+## D-LEVEL2-COURTYARD-PORTAL: Courtyard as Level 2 Gateway
+
+**Status:** 🟢 Active  
+**Author:** Wayne \"Effe\" Berry (via Copilot)  
+**Date:** 2026-03-29T11:49Z  
+**Category:** Architecture / Design
+
+### Decision
+
+The Level 1 → Level 2 (garden & grounds) portal should connect through the **courtyard**, not the hallway staircase. A staircase is not a natural transition from interior to exterior — the courtyard (already exterior, already connected to bedroom via window portal #199) is the logical gateway to the garden.
+
+### Implementation Requirements
+
+- New portal object in courtyard (garden gate, archway, or garden path)
+- Courtyard becomes the hub connecting Level 1 interior to Level 2 exterior
+- Consider intermediate transition room (walled garden, kitchen garden, or terrace) if needed for pacing
+- Issue #205 scope changed: hallway staircase now targets **upper floors** (future level), not Level 2
+
+### Why
+
+Architectural logic: Manors don't access gardens via staircases. The courtyard is the natural exterior transition point. This aligns with real-world manor/estate topology.
+
+### Impact
+
+- **Moe:** Courtyard expansion, portal design, garden layout anchoring to courtyard
+- **Lisa:** Issue #205 scope change (staircase destination = upper floors, not Level 2)
+- **CBG:** Map flow validation — courtyard becomes Level 2 hub
+- **Flanders:** Courtyard portal object design
+
+---
+
+## D-LEVEL2-MAUSOLEUM-PORTAL: Mausoleum as Level 2→3 Gate
+
+**Status:** 🟢 Active  
+**Author:** Wayne \"Effe\" Berry (via Copilot)  
+**Date:** 2026-03-29T11:48Z  
+**Category:** Architecture / Design
+
+### Decision
+
+In Level 2 (garden & grounds), there is a small freestanding **mausoleum** structure. The mausoleum serves a dual role:
+
+1. **Arrival point FROM Level 1** — The deep cellar staircase ascends through the mausoleum floor; players complete Level 1 underground puzzles, then emerge in the mausoleum
+2. **Portal to Level 3** — Mausoleum contains a puzzle-locked gate/descent into Level 3
+
+The mausoleum should be a discoverable structure in the garden that feels like a natural landmark, not a hidden secret.
+
+### Ownership
+
+- **Moe:** Mausoleum room definition + garden layout
+- **Flanders:** Mausoleum object structure + interactive elements
+- **Sideshow Bob:** Puzzle design (what locks the Level 3 gate)
+- **Bart:** Portal implementation in engine (already exists)
+
+### Why
+
+Completes the Level 1→2→3 transition narrative. The staircase ascent feels earned (deep underground → emergence). The mausoleum becomes a landmark and emotional beats for player progression.
+
+### Impact
+
+- Level 1 completion feels climactic (deep cellar ascent)
+- Level 2 has a visual anchor (mausoleum monument)
+- Level 3 gate is guarded by a real location, not an arbitrary invisible barrier
+
+---
+
+## D-LEVEL-TOPOLOGY-MAP: Full Level Transition Architecture
+
+**Status:** 🟢 Active  
+**Author:** Wayne \"Effe\" Berry (via Copilot)  
+**Date:** 2026-03-29T11:52Z  
+**Category:** Architecture / Planning
+
+### Summary
+
+Complete level transition topology locked for Levels 1–4+. This is the binding map for all level design work.
+
+### Level 1 → Level 2 (two paths)
+
+1. **Bedroom window → Courtyard → Garden (early access shortcut)**
+   - Existing portal #199 (already implemented)
+   - Player can reach Level 2 early but garden is just the start
+   
+2. **Deep cellar staircase → Mausoleum (completion exit)**
+   - Player completes Level 1 underground puzzles
+   - Staircase ascends **through the mausoleum floor**
+   - Emerges in mausoleum (dramatic climax)
+   - This is the \"true\" Level 1 completion path
+
+### Mausoleum (Level 2) — Dual Role
+
+- **Arrival point:** Where staircase from Level 1 leads
+- **Level 3 gate:** Puzzle-locked descent into Level 3
+
+### Level 2 → Level 3
+
+- **Mausoleum puzzle gate** (Sideshow Bob designs the puzzle)
+- Players must solve mausoleum puzzle to access Level 3
+
+### Level 2 → Level 4+
+
+- **Hedge maze exit → Moorland / wild countryside**
+- Garden's manicured geometry dissolves into untamed landscape
+- Estate boundary — civilization ends; wilderness begins
+
+### Rework Needed
+
+- **Issue #205 scope:** Hallway staircase no longer goes to Level 2 garden. It's the path to upper floors (attic, tower, servant quarters) — future level
+- **Last room in Level 1 underground:** Needs to feel like a culmination before the staircase ascent
+- **Courtyard-to-garden connection:** Needs a portal (garden gate, archway, or path) per D-LEVEL2-COURTYARD-PORTAL
+
+### Impact
+
+- **Moe:** Room design (Level 2 rooms + mausoleum + courtyard)
+- **CBG:** Map flow validation
+- **Sideshow Bob:** Mausoleum puzzle design
+- **Lisa:** Issue #205 scope change (hallway staircase = upper floors)
+- **Level 2 board:** Full topology integrated
+- **Level 3 planning:** Mausoleum gate is the entry point
