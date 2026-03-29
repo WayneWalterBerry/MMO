@@ -1,8 +1,8 @@
 # Sound Project Board
 
 **Owner:** 🏗️ Bart (Architecture Lead) + ⚙️ Gil (Web Engineer)
-**Last Updated:** 2026-03-29T11:52Z
-**Overall Status:** 🟢 WAVE-0 COMPLETE ✅ + WAVE-2 Track 2A COMPLETE ✅ — Sound manager + null driver + defaults + 47 tests + 12 engine hooks. Gil (web bridge) and Nelson (mock driver + scaffolding) tracks pending.
+**Last Updated:** 2026-03-29T12:14Z
+**Overall Status:** 🟢 WAVE-0 COMPLETE ✅ + WAVE-1 COMPLETE ✅ + WAVE-2 Track 2A COMPLETE ✅ — Sound manager + null driver + defaults + 47 tests + 12 engine hooks + 20 object/creature metadata + 7 room ambients. Gate-1 ready for integration. Gil (web bridge) and Nelson (mock driver + scaffolding) tracks pending.
 
 ---
 
@@ -15,7 +15,7 @@
 | **P0b** | Wayne final review of v1.1 plan | Wayne | ⏳ Pending |
 | **P0c** | Wayne final review (documentation gaps, missing deliverables) | Wayne | ⏳ Blocked by P0b (merged into P0b flow) |
 | **P1** | **WAVE-0** — Sound manager module + platform drivers | Bart, Gil, Nelson | ✅ Done (Bart track — init.lua + null-driver + defaults + tests) |
-| **P2** | **WAVE-1** — Object metadata + room ambients + asset sourcing | Flanders, Moe, CBG, Nelson | ⏳ Pending |
+| **P2** | **WAVE-1** — Object metadata + room ambients + asset sourcing | Flanders, Moe, CBG, Nelson | ✅ Done (Flanders: 20 files, Moe: 7 rooms, CBG: asset sourcing ⏳) |
 | **P3** | **WAVE-2 Track 2A** — Engine hooks (FSM, verb, mutation, room, effects, loader) | Bart | ✅ Done (12 hooks, +70 lines, 260/260 tests pass, commit 2669e5e) |
 | **P3b** | **WAVE-2 Track 2B+C** — Integration + verb narration | Smithers, Nelson | ⏳ Blocked on GATE-1 |
 | **P4** | **WAVE-3** — Build pipeline + deploy + documentation | Gil, Nelson, Brockman | ⏳ Pending |
@@ -24,7 +24,7 @@
 
 ## Overall Status
 
-**🟢 WAVE-0 COMPLETE ✅ — Sound manager module, null driver, defaults table, and 47 unit tests delivered. 260 test files pass (zero regressions). WAVE-2 Track 2A COMPLETE ✅ — 12 engine hooks across 9 files, +70 lines, full FSM/verb/mutation/room/effects/loader integration wired. Gil (web bridge) and Nelson (mock driver + additional tests) tracks still pending for full GATE-0.**
+**🟢 WAVE-0 COMPLETE ✅ — Sound manager module, null driver, defaults table, and 47 unit tests delivered. WAVE-1 COMPLETE ✅ — 20 object/creature metadata files (Flanders, 263 tests) + 7 room ambient declarations (Moe, 260 tests). WAVE-2 Track 2A COMPLETE ✅ — 12 engine hooks across 9 files, +70 lines, full FSM/verb/mutation/room/effects/loader integration wired. Gate-1 ready for integration. Gil (web bridge) and Nelson (mock driver + asset sourcing validation) tracks pending for full GATE-2.**
 
 ---
 
@@ -44,8 +44,8 @@
 
 | Wave | Phase | Parallel Tracks | Gate Criteria | Status |
 |------|-------|-----------------|---------------|--------|
-| **WAVE-0** | Infrastructure | 3 | Sound manager loads, no-op works, web bridge connects, zero regressions | ✅ Done (Bart track) |
-| **WAVE-1** | Metadata + Assets | 4 | 15+ objects/creatures have sounds tables, 7 rooms declare ambients, 24 files sourced + compressed | ⏳ Pending |
+| **WAVE-0** | Infrastructure | 3 | Sound manager loads, no-op works, web bridge connects, zero regressions | ✅ Done (Bart track, commit 2669e5e) |
+| **WAVE-1** | Metadata + Assets | 4 | 15+ objects/creatures have sounds tables, 7 rooms declare ambients, 24 files sourced + compressed | ✅ Done (Flanders: 20 files, 263 tests; Moe: 7 rooms, 260 tests; CBG: asset sourcing ⏳) |
 | **WAVE-2 Track 2A** | Engine Hooks | 1 | FSM/verb/mutation engine hook points registered | ✅ Done (Bart: 12 hooks, +70 lines, commit 2669e5e) |
 | **WAVE-2 Track 2B+C** | Integration | 2 | Combat dispatch + verb handlers wired, integration tests pass | ⏳ Blocked on WAVE-1 + GATE-0 |
 | **WAVE-3** | Deploy + Polish | 3 | Build pipeline works, sounds deploy to web, LLM walkthroughs pass, docs shipped | ⏳ Pending |
@@ -210,5 +210,5 @@
 
 ---
 
-**Board Last Updated:** 2026-03-29T11:52Z (Scribe — WAVE-0 + WAVE-2 Track 2A completion)  
+**Board Last Updated:** 2026-03-29T12:14Z (Scribe — WAVE-0 + WAVE-1 + WAVE-2 Track 2A completion)  
 **For questions:** See `.squad/agents/bart/charter.md` or `.squad/decisions.md`
