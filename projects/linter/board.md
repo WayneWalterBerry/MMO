@@ -13,7 +13,7 @@
 
 | Priority | Task | Blocker | Owner |
 |----------|------|---------|-------|
-| P0 | Fix 4 CREATURE validation bugs (CREATURE-003, 004, 007, 008) in lint.py | Closes GATE-4 | Bart |
+| P0 | Fix 4 CREATURE validation bugs (CREATURE-003, 004, 007, 008) in lint.py | Closes GATE-4 | Wiggum |
 | P1 | Update linter board after GATE-4 passes → mark all waves complete | Blocked by P0 | Wiggum |
 | P2 | Mutation-graph Phase 2 deferred | Future work | — |
 
