@@ -35,17 +35,19 @@ $playDir   = "$pagesRepo/play"
 # Create play/ directory if it doesn't exist
 New-Item -ItemType Directory -Path $playDir -Force
 
-# ⚠️ CRITICAL: Copy index.html EVERY TIME — it contains all CSS.
-# This file was missed in a prior deploy and caused CSS fixes to not appear.
+# Copy dist files FIRST (engine bundle, meta files, etc.)
+Copy-Item web/dist/*           $playDir/ -Recurse -Force
+
+# ⚠️ CRITICAL: Copy top-level files LAST — they are freshly stamped by build
+# scripts and MUST overwrite any stale copies that may exist in dist/.
+# (Bug: dist/ once contained committed copies of these files that overwrote
+# the stamped versions, causing deploys to show stale BUILD_TIMESTAMP.)
 # Remove before copy — Copy-Item -Force silently fails on Windows (#25)
 foreach ($f in @("index.html", "bootstrapper.js", "game-adapter.lua")) {
     $dest = "$playDir/$f"
     if (Test-Path $dest) { Remove-Item $dest -Force }
     Copy-Item "web/$f" $playDir/
 }
-
-# Copy all built/dist files (engine bundle, meta files, etc.)
-Copy-Item web/dist/*           $playDir/ -Recurse -Force
 
 # 4. Commit and push
 cd $pagesRepo

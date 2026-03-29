@@ -102,17 +102,18 @@ jobs:
           # Create play/ directory if it doesn't exist
           New-Item -ItemType Directory -Path $playDir -Force | Out-Null
 
-          # Copy critical top-level files (index.html, bootstrapper.js, game-adapter.lua)
+          # Copy dist files FIRST (engine bundle, meta files, etc.)
+          Copy-Item web/dist/* $playDir/ -Recurse -Force
+          Write-Host "Copied: web/dist/* -> $playDir/"
+
+          # Copy top-level files LAST — these are freshly stamped by build scripts
+          # and MUST overwrite any stale copies that may exist in dist/
           foreach ($f in @("index.html", "bootstrapper.js", "game-adapter.lua")) {
             $dest = Join-Path $playDir $f
             if (Test-Path $dest) { Remove-Item $dest -Force }
             Copy-Item "web/$f" $playDir/
-            Write-Host "Copied: $f"
+            Write-Host "Copied (stamped): $f"
           }
-
-          # Copy all built/dist files (engine bundle, meta files, etc.)
-          Copy-Item web/dist/* $playDir/ -Recurse -Force
-          Write-Host "Copied: web/dist/* -> $playDir/"
 
           # Summary
           $fileCount = (Get-ChildItem $playDir -Recurse -File).Count
