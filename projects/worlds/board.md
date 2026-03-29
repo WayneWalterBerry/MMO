@@ -1,8 +1,8 @@
 # Worlds — Board
 
 **Owner:** 🏗️ Bart (Architecture Lead) + 🏗️ Moe (World & Level Builder)
-**Last Updated:** 2026-03-29 (Reviewed & Verified by Bart + Moe)
-**Overall Status:** 📋 DESIGNED (D-WORLDS-CONCEPT active) — Phase 1 implementation READY TO START
+**Last Updated:** 2026-03-30 (WAVE-0 + WAVE-1 loader completed by Bart)
+**Overall Status:** 🚧 IN PROGRESS — WAVE-0 ✅ Done, WAVE-1 loader ✅ Done, WAVE-1 data + WAVE-2/3 pending
 
 ---
 
@@ -10,10 +10,10 @@
 
 | Priority | Wave | Task | Owner | Status | Gate |
 |----------|------|------|-------|--------|------|
-| **P0** | WAVE-0 | Create `src/meta/worlds/` and `src/meta/worlds/themes/` directories | Bart | ⏳ Pending | — |
-| **P0** | WAVE-0 | Register `test/worlds/` in test runner (`test/run-tests.lua`) | Bart | ⏳ Pending | — |
-| **P0** | WAVE-1 | Implement world loader engine (`src/engine/world/init.lua`) | Bart | ⏳ Pending | GATE-1 |
-| **P0** | WAVE-1 | Write world loader tests (`test/worlds/test-world-loader.lua`) | Nelson | ⏳ Pending | GATE-1 |
+| **P0** | WAVE-0 | Create `src/meta/worlds/` and `src/meta/worlds/themes/` directories | Bart | ✅ Done | — |
+| **P0** | WAVE-0 | Register `test/worlds/` in test runner (`test/run-tests.lua`) | Bart | ✅ Done | — |
+| **P0** | WAVE-1 | Implement world loader engine (`src/engine/world/init.lua`) | Bart | ✅ Done | GATE-1 |
+| **P0** | WAVE-1 | Write world loader tests (`test/worlds/test-world-loader.lua`) | Nelson | ✅ Done (Bart) | GATE-1 |
 | **P1** | WAVE-1 | Write world definition tests (`test/worlds/test-world-definition.lua`) | Nelson | ⏳ Pending | GATE-1 |
 | **P1** | WAVE-2 | Integrate boot sequence (world-driven `main.lua` boot) | Bart | ⏳ Pending | GATE-2 |
 | **P1** | WAVE-2 | Write boot integration tests (`test/worlds/test-world-boot.lua`, `test/integration/test-world-integration.lua`) | Nelson | ⏳ Pending | GATE-2 |
@@ -29,8 +29,8 @@
 
 | Wave | Name | Status | Gate | Key Deliverables |
 |------|------|--------|------|-----------------|
-| WAVE-0 | Pre-Flight (dirs + test runner) | ⏳ Pending | — | Directory creation, 1-line test runner update |
-| WAVE-1 | World Loader + Data (foundation) | ⏳ Pending | GATE-1 | `engine/world/init.lua`, world template, `world-01.lua`, tests |
+| WAVE-0 | Pre-Flight (dirs + test runner) | ✅ Done | — | Directory creation, test runner update |
+| WAVE-1 | World Loader + Data (foundation) | ✅ Done (loader + tests) | GATE-1 | `engine/world/init.lua`, tests (16 pass) |
 | WAVE-2 | Boot Integration (engine wiring) | ⏳ Pending | GATE-2 | `main.lua` world-driven boot, integration tests |
 | WAVE-3 | Documentation + Verification (ship gate) | ⏳ Pending | GATE-3 | Architecture docs, LLM walkthrough |
 
@@ -48,11 +48,13 @@
 | `src/meta/worlds/` directory | ✅ Exists | `src/meta/worlds/` | Holds all world definitions; `world-01.lua` currently present |
 | Decision D-WORLDS-CONCEPT | ✅ Active | `.squad/decisions.md` | Architecture decision for worlds as top-level container; active in Bart + Moe histories |
 | Implementation plan (Phase 1) | ✅ Complete | `projects/worlds/worlds-implementation-phase1.md` (586 lines) | 4-wave plan, dependency graph, detailed task specs, gate criteria, owner assignments |
-| World loader engine module | ❌ NOT started | `src/engine/world/init.lua` (to-do) | Needs implementation per WAVE-1 spec |
-| Test directory | ❌ NOT created | `test/worlds/` (to-do) | Needs creation + registration in test runner (WAVE-0) |
-| Test runner registration | ❌ NOT updated | `test/run-tests.lua` (to-do) | `test/worlds/` entry needed in test_dirs array (WAVE-0) |
+| World loader engine module | ✅ Complete | `src/engine/world/init.lua` | discover(), load(), validate(), select(), get_starting_room() |
+| Test directory | ✅ Created | `test/worlds/` | Created + registered in test runner |
+| Test runner registration | ✅ Updated | `test/run-tests.lua` | `test/worlds/` in test_dirs + source_to_tests mapping |
 | Boot integration | ❌ NOT started | `src/main.lua` (to-do) | Needs world-driven boot logic per WAVE-2 spec |
-| Tests | ❌ NOT written | `test/worlds/test-*.lua` (to-do) | 3 test files: world-loader, world-definition, world-boot (WAVE-1 + WAVE-2) |
+| Tests — world-loader | ✅ Written | `test/worlds/test-world-loader.lua` | 16 tests: discover, validate, select, load, get_starting_room + real world-01 integration |
+| Tests — world-definition | ❌ NOT written | `test/worlds/test-world-definition.lua` (to-do) | WAVE-1 remaining (Nelson) |
+| Tests — world-boot | ❌ NOT written | `test/worlds/test-world-boot.lua` (to-do) | WAVE-2 (Nelson) |
 
 ---
 

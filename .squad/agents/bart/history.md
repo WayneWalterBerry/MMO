@@ -58,6 +58,16 @@
 - Review written to `.squad/decisions/inbox/bart-sound-review.md`. Board updated.
 - Commit: d5962c6.
 
+8. **Worlds WAVE-0 + WAVE-1 Loader (2026-03-30):**
+   - Executed WAVE-0: Created `test/worlds/` directory, registered in `test/run-tests.lua` (test_dirs + source_to_tests mapping).
+   - Executed WAVE-1 (loader portion): Built `src/engine/world/init.lua` with 5 functions: discover(), validate(), select(), get_starting_room(), load().
+   - Module follows dependency injection pattern (zero require() calls) — list_lua_files, read_file, load_source passed as parameters.
+   - Single-world auto-select: 0 worlds → FATAL, 1 world → return it, 2+ → "not implemented" (Phase 2).
+   - Wrote `test/worlds/test-world-loader.lua` — 16 tests covering all functions + real world-01.lua integration.
+   - Full suite: 258 test files, all passing (257 existing + 1 new). Zero regressions.
+   - Board updated: WAVE-0 ✅ Done, WAVE-1 loader ✅ Done. Remaining: WAVE-1 data (Flanders), WAVE-2 boot, WAVE-3 docs.
+   - Note: world-01.lua already existed in `src/meta/worlds/` (built by Moe previously). Template `world.lua` also already exists. The plan's WAVE-1 references "the-manor.lua" but the actual file is "world-01.lua" with `id = "world-1"` — no rename needed, the loader is generic.
+
 ## Archives
 
 - Prior detailed session logs: .squad/log/
