@@ -2,12 +2,13 @@
 
 **Author:** Bart (Architecture Lead)  
 **Date:** 2026-03-28  
-**Version:** v1.0 (Assembled)  
-**Status:** 🟢 ASSEMBLED — All 5 chunks merged  
+**Version:** v2.0 (All 8 reviewer findings incorporated)  
+**Revised:** 2026-03-29  
+**Status:** 🟢 REVIEW-CLEAN — 17 fixes applied, 0 blockers  
 **Requested By:** Wayne "Effe" Berry  
 **Governs:** Phase 5: Level 2 Expansion → Werewolf NPC → Pack Coordination → Salt Preservation → Integration  
 **Predecessor:** `plans/npc-combat/npc-combat-implementation-phase4.md` (Phase 4 — ✅ COMPLETE, 223 tests)  
-**Reviewers:** [TBD — pending full plan completion]
+**Reviewers:** CBG (game design), Marge (testing), Chalmers (sequencing/skill audit), Flanders (objects), Smithers (verbs/parser), Moe (rooms), Nelson (QA), Bart (architecture)
 
 ---
 
@@ -203,6 +204,9 @@ Phase 4 ──→ PRE-WAVE (bugs + design) ──→ W1 (Level 2 foundation) ─
 | Bart | **Werewolf design spec** | Write creature spec: combat stats (health, attack, defense), territorial behavior pattern, patrol routes (room-to-room), semi-intelligent AI hooks (future dialogue scaffold). Distinct from wolf — separate creature class, higher stats, solo hunter. Write to `.squad/decisions/inbox/bart-werewolf-spec.md`. |
 | Bart | **Salt preservation design spec** | Write preservation pipeline spec: `salt` verb handler flow, salt object definition, mutation path (wolf-meat → salted-wolf-meat), spoilage FSM rate modifier (3× slower decay), tool requirement (salt must be in hand). Write to `.squad/decisions/inbox/bart-salt-preservation-spec.md`. |
 | Nelson | **Regression baseline** | Run `lua test/run-tests.lua`, record exact test count as PHASE-4-FINAL-COUNT (expected: 223). Verify zero failures. Register new test directories: `test/level2/`, `test/pack/`, `test/preservation/`. |
+| Bart | **GUID pre-assignment** | Reserve Windows-format GUIDs for all 12+ Phase 5 new objects (werewolf, werewolf-pelt, werewolf-fang, werewolf-meat, cooked-werewolf-meat, silver-pendant, torn-journal-page, salt, salted-wolf-meat, cooked-salted-wolf-meat, salted-werewolf-meat, cooked-salted-werewolf-meat). Write to `.squad/decisions/inbox/bart-phase5-guids.md`. Flanders and Smithers reference this file during WAVE-1 and WAVE-3. Prevents GUID collisions during parallel authoring. |
+| Moe | **Level 2 environmental specifications** | Produce `docs/design/levels/level2-environmental-specifications.md` — full sensory specs for all 7 L2 rooms: `description` (lit), `on_feel` (dark), `on_smell`, `on_listen` per room, spatial instance trees (what objects go where using `on_top`/`contents`/`nested`/`underneath`), and puzzle hooks. **Must complete before WAVE-1** so Moe can write room `.lua` files with proper sensory depth. |
+| Smithers | **Preserve/cure alias audit** | Audit `src/engine/verbs/init.lua` verb dispatch for collisions between new salt aliases (`preserve`, `cure`, `rub salt on`) and existing verbs (e.g., `cure poison` in injury system). Document precedence rules: most-specific verb wins. If collision found, file decision to `.squad/decisions/inbox/smithers-alias-precedence.md`. Check `src/assets/parser/embedding-index.json` for semantic overlaps. |
 
 #### File Ownership Table
 
@@ -218,6 +222,9 @@ Phase 4 ──→ PRE-WAVE (bugs + design) ──→ W1 (Level 2 foundation) ─
 | `.squad/decisions/inbox/bart-werewolf-spec.md` | Bart | CREATE |
 | `.squad/decisions/inbox/bart-salt-preservation-spec.md` | Bart | CREATE |
 | `test/run-tests.lua` | Nelson | MODIFY (register 3 new dirs) |
+| `.squad/decisions/inbox/bart-phase5-guids.md` | Bart | CREATE |
+| `docs/design/levels/level2-environmental-specifications.md` | Moe | CREATE |
+| `.squad/decisions/inbox/smithers-alias-precedence.md` | Smithers | CREATE (if collision found) |
 
 **File conflict check:** ✅ No overlaps. Smithers owns silk objects + crafting verb. Bart owns brass-key objects + design specs. Moe owns geography sketch. Nelson owns test runner.
 
@@ -332,7 +339,7 @@ Phase 4 delivered simplified pack awareness in `src/engine/creatures/pack-tactic
 Phase 5 upgrades to:
 - **Alpha selection by highest HP** (Wayne Q4 decision: Option A) — healthiest wolf leads
 - **Stagger attacks with turn-taking** — alpha strikes first, betas follow in HP order, 1-turn delay between each
-- **Omega reserve** — lowest-HP wolf retreats to adjacent room if health < 30%, returns when healed
+- **Omega reserve** — lowest-HP wolf retreats to adjacent room if health < 30% (per code spec), returns when healed
 - **Pack awareness radius** — wolves within 2 rooms sense each other (reuses territorial BFS from Phase 4)
 
 ```lua
@@ -359,7 +366,7 @@ end
 | Bart | **Omega reserve behavior** | Add retreat logic to `src/engine/creatures/pack-tactics.lua` — omega flees to adjacent room when health < 30%. Returns after 3 ticks if health > 50%. Uses `src/engine/creatures/navigation.lua` for exit selection. |
 | Flanders | **Wolf pack_role metadata** | Update `src/meta/creatures/wolf.lua` — add `pack_tactics.role_eligible = true` flag. Add `pack_tactics.retreat_threshold = 0.3` and `pack_tactics.return_threshold = 0.5`. Do NOT set `pack_role` statically — roles are computed by engine. |
 | Flanders | **Werewolf pack exclusion** | Update `src/meta/creatures/werewolf.lua` — add `pack_tactics.role_eligible = false`. Werewolves are solo hunters, never join wolf packs. |
-| Smithers | **Pack narration** | Add coordinated attack narration to `src/engine/verbs/combat.lua`. Distinct messages: "The alpha wolf lunges first...", "The pack follows in sequence...", "The omega wolf retreats, whimpering." |
+| Smithers | **Pack narration** | Add coordinated attack narration to `src/engine/verbs/combat.lua`. Alpha, beta, and omega attacks must be **visually distinct** in combat text (CBG requirement). Distinct messages: alpha = "The largest wolf **lunges forward**, teeth bared." beta = "Another wolf **hesitates, waiting for an opening**, then strikes." omega = "The wounded wolf **backs away and flees through [exit]**." Role-variant text ensures players understand wolves are coordinating — not just individually weak. |
 | Nelson | **Pack role tests** | `test/pack/test-role-assignment.lua`: 3 wolves → correct alpha/beta/omega by HP. HP changes → roles reassign. `test/pack/test-stagger-attacks.lua`: attack order follows role priority. `test/pack/test-omega-reserve.lua`: omega flees at <30% HP, returns at >50%. ~10-12 tests. |
 
 #### File Ownership Table
@@ -418,7 +425,7 @@ Salt is consumed on use (1 salt → 1 salted meat). Player must hold salt in one
 
 | Agent | Task | Details |
 |-------|------|---------|
-| Smithers | **`salt` verb handler** | Create handler in `src/engine/verbs/crafting.lua` (or new `preservation.lua` if crafting exceeds 500 LOC). Verb: `salt`. Aliases: `preserve`, `cure`, `rub salt on`. Requires: salt object in one hand, meat object in other hand. Validates target has `preservable = true` flag. Triggers mutation on meat object. Consumes salt object. |
+| Smithers | **`salt` verb handler** | Create handler in `src/engine/verbs/crafting.lua` (or new `preservation.lua` if crafting exceeds 500 LOC). Verb: `salt`. Aliases: `preserve`, `cure`, `rub salt on`. Requires: salt object in one hand, meat object in other hand. Validates target has `preservable = true` flag. Triggers mutation on meat object. Consumes salt object. **Narration requirement (CBG):** Salt verb MUST telegraph expedition benefit — e.g., "You work the salt crystals into the meat. This should keep much longer now." Examining salted meat should also reinforce value: "The salt has formed a protective crust — this will last far longer than fresh meat." |
 | Smithers | **Embedding index update** | Add `salt`, `preserve`, `cure`, `rub salt` to `src/assets/parser/embedding-index.json`. Verify no collision with existing entries. |
 | Flanders | **salt.lua object** | Create `src/meta/objects/salt.lua`. Template: small-item. Consumable (consumed on use). Material: mineral. `on_feel = "Coarse, dry crystals."` `on_taste = "Intensely salty — stings the tongue."` Capabilities: `preserving`. Keywords: salt, rock salt, salt crystals. Placed in deep-storage room (Level 2). |
 | Flanders | **salted-wolf-meat.lua** | Mutation target from wolf-meat. `preservable = true` on wolf-meat source. FSM: raw-salted → cooked-salted. Spoilage rate: `spoil_multiplier = 3.0` (3× slower). `on_feel = "Firm, salt-crusted flesh."` `on_smell = "Sharp salt and dried meat."` Nutrition: 35 (same as wolf-meat). |
@@ -427,7 +434,7 @@ Salt is consumed on use (1 salt → 1 salted meat). Player must hold salt in one
 | Flanders | **cooked-salted-werewolf-meat.lua** | Mutation result of cooking salted-werewolf-meat. Nutrition: 50, heal: 18. Spoilage: `spoil_multiplier = 3.0`. |
 | Flanders | **wolf-meat.lua update** | Add `preservable = true` and `mutations.salt = { becomes = "salted-wolf-meat", message = "You rub salt into the wolf meat..." }` to existing object. |
 | Flanders | **werewolf-meat.lua update** | Add `preservable = true` and `mutations.salt` block (same pattern as wolf-meat). |
-| Bart | **FSM spoilage rate modifier** | Update `src/engine/fsm/init.lua` — when ticking food spoilage timers, check for `spoil_multiplier` field on object. If present, divide decay rate by multiplier. ~20-30 LOC change. Affects all food objects with the field (future-proof for smoking, drying, etc.). |
+| Bart | **FSM spoilage rate — decision: NO engine change** | Per Principle 8 and Bart's architecture review: objects declare actual `duration` values directly in their FSM states. No `spoil_multiplier` field on objects, no engine check. Salted-meat objects simply declare `duration = 21600` (3× the base 7200) in their state definitions. Engine ticks `duration` generically — it already does this. **Decision:** `.squad/decisions/inbox/bart-spoilage-no-engine-change.md`. This resolves the §1.4 vs §4 contradiction (line 998 says "no engine changes"; previous text said ~20-30 LOC change). Objects own their timing; engine stays generic. |
 | Nelson | **Preservation tests** | `test/preservation/test-salt-verb.lua`: salt verb resolves, requires salt + meat in hands, consumes salt, produces salted-meat. `test/preservation/test-spoilage-rate.lua`: salted meat decays 3× slower than unsalted (FSM tick comparison). `test/preservation/test-salt-cook-chain.lua`: salted-raw → cook → salted-cooked preserves multiplier. ~10-12 tests. |
 
 #### File Ownership Table
@@ -568,11 +575,45 @@ WAVE-4 is validation, not implementation. No new unit tests. Nelson's walkthroug
 
 Run `lua test/run-tests.lua` on Phase 4 HEAD before Phase 5 work. Record as PHASE-4-FINAL-COUNT (current: ~258 files, 223 tracked tests). Each gate adds incrementally: GATE-1 +15, GATE-2 +10, GATE-3 +10, GATE-4 +15. Final target: **270+ passing tests, ZERO regressions.**
 
+### Flaky Test Quarantine Protocol (Marge)
+
+1. **Prevention:** All new Phase 5 tests MUST use `math.randomseed(42)` by default for deterministic replay
+2. **Detection threshold:** Any test that fails in ≥1 of 3 consecutive runs (95% pass rate floor) triggers investigation
+3. **Quarantine:** Failing flaky tests are tagged `@skip-ci` in the test file with linked GitHub issue:
+   ```lua
+   -- @skip-ci: Issue #NNN (non-deterministic creature tick ordering)
+   ```
+4. **Recovery:** Quarantined test must pass 3 consecutive green runs before `@skip-ci` is removed
+5. **Gate impact:** Flaky tests with `@skip-ci` + issue link do NOT block gates; untagged flaky tests DO block
+6. **Audit:** WAVE-4 includes Nelson's flakiness audit — any test added in WAVE-1 through WAVE-3 without fixed seed is flagged
+
+### LLM Scenario Log Format (Nelson)
+
+Each scenario run outputs to a separate file: `test/scenarios/phase5-{name}.log`
+
+```
+=== Scenario 2.N: {Name} ===
+[DATE] YYYY-MM-DDTHH:MM:SSZ
+[SEED] math.randomseed(42)
+[INPUT] echo "..." | lua src/main.lua --headless
+[STDOUT]
+... game output ...
+[STDERR]
+... errors (if any) ...
+[VERDICT] PASS | FAIL
+[NOTES] {Free-text observations}
+```
+
+- **File naming:** `test/scenarios/phase5-level2-exploration.log`, `test/scenarios/phase5-pack-tactics.log`, etc.
+- **Aggregate report:** `test/scenarios/phase5-scenario-summary.txt` — one line per scenario with verdict
+- **Retention:** Logs committed to git with each gate tag
+- **Gate rule:** If any scenario FAIL verdict, gate fails; logs provide RCA evidence
+
 ---
 
 ### GATE-1 — Level 2 Foundation
 
-**After:** WAVE-1 | **Reviewers:** Bart + Nelson
+**After:** WAVE-1 | **Reviewers:** Bart (architecture sign-off) + Nelson (QA sign-off)
 
 #### Pass/Fail Criteria
 
@@ -582,6 +623,7 @@ Run `lua test/run-tests.lua` on Phase 4 HEAD before Phase 5 work. Record as PHAS
 - [ ] Werewolf creature loads (stats, patrol, territorial) — `lua test/creatures/test-werewolf.lua`
 - [ ] L2 creatures spawn in correct rooms — `lua test/creatures/test-level2-placement.lua`
 - [ ] Room presence text correct — Manual review
+- [ ] Embedding index updated for L2 nouns — `lua test/parser/test-embedding-index.lua` (moved from GATE-4 per Smithers: catch noun resolution gaps early)
 - [ ] Zero regressions + ~238 tests pass — `lua test/run-tests.lua`
 
 **Perf:** L2 instantiation < 200ms | **LLM:** Scenario 2.1 | **Commit:** `feat: Level 2 foundation (WAVE-1)`
@@ -590,13 +632,13 @@ Run `lua test/run-tests.lua` on Phase 4 HEAD before Phase 5 work. Record as PHAS
 
 ### GATE-2 — Pack Role System
 
-**After:** WAVE-2 | **Reviewers:** Bart + Nelson
+**After:** WAVE-2 | **Reviewers:** Bart (architecture sign-off) + Nelson (QA sign-off)
 
 #### Pass/Fail Criteria
 
 - [ ] Stagger attacks (alpha first, others delay 1 turn) — `lua test/creatures/test-pack-stagger.lua`
 - [ ] Alpha = highest HP; re-evaluates on damage — `lua test/creatures/test-pack-alpha.lua`
-- [ ] Omega (< 25% HP) retreats — `lua test/creatures/test-pack-omega.lua`
+- [ ] Omega (< 30% HP) retreats — `lua test/creatures/test-pack-omega.lua`
 - [ ] `pack_role` field on wolf instances — `lua test/creatures/test-wolf-pack-metadata.lua`
 - [ ] Territory zones map to L2 topology — `lua test/creatures/test-level2-territory.lua`
 - [ ] Coordinated attack narration correct — Manual review
@@ -608,7 +650,7 @@ Run `lua test/run-tests.lua` on Phase 4 HEAD before Phase 5 work. Record as PHAS
 
 ### GATE-3 — Salt Preservation System
 
-**After:** WAVE-3 | **Reviewers:** Bart + Nelson
+**After:** WAVE-3 | **Reviewers:** Bart (architecture sign-off) + Nelson (QA sign-off)
 
 #### Pass/Fail Criteria
 
@@ -626,7 +668,7 @@ Run `lua test/run-tests.lua` on Phase 4 HEAD before Phase 5 work. Record as PHAS
 
 ### GATE-4 — Phase 5 Complete
 
-**After:** WAVE-4 | **Reviewers:** Bart + Nelson + Brockman
+**After:** WAVE-4 | **Reviewers:** Bart (architecture sign-off) + Nelson (QA sign-off) + Brockman (docs sign-off)
 
 #### Pass/Fail Criteria
 
@@ -636,7 +678,7 @@ Run `lua test/run-tests.lua` on Phase 4 HEAD before Phase 5 work. Record as PHAS
 - [ ] No flaky tests (3 consecutive runs, 100%) — `lua test/run-tests.lua` × 3
 - [ ] No engine module > 500 LOC — manual audit
 - [ ] Meta-lint passes (0 errors) — `lua scripts/meta-lint.lua`
-- [ ] Embedding index updated (L2 nouns, salt, werewolf) — `lua test/parser/test-embedding-index.lua`
+- [ ] Embedding index validated (salt aliases verified; L2 nouns validated at GATE-1) — `lua test/parser/test-embedding-index.lua`
 
 #### Docs Acceptance
 
@@ -755,7 +797,7 @@ smell salted-wolf-meat" | lua src/main.lua --headless
 
 ### 2.4 Scenario: Pack Tactics (GATE-2 + GATE-4)
 
-**Goal:** Encounter wolf pack, verify stagger attacks, observe alpha/omega behavior.
+**Goal:** Encounter wolf pack, trigger combat, verify stagger attacks and alpha/omega behavior.
 
 ```bash
 echo "look
@@ -768,20 +810,23 @@ open door
 go north
 go west
 look
-wait
-wait
-wait
-wait
-wait
+attack wolf
+look
+attack wolf
+attack wolf
+look
+attack wolf
+attack wolf
+attack wolf
 look
 feel" | lua src/main.lua --headless
 ```
 
-**Expected patterns:** `wolf` (multiple mentions — pack present), `alpha`/`lunges first`/`leads the attack` (alpha first), `staggers`/`follows` (beta delayed), `retreats`/`flees` (omega if wounded). Sequential attack text, no simultaneous. No creature tick errors.
+**Expected patterns:** `wolf` (multiple mentions — pack present), `lunges forward`/`largest wolf`/`alpha` (alpha attacks first), `hesitates`/`waiting`/`follows` (beta delayed 1 turn), `backs away`/`flees`/`retreats` (omega if wounded below 30% HP). Sequential attack text — attacks must NOT appear simultaneous. No creature tick errors.
 
-**Pass:** Alpha attacks first, beta staggers 1 turn, omega retreats if wounded. Pack does not attack simultaneously.
+**Pass:** Alpha attacks first, beta staggers 1 turn, omega retreats when wounded below 30% HP. Pack combat demonstrates coordinated behavior through distinct role narration.
 
-**Note:** `wait` advances game time to trigger creature ticks. Adjust count based on tick frequency.
+**Note:** Combat commands (`attack wolf`) advance game time AND trigger creature ticks. Multiple rounds verify stagger sequencing and omega retreat behavior under actual combat conditions.
 
 ---
 
@@ -841,7 +886,7 @@ rest" | lua src/main.lua --headless
 | `test/creatures/test-level2-placement.lua` | W1 | Creatures in correct L2 rooms per geography | Nelson | 5 |
 | `test/creatures/test-pack-stagger.lua` | W2 | Alpha first, beta delayed 1 turn, sequence correct | Nelson | 4 |
 | `test/creatures/test-pack-alpha.lua` | W2 | Highest HP = alpha; re-evaluates; deterministic tie-break | Nelson | 4 |
-| `test/creatures/test-pack-omega.lua` | W2 | Omega retreat at < 25% HP, path selection | Nelson | 3 |
+| `test/creatures/test-pack-omega.lua` | W2 | Omega retreat at < 30% HP, path selection | Nelson | 3 |
 | `test/creatures/test-wolf-pack-metadata.lua` | W2 | `pack_role` field present, updates dynamically | Nelson | 3 |
 | `test/creatures/test-level2-territory.lua` | W2 | BFS radius in L2 room graph, zone boundaries | Nelson | 4 |
 | `test/verbs/test-salt-verb.lua` | W3 | Aliases resolve, requires salt in hand | Nelson | 4 |
@@ -917,7 +962,7 @@ rest" | lua src/main.lua --headless
 | `alive-flee` | "The werewolf crashes away into the darkness." | →idle(safe_room) |
 | `dead` | "In death, the face is almost human." | (final) |
 
-**Behavior vs wolf:** aggression=85 (wolf:70), flee_threshold=15% (wolf:20%), `nocturnal=true`, `can_open_doors=true`, territory=`werewolf-lair`, patrol_rooms=`{werewolf-lair, bone-gallery}`.
+**Behavior vs wolf:** aggression=85 (wolf:70), flee_threshold=15% (wolf:20%), `nocturnal=true`, `can_open_doors=true`, territory=`werewolf-lair`, patrol_rooms=`{werewolf-lair, bone-gallery}`. **Pack exclusion:** `pack_tactics = { role_eligible = false }` — werewolves are solo hunters, never join wolf packs (Flanders review, Principle 8 compliant).
 
 #### Combat Stats
 
@@ -1080,6 +1125,24 @@ WAVE-N → spawn parallel agents → agents complete → Nelson smoke-test
 - **Nelson continuous testing:** Smoke after each agent, full suite at gates, exploratory between waves
 - **All Nelson runs:** `--headless` mode, `math.randomseed(42)` for deterministic reproducibility
 
+### Session Continuity (Chalmers Pattern 14)
+
+If execution session dies (crash, network drop, timeout):
+
+1. Next session loads this plan file and checks Wave Status Tracker (top of document)
+2. Find last wave with `✅ Complete` status
+3. Verify corresponding gate tag exists: `git tag phase5-gate-N`
+4. Resume from WAVE-(N+1) with fresh agent spawning
+5. Re-run gate-N tests to confirm state before proceeding (no stale assumptions)
+
+### Gate Review Protocol (Marge + Nelson)
+
+- **Bart (Architecture Lead):** Verifies engine modules, integration points, Principle 8 compliance, module size guard. Sign-off: "GATE-N architecture OK"
+- **Nelson (QA):** Runs full test suite (`lua test/run-tests.lua`), LLM walkthroughs, flakiness audit. Sign-off: "GATE-N tests pass"
+- **Acceptance:** Both signatures required (Bart AND Nelson). Disagreement escalates to Coordinator.
+- **Coordinator Role:** The session orchestrator (or first available Squad member who is not Bart/Nelson). On escalation, Coordinator files GitHub issue and notifies Wayne.
+- **Gate passes iff:** (A) Bart signs architecture, (B) Nelson signs QA, (C) No new P0 bugs opened during gate review.
+
 ---
 
 ## Section 12: Gate Failure Protocol
@@ -1109,6 +1172,13 @@ WAVE-N → spawn parallel agents → agents complete → Nelson smoke-test
 | 1× | File issue → fix agent → re-gate | Coordinator |
 | 2× same gate | Escalate → wait | Wayne |
 | Post-rollback | Re-plan wave → fresh attempt | Coordinator + Bart |
+
+### Version Tracking (Chalmers Pattern 14)
+
+After all reviewer findings are addressed and gates pass:
+- Increment version: v1.0 → v2.0 (review findings), v2.1 (post-gate-1), v2.2 (post-gate-2), etc.
+- Commit: `git commit -m "Phase 5 plan updated to v{version}: {reason}"`
+- Reviewers reference the plan version when filing concerns
 
 ---
 
@@ -1197,8 +1267,41 @@ Phase 5 is complete when ALL are true (binary pass/fail):
 
 ---
 
+## Section 17: Post-Mortem Template (Chalmers Pattern 14)
+
+*To be filled after Phase 5 completion — all waves done, GATE-4 passed.*
+
+### Actual vs Estimated
+
+- Total LOC: {actual} vs ~1,975–2,575 estimated
+- Duration: {actual days} vs ~3–4 weeks estimated
+- Test count: {actual} vs 270+ target
+- New files: {actual} vs ~32 estimated
+- Modified files: {actual} vs ~23 estimated
+
+### Gate Failures
+
+- GATE-1: {count and resolution}
+- GATE-2: {count and resolution}
+- GATE-3: {count and resolution}
+- GATE-4: {count and resolution}
+
+### New Risks Discovered
+
+- {Risk} → {candidate mitigations}
+
+### Candidate Skills to Formalize
+
+- {Skill from Phase 5 execution pattern} → `.squad/skills/{name}/SKILL.md`
+
+### Deviations from Plan
+
+- {Scope changes, file renames, unexpected dependencies, unplanned work}
+
+---
+
 **END OF CHUNK 5 (OPERATIONS)**
 
 ---
 
-*Plan authored by Bart (Architecture Lead). Assembled from 5 chunks per implementation-plan skill Pattern 2a.*
+*Plan authored by Bart (Architecture Lead). Assembled from 5 chunks per implementation-plan skill Pattern 2a. Updated to v2.0 after 8-reviewer team review cycle.*
