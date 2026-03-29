@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-28T22:25:46Z  
-**Last Merge:** 2026-03-28T22:25:46Z (3 decisions from mutation-linter inbox merged)
+**Last Updated:** 20260329T000802Z  
+**Last Merge:** 20260329T000802Z (3 decisions from phase5/linter inbox merged)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -26,6 +26,9 @@ Quick-reference table of **active + most recent decisions**.
 | D-PARALLEL-EXPAND-LINT | Process | 🟢 Active | Objects expanded and linted in parallel — each object's mutation targets can run concurrently |
 | D-MUTATION-EDGE-EXTRACTION | Process | 🟢 Active | 5 mutation edge types formalized: file-swap, destruction, state-transition, composite-part, linked-exit |
 | D-LINTER-IMPL-WAVES | Process | 🟢 Active | Linter improvement: 6 waves with 5 gates, serialized lint.py edits |
+| D-WAYNE-PHASE5-DECISIONS | Process | 🟢 Active | Phase 5 scope: werewolf NPC, salt-only preservation, defer A*/env-combat/humanoid NPCs |
+| D-LINTER-ENGINEER-HIRE | Process | 🟢 Active | Hire dedicated linter engineer (Wiggum) to own 306-rule Python linter system |
+| D-FLANDERS-META-OWNERSHIP | Architecture | 🟢 Active | Flanders owns ALL src/meta/objects engineering; Bart focuses on src/engine/ only |
 | D-TEST-SPEED-IMPL-WAVES | Process | 🟢 Active | Test speed: 5-wave, 4-gate implementation; Nelson owns run-tests.lua; benchmark gating |
 | D-BENCHMARK-GATING | Testing | 🟢 Active | Benchmark files use `bench-*.lua` prefix; `--bench` flag includes benchmarks |
 | D-WAVE1-ALREADY-IMPLEMENTED | Testing | ✅ Complete | WAVE-1 regression tests pass; GATE-1 ready |
@@ -45,6 +48,105 @@ Quick-reference table of **active + most recent decisions**.
 | D-WAVE5-BEHAVIORS | Architecture | ✅ Implemented | Pack tactics, territorial, ambush behavior engine design |
 | D-CREATE-OBJECT-ACTION | Architecture | ✅ Implemented | Metadata-driven creature object creation + NPC obstacle detection |
 | D-STRESS-HOOKS | Architecture | ✅ Implemented | Stress trauma hooks delegate to central injuries.add_stress() API |
+
+---
+
+## D-WAYNE-PHASE5-DECISIONS: Phase 5 Scope Decisions
+
+**Status:** 🟢 Active  
+**Author:** Wayne "Effe" Berry  
+**Date:** 2026-03-28T23:33Z  
+**Category:** Process / Planning
+
+### Summary
+
+Phase 5 scope locked on 7 key decisions:
+
+| Decision | Option | Rationale |
+|----------|--------|-----------|
+| Q1: Werewolf Feature | Option B (NPC type, separate creature) | Not a disease; creatures are separate game objects |
+| Q2: Food Preservation | Option A (salt-only, ~80 LOC) | Minimal, focused implementation |
+| Q3: Humanoid NPCs | Option C (defer to Phase 6) | Heavy lift; keep Phase 5 lean |
+| Q4: Pack Role System | Option A (simplified: stagger attacks, alpha by health) | Behavioral depth without A* |
+| Q5: A* Pathfinding | Option B (defer to Phase 6+) | Complex; defer |
+| Q6: Environmental Combat | Option B (defer to Combat Phase 3) | Out of Phase 5 scope |
+| Q7: Portal Refactoring | Removed from Phase 5 scope | Track independently as #203-208 |
+
+### Rationale
+
+Keep Phase 5 focused on **Level 2 foundation + creature expansion + salt preservation**. Defer heavy systems (humanoid NPCs, A* pathfinding, environmental combat) to future phases. Portal refactoring is infrastructure work, not NPC/Combat scope.
+
+### Impact
+
+- **Flanders/Moe:** Clear object/room requirements for Phase 5
+- **Bart:** Creature behavior system scoped (no A*, no humanoid NPC engine)
+- **All agents:** Phase 5 is greenlit and ready to execute
+
+---
+
+## D-LINTER-ENGINEER-HIRE: Dedicated Linter Engineer
+
+**Status:** 🟢 Active  
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-28T23:35Z  
+**Category:** Process / Team
+
+### Decision
+
+Hire a dedicated engineering role to maintain and evolve the linter system. The linter has grown to 306 rules, 6 Python modules, mutation-edge-check, 2 wrapper scripts, and CI integration — too complex for shared ownership across Bart/Nelson/Lisa.
+
+### New Role: Wiggum (Linter Engineer)
+
+- **Domain:** `scripts/meta-lint/`, `scripts/mutation-lint.ps1`, linter CI integration
+- **Responsibilities:** Evolve linter rules, maintain mutation-edge-check, CI pipelines
+- **Reports to:** Bart (Architecture Lead)
+- **Owns:** All lint rule creation and modification; acts as single point of contact for lint issues
+
+### Charter
+
+[See `.squad/agents/wiggum/charter.md`]
+
+### Impact
+
+- **Bart:** Wiggum becomes dedicated linter point-of-contact
+- **Nelson:** Wiggum + Nelson share testing responsibilities for linter
+- **All agents:** Lint questions → Wiggum
+- **Consistency:** Single owner prevents rule conflicts and drift
+
+---
+
+## D-FLANDERS-META-OWNERSHIP: Flanders Owns All Meta Object Engineering
+
+**Status:** 🟢 Active  
+**Author:** Wayne "Effe" Berry (via Copilot)  
+**Date:** 2026-03-28T23:56Z  
+**Category:** Architecture / Team
+
+### Decision
+
+**Flanders** has sole ownership of all meta object engineering in `src/meta/objects/`. **Bart does NOT create object .lua files.** Bart owns `src/engine/` and engine-level features only.
+
+### Ownership Boundary
+
+| Directory | Owner | Notes |
+|-----------|-------|-------|
+| `src/meta/objects/**` | **Flanders** | Object definitions, mutations, states, sensory text |
+| `src/meta/rooms/**` | **Moe** | Room definitions, exit layout, object instances |
+| `src/meta/levels/**` | **Moe** | Level definitions |
+| `src/meta/injuries/**` | **Flanders** | Injury type definitions |
+| `src/engine/**` | **Bart** | Engine architecture, module design, FSM, effects, verbs |
+| `scripts/meta-lint/` | **Wiggum** | Linter rules and evolution |
+
+### Rationale
+
+During linter Phase 1 fixes, Bart created `wood-splinters.lua` and `poison-gas-vent-plugged.lua` to resolve broken mutation edges. This crosses into Flanders' domain. Objects declare behavior; Bart executes it (Principle 8). Clear boundaries reduce merge conflicts and duplication.
+
+### Impact
+
+- **Bart:** Focus on engine features; file bugs when object changes are needed
+- **Flanders:** Single point of contact for all `src/meta/objects/` work
+- **Consistency:** No dual object ownership; cleaner code review
+- **Principle 8 Compliance:** Engine executes object metadata generically
 
 ---
 
