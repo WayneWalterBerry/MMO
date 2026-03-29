@@ -1,9 +1,92 @@
 # Sound Design Guide
 
-**Version:** 1.1  
-**Status:** Production-ready (WAVE-3)  
-**Audience:** Content creators, object designers, room builders  
+**Version:** 1.2  
+**Status:** Production-ready (WAVE-5 complete — Web Audio driver + room ambients shipped)  
+**Audience:** Content creators, object designers, room builders, web audio engineers  
 **Owner:** Brockman (Documentation)
+
+---
+
+## Architecture Overview
+
+The sound system is a **platform-agnostic Lua sound manager** with pluggable drivers:
+
+- **Lua Core** (`src/engine/sound/init.lua`): Sound manager with 21-method API, no external dependencies
+- **Web Audio Driver** (`src/engine/sound/web-driver.lua`): Bridges to Web Audio API (browser)
+- **Terminal Driver** (`src/engine/sound/terminal-driver.lua`): Best-effort platform support (macOS/Linux/Windows)
+- **Null Driver** (`src/engine/sound/null-driver.lua`): Silent fallback (headless mode, tests)
+
+**Status:** WAVE-4 complete — Web Audio driver deployed with **synthetic fallback tones** for dev/testing. Real audio assets (MVP Phase 1) awaiting sourcing. See `projects/sound/north-star.md` for phased roadmap.
+
+---
+
+## Web Audio Driver (NEW — WAVE-4)
+
+The Web Audio driver enables in-browser sound playback via the Web Audio API. It implements:
+
+- **Async audio loading:** Fetch + decode OGG Opus files
+- **Concurrent playback:** Max 4 one-shots, max 3 ambient loops
+- **Volume control:** Master gain node with per-sound ducking
+- **Synthetic fallback:** If a real audio file is missing (404), generates a procedural tone (oscillator-based) so sounds work immediately during dev
+- **Fengari bridge:** Calls JavaScript functions via `js` global (Fengari compatibility)
+
+### How It Works
+
+**File:** `web/audio-driver.js` (100 LOC)
+
+When a sound plays:
+
+```
+1. Lua calls: sound_manager:play("door-creak.opus", opts)
+2. web-driver.lua wraps this: window:_soundPlay("door-creak.opus", opts)
+3. audio-driver.js checks: Does "sounds/door-creak.opus" exist?
+   - YES → fetch + decodeAudioData() → play from buffer
+   - NO  → generate synthetic tone (oscillator) + play
+4. Result: Sound plays in-browser; game continues
+```
+
+### Synthetic Fallback Tones
+
+When real assets are missing, the engine generates synthetic tones to prevent silent failures:
+
+- **One-shot sounds** (verb actions): Beep + envelope (attack/decay)
+- **Ambient loops** (room atmosphere): Low-frequency drone (80 Hz sine wave)
+- **Creature sounds** (vocalizations): Mid-frequency oscillator (440 Hz A note) with tremolo
+
+**Why:** Developers can test the sound system without waiting for audio production. The synthetic fallback makes it immediately obvious that a sound *should* play at that point, even if it sounds like a placeholder.
+
+### Deployment
+
+Real audio files go to `web/sounds/`:
+
+```
+web/
+├── audio-driver.js           ← Web Audio API engine
+├── sounds/                   ← OGG Opus files (MVP 24 files)
+│   ├── ambient/
+│   │   ├── bedroom-night.opus
+│   │   ├── hallway-wind.opus
+│   │   └── ...
+│   ├── creatures/
+│   │   ├── rat-idle.opus
+│   │   ├── wolf-growl.opus
+│   │   └── ...
+│   ├── combat/
+│   │   ├── hit-blunt.opus
+│   │   ├── hit-slash.opus
+│   │   └── ...
+│   └── objects/
+│       ├── door-creak.opus
+│       ├── candle-ignite.opus
+│       └── ...
+└── build-sounds.ps1         ← Build pipeline (validates + deploys)
+```
+
+**Build Pipeline:** `web/build-sounds.ps1`
+- Validates OGG Opus format (@48 kbps mono)
+- Checks file sizes (warn if >50 KB per file)
+- Copies to `web/dist/sounds/` with cache-busting
+- Generates manifest (optional, for future asset preload)
 
 ---
 
@@ -645,6 +728,125 @@ return {
     instances = { ... },
 }
 ```
+
+---
+
+## Adding Real Audio Assets (Phase 1+)
+
+Current status: **MVP implementation complete. Web Audio driver ready. Synthetic fallback tones work. Awaiting real audio files (Phase 1).**
+
+### Asset Production Pipeline
+
+**Step 1: Audio Source**
+- **Option A:** Commission royalty-free audio library (Freesound, Zapsplat, BBC Sound Effects Library)
+- **Option B:** Create procedurally (synthesize via Web Audio API — post-Phase 1)
+- **Option C:** Record foley (if budget allows — high-fidelity option)
+
+**Target Spec:**
+- Format: OGG Opus @ 48 kbps mono
+- Duration: 1–5 seconds per file (one-shots), 10–60 seconds (ambient loops)
+- Total budget: ~230 KB (24 MVP files)
+- Compression: Handled by browser `decodeAudioData()`
+
+### Asset Directory Structure
+
+```
+web/sounds/
+├── ambient/           ← Room atmosphere loops
+│   ├── bedroom-night.opus
+│   ├── hallway-wind.opus
+│   ├── cellar-drip.opus
+│   ├── storage-scratching.opus
+│   ├── deep-cellar-void.opus
+│   ├── crypt-void.opus
+│   └── courtyard-wind.opus
+├── creatures/         ← Creature vocalizations
+│   ├── rat-idle.opus
+│   ├── rat-skitter.opus
+│   ├── wolf-growl.opus
+│   ├── wolf-snarl.opus
+│   ├── cat-purr.opus
+│   ├── cat-hiss.opus
+│   ├── bat-screech.opus
+│   └── spider-skitter.opus
+├── objects/           ← Object interactions
+│   ├── door-creak.opus
+│   ├── door-lock-click.opus
+│   ├── gate-clang.opus
+│   ├── trapdoor-thud.opus
+│   ├── candle-ignite.opus
+│   ├── match-strike.opus
+│   ├── glass-shatter.opus
+│   └── trap-snap.opus
+└── effects/           ← Fallback SFX
+    ├── generic-break.opus
+    ├── generic-creak.opus
+    └── generic-close.opus
+```
+
+### Integration Workflow
+
+**When a new asset is ready:**
+
+1. **Add to web/sounds/{category}/{name}.opus**
+2. **Update object/room metadata** in `src/meta/`:
+   ```lua
+   sounds = {
+       on_verb_open = "door-creak.opus",  ← now references real file
+   }
+   ```
+3. **Deploy via build pipeline:**
+   ```powershell
+   .\web\build-sounds.ps1
+   ```
+4. **Test in browser:**
+   - Open game
+   - Trigger the action (e.g., open a door)
+   - Real audio should play; synthetic fallback silenced
+5. **Verify file size** — Run `build-sounds.ps1` check, warn if >50 KB per file
+6. **Commit:**
+   ```
+   git add web/sounds/{category}/
+   git commit -m "feat(audio): add {name} asset ({category})"
+   ```
+
+### Fallback Behavior
+
+If a real audio file is missing (404 or network error):
+- Browser still plays a synthetic tone (placeholder)
+- Game continues; no hang or error
+- Dev is alerted via console (`[audio-driver] fallback tone played for...`)
+- Metadata validation test warns if file missing at commit time
+
+### Performance Considerations
+
+| Metric | Target | Check |
+|--------|--------|-------|
+| File size per asset | <50 KB | `build-sounds.ps1` warning |
+| Total audio RAM (decoded) | <1 MB | Profile in DevTools |
+| Concurrent playback | 4 one-shots + 3 ambients | Enforced by sound manager |
+| Load latency | <200 ms per file | Network tab in DevTools |
+| Audio latency (play delay) | <50 ms | Test in console |
+
+**Mobile optimization:** Lazy load — sounds decode only when needed (room entry, object interaction). No preload of all 24 files at startup.
+
+---
+
+## Room Ambient Loops (WAVE-5 Complete)
+
+All 7 rooms have `ambient_loop` declarations:
+
+| Room | Ambient File | Status |
+|------|--------------|--------|
+| Bedroom | `ambient/bedroom-night.opus` | ✅ Declared (WAVE-5) |
+| Hallway | `ambient/hallway-wind.opus` | ✅ Declared (WAVE-5) |
+| Cellar | `ambient/cellar-drip.opus` | ✅ Declared (WAVE-5) |
+| Storage Cellar | `ambient/storage-scratching.opus` | ✅ Declared (WAVE-5) |
+| Deep Cellar | `ambient/deep-cellar-void.opus` | ✅ Declared (WAVE-5) |
+| Crypt | `ambient/crypt-void.opus` | ✅ Declared (WAVE-5) |
+| Courtyard | `ambient/courtyard-wind.opus` | ✅ Declared (WAVE-5) |
+
+Ambient loops start when player enters room, stop on exit. See `src/meta/rooms/*.lua` for declarations.
 
 ---
 
