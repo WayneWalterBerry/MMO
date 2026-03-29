@@ -264,13 +264,15 @@ end
 --- Start room ambients and object ambients when entering a room.
 function M:enter_room(room)
     if not room or not self._driver then return end
+    -- Resolve ambient: room.sounds.ambient (object convention) or
+    -- room.ambient_loop (room-definition convention)
+    local ambient = (room.sounds and room.sounds.ambient) or room.ambient_loop
     if self._debug then
         local rid = room.id or room.guid or "?"
-        local amb = (room.sounds and room.sounds.ambient) or "(no ambient)"
-        print("[sound] enter_room: " .. rid .. " → " .. amb)
+        print("[sound] enter_room: " .. rid .. " → " .. (ambient or "(no ambient)"))
     end
-    if room.sounds and room.sounds.ambient then
-        self:play(room.sounds.ambient, { loop = true, owner_id = room.guid or room.id })
+    if ambient then
+        self:play(ambient, { loop = true, owner_id = room.guid or room.id })
     end
 end
 

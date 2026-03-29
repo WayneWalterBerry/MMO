@@ -551,6 +551,12 @@ if headless then
 end
 
 ---------------------------------------------------------------------------
+-- Trigger ambient sound for the starting room (no transition event fires
+-- for the initial room, so we call enter_room explicitly after setup)
+---------------------------------------------------------------------------
+sm:enter_room(room)
+
+---------------------------------------------------------------------------
 -- Run (with cleanup on exit)
 ---------------------------------------------------------------------------
 local ok, err = pcall(loop.run, context)
