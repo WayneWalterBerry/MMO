@@ -15,6 +15,7 @@
 | **P0** | WAVE-1 | Implement world loader engine (`src/engine/world/init.lua`) | Bart | ✅ Done | GATE-1 |
 | **P0** | WAVE-1 | Write world loader tests (`test/worlds/test-world-loader.lua`) | Nelson | ✅ Done (Bart) | GATE-1 |
 | **P1** | WAVE-1 | Write world definition tests (`test/worlds/test-world-definition.lua`) | Nelson | ⏳ Pending | GATE-1 |
+| **P1** | WAVE-1 | **Design Team: Fill out theme subsections** for `src/meta/worlds/world-01.lua` — create `src/meta/worlds/themes/manor-architecture.lua`, `manor-creatures.lua`, `manor-history.lua` (uncomment theme_files in world-01.lua) | CBG + Willie + Moe | ⏳ Pending | GATE-1 |
 | **P1** | WAVE-2 | Integrate boot sequence (world-driven `main.lua` boot) | Bart | ⏳ Pending | GATE-2 |
 | **P1** | WAVE-2 | Write boot integration tests (`test/worlds/test-world-boot.lua`, `test/integration/test-world-integration.lua`) | Nelson | ⏳ Pending | GATE-2 |
 | **P2** | WAVE-3 | Architecture docs (`docs/architecture/engine/world-system.md`) | Brockman | ⏳ Pending | GATE-3 |
