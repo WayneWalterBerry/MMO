@@ -64,6 +64,7 @@ local test_dirs = {
     repo_root .. SEP .. "test" .. SEP .. "meta",
     repo_root .. SEP .. "test" .. SEP .. "worlds",
     repo_root .. SEP .. "test" .. SEP .. "sound",
+    repo_root .. SEP .. "test" .. SEP .. "options",
 }
 
 -- Source-to-test mapping for --changed flag
@@ -77,6 +78,7 @@ local source_to_tests = {
     ["src/engine/ui/"]          = {"ui"},
     ["src/engine/world/"]       = {"worlds"},
     ["src/engine/sound/"]       = {"sound"},
+    ["src/engine/verbs/options.lua"] = {"options"},
     ["src/meta/objects/"]       = {"objects", "sensory"},
     ["src/meta/world/"]         = {"rooms"},
     ["src/meta/injuries/"]      = {"injuries"},
