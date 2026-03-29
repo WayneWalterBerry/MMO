@@ -97,3 +97,40 @@ The `death_state.crafting.cook` field on creature definitions is the key mechani
 **Surface object narration (#394):** Test "traverse.step: object with surfaces returns empty narrative (undirected)" failed because #385 added `narrator.enumerate_room_object()` for surfaced objects during undirected sweep, conflicting with bug #40 fix. Fix: return empty narrative for surfaced objects — surface entries in the queue handle their own narration.
 
 **Cross-domain note:** Touched `src/engine/search/traverse.lua` (Bart's domain) for #394 — minimal change, removed contradictory narration path. Decision filed to `.squad/decisions/inbox/flanders-surface-object-narration.md`.
+
+### 2026-03-29: Sound WAVE-1 Track 1A — Object/Creature Sound Metadata
+
+**Task:** Add `sounds` tables to all Tier 1 priority objects and creatures per `projects/sound/sound-implementation-plan.md` v1.1 Track 1A.
+
+**Files modified (20):**
+- **Light sources (4):** candle.lua, match.lua, torch.lua, oil-lantern.lua
+- **Breakables (2):** mirror.lua, bear-trap.lua
+- **Doors (9):** bedroom-hallway-door-north/south, hallway-east/west, cellar-storage-door-north, storage-cellar-door-south, deep-cellar-storage-door-south, storage-deep-cellar-door-north, courtyard-kitchen-door
+- **Creatures (5):** rat.lua, wolf.lua, spider.lua, cat.lua, bat.lua
+
+**Sound field patterns used:**
+- `on_state_{state}` — FSM transition sounds (candle-ignite, torch-ignite, lantern-ignite, trap-snap)
+- `on_verb_{verb}` — verb interaction sounds (match-strike, glass-shatter, door-open/close)
+- `ambient_{state}` — state-scoped loops (torch-crackle when lit)
+- `ambient_loop` — creature idle loops (rat-idle, wolf-growl, cat-purr, spider-skitter, bat-chitter)
+- `on_traverse` — door traversal sounds (differentiated by material: oak, iron, wood)
+- `on_mutate` — mutation sounds (mirror-crack)
+
+**Creature-specific per-state sounds:**
+- Rat: scurry (wander), squeak (flee)
+- Wolf: snarl (aggressive), whimper (flee), patrol
+- Spider: silk (web-building), scurry (flee)
+- Cat: stalk (hunt), hiss (flee)
+- Bat: wings (flying), screech (flee)
+
+**Design rule compliance fixes:**
+- Candle: added missing `on_listen` to top-level and unlit state ("Silent. Wax and wick.")
+- Match: added missing `on_listen` to top-level and unlit state ("Silent. Just a small stick.")
+- Dead creatures: updated `on_listen` text to explicit silence format per plan v1.1 ("The [creature] is motionless. No breath, no sound.") in both FSM dead state and death_state reshape
+
+**Validation:**
+- Meta-linter: zero new errors (6 pre-existing: 5× CREATURE-003, 1× TD-06)
+- All 263 test files pass, zero regressions
+- Commit: `c4efcbf`
+
+**Lesson:** Bracket-syntax Lua table keys (`["on_state_alive-flee"]`) are needed for creature state sounds because creature state names contain hyphens. Standard dot-notation keys work for objects with simple state names (lit, triggered, etc.).
