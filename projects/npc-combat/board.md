@@ -1,8 +1,36 @@
-# NPC + Combat — Board
+# NPC Combat — Board
 
-**Owner:** 🏗️ Bart (Architecture Lead) + 🌿 Willie (Creature Designer)
-**Last Updated:** 2026-03-29
-**Current Phase:** Phase 5 — v2.0 plan ready, PRE-WAVE pending
+**Owner:** 📊 Kirk (PM coordination) + 🏗️ Bart (Architecture lead) + 🌿 Flanders (Creatures lead)
+**Last Updated:** 2026-04-02
+**Overall Status:** 🟢 Active — Phase 5 (Creature Intelligence Escalation)
+
+---
+
+## Next Steps (Prioritized)
+
+| Priority | Task | Owner | Status | Gate |
+|----------|------|-------|--------|------|
+| **P0** | PRE-WAVE: GUID pre-assignment for 12+ new objects | Flanders | ⏳ Pending | Unblock WAVE-1 |
+| **P0** | PRE-WAVE: Level 2 room sensory specs (7 rooms) | Moe | ⏳ Pending | Unblock WAVE-1 |
+| **P0** | PRE-WAVE: Preserve/cure verb alias collision audit | Smithers | ⏳ Pending | Unblock WAVE-1 |
+| **P1** | WAVE-1: Implement 7 Level 2 rooms + werewolf creature | Moe, Flanders | ⏳ Pending | GATE-WAVE1 |
+| **P1** | WAVE-1: Brass key transition mechanics | Bart | ⏳ Pending | GATE-WAVE1 |
+| **P2** | WAVE-2: Pack tactics v1.1 (alpha/stagger/omega) | Bart, Smithers | ⏳ Pending | GATE-WAVE2 |
+| **P2** | WAVE-3: Salt preservation verb + salted-meat mutation | Smithers, Flanders | ⏳ Pending | GATE-WAVE3 |
+
+---
+
+## Priority Status
+
+| Project | Tier | Status | Notes |
+|---------|------|--------|-------|
+| **NPC Combat (Phase 5)** | **🔴 T4 (ACTIVE)** | 🟢 Ready to start | Elevated from background; all decisions locked; PRE-WAVE tasks in flight |
+| Worlds | T0 | 🟢 Planning | Gate-0 |
+| Sound | T1 | 🟢 Wave-0 complete | Review cycles done |
+| Food Implementation | T2 | 🟡 In progress | Final integration |
+| Testing Infrastructure | T3 | 🟢 Steady state | Baseline maintained |
+| Level 2 | Background | 🟡 Planning | Depends on Phase 5 creature engine |
+| Parser Improvements | Background | 🟢 Phase 3 shipped | MaxSim pending |
 
 ---
 
@@ -14,7 +42,7 @@
 | Phase 2 | ✅ Complete | Cat, bat, multi-creature rooms | Creature coexistence |
 | Phase 3 | ✅ Complete | Combat system, body zones, weapons | Hit/damage/death pipeline |
 | Phase 4 | ✅ Complete | Loot, butchery, stress, pack tactics v1, territory | Crafting loop closed |
-| **Phase 5** | 📋 **PLANNED v2.0** | Level 2, werewolf, salt preservation, pack v1.1 | Ecosystem expansion |
+| **Phase 5** | 🟢 **ACTIVE v2.0** | Level 2, werewolf, salt preservation, pack v1.1 | Ecosystem expansion |
 
 ---
 
