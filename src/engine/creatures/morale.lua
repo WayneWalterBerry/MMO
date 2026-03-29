@@ -38,6 +38,11 @@ function M.check(context, creature, combat_result, helpers)
     end
     if not threshold then return nil end
 
+    -- Pack morale override: pack_tactics.apply_pack_morale_bonus sets this
+    if creature._pack_flee_threshold then
+        threshold = creature._pack_flee_threshold
+    end
+
     local health_ratio = health / max_health
     if health_ratio >= threshold then
         creature._cornered = nil

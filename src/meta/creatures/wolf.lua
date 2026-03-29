@@ -98,6 +98,9 @@ return {
         nocturnal = false,
         home_room = nil,
         prey = {"player", "rat", "cat", "bat"},
+        pack_animal = true,
+        pack_morale_bonus = 0.05,
+        call_pack_range = 1,
         territorial = {
             marks_territory = true,
             mark_object = "territory-marker",
@@ -154,6 +157,16 @@ return {
             action = "evaluate",
             fear_delta = 5,
             message = "The wolf's amber eyes flash in the sudden light. It does not flinch.",
+        },
+        pack_call = {
+            action = "move_to_caller",
+            fear_delta = -5,
+            message = "A howl echoes through the passage. The wolf's ears prick up.",
+        },
+        pack_member_died = {
+            action = "aggressive",
+            fear_delta = 30,
+            message = "The wolf snarls, enraged by the fall of its packmate!",
         },
     },
 

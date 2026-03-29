@@ -71,6 +71,15 @@ function M.score_actions(creature, context, helpers)
         scores[#scores + 1] = { action = "create_object", score = create_score }
     end
 
+    -- Call pack: howl to summon allies when aggressive and pack_animal
+    if behavior.pack_animal and creature._state == "alive-aggressive"
+       and not creature._pack_called then
+        scores[#scores + 1] = {
+            action = "call_pack",
+            score = (behavior.aggression or 0) * 0.4
+        }
+    end
+
     for _, entry in ipairs(scores) do
         entry.score = entry.score + math.random() * 2
     end
@@ -397,6 +406,20 @@ function M.execute_action(context, creature, action, helpers)
             if creature._morale_message then
                 messages[#messages + 1] = creature._morale_message
                 creature._morale_message = nil
+            end
+        end
+
+    elseif action == "call_pack" then
+        if creature.behavior and creature.behavior.pack_animal and creature_loc then
+            helpers.emit_stimulus(creature_loc, "pack_call", {
+                caller_id = creature.guid,
+                caller_name = creature.name,
+            })
+            creature._pack_called = true
+            if creature_loc == player_room then
+                local name = creature.name or "a creature"
+                messages[#messages + 1] = name:sub(1,1):upper() .. name:sub(2) ..
+                    " raises its head and howls!"
             end
         end
     end

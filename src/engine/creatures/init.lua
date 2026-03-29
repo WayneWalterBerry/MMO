@@ -280,6 +280,37 @@ function M.creature_tick(context, creature)
     local bait = creature_actions.try_bait(context, creature, action_helpers)
     if bait then for _, m in ipairs(bait) do messages[#messages+1] = m end; return messages end
 
+    -- Pack coordination: shared threat + morale (WAVE-2)
+    if behavior.pack_animal and creature_loc then
+        -- Shared threat: if a threat stimulus exists for this room, alert pack
+        for _, stim in ipairs(stimulus.get_pending()) do
+            if stim.room_id == creature_loc
+               and (stim.stimulus_type == "creature_attacked"
+                    or stim.stimulus_type == "player_attacks"
+                    or stim.stimulus_type == "creature_died") then
+                pack_tactics.share_threat(context.registry, creature_loc, creature, {
+                    attacker_id = stim.data and (stim.data.attacker_id or stim.data.killer_id),
+                })
+                break
+            end
+        end
+        -- Pack morale: braver with allies, scatter if alpha critically wounded
+        local pack = pack_tactics.get_pack_in_room(context.registry, creature_loc, creature)
+        if #pack > 1 then
+            local adjusted = pack_tactics.apply_pack_morale_bonus(
+                creature, context.registry, creature_loc)
+            if adjusted then creature._pack_flee_threshold = adjusted end
+            if pack_tactics.check_pack_morale(pack, context) == "scatter" then
+                if creature.drives and creature.drives.fear then
+                    creature.drives.fear.value = creature.drives.fear.max or 100
+                end
+            end
+        else
+            creature._pack_flee_threshold = nil
+            creature._pack_called = nil
+        end
+    end
+
     -- 2a. Ambush check: creature with behavior.ambush stays hidden until trigger
     if behavior.ambush and not creature._ambush_sprung then
         local ambush = behavior.ambush

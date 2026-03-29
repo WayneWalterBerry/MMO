@@ -106,4 +106,80 @@ function M.prefers_doorway(creature, ctx, get_room_fn)
     return exit_count > 0
 end
 
+---------------------------------------------------------------------------
+-- WAVE-2: Pack Coordination Engine
+-- Shared threat tracking, pack morale, call_pack support.
+-- All behavior is metadata-driven (Principle 8): reads pack_animal,
+-- pack_morale_bonus, call_pack_range from creature.behavior.
+---------------------------------------------------------------------------
+
+---------------------------------------------------------------------------
+-- share_threat(registry, room_id, creature, data)
+-- When a pack member detects a threat, alert same-room pack mates.
+-- Sets _pack_threat on allies and transitions idle members to aggressive.
+---------------------------------------------------------------------------
+function M.share_threat(registry, room_id, creature, data)
+    if not creature or not (creature.behavior or {}).pack_animal then return end
+    local pack = M.get_pack_in_room(registry, room_id, creature)
+    for _, member in ipairs(pack) do
+        if member.guid ~= creature.guid then
+            member._pack_threat = data and data.attacker_id or true
+            local st = member._state
+            if st == "alive-idle" or st == "alive-wander" or st == "alive-patrol" then
+                member._state = "alive-aggressive"
+            end
+        end
+    end
+end
+
+---------------------------------------------------------------------------
+-- apply_pack_morale_bonus(creature, registry, room_id) -> number|nil
+-- Pack animals flee at a lower health ratio when allies are present.
+-- Reads pack_morale_bonus from behavior (default 0.05 per ally).
+---------------------------------------------------------------------------
+function M.apply_pack_morale_bonus(creature, registry, room_id)
+    if not creature or not (creature.behavior or {}).pack_animal then return nil end
+    local pack = M.get_pack_in_room(registry, room_id, creature)
+    local allies = #pack - 1
+    if allies <= 0 then return nil end
+    local bonus = creature.behavior.pack_morale_bonus or 0.05
+    local base = creature.combat and creature.combat.behavior
+        and creature.combat.behavior.flee_threshold
+    if not base then
+        local raw = creature.behavior.flee_threshold
+        if raw and raw > 1 then base = raw / 100 else base = raw end
+    end
+    if not base then return nil end
+    local adjusted = base - (bonus * allies)
+    return adjusted < 0.05 and 0.05 or adjusted
+end
+
+---------------------------------------------------------------------------
+-- check_pack_morale(pack, context) -> "hold" | "scatter"
+-- Pack scatters if alpha is critically wounded or all members fled/dead.
+---------------------------------------------------------------------------
+function M.check_pack_morale(pack, context)
+    if not pack or #pack == 0 then return "scatter" end
+    local active = 0
+    for _, m in ipairs(pack) do
+        if m._state ~= "dead" and m._state ~= "alive-flee" then
+            active = active + 1
+        end
+    end
+    if active == 0 then return "scatter" end
+    local alpha = M.select_alpha(pack, context)
+    if not alpha then return "scatter" end
+    if alpha.health and alpha.max_health and alpha.max_health > 0
+       and (alpha.health / alpha.max_health) < 0.20 then
+        for _, m in ipairs(pack) do
+            if m.guid ~= alpha.guid and m.drives and m.drives.fear then
+                local fear = m.drives.fear
+                fear.value = math.min(fear.max or 100, (fear.value or 0) + 40)
+            end
+        end
+        return "scatter"
+    end
+    return "hold"
+end
+
 return M

@@ -56,6 +56,14 @@ function M.clear()
 end
 
 ---------------------------------------------------------------------------
+-- get_pending() -> stimulus_queue
+-- Returns the current stimulus queue for inspection by other systems.
+---------------------------------------------------------------------------
+function M.get_pending()
+    return stimulus_queue
+end
+
+---------------------------------------------------------------------------
 -- process(context, creature, helpers) -> messages[]
 -- Matches queued stimuli against creature's reactions table, applies drive
 -- deltas.  `helpers` must provide:
