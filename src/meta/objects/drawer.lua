@@ -30,6 +30,11 @@ return {
 
     location = nil,
 
+    sounds = {
+        ["on_verb_open"] = "container-open.opus",
+        ["on_verb_close"] = "container-close.opus",
+    },
+
     -- FSM
     initial_state = "closed",
     _state = "closed",

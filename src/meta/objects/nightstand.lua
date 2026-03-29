@@ -30,6 +30,7 @@ return {
     room_position = "stands beside the bed",
     portable = false,
     on_smell = "Old pine wood and melted tallow.",
+    on_listen = "Faint creaking when you lean against it. The wood settles and shifts.",
 
     -- Initial state properties (closed_with_drawer)
     name = "a small nightstand",
@@ -42,6 +43,11 @@ return {
     },
 
     location = nil,
+
+    sounds = {
+        ["on_verb_open"] = "container-open.opus",
+        ["on_verb_close"] = "container-close.opus",
+    },
 
     on_look = function(self, registry)
         return look_with_top(self, registry) .. "\nThe drawer is closed."
