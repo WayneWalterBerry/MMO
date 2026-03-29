@@ -1,12 +1,13 @@
 # Wyatt's World — Implementation Plan
 
-**Version:** 2.0  
+**Version:** 2.1  
 **Author:** Bart (Architect)  
-**Date:** 2026-08-22  
+**Date:** 2026-08-23  
 **Status:** `WAVE-0: ⏳ | WAVE-1: ⏳ | WAVE-2: ⏳ | WAVE-3: ⏳`  
-**Replaces:** Kirk's v1.0 plan (2026-03-27)  
+**Replaces:** v2.0 (2026-08-22) — Kirk's v1.0 plan (2026-03-27)  
 **Source Design:** `projects/wyatt-world/design.md` (CBG v1.0, 543 lines)  
-**Decisions:** D-WORLDS-CONCEPT, D-WORLDS-LOADER-WAVE0, D-WYATT-WORLD
+**Decisions:** D-WORLDS-CONCEPT, D-WORLDS-LOADER-WAVE0, D-WYATT-WORLD, D-RATING-TWO-LAYER  
+**v2.1 Changes:** Fixed 3 blockers (B1–B3) + 12 concerns (C1–C12) from 6-agent team review
 
 ---
 
@@ -33,7 +34,7 @@
 
 | Wave | Agent(s) | Files Created/Modified | Gate | Est. LOC |
 |------|----------|----------------------|------|----------|
-| **WAVE-0** | Bart | `src/engine/world/init.lua`, `src/main.lua`, `src/meta/worlds/wyatt-world.lua`, dirs | GATE-0: Both worlds boot | ~150 |
+| **WAVE-0** | Bart | `src/engine/world/init.lua`, `src/main.lua`, `src/meta/worlds/wyatt-world.lua`, dirs, E-rating enforcement | GATE-0: Both worlds boot + E-rating enforced | ~200 |
 | **WAVE-1a** | Moe | `src/meta/worlds/wyatt-world/rooms/*.lua` (7 files) | GATE-1: All rooms load | ~700 |
 | **WAVE-1b** | Flanders | `src/meta/worlds/wyatt-world/objects/*.lua` (~70 files) | GATE-1: All objects register | ~3500 |
 | **WAVE-1c** | Bob | `projects/wyatt-world/puzzles/*.md` (7 specs) | GATE-1: Puzzle specs reviewed | ~350 |
@@ -57,10 +58,13 @@ WAVE-0: Engine (Bart)
   ├── Add --world CLI flag to main.lua
   ├── Refactor main.lua content loading to be world-aware
   ├── Create wyatt-world.lua definition + directory structure
-  └── Tests: multi-world selection, content isolation
+  ├── E-rating enforcement: verb dispatch interception (B1)
+  ├── Tests: multi-world selection, content isolation, E-rating blocks
+  └── Pre-assign GUID block for ~80 entities (B3)
   │
   ▼ GATE-0: `lua src/main.lua --world world-1` boots The Manor
   │          `lua src/main.lua --world wyatt-world` boots (empty world, no crash)
+  │          E-rating: combat/harm verbs blocked in wyatt-world
   │          `lua test/run-tests.lua` — zero regressions
   │
   ╔═══════════════════════════╦═══════════════════════╦═══════════════════════╗
@@ -145,16 +149,17 @@ content_root = "worlds/wyatt-world",
 | Intro text | Read intro from level data as before — but the level comes from the selected world's level dir. |
 | World on context | Already exists (`context.world`). Ensure it's populated from the selected world. |
 
-#### 4.0.4 Wyatt World Definition (`src/meta/worlds/wyatt-world.lua`)
+#### 4.0.4 Wyatt World Definition — Rating Field (B1)
 
-New file. Shape matches CBG's design (§ Engine Compatibility Notes):
+The world definition file at `src/meta/worlds/wyatt-world.lua` **must** declare `rating = "E"`:
 
 ```lua
 return {
-    guid = "{new-guid}",
+    guid = "{6F129CCE-4798-446D-9CD8-198B36F04EF0}",
     template = "world",
     id = "wyatt-world",
     name = "Wyatt's World",
+    rating = "E",  -- Everyone (engine-enforced: no combat/harm verbs)
     description = "A MrBeast challenge course! Seven rooms. Seven puzzles. "
                .. "Can you solve them all and win the grand prize?",
     starting_room = "beast-studio",
@@ -165,7 +170,9 @@ return {
 }
 ```
 
-#### 4.0.5 Directory Structure Creation
+The `rating` field is read by the engine at verb dispatch time (see §4.0.7). Future worlds declare their own rating ("E", "T", or nil for legacy).
+
+#### 4.0.6 Directory Structure Creation
 
 ```
 src/meta/worlds/wyatt-world/
@@ -174,18 +181,70 @@ src/meta/worlds/wyatt-world/
 └── levels/         (empty — WAVE-1b populates)
 ```
 
-#### 4.0.6 Tests
+**Agent:** Bart  
+**Files touched:** `src/engine/world/init.lua`, `src/main.lua`, `src/meta/worlds/wyatt-world.lua`, test files, empty dirs  
+**TDD:** Write tests first for `select(worlds, id)` and `get_content_paths()`, then implement.  
+**Estimated LOC:** ~200 new/modified (was ~150; +50 for E-rating enforcement)  
+**Risk:** Main.lua refactoring could break existing boot. Mitigated by running full test suite + headless Manor boot as regression check.
+
+#### 4.0.7 E-Rating Enforcement (B1 — Two-Layer Model)
+
+**Directive:** Per `copilot-directive-rating-system.md` and `copilot-directive-rating-two-layer.md`, every world declares a `rating` field. The engine enforces rating restrictions at verb dispatch time.
+
+**Two-Layer Enforcement Model:**
+
+| Layer | What | How | Owner |
+|-------|------|-----|-------|
+| **Engine-enforced (hard block)** | Combat, attack, self-harm, injury verbs | Verb dispatch checks `context.world.rating` before execution. If verb is E-restricted, refuse with kid-friendly message. | Bart (WAVE-0) |
+| **Design-enforced (soft guideline)** | No poison objects, no scary content, no hostile creatures, taste always safe | Designers simply don't create harmful objects for E-rated worlds. Engine doesn't block the VERB — content just doesn't include dangerous objects. | CBG / Flanders (WAVE-1) |
+
+**E-Restricted Verbs (hard-blocked in `rating = "E"` worlds):**
+- `attack`, `fight`, `kill`, `stab`, `slash`, `punch`, `kick`
+- `harm`, `hurt`, `injure`, `wound`
+- `self-harm` (any self-directed damage verb)
+- All combat-related aliases that resolve to the above
+
+**NOT restricted (safe in E-rated worlds):**
+- `taste`, `lick` — safe because E-world content has no poison (design-enforced)
+- `break`, `smash` — safe because E-world objects break harmlessly (design-enforced)
+- `look`, `feel`, `smell`, `listen`, `examine`, `read`, `take`, `drop`, `put`, `press`, `open`, `close`, `go`, `enter` — all safe
+
+**Dispatch Interception Point (C8):**
+
+The E-rating check lives in `src/engine/verbs/init.lua` at the top of the verb dispatch function, BEFORE the handler executes:
+
+```lua
+-- In verb dispatch (src/engine/verbs/init.lua):
+local E_RESTRICTED_VERBS = {
+    attack = true, fight = true, kill = true, stab = true,
+    slash = true, punch = true, kick = true,
+    harm = true, hurt = true, injure = true, wound = true,
+}
+
+-- At dispatch time, before calling handler:
+if context.world and context.world.rating == "E" and E_RESTRICTED_VERBS[verb] then
+    context.output("That's not part of this world.")
+    return
+end
+```
+
+**Why verb dispatch, not parser preprocess:** The parser should still PARSE "attack the sign" (the player typed valid English). The block happens at execution — the engine refuses to RUN the verb handler. This preserves clean parser semantics and makes the error message contextual.
+
+**Error message:** `"That's not part of this world."` — neutral, encouraging, age-appropriate. Doesn't shame the player. Doesn't explain the rating system. Just redirects.
+
+#### 4.0.8 GUID Pre-Assignment Block (B3)
+
+All ~80 GUIDs for Wyatt's World entities are pre-assigned by Bart before WAVE-1 starts. Published to `.squad/decisions/inbox/bart-wyatt-guids.md`. Moe and Flanders use sequential GUIDs from this block — no independent GUID generation.
+
+See `bart-wyatt-guids.md` for the complete assignment table.
+
+#### 4.0.9 Tests (Extended)
 
 | Test File | What It Tests |
 |-----------|---------------|
 | `test/worlds/test-world-loader.lua` | Extended: `select(worlds, id)` by ID, `get_content_paths()`, legacy fallback, multi-world discovery |
 | `test/worlds/test-multi-world-boot.lua` | Integration: discovers both worlds from disk, selects each by ID, content paths resolve correctly |
-
-**Agent:** Bart  
-**Files touched:** `src/engine/world/init.lua`, `src/main.lua`, `src/meta/worlds/wyatt-world.lua`, test files, empty dirs  
-**TDD:** Write tests first for `select(worlds, id)` and `get_content_paths()`, then implement.  
-**Estimated LOC:** ~150 new/modified  
-**Risk:** Main.lua refactoring could break existing boot. Mitigated by running full test suite + headless Manor boot as regression check.
+| `test/worlds/test-e-rating-blocks.lua` | **New (B2).** E-rating enforcement: attack/fight/stab/kill/harm verbs blocked in E-rated worlds; taste/look/feel/take etc. still work normally |
 
 ---
 
@@ -231,6 +290,7 @@ All four agents work in parallel on different files. No conflicts possible — M
 - `instances` use deep-nesting syntax (`on_top`, `contents`, `nested`, `underneath`)
 - Every room gets a `goal` field (for the options system, per D-OPTIONS-ENGINE-HYBRID)
 - All text at 3rd-grade reading level
+- **Ambient sound specification (C9):** Each room description MUST include at least one non-visual sensory detail (sound and/or smell) in the 3-sentence description. Examples: "A big grill sizzles in the corner." (Burger Kitchen), "The whole room smells like chocolate." (Feastables Factory). Room-level `on_listen` is environmental flavor in the description, not a separate verb target (rooms are passive — objects have `on_listen`).
 
 **Agent:** Moe  
 **TDD:** Nelson writes room-load tests in parallel (WAVE-1d)
@@ -308,7 +368,7 @@ All four agents work in parallel on different files. No conflicts possible — M
 | `test/worlds/wyatt/test-room-load.lua` | All 7 rooms load, have required fields, exits resolve, description present |
 | `test/worlds/wyatt/test-object-load.lua` | All objects load, have `on_feel`, GUIDs unique, templates resolve |
 | `test/worlds/wyatt/test-hub-connectivity.lua` | From hub, every exit reaches the correct room. Every room has a return exit to hub. |
-| `test/worlds/wyatt/test-no-scary-content.lua` | No object has `poison`, `injury`, `damage`, `death`, `dark` in descriptions. No room has `locked` exits. |
+| `test/worlds/wyatt/test-no-scary-content.lua` | No object has `poison`, `injury`, `damage`, `death`, `dark` in descriptions. No room has `locked` exits. Uses Lua pattern word-boundary matching for variants (C6): `"dark"`, `"darken"`, `"darkened"`, `"shadow"`, `"shadows"`, `"shadowy"`, `"dim"`, `"dimly"`, `"can't see"`. |
 
 **Agent:** Nelson  
 **Parallel with:** Moe, Flanders, Bob (different files)
@@ -375,6 +435,8 @@ return {
 | G0-5 | Full test suite passes | `lua test/run-tests.lua` | ≥269 pass, ≤3 pre-existing failures |
 | G0-6 | World loader unit tests pass | `lua test/worlds/test-world-loader.lua` | All pass |
 | G0-7 | Multi-world integration tests pass | `lua test/worlds/test-multi-world-boot.lua` | All pass |
+| G0-8 | E-rating enforcement verified (B2) | `lua test/worlds/test-e-rating-blocks.lua` | All pass: attack/fight/stab/kill/harm blocked; taste/look/feel/take allowed |
+| G0-9 | Wyatt world declares `rating = "E"` (B1) | Check field in `src/meta/worlds/wyatt-world.lua` | `rating == "E"` present |
 
 **Gate reviewers:** Bart (architecture), Nelson (test sign-off)  
 **Action on pass:** Commit, push, update board, proceed to WAVE-1.  
@@ -447,10 +509,10 @@ return {
 - Wrong-answer paths tested too (verify funny feedback, not punishment)
 - Hint escalation tested (1st, 2nd, 3rd wrong attempt)
 
-**Reading-level scan:**
+**Reading-level scan (C12 — explicit in WAVE-2b):**
 - Nelson extracts all player-facing text (descriptions, messages, hints)
 - Flags any sentence >12 words or any word >3 syllables (unless on CBG's approved list: "chocolate", "scoreboard", "champion", "confetti", "contestant")
-- Violations reported to Wayne, not auto-fixed
+- Violations reported to Wayne for fixing in WAVE-3b (C2 — reading-level fix responsibility: Wayne owns fixes, not Nelson)
 
 **Agent:** Nelson  
 **Parallel with:** Smithers (different files)
@@ -490,6 +552,7 @@ return {
 - Verify celebration messages are "over-the-top" (not bland)
 - Verify wrong-answer messages are funny, not punishing
 - Log design debt to `.squad/decisions/inbox/cbg-wyatt-design-debt.md`
+- **Design debt tracking (C5):** CBG maintains a running list of non-blocking design issues discovered during review (e.g., "puzzle feels too easy but passes gate", "celebration message is bland but not wrong"). Issues go to `.squad/decisions/inbox/cbg-wyatt-design-debt.md` with severity tags (polish, tweak, rethink). Wayne triages after GATE-3.
 
 **Agent:** CBG
 
@@ -550,6 +613,7 @@ return {
 | `select(worlds, world_id)` | **Modified.** Accepts optional `world_id`. If provided, find by `world.id == world_id`. If nil + 1 world → auto-select. If nil + 2+ worlds → return error listing IDs. |
 | `get_content_paths(world, meta_root)` | **New.** Returns table: `{ rooms_dir, objects_dir, creatures_dir, levels_dir }`. If `world.content_root` is set, paths derive from `meta_root/content_root/rooms/` etc. If nil, use legacy: `meta_root/rooms/`, `meta_root/objects/`, etc. |
 | `load(worlds_dir, list_lua_files, read_file, load_source, world_id)` | **Modified.** Passes `world_id` through to `select()`. |
+| E-rating verb dispatch (B1) | **New.** In `src/engine/verbs/init.lua`: check `context.world.rating` before executing restricted verbs. See §4.0.7 for interception point and verb list. |
 
 **Main.lua changes:**
 
@@ -639,6 +703,8 @@ return {
 
 **Expectation: minimal or zero parser changes.** The 5-tier pipeline handles this content.
 
+**Parser verb coverage pre-flight (C3):** Before WAVE-2a starts, Smithers verifies that all verbs used in puzzle solutions are handled by existing verb handlers or aliases. Specific verbs to verify: `sort` (→ existing `put`), `enter [code]` / `type [number]` (→ existing `interact` or FSM input), `place` (→ existing `put` alias). If gaps found, Smithers estimates effort and reports at GATE-1. This could slip WAVE-2a if new handlers are needed (low likelihood).
+
 **Potential work items (assess at GATE-1):**
 
 | Item | Likelihood | Why |
@@ -665,9 +731,11 @@ return {
 **Scoreboard integration note:** The scoreboard tracking "puzzles solved" is the trickiest cross-system point. Options:
 1. **Mutation approach:** When a room's puzzle is solved (FSM → solved state), the engine fires a mutation on the scoreboard. Requires the puzzle object's FSM to trigger a cross-room mutation — not currently supported for objects in other rooms.
 2. **Context counter approach:** Add `context.wyatt_puzzles_solved` counter. Each puzzle completion increments it. Scoreboard reads the counter when examined. Simpler but world-specific engine code (violates Principle 8).
-3. **Player state approach:** Track solved puzzles in `player.state.puzzles_completed = {}`. Scoreboard's `on_look` reads from player state. No engine code — just object metadata reading player state. **Recommended.**
+3. **Player state approach (LOCKED — C4):** Track solved puzzles in `player.state.puzzles_completed = {}`. Scoreboard's `on_look` reads from player state. No engine code — just object metadata reading player state. **Decision: This is the confirmed approach.** Bob and Flanders implement during WAVE-1. Scoreboard FSM reads `#player.state.puzzles_completed` to determine display state (0/6 → 6/6).
 
-**Decision needed at WAVE-1:** Bob and Flanders coordinate on approach. Recommend option 3.
+**FSM State Name Coordination (C10):** Before WAVE-1c starts, Bob and Flanders must agree on FSM state naming conventions. Standardized names: `unpressed`/`pressed`, `locked`/`unlocked`, `empty`/`partial`/`complete`, `unsolved`/`solved`, `correct`/`wrong`. Bob specifies states in puzzle specs; Flanders implements them in object .lua files. Both must use identical names. Coordination point: WAVE-1 kickoff.
+
+**Burger Assembly Ordering (C11):** The Burger Kitchen puzzle requires placing 6 ingredients in a specific order on a plate. The plate is a container with `ordered = true`. The engine validates order on each `put` — if wrong ingredient placed, plate resets (burger falls apart with funny splat sound). Player can retry immediately. Flanders defines the plate FSM (`empty → step1 → step2 → ... → complete`). On wrong order: plate mutates back to `empty` state, all ingredients return to shelves. No permanent penalty.
 
 ---
 
@@ -735,9 +803,18 @@ echo -e "look\nlook sign\npress red button\nquit" | \
 ### 7.5 10-Year-Old Simulation (Post-WAVE-2)
 
 ```
-# S11: "The Confused Player"
-# Send common wrong inputs: "idk", "help", "what do i do", "go home"
-# Expected: Helpful responses, no crashes, no confusing error messages
+# S11: "The Confused Player" (C7 — bounded test script)
+# Fixed set of 8 inputs simulating a confused 10-year-old:
+echo -e "idk\nhelp\nwhat do i do\ngo home\nhello\npls\nwhere am i\nlook\nquit" | \
+  lua src/main.lua --headless --world wyatt-world
+# Pass criteria (all must be true):
+#   1. Exit code 0 (no crash)
+#   2. No "error" or stack trace in output
+#   3. At least 3 of 8 inputs produce a response containing "look" or "try" or "help"
+#      (parser returns HINT tier or graceful "I don't understand")
+#   4. Max runtime: 30 seconds total (bailout if exceeded)
+#   5. If ≥3 consecutive "I don't understand that" responses, test still passes
+#      (realistic: confused child gives up, which is OK)
 
 # S12: "The Rusher"
 # Skip reading signs, try random verbs on random objects
@@ -756,10 +833,11 @@ echo -e "look\nlook sign\npress red button\nquit" | \
 |-----------|--------|------|
 | `test/worlds/test-world-loader.lua` | Extended: select by ID, get_content_paths, multi-world | WAVE-0 |
 | `test/worlds/test-multi-world-boot.lua` | Integration: real world files, both worlds boot | WAVE-0 |
+| `test/worlds/test-e-rating-blocks.lua` | **New (B2).** E-rating: combat/harm verbs blocked; safe verbs allowed | WAVE-0 |
 | `test/worlds/wyatt/test-room-load.lua` | All 7 rooms load, fields present, exits valid | WAVE-1 |
 | `test/worlds/wyatt/test-object-load.lua` | All objects load, on_feel present, GUIDs unique | WAVE-1 |
 | `test/worlds/wyatt/test-hub-connectivity.lua` | Hub 6-way connectivity, all return exits | WAVE-1 |
-| `test/worlds/wyatt/test-no-scary-content.lua` | No dark/scary/violent/poison content | WAVE-1 |
+| `test/worlds/wyatt/test-no-scary-content.lua` | No dark/scary/violent/poison content (word-boundary matching) | WAVE-1 |
 | `test/worlds/wyatt/test-puzzle-studio.lua` | Studio puzzle walkthrough | WAVE-2 |
 | `test/worlds/wyatt/test-puzzle-feastables.lua` | Feastables puzzle walkthrough | WAVE-2 |
 | `test/worlds/wyatt/test-puzzle-money-vault.lua` | Money Vault puzzle walkthrough | WAVE-2 |
@@ -770,7 +848,7 @@ echo -e "look\nlook sign\npress red button\nquit" | \
 | `test/worlds/wyatt/test-sensory-coverage.lua` | All objects × 5 senses | WAVE-2 |
 | `test/worlds/wyatt/test-safety-audit.lua` | No injury, poison, darkness, scary content | WAVE-2 |
 
-**Total new test files:** 15  
+**Total new test files:** 16 (was 15; +1 for E-rating enforcement)  
 **Test registration:** `test/worlds/wyatt/` added to `test/run-tests.lua` test_dirs in WAVE-0.
 
 ---
@@ -857,12 +935,15 @@ If a session dies mid-wave:
 1. **Multi-world engine support in WAVE-0** — Wayne decision. Kirk's v1.0 said "no engine changes." Overruled. The engine's `select()` currently errors on 2+ worlds.
 2. **`content_root` convention** — Bart decision. Each world .lua file optionally specifies where its content lives. The Manor uses legacy paths (nil). Wyatt's World uses `worlds/wyatt-world`.
 3. **`--world <id>` CLI flag** — Bart decision. Required for world selection when 2+ worlds exist. Auto-select when 1 world.
-4. **Player-state approach for scoreboard** — Bart recommendation. Track solved puzzles in `player.state`. No cross-room mutations needed. Decision to be confirmed by Bob + Flanders in WAVE-1.
+4. **Player-state approach for scoreboard (LOCKED — C4)** — Bart decision, confirmed v2.1. Track solved puzzles in `player.state.puzzles_completed = {}`. Scoreboard reads from player state. No cross-room mutations. No engine-specific code.
 5. **All exits always open** — CBG design decision. No locked doors in Wyatt's World. Can't get stuck.
 6. **No darkness mechanic** — CBG design decision. All rooms brightly lit. `casts_light` irrelevant.
 7. **Taste always safe** — CBG design decision. No poison. No harmful taste. Silly and fun.
 8. **Hub-and-spoke layout** — CBG design decision. Studio hub + 6 challenge rooms. Can't get lost.
-9. **GUID pre-assignment before WAVE-1** — Bart decision. Prevents collisions during parallel authoring.
+9. **GUID pre-assignment before WAVE-1 (B3)** — Bart decision. ~80 GUIDs reserved in `bart-wyatt-guids.md`. Prevents collisions during parallel authoring.
+10. **E-rating two-layer enforcement (B1)** — Wayne directive + Bart implementation. World declares `rating = "E"`. Engine hard-blocks combat/harm verbs at dispatch. Design soft-enforces no-poison/no-scary via content choices. See §4.0.7.
+11. **E-rating test gate (B2)** — Nelson requirement. `test/worlds/test-e-rating-blocks.lua` verifies enforcement before GATE-0 passes.
+12. **Reading-level fix responsibility (C2)** — Wayne owns text fixes in WAVE-3b. Nelson flags violations in WAVE-2b; Wayne edits.
 
 ---
 
@@ -882,6 +963,7 @@ If a session dies mid-wave:
 
 ---
 
-**Plan Version:** 2.0  
+**Plan Version:** 2.1  
 **Author:** Bart (Architect)  
-**Last Updated:** 2026-08-22
+**Last Updated:** 2026-08-23  
+**v2.1 Review Fixes:** B1 (E-rating field), B2 (E-rating test gate), B3 (GUID pre-assignment), C1–C12 (concerns from CBG/Nelson/Smithers/Moe/Bob/Flanders)

@@ -5,9 +5,9 @@
 **Team:** Bart (Engine), Moe (Rooms), Flanders (Objects), Sideshow Bob (Puzzles), Smithers (Parser), Nelson (Testing), Gil (Web)  
 **Target Player:** Wyatt, age 10  
 **Created:** 2026-03-27  
-**Updated:** 2026-08-22  
-**Overall Status:** 🔄 In Progress — Implementation plan v2.0 complete  
-**Plan:** `projects/wyatt-world/plan.md` (Bart v2.0)
+**Updated:** 2026-08-23  
+**Overall Status:** 🔄 In Progress — Implementation plan v2.1 complete (review fixes applied)  
+**Plan:** `projects/wyatt-world/plan.md` (Bart v2.1)
 
 ## Constraints (HARD)
 
@@ -17,6 +17,7 @@
 - **Content:** Not scary, age-appropriate
 - **Puzzle scope:** Single-room puzzles only (no multi-room chains)
 - **Theme:** Semi-educational, Mr. Beast inspired
+- **Rating:** E for Everyone — engine-enforced combat/harm verb blocking (D-RATING-TWO-LAYER)
 
 ## Wave Overview
 
@@ -50,7 +51,9 @@
 - **All new objects:** No reuse of medieval objects; all Mr. Beast themed
 - **Reading-level audit:** Wayne reviews ALL text for 3rd-grade appropriateness
 - **Puzzle simplicity:** 7 puzzles, each solvable within a single room
-- **Player-state scoreboard:** Track solved puzzles in `player.state` (recommended, not yet confirmed)
+- **Player-state scoreboard (LOCKED):** Track solved puzzles in `player.state.puzzles_completed` — confirmed approach
+- **E-rating two-layer enforcement:** Engine hard-blocks combat/harm verbs; design soft-enforces no-poison/no-scary
+- **GUID pre-assignment:** ~80 GUIDs reserved in `bart-wyatt-guids.md` before WAVE-1
 
 ## Risks & Mitigations
 
@@ -68,6 +71,8 @@
 - [x] Research complete (Frink)
 - [x] Design doc approved (CBG)
 - [x] Implementation plan v2.0 (Bart)
+- [x] Implementation plan v2.1 — review fixes (Bart)
+- [x] GUID pre-assignment block (Bart)
 - [ ] GATE-0: Multi-world engine boots both worlds (Bart)
 - [ ] GATE-1: 7 rooms + ~70 objects + 7 puzzle specs (Moe/Flanders/Bob/Nelson)
 - [ ] GATE-2: All puzzles solvable, safety audit pass (Smithers/Nelson)
@@ -76,4 +81,4 @@
 
 ---
 
-**Last Updated:** 2026-08-22 (Bart)
+**Last Updated:** 2026-08-23 (Bart — v2.1 review fixes)
