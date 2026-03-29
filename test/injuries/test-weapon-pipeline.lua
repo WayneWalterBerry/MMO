@@ -272,10 +272,12 @@ setup_injuries()
 
 do
     local ctx = make_ctx(silver_dagger_def, { verb = "stab" })
-    local output = capture_output(function() handlers["stab"](ctx, "self with silver dagger") end)
+    -- Use "arm" to get a deterministic body area (left arm, modifier 1.0)
+    -- so damage = base 8 * 1.0 = 8 (not random per BUG-151)
+    local output = capture_output(function() handlers["stab"](ctx, "arm with silver dagger") end)
     assert_true(#ctx.player.injuries > 0, "stab self with silver dagger creates injury")
     assert_eq(ctx.player.injuries[1].type, "bleeding", "stab with dagger → bleeding")
-    assert_eq(ctx.player.injuries[1].damage, 8, "dagger stab damage is 8")
+    assert_eq(ctx.player.injuries[1].damage, 8, "dagger stab damage is 8 (arm, 1.0x)")
 end
 
 ---------------------------------------------------------------------------

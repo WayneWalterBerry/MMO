@@ -2,10 +2,11 @@
 -- Discovers and runs all test-*.lua files under test subdirectories.
 -- Returns exit code 1 if any test file fails.
 --
--- Usage: lua test/run-tests.lua [--bench] [--shard <name>] [--changed]
+-- Usage: lua test/run-tests.lua [--bench] [--shard <name>] [--changed] [--verbose|-v]
 --   --bench          Also discover and run bench-*.lua benchmark files
 --   --shard <name>   Run only test directories matching shard name (for CI matrix)
 --   --changed        Only run tests for directories affected by git-diff changes
+--   --verbose / -v   Show all PASS and FAIL lines (default: failures only + summary)
 -- Must be run from the repository root (C:\Users\wayneb\source\repos\MMO).
 
 local SEP = package.config:sub(1, 1) -- \ on Windows, / on Unix
@@ -14,6 +15,7 @@ local SEP = package.config:sub(1, 1) -- \ on Windows, / on Unix
 local include_bench = false
 local shard_filter = nil
 local changed_only = false
+local verbose = false
 for i, a in ipairs(arg or {}) do
     if a == "--bench" then
         include_bench = true
@@ -21,6 +23,8 @@ for i, a in ipairs(arg or {}) do
         shard_filter = arg[i + 1]
     elseif a == "--changed" then
         changed_only = true
+    elseif a == "--verbose" or a == "-v" then
+        verbose = true
     end
 end
 
@@ -302,10 +306,30 @@ end
 
 print("\nFound " .. #test_entries .. " test file(s):\n")
 
-local total_failed = 0
+-- Comma-format large numbers (e.g. 1847 → "1,847")
+local function format_number(n)
+    local s = tostring(n)
+    local pos = #s % 3
+    if pos == 0 then pos = 3 end
+    local parts = { s:sub(1, pos) }
+    for i = pos + 1, #s, 3 do
+        parts[#parts + 1] = s:sub(i, i + 2)
+    end
+    return table.concat(parts, ",")
+end
+
+local total_failed_files = 0
+local total_passed_files = 0
+local grand_total_pass = 0
+local grand_total_fail = 0
+local failed_file_details = {}  -- { display, fail_lines }
+
 for _, entry in ipairs(test_entries) do
     local filepath = entry.filepath
-    print(">> Running: " .. entry.display)
+
+    if verbose then
+        print(">> Running: " .. entry.display)
+    end
 
     -- Run each test file as a subprocess so failures are isolated
     local cmd
@@ -319,24 +343,79 @@ for _, entry in ipairs(test_entries) do
     local output = pipe:read("*a")
     local ok, exit_type, code = pipe:close()
 
-    io.write(output)
+    -- Parse output for PASS/FAIL counts and failure details
+    local file_pass = 0
+    local file_fail = 0
+    local fail_lines = {}
 
-    -- Check exit code
-    if not ok or (code and code ~= 0) then
-        total_failed = total_failed + 1
-        print(">> " .. entry.display .. " — FAILED\n")
+    for line in output:gmatch("[^\r\n]+") do
+        if line:match("^%s+PASS ") then
+            file_pass = file_pass + 1
+        elseif line:match("^%s+FAIL ") then
+            file_fail = file_fail + 1
+            fail_lines[#fail_lines + 1] = line
+        elseif #fail_lines > 0 and line:match("^%s+expected:") then
+            -- Attach expected/actual context to last failure
+            fail_lines[#fail_lines] = fail_lines[#fail_lines] .. "\n" .. line
+        elseif #fail_lines > 0 and line:match("^%s+actual:") then
+            fail_lines[#fail_lines] = fail_lines[#fail_lines] .. "\n" .. line
+        end
+    end
+
+    grand_total_pass = grand_total_pass + file_pass
+    grand_total_fail = grand_total_fail + file_fail
+
+    if verbose then
+        -- Verbose: print everything (original behavior)
+        io.write(output)
     else
-        print(">> " .. entry.display .. " — OK\n")
+        -- Quiet: only print FAIL details
+        if file_fail > 0 then
+            for _, fl in ipairs(fail_lines) do
+                print(fl)
+            end
+        end
+    end
+
+    -- Check exit code or failure count
+    local file_failed = (not ok or (code and code ~= 0)) or file_fail > 0
+    if file_failed then
+        total_failed_files = total_failed_files + 1
+        failed_file_details[#failed_file_details + 1] = {
+            display = entry.display,
+            fail_lines = fail_lines,
+        }
+        if verbose then
+            print(">> " .. entry.display .. " — FAILED\n")
+        else
+            local summary_parts = {}
+            if file_pass > 0 then summary_parts[#summary_parts + 1] = file_pass .. " passed" end
+            summary_parts[#summary_parts + 1] = file_fail .. " FAILED"
+            print("  ✗ " .. entry.display .. " (" .. table.concat(summary_parts, ", ") .. ")")
+        end
+    else
+        total_passed_files = total_passed_files + 1
+        if verbose then
+            print(">> " .. entry.display .. " — OK\n")
+        else
+            print("  ✓ " .. entry.display .. " (" .. file_pass .. " passed)")
+        end
     end
 end
 
-print("========================================")
-if total_failed > 0 then
-    print("  RESULT: " .. total_failed .. " test file(s) FAILED")
-    print("========================================")
+print("\n════════════════════════════════════════")
+if total_failed_files > 0 then
+    print("  PASSED: " .. total_passed_files .. " file(s) (" .. format_number(grand_total_pass) .. " tests)")
+    print("  FAILED: " .. total_failed_files .. " file(s) (" .. format_number(grand_total_fail) .. " tests)")
+    for _, detail in ipairs(failed_file_details) do
+        for _, fl in ipairs(detail.fail_lines) do
+            print("    ✗ " .. detail.display .. ": " .. fl:match("^%s*FAIL (.+)$"):gsub("\n.*", ""))
+        end
+    end
+    print("════════════════════════════════════════")
     os.exit(1)
 else
-    print("  RESULT: All " .. #test_entries .. " test file(s) PASSED")
-    print("========================================")
+    print("  PASSED: " .. #test_entries .. " file(s) (" .. format_number(grand_total_pass) .. " tests)")
+    print("════════════════════════════════════════")
     os.exit(0)
 end
