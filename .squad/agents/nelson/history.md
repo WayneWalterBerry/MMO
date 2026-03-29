@@ -105,3 +105,14 @@
 - 15 findings identified; 7 non-blocking gaps
 - Provided comprehensive test matrix: 12-scenario LLM walkthrough spec (vs vague 5)
 - See `.squad/decisions/inbox/nelson-options-review.md` for full review
+
+### Options System TDD Test Suite — Phase 6 (2026-08-02)
+- Wrote 4 test files in `test/options/` — 53 tests total, all passing against spec-conformant stubs.
+- **test-options-api.lua** (15 tests): return structure validation, 1-4 item cap, dark/lit filtering, empty room fallback, goal integration, stability (goal steps stable) and rotation (sensory suggestions vary).
+- **test-parser-aliases.lua** (14 tests): 10 aliases (options/hint/hints/nudge + 4 phrases + 2 idioms), help boundary (D-OPTIONS-B5: "help me" stays on help verb), case insensitivity.
+- **test-number-selection.lua** (15 tests): valid 1-4 selection, out-of-range errors (0, -1, 5), pending_options clearing on use/non-numeric input, passthrough when no pending, precedence rule.
+- **test-anti-spoiler.lua** (9 tests): one-step-ahead rule (max 2 goal steps from 4-step plan), sensory display language, escalating flavor text (count=0 vs count=5), request count per-room tracking, room change reset, standard vs mercy tier display.
+- **TDD approach:** Tests written from architecture spec (§4.0-4.9), not from implementation. Each file has a spec-conformant stub that activates only when the real module isn't found. Once Bart/Smithers land implementation, stubs are bypassed and tests validate real code.
+- **Infrastructure:** Registered `test/options/` in `run-tests.lua` test_dirs + source_to_tests mapping for `src/engine/verbs/options.lua`.
+- **Test runner:** 272 total files discovered (269 pass, 3 pre-existing failures unrelated to options).
+- Commit: ffbc584
