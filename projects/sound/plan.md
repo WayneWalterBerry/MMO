@@ -153,7 +153,7 @@ Per Frink's research (2026-03-27, `resources/research/sound/sound-effects-resear
 
 All sources offer **free downloads with no commercial restrictions** (CC0 preferred).
 
-
+### Shopping List (Concrete Asset List)
 
 | Sound | Category | Search Terms | Source | Priority | License |
 |-------|----------|-------------|--------|----------|---------|
