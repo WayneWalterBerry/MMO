@@ -1,22 +1,44 @@
-# Sound Design Guide
+# Sound Design Guide — ARCHIVED
 
-**Version:** 1.2  
-**Status:** Production-ready (WAVE-5 complete — Web Audio driver + room ambients shipped)  
-**Audience:** Content creators, object designers, room builders, web audio engineers  
-**Owner:** Brockman (Documentation)
+**This document has been consolidated into `projects/sound/design.md`.**
+
+All sound design content, principles, object audit, architecture, deployment, and accessibility guidelines have been merged into the unified design reference.
+
+**New Location:** [projects/sound/design.md](../../projects/sound/design.md)
 
 ---
 
-## Architecture Overview
+## Why This Change?
 
-The sound system is a **platform-agnostic Lua sound manager** with pluggable drivers:
+The sound project had multiple overlapping design documents:
+- `projects/sound/north-star.md` — Vision + roadmap
+- `projects/sound/sound-design-notes.md` — Game design perspective
+- `docs/design/sound-design-guide.md` — Comprehensive guide (this file)
+- Plus: implementation plans, web pipeline notes, etc.
 
-- **Lua Core** (`src/engine/sound/init.lua`): Sound manager with 21-method API, no external dependencies
-- **Web Audio Driver** (`src/engine/sound/web-driver.lua`): Bridges to Web Audio API (browser)
-- **Terminal Driver** (`src/engine/sound/terminal-driver.lua`): Best-effort platform support (macOS/Linux/Windows)
-- **Null Driver** (`src/engine/sound/null-driver.lua`): Silent fallback (headless mode, tests)
+**Kirk consolidated to 3 files per Wayne's request:**
+1. **design.md** — One unified design reference (all design, philosophy, audits, architecture)
+2. **plan.md** — One unified execution plan (waves, timeline, assignments)
+3. **board.md** — Project board (updated with references)
 
-**Status:** WAVE-4 complete — Web Audio driver deployed with **synthetic fallback tones** for dev/testing. Real audio assets (MVP Phase 1) awaiting sourcing. See `projects/sound/north-star.md` for phased roadmap.
+This ensures there's **one source of truth** for sound system design and avoids content duplication.
+
+---
+
+## Quick Navigation
+
+If you're looking for:
+- **Sound philosophy + accessibility** → See [design.md § Philosophy](../../projects/sound/design.md#design-philosophy)
+- **Object/creature sound audit** → See [design.md § Sound-Per-Object Audit](../../projects/sound/design.md#sound-per-object-audit)
+- **Web Audio architecture** → See [design.md § Deployment Architecture](../../projects/sound/design.md#deployment-architecture)
+- **Implementation timeline** → See [plan.md § Wave Roadmap](../../projects/sound/plan.md#phase-roadmap--timeline)
+- **Object sound implementation** → See [design.md § Implementation](../../projects/sound/design.md#implementation-how-to-add-sounds-to-objects)
+
+---
+
+**Consolidated:** 2026-03-29  
+**Redirect valid as of:** 2026-03-29
+
 
 ---
 

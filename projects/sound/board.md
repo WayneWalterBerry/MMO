@@ -4,7 +4,7 @@
 **Last Updated:** 2026-03-29T14:22Z  
 **Overall Status:** 🟢 WAVE-4/5 COMPLETE ✅ — Sound manager (21-method API) + Web Audio driver with synthetic fallback + all 7 room ambients + 20+ object sound metadata + full engine integration (FSM, verbs, mutations, room transitions, effects) + 266-test suite. **MVP implementation DONE. Awaiting real audio assets to ship (Phase 1).**
 
-**North Star Vision:** See `projects/sound/north-star.md` for 9-phase post-V1.1 roadmap (real assets, object sounds, creature audio, combat audio, time variation, weather, music, accessibility, advanced features).
+**Documentation:** See `projects/sound/design.md` (unified design reference) and `projects/sound/plan.md` (unified execution plan).
 
 ---
 
@@ -132,11 +132,10 @@
 
 ---
 
-## Plan Files
+## Documentation Files
 
-- [sound-design-notes.md](./sound-design-notes.md) — Game design perspective, priority tiers, sound audit per object
-- [sound-implementation-plan.md](./sound-implementation-plan.md) — Full 4-wave roadmap, API specs, dependencies, risk register
-- [sound-web-pipeline-notes.md](./sound-web-pipeline-notes.md) — Web Audio architecture, compression, lazy load, Fengari bridge, deploy pipeline
+- **[design.md](./design.md)** — Unified design reference (consolidated from north-star.md, sound-design-notes.md, sound-design-guide.md). Covers: sound philosophy, priority tiers, object/creature/door audit, architecture, ambient design, compression strategy, deployment, web integration, player controls, accessibility.
+- **[plan.md](./plan.md)** — Unified execution plan (consolidated from implementation-plan.md, sound-implementation-plan.md). Covers: wave-based roadmap, agent assignments, dependencies, gates, timelines, risk register, escalation protocol.
 
 ---
 
