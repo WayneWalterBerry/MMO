@@ -198,13 +198,16 @@ When a sound plays:
 4. Result: Sound plays in-browser; game continues
 ```
 
-### Synthetic Fallback Tones
+### Synthetic Fallback Tones (TEMPORARY PLACEHOLDER ONLY)
 
-When real assets are missing, the engine generates synthetic tones (developers can test without waiting for audio production):
+⚠️ **IMPORTANT:** Synthetic tones are **temporary development placeholders ONLY**. For production, all sounds come from free libraries (Zapsplat, BBC Sound Effects, OpenGameArt) — no self-generated sounds.
 
+**Development fallback (when real assets missing):**
 - **One-shot sounds** (verb actions): Beep + envelope (attack/decay)
 - **Ambient loops** (room atmosphere): Low-frequency drone (80 Hz sine wave)
 - **Creature sounds** (vocalizations): Mid-frequency oscillator (440 Hz A note) with tremolo
+
+**Production sourcing (Phase 1 MVP):** Real audio assets sourced from free CC0/CC-BY libraries using concrete shopping list (see `projects/sound/plan.md` WAVE-1 for details). No synthetic tones ship in production.
 
 ---
 
@@ -321,6 +324,32 @@ Verify:
 | **Total MVP (18 sounds)** | | | **~19** | **~230 KB** |
 
 For context: the engine bundle is 232 KB compressed. Sound adds ~230 KB — roughly doubling static assets, but still under 500 KB total.
+
+---
+
+## Asset Sourcing Strategy
+
+### Sources: Free Sound Libraries Only
+
+Per Wayne's directive, **all sounds are sourced from free libraries — NO self-generated or synthesized sounds.**
+
+**Primary sources:**
+- **Zapsplat.com:** 100,000+ CC0 sound effects; high-quality, curated, game-ready. Start here for 80% of MVP sounds.
+- **BBC Sound Effects Library:** 16,000+ broadcast-grade effects (creatures, environment, ambience); CC-BY-NC or CC0.
+- **OpenGameArt.org:** 1,000+ game-ready SFX, CC0/CC-BY licensed, pre-optimized for games.
+
+**Shopping List & Search Terms:** See `projects/sound/plan.md` WAVE-1 section for concrete asset list with Zapsplat search terms (water drip, wolf growl, door creak, etc.).
+
+**Licensing:**
+- ✅ **CC0** (preferred) — No attribution required, full commercial use
+- ✅ **CC-BY** — Requires attribution, full commercial use
+- ⚠️ **CC-BY-NC** — Non-commercial only; use only with Wayne's approval
+
+**Attribution & Manifest:**
+1. Capture source URL and artist name for each asset
+2. Document in `assets/sounds/README.md` with full license text
+3. Generate `assets/sounds/manifest.json` with source metadata (source, artist, license)
+4. Ship manifest alongside compressed sounds to `web/dist/sounds/`
 
 ---
 
@@ -665,3 +694,5 @@ sounds = {
 **Last Updated:** 2026-03-29  
 **Next Review:** When Phase 1 assets are 50% sourced  
 **Escalation:** If Phase 1 assets blocked >1 week, escalate to Wayne via `.squad/decisions/inbox/kirk-sound-phase1-blocked.md`
+
+

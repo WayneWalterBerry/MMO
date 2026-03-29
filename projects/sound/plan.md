@@ -39,7 +39,7 @@ WAVE-3 (Phases 6–9): ⏳ Pending — Polish, accessibility, advanced features
 | Phase | Wave | Name | Agents | Tracks | Dependencies | Gate | Deliverables |
 |-------|------|------|--------|--------|--------------|------|--------------|
 | **1** | **WAVE-0** | ✅ Infrastructure + Drivers | Bart, Gil, Nelson | 3 | None | ✅ GATE-0 | Sound manager (21 API), Web Audio driver, null driver, synthetic fallback |
-| **2** | **WAVE-1** | Real Audio Assets (MVP) | CBG, Gil | 2 | None | GATE-1 | 24 `.opus` files sourced, compressed, deployed to `web/dist/sounds/` |
+| **2** | **WAVE-1** | Real Audio Assets (MVP) | CBG, Gil | 2 | None | GATE-1 | 12-15 `.opus` files sourced from free libraries, compressed, deployed to `web/dist/sounds/` |
 | **3** | **WAVE-2A** | Object-Specific Sounds | Flanders, CBG, Nelson | 3 | Phase 1 assets | GATE-2A | Container, trap, puzzle, liquid sounds declared on 12+ objects; tests pass |
 | **4** | **WAVE-2B** | Creature Audio Evolution | Flanders, Nelson | 2 | Phase 1 + Injury hook | GATE-2B | Per-state creature sounds; 5 creatures audio-complete; death silence design verified |
 | **5** | **WAVE-3** | Combat Immersion | Combat team, Flanders, Nelson | 3 | Phase 2B + Combat trace | GATE-3 | Weapon impact sounds, armor feedback, injury-specific sounds, death sounds (if applicable) |
@@ -131,37 +131,79 @@ Criteria:
 
 ### Goal
 
-Replace synthetic fallback tones with real audio files. Ship a cohesive first sound experience.
+Replace synthetic fallback tones with free audio library assets. Ship a cohesive first sound experience with zero self-generated sounds.
+
+**Wayne's Directive:** Use free sound libraries (Zapsplat, BBC Sound Effects, OpenGameArt). Do NOT generate or synthesize sounds ourselves.
 
 ### Scope
 
-**24 OGG Opus files (~230 KB total), sourced, compressed, deployed:**
-- 8 creature sounds (rat, cat, wolf, bat, spider vocalizations)
-- 5 door/passage sounds (creaks, locks, gates, trapdoors)
-- 3 fire/light ignition sounds (match, candle, torch)
-- 2 combat impacts (blunt hit, slash hit)
-- 6 ambient loops (bedroom, hallway, cellar, storage, deep cellar, crypt, courtyard)
+**12-15 OGG Opus files (~230 KB total), sourced from free libraries, compressed, deployed:**
+- 4 creature vocalizations (rat, cat, wolf, spider)
+- 3 door/lock/passage sounds (creaks, locks, impacts)
+- 3 object impacts (glass shatter, container open, match/fire)
+- 2 ambient loops (water drip, wind/draft)
+- 1 UI/feedback sound (optional)
+
+### Research & Sourcing Foundation
+
+Per Frink's research (2026-03-27, `resources/research/sound/sound-effects-research.md`):
+- **Primary source:** Zapsplat.com (100k+ CC0 SFX, high-quality, game-ready, curated)
+- **Secondary:** BBC Sound Effects Library (16k broadcast-grade, CC-BY-NC)
+- **Tertiary:** OpenGameArt.org (1k game-ready SFX, CC0/CC-BY)
+
+All sources offer **free downloads with no commercial restrictions** (CC0 preferred).
+
+
+
+| Sound | Category | Search Terms | Source | Priority | License |
+|-------|----------|-------------|--------|----------|---------|
+| **Water drip loop** | ambient | "water drip cave cellar" | Zapsplat | P1 | CC0 |
+| **Wind/draft** | ambient | "wind draft stone corridor" | Zapsplat | P1 | CC0 |
+| **Fire crackle loop** | ambient | "fire hearth crackling" | Zapsplat | P1 | CC0 |
+| **Rat squeak** | creature | "rat squeak scurry" | Zapsplat | P1 | CC0 |
+| **Wolf growl** | creature | "wolf growl snarl" | Zapsplat | P1 | CC0 |
+| **Spider hiss** | creature | "insect hiss skitter" | Zapsplat | P2 | CC0 |
+| **Cat meow/hiss** | creature | "cat meow hiss" | Zapsplat | P2 | CC0 |
+| **Door creak** | object | "wooden door creak open" | Zapsplat/BBC | P1 | CC0 |
+| **Lock click** | object | "padlock click metal" | Zapsplat | P1 | CC0 |
+| **Metal clang/chain** | object | "chain metal clang" | Zapsplat | P1 | CC0 |
+| **Glass shatter** | object | "mirror glass break shatter" | Zapsplat | P1 | CC0 |
+| **Candle flicker** | object | "candle flame flicker" | Zapsplat | P2 | CC0 |
+| **Match strike** | object | "match strike light ignite" | Zapsplat | P1 | CC0 |
+| **Footstep stone** | movement | "footstep stone dungeon" | Zapsplat | P2 | CC0 |
+
+**Total expected:** 14 sounds, ~150–250 KB post-compression (OGG Opus @ 48 kbps).
+
+### Source Validation Requirements
+
+**Before committing any asset:**
+1. **License check:** Confirm CC0 or CC-BY (CC-BY-NC only if explicitly approved by Wayne)
+2. **Attribution:** Capture source URL, artist name, license text
+3. **Quality:** Download preview; verify no artifacts, audible quality acceptable for mobile
+4. **Format:** Download as WAV or FLAC (highest quality available)
 
 ### Agents & Assignments
 
 | Agent | Role | Tasks |
 |-------|------|-------|
-| **CBG (Game Design)** | Creative Director | Finalize sound asset list, source CC0 + CC-BY sounds, quality review |
-| **Gil (Web Engineer)** | Build/Deploy Lead | Validate Opus format, compress @48 kbps, stage in web/dist/sounds/, cache-bust |
+| **CBG (Game Design)** | Creative Director | Source CC0/CC-BY assets from free libraries using shopping list, quality review, attribution capture |
+| **Gil (Web Engineer)** | Build/Deploy Lead | Validate sourced assets, compress to Opus @48 kbps, stage in web/dist/sounds/, document licenses |
 | **Nelson (QA)** | Test/Validation | Regression tests (full 266-suite must pass), LLM walkthroughs (5 scenarios) |
 
 ### Dependencies
 
-None — can start immediately. Does not depend on object/room metadata being complete.
+None — can start immediately. Sourcing from free libraries has zero external dependencies.
 
 ### Execution
 
-1. **Asset Sourcing (CBG)** — 3–5 days
-   - Audit 24 required sounds from design doc
-   - Source royalty-free CC0 OR CC-BY files (freesound.org, zapsplat, epidemic sound)
-   - OR commission custom recordings if budget approved
+1. **Asset Sourcing (CBG)** — 2–3 days
+   - Visit Zapsplat.com, BBC Sound Effects Library, OpenGameArt
+   - For each item in shopping list: search using provided terms
+   - Download highest-quality version (WAV or FLAC preferred)
+   - Verify CC0 license (or CC-BY with attribution)
+   - Capture source URL and artist attribution in spreadsheet
    - Store in `assets/sounds/{category}/{name}.wav` (studio quality)
-   - Document source attribution in `assets/sounds/README.md`
+   - Document source attribution in `assets/sounds/README.md` with licenses and source URLs
 
 2. **Compression & Staging (Gil)** — 1–2 days
    - Install ffmpeg (if not present)
@@ -180,27 +222,28 @@ None — can start immediately. Does not depend on object/room metadata being co
      ```
      echo "look\nfeel wolf\nlisten\nopen door\nlight candle" | lua src/main.lua --headless
      ```
-   - Verify: sound manager loads, no crashes, correct fallback behavior
+   - Verify: sound manager loads, all sourced assets play (no fallback needed), zero crashes
    - Document any issues in `.squad/decisions/inbox/nelson-sound-wave1-blockers.md`
 
 ### Gate-1: MVP Assets Ready
 
 **Criteria (all must pass):**
-- ✅ 24 OGG Opus files staged in `web/dist/sounds/`
-- ✅ Each file valid Opus format, < 100 KB
-- ✅ Total size < 500 KB
-- ✅ Source attribution documented in `assets/sounds/README.md`
+- ✅ 12–15 OGG Opus files staged in `web/dist/sounds/`
+- ✅ Each file sourced from CC0/CC-BY free library (no self-generated sounds)
+- ✅ Each file valid Opus format, < 100 KB per file
+- ✅ Total size < 300 KB (target: 150–250 KB)
+- ✅ Source attribution + licenses documented in `assets/sounds/README.md` and `assets/sounds/manifest.json`
+- ✅ All sources verified CC0 (or CC-BY with approval from Wayne)
 - ✅ Full 266-test suite passes
 - ✅ LLM headless walkthroughs pass (5 scenarios)
 - ✅ Zero regressions
-- ✅ Manifest.json generated (if using preload strategy)
 
 **If GATE-1 fails:** Retry asset sourcing or compression. If failed after 2 retries, escalate to Wayne.
 
 ### Timeline Estimate
 
-**3–5 days total:**
-- CBG: 2–3 days (asset sourcing)
+**2–4 days total:**
+- CBG: 1–2 days (sourcing from free libraries using shopping list)
 - Gil: 1 day (compression + staging)
 - Nelson: 1 day (validation + LLM walkthroughs)
 
@@ -215,6 +258,35 @@ Expand sound vocabulary beyond creatures and doors. Make every interactive objec
 ### Scope
 
 Container interactions, trap activation, puzzle sounds, liquid interactions, environmental reactions.
+
+### Shopping List (Concrete Asset List)
+
+| Sound | Category | Search Terms | Source | Priority | License |
+|-------|----------|-------------|--------|----------|---------|
+| **Water drip loop** | ambient | "water drip cave cellar" | Zapsplat | P1 | CC0 |
+| **Wind/draft** | ambient | "wind draft stone corridor" | Zapsplat | P1 | CC0 |
+| **Fire crackle loop** | ambient | "fire hearth crackling" | Zapsplat | P1 | CC0 |
+| **Rat squeak** | creature | "rat squeak scurry" | Zapsplat | P1 | CC0 |
+| **Wolf growl** | creature | "wolf growl snarl" | Zapsplat | P1 | CC0 |
+| **Spider hiss** | creature | "insect hiss skitter" | Zapsplat | P2 | CC0 |
+| **Cat meow/hiss** | creature | "cat meow hiss" | Zapsplat | P2 | CC0 |
+| **Door creak** | object | "wooden door creak open" | Zapsplat/BBC | P1 | CC0 |
+| **Lock click** | object | "padlock click metal" | Zapsplat | P1 | CC0 |
+| **Metal clang/chain** | object | "chain metal clang" | Zapsplat | P1 | CC0 |
+| **Glass shatter** | object | "mirror glass break shatter" | Zapsplat | P1 | CC0 |
+| **Candle flicker** | object | "candle flame flicker" | Zapsplat | P2 | CC0 |
+| **Match strike** | object | "match strike light ignite" | Zapsplat | P1 | CC0 |
+| **Footstep stone** | movement | "footstep stone dungeon" | Zapsplat | P2 | CC0 |
+
+**Total expected:** 14 sounds, ~150–250 KB post-compression (OGG Opus @ 48 kbps).
+
+### Source Validation Requirements
+
+**Before committing any asset:**
+1. **License check:** Confirm CC0 or CC-BY (CC-BY-NC only if explicitly approved by Wayne)
+2. **Attribution:** Capture source URL, artist name, license text
+3. **Quality:** Download preview; verify no artifacts, audible quality acceptable for mobile
+4. **Format:** Download as WAV or FLAC (highest quality available)
 
 ### Agents & Assignments
 
@@ -306,6 +378,35 @@ Deepen creature audio identity — per-state sounds, behavioral variation, pack 
 
 Per-state creature sounds (idle, hunting, fleeing, injured, dead). Creature interactions, creature death silence design (intentional absence).
 
+### Shopping List (Concrete Asset List)
+
+| Sound | Category | Search Terms | Source | Priority | License |
+|-------|----------|-------------|--------|----------|---------|
+| **Water drip loop** | ambient | "water drip cave cellar" | Zapsplat | P1 | CC0 |
+| **Wind/draft** | ambient | "wind draft stone corridor" | Zapsplat | P1 | CC0 |
+| **Fire crackle loop** | ambient | "fire hearth crackling" | Zapsplat | P1 | CC0 |
+| **Rat squeak** | creature | "rat squeak scurry" | Zapsplat | P1 | CC0 |
+| **Wolf growl** | creature | "wolf growl snarl" | Zapsplat | P1 | CC0 |
+| **Spider hiss** | creature | "insect hiss skitter" | Zapsplat | P2 | CC0 |
+| **Cat meow/hiss** | creature | "cat meow hiss" | Zapsplat | P2 | CC0 |
+| **Door creak** | object | "wooden door creak open" | Zapsplat/BBC | P1 | CC0 |
+| **Lock click** | object | "padlock click metal" | Zapsplat | P1 | CC0 |
+| **Metal clang/chain** | object | "chain metal clang" | Zapsplat | P1 | CC0 |
+| **Glass shatter** | object | "mirror glass break shatter" | Zapsplat | P1 | CC0 |
+| **Candle flicker** | object | "candle flame flicker" | Zapsplat | P2 | CC0 |
+| **Match strike** | object | "match strike light ignite" | Zapsplat | P1 | CC0 |
+| **Footstep stone** | movement | "footstep stone dungeon" | Zapsplat | P2 | CC0 |
+
+**Total expected:** 14 sounds, ~150–250 KB post-compression (OGG Opus @ 48 kbps).
+
+### Source Validation Requirements
+
+**Before committing any asset:**
+1. **License check:** Confirm CC0 or CC-BY (CC-BY-NC only if explicitly approved by Wayne)
+2. **Attribution:** Capture source URL, artist name, license text
+3. **Quality:** Download preview; verify no artifacts, audible quality acceptable for mobile
+4. **Format:** Download as WAV or FLAC (highest quality available)
+
 ### Agents & Assignments
 
 | Agent | Role | Tasks |
@@ -396,6 +497,35 @@ Make combat visceral through sound. Hit feedback, death sounds, weapon impacts, 
 ### Scope
 
 Weapon impact sounds (blunt, slash, pierce, range), armor feedback (leather, plate, ricochet), injury-specific sounds (gash, bleed, poison), combat miss sounds (swing-and-miss, dodge).
+
+### Shopping List (Concrete Asset List)
+
+| Sound | Category | Search Terms | Source | Priority | License |
+|-------|----------|-------------|--------|----------|---------|
+| **Water drip loop** | ambient | "water drip cave cellar" | Zapsplat | P1 | CC0 |
+| **Wind/draft** | ambient | "wind draft stone corridor" | Zapsplat | P1 | CC0 |
+| **Fire crackle loop** | ambient | "fire hearth crackling" | Zapsplat | P1 | CC0 |
+| **Rat squeak** | creature | "rat squeak scurry" | Zapsplat | P1 | CC0 |
+| **Wolf growl** | creature | "wolf growl snarl" | Zapsplat | P1 | CC0 |
+| **Spider hiss** | creature | "insect hiss skitter" | Zapsplat | P2 | CC0 |
+| **Cat meow/hiss** | creature | "cat meow hiss" | Zapsplat | P2 | CC0 |
+| **Door creak** | object | "wooden door creak open" | Zapsplat/BBC | P1 | CC0 |
+| **Lock click** | object | "padlock click metal" | Zapsplat | P1 | CC0 |
+| **Metal clang/chain** | object | "chain metal clang" | Zapsplat | P1 | CC0 |
+| **Glass shatter** | object | "mirror glass break shatter" | Zapsplat | P1 | CC0 |
+| **Candle flicker** | object | "candle flame flicker" | Zapsplat | P2 | CC0 |
+| **Match strike** | object | "match strike light ignite" | Zapsplat | P1 | CC0 |
+| **Footstep stone** | movement | "footstep stone dungeon" | Zapsplat | P2 | CC0 |
+
+**Total expected:** 14 sounds, ~150–250 KB post-compression (OGG Opus @ 48 kbps).
+
+### Source Validation Requirements
+
+**Before committing any asset:**
+1. **License check:** Confirm CC0 or CC-BY (CC-BY-NC only if explicitly approved by Wayne)
+2. **Attribution:** Capture source URL, artist name, license text
+3. **Quality:** Download preview; verify no artifacts, audible quality acceptable for mobile
+4. **Format:** Download as WAV or FLAC (highest quality available)
 
 ### Agents & Assignments
 
@@ -497,6 +627,35 @@ Weapon impact sounds (blunt, slash, pierce, range), armor feedback (leather, pla
 ### Goal
 
 The world evolves sonically throughout the day. Day vs. night. Courtyard outdoors change.
+
+### Shopping List (Concrete Asset List)
+
+| Sound | Category | Search Terms | Source | Priority | License |
+|-------|----------|-------------|--------|----------|---------|
+| **Water drip loop** | ambient | "water drip cave cellar" | Zapsplat | P1 | CC0 |
+| **Wind/draft** | ambient | "wind draft stone corridor" | Zapsplat | P1 | CC0 |
+| **Fire crackle loop** | ambient | "fire hearth crackling" | Zapsplat | P1 | CC0 |
+| **Rat squeak** | creature | "rat squeak scurry" | Zapsplat | P1 | CC0 |
+| **Wolf growl** | creature | "wolf growl snarl" | Zapsplat | P1 | CC0 |
+| **Spider hiss** | creature | "insect hiss skitter" | Zapsplat | P2 | CC0 |
+| **Cat meow/hiss** | creature | "cat meow hiss" | Zapsplat | P2 | CC0 |
+| **Door creak** | object | "wooden door creak open" | Zapsplat/BBC | P1 | CC0 |
+| **Lock click** | object | "padlock click metal" | Zapsplat | P1 | CC0 |
+| **Metal clang/chain** | object | "chain metal clang" | Zapsplat | P1 | CC0 |
+| **Glass shatter** | object | "mirror glass break shatter" | Zapsplat | P1 | CC0 |
+| **Candle flicker** | object | "candle flame flicker" | Zapsplat | P2 | CC0 |
+| **Match strike** | object | "match strike light ignite" | Zapsplat | P1 | CC0 |
+| **Footstep stone** | movement | "footstep stone dungeon" | Zapsplat | P2 | CC0 |
+
+**Total expected:** 14 sounds, ~150–250 KB post-compression (OGG Opus @ 48 kbps).
+
+### Source Validation Requirements
+
+**Before committing any asset:**
+1. **License check:** Confirm CC0 or CC-BY (CC-BY-NC only if explicitly approved by Wayne)
+2. **Attribution:** Capture source URL, artist name, license text
+3. **Quality:** Download preview; verify no artifacts, audible quality acceptable for mobile
+4. **Format:** Download as WAV or FLAC (highest quality available)
 
 ### Agents & Assignments
 
@@ -608,6 +767,35 @@ Establish whether MMO wants diegetic vs. non-diegetic music.
 ### Goal
 
 Ensure deaf and hard-of-hearing players lose nothing. Enhance audio descriptions, provide volume controls.
+
+### Shopping List (Concrete Asset List)
+
+| Sound | Category | Search Terms | Source | Priority | License |
+|-------|----------|-------------|--------|----------|---------|
+| **Water drip loop** | ambient | "water drip cave cellar" | Zapsplat | P1 | CC0 |
+| **Wind/draft** | ambient | "wind draft stone corridor" | Zapsplat | P1 | CC0 |
+| **Fire crackle loop** | ambient | "fire hearth crackling" | Zapsplat | P1 | CC0 |
+| **Rat squeak** | creature | "rat squeak scurry" | Zapsplat | P1 | CC0 |
+| **Wolf growl** | creature | "wolf growl snarl" | Zapsplat | P1 | CC0 |
+| **Spider hiss** | creature | "insect hiss skitter" | Zapsplat | P2 | CC0 |
+| **Cat meow/hiss** | creature | "cat meow hiss" | Zapsplat | P2 | CC0 |
+| **Door creak** | object | "wooden door creak open" | Zapsplat/BBC | P1 | CC0 |
+| **Lock click** | object | "padlock click metal" | Zapsplat | P1 | CC0 |
+| **Metal clang/chain** | object | "chain metal clang" | Zapsplat | P1 | CC0 |
+| **Glass shatter** | object | "mirror glass break shatter" | Zapsplat | P1 | CC0 |
+| **Candle flicker** | object | "candle flame flicker" | Zapsplat | P2 | CC0 |
+| **Match strike** | object | "match strike light ignite" | Zapsplat | P1 | CC0 |
+| **Footstep stone** | movement | "footstep stone dungeon" | Zapsplat | P2 | CC0 |
+
+**Total expected:** 14 sounds, ~150–250 KB post-compression (OGG Opus @ 48 kbps).
+
+### Source Validation Requirements
+
+**Before committing any asset:**
+1. **License check:** Confirm CC0 or CC-BY (CC-BY-NC only if explicitly approved by Wayne)
+2. **Attribution:** Capture source URL, artist name, license text
+3. **Quality:** Download preview; verify no artifacts, audible quality acceptable for mobile
+4. **Format:** Download as WAV or FLAC (highest quality available)
 
 ### Agents & Assignments
 
@@ -800,3 +988,13 @@ TOTAL: 8–12 weeks (with WAVE-4 blocked on Level 2)
 **Execution Lead:** Bart (Architecture Lead)  
 **Next Review:** When WAVE-1 assets are 50% sourced (2026-04-06)  
 **Escalation Point:** If any GATE blocked >3 days, escalate to Wayne
+
+
+
+
+
+
+
+
+
+

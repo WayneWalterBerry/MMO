@@ -12,7 +12,7 @@
 
 | Priority | Task | Owner | Status |
 |----------|------|-------|--------|
-| **P0** | **PHASE 1: Real Audio Assets (MVP)** | CBG (sourcing), Gil (build/deploy) | ⏳ In Progress — 24 sound files (OGG Opus @ 48 kbps) awaiting final sourcing or creation. Build pipeline ready; assets staged. |
+| **P0** | **PHASE 1: Real Audio Assets from Free Libraries (MVP)** | CBG (sourcing), Gil (build/deploy) | ⏳ In Progress — Source 12–15 sound files from free libraries (Zapsplat, BBC Sound Effects, OpenGameArt) using concrete shopping list. No self-generated sounds. See `projects/sound/plan.md` WAVE-1 for details. |
 | **P1** | **WAVE-0** — Sound manager module + platform drivers | Bart, Gil, Nelson | ✅ Done (Bart: init.lua + null-driver + defaults; Gil: web bridge; Nelson: test scaffolding) |
 | **P2** | **WAVE-1** — Object metadata + room ambients + asset sourcing | Flanders, Moe, CBG, Nelson | ✅ Done (Flanders: 20 files, Moe: 7 rooms, CBG: design complete, sourcing pending) |
 | **P3** | **WAVE-2 Track 2A** — Engine hooks (FSM, verb, mutation, room, effects, loader) | Bart | ✅ Done (12 hooks, +70 lines, 260/260 tests pass) |
@@ -30,7 +30,7 @@
 
 **TOTAL SCORE:** Full sound infrastructure deployed. Core gameplay integration complete. **MVP sound system is production-ready.** The skeleton plays real sounds; now we ship the voice (Phase 1: real audio assets).
 
-**Blocker:** Real audio assets (24 MVP files) awaiting sourcing/creation decision. Build pipeline (`build-sounds.ps1`) is ready to deploy on file arrival.
+**Next Step:** Execute WAVE-1 (Phase 1 MVP) — Source 12–15 sounds from free libraries using shopping list in `projects/sound/plan.md`. CBG leads sourcing (Zapsplat/BBC/OpenGameArt), Gil handles compression & deploy. Build pipeline (`build-sounds.ps1`) ready. No blockers — can start immediately.
 
 ---
 
@@ -220,3 +220,5 @@
 
 **Board Last Updated:** 2026-03-29T12:14Z (Scribe — WAVE-0 + WAVE-1 + WAVE-2 Track 2A completion)  
 **For questions:** See `.squad/agents/bart/charter.md` or `.squad/decisions.md`
+
+
