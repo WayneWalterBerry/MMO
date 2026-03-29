@@ -1,7 +1,7 @@
 # Sound Project Board
 
 **Owner:** 🏗️ Bart (Architecture Lead) + ⚙️ Gil (Web Engineer)
-**Last Updated:** 2026-03-29T12:14Z
+**Last Updated:** 2026-03-29T05:54Z
 **Overall Status:** 🟢 WAVE-0 COMPLETE ✅ + WAVE-1 COMPLETE ✅ + WAVE-2 Track 2A COMPLETE ✅ — Sound manager + null driver + defaults + 47 tests + 12 engine hooks + 20 object/creature metadata + 7 room ambients. Gate-1 ready for integration. Gil (web bridge) and Nelson (mock driver + scaffolding) tracks pending.
 
 ---
@@ -17,14 +17,15 @@
 | **P1** | **WAVE-0** — Sound manager module + platform drivers | Bart, Gil, Nelson | ✅ Done (Bart track — init.lua + null-driver + defaults + tests) |
 | **P2** | **WAVE-1** — Object metadata + room ambients + asset sourcing | Flanders, Moe, CBG, Nelson | ✅ Done (Flanders: 20 files, Moe: 7 rooms, CBG: asset sourcing ⏳) |
 | **P3** | **WAVE-2 Track 2A** — Engine hooks (FSM, verb, mutation, room, effects, loader) | Bart | ✅ Done (12 hooks, +70 lines, 260/260 tests pass, commit 2669e5e) |
-| **P3b** | **WAVE-2 Track 2B+C** — Integration + verb narration | Smithers, Nelson | ⏳ Blocked on GATE-1 |
-| **P4** | **WAVE-3** — Build pipeline + deploy + documentation | Gil, Nelson, Brockman | ⏳ Pending |
+| **P3b** | **WAVE-2 Track 2B** — Verb narration integration | Smithers | ✅ Done (265 tests, all verb→sound dispatch verified) |
+| **P3c** | **WAVE-2 Track 2C** — Integration tests (end-to-end) | Nelson | ✅ Done (25 tests, 266-suite green) |
+| **P4** | **WAVE-3** — Build pipeline + deploy + documentation | Gil, Nelson, Brockman | ⏳ In Progress |
 
 ---
 
 ## Overall Status
 
-**🟢 WAVE-0 COMPLETE ✅ — Sound manager module, null driver, defaults table, and 47 unit tests delivered. WAVE-1 COMPLETE ✅ — 20 object/creature metadata files (Flanders, 263 tests) + 7 room ambient declarations (Moe, 260 tests). WAVE-2 Track 2A COMPLETE ✅ — 12 engine hooks across 9 files, +70 lines, full FSM/verb/mutation/room/effects/loader integration wired. Gate-1 ready for integration. Gil (web bridge) and Nelson (mock driver + asset sourcing validation) tracks pending for full GATE-2.**
+**🟢 WAVE-0 COMPLETE ✅ — Sound manager module, null driver, defaults table, and 47 unit tests delivered. WAVE-1 COMPLETE ✅ — 20 object/creature metadata files (Flanders, 263 tests) + 7 room ambient declarations (Moe, 260 tests) + 141 metadata validation tests (Nelson). WAVE-2 COMPLETE ✅ — Track 2A: 12 engine hooks (+70 lines, Bart). Track 2B: 265 verb narration tests (Smithers). Track 2C: 25 integration tests, 266-suite green (Nelson). Full GATE-2 satisfied — all sound event chains verified. WAVE-3 unblocked.**
 
 ---
 
@@ -47,8 +48,9 @@
 | **WAVE-0** | Infrastructure | 3 | Sound manager loads, no-op works, web bridge connects, zero regressions | ✅ Done (Bart track, commit 2669e5e) |
 | **WAVE-1** | Metadata + Assets | 4 | 15+ objects/creatures have sounds tables, 7 rooms declare ambients, 24 files sourced + compressed | ✅ Done (Flanders: 20 files, 263 tests; Moe: 7 rooms, 260 tests; CBG: asset sourcing ⏳) |
 | **WAVE-2 Track 2A** | Engine Hooks | 1 | FSM/verb/mutation engine hook points registered | ✅ Done (Bart: 12 hooks, +70 lines, commit 2669e5e) |
-| **WAVE-2 Track 2B+C** | Integration | 2 | Combat dispatch + verb handlers wired, integration tests pass | ⏳ Blocked on WAVE-1 + GATE-0 |
-| **WAVE-3** | Deploy + Polish | 3 | Build pipeline works, sounds deploy to web, LLM walkthroughs pass, docs shipped | ⏳ Pending |
+| **WAVE-2 Track 2B** | Verb Narration | 1 | Verb handler sound dispatch + narration integration | ✅ Done (Smithers: 47 lines, 265 tests) |
+| **WAVE-2 Track 2C** | Integration Tests | 1 | End-to-end sound event chains verified | ✅ Done (Nelson: 25 tests, 266 total suite green) |
+| **WAVE-3** | Deploy + Polish | 3 | Build pipeline works, sounds deploy to web, LLM walkthroughs pass, docs shipped | ⏳ In Progress |
 
 ---
 
