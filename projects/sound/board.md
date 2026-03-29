@@ -1,8 +1,8 @@
 # Sound Project Board
 
 **Owner:** 🏗️ Bart (Architecture Lead) + ⚙️ Gil (Web Engineer)
-**Last Updated:** 2026-03-29
-**Overall Status:** 📋 DESIGNED — Plans complete, implementation not started
+**Last Updated:** 2026-07-31
+**Overall Status:** 📋 PLAN v1.1 REVIEWED — Awaiting Wayne final review
 
 ---
 
@@ -10,10 +10,11 @@
 
 | Priority | Task | Owner | Status |
 |----------|------|-------|--------|
-| **P0** | Full team review of implementation plan (per implementation-plan skill Pattern 5) | CBG, Marge, Chalmers, Flanders, Smithers, Moe | ✅ Complete — **Bart: ⚠️** (7 concerns), **CBG: ✅** (2 concerns), **Marge: ⚠️** (3 blockers, 5 concerns), **Chalmers: ⚠️** (3 blockers, 3 concerns), **Flanders: ⚠️** (3 blockers, 2 concerns), **Moe: ✅** (2 blockers, 2 concerns) |
-| **P0b** | Fix all blockers found in team review → plan v2.0 | Bart (author) + reviewers | ⏳ Blocked by P0 |
-| **P0c** | Wayne final review (documentation gaps, missing deliverables) | Wayne | ⏳ Blocked by P0b |
-| **P1** | **WAVE-0** — Sound manager module + platform drivers | Bart, Gil, Nelson | ⏳ Blocked by P0c |
+| **P0** | Full team review of implementation plan (per implementation-plan skill Pattern 5) | CBG, Marge, Chalmers, Flanders, Smithers, Moe | ✅ Complete — **Bart: ⚠️** (7 concerns), **CBG: ✅** (2 concerns), **Marge: ⚠️** (3 blockers, 5 concerns), **Chalmers: ⚠️** (3 blockers, 3 concerns), **Flanders: ⚠️** (3 blockers, 2 concerns), **Moe: ✅** (2 blockers, 2 concerns), **Smithers: ⚠️** (2 blockers, 3 concerns) |
+| **P0a** | Consolidate all review findings → plan v1.1 | Bart (author) | ✅ Complete — 10 blockers + 11 concerns resolved. Plan v1.1 committed. |
+| **P0b** | Wayne final review of v1.1 plan | Wayne | ⏳ Pending |
+| **P0c** | Wayne final review (documentation gaps, missing deliverables) | Wayne | ⏳ Blocked by P0b (merged into P0b flow) |
+| **P1** | **WAVE-0** — Sound manager module + platform drivers | Bart, Gil, Nelson | ⏳ Blocked by P0b |
 | **P2** | **WAVE-1** — Object metadata + room ambients + asset sourcing | Flanders, Moe, CBG, Nelson | ⏳ Pending |
 | **P3** | **WAVE-2** — Event integration + engine hooks | Bart, Smithers, Nelson | ⏳ Pending |
 | **P4** | **WAVE-3** — Build pipeline + deploy + documentation | Gil, Nelson, Brockman | ⏳ Pending |
@@ -22,7 +23,7 @@
 
 ## Overall Status
 
-**🔴 REVIEW COMPLETE — 6 reviewers done. 10 blockers across team (Marge: 3, Chalmers: 3, Flanders: 3, Moe: 2). Awaiting Bart fixes & Wayne's decision on scope/timing.**
+**🟡 REVIEW RESOLVED — Plan v1.1 committed. 10 blockers + 11 concerns from 7-agent review addressed. Awaiting Wayne's final review (P0b).**
 
 ---
 
@@ -191,7 +192,7 @@
 | WAVE-3 | 4–5 (Gil: 2, Nelson: 2, Brockman: 1) | Docs can run in parallel |
 | **Total** | **24–31 hours** | |
 
-**Recommendation:** Run WAVE-1 and WAVE-2 in parallel after GATE-0. Asset sourcing (1B) can start immediately; engine hooks (2A) start after GATE-0 but don't depend on WAVE-1.
+**Recommendation:** WAVE-2 Track 2A (Bart: engine hooks) can start after GATE-0 in parallel with WAVE-1 — hooks are structural and don't need sound files. WAVE-2 Tracks 2B + 2C wait for GATE-1. Asset sourcing (1B) can also start immediately after GATE-0.
 
 ---
 
