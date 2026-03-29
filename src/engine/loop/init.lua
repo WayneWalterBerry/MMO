@@ -478,8 +478,15 @@ function loop.run(context)
         end
         if _G.TRACE then io.stderr:write("[TRACE] handler complete: " .. verb .. "\n") end
         -- Sound: fire generic on_verb_{verb} event after successful dispatch
+        -- Resolve noun → object so trigger() can check object-specific sounds
+        -- before falling back to defaults (WAVE-2 Track 2B)
         if context.sound_manager then
-            context.sound_manager:trigger(nil, "on_verb_" .. verb)
+            local sound_obj = nil
+            if noun ~= "" and context.registry then
+                local bare = noun:match("^%a+%s+(.+)$") or noun
+                sound_obj = context.registry:find_by_keyword(bare)
+            end
+            context.sound_manager:trigger(sound_obj, "on_verb_" .. verb)
         end
         -- BUG-060: Update last_noun after successful handler with a real noun
         if noun ~= "" and not no_noun_verbs[verb] then
