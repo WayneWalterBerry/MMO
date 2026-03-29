@@ -97,6 +97,7 @@ data.KNOWN_VERBS = {
     sleep = true, rest = true, nap = true,
     -- movement
     go = true, walk = true, run = true, head = true, travel = true,
+    leave = true, exit = true,
     enter = true, climb = true, ascend = true, descend = true,
     back = true, ["return"] = true,
     north = true, south = true, east = true, west = true,

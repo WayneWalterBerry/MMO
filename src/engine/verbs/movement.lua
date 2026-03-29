@@ -103,6 +103,8 @@ function M.register(handlers)
             :gsub("^to%s+", "")
             :gsub("^into%s+", "")
             :gsub("^towards?%s+", "")
+            :gsub("^out%s+of%s+", "")
+            :gsub("^out%s+", "")
         if clean == "" then
             print("Go where?")
             return
@@ -409,6 +411,8 @@ function M.register(handlers)
     handlers["run"]    = handlers["go"]
     handlers["head"]   = handlers["go"]
     handlers["travel"] = handlers["go"]
+    handlers["leave"]  = handlers["go"]
+    handlers["exit"]   = handlers["go"]
 
     -- BUG-124 (#32): "move" must disambiguate between navigation and object interaction.
     -- If the noun is a direction, treat as "go"; otherwise delegate to the spatial move handler.
@@ -421,6 +425,8 @@ function M.register(handlers)
             :gsub("^to%s+", "")
             :gsub("^into%s+", "")
             :gsub("^towards?%s+", "")
+            :gsub("^out%s+of%s+", "")
+            :gsub("^out%s+", "")
         if DIRECTION_ALIASES[clean] or clean == "back" then
             handle_movement(ctx, noun)
         else
