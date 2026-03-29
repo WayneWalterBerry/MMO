@@ -133,6 +133,133 @@
         return buf;
     }
 
+    // Generate intermittent water drip buffer (synth:drip)
+    // Short resonant bursts at random intervals — sounds like water drops
+    function _syntheticDrip(ctx, durationSec) {
+        var sr = ctx.sampleRate;
+        var dur = durationSec || 10;
+        var len = Math.floor(sr * dur);
+        var buf = ctx.createBuffer(1, len, sr);
+        var data = buf.getChannelData(0);
+
+        // Place drips at random intervals (2-5 seconds apart)
+        var pos = Math.floor(sr * (0.5 + Math.random() * 1.5));
+        while (pos < len) {
+            // Each drip: damped resonant burst (50-100ms)
+            var dripLen = Math.floor(sr * (0.05 + Math.random() * 0.05));
+            var freq = 800 + Math.random() * 1200;
+            var decayRate = 30 + Math.random() * 20;
+
+            for (var i = 0; i < dripLen && (pos + i) < len; i++) {
+                var t = i / sr;
+                var env = Math.exp(-t * decayRate);
+                var sample = (Math.sin(2 * Math.PI * freq * t) * 0.6
+                             + Math.sin(2 * Math.PI * freq * 0.5 * t) * 0.2
+                             + (Math.random() * 2 - 1) * 0.15)
+                             * env * 0.4;
+                data[pos + i] += sample;
+            }
+
+            // Quiet reverb tail
+            var tailLen = Math.floor(sr * (0.1 + Math.random() * 0.1));
+            var tailStart = pos + dripLen;
+            for (var j = 0; j < tailLen && (tailStart + j) < len; j++) {
+                var tt = j / sr;
+                var tailEnv = Math.exp(-tt * 15);
+                data[tailStart + j] += (Math.random() * 2 - 1) * 0.02 * tailEnv;
+            }
+
+            // Next drip: 2-5 seconds later
+            pos += dripLen + Math.floor(sr * (2 + Math.random() * 3));
+        }
+
+        return buf;
+    }
+
+    // Generate wind ambient buffer (synth:wind)
+    // Low-pass filtered brownian noise with slow volume gusts
+    function _syntheticWind(ctx, durationSec) {
+        var sr = ctx.sampleRate;
+        var dur = durationSec || 4;
+        var len = Math.floor(sr * dur);
+        var buf = ctx.createBuffer(1, len, sr);
+        var data = buf.getChannelData(0);
+
+        var last = 0;
+        for (var i = 0; i < len; i++) {
+            var white = Math.random() * 2 - 1;
+            last = (last + (0.02 * white)) / 1.02;
+
+            // Slow gust modulation (~0.15-0.25 Hz cycle)
+            var gustFreq = 0.15 + 0.1 * Math.sin(2 * Math.PI * 0.03 * (i / sr));
+            var gust = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(2 * Math.PI * gustFreq * (i / sr)));
+
+            data[i] = last * 3.5 * gust;
+            if (data[i] > 1) data[i] = 1;
+            if (data[i] < -1) data[i] = -1;
+        }
+
+        // Fade in/out for seamless looping
+        var fade = Math.min(sr * 0.5, len / 4);
+        for (var j = 0; j < fade; j++) {
+            var env = j / fade;
+            data[j] *= env;
+            data[len - 1 - j] *= env;
+        }
+
+        return buf;
+    }
+
+    // Generate deep rumble buffer (synth:deep)
+    // Very low frequency rumble with occasional metallic scrape
+    function _syntheticDeep(ctx, durationSec) {
+        var sr = ctx.sampleRate;
+        var dur = durationSec || 6;
+        var len = Math.floor(sr * dur);
+        var buf = ctx.createBuffer(1, len, sr);
+        var data = buf.getChannelData(0);
+
+        // Layered sub-bass rumble (40-80 Hz)
+        for (var i = 0; i < len; i++) {
+            var t = i / sr;
+            var rumble = Math.sin(2 * Math.PI * 45 * t) * 0.3
+                       + Math.sin(2 * Math.PI * 65 * t) * 0.2
+                       + Math.sin(2 * Math.PI * 38 * t) * 0.15;
+            var mod = 0.6 + 0.4 * Math.sin(2 * Math.PI * 0.25 * t);
+            data[i] = rumble * mod * 0.5;
+        }
+
+        // 1-2 metallic scrapes at random positions
+        var numScrapes = 1 + Math.floor(Math.random() * 2);
+        for (var s = 0; s < numScrapes; s++) {
+            var scrapePos = Math.floor(len * (0.2 + Math.random() * 0.6));
+            var scrapeLen = Math.floor(sr * (0.08 + Math.random() * 0.12));
+            for (var k = 0; k < scrapeLen && (scrapePos + k) < len; k++) {
+                var st = k / sr;
+                var scrapeEnv = Math.exp(-st * 20);
+                var scrape = (Math.sin(2 * Math.PI * 3000 * st) * 0.15
+                            + Math.sin(2 * Math.PI * 4500 * st) * 0.1
+                            + (Math.random() * 2 - 1) * 0.1)
+                            * scrapeEnv * 0.3;
+                data[scrapePos + k] += scrape;
+            }
+        }
+
+        // Clamp and fade
+        for (var c = 0; c < len; c++) {
+            if (data[c] > 1) data[c] = 1;
+            if (data[c] < -1) data[c] = -1;
+        }
+        var fade = Math.min(sr * 0.5, len / 4);
+        for (var f = 0; f < fade; f++) {
+            var fenv = f / fade;
+            data[f] *= fenv;
+            data[len - 1 - f] *= fenv;
+        }
+
+        return buf;
+    }
+
     // Generate a short click/thud tone (for object interactions)
     function _syntheticObject(ctx) {
         var sr = ctx.sampleRate;
@@ -218,8 +345,16 @@
 
     function _generateSyntheticBuffer(ctx, filename) {
         var soundType = _classifySoundType(filename);
+        if (soundType === 'ambient') {
+            // Named synthetic patterns based on sound ID
+            var lower = filename ? filename.toLowerCase() : '';
+            if (lower.indexOf('drip') !== -1) return _syntheticDrip(ctx, 10);
+            if (lower.indexOf('wind') !== -1) return _syntheticWind(ctx, 4);
+            if (lower.indexOf('deep') !== -1 || lower.indexOf('crypt') !== -1
+                || lower.indexOf('void') !== -1) return _syntheticDeep(ctx, 6);
+            return _syntheticAmbient(ctx, 4); // default brownian fallback
+        }
         switch (soundType) {
-            case 'ambient':  return _syntheticAmbient(ctx, 4);
             case 'creature': return _syntheticCreature(ctx);
             case 'object':   return _syntheticObject(ctx);
             default:         return _syntheticGeneric(ctx);
