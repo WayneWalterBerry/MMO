@@ -53,6 +53,14 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 
 ## Learnings
 
+### Options Parser Integration (Phase 2+4)
+
+- **Idiom table duplication:** Both `data.lua` IDIOM_TABLE and `idioms.lua` IDIOM_TABLE exist. The data.lua version is consumed by `phrases.expand_idioms()` in the pipeline; `idioms.lua` is a separate Tier 3 module. Both needed updating for "give me a hint" redirect.
+- **Pattern ordering matters:** Options patterns ("what can i try") placed BEFORE "what can i see" / "what do i see" in transform_questions to prevent false matches. The first `if` block that matches wins.
+- **Number interception placement:** Goes after trim + question-mark strip but before BUG-105 safety net and multi-command splitting. This ensures numbers are caught early and the substituted command flows through the full pipeline normally.
+- **pending_options lifecycle:** Set by the options verb handler (Phase 1, Bart's domain). Cleared by the loop on: valid selection, invalid number (after error), or any non-numeric input. One-shot design — no state machine needed.
+- **"nudge" collision:** "nudge" is already in KNOWN_VERBS as a physical verb (push synonym). Added it to phrases.transform_questions as bare-word match (`text == "nudge"`), which fires before verb dispatch. Added `nudge_verb` to KNOWN_VERBS as a distinct entry; bare "nudge" routes to options via transform_questions.
+
 ### Parser Improvement Audit (2026-03-29)
 
 Full audit of parser codebase vs. design doc (`projects/parser-improvements/parser-improvement-design.md`). Key findings:
@@ -84,6 +92,21 @@ Implemented two-stage hybrid scoring pipeline per Frink's D1/D3 decisions:
 ---
 
 ## Latest Activity
+
+**Options Parser Aliases + Number Selection (Phase 2+4):**
+- Implemented 10 parser aliases for `options` verb across 3 layers:
+  - `phrases.lua` transform_questions: "what are my options", "give me options", "what can i try", "i'm stuck", "hint", "hints", "nudge"
+  - `data.lua` IDIOM_TABLE + `idioms.lua`: "give me a nudge", "give me a hint", "suggest something"
+  - `data.lua` KNOWN_VERBS: added `options`, `hint`, `hints`
+- Redirected `idioms.lua` "give me a hint" from `help` → `options` (was stale mapping)
+- D-OPTIONS-B5 respected: "help me" NOT in options aliases
+- Number selection interception in `loop/init.lua`:
+  - Inserted after trim/question-mark-strip, before BUG-105 safety net
+  - Valid number (1-N) → substitutes command string, clears pending_options
+  - Invalid number → error message with valid range, short-circuits
+  - Non-numeric input → clears pending_options silently
+- Added `options` to `no_noun_verbs` (prevents stale context noun inheritance)
+- All 7,361 tests pass (same 3 pre-existing failures unchanged)
 
 **Options Review Ceremony (2026-08-02):**
 - Reviewed Options project as Parser/UI Engineer
