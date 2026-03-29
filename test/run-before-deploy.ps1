@@ -14,6 +14,7 @@ $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot  = Split-Path -Parent $ScriptDir
+$luaExe    = "lua"
 
 Write-Host "=== Pre-Deploy Gate ==="
 Write-Host ""
@@ -25,9 +26,9 @@ if (Test-Path $edgeCheck) {
     Push-Location $RepoRoot
     try {
         & $luaExe $edgeCheck
-        # Don't fail on known broken edges — they're tracked as issues
+        # Don't fail on known broken edges - they're tracked as issues
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "Edge check found broken edges (tracked as issues — not blocking deploy)." -ForegroundColor Yellow
+            Write-Host "Edge check found broken edges (tracked as issues - not blocking deploy)." -ForegroundColor Yellow
         } else {
             Write-Host "Edge check passed." -ForegroundColor Green
         }
@@ -37,7 +38,7 @@ if (Test-Path $edgeCheck) {
         Pop-Location
     }
 } else {
-    Write-Host "Warning: mutation-edge-check.lua not found — skipping." -ForegroundColor Yellow
+    Write-Host "Warning: mutation-edge-check.lua not found - skipping." -ForegroundColor Yellow
 }
 Write-Host ""
 
