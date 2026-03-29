@@ -129,11 +129,17 @@ if ($warnings.Count -gt 0) {
     }
 }
 
-# Embed build timestamp in game-adapter.lua
+# Embed build timestamp and version in game-adapter.lua
 $adapterPath = Join-Path $ScriptDir "game-adapter.lua"
 $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
 $adapterContent = [System.IO.File]::ReadAllText($adapterPath, $utf8NoBom)
 $adapterContent = $adapterContent -replace 'local BUILD_TIMESTAMP = ".*?"', "local BUILD_TIMESTAMP = `"$timestamp`""
+$commitHash = (git -C $RepoRoot rev-parse --short HEAD 2>$null) | Out-String
+$commitHash = $commitHash.Trim()
+if ($commitHash) {
+    $adapterContent = $adapterContent -replace 'local BUILD_VERSION = ".*?"', "local BUILD_VERSION = `"$commitHash`""
+    Write-Host "  Stamped game-adapter.lua: BUILD_VERSION = `"$commitHash`""
+}
 [System.IO.File]::WriteAllText($adapterPath, $adapterContent, $utf8NoBom)
 Write-Host "  Stamped game-adapter.lua: BUILD_TIMESTAMP = `"$timestamp`""
 

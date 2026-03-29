@@ -48,7 +48,8 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-29 05:55"
+local BUILD_TIMESTAMP = "2026-03-29 06:37"
+local BUILD_VERSION = ""
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -400,9 +401,9 @@ local ok, err = pcall(function()
 
         local source, was_cached = fetch_text("meta/rooms/" .. room_id .. ".lua")
         if was_cached then
-            log_debug("Loading Room: " .. name_hint .. "... (cached)")
+            log_debug("✓ Room: " .. name_hint .. " (cached)")
         elseif source then
-            log_debug("Loading Room: " .. name_hint .. "... (" .. format_size(#source) .. ")")
+            log_debug("✓ Room: " .. name_hint .. " (" .. format_size(#source) .. ")")
         else
             log_debug("Loading Room: " .. name_hint .. "...")
         end

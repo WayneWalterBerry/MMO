@@ -160,6 +160,7 @@
     // --- Build version (embedded at build time) ---
     const BUILD_TIMESTAMP = "2026-03-29 04:27";
     const CACHE_BUST = "20260329042754";
+    const BUILD_VERSION = "";
 
     // --- Size formatting ---
     function formatSize(bytes) {
@@ -502,43 +503,31 @@
     // --- Main boot sequence ---
     async function boot() {
         try {
-            if (window._debugMode) {
-                showStatus('Loading Bootstrapper (' + BUILD_TIMESTAMP + ')...');
-            }
+            var versionTag = BUILD_VERSION ? ' commit: ' + BUILD_VERSION : '';
+            showStatus('✓ Bootstrapper loaded (' + BUILD_TIMESTAMP + versionTag + ')');
 
             // Step 1: Fetch compressed engine bundle
             showStatus('Loading Game Engine...');
             var engineResponse = await fetchWithRetry('engine.lua.gz?v=' + CACHE_BUST, 1);
             var compressedData = await engineResponse.arrayBuffer();
-            if (window._debugMode) {
-                showStatus('Loading Game Engine... (' + formatSize(compressedData.byteLength) + ' compressed)');
-            }
 
             // Step 2: Decompress
-            if (window._debugMode) {
-                showStatus('Decompressing Engine...');
-            }
+            showStatus('Decompressing Engine...');
             var engineSource = await decompress(compressedData);
-            if (window._debugMode) {
-                showStatus('Decompressing Engine... (' + formatSize(engineSource.length) + ')');
-            }
+            showStatus('✓ Engine loaded (' + formatSize(engineSource.length) + ', ' + formatSize(compressedData.byteLength) + ' compressed' + versionTag + ')');
 
             // Step 3: Load engine into Fengari
             if (window._debugMode) {
-                showStatus('Initializing Fengari (' + BUILD_TIMESTAMP + ')...');
+                showStatus('Initializing Fengari...');
             }
             var L = getLuaState();
             executeLua(L, engineSource, 'engine');
 
             // Step 4: Fetch and execute game adapter
-            if (window._debugMode) {
-                showStatus('Loading Game Adapter...');
-            }
+            showStatus('Loading Game Adapter...');
             var adapterResponse = await fetchWithRetry('game-adapter.lua?v=' + CACHE_BUST, 1);
             var adapterSource = await adapterResponse.text();
-            if (window._debugMode) {
-                showStatus('Loading Game Adapter... (' + formatSize(adapterSource.length) + ')');
-            }
+            showStatus('✓ Game Adapter loaded (' + formatSize(adapterSource.length) + ')');
             executeLua(L, adapterSource, 'game-adapter');
 
             // Lazy-load SLM vectors in the background (non-blocking)

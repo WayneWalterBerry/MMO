@@ -187,6 +187,12 @@ $bsContent = [System.IO.File]::ReadAllText($bootstrapperPath, $utf8NoBom)
 $bsContent = $bsContent -replace 'const BUILD_TIMESTAMP = ".*?"', "const BUILD_TIMESTAMP = `"$timestamp`""
 $bsContent = $bsContent -replace 'const CACHE_BUST = ".*?"', "const CACHE_BUST = `"$timestampCompact`""
 $bsContent = $bsContent -replace 'const VECTORS_VERSION = ".*?"', "const VECTORS_VERSION = `"$vectorsVersion`""
+$commitHash = (git -C $RepoRoot rev-parse --short HEAD 2>$null) | Out-String
+$commitHash = $commitHash.Trim()
+if ($commitHash) {
+    $bsContent = $bsContent -replace 'const BUILD_VERSION = ".*?"', "const BUILD_VERSION = `"$commitHash`""
+    Write-Host "  Stamped bootstrapper.js: BUILD_VERSION = `"$commitHash`""
+}
 [System.IO.File]::WriteAllText($bootstrapperPath, $bsContent, $utf8NoBom)
 Write-Host "  Stamped bootstrapper.js: BUILD_TIMESTAMP = `"$timestamp`", CACHE_BUST = `"$timestampCompact`", VECTORS = `"$vectorsVersion`""
 
