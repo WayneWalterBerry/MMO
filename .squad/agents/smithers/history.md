@@ -51,6 +51,23 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 - Parser Tier 4 context window needs testing at scale
 - Web performance gains hold at 135KB initial load + progressive hydration
 
+## Learnings
+
+### Parser Improvement Audit (2026-03-29)
+
+Full audit of parser codebase vs. design doc (`projects/parser-improvements/parser-improvement-design.md`). Key findings:
+
+- **91.2% accuracy achieved** (134/147 benchmark) — up from 68% baseline. Phases 1-3 fully shipped.
+- **BM25 scoring fully operational** — IDF table (244 tokens, 11,131 phrases), inverted index, synonym expansion (60+ verb mappings), tightened Levenshtein thresholds.
+- **All 6 validation gates (P1-P6) implemented** — noun validation, verbose truncation, question transform, noun exactness, adjective guard, unknown lead-word guard. These were "recommended next improvements" in the design doc and are now all done.
+- **Context-aware recency boost operational** — Phase 3 mode in embedding_matcher wired to context.recency_score().
+- **word_similarity.lua exists but is NOT consumed** — 257 LOC sparse matrix data file is present but no soft_cosine_score() or maxsim_score() function in embedding_matcher.lua. Thresholds reserved (HYBRID=0.20) but no code path.
+- **Synonym table is verb-only** — No noun synonym expansion yet (candle→taper, lamp→lantern).
+- **32 parser test files + 11 pipeline sub-tests** — comprehensive coverage of BM25, context, fuzzy, GOAP, preprocessing, regressions.
+- **Remaining work: soft cosine re-ranker, MaxSim, hybrid scoring, BM25F, noun synonyms** — all Phase 2/3 design doc items.
+
+Board created at `projects/parser-improvements/board.md`.
+
 ---
 
 ## Archives
