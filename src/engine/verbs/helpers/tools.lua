@@ -109,7 +109,7 @@ local function consume_tool_charge(ctx, tool)
         end
         local source = ctx.object_sources[tool.on_tool_use.when_depleted]
         if source then
-            ctx.mutation.mutate(ctx.registry, ctx.loader, tool.id, source, ctx.templates)
+            ctx.mutation.mutate(ctx.registry, ctx.loader, tool.id, source, ctx.templates, ctx)
         end
     end
 end

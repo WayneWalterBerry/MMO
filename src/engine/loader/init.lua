@@ -222,4 +222,13 @@ function loader.flatten_instances(instances)
     return flat
 end
 
+-- Post-registration sound hook: scan a newly registered object for sound
+-- declarations. Call after resolve_instance + register to queue file loading.
+-- No-op when sound_manager is nil (headless mode).
+function loader.scan_for_sounds(sound_manager, obj)
+    if sound_manager and obj then
+        sound_manager:scan_object(obj)
+    end
+end
+
 return loader

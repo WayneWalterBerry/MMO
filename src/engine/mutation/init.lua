@@ -5,14 +5,15 @@
 
 local mutation = {}
 
--- mutate(registry, loader, object_id, new_source, templates)
+-- mutate(registry, loader, object_id, new_source, templates, ctx)
 --   -> new_object, nil  |  nil, error_string
 --
 -- Loads new_source into a fresh table, carries over containment references
 -- from the old object (location, container, surface contents), then replaces
 -- the registry entry. If `templates` is provided and the new object has a
 -- `template` field, resolves it before registration.
-function mutation.mutate(reg, ldr, object_id, new_source, templates)
+-- Optional `ctx` enables sound hooks (stop old, fire on_mutate, scan new).
+function mutation.mutate(reg, ldr, object_id, new_source, templates, ctx)
   local old = reg:get(object_id)
   if not old then
     return nil, "mutation: object '" .. tostring(object_id) .. "' not found in registry"
@@ -50,7 +51,19 @@ function mutation.mutate(reg, ldr, object_id, new_source, templates)
     new_obj.contents = old.contents
   end
 
+  -- Sound: stop old object sounds, fire on_mutate, scan replacement
+  if ctx and ctx.sound_manager then
+      ctx.sound_manager:stop_by_owner(object_id)
+      ctx.sound_manager:trigger(old, "on_mutate")
+  end
+
   reg:register(object_id, new_obj)
+
+  -- Sound: scan the mutated replacement for new sound declarations
+  if ctx and ctx.sound_manager then
+      ctx.sound_manager:scan_object(new_obj)
+  end
+
   return new_obj, nil
 end
 

@@ -232,7 +232,7 @@ function M.register(handlers)
         -- Perform the mutation
         local had_writing = target.written_text ~= nil
         local new_obj, err = ctx.mutation.mutate(
-            ctx.registry, ctx.loader, target.id, new_source, ctx.templates)
+            ctx.registry, ctx.loader, target.id, new_source, ctx.templates, ctx)
         if not new_obj then
             print("Something goes wrong -- the ink smears illegibly.")
             return

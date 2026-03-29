@@ -136,6 +136,8 @@ function M.register(handlers)
                 print(ctx.current_room.event_output["on_exit_room"])
                 ctx.current_room.event_output["on_exit_room"] = nil
             end
+            -- Sound: exit old room (stop ambients before transition text)
+            if ctx.sound_manager then ctx.sound_manager:exit_room(ctx.current_room) end
             ctx.player.location = prev_id
             ctx.current_room = prev_room
             ctx.player.visited_rooms = ctx.player.visited_rooms or {}
@@ -155,6 +157,8 @@ function M.register(handlers)
             if prev_room.short_description then
                 print(prev_room.short_description)
             end
+            -- Sound: enter new room (start ambients after text)
+            if ctx.sound_manager then ctx.sound_manager:enter_room(prev_room) end
             return
         end
 
@@ -240,6 +244,8 @@ function M.register(handlers)
                 print(old_room.event_output["on_exit_room"])
                 old_room.event_output["on_exit_room"] = nil
             end
+            -- Sound: exit old room
+            if ctx.sound_manager then ctx.sound_manager:exit_room(old_room) end
 
             -- Record previous room for "go back"
             if context_window and ctx.current_room then
@@ -281,6 +287,8 @@ function M.register(handlers)
                     print(target_room.short_description)
                 end
             end
+            -- Sound: enter new room (start ambients after text)
+            if ctx.sound_manager then ctx.sound_manager:enter_room(target_room) end
             return
         end
 
@@ -325,6 +333,8 @@ function M.register(handlers)
                 print(old_room.event_output["on_exit_room"])
                 old_room.event_output["on_exit_room"] = nil
             end
+            -- Sound: exit old room
+            if ctx.sound_manager then ctx.sound_manager:exit_room(old_room) end
 
             -- Record previous room for "go back"
             if context_window and ctx.current_room then
@@ -367,6 +377,8 @@ function M.register(handlers)
                     print(target_room.short_description)
                 end
             end
+            -- Sound: enter new room (start ambients after text)
+            if ctx.sound_manager then ctx.sound_manager:enter_room(target_room) end
             return
         end
 
@@ -505,6 +517,8 @@ function M.register(handlers)
             print(ctx.current_room.event_output["on_exit_room"])
             ctx.current_room.event_output["on_exit_room"] = nil
         end
+        -- Sound: exit old room
+        if ctx.sound_manager then ctx.sound_manager:exit_room(ctx.current_room) end
 
         -- Move player
         ctx.player.location = target_id
@@ -534,6 +548,8 @@ function M.register(handlers)
                 print(target_room.short_description)
             end
         end
+        -- Sound: enter new room (start ambients after text)
+        if ctx.sound_manager then ctx.sound_manager:enter_room(target_room) end
     end
     handlers["goto"] = handlers["teleport"]
 

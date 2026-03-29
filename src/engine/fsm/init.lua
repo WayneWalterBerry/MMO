@@ -242,6 +242,11 @@ function fsm.transition(registry, obj_id, target_state, context, verb_hint)
         end
     end
 
+    -- Sound: trigger on_state_{new_state} after successful FSM transition
+    if context and context.sound_manager then
+        context.sound_manager:trigger(obj, "on_state_" .. target_state)
+    end
+
     return trans
 end
 

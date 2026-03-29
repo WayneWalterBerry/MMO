@@ -292,4 +292,22 @@ effects.register("heal", function(effect, ctx)
     end
 end)
 
+---------------------------------------------------------------------------
+-- Built-in handler: play_sound
+-- Canonical sound dispatch path (v1.1). Objects declare play_sound effects;
+-- the effects pipeline routes them to the sound manager via trigger().
+---------------------------------------------------------------------------
+effects.register("play_sound", function(effect, ctx)
+    if not ctx or not ctx.sound_manager then return end
+    local obj = effect.source_obj or ctx.source
+    local key = effect.key or effect.sound_key
+    if key then
+        ctx.sound_manager:trigger(obj, key)
+    elseif effect.filename then
+        ctx.sound_manager:play(effect.filename, {
+            owner_id = obj and (obj.guid or obj.id),
+        })
+    end
+end)
+
 return effects

@@ -74,7 +74,7 @@ local function perform_mutation(ctx, obj, mut_data)
             return false
         end
         local new_obj, err = ctx.mutation.mutate(
-            ctx.registry, ctx.loader, obj.id, source, ctx.templates)
+            ctx.registry, ctx.loader, obj.id, source, ctx.templates, ctx)
         if not new_obj then
             print("Error: " .. tostring(err))
             return false
