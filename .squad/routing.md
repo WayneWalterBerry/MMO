@@ -21,6 +21,7 @@ How to decide who handles what.
 | Web builds & deploys | Gil | Build pipeline, GitHub Pages deploy, web/index.html, bootstrapper.js, game-adapter.lua, browser bugs |
 | Creature design & behavior | Willie | Creature .lua files, behavior metadata, loot tables, pack dynamics, creature design docs |
 | Linting & code quality | Wiggum | meta-lint rules, mutation-edge-check, lint.py, wrapper scripts, CI lint steps, lint config, rule registry |
+| Board management, project status, cross-project priorities, sprint planning | Kirk |
 | Code review | Chalmers | Review PRs, check quality, suggest improvements |
 | Async issue work (bugs, tests, small features) | @copilot 🤖 | Well-defined tasks matching capability profile |
 | Session logging | Scribe | Automatic — never needs routing |

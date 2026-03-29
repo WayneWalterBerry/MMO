@@ -29,6 +29,7 @@
 | 🌿 Willie | Creature Designer | 🎨 Design | .squad/agents/willie/charter.md | Active |
 | 🔍 Wiggum | Linter Engineer | ⚙️ Engineering | .squad/agents/wiggum/charter.md | Active |
 | 📋 Scribe | Session Logger | 📋 Operations | .squad/agents/scribe/charter.md | 🔄 Monitor |
+| 📊 Kirk | Project Manager | 📋 Operations | .squad/agents/kirk/charter.md | Active |
 | 🔄 Ralph | Work Monitor | 📋 Operations | — | 🔄 Monitor |
 
 ## Departments
@@ -39,7 +40,7 @@
 | ⚙️ Engineering | Bart | Bart, Smithers, Gil, Frink | Engine code, architecture, UI/parser, web builds & deploys, research |
 | 🧪 Test | Marge | Marge, Nelson, Lisa | QA engineering, system testing, test automation |
 | 📝 Docs | Brockman | Brockman | Documentation, newspapers |
-| 📋 Operations | Chalmers | Chalmers, Scribe, Ralph | Planning, session logging, work monitoring |
+| 📋 Operations | Chalmers | Chalmers, Scribe, Kirk, Ralph | Planning, session logging, project management, work monitoring |
 
 ## Project Context
 
