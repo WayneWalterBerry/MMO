@@ -1831,22 +1831,23 @@ def _validate_creature(parsed: ParsedFile, materials: Dict[str, object],
         _add_violation(violations, path, _line_for(parsed, "behavior"), "error",
                        "CREATURE-002", "behavior must be a table")
     else:
-        # CREATURE-003: behavior must have >= 1 drive entry
-        behavior_keys = set(behavior_t.fields.keys())
-        if len(behavior_keys) == 0:
+        # CREATURE-003: behavior.drives must exist and have >= 1 drive entry
+        beh_drives_v = behavior_t.fields.get("drives")
+        beh_drives_t = _as_table(beh_drives_v)
+        if beh_drives_v is None or beh_drives_t is None or len(beh_drives_t.fields) == 0:
             _add_violation(violations, path, _line_for(parsed, "behavior"), "error",
-                           "CREATURE-003", "behavior table must have at least 1 entry")
+                           "CREATURE-003", "behavior.drives must have at least 1 drive entry")
 
-        # CREATURE-004: creature states must include an idle key
-        states_v = fields.get("states")
-        states_t = _as_table(states_v)
-        if states_t is not None:
-            state_keys = set(states_t.fields.keys())
+        # CREATURE-004: behavior.states must include an idle key
+        beh_states_v = behavior_t.fields.get("states")
+        beh_states_t = _as_table(beh_states_v)
+        if beh_states_t is not None:
+            state_keys = set(beh_states_t.fields.keys())
             has_idle = any("idle" in k for k in state_keys)
             if not has_idle:
-                _add_violation(violations, path, _line_for(parsed, "states"), "error",
+                _add_violation(violations, path, _line_for(parsed, "behavior"), "error",
                                "CREATURE-004",
-                               "Creature states must include an idle state (e.g. alive-idle)")
+                               "Creature behavior.states must include an idle state (e.g. alive-idle)")
 
     # CREATURE-005: health and max_health must be numbers
     health_v = fields.get("health")
@@ -1864,8 +1865,11 @@ def _validate_creature(parsed: ParsedFile, materials: Dict[str, object],
         _add_violation(violations, path, _line_for(parsed, "alive"), "error",
                        "CREATURE-006", "Creature must have alive as boolean")
 
-    # CREATURE-007 / CREATURE-008: Drive weights
-    drives_v = fields.get("drives")
+    # CREATURE-007 / CREATURE-008: Drive weights (inside behavior.drives)
+    if behavior_t is not None:
+        drives_v = behavior_t.fields.get("drives")
+    else:
+        drives_v = fields.get("drives")
     drives_t = _as_table(drives_v)
     if drives_t is not None:
         weight_sum = 0.0
