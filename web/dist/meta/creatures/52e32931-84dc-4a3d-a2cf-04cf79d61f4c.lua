@@ -40,6 +40,17 @@ return {
             room_presence = "A panicked bat careens wildly through the air.",
             on_listen = "Frantic squeaking and the frenzied beat of wings.",
         },
+        ["alive-idle"] = {
+            description = "A small bat hangs quietly, at rest.",
+            room_presence = "A bat clings to the ceiling.",
+        },
+        ["alive-wander"] = {
+            description = "A bat flutters about.",
+            room_presence = "A bat flutters through the air.",
+        },
+        ["*"] = {
+            description = "A bat in an undefined state.",
+        },
         dead = {
             description = "A dead bat lies on the floor, wings crumpled and splayed. Its tiny mouth hangs open.",
             room_presence = "A dead bat lies on the floor, wings spread like crumpled parchment.",
@@ -142,10 +153,14 @@ return {
 
     -- Body zones
     body_tree = {
-        head  = { size = 1, vital = true,  tissue = { "hide", "flesh", "bone" } },
-        body  = { size = 1, vital = true,  tissue = { "hide", "flesh", "bone", "organ" } },
-        wings = { size = 2, vital = false, tissue = { "hide", "flesh" }, on_damage = { "grounded" } },
-        legs  = { size = 1, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" } },
+        head  = { size = 1, vital = true,  tissue = { "hide", "flesh", "bone" },
+            names = { "head", "skull" } },
+        body  = { size = 1, vital = true,  tissue = { "hide", "flesh", "bone", "organ" },
+            names = { "body", "torso" } },
+        wings = { size = 2, vital = false, tissue = { "hide", "flesh" }, on_damage = { "grounded" },
+            names = { "wing", "wing membrane", "outstretched wing" } },
+        legs  = { size = 1, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" },
+            names = { "leg", "claw", "hind leg" } },
     },
 
     -- Combat metadata

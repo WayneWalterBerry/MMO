@@ -65,6 +65,10 @@ return {
     "portal",
     "room",
     "sheet",
-    "small-item"
+    "small-item",
+    "world"
+  },
+  worlds = {
+    "world-01"
   },
 }

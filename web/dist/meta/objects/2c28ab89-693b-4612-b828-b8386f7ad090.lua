@@ -89,6 +89,9 @@ return {
         },
     },
 
+    -- Two break transitions spawn wood-splinters independently (locked→broken
+    -- and closed→broken). Both are intentional: the door can be broken from
+    -- either state, producing splinters each time. See Issue #405.
     transitions = {
         {
             from = "locked", to = "closed", verb = "unlock",

@@ -50,6 +50,9 @@ return {
             room_presence = "A wounded wolf limps toward the exit.",
             on_listen = "Rapid panting and the scramble of claws on stone.",
         },
+        ["*"] = {
+            description = "A wolf in an undefined state.",
+        },
         dead = {
             description = "The wolf lies on its side, tongue lolling. Its amber eyes stare at nothing. Blood pools beneath the thick coat.",
             room_presence = "A dead wolf sprawls across the floor.",
@@ -92,6 +95,11 @@ return {
             mark_object = "territory-marker",
             mark_radius = 2,
             mark_duration = "1 day",
+        },
+        territory = "hallway",
+        lingering_scent = {
+            on_smell = "A faint predator's musk lingers in the air — a wolf was here recently.",
+            duration = 5,
         },
     },
 
@@ -163,11 +171,16 @@ return {
 
     -- Body zones
     body_tree = {
-        head     = { size = 2, vital = true,  tissue = { "hide", "flesh", "bone" } },
-        body     = { size = 5, vital = true,  tissue = { "hide", "flesh", "bone", "organ" } },
-        forelegs = { size = 3, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" } },
-        hindlegs = { size = 3, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" } },
-        tail     = { size = 1, vital = false, tissue = { "hide", "flesh" } },
+        head     = { size = 2, vital = true,  tissue = { "hide", "flesh", "bone" },
+            names = { "head", "skull", "muzzle", "jaw" } },
+        body     = { size = 5, vital = true,  tissue = { "hide", "flesh", "bone", "organ" },
+            names = { "body", "flank", "side", "ribs" } },
+        forelegs = { size = 3, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" },
+            names = { "foreleg", "front leg", "shoulder" } },
+        hindlegs = { size = 3, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" },
+            names = { "hind leg", "haunch", "hip" } },
+        tail     = { size = 1, vital = false, tissue = { "hide", "flesh" },
+            names = { "tail" } },
     },
 
     -- Combat metadata
@@ -214,7 +227,7 @@ return {
     respawn = {
         timer = 200,
         home_room = "hallway",
-        max_population = 1,
+        max_population = 3,
     },
 
     -- Death reshape (WAVE-1)
@@ -272,21 +285,21 @@ return {
             fresh = {
                 description = "A freshly killed wolf. The blood is still warm, pooling beneath the body.",
                 room_presence = "A dead wolf sprawls across the floor, blood pooling beneath it.",
-                timed_events = { { delay = 40, event = "timer_expired", to_state = "bloated" } },
+                timed_events = { { delay = 7200, event = "timer_expired", to_state = "bloated" } },
             },
             bloated = {
                 description = "The wolf's body has swollen grotesquely, its belly distended with gas. The stench is terrible.",
                 room_presence = "A bloated wolf carcass sprawls across the floor, reeking.",
                 on_smell = "A wall of decay. The sweet-sick stench of bloating flesh.",
                 food = { cookable = false },
-                timed_events = { { delay = 50, event = "timer_expired", to_state = "rotten" } },
+                timed_events = { { delay = 10800, event = "timer_expired", to_state = "rotten" } },
             },
             rotten = {
                 description = "The wolf is a putrid mass of matted fur and exposed tissue. The floor beneath is stained dark.",
                 room_presence = "A rotting wolf carcass festers on the floor.",
                 on_smell = "Overwhelming rot. You can taste it in the air.",
                 food = { cookable = false, edible = false },
-                timed_events = { { delay = 80, event = "timer_expired", to_state = "bones" } },
+                timed_events = { { delay = 14400, event = "timer_expired", to_state = "bones" } },
             },
             bones = {
                 description = "A large scatter of wolf bones, picked clean. The skull grins with yellowed fangs.",

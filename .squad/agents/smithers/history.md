@@ -68,6 +68,19 @@ Full audit of parser codebase vs. design doc (`projects/parser-improvements/pars
 
 Board created at `projects/parser-improvements/board.md`.
 
+### MaxSim Re-Ranker Implementation (2026-03-30)
+
+Implemented two-stage hybrid scoring pipeline per Frink's D1/D3 decisions:
+
+- **maxsim_score() function added** — ~20 LOC. For each input token, finds best-matching candidate token via word_similarity.lua sparse matrix, sums the max similarities. Exact matches short-circuit to 1.0.
+- **word_similarity.lua NOW consumed** — 286 LOC sparse matrix (~150 word pairs) wired into embedding_matcher.lua via pcall require. Graceful degradation if missing.
+- **Two-stage pipeline operational** — Stage 1: BM25 retrieves candidates via inverted index. Stage 2: MaxSim re-ranks top-50. Hybrid score: 0.70 * BM25_normalized + 0.30 * MaxSim_normalized.
+- **Raw BM25 score returned externally** — hybrid score used only for internal ranking. Tests and downstream code see raw BM25 scores unchanged.
+- **Stable sort required** — Lua's table.sort is unstable. Added phrase.id tiebreaker to both BM25 and hybrid sorts. Without this, equal-scored candidates (e.g., bedroom-hallway-door-north vs locked-door) produced non-deterministic results.
+- **All 257 test files pass** — zero regressions. The "put candle" known bug remains in its documented state (don, not place).
+- **Constants added:** HYBRID_BM25_WEIGHT=0.70, HYBRID_MAXSIM_WEIGHT=0.30, HYBRID_THRESHOLD=0.20, BM25_TOP_N=50.
+- **Remaining from board:** noun synonym expansion (D2), soft cosine fallback (D3 fallback), accuracy benchmark to measure 91.2% → 93% delta.
+
 ---
 
 ## Archives

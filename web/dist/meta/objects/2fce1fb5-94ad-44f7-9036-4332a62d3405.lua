@@ -1,5 +1,5 @@
 -- incense-burner.lua — Ritual container for incense sticks (Deep Cellar puzzle 017)
--- States: empty → holding → burning (incense lit inside burner)
+-- States: empty → holding → burning → spent (full burn lifecycle)
 -- Acts as a holder for incense-stick, like candle-holder for candles
 return {
     guid = "{2fce1fb5-94ad-44f7-9036-4332a62d3405}",
@@ -71,9 +71,35 @@ return {
             on_smell = "Sandalwood and myrrh, amplified and focused by the brass chamber. The geometric perforations direct the smoke upward in thin, elegant columns. The scent is dense and ceremonial.",
             on_listen = "A faint crackling from the burning resin. The smoke hisses softly through the perforations.",
             provides_tool = "fragrant_smoke",
+            contents = {"incense-stick"},
+
+            timed_events = {
+                { event = "transition", delay = 5400, to_state = "spent" },
+            },
+
+            on_look = function(self, registry)
+                local text = self.description
+                local stick = registry and registry:get("incense-stick")
+                if stick and stick._state == "spent" then
+                    text = text .. "\n\nThe incense has burned down to a finger of pale ash."
+                else
+                    text = text .. "\n\nSmoke rises through the star and hexagon cutouts in a mesmerizing pattern."
+                end
+                return text
+            end,
+        },
+
+        spent = {
+            name = "a brass incense burner (spent)",
+            description = "The brass incense burner sits quiet and warm. A thin finger of pale grey ash -- all that remains of the incense stick -- stands in the center hole of the perforated lid. No smoke rises. The geometric perforations frame only stillness now. The ghost of sandalwood lingers in the warm brass.",
+            room_presence = "A brass incense burner sits nearby, its incense spent. A faint sweetness hangs in the air.",
+            on_feel = "Warm brass, slowly cooling. The ash in the center hole crumbles at a touch, dissolving into powder. The perforated lid retains the heat of the burning.",
+            on_smell = "The memory of sandalwood and myrrh, fading. Warm brass and fine ash. The ceremony is over.",
+            on_listen = "Silent. The crackling has stopped.",
+            contents = {"incense-stick"},
 
             on_look = function(self)
-                return self.description .. "\n\nSmoke rises through the star and hexagon cutouts in a mesmerizing pattern."
+                return self.description .. "\n\nThe spent incense could be removed to make room for a fresh stick."
             end,
         },
     },
@@ -97,6 +123,20 @@ return {
             aliases = {"remove", "pull", "extract"},
             part_id = "incense-stick",
             message = "You pull the incense stick free from the burner's lid. It comes loose with a soft scrape of resin against brass.",
+        },
+        {
+            from = "burning", to = "spent", trigger = "auto",
+            condition = "timer_expired",
+            message = "The last ember winks out. The smoke thins to nothing, leaving only a pale finger of ash standing in the burner's lid. The brass begins to cool. The ghost of sandalwood lingers.",
+            mutate = {
+                keywords = { add = "spent" },
+            },
+        },
+        {
+            from = "spent", to = "empty", verb = "take",
+            aliases = {"remove", "clean", "empty", "clear"},
+            part_id = "incense-stick",
+            message = "You pull the spent incense from the burner's lid. The ash crumbles as it comes free, dusting the brass with grey powder. The burner is empty again, ready for a fresh stick.",
         },
     },
 

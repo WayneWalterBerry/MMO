@@ -40,6 +40,13 @@ return {
             room_presence = "A spider scrambles toward the nearest crevice.",
             on_listen = "A frantic skittering across stone.",
         },
+        ["alive-wander"] = {
+            description = "A spider crawls about.",
+            room_presence = "A spider crawls along the wall.",
+        },
+        ["*"] = {
+            description = "A spider in an undefined state.",
+        },
         dead = {
             description = "A dead spider lies curled on its back, legs drawn inward. Its web sags, abandoned.",
             room_presence = "A dead spider lies curled beneath a sagging web.",
@@ -75,11 +82,8 @@ return {
         -- WAVE-4: Creature-created objects (spider spins webs)
         creates_object = {
             template = "spider-web",
-            cooldown = "30 minutes",
-            condition = function(creature, ctx)
-                local webs = ctx.room:find_by_template("spider-web")
-                return #webs < 2
-            end,
+            cooldown = 30,
+            max_per_room = 2,
             narration = "The spider spins a web in the corner.",
         },
 
@@ -162,11 +166,14 @@ return {
     max_health = 3,
     alive = true,
 
-    -- Body zones
+    -- Body zones (spider-specific anatomy — no human zones per #369/#337)
     body_tree = {
-        cephalothorax = { size = 1, vital = true, tissue = { "chitin", "flesh" } },
-        abdomen       = { size = 1, vital = true, tissue = { "chitin", "flesh", "organ" } },
-        legs          = { size = 1, vital = false, tissue = { "chitin" }, on_damage = { "reduced_movement" } },
+        cephalothorax = { size = 1, vital = true, tissue = { "chitin", "flesh" },
+            names = { "cephalothorax", "head cluster", "fused head" } },
+        abdomen       = { size = 1, vital = true, tissue = { "chitin", "flesh", "organ" },
+            names = { "abdomen", "bulbous abdomen", "swollen belly" } },
+        legs          = { size = 1, vital = false, tissue = { "chitin" }, on_damage = { "reduced_movement" },
+            names = { "leg", "bristled leg", "spindly leg", "front leg" } },
     },
 
     -- Combat metadata

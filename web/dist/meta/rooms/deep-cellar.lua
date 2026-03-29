@@ -7,10 +7,10 @@ return {
     level = { number = 1, name = "The Awakening" },
     sky_visible = false,
     keywords = {"deep cellar", "cellar", "chamber", "deep", "vault", "underground"},
-    description = "The architecture changes here. Where the cellars above were rough-hewn and practical, this chamber is built from massive limestone blocks, dry-stacked with a precision that speaks of older and more deliberate hands. The ceiling rises into a ribbed vault, its central boss carved into a face that stares downward with blank stone eyes. Iron sconces line the walls, unlit and cold. Against the south wall stands a stone altar, its surface inscribed with symbols you cannot read. The air is still and heavy with the smell of ancient dust, old wax, and something fainter — incense, or the memory of incense, burned decades or centuries ago. From the north wall, where stone steps ascend into shadow, a faint draught of warmer air descends — just enough to stir the dust motes and remind you that a world above still exists.",
+    description = "The architecture changes here. Where the cellars above were rough-hewn and practical, this chamber is built from massive limestone blocks, dry-stacked with a precision that speaks of older and more deliberate hands. The ceiling rises into a ribbed vault, its central boss carved into a face that stares downward with blank stone eyes. Iron sconces line the walls, unlit and cold. Against the south wall stands a stone altar, its surface inscribed with symbols you cannot read. A heavy iron chain hangs from the vaulted ceiling near the centre of the room, ending in a large ring at chest height. On the west wall, between the archway and the corner, a section of stone appears subtly different — the mortar joints are finer, the surface a shade smoother, as though this panel were set in place after the rest of the wall was built. The air is still and heavy with the smell of ancient dust, old wax, and something fainter — incense, or the memory of incense, burned decades or centuries ago. From the north wall, where stone steps ascend into shadow, a faint draught of warmer air descends — just enough to stir the dust motes and remind you that a world above still exists.",
     short_description = "A vaulted limestone chamber with a stone altar and the ghost of incense.",
 
-    on_feel = "Smooth stone — worked, polished, precise. Not the rough granite of the cellars. Your fingers find joints between massive blocks, fitted so tightly a knife blade wouldn't pass between them. The ceiling is higher here; you reach up and find only air. The floor is flat and even — large flagstones, some with raised edges that feel like carved borders. Against one wall, your hands find a broad stone surface at waist height — an altar or table, cold as ice, its surface covered in grooves and ridges that might be letters or symbols. The air smells of dust and something older — wax and incense, faint and ancient.",
+    on_feel = "Smooth stone — worked, polished, precise. Not the rough granite of the cellars. Your fingers find joints between massive blocks, fitted so tightly a knife blade wouldn't pass between them. The ceiling is higher here; you reach up and find only air. Something cold and heavy brushes your raised hand — iron links. A chain, hanging from the vault, ending in a thick ring at about chest height. The floor is flat and even — large flagstones, some with raised edges that feel like carved borders. Against one wall, your hands find a broad stone surface at waist height — an altar or table, cold as ice, its surface covered in grooves and ridges that might be letters or symbols. The air smells of dust and something older — wax and incense, faint and ancient.",
 
     on_smell = "Dust — not the organic dust of the storage cellar, but mineral dust, the slow erosion of stone on stone. Old wax, from candles burned out years ago, their residue soaked into the stone. And beneath it, a ghost of incense — frankincense or myrrh, the kind burned in churches and temples. It clings to the stone like a memory that refuses to fade.",
 
@@ -45,6 +45,17 @@ return {
             },
         },
 
+        -- === Stone Alcove (hidden — revealed by chain mechanism) ===
+        { id = "stone-alcove",       type = "Stone Alcove",      type_id = "03ef4073-c48c-4697-bc6e-2e4e67dbb749",
+            contents = {
+                { id = "incense-stick-1",    type = "Incense Stick",     type_id = "5efbec64-300c-4c93-bec1-70f837cfea77" },
+                { id = "incense-stick-2",    type = "Incense Stick",     type_id = "5efbec64-300c-4c93-bec1-70f837cfea77" },
+                { id = "incense-stick-3",    type = "Incense Stick",     type_id = "5efbec64-300c-4c93-bec1-70f837cfea77" },
+                { id = "altar-candle-1",     type = "Altar Candle",      type_id = "a677a95b-7f86-4f6c-a4a4-3cbac596240c" },
+                { id = "altar-candle-2",     type = "Altar Candle",      type_id = "a677a95b-7f86-4f6c-a4a4-3cbac596240c" },
+            },
+        },
+
         -- === Room-level ===
         { id = "chain",              type = "Chain",             type_id = "5f18202e-220f-4a16-b75e-170595f22845" },
         { id = "deep-cellar-storage-door-south", type_id = "{3f4dbb18-131f-46f6-83d5-99aa5b4eb98f}" },
@@ -57,6 +68,14 @@ return {
         south = { portal = "deep-cellar-storage-door-south" },
         up = { portal = "deep-cellar-hallway-stairs-up" },
         west = { portal = "deep-cellar-crypt-archway-west" },
+    },
+
+    -- Chain mechanism: pulling the chain reveals the hidden stone alcove
+    triggers = {
+        {
+            when   = { object = "chain", enters_state = "pulled" },
+            action = { object = "stone-alcove", transition_to = "revealed" },
+        },
     },
 
     on_enter = function(self)

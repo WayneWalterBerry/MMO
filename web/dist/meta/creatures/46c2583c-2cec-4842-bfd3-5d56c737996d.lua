@@ -45,6 +45,9 @@ return {
             room_presence = "A cat stalks something with predatory focus.",
             on_listen = "Nothing. The silence of a predator about to strike.",
         },
+        ["*"] = {
+            description = "A cat in an undefined state.",
+        },
         dead = {
             description = "A dead cat lies on its side, eyes glassy and half-closed. Its fur is matted with blood.",
             room_presence = "A dead cat lies crumpled on the floor.",
@@ -150,10 +153,14 @@ return {
 
     -- Body zones
     body_tree = {
-        head = { size = 1, vital = true, tissue = { "hide", "flesh", "bone" } },
-        body = { size = 3, vital = true, tissue = { "hide", "flesh", "bone", "organ" } },
-        legs = { size = 2, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" } },
-        tail = { size = 1, vital = false, tissue = { "hide", "flesh" }, on_damage = { "balance_loss" } },
+        head = { size = 1, vital = true, tissue = { "hide", "flesh", "bone" },
+            names = { "head", "skull" } },
+        body = { size = 3, vital = true, tissue = { "hide", "flesh", "bone", "organ" },
+            names = { "body", "flank", "belly" } },
+        legs = { size = 2, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" },
+            names = { "leg", "paw", "hind leg" } },
+        tail = { size = 1, vital = false, tissue = { "hide", "flesh" }, on_damage = { "balance_loss" },
+            names = { "tail" } },
     },
 
     -- Combat metadata

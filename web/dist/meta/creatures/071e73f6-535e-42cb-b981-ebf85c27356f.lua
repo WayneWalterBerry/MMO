@@ -40,6 +40,9 @@ return {
             room_presence = "A panicked rat zigzags across the floor.",
             on_listen = "Frantic squeaking and the scrabble of claws.",
         },
+        ["*"] = {
+            description = "A rat in an undefined state.",
+        },
         dead = {
             description = "A dead rat lies on its side, legs splayed. Its fur is matted with blood.",
             room_presence = "A dead rat lies crumpled on the floor.",
@@ -138,12 +141,16 @@ return {
     max_health = 5,
     alive = true,
 
-    -- Body zones (WAVE-4: combat data layer)
+    -- Body zones (WAVE-4: combat data layer — rat-specific names per #337)
     body_tree = {
-        head = { size = 1, vital = true, tissue = { "hide", "flesh", "bone" } },
-        body = { size = 3, vital = true, tissue = { "hide", "flesh", "bone", "organ" } },
-        legs = { size = 2, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" } },
-        tail = { size = 1, vital = false, tissue = { "hide", "flesh" }, on_damage = { "balance_loss" } },
+        head = { size = 1, vital = true, tissue = { "hide", "flesh", "bone" },
+            names = { "head", "skull", "snout" } },
+        body = { size = 3, vital = true, tissue = { "hide", "flesh", "bone", "organ" },
+            names = { "body", "flank", "belly", "side" } },
+        legs = { size = 2, vital = false, tissue = { "hide", "flesh", "bone" }, on_damage = { "reduced_movement" },
+            names = { "leg", "haunches", "hind leg" } },
+        tail = { size = 1, vital = false, tissue = { "hide", "flesh" }, on_damage = { "balance_loss" },
+            names = { "tail" } },
     },
 
     -- Combat metadata (WAVE-4)
@@ -221,21 +228,21 @@ return {
             fresh = {
                 description = "A freshly killed rat. The blood is still wet.",
                 room_presence = "A dead rat lies crumpled on the floor.",
-                timed_events = { { delay = 30, event = "timer_expired", to_state = "bloated" } },
+                timed_events = { { delay = 3600, event = "timer_expired", to_state = "bloated" } },
             },
             bloated = {
                 description = "The rat's body has swollen, its belly distended with gas.",
                 room_presence = "A bloated rat carcass lies on the floor, reeking.",
                 on_smell = "The sweet, cloying stench of decay.",
                 food = { cookable = false },
-                timed_events = { { delay = 40, event = "timer_expired", to_state = "rotten" } },
+                timed_events = { { delay = 7200, event = "timer_expired", to_state = "rotten" } },
             },
             rotten = {
                 description = "The rat is a putrid mess of matted fur and exposed tissue.",
                 room_presence = "A rotting rat carcass festers on the floor.",
                 on_smell = "Overwhelming rot. Your eyes water.",
                 food = { cookable = false, edible = false },
-                timed_events = { { delay = 60, event = "timer_expired", to_state = "bones" } },
+                timed_events = { { delay = 14400, event = "timer_expired", to_state = "bones" } },
             },
             bones = {
                 description = "A tiny scatter of cleaned rat bones.",

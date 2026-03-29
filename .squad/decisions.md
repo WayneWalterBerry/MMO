@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 20260329T000802Z  
-**Last Merge:** 20260329T000802Z (3 decisions from phase5/linter inbox merged)
+**Last Updated:** 20260329T014700Z  
+**Last Merge:** 20260329T014700Z (5 decisions merged: parser-audit, maxsim, parser-scoring, deploy-workflow, priorities)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -22,12 +22,15 @@ Quick-reference table of **active + most recent decisions**.
 | D-INANIMATE | Architecture | 🟢 Active | Objects are inanimate; creatures future phase |
 | D-WORLDS-CONCEPT | Architecture | 🟢 Active | Worlds meta concept — top-level container above Levels |
 | D-ENGINE-REFACTORING-WAVE2 | Architecture | 🟢 Active | Engine refactoring sequencing: 6 files, 5 modules each, after test baselines |
+| D-PARSER-PHASE-NEXT | Parser | 🟢 Active | Parser Phase 3 soft matching design (91.2% → 93%+): MaxSim, 70/30 BM25, 2-3 synonyms |
+| D-MAXSIM-INTEGRATION | Parser | 🟢 Active | MaxSim re-ranker implemented: hybrid score internal-only, stable sort tiebreaker |
 | D-MUTATION-LINT-PIVOT | Process | 🟢 Active | Mutation graph linter uses expand-and-lint (Python meta-lint) instead of standalone Lua graph library |
 | D-PARALLEL-EXPAND-LINT | Process | 🟢 Active | Objects expanded and linted in parallel — each object's mutation targets can run concurrently |
 | D-MUTATION-EDGE-EXTRACTION | Process | 🟢 Active | 5 mutation edge types formalized: file-swap, destruction, state-transition, composite-part, linked-exit |
 | D-LINTER-IMPL-WAVES | Process | 🟢 Active | Linter improvement: 6 waves with 5 gates, serialized lint.py edits |
 | D-WAYNE-PHASE5-DECISIONS | Process | 🟢 Active | Phase 5 scope: werewolf NPC, salt-only preservation, defer A*/env-combat/humanoid NPCs |
 | D-LINTER-ENGINEER-HIRE | Process | 🟢 Active | Hire dedicated linter engineer (Wiggum) to own 306-rule Python linter system |
+| D-DEPLOY-ON-MERGE | Process | 🟢 Active | Deploy-on-merge workflow: auto-deploy to GitHub Pages after PR merge to main |
 | D-FLANDERS-META-OWNERSHIP | Architecture | 🟢 Active | Flanders owns ALL src/meta/objects engineering; Bart focuses on src/engine/ only |
 | D-TEST-SPEED-IMPL-WAVES | Process | 🟢 Active | Test speed: 5-wave, 4-gate implementation; Nelson owns run-tests.lua; benchmark gating |
 | D-BENCHMARK-GATING | Testing | 🟢 Active | Benchmark files use `bench-*.lua` prefix; `--bench` flag includes benchmarks |
@@ -344,6 +347,129 @@ When a player breaks a mirror or defeats a creature, the engine does NOT set a f
 - **Bart** — sole lint.py editor in WAVE-4
 
 **Full plan:** `plans/linter/linter-implementation-plan.md`
+
+---
+
+## D-PARSER-PHASE-NEXT: Parser Phase 3 Soft Matching Design
+
+**Status:** 🟢 Active  
+**Author:** Frink (Research Scientist)  
+**Requested by:** Wayne "Effe" Berry  
+**Date:** 2026-03-29
+**Category:** Parser / Architecture
+
+### Summary
+
+Parser Phase 3 design decisions for soft matching to push accuracy from 91.2% (134/147 benchmark) to 93%+:
+
+| Decision | Recommendation | Rationale |
+|----------|---------------|-----------|
+| D1: Hybrid weights | 70/30 BM25-heavy, two-stage pipeline | Short queries favor lexical precision; semantic re-ranking handles ties |
+| D2: Synonym scope | 2-3 per noun (conservative) | Lu et al. research; no synonym-caused failures in remaining 13; drift risk above 3 |
+| D3: Scoring approach | MaxSim first, soft cosine fallback | Simpler, debuggable, noise-robust, equivalent accuracy at this scale |
+| D4: Accuracy target | 93%, then beta + reassess | 3 cases achievable; diminishing returns above 93%; real player data > benchmarks |
+
+### Key Insights
+
+1. **Two-stage pipeline (BM25 → semantic re-rank)** is cleaner than linear combination — avoids score normalization issues
+2. **MaxSim (O(n×m))** vs soft cosine (O(n²)) complexity is irrelevant at query scale; MaxSim debuggability wins
+3. **Target 93%** is defensible milestone; diminishing returns above; beta playtesting data will drive next iteration
+4. **Noun synonyms:** Conservative 2-3 expansion validated by corpus — zero remaining failures caused by missing synonyms
+
+### Impact
+
+- **Smithers:** Implement MaxSim re-ranker in `embedding_matcher.lua`
+- **Nelson:** Update benchmark target to 93%
+- **Wayne:** Beta timeline now clear — 93% accuracy gate before playtesting
+
+---
+
+## D-MAXSIM-INTEGRATION: MaxSim Re-Ranker Implementation
+
+**Status:** 🟢 Active  
+**Author:** Smithers (UI Engineer)  
+**Date:** 2026-03-30  
+**Category:** Parser / Implementation
+
+### Decisions Implemented
+
+#### S1: Hybrid Score Internal-Only
+
+The hybrid score (70/30 BM25+MaxSim) is used exclusively for candidate ranking inside `match()`. The externally returned score remains the raw BM25 value.
+
+**Reasoning:** Multiple test suites assert score thresholds calibrated to raw BM25 ranges (~3.0+). Returning normalized hybrid scores (0-1) would break 100+ test assertions. The hybrid score's purpose is ranking, not magnitude.
+
+#### S2: Stable Sort Tiebreaker
+
+Both BM25 and hybrid re-sort use `phrase.id` (original index position) as tiebreaker when scores are equal.
+
+**Reasoning:** Lua's `table.sort` is not stable. Without a tiebreaker, candidates with identical hybrid scores produced non-deterministic results — tests flapped. Using phrase index position preserves implicit ordering from the embedding index, which was prior behavior under pure BM25.
+
+### Impact
+
+- **Nelson:** Test expectations unchanged (raw BM25 scores); deterministic results
+- **Frink:** Hybrid is internal ranking only; no caller-facing change
+- **Benchmark:** Accuracy expected to improve 91.2% → 92–93% with MaxSim + 2-3 noun synonyms
+
+---
+
+## D-DEPLOY-ON-MERGE: Deploy-on-Merge Workflow
+
+**Status:** 🟢 Active  
+**Author:** Gil (Web Engineer)  
+**Date:** 2026-03-29  
+**Category:** CI/CD
+
+### Summary
+
+Created `.github/workflows/squad-deploy.yml` — an automated deploy pipeline that triggers on push to `main` (after PR merge). It runs the full sharded test suite, builds engine + meta bundles via PowerShell, and pushes to `WayneWalterBerry/WayneWalterBerry.github.io` → `play/`.
+
+### Key Features
+
+1. **Sharded tests** mirror squad-ci.yml (same 6-shard matrix for consistency)
+2. **No-op deploy guard** — if build produces identical files, no commit is pushed
+3. **BUILD_TIMESTAMP logged** — printed to Actions output for post-deploy verification
+4. **Cross-repo auth** via x-access-token (standard GitHub PAT pattern)
+
+### Requirements
+
+Repository secret `PAGES_DEPLOY_TOKEN` must be configured:
+- Fine-grained PAT scoped to `WayneWalterBerry/WayneWalterBerry.github.io`
+- Permission: Contents (read & write)
+- Set in MMO repo → Settings → Secrets → Actions
+
+### Impact
+
+- **All squad members:** Merging to `main` now auto-deploys. No manual `web/deploy.ps1` needed for routine deploys.
+- **Nelson / QA:** Test gate runs before deploy — broken code won't reach Pages.
+- **Wayne:** Must configure `PAGES_DEPLOY_TOKEN` secret.
+- **Gil:** Manual deploys still available via `web/deploy.ps1` for hotfixes.
+
+---
+
+## DIRECTIVE-2026-03-29T0139Z: User Directive — Project Priority Order
+
+**Status:** 🟢 Active  
+**Author:** Wayne Berry  
+**Date:** 2026-03-29
+
+### Directive
+
+Project priorities set by Wayne:
+
+**Stability First:** Testing + Linter (get product stable)
+
+**New improvements in order:**
+1. Worlds (high-value architecture)
+2. Sound (creative direction)
+3. Food (close to done, quick win)
+4. NPC Combat (most destabilization risk — deferred to Phase 5+)
+
+**Always nice / background:** Parser improvements
+
+### Rationale
+
+Stability before features. Least-disruptive features first. Heavy lifting (combat, NPCs) deferred until core is rock-solid.
 
 ---
 
