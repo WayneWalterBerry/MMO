@@ -10,6 +10,7 @@ return {
 
     on_feel = "A massive wooden frame, smooth and cold. Carved door handles -- acorns and oak leaves under your fingers.",
     on_smell = "Cedar. Sharp and sweet, even through closed doors.",
+    on_listen = "Solid wood. The hinges creak faintly when you lean against it.",
 
     size = 9,
     weight = 60,
@@ -22,6 +23,11 @@ return {
     },
 
     location = nil,
+
+    sounds = {
+        ["on_verb_open"] = "container-open.opus",
+        ["on_verb_close"] = "container-close.opus",
+    },
 
     -- FSM
     initial_state = "closed",
