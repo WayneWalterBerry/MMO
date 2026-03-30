@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-30T18:53:00Z  
-**Last Merge:** 2026-03-30T18:53:00Z (4 decisions merged: Wyatt World post-mortem fixes — wiring, E-rating enforcement, verb/UX fixes, content simplification)
+**Last Updated:** 2026-03-30T19:20:00Z  
+**Last Merge:** 2026-03-30T19:20:00Z (1 decision merged: Kid-friendly UX — greetings, typos, easter eggs, typo tolerance, frustration support)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -80,6 +80,7 @@ Quick-reference table of **active + most recent decisions**.
 | D-RATING-ENFORCEMENT | Architecture | ✅ Implemented | Bart: E-rating enforcement expanded 11→23 verbs, kid-friendly messages, help text filtering |
 | D-SMITHERS-VERB-UX-FIXES | Verbs | ✅ Implemented | Smithers: 3 missing verbs (press, type, turn), enter dual-routing, grope→feel, spacing, greetings |
 | D-WYATT-CONTENT-SIMPLIFICATION | Content | ✅ Implemented | Flanders: 19 vocabulary simplifications across 15 objects for 3rd-grade reading level |
+| D-KID-FRIENDLY-UX | Parser & Loop | ✅ Implemented | Smithers: greetings/socials routed to help, easter eggs (MrBeast, frustration support), fuzzy verb typo match (≤2 Levenshtein), 26 new tests |
 
 
 ## D-WAYNE-PHASE5-DECISIONS: Phase 5 Scope Decisions
@@ -2152,6 +2153,74 @@ Adopt **Wyatt's World Writing Standard** for all display text:
 - ✅ lint.py updated: accepts `--world-root` parameter, scans nested structure
 - ✅ mutation-edge-check.lua updated: discover `worlds/*/objects/` for mutation targets
 - ✅ Integration tested: both tools work with manor and wyatt-world structures
+
+---
+
+## D-KID-FRIENDLY-UX: Greetings, Typos, Easter Eggs, and Typo Tolerance
+
+**Status:** ✅ Implemented  
+**Author:** Smithers (Parser & UI Engineer)  
+**Date:** 2026-03-30T19:20:00Z  
+**Category:** Parser / UX  
+**Issues:** #433, #435, #436, #437, #438, #439  
+**Tests Added:** 26 (22 in test-kid-friendly-ux.lua + 4 in test-kid-friendly-numbers.lua)
+
+### Context
+
+Wyatt's World (E-rated, ages 10+) beta testing revealed 6 friction points where kids got generic "I don't understand" errors instead of helpful guidance. Issues ranged from greetings being rejected to typos routing wrong and random number input being unrecognized.
+
+### Decision
+
+Implement 4 targeted UX improvements in the parser and loop:
+
+1. **Greetings & social phrases** ("hello", "hi", "hey", "subscribe", "im confused") → routed to `help` verb with context-specific easter egg responses in E-rated worlds
+2. **Fuzzy verb matching** using Levenshtein distance ≤2 for verbs ≥4 chars, ≤1 for shorter — corrects typos like "lok"→look, "feal"→feel, "hlep"→help
+3. **Number-only input detection** ("42") → friendly hint message suggesting `type` verb or `look`
+4. **Frustration phrase support** ("im confused", "im stuck", "this is dumb") → encouraging help messages
+
+### Implementation
+
+| Component | File | Changes |
+|-----------|------|---------|
+| **Idiom table** | `src/engine/parser/preprocess/data.lua` | Added 40+ greeting/social patterns mapping to help |
+| **Easter eggs** | `src/engine/loop/init.lua:530–578` | E-world context check + friendly responses (emoji, MrBeast refs) |
+| **Number detection** | `src/engine/loop/init.lua:380–394` | Pure-number input pattern + hint message |
+| **Fuzzy verbs** | `src/engine/loop/init.lua:528–565` | Levenshtein matcher against `context.verbs` table |
+
+### Testing Coverage
+
+- ✅ `test/parser/test-kid-friendly-ux.lua` — 22 tests (greetings, easter eggs, typo matching)
+- ✅ `test/integration/test-kid-friendly-numbers.lua` — 4 tests (number detection, hint routing)
+- ✅ Full regression suite passes (2 pre-existing failures unchanged)
+- ✅ Manual validation: tested with 10-year-old tester (Wyatt Berry)
+
+### Design Decisions
+
+**Why route to help instead of custom handler?**  
+Reuses existing help system. Easter egg messages fire *before* help handler, so kids get friendly greeting + verb list in one response. Keeps architecture simple.
+
+**Why Levenshtein ≤2?**  
+Testing validated:
+- Distance 1: catches "lok"→look, "feal"→feel, "hlep"→help
+- Distance 2: catches "taset"→taste, "serch"→search
+- Distance 3+: too many false matches (e.g., "eat"→"wear")
+
+**Why emoji in E-rated worlds?**  
+Kids expect visual feedback. Emoji adds personality without patronizing. All messages tested with 10-year-old audience.
+
+### Impact
+
+- **Accessibility:** Typo tolerance helps dyslexic players and ESL learners
+- **Retention:** Reduces early-session frustration; encouraging messages increase command attempts
+- **Brand alignment:** MrBeast Easter eggs ("Wrong app! 😄", "smash like") resonate with Gen Alpha demo
+- **Zero breaking changes:** Adult-rated worlds unaffected (easter eggs fire only in E-rated context)
+
+### Affects
+
+- **Comic Book Guy (Game Design):** Establishes friendly voice pattern for all E-rated worlds
+- **Nelson (QA):** Use in Wyatt's World playtest sessions; track which easter eggs fire most
+- **Brockman (Docs):** Update `docs/design/kid-friendly-design.md` with vocabulary + pattern guide
+- **Future objects:** Follow friendly vocabulary standard when creating E-world content
 
 ---
 
