@@ -112,6 +112,39 @@ Implemented two-stage hybrid scoring pipeline per Frink's D1/D3 decisions:
 
 ## Latest Activity
 
+**Pre-existing Test Failure Fix Sprint (2026-03-29):**
+
+Fixed 7 pre-existing test failures across 2 integration test files. Zero regressions.
+
+**Bugs Fixed:**
+1. **BUG-155 (read paper)** — Paper had `categories = {"small", "writable", "flammable"}` but `read` handler required `"readable"`. Added `"readable"` to paper categories. Writable surfaces should be readable.
+   - File: `src/meta/worlds/manor/objects/paper.lua`
+
+2. **BUG-156 (jump out window → extinguish)** — "jump out window" fell through to Tier 2 embedding matcher which matched "extinguish". Two fixes:
+   - Added compound_actions transform: `"jump out [of] X"` → `"go X"` (before the extinguish patterns)
+   - Suppressed tutorial hints in headless mode — hint text "(Hint: You can extinguish flames...)" was polluting headless test output
+   - Files: `src/engine/parser/preprocess/compound_actions.lua`, `src/engine/verbs/helpers.lua`
+
+3. **Craft silk-rope** — `nil == nil` bug in ingredient deduplication. Craft handler used `c.guid == obj.guid` to prevent reuse, but objects without guid fields (test mocks) had `nil == nil → true`, causing all objects to appear "already consumed". Fixed to use table identity (`c == obj`).
+   - File: `src/engine/verbs/crafting.lua`
+
+4. **Headless hint suppression** — `show_hint()` now checks `ctx.headless` and skips printing (but still tracks shown state). This resolved BUG-156 and incidentally fixed BUG-151, BUG-153, and BUG-163 which were also matching hint text.
+   - File: `src/engine/verbs/helpers.lua`
+
+**Test Results:**
+- Before: 10 failures across 5 files (7,645 tests)
+- After: 3 failures across 3 files (7,652 tests)
+- Net: **7 tests fixed, 0 regressions, +7 tests passing**
+
+**Remaining failures (not my domain):**
+- `unlock door` integration test — game path can't reach cellar (hands full, bed blocks rug). Unlock handler code IS correct; unit test passes. Needs game-world fixes (Bart/Moe).
+- `test-e-rating-blocks.lua` — pre-existing, Wyatt's World domain
+- `test-injuries-comprehensive.lua` — flaky combat damage assertion
+
+**Commits:** `4a79381` (my fixes) + `70c54fe` (Bart's parallel fixes for BUG-151/153/163/search)
+
+**Previous Activity:**
+
 **Options Parser Aliases + Number Selection (Phase 2+4):**
 - Implemented 10 parser aliases for `options` verb across 3 layers:
   - `phrases.lua` transform_questions: "what are my options", "give me options", "what can i try", "i'm stuck", "hint", "hints", "nudge"
