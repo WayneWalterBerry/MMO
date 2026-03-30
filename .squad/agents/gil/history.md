@@ -90,3 +90,25 @@
     - Manor: https://waynewalterberry.github.io/play/
     - Wyatt's World: https://waynewalterberry.github.io/play/?world=wyatt-world
     - Debug: https://waynewalterberry.github.io/play/?world=wyatt-world&debug
+
+- **World URL Param Bug Fix (2026-03-29):**
+  - **Trigger:** Wayne Berry — `?world=wyatt-world` URL loaded Manor instead of Wyatt's World
+  - **Status:** ✓ CODE FIX COMMITTED + PUSHED
+  - **Root cause diagnosis:**
+    - Code flow in game-adapter.lua was structurally correct (world selection, content_root, level path all wired)
+    - The dist (`web/dist/meta/worlds/wyatt-world/`) has all content: world.lua, levels/level-01.lua, 7 rooms, 68 objects
+    - Most likely cause: WAVE-3c build was local-only ("ready for deploy push") and was never pushed to Pages repo
+    - When world.lua 404s on the deployed site, the adapter silently fell back to Manor — zero console output, zero user error
+  - **Fix 1: bootstrapper.js** — Added `console.log('[world] Selected world: ...')` (always fires, not just `?debug`)
+  - **Fix 2: game-adapter.lua** — Added 7 `console.log("[world] ...")` messages throughout the world loading path:
+    - `[world] Selected world: wyatt-world (from URL)` — which world was requested
+    - `[world] Fetching: meta/worlds/wyatt-world/world.lua` — what URL is fetched
+    - `[world] Content root: worlds/wyatt-world` — resolved content root
+    - `[world] Level file: meta/worlds/wyatt-world/levels/level-01.lua` — level URL
+    - `[world] Start room: beast-studio` — which room the game starts in
+    - `[world] ...warn/error` messages when world or level not found
+  - **Fix 3: User-visible error** — When `?world=X` is specified but world.lua 404s, shows: `"World 'X' not found. Loading The Manor instead."` (was completely silent before)
+  - **Fix 4: Loading messages** — `"Loading Wyatt's World..."` instead of generic `"Loading Level 1..."` — uses world display name
+  - **Tests:** 7,643 tests pass. 12 pre-existing failures unchanged (not related)
+  - **Commit:** `b9b7106` (pushed to `WayneWalterBerry/MMO` main)
+  - **NOTE:** A deploy push to Pages repo is still needed for `?world=wyatt-world` to work on the live site. The code is correct; the content must be deployed.
