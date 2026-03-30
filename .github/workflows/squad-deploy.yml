@@ -56,6 +56,7 @@ jobs:
   # ── Job 2: Build and deploy to GitHub Pages ──────────────────────────────
   build-and-deploy:
     needs: test
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Checkout MMO repo
