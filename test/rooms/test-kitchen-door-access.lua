@@ -14,7 +14,7 @@ local test = h.test
 local suite = h.suite
 
 -- Load the hallway-east-door portal object
-local door = dofile(script_dir .. "/../../src/meta/objects/hallway-east-door.lua")
+local door = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/hallway-east-door.lua")
 
 -- Helper: find a transition by from/to states
 local function find_transition(transitions, from, to)

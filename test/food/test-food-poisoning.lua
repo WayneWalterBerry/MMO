@@ -26,7 +26,7 @@ end
 -- Load food-poisoning injury definition
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
-local fp_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "injuries" .. SEP .. "food-poisoning.lua"
+local fp_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "injuries" .. SEP .. "food-poisoning.lua"
 local ok_fp, fp_def = pcall(dofile, fp_path)
 if not ok_fp then
     print("WARNING: food-poisoning.lua not found — " .. tostring(fp_def))

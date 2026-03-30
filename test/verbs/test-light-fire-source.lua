@@ -75,7 +75,7 @@ local function make_ctx(opts)
     }
 end
 
--- Realistic candle: FSM-managed light source (matches src/meta/objects/candle.lua)
+-- Realistic candle: FSM-managed light source (matches src/meta/worlds/manor/objects/candle.lua)
 local function make_candle()
     return {
         id = "candle",
@@ -102,7 +102,7 @@ local function make_candle()
     }
 end
 
--- Realistic unlit match: NO provides_tool at root (matches src/meta/objects/match.lua)
+-- Realistic unlit match: NO provides_tool at root (matches src/meta/worlds/manor/objects/match.lua)
 -- The real match only has provides_tool in states.lit, not at root level.
 local function make_unlit_match()
     return {

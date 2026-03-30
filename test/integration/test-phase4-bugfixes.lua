@@ -243,9 +243,9 @@ test("craft silk-rope with 2 silk-bundles in hands should produce silk-rope", fu
 
     -- Build object_sources so spawn_objects can find silk-rope definition
     local object_sources = {}
-    local silk_rope_src = read_file("src/meta/objects/silk-rope.lua")
+    local silk_rope_src = read_file("src/meta/worlds/manor/objects/silk-rope.lua")
     if silk_rope_src then object_sources["silk-rope"] = silk_rope_src end
-    local silk_bandage_src = read_file("src/meta/objects/silk-bandage.lua")
+    local silk_bandage_src = read_file("src/meta/worlds/manor/objects/silk-bandage.lua")
     if silk_bandage_src then object_sources["silk-bandage"] = silk_bandage_src end
 
     local ctx = {
@@ -351,7 +351,7 @@ test("craft silk-bandage with 1 silk-bundle should produce 2 silk-bandages", fun
     reg:register("test-room", room)
 
     local object_sources = {}
-    local silk_bandage_src = read_file("src/meta/objects/silk-bandage.lua")
+    local silk_bandage_src = read_file("src/meta/worlds/manor/objects/silk-bandage.lua")
     if silk_bandage_src then object_sources["silk-bandage"] = silk_bandage_src end
 
     local ctx = {
@@ -418,13 +418,13 @@ test("brass-key provides_tool should match door requires_tool", function()
     local loader = require("engine.loader")
 
     -- Load real brass-key definition
-    local brass_key_src = read_file("src/meta/objects/brass-key.lua")
+    local brass_key_src = read_file("src/meta/worlds/manor/objects/brass-key.lua")
     assert_true(brass_key_src ~= nil, "brass-key.lua file should exist")
     local brass_key = loader.load_source(brass_key_src)
     assert_true(brass_key ~= nil, "brass-key should load successfully")
 
     -- Load the cellar-storage door definition
-    local door_src = read_file("src/meta/objects/cellar-storage-door-north.lua")
+    local door_src = read_file("src/meta/worlds/manor/objects/cellar-storage-door-north.lua")
     assert_true(door_src ~= nil, "cellar-storage-door-north.lua file should exist")
     local door = loader.load_source(door_src)
     assert_true(door ~= nil, "cellar-storage-door-north should load successfully")

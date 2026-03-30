@@ -32,9 +32,9 @@ local suite = h.suite
 -- Load actual definitions from source (the contract we're locking down)
 ---------------------------------------------------------------------------
 local POISON_BOTTLE_PATH = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP
-    .. "objects" .. SEP .. "poison-bottle.lua"
+    .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "poison-bottle.lua"
 local NIGHTSHADE_INJURY_PATH = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP
-    .. "injuries" .. SEP .. "poisoned-nightshade.lua"
+    .. "worlds" .. SEP .. "manor" .. SEP .. "injuries" .. SEP .. "poisoned-nightshade.lua"
 
 local poison_def = dofile(POISON_BOTTLE_PATH)
 local nightshade_injury_def = dofile(NIGHTSHADE_INJURY_PATH)

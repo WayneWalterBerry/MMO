@@ -28,7 +28,7 @@ local function read_file(path)
 end
 
 local SEP = package.config:sub(1, 1)
-local level_path = script_dir .. SEP .. ".." .. SEP .. ".." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "levels" .. SEP .. "level-01.lua"
+local level_path = script_dir .. SEP .. ".." .. SEP .. ".." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "levels" .. SEP .. "level-01.lua"
 local level_source = read_file(level_path)
 local level = level_source and loader.load_source(level_source)
 

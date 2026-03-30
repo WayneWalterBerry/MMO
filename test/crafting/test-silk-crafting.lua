@@ -35,21 +35,21 @@ end
 ---------------------------------------------------------------------------
 -- Load silk object definitions
 ---------------------------------------------------------------------------
-local silk_rope_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "silk-rope.lua"
+local silk_rope_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "silk-rope.lua"
 local rope_ok, silk_rope = pcall(dofile, silk_rope_path)
 if not rope_ok then
     print("WARNING: silk-rope.lua not found (TDD: expected)")
     silk_rope = nil
 end
 
-local silk_bandage_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "silk-bandage.lua"
+local silk_bandage_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "silk-bandage.lua"
 local bandage_ok, silk_bandage = pcall(dofile, silk_bandage_path)
 if not bandage_ok then
     print("WARNING: silk-bandage.lua not found (TDD: expected)")
     silk_bandage = nil
 end
 
-local silk_bundle_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "silk-bundle.lua"
+local silk_bundle_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "silk-bundle.lua"
 local bundle_ok, silk_bundle = pcall(dofile, silk_bundle_path)
 if not bundle_ok then
     print("WARNING: silk-bundle.lua not found (TDD: expected)")

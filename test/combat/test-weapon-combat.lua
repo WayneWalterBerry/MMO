@@ -20,7 +20,7 @@ local suite = h.suite
 -- Load weapon objects
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
-local objects_dir = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP
+local objects_dir = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP
 
 local ok_dagger, dagger = pcall(dofile, objects_dir .. "silver-dagger.lua")
 if not ok_dagger then

@@ -64,7 +64,7 @@ local EXPECTED_ROOMS = {
     "courtyard",
 }
 
-local rooms_dir = "src" .. SEP .. "meta" .. SEP .. "rooms"
+local rooms_dir = "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "rooms"
 local room_files = list_lua_files(rooms_dir)
 
 ----------------------------------------------------------------------------

@@ -82,15 +82,15 @@ injury_mod.clear_cache()
 injury_mod.reset_id_counter()
 
 -- Register concussion definition for tests
-local concussion_def = require("meta.injuries.concussion")
+local concussion_def = require("meta.worlds.manor.injuries.concussion")
 injury_mod.register_definition("concussion", concussion_def)
 
 -- Register bruised definition for tests
-local bruised_def = require("meta.injuries.bruised")
+local bruised_def = require("meta.worlds.manor.injuries.bruised")
 injury_mod.register_definition("bruised", bruised_def)
 
 -- Register bleeding definition for tests
-local bleeding_def = require("meta.injuries.bleeding")
+local bleeding_def = require("meta.worlds.manor.injuries.bleeding")
 injury_mod.register_definition("bleeding", bleeding_def)
 
 -- Load verbs module
@@ -587,12 +587,12 @@ end)
 
 suite("mirror — is_mirror flag")
 test("mirror object has is_mirror flag", function()
-    local mirror = require("meta.objects.mirror")
+    local mirror = require("meta.worlds.manor.objects.mirror")
     assert_truthy(mirror.is_mirror, "Mirror should have is_mirror = true")
 end)
 
 test("vanity object does NOT have is_mirror flag", function()
-    local vanity = require("meta.objects.vanity")
+    local vanity = require("meta.worlds.manor.objects.vanity")
     assert_eq(nil, vanity.is_mirror, "Vanity should not have is_mirror (mirror is separate object)")
 end)
 

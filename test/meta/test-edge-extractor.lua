@@ -203,13 +203,13 @@ end)
 suite("Sandbox loading")
 
 test("safe_load returns a table for valid object file", function()
-    local obj, err = extractor.safe_load(META_ROOT .. SEP .. "objects" .. SEP .. "candle.lua")
+    local obj, err = extractor.safe_load(META_ROOT .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "candle.lua")
     t.assert_truthy(type(obj) == "table",
         "expected table, got " .. type(tostring(obj)) .. " err=" .. tostring(err))
 end)
 
 test("safe_load returns id field from loaded object", function()
-    local obj = extractor.safe_load(META_ROOT .. SEP .. "objects" .. SEP .. "candle.lua")
+    local obj = extractor.safe_load(META_ROOT .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "candle.lua")
     t.assert_truthy(obj and obj.id, "expected object with id field")
 end)
 
@@ -473,13 +473,13 @@ end)
 suite("Broken edge detection")
 
 test("resolve_target finds existing file in map", function()
-    local file_map = { ["candle"] = "src/meta/objects/candle.lua" }
+    local file_map = { ["candle"] = "src/meta/worlds/manor/objects/candle.lua" }
     local result = extractor.resolve_target("candle", file_map)
     t.assert_truthy(result, "expected to find candle in file_map")
 end)
 
 test("resolve_target returns nil for missing target", function()
-    local file_map = { ["candle"] = "src/meta/objects/candle.lua" }
+    local file_map = { ["candle"] = "src/meta/worlds/manor/objects/candle.lua" }
     local result = extractor.resolve_target("does-not-exist", file_map)
     t.assert_nil(result, "expected nil for missing target")
 end)

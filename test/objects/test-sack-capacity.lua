@@ -76,7 +76,7 @@ local function make_ctx(opts)
     }
 end
 
--- Realistic sack matching src/meta/objects/sack.lua
+-- Realistic sack matching src/meta/worlds/manor/objects/sack.lua
 local function make_sack(existing_contents)
     return {
         id = "sack",

@@ -22,10 +22,10 @@ local suite = h.suite
 local SEP = package.config:sub(1, 1)
 
 local function creature_path(name)
-    return "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. name .. ".lua"
+    return "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. name .. ".lua"
 end
 local function object_path(name)
-    return "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. name .. ".lua"
+    return "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. name .. ".lua"
 end
 
 local ok_spider, spider_def = pcall(dofile, creature_path("spider"))

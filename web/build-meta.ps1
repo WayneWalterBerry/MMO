@@ -27,6 +27,7 @@ $RepoRoot  = Split-Path -Parent $ScriptDir
 if (-not $OutDir) { $OutDir = Join-Path $ScriptDir "dist" }
 
 $MetaRoot = Join-Path $RepoRoot "src\meta"
+$WorldRoot = Join-Path $MetaRoot "worlds\manor"
 $MetaOut  = Join-Path $OutDir "meta"
 
 Write-Host "=== build-meta.ps1 ==="
@@ -43,8 +44,20 @@ if (Test-Path $MetaOut) {
     Remove-Item -Recurse -Force $MetaOut
 }
 
-# Auto-discover ALL subdirectories under src/meta (no hardcoded list)
-$srcDirs = Get-ChildItem -Path $MetaRoot -Directory | Select-Object -ExpandProperty Name
+# Auto-discover world content directories + shared directories
+# World-specific: objects, rooms, creatures, levels, injuries under worlds/manor/
+# Shared: templates, materials under src/meta/
+$worldDirs = @()
+if (Test-Path $WorldRoot) {
+    $worldDirs = Get-ChildItem -Path $WorldRoot -Directory | Select-Object -ExpandProperty Name
+}
+$sharedDirs = @()
+foreach ($d in @("templates", "materials")) {
+    if (Test-Path (Join-Path $MetaRoot $d)) { $sharedDirs += $d }
+}
+# Also include the worlds dir itself (for world definition files)
+$srcDirs = $sharedDirs + $worldDirs
+if (Test-Path (Join-Path $MetaRoot "worlds")) { $srcDirs += "worlds" }
 
 # No dir name mapping needed — source and output names match
 $dirMap = @{}
@@ -59,7 +72,7 @@ $counts = @{}
 $warnings = @()
 
 # --- Objects: special handling — rename by GUID ---
-$objectDir = Join-Path $MetaRoot "objects"
+$objectDir = Join-Path $WorldRoot "objects"
 if (Test-Path $objectDir) {
     $objectFiles = Get-ChildItem -Path $objectDir -File -Filter "*.lua" | Sort-Object Name
     $counts["objects"] = 0
@@ -78,7 +91,7 @@ if (Test-Path $objectDir) {
 }
 
 # --- Creatures: special handling — rename by GUID (like objects) ---
-$creatureDir = Join-Path $MetaRoot "creatures"
+$creatureDir = Join-Path $WorldRoot "creatures"
 if (Test-Path $creatureDir) {
     $creatureFiles = Get-ChildItem -Path $creatureDir -File -Filter "*.lua" | Sort-Object Name
     $counts["creatures"] = 0
@@ -100,7 +113,15 @@ if (Test-Path $creatureDir) {
 $specialDirs = @("objects", "creatures")
 foreach ($srcName in $srcDirs) {
     if ($specialDirs -contains $srcName) { continue }
-    $srcPath = Join-Path $MetaRoot $srcName
+    # Determine source path: shared dirs (templates, materials) are under MetaRoot,
+    # world-specific dirs are under WorldRoot
+    if ($sharedDirs -contains $srcName) {
+        $srcPath = Join-Path $MetaRoot $srcName
+    } elseif ($srcName -eq "worlds") {
+        $srcPath = Join-Path $MetaRoot "worlds\manor"
+    } else {
+        $srcPath = Join-Path $WorldRoot $srcName
+    }
     $outName = if ($dirMap[$srcName]) { $dirMap[$srcName] } else { $srcName }
     $outPath = Join-Path $MetaOut $outName
     $counts[$outName] = 0
@@ -149,7 +170,14 @@ $indexLines = @("return {")
 foreach ($srcName in ($srcDirs | Sort-Object)) {
     if ($specialDirs -contains $srcName) { continue }
     $outName = if ($dirMap[$srcName]) { $dirMap[$srcName] } else { $srcName }
-    $srcPath = Join-Path $MetaRoot $srcName
+    # Determine source path for manifest generation
+    if ($sharedDirs -contains $srcName) {
+        $srcPath = Join-Path $MetaRoot $srcName
+    } elseif ($srcName -eq "worlds") {
+        $srcPath = Join-Path $MetaRoot "worlds\manor"
+    } else {
+        $srcPath = Join-Path $WorldRoot $srcName
+    }
     $files = Get-ChildItem -Path $srcPath -File -Filter "*.lua" | Sort-Object Name
     $names = ($files | ForEach-Object { '    "' + $_.BaseName + '"' }) -join ",`n"
     $indexLines += "  $outName = {"

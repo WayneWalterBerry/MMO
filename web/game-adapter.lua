@@ -247,9 +247,15 @@ end)
 ---------------------------------------------------------------------------
 -- Package searcher: resolve require("meta.X.Y") via HTTP JIT fetch
 -- Enables dynamic loading of injuries, materials, etc. in the browser
+-- Handles both legacy paths (meta.X.Y) and world paths (meta.worlds.{world}.X.Y)
 ---------------------------------------------------------------------------
 table.insert(package.searchers, 3, function(modname)
-    local meta_type, name = modname:match("^meta%.([^.]+)%.(.+)$")
+    -- World-aware path: meta.worlds.{world_id}.{category}.{name}
+    local meta_type, name = modname:match("^meta%.worlds%.[^.]+%.([^.]+)%.(.+)$")
+    -- Legacy path: meta.{category}.{name}
+    if not meta_type then
+        meta_type, name = modname:match("^meta%.([^.]+)%.(.+)$")
+    end
     if not meta_type then
         return "\n\tno meta match for '" .. modname .. "'"
     end

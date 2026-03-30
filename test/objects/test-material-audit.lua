@@ -1,5 +1,5 @@
 -- test/objects/test-material-audit.lua
--- Fix #163: Structural test — every object in src/meta/objects/ must declare
+-- Fix #163: Structural test — every object in src/meta/worlds/manor/objects/ must declare
 -- a valid material that exists in the material registry.
 -- Prevents regressions after the manual material audit.
 -- Must be run from repository root: lua test/objects/test-material-audit.lua
@@ -29,7 +29,7 @@ end
 local SEP = package.config:sub(1, 1)
 local is_windows = SEP == "\\"
 
-local objects_dir = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP
+local objects_dir = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP
 
 local list_cmd
 if is_windows then

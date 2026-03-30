@@ -17,7 +17,7 @@ local suite = h.suite
 ---------------------------------------------------------------------------
 -- Load the spittoon object and materials registry
 ---------------------------------------------------------------------------
-local spittoon = dofile(script_dir .. "/../../src/meta/objects/brass-spittoon.lua")
+local spittoon = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/brass-spittoon.lua")
 local materials = require("engine.materials")
 
 ---------------------------------------------------------------------------

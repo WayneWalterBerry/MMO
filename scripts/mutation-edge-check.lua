@@ -28,32 +28,37 @@ local function make_sandbox()
 end
 
 -- scan_meta_root(root) -> [{filepath, id}]
--- Two-pass: discover subdirs, then scan each for .lua files.
+-- Recursive scan: discovers subdirs and scans each for .lua files.
+-- Supports nested world folder structure (worlds/manor/objects/).
 local function scan_meta_root(root)
     local files = {}
     local subdirs = {}
 
-    -- Pass 1: discover subdirectories
-    local dir_cmd
-    if is_windows then
-        dir_cmd = 'dir /b /ad "' .. root .. '" 2>nul'
-    else
-        dir_cmd = 'ls -d "' .. root .. '"/*/ 2>/dev/null'
-    end
-    local handle = io.popen(dir_cmd)
-    if handle then
-        for line in handle:lines() do
-            local name = line:match("([^/\\]+)/?$") or line
-            if name ~= "" then subdirs[#subdirs + 1] = name end
+    -- Recursive helper to discover all directories
+    local function collect_dirs(dir, all_dirs)
+        local dir_cmd
+        if is_windows then
+            dir_cmd = 'dir /b /ad "' .. dir .. '" 2>nul'
+        else
+            dir_cmd = 'ls -d "' .. dir .. '"/*/ 2>/dev/null'
         end
-        handle:close()
+        local handle = io.popen(dir_cmd)
+        if handle then
+            for line in handle:lines() do
+                local name = line:match("([^/\\]+)/?$") or line
+                if name ~= "" then
+                    subdirs[#subdirs + 1] = name
+                    local child = dir .. SEP .. name
+                    all_dirs[#all_dirs + 1] = child
+                    collect_dirs(child, all_dirs)
+                end
+            end
+            handle:close()
+        end
     end
 
-    -- Pass 2: scan root + each subdirectory for .lua files
     local scan_dirs = { root }
-    for _, sub in ipairs(subdirs) do
-        scan_dirs[#scan_dirs + 1] = root .. SEP .. sub
-    end
+    collect_dirs(root, scan_dirs)
 
     for _, dir in ipairs(scan_dirs) do
         local file_cmd

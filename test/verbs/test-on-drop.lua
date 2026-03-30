@@ -28,7 +28,7 @@ local suite = h.suite
 ---------------------------------------------------------------------------
 -- Load object definitions from disk
 ---------------------------------------------------------------------------
-local OBJ_DIR = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP
+local OBJ_DIR = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP
 
 local function load_obj(name)
     return dofile(OBJ_DIR .. name .. ".lua")

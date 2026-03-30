@@ -163,34 +163,12 @@ t.test("load returns FATAL when no valid worlds", function()
     t.assert_truthy(err and err:find("FATAL"), "error should be FATAL")
 end)
 
--- Also test against the real world-01.lua file on disk
-t.suite("world loader — real world-01.lua integration")
+-- Also test against the real world.lua file on disk
+t.suite("world loader — real manor/world.lua integration")
 
-t.test("discover finds real world-01", function()
+t.test("discover finds real manor world", function()
     local SEP = package.config:sub(1, 1)
     local worlds_dir = "src" .. SEP .. "meta" .. SEP .. "worlds"
-
-    local function list_lua_files(dir)
-        local files = {}
-        local is_windows = SEP == "\\"
-        local cmd
-        if is_windows then
-            cmd = 'dir /b "' .. dir .. '\\*.lua" 2>nul'
-        else
-            cmd = 'ls "' .. dir .. '"/*.lua 2>/dev/null'
-        end
-        local handle = io.popen(cmd)
-        if handle then
-            for line in handle:lines() do
-                local fname = line:match("([^/\\]+)$") or line
-                if fname:match("%.lua$") then
-                    files[#files + 1] = fname
-                end
-            end
-            handle:close()
-        end
-        return files
-    end
 
     local function read_file(path)
         local f = io.open(path, "r")
@@ -200,22 +178,23 @@ t.test("discover finds real world-01", function()
         return content
     end
 
-    local worlds = world_mod.discover(worlds_dir, list_lua_files, read_file, mock_load_source)
+    local worlds = world_mod.discover(worlds_dir, function() return {} end, read_file, mock_load_source)
     t.assert_truthy(#worlds >= 1, "should discover at least 1 world")
     t.assert_eq("world-1", worlds[1].id, "first world should be world-1")
+    t.assert_truthy(worlds[1].content_root, "world should have content_root set by discover")
 end)
 
-t.test("load real world-01 has required fields", function()
+t.test("load real manor/world.lua has required fields", function()
     local SEP = package.config:sub(1, 1)
-    local path = "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "world-01.lua"
+    local path = "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "world.lua"
     local f = io.open(path, "r")
-    t.assert_truthy(f, "world-01.lua file should exist")
+    t.assert_truthy(f, "manor/world.lua file should exist")
     local source = f:read("*a")
     f:close()
     local world = mock_load_source(source)
-    t.assert_truthy(world, "world-01 should load")
+    t.assert_truthy(world, "manor world should load")
     local ok, err = world_mod.validate(world)
-    t.assert_truthy(ok, "world-01 should validate: " .. tostring(err))
+    t.assert_truthy(ok, "manor world should validate: " .. tostring(err))
     t.assert_eq("start-room", world_mod.get_starting_room(world), "starting room should be start-room")
     t.assert_truthy(world.theme, "world should have theme")
     t.assert_truthy(world.name, "world should have name")

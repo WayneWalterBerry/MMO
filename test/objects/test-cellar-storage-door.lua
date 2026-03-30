@@ -18,10 +18,10 @@ local suite = h.suite
 ---------------------------------------------------------------------------
 -- Load portal objects and room files
 ---------------------------------------------------------------------------
-local door_north = dofile(script_dir .. "/../../src/meta/objects/cellar-storage-door-north.lua")
-local door_south = dofile(script_dir .. "/../../src/meta/objects/storage-cellar-door-south.lua")
-local cellar = dofile(script_dir .. "/../../src/meta/rooms/cellar.lua")
-local storage = dofile(script_dir .. "/../../src/meta/rooms/storage-cellar.lua")
+local door_north = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/cellar-storage-door-north.lua")
+local door_south = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/storage-cellar-door-south.lua")
+local cellar = dofile(script_dir .. "/../../src/meta/worlds/manor/rooms/cellar.lua")
+local storage = dofile(script_dir .. "/../../src/meta/worlds/manor/rooms/storage-cellar.lua")
 
 ---------------------------------------------------------------------------
 -- Helpers

@@ -45,7 +45,7 @@ local function capture_output(fn)
     return table.concat(captured, "\n")
 end
 
--- Real knife definition WITH effects_pipeline (matches src/meta/objects/knife.lua)
+-- Real knife definition WITH effects_pipeline (matches src/meta/worlds/manor/objects/knife.lua)
 local function pipeline_knife()
     return {
         id = "knife",
@@ -392,8 +392,8 @@ end)
 suite("=== WEB BUILD SIMULATION: injury defs missing from require() ===")
 
 -- This test simulates the web build environment where
--- require("meta.injuries.bleeding") FAILS because build-meta.ps1
--- does NOT copy src/meta/injuries/ to web/dist/meta/injuries/.
+-- require("meta.worlds.manor.injuries.bleeding") FAILS because build-meta.ps1
+-- does NOT copy src/meta/worlds/manor/injuries/ to web/dist/meta/injuries/.
 -- The injury definition cache is cleared and no definitions are registered,
 -- mimicking what happens on the live site.
 
@@ -403,7 +403,7 @@ test("BUG REPRO: pipeline knife with EMPTY injury cache -> 'wound doesn't take h
     injury_mod.reset_id_counter()
     -- NOTE: NOT calling setup_injuries() — mimics web build
 
-    -- Temporarily break require("meta.injuries.bleeding") by removing from loaded
+    -- Temporarily break require("meta.worlds.manor.injuries.bleeding") by removing from loaded
     local saved_bleeding = package.loaded["meta.injuries.bleeding"]
     local saved_preload  = package.preload["meta.injuries.bleeding"]
     package.loaded["meta.injuries.bleeding"] = nil
@@ -412,7 +412,7 @@ test("BUG REPRO: pipeline knife with EMPTY injury cache -> 'wound doesn't take h
     -- Poison the searcher so require can't find it via filesystem either
     -- (simulates the browser environment where no filesystem searchers work)
     local old_path = package.path
-    -- Remove any path that could find src/meta/injuries/
+    -- Remove any path that could find src/meta/worlds/manor/injuries/
     package.path = ""
 
     effects_mod.clear_interceptors()

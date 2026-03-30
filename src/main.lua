@@ -111,6 +111,7 @@ end
 -- Load templates
 ---------------------------------------------------------------------------
 local meta_root = script_dir .. SEP .. "meta"
+local world_content_root = meta_root .. SEP .. "worlds" .. SEP .. "manor"
 
 local templates = {}
 local template_dir = meta_root .. SEP .. "templates"
@@ -133,7 +134,7 @@ end
 ---------------------------------------------------------------------------
 local object_sources = {}
 local base_classes = {}
-local object_dir = meta_root .. SEP .. "objects"
+local object_dir = world_content_root .. SEP .. "objects"
 local object_files = list_lua_files(object_dir)
 for _, fname in ipairs(object_files) do
     local path = object_dir .. SEP .. fname
@@ -162,7 +163,7 @@ for _, fname in ipairs(object_files) do
     end
 end
 
-local creatures_dir = meta_root .. SEP .. "creatures"
+local creatures_dir = world_content_root .. SEP .. "creatures"
 local creature_files = list_lua_files(creatures_dir)
 for _, fname in ipairs(creature_files) do
     local path = creatures_dir .. SEP .. fname
@@ -195,7 +196,7 @@ end
 -- Load all rooms from meta/rooms/
 ---------------------------------------------------------------------------
 local rooms = {}
-local room_dir = meta_root .. SEP .. "rooms"
+local room_dir = world_content_root .. SEP .. "rooms"
 local room_files = list_lua_files(room_dir)
 for _, fname in ipairs(room_files) do
     local path = room_dir .. SEP .. fname
@@ -219,7 +220,7 @@ end
 -- Load level data (intro text, completion criteria, etc.)
 ---------------------------------------------------------------------------
 local level = nil
-local level_dir = meta_root .. SEP .. "levels"
+local level_dir = world_content_root .. SEP .. "levels"
 local level_source = read_file(level_dir .. SEP .. "level-01.lua")
 if level_source then
     local lv, lv_err = loader.load_source(level_source)

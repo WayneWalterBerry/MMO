@@ -35,14 +35,14 @@ end
 ---------------------------------------------------------------------------
 -- Load wolf and territory-marker definitions
 ---------------------------------------------------------------------------
-local wolf_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "wolf.lua"
+local wolf_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. "wolf.lua"
 local ok_wolf, wolf_def = pcall(dofile, wolf_path)
 if not ok_wolf then
     print("WARNING: wolf.lua not found — some tests use fallback mock")
     wolf_def = nil
 end
 
-local marker_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "territory-marker.lua"
+local marker_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "territory-marker.lua"
 local ok_marker, marker_def = pcall(dofile, marker_path)
 if not ok_marker then
     print("WARNING: territory-marker.lua not found — tests use mock (TDD: expected)")

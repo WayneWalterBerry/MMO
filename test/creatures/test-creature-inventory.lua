@@ -18,7 +18,7 @@ local suite = h.suite
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
 local function creature_path(name)
-    return "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. name .. ".lua"
+    return "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. name .. ".lua"
 end
 
 local ok_wolf, wolf_def = pcall(dofile, creature_path("wolf"))
@@ -39,7 +39,7 @@ if not ok_spider then print("WARNING: spider.lua failed to load — " .. tostrin
 ---------------------------------------------------------------------------
 -- Load gnawed-bone object (for GUID resolution checks)
 ---------------------------------------------------------------------------
-local obj_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP
+local obj_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP
 local ok_bone, bone_def = pcall(dofile, obj_path .. "gnawed-bone.lua")
 if not ok_bone then print("WARNING: gnawed-bone.lua failed to load — " .. tostring(bone_def)) end
 

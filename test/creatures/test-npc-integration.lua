@@ -40,7 +40,7 @@ end
 -- Load rat object definition directly
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
-local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "rat.lua"
+local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. "rat.lua"
 local ok_rat, rat_def = pcall(dofile, rat_path)
 if not ok_rat then
     print("WARNING: rat.lua not found — rat tests will fail (TDD: expected)")
@@ -50,7 +50,7 @@ end
 ---------------------------------------------------------------------------
 -- Load cellar room definition directly
 ---------------------------------------------------------------------------
-local cellar_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "rooms" .. SEP .. "cellar.lua"
+local cellar_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "rooms" .. SEP .. "cellar.lua"
 local ok_cellar, cellar_def = pcall(dofile, cellar_path)
 if not ok_cellar then
     print("WARNING: cellar.lua not found — cellar tests will fail (TDD: expected)")

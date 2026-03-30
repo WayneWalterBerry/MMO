@@ -193,32 +193,32 @@ h.suite("4. BUG-091: 'take match' — spent vs fresh match priority")
 
 test("BUG-091: match object has terminal state 'spent'", function()
     -- Verify the match definition has the right FSM structure
-    local match_def = dofile(script_dir .. "/../../src/meta/objects/match.lua")
+    local match_def = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/match.lua")
     truthy(match_def.states, "Match should have states table")
     truthy(match_def.states.spent, "Match should have 'spent' state")
     truthy(match_def.states.spent.terminal, "'spent' state should be terminal")
 end)
 
 test("BUG-091: match 'spent' state is consumable", function()
-    local match_def = dofile(script_dir .. "/../../src/meta/objects/match.lua")
+    local match_def = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/match.lua")
     truthy(match_def.states.spent.consumable, "'spent' state should be consumable")
 end)
 
 test("BUG-091: match 'unlit' state is NOT terminal", function()
-    local match_def = dofile(script_dir .. "/../../src/meta/objects/match.lua")
+    local match_def = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/match.lua")
     truthy(not match_def.states.unlit.terminal,
            "'unlit' state should not be terminal")
 end)
 
 test("BUG-091: match 'lit' state is NOT terminal", function()
-    local match_def = dofile(script_dir .. "/../../src/meta/objects/match.lua")
+    local match_def = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/match.lua")
     truthy(not match_def.states.lit.terminal,
            "'lit' state should not be terminal")
 end)
 
 test("BUG-091: matchbox has accessible flag (open vs closed)", function()
-    local mb_closed = dofile(script_dir .. "/../../src/meta/objects/matchbox.lua")
-    local mb_open = dofile(script_dir .. "/../../src/meta/objects/matchbox-open.lua")
+    local mb_closed = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/matchbox.lua")
+    local mb_open = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/matchbox-open.lua")
     eq(false, mb_closed.accessible, "Closed matchbox should not be accessible")
     eq(true, mb_open.accessible, "Open matchbox should be accessible")
 end)

@@ -38,8 +38,8 @@ end
 ---------------------------------------------------------------------------
 -- Load actual portal object files
 ---------------------------------------------------------------------------
-local obj_dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP
-local room_dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "rooms" .. SEP
+local obj_dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP
+local room_dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "rooms" .. SEP
 
 local west_ok, portal_west_def = pcall(dofile, obj_dir .. "deep-cellar-crypt-archway-west.lua")
 local east_ok, portal_east_def = pcall(dofile, obj_dir .. "crypt-deep-cellar-archway-east.lua")

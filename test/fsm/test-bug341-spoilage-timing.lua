@@ -52,7 +52,7 @@ local function make_mock_registry(objects)
 end
 
 -- Load the rat death_state from the actual creature file
-local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "rat.lua"
+local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. "rat.lua"
 local ok_rat, rat_def = pcall(dofile, rat_path)
 if not ok_rat then
     print("WARNING: rat.lua not loadable — " .. tostring(rat_def))

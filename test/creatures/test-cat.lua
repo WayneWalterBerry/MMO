@@ -17,7 +17,7 @@ local suite = h.suite
 -- Load the cat object via dofile
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
-local cat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "cat.lua"
+local cat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. "cat.lua"
 
 local ok, cat = pcall(dofile, cat_path)
 if not ok then

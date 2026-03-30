@@ -17,7 +17,7 @@ local suite = h.suite
 -- Load the bat object via dofile
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
-local bat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "bat.lua"
+local bat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. "bat.lua"
 
 local ok, bat = pcall(dofile, bat_path)
 if not ok then

@@ -28,9 +28,9 @@ local suite = h.suite
 -- Load actual definitions from source
 ---------------------------------------------------------------------------
 local BEAR_TRAP_PATH = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP
-    .. "objects" .. SEP .. "bear-trap.lua"
+    .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "bear-trap.lua"
 local CRUSHING_WOUND_PATH = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP
-    .. "injuries" .. SEP .. "crushing-wound.lua"
+    .. "worlds" .. SEP .. "manor" .. SEP .. "injuries" .. SEP .. "crushing-wound.lua"
 
 local trap_def = dofile(BEAR_TRAP_PATH)
 local crushing_def = dofile(CRUSHING_WOUND_PATH)

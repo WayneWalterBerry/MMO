@@ -110,7 +110,7 @@ end
 suite("BUG #323: Wolf scent must linger after wolf leaves room")
 
 test("1. wolf definition has lingering_scent metadata", function()
-    local wolf_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "wolf.lua"
+    local wolf_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. "wolf.lua"
     local ok, wolf_def = pcall(dofile, wolf_path)
     h.assert_truthy(ok, "wolf.lua must load")
     h.assert_truthy(wolf_def.behavior, "wolf must have behavior")

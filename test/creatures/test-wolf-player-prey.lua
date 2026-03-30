@@ -32,7 +32,7 @@ end
 -- Load wolf definition
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
-local wolf_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "wolf.lua"
+local wolf_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. "wolf.lua"
 local ok_wolf, wolf_def = pcall(dofile, wolf_path)
 if not ok_wolf then
     print("WARNING: wolf.lua not found — " .. tostring(wolf_def))

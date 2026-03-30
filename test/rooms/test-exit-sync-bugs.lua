@@ -55,9 +55,9 @@ local function deep_copy(t)
 end
 
 -- Load room and object metadata directly
-local room_meta = dofile(script_dir .. "/../../src/meta/rooms/start-room.lua")
-local portal_meta = dofile(script_dir .. "/../../src/meta/objects/bedroom-hallway-door-north.lua")
-local window_portal_meta = dofile(script_dir .. "/../../src/meta/objects/bedroom-courtyard-window-out.lua")
+local room_meta = dofile(script_dir .. "/../../src/meta/worlds/manor/rooms/start-room.lua")
+local portal_meta = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/bedroom-hallway-door-north.lua")
+local window_portal_meta = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/bedroom-courtyard-window-out.lua")
 
 ---------------------------------------------------------------------------
 -- Load verb handlers

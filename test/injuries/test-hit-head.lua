@@ -119,13 +119,13 @@ local injury_mod = require("engine.injuries")
 injury_mod.clear_cache()
 injury_mod.reset_id_counter()
 
-local concussion_def = require("meta.injuries.concussion")
+local concussion_def = require("meta.worlds.manor.injuries.concussion")
 injury_mod.register_definition("concussion", concussion_def)
 
-local bruised_def = require("meta.injuries.bruised")
+local bruised_def = require("meta.worlds.manor.injuries.bruised")
 injury_mod.register_definition("bruised", bruised_def)
 
-local bleeding_def = require("meta.injuries.bleeding")
+local bleeding_def = require("meta.worlds.manor.injuries.bleeding")
 injury_mod.register_definition("bleeding", bleeding_def)
 
 local verbs_mod = require("engine.verbs")

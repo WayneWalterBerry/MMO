@@ -161,7 +161,7 @@ print("\n=== #264 — room file sky_visible verification ===")
 local underground_rooms = { "cellar", "deep-cellar", "storage-cellar", "crypt" }
 for _, room_name in ipairs(underground_rooms) do
     test(room_name .. " has sky_visible = false", function()
-        local path = "src" .. SEP .. "meta" .. SEP .. "rooms" .. SEP .. room_name .. ".lua"
+        local path = "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "rooms" .. SEP .. room_name .. ".lua"
         local f = io.open(path, "r")
         if not f then error("cannot open " .. path) end
         local source = f:read("*a")

@@ -1,4 +1,4 @@
--- src/meta/injuries/crushing-wound.lua
+-- src/meta/worlds/manor/injuries/crushing-wound.lua
 -- Injury template: Crushing Wound (bear trap, falling debris, etc.)
 -- Pattern: Heavy initial blunt damage + ongoing bleeding from crushed tissue
 -- FSM: active → treated → healed  (bandaged path, bleeding stops)

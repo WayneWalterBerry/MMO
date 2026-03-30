@@ -382,11 +382,11 @@ end)
 suite("AMBUSH: wolf metadata (Principle 8)")
 
 test("15. wolf template declares ambush metadata", function()
-    local ok, wolf = pcall(dofile, "src/meta/creatures/wolf.lua")
+    local ok, wolf = pcall(dofile, "src/meta/worlds/manor/creatures/wolf.lua")
     if not ok then
         -- Try alternate path
         ok, wolf = pcall(function()
-            return loadfile("src/meta/creatures/wolf.lua")()
+            return loadfile("src/meta/worlds/manor/creatures/wolf.lua")()
         end)
     end
     h.assert_truthy(ok, "wolf.lua should load")

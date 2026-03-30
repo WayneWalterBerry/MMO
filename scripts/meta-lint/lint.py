@@ -525,21 +525,22 @@ class ParsedFile:
 
 def _detect_kind(path: Path) -> str:
     lower = str(path).lower()
-    if os.sep + "src" + os.sep + "meta" + os.sep + "objects" + os.sep in lower:
+    # Support both direct paths (src/meta/objects/) and world-nested paths (src/meta/worlds/manor/objects/)
+    if os.sep + "objects" + os.sep in lower and os.sep + "meta" + os.sep in lower:
         return "object"
-    if os.sep + "src" + os.sep + "meta" + os.sep + "creatures" + os.sep in lower:
+    if os.sep + "creatures" + os.sep in lower and os.sep + "meta" + os.sep in lower:
         return "creature"
-    if os.sep + "src" + os.sep + "meta" + os.sep + "world" + os.sep in lower:
+    if os.sep + "rooms" + os.sep in lower and os.sep + "meta" + os.sep in lower:
         return "room"
-    if os.sep + "src" + os.sep + "meta" + os.sep + "rooms" + os.sep in lower:
+    if os.sep + "world" + os.sep in lower and os.sep + "meta" + os.sep in lower:
         return "room"
-    if os.sep + "src" + os.sep + "meta" + os.sep + "levels" + os.sep in lower:
+    if os.sep + "levels" + os.sep in lower and os.sep + "meta" + os.sep in lower:
         return "level"
-    if os.sep + "src" + os.sep + "meta" + os.sep + "templates" + os.sep in lower:
+    if os.sep + "templates" + os.sep in lower and os.sep + "meta" + os.sep in lower:
         return "template"
-    if os.sep + "src" + os.sep + "meta" + os.sep + "injuries" + os.sep in lower:
+    if os.sep + "injuries" + os.sep in lower and os.sep + "meta" + os.sep in lower:
         return "injury"
-    if os.sep + "src" + os.sep + "meta" + os.sep + "materials" + os.sep in lower:
+    if os.sep + "materials" + os.sep in lower and os.sep + "meta" + os.sep in lower:
         return "material"
     return "unknown"
 

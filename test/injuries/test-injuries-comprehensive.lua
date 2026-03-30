@@ -145,7 +145,7 @@ end
 -- Load all 7 injury definitions from disk
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
-local injury_dir = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "injuries" .. SEP
+local injury_dir = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "injuries" .. SEP
 
 local bleeding_def     = dofile(injury_dir .. "bleeding.lua")
 local bruised_def      = dofile(injury_dir .. "bruised.lua")
@@ -170,7 +170,7 @@ end
 ---------------------------------------------------------------------------
 -- Load weapon definitions from disk
 ---------------------------------------------------------------------------
-local obj_dir = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP
+local obj_dir = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP
 local knife_def        = dofile(obj_dir .. "knife.lua")
 local glass_shard_def  = dofile(obj_dir .. "glass-shard.lua")
 local silver_dagger_def= dofile(obj_dir .. "silver-dagger.lua")

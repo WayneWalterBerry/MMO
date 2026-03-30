@@ -1,5 +1,5 @@
 -- test/objects/test-object-templates.lua
--- Fix #124: Structural test — every object in src/meta/objects/ must declare a template.
+-- Fix #124: Structural test — every object in src/meta/worlds/manor/objects/ must declare a template.
 -- Valid templates: small-item, container, furniture, sheet
 -- Must be run from repository root: lua test/objects/test-object-templates.lua
 
@@ -20,7 +20,7 @@ local SEP = package.config:sub(1, 1)
 local is_windows = SEP == "\\"
 
 -- Use repo root (cwd) for reliable path resolution
-local objects_dir = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP
+local objects_dir = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP
 
 local list_cmd
 if is_windows then

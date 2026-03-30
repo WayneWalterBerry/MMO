@@ -17,10 +17,10 @@ local suite = h.suite
 ---------------------------------------------------------------------------
 -- Load objects
 ---------------------------------------------------------------------------
-local bottle = dofile(script_dir .. "/../../src/meta/objects/wine-bottle.lua")
-local shard = dofile(script_dir .. "/../../src/meta/objects/glass-shard.lua")
-local ceramic_shard = dofile(script_dir .. "/../../src/meta/objects/ceramic-shard.lua")
-local chamber_pot = dofile(script_dir .. "/../../src/meta/objects/chamber-pot.lua")
+local bottle = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/wine-bottle.lua")
+local shard = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/glass-shard.lua")
+local ceramic_shard = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/ceramic-shard.lua")
+local chamber_pot = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/chamber-pot.lua")
 
 ---------------------------------------------------------------------------
 -- Helpers

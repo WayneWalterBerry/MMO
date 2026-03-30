@@ -26,7 +26,7 @@ end
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
 local function creature_path(name)
-    return "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. name .. ".lua"
+    return "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. name .. ".lua"
 end
 
 local ok_rat, rat_def = pcall(dofile, creature_path("rat"))

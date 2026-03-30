@@ -24,17 +24,17 @@ local function pending(name, reason)
 end
 
 -- Load the room metadata table directly (it returns a plain Lua table)
-local room = dofile(script_dir .. "/../../src/meta/rooms/start-room.lua")
+local room = dofile(script_dir .. "/../../src/meta/worlds/manor/rooms/start-room.lua")
 
 local north = room.exits and room.exits.north
 local window = room.exits and room.exits.window
 local down = room.exits and room.exits.down
 
 -- Load portal objects that replaced inline exit metadata (Portal Phase 3)
-local portal = dofile(script_dir .. "/../../src/meta/objects/bedroom-hallway-door-north.lua")
-local window_portal = dofile(script_dir .. "/../../src/meta/objects/bedroom-courtyard-window-out.lua")
-local trapdoor_portal = dofile(script_dir .. "/../../src/meta/objects/bedroom-cellar-trapdoor-down.lua")
-local rug_obj = dofile(script_dir .. "/../../src/meta/objects/rug.lua")
+local portal = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/bedroom-hallway-door-north.lua")
+local window_portal = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/bedroom-courtyard-window-out.lua")
+local trapdoor_portal = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/bedroom-cellar-trapdoor-down.lua")
+local rug_obj = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/rug.lua")
 
 -- Capture print output from a function call
 local function capture(fn)

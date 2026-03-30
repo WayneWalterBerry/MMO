@@ -16,7 +16,7 @@ local suite = h.suite
 ---------------------------------------------------------------------------
 -- Load objects
 ---------------------------------------------------------------------------
-local objects_dir = script_dir .. "/../../src/meta/objects/"
+local objects_dir = script_dir .. "/../../src/meta/worlds/manor/objects/"
 local spittoon = dofile(objects_dir .. "brass-spittoon.lua")
 local holder   = dofile(objects_dir .. "candle-holder.lua")
 

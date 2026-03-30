@@ -29,7 +29,7 @@ end
 ---------------------------------------------------------------------------
 -- Load spider-web object definition
 ---------------------------------------------------------------------------
-local web_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "spider-web.lua"
+local web_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "spider-web.lua"
 local web_ok, spider_web = pcall(dofile, web_path)
 if not web_ok then
     print("WARNING: spider-web.lua not found — tests will fail (TDD: expected)")
@@ -37,7 +37,7 @@ if not web_ok then
 end
 
 -- Load spider creature definition
-local spider_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "spider.lua"
+local spider_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. "spider.lua"
 local spider_ok, spider_def = pcall(dofile, spider_path)
 if not spider_ok then
     print("WARNING: spider.lua not found — some tests will fail (TDD: expected)")

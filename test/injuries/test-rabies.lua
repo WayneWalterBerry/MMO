@@ -81,7 +81,7 @@ end
 local rabies_from_disk = nil
 do
     local ok, def = pcall(dofile, repo_root .. SEP .. "src" .. SEP .. "meta"
-        .. SEP .. "injuries" .. SEP .. "rabies.lua")
+        .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "injuries" .. SEP .. "rabies.lua")
     if ok and def then rabies_from_disk = def end
 end
 

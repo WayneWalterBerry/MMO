@@ -49,9 +49,9 @@ local function capture_print(fn)
     return table.concat(lines, "\n")
 end
 
---- Load a .lua object definition from src/meta/objects/
+--- Load a .lua object definition from src/meta/worlds/manor/objects/
 local function load_object(filename)
-    local path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. filename
+    local path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. filename
     return dofile(path)
 end
 
@@ -104,7 +104,7 @@ end
 --- Build object_sources map: object ID → source code string
 --- (matches how main.lua builds ctx.object_sources)
 local function build_object_sources(templates)
-    local dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP
+    local dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP
     local sources = {}
     local list_cmd
     if is_windows then

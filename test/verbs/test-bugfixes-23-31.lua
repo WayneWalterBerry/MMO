@@ -117,7 +117,7 @@ end)
 suite("Issue #28 — reflection triggers mirror/appearance system")
 
 -- Load the mirror object definition (now separate from vanity)
-local mirror = require("meta.objects.mirror")
+local mirror = require("meta.worlds.manor.objects.mirror")
 
 test("mirror keywords include 'reflection'", function()
     local found = false
@@ -207,7 +207,7 @@ test("game loop injury tick skipped when game_over is true", function()
 
     -- First tick: health should be <= 0, died = true
     injury_mod.clear_cache()
-    local bleeding_def = require("meta.injuries.bleeding")
+    local bleeding_def = require("meta.worlds.manor.injuries.bleeding")
     injury_mod.register_definition("bleeding", bleeding_def)
 
     local msgs, died = injury_mod.tick(player)

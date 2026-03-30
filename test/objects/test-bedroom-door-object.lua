@@ -16,8 +16,8 @@ local suite = h.suite
 ---------------------------------------------------------------------------
 -- Load the portal object and start-room
 ---------------------------------------------------------------------------
-local door = dofile(script_dir .. "/../../src/meta/objects/bedroom-hallway-door-north.lua")
-local room = dofile(script_dir .. "/../../src/meta/rooms/start-room.lua")
+local door = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/bedroom-hallway-door-north.lua")
+local room = dofile(script_dir .. "/../../src/meta/worlds/manor/rooms/start-room.lua")
 
 ---------------------------------------------------------------------------
 -- IDENTITY & STRUCTURE

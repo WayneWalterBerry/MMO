@@ -1,4 +1,4 @@
--- src/meta/injuries/food-poisoning.lua
+-- src/meta/worlds/manor/injuries/food-poisoning.lua
 -- Injury template: Food Poisoning
 -- Pattern: Onset cramps → nausea with DOT → recovery → cleared
 -- FSM: onset → nausea → recovery → cleared

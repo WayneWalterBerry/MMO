@@ -17,14 +17,14 @@ local suite = h.suite
 ---------------------------------------------------------------------------
 -- Load definitions
 ---------------------------------------------------------------------------
-local cellar_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "rooms" .. SEP .. "cellar.lua"
+local cellar_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "rooms" .. SEP .. "cellar.lua"
 local ok_cellar, cellar = pcall(dofile, cellar_path)
 if not ok_cellar then
     print("WARNING: cellar.lua not loadable — " .. tostring(cellar))
     cellar = nil
 end
 
-local web_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "spider-web.lua"
+local web_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "spider-web.lua"
 local ok_web, spider_web = pcall(dofile, web_path)
 if not ok_web then
     print("WARNING: spider-web.lua not loadable — " .. tostring(spider_web))

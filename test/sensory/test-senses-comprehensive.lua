@@ -79,7 +79,7 @@ local function make_ctx(opts)
     }
 end
 
--- A candle object with FSM states (mirrors src/meta/objects/candle.lua)
+-- A candle object with FSM states (mirrors src/meta/worlds/manor/objects/candle.lua)
 local function make_candle(state)
     return {
         id = "candle",
@@ -1155,10 +1155,10 @@ end)
 ---------------------------------------------------------------------------
 -- SECTION 11: on_feel COVERAGE AUDIT (programmatic)
 ---------------------------------------------------------------------------
-suite("ON_FEEL AUDIT — all objects in src/meta/objects must have on_feel")
+suite("ON_FEEL AUDIT — all objects in src/meta/worlds/manor/objects must have on_feel")
 
 test("every object file has on_feel property", function()
-    local dir = "src" .. SEP .. "meta" .. SEP .. "objects"
+    local dir = "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects"
     local list_cmd
     if SEP == "\\" then
         list_cmd = 'dir /b "' .. dir .. '\\*.lua" 2>nul'

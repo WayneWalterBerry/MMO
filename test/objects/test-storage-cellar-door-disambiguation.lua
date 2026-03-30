@@ -18,7 +18,7 @@ local suite = h.suite
 ---------------------------------------------------------------------------
 -- Load both door objects (storage-cellar side)
 ---------------------------------------------------------------------------
-local objects_dir = script_dir .. "/../../src/meta/objects/"
+local objects_dir = script_dir .. "/../../src/meta/worlds/manor/objects/"
 local south_door = dofile(objects_dir .. "storage-cellar-door-south.lua")
 local north_door = dofile(objects_dir .. "storage-deep-cellar-door-north.lua")
 

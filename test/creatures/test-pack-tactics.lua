@@ -35,7 +35,7 @@ end
 ---------------------------------------------------------------------------
 -- Load wolf definition
 ---------------------------------------------------------------------------
-local wolf_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "wolf.lua"
+local wolf_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. "wolf.lua"
 local ok_wolf, wolf_def = pcall(dofile, wolf_path)
 if not ok_wolf then
     print("WARNING: wolf.lua not found — tests will fail (TDD: expected)")

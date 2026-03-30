@@ -1,4 +1,4 @@
--- src/meta/injuries/spider-venom.lua
+-- src/meta/worlds/manor/injuries/spider-venom.lua
 -- Injury template: Spider Venom
 -- Pattern: Immediate symptoms, progressive paralysis, recoverable
 -- FSM: injected → spreading → paralysis → healed  (untreated, survives)

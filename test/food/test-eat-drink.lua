@@ -32,7 +32,7 @@ end
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
 local function obj_path(name)
-    return "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. name .. ".lua"
+    return "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. name .. ".lua"
 end
 
 local ok_cheese, cheese_def = pcall(dofile, obj_path("cheese"))

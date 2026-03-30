@@ -10,22 +10,56 @@ local M = {}
 local REQUIRED_FIELDS = { "guid", "id", "name", "levels", "starting_room", "theme" }
 
 --- discover(worlds_dir, list_lua_files, read_file, load_source)
--- Scan worlds_dir for .lua files, load each via sandbox.
+-- Scan worlds_dir for subdirectories containing world.lua, load each via sandbox.
+-- Also supports legacy .lua files directly in worlds_dir for backward compat.
 -- Returns array of world tables (may be empty).
 function M.discover(worlds_dir, list_lua_files, read_file, load_source)
-    local files = list_lua_files(worlds_dir)
     local worlds = {}
-    for _, filename in ipairs(files) do
-        local sep = package.config:sub(1, 1)
-        local path = worlds_dir .. sep .. filename
-        local source = read_file(path)
-        if source then
-            local tbl, err = load_source(source)
-            if tbl then
-                worlds[#worlds + 1] = tbl
+    local sep = package.config:sub(1, 1)
+
+    -- Phase 1: Scan for subdirectory-based worlds (worlds/{name}/world.lua)
+    local is_windows = sep == "\\"
+    local dir_cmd
+    if is_windows then
+        dir_cmd = 'dir /b /ad "' .. worlds_dir .. '" 2>nul'
+    else
+        dir_cmd = 'ls -d "' .. worlds_dir .. '"/*/ 2>/dev/null'
+    end
+    local handle = io.popen(dir_cmd)
+    if handle then
+        for line in handle:lines() do
+            local dirname = line:match("([^/\\]+)/?$") or line
+            dirname = dirname:match("^%s*(.-)%s*$")  -- trim
+            if dirname and dirname ~= "" then
+                local world_file = worlds_dir .. sep .. dirname .. sep .. "world.lua"
+                local source = read_file(world_file)
+                if source then
+                    local tbl, err = load_source(source)
+                    if tbl then
+                        tbl.content_root = "worlds" .. sep .. dirname
+                        worlds[#worlds + 1] = tbl
+                    end
+                end
+            end
+        end
+        handle:close()
+    end
+
+    -- Phase 2: Legacy fallback — scan for .lua files directly in worlds_dir
+    if #worlds == 0 then
+        local files = list_lua_files(worlds_dir)
+        for _, filename in ipairs(files) do
+            local path = worlds_dir .. sep .. filename
+            local source = read_file(path)
+            if source then
+                local tbl, err = load_source(source)
+                if tbl then
+                    worlds[#worlds + 1] = tbl
+                end
             end
         end
     end
+
     return worlds
 end
 

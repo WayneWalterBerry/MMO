@@ -16,10 +16,15 @@ local load_stress_def  -- forward declaration; defined in stress section
 -- Injury definition loader
 ---------------------------------------------------------------------------
 local _cache = {}
+local _injury_require_root = "meta.worlds.manor.injuries"
+
+function injuries.set_content_root(root)
+    _injury_require_root = root .. ".injuries"
+end
 
 function injuries.load_definition(injury_type)
     if _cache[injury_type] then return _cache[injury_type] end
-    local ok, def = pcall(require, "meta.injuries." .. injury_type)
+    local ok, def = pcall(require, _injury_require_root .. "." .. injury_type)
     if ok and def then
         _cache[injury_type] = def
         return def
@@ -422,7 +427,7 @@ injuries.get_restrictions = cure.get_restrictions
 
 ---------------------------------------------------------------------------
 -- Stress system (WAVE-3): psychological injury via accumulated trauma
--- Stress metadata lives in meta/injuries/stress.lua (Principle 8).
+-- Stress metadata lives in worlds/manor/injuries/stress.lua (Principle 8).
 -- Narration owned by Smithers (UI Engineer).
 ---------------------------------------------------------------------------
 
@@ -433,7 +438,7 @@ load_stress_def = function()
         _stress_def = _cache["stress"]
         return _stress_def
     end
-    local ok, def = pcall(require, "meta.injuries.stress")
+    local ok, def = pcall(require, _injury_require_root .. ".stress")
     if ok and def then
         _stress_def = def
         return def

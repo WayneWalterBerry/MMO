@@ -1,5 +1,4 @@
--- world-01.lua
--- World 1: The Manor
+-- world.lua — The Manor
 -- Gothic domestic horror. Late medieval manor, 2 AM, isolation, candlelight.
 -- See: docs/design/worlds.md (full specification)
 -- See: .squad/decisions.md — D-WORLDS-CONCEPT
@@ -10,6 +9,9 @@ return {
 
     id = "world-1",
     name = "The Manor",
+    rating = "M",  -- Mature (combat, injury, poison, darkness)
+    content_root = "worlds/manor",
+    start_level = "level-01",
     description = "A crumbling gothic estate of cold stone and long shadows. "
               .. "You wake at 2 AM, trapped and alone. The darkness is absolute.",
 

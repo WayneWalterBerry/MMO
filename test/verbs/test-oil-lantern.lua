@@ -41,7 +41,7 @@ local function capture_output(fn)
 end
 
 local function make_lantern(state_override)
-    local def = dofile("src/meta/objects/oil-lantern.lua")
+    local def = dofile("src/meta/worlds/manor/objects/oil-lantern.lua")
     if state_override then
         def._state = state_override
     end
@@ -342,7 +342,7 @@ test("lantern has wind_resistant property", function()
 end)
 
 test("candle is NOT wind resistant (comparison)", function()
-    local candle = dofile("src/meta/objects/candle.lua")
+    local candle = dofile("src/meta/worlds/manor/objects/candle.lua")
     h.assert_truthy(not candle.wind_resistant,
         "Candle should NOT be wind resistant")
 end)

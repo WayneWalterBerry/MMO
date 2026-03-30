@@ -58,15 +58,15 @@ end
 ---------------------------------------------------------------------------
 -- Load real object definitions from disk
 ---------------------------------------------------------------------------
-local knife_def = dofile(repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "knife.lua")
-local glass_shard_def = dofile(repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "glass-shard.lua")
-local silver_dagger_def = dofile(repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "silver-dagger.lua")
+local knife_def = dofile(repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "knife.lua")
+local glass_shard_def = dofile(repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "glass-shard.lua")
+local silver_dagger_def = dofile(repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "silver-dagger.lua")
 
 ---------------------------------------------------------------------------
 -- Load real injury definitions from disk
 ---------------------------------------------------------------------------
-local bleeding_file = dofile(repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "injuries" .. SEP .. "bleeding.lua")
-local minor_cut_file = dofile(repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "injuries" .. SEP .. "minor-cut.lua")
+local bleeding_file = dofile(repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "injuries" .. SEP .. "bleeding.lua")
+local minor_cut_file = dofile(repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "injuries" .. SEP .. "minor-cut.lua")
 
 ---------------------------------------------------------------------------
 -- Helpers

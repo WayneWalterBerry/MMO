@@ -17,7 +17,7 @@ local suite = h.suite
 -- Load the spider object via dofile
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
-local spider_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "spider.lua"
+local spider_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. "spider.lua"
 
 local ok, spider = pcall(dofile, spider_path)
 if not ok then

@@ -17,10 +17,10 @@ local suite = h.suite
 ---------------------------------------------------------------------------
 -- Load objects and rooms
 ---------------------------------------------------------------------------
-local win_out = dofile(script_dir .. "/../../src/meta/objects/bedroom-courtyard-window-out.lua")
-local win_in  = dofile(script_dir .. "/../../src/meta/objects/courtyard-bedroom-window-in.lua")
-local bedroom = dofile(script_dir .. "/../../src/meta/rooms/start-room.lua")
-local courtyard = dofile(script_dir .. "/../../src/meta/rooms/courtyard.lua")
+local win_out = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/bedroom-courtyard-window-out.lua")
+local win_in  = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/courtyard-bedroom-window-in.lua")
+local bedroom = dofile(script_dir .. "/../../src/meta/worlds/manor/rooms/start-room.lua")
+local courtyard = dofile(script_dir .. "/../../src/meta/worlds/manor/rooms/courtyard.lua")
 
 ---------------------------------------------------------------------------
 -- Helpers
@@ -863,13 +863,13 @@ end)
 suite("OLD WINDOW OBJECT: coexistence check")
 
 test("Old window.lua still loads (backward compat)", function()
-    local old_window = dofile(script_dir .. "/../../src/meta/objects/window.lua")
+    local old_window = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/window.lua")
     h.assert_truthy(old_window, "window.lua must still load")
     h.assert_eq("window", old_window.id, "old window id must be 'window'")
 end)
 
 test("Old window is furniture template, not portal", function()
-    local old_window = dofile(script_dir .. "/../../src/meta/objects/window.lua")
+    local old_window = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/window.lua")
     h.assert_eq("furniture", old_window.template, "old window must be furniture")
 end)
 

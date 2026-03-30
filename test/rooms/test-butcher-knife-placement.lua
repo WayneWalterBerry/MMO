@@ -14,10 +14,10 @@ local test = h.test
 local suite = h.suite
 
 -- Load the butcher-knife object
-local knife = dofile(script_dir .. "/../../src/meta/objects/butcher-knife.lua")
+local knife = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/butcher-knife.lua")
 
 -- Load all Level 1 rooms
-local rooms_dir = script_dir .. "/../../src/meta/rooms/"
+local rooms_dir = script_dir .. "/../../src/meta/worlds/manor/rooms/"
 local rooms = {
     ["start-room"]     = dofile(rooms_dir .. "start-room.lua"),
     ["cellar"]         = dofile(rooms_dir .. "cellar.lua"),

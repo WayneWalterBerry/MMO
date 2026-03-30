@@ -24,7 +24,7 @@ local function pending(name, reason)
     skipped = skipped + 1
 end
 
-local rooms_dir = script_dir .. "/../../src/meta/rooms/"
+local rooms_dir = script_dir .. "/../../src/meta/worlds/manor/rooms/"
 
 -- Load all 7 room metadata tables
 local start_room    = dofile(rooms_dir .. "start-room.lua")
@@ -46,7 +46,7 @@ local ALL_ROOMS = {
 }
 
 -- Load portal objects (Phase 3 — all exits are now portal references)
-local objects_dir = script_dir .. "/../../src/meta/objects/"
+local objects_dir = script_dir .. "/../../src/meta/worlds/manor/objects/"
 local PORTAL_OBJECTS = {}
 local function load_portal(filename)
     local ok, obj = pcall(dofile, objects_dir .. filename)

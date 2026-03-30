@@ -78,7 +78,7 @@ end
 local rabies_def
 do
     local ok, def = pcall(dofile, repo_root .. SEP .. "src" .. SEP .. "meta"
-        .. SEP .. "injuries" .. SEP .. "rabies.lua")
+        .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "injuries" .. SEP .. "rabies.lua")
     if ok and def then rabies_def = def end
 end
 rabies_def = rabies_def or {
@@ -115,7 +115,7 @@ rabies_def = rabies_def or {
 local venom_def
 do
     local ok, def = pcall(dofile, repo_root .. SEP .. "src" .. SEP .. "meta"
-        .. SEP .. "injuries" .. SEP .. "spider-venom.lua")
+        .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "injuries" .. SEP .. "spider-venom.lua")
     if ok and def then venom_def = def end
 end
 venom_def = venom_def or {

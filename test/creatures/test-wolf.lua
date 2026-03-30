@@ -17,7 +17,7 @@ local suite = h.suite
 -- Load the wolf object via dofile
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
-local wolf_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "wolf.lua"
+local wolf_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. "wolf.lua"
 
 local ok, wolf = pcall(dofile, wolf_path)
 if not ok then

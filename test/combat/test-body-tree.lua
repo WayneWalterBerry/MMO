@@ -19,7 +19,7 @@ local suite = h.suite
 -- Load rat object
 ---------------------------------------------------------------------------
 local SEP = package.config:sub(1, 1)
-local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. "rat.lua"
+local rat_path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. "rat.lua"
 
 local ok_rat, rat = pcall(dofile, rat_path)
 if not ok_rat then

@@ -472,7 +472,7 @@ h.suite("9. NIGHTSTAND OBJECT — part surface mapping")
 
 test("nightstand drawer part has no parent surface mapping (Principle 0.5)", function()
     -- Load the actual nightstand object definition
-    local nightstand = dofile(script_dir .. "/../../src/meta/objects/nightstand.lua")
+    local nightstand = dofile(script_dir .. "/../../src/meta/worlds/manor/objects/nightstand.lua")
     truthy(nightstand.parts ~= nil, "Nightstand must have parts")
     truthy(nightstand.parts.drawer ~= nil, "Nightstand must have drawer part")
     eq(nil, nightstand.parts.drawer.surface,

@@ -80,8 +80,8 @@ local SENSORY_TEXT_FIELDS = {
 -- Scan directories
 ----------------------------------------------------------------------------
 
-local objects_dir = "src" .. SEP .. "meta" .. SEP .. "objects"
-local creatures_dir = "src" .. SEP .. "meta" .. SEP .. "creatures"
+local objects_dir = "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects"
+local creatures_dir = "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures"
 
 local object_files = list_lua_files(objects_dir)
 local creature_files = list_lua_files(creatures_dir)

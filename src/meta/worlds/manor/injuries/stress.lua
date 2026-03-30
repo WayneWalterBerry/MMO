@@ -1,4 +1,4 @@
--- src/meta/injuries/stress.lua
+-- src/meta/worlds/manor/injuries/stress.lua
 -- Injury template: Acute Stress (psychological)
 -- Pattern: Threshold-based accumulation from trauma triggers, rest-cured
 -- Levels: mild → moderate → severe

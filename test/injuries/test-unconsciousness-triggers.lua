@@ -42,21 +42,21 @@ local injury_mod = require("engine.injuries")
 injury_mod.clear_cache()
 injury_mod.reset_id_counter()
 
-local concussion_def = require("meta.injuries.concussion")
+local concussion_def = require("meta.worlds.manor.injuries.concussion")
 injury_mod.register_definition("concussion", concussion_def)
 
-local bleeding_def = require("meta.injuries.bleeding")
+local bleeding_def = require("meta.worlds.manor.injuries.bleeding")
 injury_mod.register_definition("bleeding", bleeding_def)
 
-local crushing_def = require("meta.injuries.crushing-wound")
+local crushing_def = require("meta.worlds.manor.injuries.crushing-wound")
 injury_mod.register_definition("crushing-wound", crushing_def)
 
 -- Try to load the 4 trigger object definitions.
 -- These DON'T EXIST yet — TDD red phase. We pcall to avoid hard crash.
-local rock_trap_ok, rock_trap_def = pcall(require, "meta.objects.falling-rock-trap")
-local ceiling_ok, ceiling_def = pcall(require, "meta.objects.unstable-ceiling")
-local gas_ok, gas_def = pcall(require, "meta.objects.poison-gas-vent")
-local club_ok, club_def = pcall(require, "meta.objects.falling-club-trap")
+local rock_trap_ok, rock_trap_def = pcall(require, "meta.worlds.manor.objects.falling-rock-trap")
+local ceiling_ok, ceiling_def = pcall(require, "meta.worlds.manor.objects.unstable-ceiling")
+local gas_ok, gas_def = pcall(require, "meta.worlds.manor.objects.poison-gas-vent")
+local club_ok, club_def = pcall(require, "meta.worlds.manor.objects.falling-club-trap")
 
 -- Load verb handlers
 local verbs_ok, verbs_mod = pcall(require, "engine.verbs")
@@ -149,25 +149,25 @@ suite("#162 — Trigger object definitions exist")
 
 test("falling-rock-trap.lua loads from meta.objects", function()
     h.assert_truthy(rock_trap_ok,
-        "falling-rock-trap.lua must exist in src/meta/objects/")
+        "falling-rock-trap.lua must exist in src/meta/worlds/manor/objects/")
     h.assert_truthy(rock_trap_def, "falling-rock-trap must return a table")
 end)
 
 test("unstable-ceiling.lua loads from meta.objects", function()
     h.assert_truthy(ceiling_ok,
-        "unstable-ceiling.lua must exist in src/meta/objects/")
+        "unstable-ceiling.lua must exist in src/meta/worlds/manor/objects/")
     h.assert_truthy(ceiling_def, "unstable-ceiling must return a table")
 end)
 
 test("poison-gas-vent.lua loads from meta.objects", function()
     h.assert_truthy(gas_ok,
-        "poison-gas-vent.lua must exist in src/meta/objects/")
+        "poison-gas-vent.lua must exist in src/meta/worlds/manor/objects/")
     h.assert_truthy(gas_def, "poison-gas-vent must return a table")
 end)
 
 test("falling-club-trap.lua loads from meta.objects", function()
     h.assert_truthy(club_ok,
-        "falling-club-trap.lua must exist in src/meta/objects/")
+        "falling-club-trap.lua must exist in src/meta/worlds/manor/objects/")
     h.assert_truthy(club_def, "falling-club-trap must return a table")
 end)
 
@@ -385,7 +385,7 @@ test("nightshade poison ticks during gas vent unconsciousness", function()
     injury_mod.reset_id_counter()
 
     -- Register nightshade if available
-    local ns_ok, ns_def = pcall(require, "meta.injuries.poisoned-nightshade")
+    local ns_ok, ns_def = pcall(require, "meta.worlds.manor.injuries.poisoned-nightshade")
     h.assert_truthy(ns_ok, "nightshade injury definition must load")
     injury_mod.register_definition("poisoned-nightshade", ns_def)
 

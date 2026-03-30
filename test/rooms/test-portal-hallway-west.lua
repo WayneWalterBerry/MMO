@@ -37,8 +37,8 @@ end
 ---------------------------------------------------------------------------
 -- Load actual object and room files
 ---------------------------------------------------------------------------
-local obj_dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP
-local room_dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "rooms" .. SEP
+local obj_dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP
+local room_dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "rooms" .. SEP
 
 local door_ok, door_def = pcall(dofile, obj_dir .. "hallway-west-door.lua")
 local hallway_ok, hallway_def = pcall(dofile, room_dir .. "hallway.lua")

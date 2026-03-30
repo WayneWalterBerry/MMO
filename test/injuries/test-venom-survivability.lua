@@ -79,7 +79,7 @@ end
 local venom_def = nil
 do
     local ok, def = pcall(dofile, repo_root .. SEP .. "src" .. SEP .. "meta"
-        .. SEP .. "injuries" .. SEP .. "spider-venom.lua")
+        .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "injuries" .. SEP .. "spider-venom.lua")
     if ok and def then venom_def = def end
 end
 

@@ -39,7 +39,7 @@ local function capture_output(fn)
 end
 
 local function load_creature(name)
-    local path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "creatures" .. SEP .. name .. ".lua"
+    local path = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "creatures" .. SEP .. name .. ".lua"
     local ok, def = pcall(dofile, path)
     if not ok then error("Failed to load " .. name .. ".lua: " .. tostring(def)) end
     return def

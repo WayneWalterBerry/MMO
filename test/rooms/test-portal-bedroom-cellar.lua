@@ -38,8 +38,8 @@ end
 ---------------------------------------------------------------------------
 -- Load actual portal object files
 ---------------------------------------------------------------------------
-local obj_dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP
-local room_dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "rooms" .. SEP
+local obj_dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP
+local room_dir = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "rooms" .. SEP
 
 local down_ok, portal_down_def = pcall(dofile, obj_dir .. "bedroom-cellar-trapdoor-down.lua")
 local up_ok, portal_up_def = pcall(dofile, obj_dir .. "cellar-bedroom-trapdoor-up.lua")

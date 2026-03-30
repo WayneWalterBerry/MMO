@@ -173,7 +173,7 @@ suite("MATERIAL MIGRATION: Cross-reference integrity (#123)")
 test("8. Every object's material field resolves via materials.get()", function()
     local SEP = package.config:sub(1, 1)
     local is_windows = SEP == "\\"
-    local objects_dir = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP
+    local objects_dir = "." .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP
 
     local list_cmd
     if is_windows then

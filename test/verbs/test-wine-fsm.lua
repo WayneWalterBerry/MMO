@@ -322,14 +322,14 @@ suite("BUG-061 regression — wine bottle instance data")
 
 test("storage-cellar wine-bottle type_id matches wine-bottle.lua GUID", function()
     -- Load the storage cellar room definition
-    local cellar_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "rooms" .. SEP .. "storage-cellar.lua"
+    local cellar_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "rooms" .. SEP .. "storage-cellar.lua"
     local f = io.open(cellar_path, "r")
     h.assert_truthy(f, "storage-cellar.lua should exist")
     local content = f:read("*a")
     f:close()
 
     -- Load the wine bottle object definition
-    local wine_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "wine-bottle.lua"
+    local wine_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "wine-bottle.lua"
     f = io.open(wine_path, "r")
     h.assert_truthy(f, "wine-bottle.lua should exist")
     local wine_content = f:read("*a")
@@ -352,7 +352,7 @@ test("storage-cellar wine-bottle type_id matches wine-bottle.lua GUID", function
 end)
 
 test("storage-cellar wine-bottle is nested inside wine-rack contents", function()
-    local cellar_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "rooms" .. SEP .. "storage-cellar.lua"
+    local cellar_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "rooms" .. SEP .. "storage-cellar.lua"
     local f = io.open(cellar_path, "r")
     h.assert_truthy(f, "storage-cellar.lua should exist")
     local content = f:read("*a")
@@ -371,7 +371,7 @@ test("storage-cellar wine-bottle is nested inside wine-rack contents", function(
 end)
 
 test("wine-rack surfaces.inside.contents includes wine-bottle", function()
-    local rack_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "objects" .. SEP .. "wine-rack.lua"
+    local rack_path = repo_root .. SEP .. "src" .. SEP .. "meta" .. SEP .. "worlds" .. SEP .. "manor" .. SEP .. "objects" .. SEP .. "wine-rack.lua"
     local f = io.open(rack_path, "r")
     h.assert_truthy(f, "wine-rack.lua should exist")
     local content = f:read("*a")
