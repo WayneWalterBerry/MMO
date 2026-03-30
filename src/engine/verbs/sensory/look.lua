@@ -492,13 +492,15 @@ function M.register(handlers)
             return
         end
 
-        -- Check if object is readable (categories contains "readable")
+        -- Check if object is readable (categories contains "readable" or "writable")
+        -- BUG-155: Writable objects (blank paper) should be readable, not rejected
         local is_readable = false
         if obj.categories and type(obj.categories) == "table" then
             for _, cat in ipairs(obj.categories) do
-                if cat == "readable" then is_readable = true; break end
+                if cat == "readable" or cat == "writable" then is_readable = true; break end
             end
         end
+        if not is_readable and obj.writable then is_readable = true end
 
         if not is_readable and not obj.grants_skill then
             print("That's not something you can read.")

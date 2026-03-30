@@ -91,7 +91,7 @@ function M.register(handlers)
                         if obj and obj.id:find(ingredient.id, 1, true) == 1 then
                             local dominated = false
                             for _, c in ipairs(consumed) do
-                                if c.guid == obj.guid then dominated = true; break end
+                                if c == obj then dominated = true; break end
                             end
                             if not dominated then found = obj; break end
                         end
@@ -102,7 +102,7 @@ function M.register(handlers)
                                 if item and item.id:find(ingredient.id, 1, true) == 1 then
                                     local dominated = false
                                     for _, c in ipairs(consumed) do
-                                        if c.guid == item.guid then dominated = true; break end
+                                        if c == item then dominated = true; break end
                                     end
                                     if not dominated then found = item; break end
                                 end
@@ -117,7 +117,7 @@ function M.register(handlers)
                         if obj and obj.id:find(ingredient.id, 1, true) == 1 then
                             local dominated = false
                             for _, c in ipairs(consumed) do
-                                if c.guid == obj.guid then dominated = true; break end
+                                if c == obj then dominated = true; break end
                             end
                             if not dominated then found = obj; break end
                         end

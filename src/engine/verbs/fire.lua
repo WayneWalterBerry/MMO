@@ -378,7 +378,7 @@ function M.register(handlers)
                             if trans then
                                 print("You touch the match flame to the wick...")
                                 print(trans.message or ("You light " .. (obj.name or obj.id) .. "."))
-                                show_hint(ctx, "extinguish", "You can extinguish flames with 'extinguish' or 'blow out'.")
+                                show_hint(ctx, "extinguish", "You can put out flames with 'blow out' or 'put out [item]'.")
                                 show_hint(ctx, "burn", "You can burn flammable objects with 'burn [item]' while holding a flame.")
                             end
                             return
@@ -403,7 +403,7 @@ function M.register(handlers)
                         local trans = fsm_mod.transition(ctx.registry, obj.id, found_trans.to, {})
                         if trans then
                             print(trans.message or ("You light " .. (obj.name or obj.id) .. "."))
-                            show_hint(ctx, "extinguish", "You can extinguish flames with 'extinguish' or 'blow out'.")
+                            show_hint(ctx, "extinguish", "You can put out flames with 'blow out' or 'put out [item]'.")
                             show_hint(ctx, "burn", "You can burn flammable objects with 'burn [item]' while holding a flame.")
                         else
                             print("You can't light " .. (obj.name or "that") .. ".")
@@ -415,7 +415,7 @@ function M.register(handlers)
                     local trans = fsm_mod.transition(ctx.registry, obj.id, found_trans.to, {})
                     if trans then
                         print(trans.message or ("You light " .. (obj.name or obj.id) .. "."))
-                        show_hint(ctx, "extinguish", "You can extinguish flames with 'extinguish' or 'blow out'.")
+                        show_hint(ctx, "extinguish", "You can put out flames with 'blow out' or 'put out [item]'.")
                         show_hint(ctx, "burn", "You can burn flammable objects with 'burn [item]' while holding a flame.")
                     else
                         print("You can't light " .. (obj.name or "that") .. ".")
@@ -445,7 +445,7 @@ function M.register(handlers)
                     print(mut_data.message
                         or ("You light " .. (mutated and mutated.name or obj.id) .. ". It casts a warm glow."))
                     print("The match, spent, curls into ash between your fingers.")
-                    show_hint(ctx, "extinguish", "You can extinguish flames with 'extinguish' or 'blow out'.")
+                    show_hint(ctx, "extinguish", "You can put out flames with 'blow out' or 'put out [item]'.")
                     show_hint(ctx, "burn", "You can burn flammable objects with 'burn [item]' while holding a flame.")
                 end
                 return
@@ -474,7 +474,7 @@ function M.register(handlers)
                 local mutated = ctx.registry:get(obj.id)
                 print(mut_data.message
                     or ("You light " .. (mutated and mutated.name or obj.id) .. ". It casts a warm glow."))
-                show_hint(ctx, "extinguish", "You can extinguish flames with 'extinguish' or 'blow out'.")
+                show_hint(ctx, "extinguish", "You can put out flames with 'blow out' or 'put out [item]'.")
                 show_hint(ctx, "burn", "You can burn flammable objects with 'burn [item]' while holding a flame.")
             end
             return
@@ -485,7 +485,7 @@ function M.register(handlers)
             local mutated = ctx.registry:get(obj.id)
             print(mut_data.message
                 or ("You light " .. (mutated and mutated.name or obj.id) .. ". It casts a warm glow."))
-            show_hint(ctx, "extinguish", "You can extinguish flames with 'extinguish' or 'blow out'.")
+            show_hint(ctx, "extinguish", "You can put out flames with 'blow out' or 'put out [item]'.")
             show_hint(ctx, "burn", "You can burn flammable objects with 'burn [item]' while holding a flame.")
         end
     end

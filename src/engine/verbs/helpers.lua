@@ -65,6 +65,8 @@ local function show_hint(ctx, hint_id, message)
     end
     if ctx.player.state.hints_shown[hint_id] then return false end
     ctx.player.state.hints_shown[hint_id] = true
+    -- Suppress tutorial hints in headless mode (automated testing)
+    if ctx.headless then return true end
     print("(Hint: " .. message .. ")")
     return true
 end

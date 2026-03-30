@@ -25,7 +25,17 @@ function M.register(handlers)
                 end
             end
             if #found > 0 then
-                print("You reach out in the darkness, feeling around you...")
+                -- BUG-163: Adapt message to light conditions
+                local light_ok, light_mod = pcall(require, "engine.verbs.helpers")
+                local is_lit = false
+                if light_ok and light_mod and light_mod.has_some_light then
+                    is_lit = light_mod.has_some_light(ctx)
+                end
+                if is_lit then
+                    print("You reach out, feeling around you...")
+                else
+                    print("You reach out in the darkness, feeling around you...")
+                end
                 for _, entry in ipairs(found) do
                     print("  " .. entry)
                 end

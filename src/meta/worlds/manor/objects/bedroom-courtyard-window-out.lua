@@ -94,6 +94,14 @@ return {
             },
         },
         {
+            from = "locked", to = "open", verb = "open",
+            aliases = {"push open"},
+            message = "You unlatch the iron catch and push the window open. Cold air rushes in, guttering the candle flame. Below, the courtyard stretches out in the moonlight — a long way down.",
+            mutate = {
+                keywords = { add = {"open", "unlatched"}, remove = "latched" },
+            },
+        },
+        {
             from = "closed", to = "locked", verb = "lock",
             aliases = {"latch", "close latch"},
             message = "You push the iron latch back into place. It catches with a gritty click.",

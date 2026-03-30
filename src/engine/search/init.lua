@@ -145,6 +145,10 @@ function search.search(ctx, target, scope, part_surface)
     -- Output initial message
     if target then
         print("You begin searching for " .. target .. "...")
+    elseif scope then
+        local scope_obj = ctx.registry and ctx.registry:get(scope)
+        local scope_name = scope_obj and (scope_obj.name or scope_obj.id) or scope
+        print("You begin searching " .. scope_name .. "...")
     else
         print("You begin searching...")
     end

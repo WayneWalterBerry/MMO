@@ -293,6 +293,13 @@ function compound.transform_compound_actions(text)
         return "put " .. put_back_item .. " in " .. put_back_target2
     end
 
+    -- "jump out [of] X" → movement, not extinguish (BUG-156)
+    local jump_out_target = text:match("^jump%s+out%s+of%s+(.+)")
+        or text:match("^jump%s+out%s+(.+)")
+    if jump_out_target then
+        return "go " .. jump_out_target
+    end
+
     local extinguish_target = text:match("^put%s+out%s+(.+)")
         or text:match("^blow%s+out%s+(.+)")
     if extinguish_target then
