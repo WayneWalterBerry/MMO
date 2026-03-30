@@ -313,7 +313,7 @@ end)
 h.suite("TRAVERSE STEP — Surface objects suppress object-entry narration")
 -------------------------------------------------------------------------------
 
-test("traverse.step: object with surfaces returns empty narrative (undirected)", function()
+test("traverse.step: object with surfaces returns enumerate narrative (undirected)", function()
     local ctx = make_bedroom_ctx()
     local queue = traverse.build_queue(ctx.current_room, "nightstand", nil, ctx.registry)
 
@@ -328,8 +328,8 @@ test("traverse.step: object with surfaces returns empty narrative (undirected)",
     truthy(obj_entry ~= nil, "Should have nightstand object entry in queue")
 
     local result = traverse.step(ctx, obj_entry, nil, false, nil, nil)
-    eq("", result.narrative,
-       "Object with surfaces should produce empty narrative for undirected search")
+    truthy(result.narrative:find("nightstand"),
+       "Object with surfaces should enumerate the object in undirected search")
 end)
 
 test("traverse.step: object with surfaces returns match if targeted", function()

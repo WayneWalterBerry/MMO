@@ -118,8 +118,8 @@ test("lighting a candle shows extinguish hint", function()
     local output = capture_output(function()
         handlers["light"](ctx, "candle")
     end)
-    h.assert_truthy(output:find("extinguish") and output:find("Hint"),
-        "Should show extinguish hint after lighting candle")
+    h.assert_truthy(output:find("put out") and output:find("Hint"),
+        "Should show put-out hint after lighting candle")
 end)
 
 test("extinguish hint only shows once (one-shot)", function()
