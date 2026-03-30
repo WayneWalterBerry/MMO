@@ -46,9 +46,12 @@ local function list_lua_files(dir)
     local handle = io.popen(cmd)
     if handle then
         for line in handle:lines() do
-            local fname = line:match("^%s*(.-)%s*$")
-            if fname and fname ~= "" and fname ~= ".gitkeep" then
-                files[#files + 1] = fname
+            line = line:match("^%s*(.-)%s*$")
+            if line and line:match("%.lua$") then
+                local fname = line:match("([^/\\]+)$") or line
+                if fname ~= ".gitkeep" then
+                    files[#files + 1] = fname
+                end
             end
         end
         handle:close()
