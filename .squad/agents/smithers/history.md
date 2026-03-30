@@ -227,6 +227,54 @@ Fixed 7 pre-existing test failures across 2 integration test files. Zero regress
 
 **Changes Made:**
 
+1. **`press` / `click` verb added** — Alias to existing `push` verb
+   - Enables button puzzles (big-red-button, confetti-cannon FSM transitions)
+   - Rationale: Leverages existing FSM infrastructure, no new handler logic
+
+2. **`type` / `input` / `dial` verb added** — New handler for code entry
+   - Searches room for objects with `verb = "type"` or `verb = "enter"` FSM transitions
+   - Handles vault-safe (type 210), prize-chest (turn dials)
+   - Distinct from movement `enter` (room entry)
+
+3. **`turn` / `rotate` / `spin` verb added** — New handler for rotating objects
+   - Triggers FSM transitions with `verb = "turn"`
+   - Handles dials, knobs, wheels
+
+4. **`enter` verb dual-routing** — Check order:
+   - Is noun a number? → Look for code/enter FSM transitions
+   - Is there an object with `verb = "enter"` transition? → Trigger FSM
+   - Fall back to movement (enter room/exit)
+
+5. **"grope" removed** — Replaced with "explore by touch" / "feel around in the dark"
+   - Updated 3 locations: look.lua, help text (meta.lua), touch.lua comments
+   - Removed from KNOWN_VERBS registry
+   - Rationale: Inappropriate for E-rated kids' game
+
+6. **Darkness message spacing fixed** — Added newline between description and time
+   - Changed `\n` in print() to separate print("") calls
+   - Prevents "darkness.It is 2:00 AM" run-on
+
+7. **Greeting handling** — Route common greetings to look command
+   - "what's up", "whats up", "wassup", "sup" → look (not direction)
+   - Added in preprocess transform_questions() stage
+
+**Manual Testing Results:**
+- ✅ `press button` → big-red-button FSM fires (confetti)
+- ✅ `type 210` → vault-safe FSM opens
+- ✅ `what's up` → shows room (not movement)
+- ✅ Help text shows "Feel around" (not "Grope")
+- ✅ Darkness spacing correct
+
+**Test Suite:** 7,649 tests across 274 files. 3 pre-existing failures (unrelated). Zero new regressions.
+
+**Decision Documented:** D-SMITHERS-VERB-UX-FIXES in `.squad/decisions.md`
+
+**Cross-Agent Impact:**
+- **Bart:** Verbs use existing FSM infrastructure (no engine changes needed)
+- **Flanders:** Objects can now use `verb = "press"`, `verb = "type"`, `verb = "turn"` in FSM definitions
+- **Moe:** Wyatt's World puzzles fully functional
+- **Nelson:** 12 bugs closed; puzzle walkthroughs verified end-to-end
+
 1. **Missing Verbs Added** — `src/engine/verbs/acquisition.lua`
    - **`press`/`click`** — Added as aliases to `push` verb. FSM objects with `verb = "press"` transitions now work (big-red-button, confetti-cannon).
    - **`type`/`input`/`dial`** — New verb for entering codes into keypads/locks. Searches room for objects with `verb = "type"` or `verb = "enter"` FSM transitions. Handles vault-safe and prize-chest combination entry.

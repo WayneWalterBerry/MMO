@@ -117,6 +117,50 @@ The `death_state.crafting.cook` field on creature definitions is the key mechani
 
 **Room breakdown:**
 - **Beast Studio (hub):** 10 objects — welcome-sign, big-red-button (FSM: unpressed→pressed), scoreboard, confetti-cannon (FSM: loaded→fired), giant-screen, camera, speaker, golden-podium, mrbeast-banner, studio-confetti
+
+## 2026-03-30: Wyatt's World Post-Mortem Fixes (Wave 3)
+
+**Summary:** Completed Wave 3 of post-mortem fix session. Applied 3rd-grade reading level standard to all Wyatt's World display text. Simplified 19 complex vocabulary words across 15 object files + level-01.lua. Unblocked reading comprehension bugs.
+
+**Content Simplification Standard Applied:**
+
+**Rules:**
+1. Common words only ("big" not "enormous")
+2. 3 syllables max (unless common to kids: chocolate, scoreboard, confetti OK)
+3. 8–12 words per sentence max
+4. One idea per sentence
+5. Active voice, present tense
+6. No scary words ("dark" → "really dark")
+7. MrBeast energy preserved (exciting, encouraging)
+
+**Vocabulary Replacements (19 words):**
+- pedestal → stand (4→1 syllable)
+- musty → dusty (concrete noun)
+- podium → stand (game show clarity)
+- ingredients → food / stuff (abstract → visual)
+- tripod → stand / legs (technical → descriptive)
+- electronics → screens / machines (abstract → concrete)
+- enormous → huge / giant (3→1 syllable)
+- velvet → soft (material → tactile)
+- vibrate → buzz / shake (formal → onomatopoeia)
+- satisfying → fun / cool (abstract → kid vocabulary)
+- contestant → player / challenger (jargon → relatable)
+- conveyor → moving belt (industrial → visual)
+- combination → code / secret code (formal → mystery)
+- laminated → shiny / smooth (process → quality)
+- darkness → "really dark" (abstract → experience)
+
+**Files Updated (15 objects + 1 level):**
+✅ letter-pedestal, stage-hole, camera, vault-safe, arena-clock, speaker, big-red-button, welcome-sign, prize-chest, recipe-card, scoreboard, cold-lamp, conveyor-belt, golden-podium, riddle-podium, ingredient-shelf, level-01
+
+**Decision Documented:** D-WYATT-CONTENT-SIMPLIFICATION in `.squad/decisions.md`
+
+**Cross-Agent Impact:**
+- **Brockman:** Update Wyatt's World style guide with vocabulary list
+- **Smithers:** Parser output should follow same vocabulary standard
+- **CBG:** Future puzzle descriptions follow this standard
+- **Nelson:** Reading-level audit gates reference this baseline
+
 - **Feastables Factory:** 12 objects — 5 chocolate bars (purple/gold/red/blue/green with flavor_category metadata), 4 sorting bins (FSM: empty→has_correct/has_wrong), conveyor-belt (surface), factory-sign
 - **Money Vault:** 10 objects — 3 counting tables (surfaces), 3 money cards (readable: $50/$60/$100), vault-safe (FSM: locked→unlocked, combination=210), vault-golden-trophy, gold-coins, vault-sign
 - **Beast Burger Kitchen:** 12 objects — 6 ingredients (bottom-bun through top-bun with burger_order 1-6), recipe-card (full step-by-step), assembly-plate (ordered container), big-grill, kitchen-sign, beast-burger-coupon, ingredient-shelf

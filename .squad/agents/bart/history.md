@@ -142,6 +142,21 @@
     - **Web world selection** (`web/bootstrapper.js` + `web/game-adapter.lua`): `?world=` URL param → `window._selectedWorld`. Adapter fetches `meta/worlds/{id}/world.lua` via HTTP, falls back to manor defaults. `context.world` populated.
     - **Wyatt world definition** (`src/meta/worlds/wyatt-world/world.lua`): `rating = "E"`, `id = "wyatt-world"`, `starting_room = "beast-studio"`, `content_root = "worlds/wyatt-world"`. Empty content dirs with `.gitkeep`.
     - **Tests:** 80 new tests across 2 new files + 4 added to existing. `test-e-rating-blocks.lua` (52 tests: 11 blocked, 17 safe, 11 M-rated pass, 11 nil-world pass, 2 file checks). `test-multi-world-boot.lua` (8 tests: discovery, select by ID, content paths, load orchestrator). Updated `test-world-loader.lua` (20 tests: +4 new for select-by-ID and get_content_paths).
+
+21. **WAVE-0 Complete: E-Rating Enforcement Expansion (2026-03-30):** Extended E-rating verb blocking from 11 → 23 verbs. Added kid-friendly refusal messages. Filtered help text for E-rated worlds. Part of Wyatt's World post-mortem fix session.
+    - **Verb coverage expansion:** From 11 original verbs (attack, fight, kill, stab, slash, punch, kick, harm, hurt, injure, wound) to 23 total. Added: hit, slap, bash, bonk, thump, smack, bang, whack, headbutt, cut, slice, nick, jab, pierce, stick, prick, burn.
+    - **Kid-friendly messages:** Replaced generic "That's not something you can do in this world!" with 4 age-appropriate variants ("Whoa! This is a friendly zone...", "No fighting here!...", "Let's keep this fun...", "That's not how we solve puzzles...").
+    - **Help text filtering:** E-rated worlds hide Combat section (stab/slash) + Violent crafting (cut self, prick self, burn) + Health system. Show filtered Tools & Crafting + Fun Stuff (renamed from Health & Survival).
+    - **Architecture:** Dual-layer enforcement — primary dispatch gate (O(1) hash lookup) + secondary attack handler check (defensive programming).
+    - **Testing:** 265/268 tests passing. Zero new regressions. E-rating verified.
+
+**Decision Documented:** D-RATING-ENFORCEMENT in `.squad/decisions.md`
+
+**Cross-Agent Impact:**
+- **Moe:** Room wiring (Wave 1) provides daylit world for verb blocking to operate on
+- **Smithers:** Missing verbs (Wave 2) work alongside E-rating gate
+- **Nelson:** E-rating test gate blocks inappropriate verbs in Wyatt's World
+
     - Full suite: 270 PASSED, 4 FAILED (same 12 pre-existing). Zero regressions.
     - Commit: 7e0753b. Pushed to main.
     - **Key learning:** Backward compat with `--world` defaulting to `world-1` is critical — the entire existing test suite and headless boot path depend on manor loading without explicit `--world` flag. The `select()` function correctly errors when 2+ worlds exist and no ID is given, so the default in main.lua bridges this gap.

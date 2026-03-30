@@ -146,6 +146,29 @@
 
 All files under `src/meta/worlds/wyatt-world/`.
 
+## 2026-03-30: Wyatt's World Post-Mortem Fixes (Wave 1)
+
+**Summary:** Completed Wave 1 of post-mortem fix session for Wyatt's World. Wired 68 objects into 7 room instances; added `light_level = 1` to enable daylight gameplay (E-rated world). Unblocked ~97 bugs.
+
+**Context:** The 97 bug reports were caused by:
+1. All 7 rooms had empty `instances = {}`
+2. No rooms had `light_level` set (defaulted to darkness)
+
+**Work Completed:**
+- Populated `instances` arrays with 68 objects using deep nesting syntax
+- Added `light_level = 1` to all 7 rooms
+- Verified GUID matches: 100% consistency
+- Updated rooms: beast-studio, feastables-factory, money-vault, beast-burger-kitchen, last-to-leave, riddle-arena, grand-prize-vault
+
+**Decision Documented:** D-WYATT-WIRING in `.squad/decisions.md`
+
+**Cross-Agent Impact:**
+- **Bart:** E-rating enforcement (Wave 0) now has daylit rooms to operate in
+- **Smithers:** Missing verbs (Wave 2) paired with object discovery
+- **Flanders:** Content simplification (Wave 3) applied to wired objects
+- **Nelson:** QA can now test object discovery and spatial relationships end-to-end
+
+
 ### Design Decisions
 
 - **Exit format:** Inline exits with `{ target = "room-id" }` — no portal objects yet. Engine supports both portal and inline; Flanders can add portal objects later.
