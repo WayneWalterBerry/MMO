@@ -122,3 +122,48 @@
 - Validated Phase 5 workload estimate (2.5-3.5 hours)
 - See `.squad/decisions/inbox/moe-options-review.md` for full review
 - Key concerns: goal completion detection semantics, deep-cellar priority, linter validation
+
+---
+
+## WAVE-1a: Wyatt's World — 7 Mr. Beast Challenge Rooms (2026-08-24)
+
+**Task:** Build all 7 room .lua files + level-01.lua for Wyatt's World.  
+**Commit:** aaeea74 on main  
+**Requested by:** Wayne (autonomous — party mode)
+
+### Files Created
+
+| File | Room | ID | Difficulty |
+|------|------|----|-----------|
+| `rooms/beast-studio.lua` | MrBeast's Challenge Studio (Hub) | beast-studio | ★ |
+| `rooms/feastables-factory.lua` | The Feastables Factory | feastables-factory | ★★ |
+| `rooms/money-vault.lua` | The Money Vault | money-vault | ★★ |
+| `rooms/beast-burger-kitchen.lua` | The Beast Burger Kitchen | beast-burger-kitchen | ★★★ |
+| `rooms/last-to-leave.lua` | The Last to Leave Room | last-to-leave | ★★★ |
+| `rooms/riddle-arena.lua` | The Riddle Arena | riddle-arena | ★★★★ |
+| `rooms/grand-prize-vault.lua` | The Grand Prize Vault | grand-prize-vault | ★★★★ |
+| `levels/level-01.lua` | Level definition | — | — |
+
+All files under `src/meta/worlds/wyatt-world/`.
+
+### Design Decisions
+
+- **Exit format:** Inline exits with `{ target = "room-id" }` — no portal objects yet. Engine supports both portal and inline; Flanders can add portal objects later.
+- **GUIDs:** Self-generated (bart-wyatt-guids.md not found). 8 unique GUIDs allocated for 7 rooms + level.
+- **instances = {}** — Flanders builds objects in WAVE-1b; rooms are empty shells for now.
+- **Goals:** Each room declares a `goal` for the Options hint system. Hub goal: "pick a challenge room." Challenge rooms: puzzle-specific verbs.
+- **Hub-and-spoke:** Studio has 6 exits (north/south/east/west/up/down). Each challenge room has exactly 1 return exit to studio.
+- **Writing style:** 3rd grade reading, MrBeast energy, 8-12 word sentences, all senses safe and fun.
+- **No on_enter functions:** Kept rooms simple; on_enter narration can be added in WAVE-2.
+
+### Lint Results
+
+`python scripts/meta-lint/lint.py src/meta/worlds/wyatt-world/ --no-cache --verbose`  
+**9 files scanned. 0 violations.** ✅
+
+### Coordination Notes
+
+- **Flanders (WAVE-1b):** Rooms are ready. `instances = {}` — populate with object type_ids when objects are built.
+- **Bob (WAVE-1c):** Room descriptions match CBG's design.md puzzle specs. Goals align with puzzle mechanics.
+- **Nelson (WAVE-1d):** Room-load tests can validate: 7 rooms load, required fields present, exits resolve, hub connectivity verified.
+- **Bart:** GUID pre-assignment file (`bart-wyatt-guids.md`) was not found. Generated GUIDs independently. No collision risk — all GUIDs verified unique.

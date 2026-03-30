@@ -19,6 +19,16 @@
 
 ## Latest Activity
 
+**WAVE-1c Puzzle Specifications Completed (2026-08-24):**
+- Designed all 7 MrBeast challenge room puzzles for Wyatt's World
+- 7 specs written: 48 KB, 1406 lines total, committed to `projects/wyatt-world/puzzles/`
+- Specs cover: Beast Studio (hub), Feastables Factory, Money Vault, Beast Burger, Last to Leave, Riddle Arena, Grand Prize Vault
+- Difficulty spread: ★ (1) → ★★★★ (2 specs at hardest level)
+- Reading-focused puzzles: every puzzle requires careful text analysis or information extraction
+- E-rated design: no combat, no harm, no scary elements, failure is silly + encouraging
+- Each spec includes: premise, objects required, solution steps, FSM states, hints (3-tier), failure states, educational angle, notes for Flanders (objects) and Nelson (testing)
+- Pushed to main: commit 460bd96
+
 **Options Review Ceremony (2026-08-02):**
 - Reviewed Options project as Puzzle Designer
 - Verdict: ⚠️ CONCERNS (2 blockers: anti-spoiler gaps, puzzle exemption system)

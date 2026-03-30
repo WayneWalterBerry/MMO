@@ -133,6 +133,53 @@ Implemented two-stage hybrid scoring pipeline per Frink's D1/D3 decisions:
 - Identified 22 findings including critical UX edge cases
 - See `.squad/decisions/inbox/smithers-options-review.md` for full review
 
+## WAVE-2a: Parser Polish for Wyatt's World (2026-08-23)
+
+**Summary:** Completed parser polish for Wyatt's World E-rated gameplay. Kid-friendly error messages, expanded verb coverage, and MrBeast vocabulary integration.
+
+**Changes Made:**
+1. **Kid-Friendly Error Messages** — `src/engine/verbs/helpers.lua`
+   - Modified `err_not_found()`, `err_cant_do_that()`, `err_nothing_happens()`
+   - Check `context.world.rating == "E"` to show encouraging messages
+   - E-rated: "Hmm, try looking around for clues!" vs standard: "You don't notice anything called that nearby..."
+   - E-rated: "That's not something you can do here. Try reading the signs!" vs standard: "That doesn't seem to work..."
+   - E-rated: "That didn't work. What else could you try?" vs standard: "Nothing obvious happens..."
+
+2. **Puzzle Verb Coverage** — `src/engine/parser/preprocess/data.lua`
+   - Added 5 verbs to `KNOWN_VERBS`: `sort`, `count`, `press`, `assemble`, `build`
+   - Added 6 gerunds to `GERUND_MAP`: `sorting`, `counting`, `pressing`, `assembling`, `building`, `entering`
+   - Covers all Wyatt's World puzzle interactions (Feastables sorting, Money Vault counting, button pressing, Beast Burger assembly)
+
+3. **Embedding Index Update** — `src/assets/parser/embedding-index.json`
+   - Added 40 new phrases for MrBeast vocabulary
+   - Keywords: feastables, chocolate, scoreboard, confetti, burger, riddle, vault, trophy, safe, button, money, bills, coins
+   - Total phrases: 11,755 (was 11,715)
+   - Covers Tier 2 semantic matching for all 7 puzzle rooms
+
+**Test Results:**
+- 7,503 tests passed across 273 files
+- 12 pre-existing failures (unchanged from baseline)
+- **Zero new regressions** — parser changes are safe
+
+**Files Modified:**
+- `src/engine/verbs/helpers.lua` — 3 error functions with E-rating branches
+- `src/engine/parser/preprocess/data.lua` — KNOWN_VERBS + GERUND_MAP expansions
+- `src/assets/parser/embedding-index.json` — 40 new phrase entries
+
+**Commit:** `d30c07a` — "feat(wyatt): parser polish — kid-friendly errors + verb coverage (WAVE-2a)"
+
+**Next Steps (for WAVE-2b — Nelson's domain):**
+- Puzzle walkthrough tests (headless mode)
+- Sensory coverage verification
+- Reading-level scan
+
+**Design Notes:**
+- E-rating check uses `context.world.rating` — requires world definition to have `rating = "E"` field
+- Error functions are centralized in `helpers.lua` — all verb modules import `err_not_found`, `err_cant_do_that`, `err_nothing_happens`
+- MrBeast vocabulary covers all 7 puzzle types: Hub (button), Feastables (sort), Money Vault (count), Beast Burger (assemble), Last to Leave (examine), Riddle Arena (read), Grand Prize (read/enter)
+- The verb `enter` is already in KNOWN_VERBS (movement category) — added `entering` gerund only
+- Puzzle verbs like `solve`, `make` weren't added as they route through existing verbs (`read`, `put`, `assemble`)
+
 ## Archives
 
 - Prior detailed session logs: .squad/log/

@@ -1,7 +1,7 @@
 # Squad Decisions
 
-**Last Updated:** 2026-03-29T16:57:20Z  
-**Last Merge:** 2026-03-29T16:57:20Z (8 decisions merged: Wyatt's World spawn manifesto)
+**Last Updated:** 2026-03-29T18:30:17Z  
+**Last Merge:** 2026-03-29T18:30:17Z (4 decisions merged: World folder structure, linter/mutation updates, autonomous execution directive)
 **Scribe:** Session Logger & Memory Manager
 
 ## How to Use This File
@@ -73,6 +73,9 @@ Quick-reference table of **active + most recent decisions**.
 | D-WYATT-GUIDS | Planning | 🟢 Active | GUID pre-assignment block: 1 world + 7 rooms + 1 level + ~70 objects. Sequential use, no collision risk |
 | D-RATING-SYSTEM | Architecture | 🟢 Active | Content rating system: E-rated worlds block combat/self-harm verbs at engine level (hard blocks) |
 | D-RATING-TWO-LAYER | Architecture | 🟢 Active | Two-layer rating enforcement: engine-enforced (hard blocks) + design-enforced (soft guidelines) |
+| D-WORLD-FOLDER-STRUCTURE | Architecture | ✅ Implemented | World-specific content under `src/meta/worlds/{world-id}/`; manor restructured, linter + mutation updated |
+| DIRECTIVE-COPILOT-LINTER-MUTATION-PATHS | Process | ✅ Implemented | Linter (lint.py) and mutation graph (mutation-edge-check.lua) updated for nested world structure |
+| DIRECTIVE-COPILOT-AUTONOMOUS-EXECUTION | Process | 🟢 Active | Walk-away autonomous execution protocol: all 4 waves, 3 gates executed without human intervention |
 
 ---
 
@@ -1849,6 +1852,108 @@ Smithers (blocker #2) identified that parallel lint workers writing to stdout si
 
 - Parallel lint is ~4× faster than sequential for 40+ target files
 - Sequential output collection preserves readability — each file's violations are grouped together
+
+---
+
+## D-WORLD-FOLDER-STRUCTURE: World Subfolder Isolation
+
+**Status:** ✅ Implemented  
+**Author:** Bart (Architect), per Wayne directive  
+**Commit:** 177e8c8  
+**Date:** 2026-08-24T00:00:00Z
+
+### Summary
+
+All world-specific content now lives under `src/meta/worlds/{world-id}/`:
+
+```
+src/meta/
+├── templates/              ← SHARED (unchanged)
+├── materials/              ← SHARED (unchanged)
+└── worlds/
+    └── manor/
+        ├── objects/        ← 143 files (was: src/meta/objects/)
+        ├── rooms/          ← 7 files (was: src/meta/rooms/)
+        ├── creatures/      ← 5 files (was: src/meta/creatures/)
+        ├── levels/         ← 1 file (was: src/meta/levels/)
+        ├── injuries/       ← 11 files (was: src/meta/injuries/)
+        └── world.lua       ← world definition (was: src/meta/worlds/world-01.lua)
+```
+
+### Rationale
+
+Prerequisite for multi-world support (Wyatt's World). Clean isolation prevents content leakage between worlds.
+
+### Engine Changes
+
+- `main.lua`: Derives content paths from `world_content_root`
+- `engine/injuries/init.lua`: `set_content_root(root)` for configurable require paths
+- `engine/world/init.lua`: `discover()` scans subdirectories for world.lua files
+- `web/game-adapter.lua`: Meta searcher handles `meta.worlds.{world}.{category}.{name}` paths
+- `web/build-meta.ps1`: Finds content in `worlds/manor/` for web build
+
+### Impact
+
+All agents — any code referencing `src/meta/objects/`, `src/meta/rooms/`, `src/meta/creatures/`, `src/meta/injuries/`, or `src/meta/levels/` must use the new `src/meta/worlds/manor/` paths.
+
+### Rules Going Forward
+
+1. New worlds create a subfolder under `src/meta/worlds/`
+2. Each world has a `world.lua` with `content_root`, `rating`, and theme
+3. Templates and materials remain shared at `src/meta/templates/` and `src/meta/materials/`
+4. No cross-world content references
+
+---
+
+## DIRECTIVE-COPILOT-LINTER-MUTATION-PATHS: Linter and Mutation Graph Updates
+
+**Status:** ✅ Implemented  
+**Author:** Wayne Berry (via Copilot)  
+**Date:** 2026-03-30T00:03:00Z
+
+### Directive
+
+The world folder restructure MUST also update:
+
+1. **scripts/meta-lint/lint.py** — hardcodes paths to `src/meta/objects/`, `src/meta/rooms/`, etc. Must be world-aware.
+2. **scripts/mutation-edge-check.lua** — scans for mutation targets in `src/meta/`. Must find them in `worlds/{id}/` subfolders.
+
+These tools need to work with the new nested world structure, scanning the correct world subfolder.
+
+### Implementation Status
+
+- ✅ lint.py updated: accepts `--world-root` parameter, scans nested structure
+- ✅ mutation-edge-check.lua updated: discover `worlds/*/objects/` for mutation targets
+- ✅ Integration tested: both tools work with manor and wyatt-world structures
+
+---
+
+## DIRECTIVE-COPILOT-AUTONOMOUS-EXECUTION: Walk-Away Autonomous Execution
+
+**Status:** 🟢 Active  
+**Author:** Wayne Berry (via Copilot)  
+**Date:** 2026-03-30T00:24:00Z
+
+### Directive
+
+Once Bart's world folder restructure completes (including Wiggum's linter/mutation updates), execute the entire Wyatt's World implementation plan autonomously — all 4 waves, all 3 gates, to completion. Wayne is going to a party and wants it done when he gets back. Use the autonomous execution protocol from the implementation-plan skill.
+
+### Purpose
+
+Walk-away capability test. Wayne trusts the team to execute the reviewed plan.
+
+### Execution Status
+
+✅ **Complete** — All 7 agents executed autonomously:
+- WAVE-0 (Bart + Nelson): Infrastructure + tests ✅
+- WAVE-1a (Moe): 7 rooms ✅
+- WAVE-1b (Flanders): 68 objects ✅
+- WAVE-1c (Sideshow Bob): 7 puzzle specs ✅
+- WAVE-2a (Smithers): 5 verbs + 40 embeddings ✅
+- WAVE-2b (Nelson): 140 tests, all pass ✅
+- WAVE-3 (Gil): Deployment in progress 🟡
+
+**Result:** 7/8 agents complete (87.5%), zero regressions, 100% test pass rate.
 - PS7 fallback ensures the scripts work on older Windows installations (just slower)
 - Shell double-scan (~1s overhead for two lua scripts/mutation-edge-check.lua invocations) is accepted as negligible vs lint runtime
 
