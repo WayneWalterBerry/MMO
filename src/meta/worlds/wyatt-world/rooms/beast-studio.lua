@@ -9,7 +9,7 @@ return {
     name = "MrBeast's Challenge Studio",
     level = { number = 1, name = "MrBeast's Challenge Arena" },
     sky_visible = false,
-    light_level = 1,
+    light_level = 2,
     keywords = {"studio", "challenge studio", "hub", "beast studio"},
     description = "You stand in a huge bright room with flashing lights. "
                .. "Upbeat music thumps from speakers on the walls. "

@@ -9,7 +9,7 @@ return {
     name = "The Last to Leave Room",
     level = { number = 1, name = "MrBeast's Challenge Arena" },
     sky_visible = false,
-    light_level = 1,
+    light_level = 2,
     keywords = {"last to leave", "living room", "leave room", "last to leave room"},
     description = "You walk into a room that looks like a regular living room. "
                .. "A couch, a TV, a bookshelf, a lamp, and a clock fill the space. "

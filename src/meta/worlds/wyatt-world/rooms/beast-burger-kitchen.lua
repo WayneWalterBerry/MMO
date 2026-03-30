@@ -9,7 +9,7 @@ return {
     name = "The Beast Burger Kitchen",
     level = { number = 1, name = "MrBeast's Challenge Arena" },
     sky_visible = false,
-    light_level = 1,
+    light_level = 2,
     keywords = {"kitchen", "burger kitchen", "beast burger", "beast burger kitchen"},
     description = "You walk into a bright kitchen that sizzles and pops. "
                .. "Shelves are loaded with burger toppings in every color. "

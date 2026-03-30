@@ -9,7 +9,7 @@ return {
     name = "The Grand Prize Vault",
     level = { number = 1, name = "MrBeast's Challenge Arena" },
     sky_visible = false,
-    light_level = 1,
+    light_level = 2,
     keywords = {"grand prize", "vault", "prize vault", "treasure room"},
     description = "Gold and silver streamers hang from the ceiling. "
                .. "A giant treasure chest sits in the middle with a combo lock. "

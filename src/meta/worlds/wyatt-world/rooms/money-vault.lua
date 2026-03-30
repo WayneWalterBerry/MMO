@@ -9,7 +9,7 @@ return {
     name = "The Money Vault",
     level = { number = 1, name = "MrBeast's Challenge Arena" },
     sky_visible = false,
-    light_level = 1,
+    light_level = 2,
     keywords = {"vault", "money vault", "money room", "bank vault"},
     description = "Wow! Stacks of play money are piled high on three tables. "
                .. "Gold coins are scattered across the shiny floor. "

@@ -9,7 +9,7 @@ return {
     name = "The Riddle Arena",
     level = { number = 1, name = "MrBeast's Challenge Arena" },
     sky_visible = false,
-    light_level = 1,
+    light_level = 2,
     keywords = {"riddle arena", "arena", "riddle room", "stage"},
     description = "Bright spotlights shine down on a small stage. "
                .. "Three big boards stand in a row with riddles in colorful letters. "

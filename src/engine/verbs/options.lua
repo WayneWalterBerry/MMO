@@ -35,6 +35,9 @@ function M.register(handlers)
         -- Store pending options for numbered selection
         ctx.player.pending_options = result.options
     end
+    
+    -- Alias "hint" to "options"
+    handlers["hint"] = handlers["options"]
 end
 
 return M

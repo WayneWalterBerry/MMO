@@ -135,7 +135,8 @@ local function generate_goal_steps(ctx)
     if not goal then return {} end
 
     -- Use GOAP planner to get prerequisite chain
-    local plan = goal_planner.plan(ctx, goal.verb, goal.noun or "")
+    -- Note: goal_planner.plan signature is (verb, noun, ctx)
+    local plan = goal_planner.plan(goal.verb, goal.noun or "", ctx)
     if not plan or #plan == 0 then return {} end
 
     local results = {}

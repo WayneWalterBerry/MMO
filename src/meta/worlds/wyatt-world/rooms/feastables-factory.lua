@@ -9,7 +9,7 @@ return {
     name = "The Feastables Factory",
     level = { number = 1, name = "MrBeast's Challenge Arena" },
     sky_visible = false,
-    light_level = 1,
+    light_level = 2,
     keywords = {"factory", "feastables", "chocolate factory", "feastables factory"},
     description = "A long conveyor belt rolls through the middle of the room. "
                .. "Chocolate bars in shiny wrappers slide past in every color. "
