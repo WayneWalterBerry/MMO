@@ -559,6 +559,8 @@ if not headless then
     local help = (intro and intro.help) or "Type 'help' for commands. Try 'feel' to explore the darkness."
     print(help)
     print("")
+    -- Skip loop's generic welcome since we've shown intro help
+    context.skip_welcome = true
 end
 if headless then
     io.write("---END---\n")

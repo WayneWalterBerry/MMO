@@ -78,7 +78,9 @@ function loop.run(context)
   -- Session transcript for "report bug" (last 100 exchanges)
   context.transcript = context.transcript or {}
 
-  if not context.headless then
+  -- Print welcome/help message unless headless or skip_welcome is set
+  -- skip_welcome allows main.lua to provide its own intro help text
+  if not context.headless and not context.skip_welcome then
     print("Type 'look' to look around. Type 'report bug' to report issues. Type 'quit' to exit.")
     if context.ui and context.ui.is_enabled() then
       print("Scroll: /up  /down  /bottom")
@@ -376,6 +378,20 @@ function loop.run(context)
         verb, noun = preprocess.parse(sub_input)
         if _G.TRACE then io.stderr:write("[TRACE] parse fallback => verb=" .. tostring(verb) .. " noun=" .. tostring(noun) .. "\n") end
       end
+      
+      -- Issue #436: If raw input is just a number, give helpful context message
+      if not verb or verb == "" then
+        local num = tonumber(sub_input)
+        if num then
+          -- In E-rated worlds (Wyatt's World), suggest puzzle context
+          if context.world and context.world.rating == "E" then
+            print("Just the number " .. num .. "? Try 'type " .. num .. "' to enter it on a keypad, or 'look' to see what's around!")
+          else
+            print("Try 'type " .. num .. "' to enter that number, or 'look' to see what you can interact with.")
+          end
+          goto next_sub
+        end
+      end
 
       if verb == "" then goto next_sub end
 
@@ -509,8 +525,101 @@ function loop.run(context)
         old_print(...)
       end
 
+      -- Issue #435/#437: Fuzzy verb matching for common typos (lok→look, feal→feel, etc.)
+      -- Only fires if exact verb lookup fails. Uses Levenshtein distance.
       local handler = context.verbs[verb]
+      if not handler and verb then
+        local function levenshtein(a, b)
+          local la, lb = #a, #b
+          if la == 0 then return lb end
+          if lb == 0 then return la end
+          local prev = {}
+          local curr = {}
+          for j = 0, lb do prev[j] = j end
+          for i = 1, la do
+            curr[0] = i
+            for j = 1, lb do
+              local cost = (a:sub(i, i) == b:sub(j, j)) and 0 or 1
+              curr[j] = math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost)
+            end
+            prev, curr = curr, prev
+          end
+          return prev[lb]
+        end
+        
+        -- Try fuzzy matching against known verbs (max distance = 2 for verbs ≥4 chars)
+        local max_dist = (#verb >= 4) and 2 or 1
+        local best_match = nil
+        local best_dist = max_dist + 1
+        
+        for known_verb, _ in pairs(context.verbs) do
+          if math.abs(#known_verb - #verb) <= max_dist then
+            local dist = levenshtein(verb, known_verb)
+            if dist > 0 and dist < best_dist then
+              best_dist = dist
+              best_match = known_verb
+            end
+          end
+        end
+        
+        if best_match then
+          if _G.TRACE then io.stderr:write("[TRACE] fuzzy verb: " .. verb .. " → " .. best_match .. "\n") end
+          verb = best_match
+          handler = context.verbs[verb]
+        end
+      end
+      
       if handler then
+        -- Issue #433/#438/#439: Kid-friendly Easter egg responses in E-rated worlds
+        -- Check if the original input was a greeting, MrBeast catchphrase, or frustration phrase
+        if context.world and context.world.rating == "E" and verb == "help" then
+          local lc = sub_input:lower()
+          -- Greetings (#433)
+          if lc == "hello" or lc == "hi" or lc == "hi there" or lc == "hey" or lc == "hey there" 
+              or lc == "greetings" or lc == "sup" or lc == "whats up" or lc == "yo" then
+            print("Hey there! 👋 Ready to explore? Try 'look' to see what's around you!")
+            _G.print = old_print
+            goto next_sub
+          end
+          -- MrBeast catchphrases (#438)
+          if lc == "subscribe" then
+            print("Haha! Wrong app! 😄 But I like your energy! Try 'look' to see what you can do here.")
+            _G.print = old_print
+            goto next_sub
+          end
+          if lc == "beast mode" or lc == "lets go" or lc == "let's go" then
+            print("BEAST MODE ACTIVATED! 💪 Now try 'examine' to inspect objects around you!")
+            _G.print = old_print
+            goto next_sub
+          end
+          if lc == "smash like" or lc == "smash that like" or lc == "hit that bell" then
+            print("Save that for YouTube! 😆 Here, try 'search' to find cool stuff!")
+            _G.print = old_print
+            goto next_sub
+          end
+          -- Frustration phrases (#439)
+          if lc == "im confused" or lc == "i am confused" or lc == "i'm confused" then
+            print("No worries! You got this! 🌟 Try 'feel' to explore by touch, or 'options' for hints.")
+            _G.print = old_print
+            goto next_sub
+          end
+          if lc == "this is dumb" or lc == "this is stupid" then
+            print("Hey, I believe in you! 💪 Every expert was once a beginner. Try 'look' to get started!")
+            _G.print = old_print
+            goto next_sub
+          end
+          if lc == "i dont get it" or lc == "dont get it" or lc == "i don't get it" then
+            print("That's totally okay! 😊 Try 'options' for a hint, or 'feel' to explore what's nearby.")
+            _G.print = old_print
+            goto next_sub
+          end
+          if lc == "im stuck" or lc == "i am stuck" or lc == "i'm stuck" or lc == "im lost" or lc == "i am lost" then
+            print("You're not stuck — just taking your time! 🎯 Try 'options' for hints, or 'search' to find clues.")
+            _G.print = old_print
+            goto next_sub
+          end
+        end
+        
         -- E-rating enforcement: block combat/harm verbs in E-rated worlds
         if context.world and context.world.rating == "E" and E_RESTRICTED_VERBS[verb] then
           -- Kid-friendly refusal message
