@@ -12,6 +12,10 @@
     window._startRoom = _urlParams.get('room') || null;
     window._selectedWorld = _urlParams.get('world') || null;
 
+    // Always log world selection to console for debugging (#world-url-bug)
+    if (window._selectedWorld) {
+        console.log('[world] Selected world: ' + window._selectedWorld);
+    }
     if (window._debugMode && window._startRoom) {
         console.log('Starting in room: ' + window._startRoom + ' (via URL override)');
     }

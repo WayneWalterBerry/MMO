@@ -558,21 +558,37 @@ local ok, err = pcall(function()
     local selected_world = nil
     local url_world = window._selectedWorld
     local world_id = "manor"
+    local world_was_requested = false
     if url_world and tostring(url_world) ~= "" and tostring(url_world) ~= "null"
        and tostring(url_world) ~= "undefined" then
         world_id = tostring(url_world)
+        world_was_requested = true
     end
+    window.console:log("[world] Selected world: " .. world_id
+        .. (world_was_requested and " (from URL)" or " (default)"))
 
     -- Fetch world definition
-    local world_source = fetch_text("meta/worlds/" .. world_id .. "/world.lua")
+    local world_url = "meta/worlds/" .. world_id .. "/world.lua"
+    window.console:log("[world] Fetching: " .. world_url)
+    local world_source = fetch_text(world_url)
     if world_source then
         selected_world = loader.load_source(world_source)
         if selected_world then
             selected_world.content_root = "worlds/" .. world_id
+            window.console:log("[world] Content root: " .. selected_world.content_root)
             log_debug("World: " .. (selected_world.name or world_id))
+        else
+            window.console:warn("[world] Failed to parse world.lua for: " .. world_id)
         end
+    else
+        window.console:warn("[world] world.lua not found at: " .. world_url)
     end
     if not selected_world then
+        if world_was_requested then
+            append_error("World '" .. world_id .. "' not found. Loading The Manor instead.")
+            window.console:error("[world] Requested world '" .. world_id
+                .. "' not found — falling back to Manor")
+        end
         -- Fallback: construct minimal manor world for backward compat
         selected_world = {
             id = "world-1",
@@ -581,23 +597,34 @@ local ok, err = pcall(function()
             content_root = "worlds/manor",
             starting_room = "start-room",
         }
+        world_id = "manor"
         log_debug("World: The Manor (default)")
     end
 
     -------------------------------------------------------------------
     -- Load level and starting room (world-aware)
     -------------------------------------------------------------------
-    log_debug("Loading Level 1...")
+    local world_display_name = selected_world.name or world_id
+    log_status("Loading " .. world_display_name .. "...")
     local level_source
     if selected_world and selected_world.content_root then
-        level_source = fetch_text("meta/" .. selected_world.content_root .. "/levels/level-01.lua")
+        local level_url = "meta/" .. selected_world.content_root .. "/levels/level-01.lua"
+        window.console:log("[world] Level file: " .. level_url)
+        level_source = fetch_text(level_url)
+        if not level_source and world_was_requested then
+            window.console:warn("[world] World-specific level not found: " .. level_url)
+        end
     end
     if not level_source then
         level_source = fetch_text("meta/levels/level-01.lua")
+        if level_source and world_was_requested then
+            window.console:warn("[world] Fell back to default level (meta/levels/level-01.lua)")
+        end
     end
     local level = level_source and loader.load_source(level_source)
 
     local start_room_id = (level and level.start_room) or "start-room"
+    window.console:log("[world] Start room: " .. start_room_id)
 
     -- ?room= URL override (set by bootstrapper.js → window._startRoom)
     local url_room = window._startRoom
