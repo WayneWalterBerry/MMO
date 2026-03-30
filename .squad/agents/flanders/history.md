@@ -97,3 +97,35 @@ The `death_state.crafting.cook` field on creature definitions is the key mechani
 **Surface object narration (#394):** Test "traverse.step: object with surfaces returns empty narrative (undirected)" failed because #385 added `narrator.enumerate_room_object()` for surfaced objects during undirected sweep, conflicting with bug #40 fix. Fix: return empty narrative for surfaced objects — surface entries in the queue handle their own narration.
 
 **Cross-domain note:** Touched `src/engine/search/traverse.lua` (Bart's domain) for #394 — minimal change, removed contradictory narration path. Decision filed to `.squad/decisions/inbox/flanders-surface-object-narration.md`.
+
+### 2026-08-23: WAVE-1b — Wyatt's World Objects (68 files)
+
+**Task:** Build all ~70 objects for Wyatt's World (MrBeast challenge arena for Wyatt, age 10). WAVE-1b of the implementation plan.
+
+**Files created:** 68 object .lua files in `src/meta/worlds/wyatt-world/objects/`
+
+**Room breakdown:**
+- **Beast Studio (hub):** 10 objects — welcome-sign, big-red-button (FSM: unpressed→pressed), scoreboard, confetti-cannon (FSM: loaded→fired), giant-screen, camera, speaker, golden-podium, mrbeast-banner, studio-confetti
+- **Feastables Factory:** 12 objects — 5 chocolate bars (purple/gold/red/blue/green with flavor_category metadata), 4 sorting bins (FSM: empty→has_correct/has_wrong), conveyor-belt (surface), factory-sign
+- **Money Vault:** 10 objects — 3 counting tables (surfaces), 3 money cards (readable: $50/$60/$100), vault-safe (FSM: locked→unlocked, combination=210), vault-golden-trophy, gold-coins, vault-sign
+- **Beast Burger Kitchen:** 12 objects — 6 ingredients (bottom-bun through top-bun with burger_order 1-6), recipe-card (full step-by-step), assembly-plate (ordered container), big-grill, kitchen-sign, beast-burger-coupon, ingredient-shelf
+- **Last to Leave Room:** 10 objects — couch, tv-screen, bookshelf, normal-rug (all is_fake=false), weird-clock (15 numbers), backwards-book (reversed title), cold-lamp (on but cold) (all is_fake=true), found-it-box (container), challenge-rules-sign, completion-medal
+- **Riddle Arena:** 9 objects — 3 riddle boards (FSM: unsolved→solved), arena-clock (answers riddle 1), arena-piano (answers riddle 2), stage-hole (answers riddle 3), riddle-podium, spotlight, riddle-prize-trophy
+- **Grand Prize Vault:** 6 objects — mrbeast-letter (hidden_numbers={13,50,7}), letter-pedestal, prize-chest (FSM: locked→unlocked, combination={13,50,7}), golden-mrbeast-trophy, victory-confetti-cannon (FSM: loaded→fired), vault-streamers
+
+**Validation:**
+- 68 unique GUIDs (generated fresh — bart-wyatt-guids.md not found)
+- All 68 objects have `on_feel` (engine requirement)
+- All 68 have `on_taste` — always safe and fun per CBG design
+- All sensory text at 3rd-grade reading level
+- Zero Lua syntax errors
+- Zero test regressions (273 pass, 4 pre-existing failures unchanged)
+
+**Design decisions:**
+1. **GUID generation:** Bart's pre-assigned GUID file (`bart-wyatt-guids.md`) wasn't found. Generated 68 fresh Windows-format GUIDs via PowerShell. All unique. Filed mental note — if Bart publishes GUIDs later, may need reconciliation.
+2. **Foam material for burger ingredients:** Used `material = "foam"` for all burger parts since they're game-show props, not real food. Consistent with the "everything is a TV set prop" aesthetic.
+3. **Puzzle metadata on objects:** Added domain-specific fields for puzzle logic: `flavor_category` on chocolate bars, `accepts_category` on bins, `burger_order` on ingredients, `is_fake`/`fake_reason` on Last to Leave objects, `riddle_answer`/`answers_riddle` on riddle objects, `hidden_numbers`/`combination` on vault items. Engine doesn't read these yet — they're metadata for WAVE-2 puzzle wiring.
+4. **Chocolate material:** Added `material = "chocolate"` to bars even though it's not in the material registry. This is a Wyatt-world-specific material — may need Bart to add it to materials/init.lua.
+5. **No inline functions:** All objects are pure data tables. No `on_look` functions, no `on_feel` functions. Principle 8 compliance — objects declare, engine executes.
+
+**Lesson:** Building for a kid audience changes EVERYTHING about sensory writing. Manor objects describe texture, weight, temperature — physical realism. Wyatt objects describe fun, silliness, excitement — emotional engagement. Same engine, radically different voice. The `on_taste` field went from "dangerous poison mechanic" to "comedy opportunity." Both are valid uses of the same system.
