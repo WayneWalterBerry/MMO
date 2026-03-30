@@ -6,11 +6,11 @@
 
 local M = {}
 
-local goal_planner = require("src.engine.parser.goal_planner")
-local context_window = require("src.engine.parser.context")
+local goal_planner = require("engine.parser.goal_planner")
+local context_window = require("engine.parser.context")
 
 -- Presentation module for light-level checks
-local pres_ok, presentation = pcall(require, "src.engine.ui.presentation")
+local pres_ok, presentation = pcall(require, "engine.ui.presentation")
 if not pres_ok then presentation = nil end
 
 -- Flavor text rotations

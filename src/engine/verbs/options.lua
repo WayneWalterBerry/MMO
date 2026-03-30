@@ -4,7 +4,7 @@
 
 local M = {}
 
-local options_engine = require("src.engine.options")
+local options_engine = require("engine.options")
 
 function M.register(handlers)
     handlers["options"] = function(ctx, noun)
