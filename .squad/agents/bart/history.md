@@ -1,53 +1,37 @@
-# Bart -- History (Summarized)
+# Bart -- History
 
-## Project Context
+## Core Context (2026-08-24)
 
-- **Project:** MMO - A text adventure MMO with multiverse architecture
-- **Owner:** Wayne 'Effe' Berry
-- **Stack:** Lua (engine + meta-code), cloud persistence
-- **Key Concepts:** Each player gets their own universe instance with self-modifying meta-code. Objects are rewritten (not flagged) when state changes. Code IS the state.
+**Project:** MMO - Lua text adventure engine with mutation-based objects (code rewrites at runtime).
+**Role:** Architect — engine design, verb systems, FSM, mutations, puzzle wiring.
+**Key Pattern:** Objects declare behavior via metadata; engine executes (Principle 8).
 
-## Core Context (Key Learnings & Patterns)
+**Active Systems:**
+- Engine: Loader (sandboxed), Registry (GUID), Mutation (hot-swap), Loop (REPL)
+- Verbs: 31+ handlers, tool resolution via capabilities
+- FSM: Inline state machines, two-phase timers, cyclic states
+- Sound: Manager + 12 engine hooks (WAVE-2a complete, v1.1 spec)
+- Worlds: Multi-world loader, E-rating enforcement (23 blocked verbs)
+- Options: Hybrid GOAP+sensory hint system (Tier 3 WAVE-1a wired)
 
-**Role:** Architect - engine design, verb systems, FSM mechanics, mutation patterns, puzzle systems
+**Key Architectural Decisions:**
+- D-14: Code mutation IS state change (objects rewritten, not flagged)
+- D-WORLDS-CONCEPT: Worlds as top-level containers above Levels
+- D-MUTATION-LINT-PIVOT: Python meta-lint with expand-and-lint strategy
+- D-WORLD-FOLDER-STRUCTURE: `src/meta/worlds/{id}/` for isolated content
+- D-RATING-ENFORCEMENT: E-rating blocks at verb dispatch (loop/init.lua:498)
 
-**Architecture Decisions Documented:**
-- D-14: Code mutation IS state change (objects rewritten at runtime, not flagged)
-- D-WORLDS-CONCEPT: Worlds meta concept - top-level container above Levels
-- D-ENGINE-REFACTORING-WAVE2: Engine refactoring sequencing (6 files, 5 modules each)
-- D-MUTATION-LINT-PIVOT: Mutation graph linter uses expand-and-lint (Python meta-lint)
-- D-MUTATION-CYCLES-V2: Multi-hop chain validation deferred to Phase 2
+**Recent Session Milestones (2026-08-23 to 2026-08-24):**
+1. **Sound WAVE-2 Track 2A:** 12 hook points across 9 files, 70 insertions (FSM, verb dispatch, mutation ctx threading, movement 4 paths, effects pipeline, loader)
+2. **World folder restructure:** 168 files moved to `src/meta/worlds/manor/`, engine paths updated, 90+ test files repatched
+3. **E-Rating enforcement expansion:** 11→23 blocked verbs, kid-friendly messages, help text filtering
+4. **Options WAVE-1a:** GOAP planner wired into hint system, sensory rotation, no-obj fallback
+5. **Wyatt's World WAVE-0:** Multi-world loader, world selection, E-rating dispatch gate
 
-**Major Systems Built (Phase 3 Completion):**
-- **Engine Foundation:** Loader (sandboxed execution), Registry (GUID-indexed), Mutation (hot-swap via loadstring), Loop (REPL)
-- **Verb System:** 31+ verbs; tool resolution via capabilities (supports virtual tools like blood)
-- **FSM Architecture:** Inline state machines with timer tracking (two-phase), room pause/resume, cyclic states
-- **Phase 3 Refactoring Completed:** Split helpers.lua (1634->5 modules), preprocess.lua (1282->6 modules), sensory.lua (1113->3 modules), traverse_effects.lua (2-module split). All splits maintain backward API compatibility via thin facade pattern. Full test suite: 243/243 passing.
-
-**Critical Bugs Fixed (Wave 3):**
-- #372 & #376: require(engine.verbs.helpers) failures - root cause was split-related import paths. Added regression test test/engine/test-helpers-facade.lua (12 assertions).
-- #386: Linked exit sync - FSM transitions now properly sync room exit state via becomes_exit mutations
-- #382: Burn no-flame message - updated error message to match test assertions
-- #375: Level intro in headless - verified already fixed, no action needed
-- #368: Rename goto-teleport - swapped primary/alias in movement.lua
-- **Brass Key/Padlock Fix:** Both unlock and lock verb handlers lacked FSM transition logic AND key objects lacked provides_tool fields - double-bug pattern now recognized
-
-**File Paths (Ongoing Responsibility):**
-- src/engine/ - core engine modules
-- src/meta/objects/, src/meta/world/ - object/world definitions
-- src/engine/verbs/init.lua - verb dispatch
-- docs/architecture/engine/ - engine architecture docs
-- scripts/mutation-edge-check.lua - mutation linter (Phase 1 implemented; Phase 2 chains deferred)
-
-**Learnings (Session Patterns):**
-1. Phase 3 refactoring was chunked by file size (large monoliths split), but dependencies were the real complexity (e.g., helpers.lua required by all verb modules).
-2. Facade pattern (X.lua alongside X/ directory) works in Lua but non-standard; future convention could standardize on init.lua.
-3. Linter improvement (WAVE-1 through WAVE-6) requires serialized lint.py edits - only one agent per wave can touch the bottleneck file.
-4. Two-phase FSM tick system (timers + state checks) is robust but adds complexity to testing edge cases.
-5. Material properties and object nesting syntax remain the two most frequently referenced patterns in design.
-6. Mutation ctx threading: `mutation.mutate()` had no context access. Added optional 6th `ctx` parameter — backward compatible. This pattern recurs for any cross-cutting concern needing runtime context in mutation.
-7. Movement has 4 room transition paths: go-back, portal, legacy exit, teleport. All needed sound hooks independently — no shared helper. Future refactor: extract `change_room(ctx, old_room, new_room)` helper.
-8. Effects pipeline as canonical sound path: `play_sound` effect handler is single entry point from object metadata. Direct `trigger()` calls only from engine internals (FSM, mutation, verb dispatch).
+**File Paths:**
+- src/engine/ — core modules
+- src/meta/worlds/{id}/ — isolated world content
+- scripts/mutation-edge-check.lua — mutation linter
 
 
 
