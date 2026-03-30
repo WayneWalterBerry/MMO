@@ -1,4 +1,4 @@
--- src/meta/injuries/minor-cut.lua
+-- src/meta/worlds/manor/injuries/minor-cut.lua
 -- Injury template: Minor Cut
 -- Pattern: One-time damage, self-heals naturally, bandage optional accelerator
 -- FSM: active → healed  (natural path, 5 turns)

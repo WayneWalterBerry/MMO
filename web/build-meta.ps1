@@ -4,13 +4,17 @@
     for JIT loading.
 
 .DESCRIPTION
-    Auto-discovers ALL subdirectories under src/meta/.
-    - Objects: renamed by their GUID field -> meta/objects/{guid}.lua
-    - Rooms (rooms/): copied as-is -> meta/rooms/{filename}
-    - All other dirs: copied as-is -> meta/{dirname}/{filename}
+    Multi-world build: discovers ALL worlds under src/meta/worlds/ and bundles
+    their content into web/dist/meta/.
 
-    Adding new meta categories (injuries, materials, etc.) requires zero
-    build script changes.
+    - Objects from all worlds: renamed by GUID -> meta/objects/{guid}.lua
+    - Creatures from all worlds: renamed by GUID -> meta/creatures/{guid}.lua
+    - Rooms from all worlds: copied as-is -> meta/rooms/{filename}
+    - World definitions: meta/worlds/{world_id}/world.lua (per-world)
+    - Levels: meta/worlds/{world_id}/levels/{file} (per-world)
+    - Levels (manor): also copied to flat meta/levels/ (backward compat)
+    - Shared dirs (templates, materials): meta/{dirname}/{filename}
+    - World-specific dirs (injuries): merged into flat meta/{dirname}/
 
 .EXAMPLE
     powershell web/build-meta.ps1
@@ -26,11 +30,11 @@ $RepoRoot  = Split-Path -Parent $ScriptDir
 
 if (-not $OutDir) { $OutDir = Join-Path $ScriptDir "dist" }
 
-$MetaRoot = Join-Path $RepoRoot "src\meta"
-$WorldRoot = Join-Path $MetaRoot "worlds\manor"
-$MetaOut  = Join-Path $OutDir "meta"
+$MetaRoot  = Join-Path $RepoRoot "src\meta"
+$WorldsDir = Join-Path $MetaRoot "worlds"
+$MetaOut   = Join-Path $OutDir "meta"
 
-Write-Host "=== build-meta.ps1 ==="
+Write-Host "=== build-meta.ps1 (multi-world) ==="
 
 # Capture build timestamp
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm"
@@ -44,103 +48,133 @@ if (Test-Path $MetaOut) {
     Remove-Item -Recurse -Force $MetaOut
 }
 
-# Auto-discover world content directories + shared directories
-# World-specific: objects, rooms, creatures, levels, injuries under worlds/manor/
-# Shared: templates, materials under src/meta/
-$worldDirs = @()
-if (Test-Path $WorldRoot) {
-    $worldDirs = Get-ChildItem -Path $WorldRoot -Directory | Select-Object -ExpandProperty Name
+# Discover all worlds
+$allWorlds = @()
+if (Test-Path $WorldsDir) {
+    $allWorlds = Get-ChildItem -Path $WorldsDir -Directory | Select-Object -ExpandProperty Name
 }
+Write-Host "  Worlds found: $($allWorlds -join ', ')"
+
+# Shared dirs live at src/meta/ level (not per-world)
 $sharedDirs = @()
 foreach ($d in @("templates", "materials")) {
     if (Test-Path (Join-Path $MetaRoot $d)) { $sharedDirs += $d }
 }
-# Also include the worlds dir itself (for world definition files)
-$srcDirs = $sharedDirs + $worldDirs
-if (Test-Path (Join-Path $MetaRoot "worlds")) { $srcDirs += "worlds" }
 
-# No dir name mapping needed — source and output names match
-$dirMap = @{}
+# GUID-renamed categories (objects, creatures) — merge from all worlds
+$guidCategories = @("objects", "creatures")
+# Copy-as-is categories — merge from all worlds into flat dirs
+$flatCategories = @("rooms", "injuries")
 
 # Create output directories
-$outputDirs = $srcDirs | ForEach-Object { if ($dirMap[$_]) { $dirMap[$_] } else { $_ } } | Sort-Object -Unique
-foreach ($d in $outputDirs) {
+foreach ($d in ($sharedDirs + $guidCategories + $flatCategories + @("levels"))) {
     New-Item -ItemType Directory -Path (Join-Path $MetaOut $d) -Force | Out-Null
 }
 
 $counts = @{}
 $warnings = @()
 
-# --- Objects: special handling — rename by GUID ---
-$objectDir = Join-Path $WorldRoot "objects"
-if (Test-Path $objectDir) {
-    $objectFiles = Get-ChildItem -Path $objectDir -File -Filter "*.lua" | Sort-Object Name
-    $counts["objects"] = 0
-    foreach ($file in $objectFiles) {
-        $content = Get-Content $file.FullName -Raw
-        if ($content -match 'guid\s*=\s*"\{?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\}?"') {
-            $guid = $Matches[1]
-            $dest = Join-Path $MetaOut "objects\$guid.lua"
-            Copy-Item $file.FullName $dest
-            $counts["objects"]++
-        } else {
-            $warnings += "No GUID found in $($file.Name) -- skipping"
-            Write-Warning "No GUID found in $($file.Name) -- skipping"
+# --- Per-world content ---
+foreach ($worldName in $allWorlds) {
+    $worldRoot = Join-Path $WorldsDir $worldName
+    Write-Host "  --- World: $worldName ---"
+
+    # World definition → meta/worlds/{world_id}/world.lua
+    $worldDefSrc = Join-Path $worldRoot "world.lua"
+    if (Test-Path $worldDefSrc) {
+        $worldDefDir = Join-Path $MetaOut "worlds\$worldName"
+        New-Item -ItemType Directory -Path $worldDefDir -Force | Out-Null
+        Copy-Item $worldDefSrc (Join-Path $worldDefDir "world.lua")
+        Write-Host "    world.lua -> meta/worlds/$worldName/world.lua"
+    }
+
+    # Levels → meta/worlds/{world_id}/levels/ (per-world)
+    $levelDir = Join-Path $worldRoot "levels"
+    if (Test-Path $levelDir) {
+        $levelFiles = Get-ChildItem -Path $levelDir -File -Filter "*.lua" | Sort-Object Name
+        if ($levelFiles.Count -gt 0) {
+            $worldLevelOut = Join-Path $MetaOut "worlds\$worldName\levels"
+            New-Item -ItemType Directory -Path $worldLevelOut -Force | Out-Null
+            $countKey = "levels($worldName)"
+            $counts[$countKey] = 0
+            foreach ($file in $levelFiles) {
+                Copy-Item $file.FullName (Join-Path $worldLevelOut $file.Name)
+                $counts[$countKey]++
+            }
+            # Backward compat: manor levels also go to flat meta/levels/
+            if ($worldName -eq "manor") {
+                foreach ($file in $levelFiles) {
+                    Copy-Item $file.FullName (Join-Path $MetaOut "levels\$($file.Name)")
+                }
+                Write-Host "    levels: $($counts[$countKey]) files -> meta/worlds/$worldName/levels/ + meta/levels/ (compat)"
+            } else {
+                Write-Host "    levels: $($counts[$countKey]) files -> meta/worlds/$worldName/levels/"
+            }
         }
+    }
+
+    # GUID-renamed categories (objects, creatures)
+    foreach ($cat in $guidCategories) {
+        $catDir = Join-Path $worldRoot $cat
+        if (-not (Test-Path $catDir)) { continue }
+        $catFiles = Get-ChildItem -Path $catDir -File -Filter "*.lua" | Sort-Object Name
+        if ($catFiles.Count -eq 0) { continue }
+        $countKey = "$cat($worldName)"
+        $counts[$countKey] = 0
+        foreach ($file in $catFiles) {
+            $content = Get-Content $file.FullName -Raw
+            if ($content -match 'guid\s*=\s*"\{?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\}?"') {
+                $guid = $Matches[1]
+                $dest = Join-Path $MetaOut "$cat\$guid.lua"
+                Copy-Item $file.FullName $dest
+                $counts[$countKey]++
+            } else {
+                $warnings += "No GUID found in $worldName/$cat/$($file.Name) -- skipping"
+                Write-Warning "No GUID found in $worldName/$cat/$($file.Name) -- skipping"
+            }
+        }
+        Write-Host "    $($cat): $($counts[$countKey]) files -> meta/$cat/ (renamed by GUID)"
+    }
+
+    # Flat-merge categories (rooms, injuries)
+    foreach ($cat in $flatCategories) {
+        $catDir = Join-Path $worldRoot $cat
+        if (-not (Test-Path $catDir)) { continue }
+        $catFiles = Get-ChildItem -Path $catDir -File -Filter "*.lua" | Sort-Object Name
+        if ($catFiles.Count -eq 0) { continue }
+        $countKey = "$cat($worldName)"
+        $counts[$countKey] = 0
+        foreach ($file in $catFiles) {
+            Copy-Item $file.FullName (Join-Path $MetaOut "$cat\$($file.Name)")
+            $counts[$countKey]++
+        }
+        Write-Host "    $($cat): $($counts[$countKey]) files -> meta/$cat/"
     }
 }
 
-# --- Creatures: special handling — rename by GUID (like objects) ---
-$creatureDir = Join-Path $WorldRoot "creatures"
-if (Test-Path $creatureDir) {
-    $creatureFiles = Get-ChildItem -Path $creatureDir -File -Filter "*.lua" | Sort-Object Name
-    $counts["creatures"] = 0
-    foreach ($file in $creatureFiles) {
-        $content = Get-Content $file.FullName -Raw
-        if ($content -match 'guid\s*=\s*"\{?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\}?"') {
-            $guid = $Matches[1]
-            $dest = Join-Path $MetaOut "creatures\$guid.lua"
-            Copy-Item $file.FullName $dest
-            $counts["creatures"]++
-        } else {
-            $warnings += "No GUID found in creature $($file.Name) -- skipping"
-            Write-Warning "No GUID found in creature $($file.Name) -- skipping"
-        }
-    }
-}
-
-# --- All other directories: copy as-is ---
-$specialDirs = @("objects", "creatures")
-foreach ($srcName in $srcDirs) {
-    if ($specialDirs -contains $srcName) { continue }
-    # Determine source path: shared dirs (templates, materials) are under MetaRoot,
-    # world-specific dirs are under WorldRoot
-    if ($sharedDirs -contains $srcName) {
-        $srcPath = Join-Path $MetaRoot $srcName
-    } elseif ($srcName -eq "worlds") {
-        $srcPath = Join-Path $MetaRoot "worlds\manor"
-    } else {
-        $srcPath = Join-Path $WorldRoot $srcName
-    }
-    $outName = if ($dirMap[$srcName]) { $dirMap[$srcName] } else { $srcName }
-    $outPath = Join-Path $MetaOut $outName
-    $counts[$outName] = 0
+# --- Shared directories (templates, materials) ---
+foreach ($srcName in $sharedDirs) {
+    $srcPath = Join-Path $MetaRoot $srcName
+    $outPath = Join-Path $MetaOut $srcName
+    $counts[$srcName] = 0
     $files = Get-ChildItem -Path $srcPath -File -Filter "*.lua" | Sort-Object Name
     foreach ($file in $files) {
-        $dest = Join-Path $outPath $file.Name
-        Copy-Item $file.FullName $dest
-        $counts[$outName]++
+        Copy-Item $file.FullName (Join-Path $outPath $file.Name)
+        $counts[$srcName]++
     }
+    Write-Host "  $($srcName): $($counts[$srcName]) files -> meta/$srcName/ (shared)"
 }
 
+# --- Summary ---
 $total = ($counts.Values | Measure-Object -Sum).Sum
 
+Write-Host ""
+Write-Host "  Summary:"
 foreach ($key in ($counts.Keys | Sort-Object)) {
-    $label = $key.PadRight(12)
-    $suffix = if ($key -eq "objects") { "(renamed by GUID)" } else { "" }
-    Write-Host "  ${label} $($counts[$key]) files -> meta/$key/ $suffix"
+    $label = $key.PadRight(22)
+    Write-Host "    ${label} $($counts[$key]) files"
 }
-Write-Host "  Total:       $total files"
+Write-Host "    Total:                 $total files"
 
 if ($warnings.Count -gt 0) {
     Write-Host ""
@@ -165,34 +199,81 @@ if ($commitHash) {
 Write-Host "  Stamped game-adapter.lua: BUILD_TIMESTAMP = `"$timestamp`""
 
 # Generate meta/_index.lua manifest for browser JIT loading
-# Lists filenames (without .lua extension) per non-object meta directory
+# Merged rooms from all worlds, shared categories
 $indexLines = @("return {")
-foreach ($srcName in ($srcDirs | Sort-Object)) {
-    if ($specialDirs -contains $srcName) { continue }
-    $outName = if ($dirMap[$srcName]) { $dirMap[$srcName] } else { $srcName }
-    # Determine source path for manifest generation
-    if ($sharedDirs -contains $srcName) {
-        $srcPath = Join-Path $MetaRoot $srcName
-    } elseif ($srcName -eq "worlds") {
-        $srcPath = Join-Path $MetaRoot "worlds\manor"
-    } else {
-        $srcPath = Join-Path $WorldRoot $srcName
+
+# Collect all rooms across worlds
+$allRooms = @()
+foreach ($worldName in $allWorlds) {
+    $roomDir = Join-Path $WorldsDir "$worldName\rooms"
+    if (Test-Path $roomDir) {
+        $roomFiles = Get-ChildItem -Path $roomDir -File -Filter "*.lua" | Sort-Object Name
+        $allRooms += $roomFiles | ForEach-Object { $_.BaseName }
     }
+}
+$allRooms = $allRooms | Sort-Object -Unique
+$roomNames = ($allRooms | ForEach-Object { '    "' + $_ + '"' }) -join ",`n"
+$indexLines += "  rooms = {"
+$indexLines += $roomNames
+$indexLines += "  },"
+
+# Collect all injuries across worlds
+$allInjuries = @()
+foreach ($worldName in $allWorlds) {
+    $injuryDir = Join-Path $WorldsDir "$worldName\injuries"
+    if (Test-Path $injuryDir) {
+        $injuryFiles = Get-ChildItem -Path $injuryDir -File -Filter "*.lua" | Sort-Object Name
+        $allInjuries += $injuryFiles | ForEach-Object { $_.BaseName }
+    }
+}
+if ($allInjuries.Count -gt 0) {
+    $allInjuries = $allInjuries | Sort-Object -Unique
+    $injuryNames = ($allInjuries | ForEach-Object { '    "' + $_ + '"' }) -join ",`n"
+    $indexLines += "  injuries = {"
+    $indexLines += $injuryNames
+    $indexLines += "  },"
+}
+
+# Collect all levels (manor flat for backward compat)
+$manorLevelDir = Join-Path $WorldsDir "manor\levels"
+if (Test-Path $manorLevelDir) {
+    $levelFiles = Get-ChildItem -Path $manorLevelDir -File -Filter "*.lua" | Sort-Object Name
+    $levelNames = ($levelFiles | ForEach-Object { '    "' + $_.BaseName + '"' }) -join ",`n"
+    $indexLines += "  levels = {"
+    $indexLines += $levelNames
+    $indexLines += "  },"
+}
+
+# Shared dirs
+foreach ($srcName in ($sharedDirs | Sort-Object)) {
+    $srcPath = Join-Path $MetaRoot $srcName
     $files = Get-ChildItem -Path $srcPath -File -Filter "*.lua" | Sort-Object Name
     $names = ($files | ForEach-Object { '    "' + $_.BaseName + '"' }) -join ",`n"
-    $indexLines += "  $outName = {"
+    $indexLines += "  $srcName = {"
     $indexLines += $names
     $indexLines += "  },"
 }
+
+# Worlds list
+$worldNames = ($allWorlds | Sort-Object | ForEach-Object { '    "' + $_ + '"' }) -join ",`n"
+$indexLines += "  worlds = {"
+$indexLines += $worldNames
+$indexLines += "  },"
+
 $indexLines += "}"
 $indexPath = Join-Path $MetaOut "_index.lua"
 $indexContent = $indexLines -join "`n"
 [System.IO.File]::WriteAllText($indexPath, $indexContent, $utf8NoBom)
 Write-Host "  Generated meta/_index.lua manifest"
 
-$objectCount = if ($counts["objects"]) { $counts["objects"] } else { 0 }
-$roomCount = if ($counts["rooms"]) { $counts["rooms"] } else { 0 }
-Write-Host "Meta built ($timestamp) -> $objectCount objects, $roomCount rooms, $total total"
+# Per-world totals
+$totalObjects = 0
+$totalRooms = 0
+foreach ($key in $counts.Keys) {
+    if ($key -like "objects(*") { $totalObjects += $counts[$key] }
+    if ($key -like "rooms(*") { $totalRooms += $counts[$key] }
+}
+Write-Host "Meta built ($timestamp) -> $totalObjects objects, $totalRooms rooms, $total total ($($allWorlds.Count) worlds)"
 
 # --- Sound assets: copy assets/sounds/ to dist/sounds/ ---
 $soundSrc = Join-Path $RepoRoot "assets\sounds"

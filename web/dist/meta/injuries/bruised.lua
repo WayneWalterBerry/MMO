@@ -1,4 +1,4 @@
--- src/meta/injuries/bruised.lua
+-- src/meta/worlds/manor/injuries/bruised.lua
 -- Injury template: Bruise
 -- Pattern: One-time blunt damage, self-heals naturally, rest accelerates
 -- FSM: active → healed  (natural path, 8 turns)

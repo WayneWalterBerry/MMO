@@ -1,4 +1,4 @@
--- src/meta/injuries/poisoned-nightshade.lua
+-- src/meta/worlds/manor/injuries/poisoned-nightshade.lua
 -- Injury template: Nightshade Poisoning
 -- Pattern: Rapid lethal over-time damage, specific antidote only
 -- FSM: active → neutralized → healed  (antidote in time)

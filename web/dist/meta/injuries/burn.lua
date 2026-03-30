@@ -1,4 +1,4 @@
--- src/meta/injuries/burn.lua
+-- src/meta/worlds/manor/injuries/burn.lua
 -- Injury template: Burn
 -- Pattern: One-time damage from flame contact, cold water or damp cloth treats
 -- FSM: active → treated → healed  (cold water/cloth path)

@@ -61,3 +61,32 @@
      - Index: https://waynewalterberry.github.io/play/
      - Debug URL: https://waynewalterberry.github.io/play/?debug
      - Commit hash & timestamp visible in debug output on page load
+
+- **WAVE-3c Multi-World Web Deploy (2026-03-29):**
+  - **Trigger:** Wayne Berry (autonomous — Wayne at party, wants playable when he returns)
+  - **Status:** ✓ BUILD SUCCESS — ready for deploy push
+  - **Deliverable 1:** `web/build-meta.ps1` — Refactored for multi-world support
+    - Discovers ALL worlds under `src/meta/worlds/` (manor + wyatt-world)
+    - Objects/creatures from all worlds → flat `meta/{category}/{guid}.lua` (GUID-renamed, no conflicts)
+    - Rooms from all worlds → flat `meta/rooms/{name}.lua` (no name collisions)
+    - World definitions → `meta/worlds/{world_id}/world.lua` (per-world)
+    - Levels → `meta/worlds/{world_id}/levels/` (per-world) + `meta/levels/` (manor backward compat)
+    - Shared content (templates, materials) → unchanged
+    - World-specific content (injuries) → merged into flat dirs
+    - `_index.lua` manifest includes both worlds' rooms and world list
+  - **Deliverable 2:** `web/game-adapter.lua` — World-aware level loading
+    - Level loading now tries `meta/{content_root}/levels/level-01.lua` first
+    - Falls back to `meta/levels/level-01.lua` for backward compat
+    - World definition loading already worked (Bart WAVE-0)
+    - `?world=wyatt-world` selects Wyatt's World; no param = manor
+  - **Build output:** 283 total files (211 objects, 14 rooms, 2 worlds)
+    - manor: 143 objects, 5 creatures, 7 rooms, 11 injuries, 1 level
+    - wyatt-world: 68 objects, 7 rooms, 1 level
+    - shared: 8 templates, 32 materials
+  - **Verification:** `bootstrapper.js` reads `?world=` URL param → `window._selectedWorld` → adapter selects world → loads world-specific level → loads world-specific rooms/objects
+  - **Backward compat:** Base URL (no `?world=`) still loads The Manor
+  - **Tests:** 7,643 tests pass (277 files). 12 pre-existing failures (not related to this change).
+  - **URLs:**
+    - Manor: https://waynewalterberry.github.io/play/
+    - Wyatt's World: https://waynewalterberry.github.io/play/?world=wyatt-world
+    - Debug: https://waynewalterberry.github.io/play/?world=wyatt-world&debug

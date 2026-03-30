@@ -1,4 +1,20 @@
 return {
+  rooms = {
+    "beast-burger-kitchen",
+    "beast-studio",
+    "cellar",
+    "courtyard",
+    "crypt",
+    "deep-cellar",
+    "feastables-factory",
+    "grand-prize-vault",
+    "hallway",
+    "last-to-leave",
+    "money-vault",
+    "riddle-arena",
+    "start-room",
+    "storage-cellar"
+  },
   injuries = {
     "bleeding",
     "bruised",
@@ -49,15 +65,6 @@ return {
     "wood",
     "wool"
   },
-  rooms = {
-    "cellar",
-    "courtyard",
-    "crypt",
-    "deep-cellar",
-    "hallway",
-    "start-room",
-    "storage-cellar"
-  },
   templates = {
     "container",
     "creature",
@@ -69,6 +76,7 @@ return {
     "world"
   },
   worlds = {
-    "world-01"
+    "manor",
+    "wyatt-world"
   },
 }

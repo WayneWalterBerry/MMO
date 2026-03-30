@@ -48,8 +48,8 @@ local function log_debug(msg)
 end
 
 -- Build version (embedded at build time)
-local BUILD_TIMESTAMP = "2026-03-29 13:27"
-local BUILD_VERSION = "1d80a60"
+local BUILD_TIMESTAMP = "2026-03-29 18:34"
+local BUILD_VERSION = "03f408e"
 
 local function format_size(bytes)
     if bytes >= 1048576 then
@@ -585,10 +585,16 @@ local ok, err = pcall(function()
     end
 
     -------------------------------------------------------------------
-    -- Load level and starting room
+    -- Load level and starting room (world-aware)
     -------------------------------------------------------------------
     log_debug("Loading Level 1...")
-    local level_source = fetch_text("meta/levels/level-01.lua")
+    local level_source
+    if selected_world and selected_world.content_root then
+        level_source = fetch_text("meta/" .. selected_world.content_root .. "/levels/level-01.lua")
+    end
+    if not level_source then
+        level_source = fetch_text("meta/levels/level-01.lua")
+    end
     local level = level_source and loader.load_source(level_source)
 
     local start_room_id = (level and level.start_room) or "start-room"

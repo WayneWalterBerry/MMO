@@ -1,4 +1,4 @@
--- src/meta/injuries/rabies.lua
+-- src/meta/worlds/manor/injuries/rabies.lua
 -- Injury template: Rabies
 -- Pattern: Silent incubation → escalating neurological damage → fatal
 -- FSM: incubating → prodromal → furious → fatal  (untreated)

@@ -10,6 +10,12 @@ return {
     description = "You stand in a dim bedchamber that smells of tallow, old wool, and the faintest ghost of lavender. The stone walls are bare save for the shadows that cling to them like ivy. Cold flagstones line the floor, and pale grey light filters in from somewhere, barely enough to see by. The air is still and heavy, as though the room has been holding its breath for a very long time.",
     short_description = "A dim bedchamber of cold stone and stale air.",
 
+    goals = {
+        { verb = "light", noun = "candle", label = "find a source of light", priority = 1 },
+        { verb = "go", noun = "north", label = "find a way out of the bedroom", priority = 2 },
+    },
+    options_delay = 3,
+
     -- No ambient_loop — silence IS the bedroom's atmosphere at 2 AM.
     -- Sound system initializes here but plays nothing; first audible
     -- ambient is the cellar water drips on room transition.

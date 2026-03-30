@@ -1,4 +1,4 @@
--- src/meta/injuries/bleeding.lua
+-- src/meta/worlds/manor/injuries/bleeding.lua
 -- Injury template: Bleeding Wound
 -- Pattern: Over-time damage with degenerative worsening if untreated
 -- FSM: active → treated → healed  (happy path)

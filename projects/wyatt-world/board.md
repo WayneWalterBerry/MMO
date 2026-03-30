@@ -5,7 +5,7 @@
 **Team:** Bart (Engine), Moe (Rooms), Flanders (Objects), Sideshow Bob (Puzzles), Smithers (Parser), Nelson (Testing), Gil (Web)  
 **Target Player:** Wyatt, age 10  
 **Created:** 2026-03-27  
-**Updated:** 2026-08-23  
+**Updated:** 2026-03-29  
 **Overall Status:** 🔄 In Progress — Implementation plan v2.1 complete (review fixes applied)  
 **Plan:** `projects/wyatt-world/plan.md` (Bart v2.1)
 
@@ -34,7 +34,7 @@
 | **WAVE-2b** | **Nelson** | Puzzle walkthroughs, sensory coverage, reading-level scan | GATE-2 | ⏳ Blocked on GATE-1 |
 | **WAVE-3a** | **CBG** | Creative review | GATE-3 | ⏳ Blocked on GATE-2 |
 | **WAVE-3b** | **Wayne** | Reading-level text audit | GATE-3 | ⏳ Blocked on GATE-2 |
-| **WAVE-3c** | **Gil** | Web world selector + deploy | GATE-3 | ⏳ Blocked on GATE-2 |
+| **WAVE-3c** | **Gil** | Web world selector + deploy | GATE-3 | ✅ Complete |
 
 ## Next Steps
 
@@ -79,6 +79,13 @@
 - [ ] GATE-3: Creative + reading-level sign-off + web live (CBG/Wayne/Gil)
 - [ ] Wayne + Wyatt play + approve
 
+## Playable URLs
+
+| World | URL |
+|-------|-----|
+| The Manor (default) | https://waynewalterberry.github.io/play/ |
+| Wyatt's World | https://waynewalterberry.github.io/play/?world=wyatt-world |
+
 ---
 
-**Last Updated:** 2026-08-23 (Bart — v2.1 review fixes)
+**Last Updated:** 2026-03-29 (Gil — WAVE-3c web deploy)
