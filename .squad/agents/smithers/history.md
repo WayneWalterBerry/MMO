@@ -7,20 +7,9 @@
 - **Stack:** Pure Lua, no external dependencies
 - **My Focus:** UI layer (text output, presentation, player feedback) and Parser pipeline (Tiers 1-5, verb resolution, disambiguation, GOAP)
 
-## Core Context (Archived Sessions Summary)
+## Core Responsibilities
 
-This section summarizes 50+ prior sessions covering UI architecture, web deployment, parser pipeline optimization, and web performance.
-
-**Key Accomplishments (Cumulative):**
-- Built 3x UI architecture documentation (README, text-presentation, parser-overview)
-- Deployed three-layer web architecture (bootstrapper.js -> engine.lua.gz -> JIT-loaded meta)
-- Fixed web performance: 16MB bundle -> 135KB initial load
-- Implemented parser phrase-routing refactor (7-stage pipeline)
-- Fixed 5 parser bugs (issues #35-39) with Pass038 phrase ordering
-- 45+ test files, 880+ total tests passing
-- Web site live at github.io/play/ with cache-busting strategy
-
-**Parser Pipeline Highlights:**
+**Parser Pipeline:**
 - Tier 1: Exact verb dispatch (70% coverage, <1ms)
 - Tier 2: Phrase similarity with token overlap (90% cumulative, ~5ms)
 - Tier 3: GOAP planning with prerequisite chaining (98% cumulative, ~100ms)
@@ -31,25 +20,44 @@ This section summarizes 50+ prior sessions covering UI architecture, web deploym
 - Synchronous XHR with HTTP caching (ETag/Last-Modified)
 - Progressive loading with boot status messages
 - Mobile-first dark theme terminal UI
-- Cache-busting via build timestamp injection
 
-**Parser Recent Work (Phase 3):**
-- Parser pipeline expansion prep work (Tier 4-5 design docs)
-- Phrase system implementation (Pass037/038 ordering)
-- Web bundle optimization completed
-- Documentation for text presentation and verb system
-
-**File Paths (Ongoing Responsibility):**
+**Key Ownership:**
 - src/engine/parser/ - parser pipeline (Tiers 1-5)
 - src/engine/ui/ - UI module, text formatting
 - src/engine/verbs/init.lua - verb dispatch (text output)
-- docs/architecture/ui/ - UI architecture docs
 - web/ - web build pipeline, browser wrapper
 
-**Known Issues/Patterns:**
-- Parallel output from concurrent linters interleaves - D-MUTATION-LINT-PARALLEL addresses this via sequential collection
-- Parser Tier 4 context window needs testing at scale
-- Web performance gains hold at 135KB initial load + progressive hydration
+## Key Parser Patterns
+
+### Options System Integration
+- **Idiom table duplication:** Both `data.lua` and `idioms.lua` IDIOM_TABLEs exist; both need updates
+- **Pattern ordering matters:** Options patterns placed BEFORE generic patterns to prevent false matches
+- **Number interception:** Goes after trim + question-mark strip but before multi-command splitting
+- **pending_options lifecycle:** One-shot design — cleared by loop on valid selection, invalid number, or non-numeric input
+- **"nudge" collision:** Already exists as physical verb; added as bare-word match in transform_questions
+
+### Parser Validation Gates
+All 6 validation gates (P1-P6) implemented:
+1. Noun validation
+2. Verbose truncation
+3. Question transform
+4. Noun exactness
+5. Adjective guard
+6. Unknown lead-word guard
+
+### Recent Parser Polish (WAVE-2a, 2026-08-23)
+
+**Kid-Friendly Error Messages:**
+- Check `context.world.rating == "E"` to show encouraging messages
+- E-rated: "Hmm, try looking around for clues!" vs standard: "You don't notice anything called that nearby..."
+
+**Puzzle Verb Coverage:**
+- Added 5 verbs: `sort`, `count`, `press`, `assemble`, `build`
+- Added 6 gerunds: `sorting`, `counting`, `pressing`, `assembling`, `building`, `entering`
+
+**Embedding Index Update:**
+- Added 40 new phrases for MrBeast vocabulary (Wyatt's World)
+- Total phrases: 11,755
 
 ## Learnings
 

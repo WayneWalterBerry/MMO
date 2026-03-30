@@ -18,11 +18,34 @@
 
 **Agent Role:** Tester responsible for playtest validation, bug discovery, and regression verification.
 
-**Testing Summary (2026-03-19 to 2026-03-23):**
-- 12 playtests completed, 346+ tests run, 284+ passed
-- Critical path: bedroom → cellar → storage-cellar → deep-cellar → hallway ✅ COMPLETE
-- 60 unique bugs discovered (8 CRITICAL/HIGH, 20 MEDIUM+MAJOR, 4 LOW, 28 MINOR/COSMETIC)
-- Phase 3 features (hit/unconsciousness/appearance/mirror): engine solid, parser gaps identified
+**Master Testing Summary:**
+- 272+ total test files maintained
+- Phase 4 features (hit/unconsciousness/appearance/mirror): engine solid, parser gaps fixed
+- Wyatt's World full test suite: 140 tests across 4 files, all passing
+- World loader + E-rating tests: 80 new tests, all passing
+- Pre-deploy gate verification infrastructure established
+
+## Key Learnings & Patterns
+
+### TDD Test Patterns
+- `test-helpers.lua` has: `assert_eq`, `assert_truthy`, `assert_nil`, `assert_no_error` (no `assert_gt`/`assert_gte`)
+- Module loading workaround: read source, strip trailing `main()`, append return table, load chunk
+- `main()` functions don't return data — wrap them with runner functions
+- Suite headers are just print statements, NOT function wrappers
+- Tests follow directly after `suite("name")` calls
+
+### Infrastructure Insights
+- Linter (lint.py) and mutation graph (mutation-edge-check.lua) must handle nested world structure
+- `--bench` flag discovers `bench-*.lua` files separately from correctness tests
+- Python availability guard: check `io.popen("python --version")` before running Python tests
+- Environment setup is as critical as test logic — pre-flight gates prevent false negatives in CI
+
+### Wyatt's World Safety Validation
+- No `damage`, `weapon_type`, or `poison` properties on any object
+- No scary words in descriptions (dark/shadow/monster/death/blood/scary)
+- All `on_taste` use positive/fun language (whole-word matching to avoid false positives)
+- Room sentence length ≤15 words, object sentences ≤25 words
+- E-rating confirmed; 12 combat verbs blocked, 12 safe verbs allowed
 
 ## Learnings
 

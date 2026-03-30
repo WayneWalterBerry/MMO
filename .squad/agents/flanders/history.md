@@ -12,28 +12,39 @@
 
 ---
 
-## 2026-03-28: Worlds Meta Concept (Decision: D-WORLDS-CONCEPT)
+## Essential Patterns & Learnings
 
-**New hierarchy:** World → Level → Room → Object/Creature/Puzzle
+### Object Design Principles
+1. **Every object MUST have `on_feel`** — it's the primary dark sense
+2. **Food system has two pathways:** Small creatures (rat/bat/cat) use corpse-as-raw-meat; large creatures (wolf/spider) use butcher→separate raw products
+3. **Creature metadata must be pure data** — no inline functions (Principle 8)
+4. **Unique registration IDs critical** — `registry.get()` uses id field, not guid
+5. **Territory markers need both fields:** `territorial` (config) AND `territory` (room-id string)
+6. **Healing metadata requires top-level `use_effect` field** — not just design properties
 
-**What changed for Flanders:**
-- Objects now belong to a **World**, which defines a **theme**
-- When designing objects, validate materials against the World's `theme.aesthetic.materials` and `theme.aesthetic.forbidden`
-- Theme specifies allowed/forbidden materials, era, atmosphere, tone
-- World 1: "The Manor" (gothic domestic horror, late medieval)
+### Creature Zone Names & Narration
+- Combat narration uses creature-specific body zone names from `body_tree[zone].names`
+- All creatures (spider, rat, wolf, cat, bat) have `names` arrays per zone
+- Engine `zone_text()` checks creature zones first before falling back
+- Different creatures need different vocabulary (spider has "fangs", human has "teeth")
 
-**How to use it:**
-1. Load the World definition from `src/meta/worlds/{world-name}.lua`
-2. Read `world.theme.aesthetic` (includes `materials` list and `forbidden` list)
-3. Design objects consistent with theme
-4. Check: all materials in my objects are in the allowed list
-5. If theme is complex, it may reference `.lua` subsections in `src/meta/worlds/themes/`
+### Territory & Sensory System
+- Territory markers use unique IDs (`territory-marker-{uid}`)
+- Room contents reference markers by registration id, not guid
+- Narration cleanup required for mid-sentence capitalization and prepositions
+- Deduplication needed when creatures appear in both room.contents and get_creatures_in_room()
+- State-aware sensory text must be checked for animate objects
 
-**Key decision:** Theme is **never player-facing** — it's the creative brief for designers. Use it to ensure aesthetic consistency.
+---
 
-**Related decision docs:**
-- `docs/design/worlds.md` — Full specification (28 KB)
-- `.squad/decisions.md` — Decision D-WORLDS-CONCEPT (full context)
+## Recent Major Work (2026-08-23)
+
+### WAVE-1b — Wyatt's World Objects (68 files)
+- Built all ~70 objects for Wyatt's World (MrBeast challenge arena for Wyatt, age 10)
+- 68 unique GUIDs, all 68 have `on_feel` (engine requirement)
+- All sensory text at 3rd-grade reading level
+- Zero Lua syntax errors, zero test regressions (273 pass, 4 pre-existing failures unchanged)
+- **Key design decision:** Foam material for burger ingredients (TV set props, not real food)
 
 ## Learnings
 
