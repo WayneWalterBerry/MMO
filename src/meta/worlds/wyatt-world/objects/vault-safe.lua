@@ -17,9 +17,9 @@ return {
     weight_capacity = 10,
     max_item_size = 3,
 
-    name = "an enormous safe",
+    name = "a huge safe",
     description = "A giant metal safe against the back wall. It has a number pad with buttons 0 through 9. A sign above says: \"Count it up! The total opens the safe.\" Type the right number to open it!",
-    room_presence = "An enormous safe stands against the back wall with a number pad.",
+    room_presence = "A huge safe stands against the back wall with a number pad.",
     on_feel = "Cold, heavy metal. The number pad buttons are clicky and fun to press.",
     on_smell = "Cold metal and a tiny bit of oil. Like a bank vault!",
     on_listen = "The buttons beep when you press them. Beep beep beep!",
@@ -34,13 +34,13 @@ return {
 
     states = {
         locked = {
-            name = "an enormous safe (locked)",
+            name = "a huge safe (locked)",
             description = "A giant metal safe. The number pad glows red. It's locked! You need to enter the right number.",
             on_feel = "Cold heavy metal. The door won't budge. Enter the code!",
             accessible = false,
         },
         unlocked = {
-            name = "an enormous safe (open!)",
+            name = "a huge safe (open!)",
             description = "The safe door swings open! Green lights flash! Inside sits a beautiful golden trophy!",
             on_feel = "The heavy door is open. Warm air flows out. Something shiny is inside!",
             accessible = true,

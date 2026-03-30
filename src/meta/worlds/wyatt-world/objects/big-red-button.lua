@@ -11,9 +11,9 @@ return {
     portable = false,
 
     name = "a big red button",
-    description = "A shiny red button the size of your fist. It sits on top of the golden podium. It looks like it wants to be pushed!",
-    room_presence = "A big shiny red button sits on top of the podium.",
-    on_feel = "Smooth and round. It clicks when you press down a little. So satisfying!",
+    description = "A shiny red button the size of your fist. It sits on top of the golden stand. It looks like it wants to be pushed!",
+    room_presence = "A big shiny red button sits on top of the stand.",
+    on_feel = "Smooth and round. It clicks when you press down a little. So fun!",
     on_smell = "Smells like clean plastic. Nothing special.",
     on_listen = "You hear a tiny click when you tap it. Ready to go!",
     on_taste = "You lick the button. Tastes like plastic and fun!",
@@ -26,13 +26,13 @@ return {
     states = {
         unpressed = {
             name = "a big red button",
-            description = "A shiny red button the size of your fist. It sits on top of the golden podium. It looks like it wants to be pushed!",
-            on_feel = "Smooth and round. It clicks when you press down a little. So satisfying!",
+            description = "A shiny red button the size of your fist. It sits on top of the golden stand. It looks like it wants to be pushed!",
+            on_feel = "Smooth and round. It clicks when you press down a little. So fun!",
         },
         pressed = {
             name = "a big red button (pressed)",
             description = "The big red button is pushed down. Confetti is flying everywhere! You did it!",
-            on_feel = "The button is pushed down flat. You can feel the click still vibrating.",
+            on_feel = "The button is pushed down flat. You can feel the click still shaking.",
         },
     },
 

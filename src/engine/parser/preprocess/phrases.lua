@@ -79,6 +79,13 @@ end
 
 -- Stage: transform_questions
 function phrases.transform_questions(text)
+    -- Handle greetings before extracting directions
+    if text:match("^what'?s%s+up%s*$") or text:match("^what%s+is%s+up%s*$")
+        or text:match("^whats%s+up%s*$") or text:match("^wassup%s*$")
+        or text:match("^sup%s*$") then
+        return "look"
+    end
+
     if text:match("^what'?s%s+in%s+my%s+hands")
         or text:match("^what%s+is%s+in%s+my%s+hands") then
         return "inventory"

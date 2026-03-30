@@ -18,8 +18,8 @@ return {
     max_item_size = 4,
 
     name = "a giant treasure chest",
-    description = "A HUGE treasure chest in the center of the room! It's made of dark wood with gold bands. A combination lock with three dials sits on the front. Each dial needs a number. The letter has the clues!",
-    room_presence = "A giant treasure chest sits in the center with a combination lock.",
+    description = "A HUGE treasure chest in the center of the room! It's made of wood with gold bands. A lock with three dials sits on the front. Each dial needs a number. The letter has the clues!",
+    room_presence = "A giant treasure chest sits in the center with a lock.",
     on_feel = "Thick wood with cold metal bands. The three dials spin smoothly. Click, click, click!",
     on_smell = "Old wood and metal. It smells like treasure!",
     on_listen = "The dials click when you turn them. Click. Click. Click. What's the combo?",
@@ -35,8 +35,8 @@ return {
     states = {
         locked = {
             name = "a giant treasure chest (locked)",
-            description = "A huge treasure chest with a combination lock. Three dials wait for the right numbers. Read the letter for clues!",
-            on_feel = "Thick wood with metal bands. The lock won't budge. Enter the right combo!",
+            description = "A huge treasure chest with a lock. Three dials wait for the right numbers. Read the letter for clues!",
+            on_feel = "Thick wood with metal bands. The lock won't budge. Enter the right code!",
             accessible = false,
         },
         unlocked = {

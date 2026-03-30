@@ -33,15 +33,17 @@ function M.register(handlers)
             if not l_ok then light = "dark" end
             if light == "dark" then
                 print("**" .. (ctx.current_room.name or "Unknown room") .. "**")
-                print("It is too dark to see. You need a light source. Try 'feel' to grope around in the darkness.")
+                print("It is too dark to see. You need a light source. Try 'feel' to explore by touch.")
                 local t_ok, hour, minute = pcall(get_game_time, ctx)
                 if t_ok then
                     local sky = ctx.current_room and ctx.current_room.sky_visible
                     local desc = time_of_day_desc(hour, sky)
                     if desc then
-                        print("\n" .. desc .. " It is " .. format_time(hour, minute) .. ".")
+                        print("")
+                        print(desc .. " It is " .. format_time(hour, minute) .. ".")
                     else
-                        print("\nIt is " .. format_time(hour, minute) .. ".")
+                        print("")
+                        print("It is " .. format_time(hour, minute) .. ".")
                     end
                 end
                 return

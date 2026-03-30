@@ -140,3 +140,33 @@ The `death_state.crafting.cook` field on creature definitions is the key mechani
 5. **No inline functions:** All objects are pure data tables. No `on_look` functions, no `on_feel` functions. Principle 8 compliance — objects declare, engine executes.
 
 **Lesson:** Building for a kid audience changes EVERYTHING about sensory writing. Manor objects describe texture, weight, temperature — physical realism. Wyatt objects describe fun, silliness, excitement — emotional engagement. Same engine, radically different voice. The `on_taste` field went from "dangerous poison mechanic" to "comedy opportunity." Both are valid uses of the same system.
+
+### 2026-08-24: Fix-5 — Content Simplification for Wyatt's World
+
+**Task:** Simplify complex vocabulary in Wyatt's World objects to meet 3rd-grade reading level (8-12 words/sentence, common words, 3 syllables max unless common).
+
+**Files edited:** 15 object files + 1 level file
+- letter-pedestal.lua: "pedestal"→"stand", "velvet"→"soft"
+- stage-hole.lua: "musty"→"dusty", "darkness"→"it's really dark"
+- camera.lua: "tripod"→"stand with three legs"
+- vault-safe.lua: "enormous"→"huge"
+- arena-clock.lua, speaker.lua, big-red-button.lua: "vibrate"→"shake"
+- big-red-button.lua: "satisfying"→"fun", "podium"→"stand"
+- welcome-sign.lua: "Contestant"→"Player", "podium"→"stand"
+- prize-chest.lua: "combination"→"code", removed "dark" reference
+- recipe-card.lua: "laminated"→"shiny", "lamination"→"cardboard"
+- scoreboard.lua: broke 17-word sentence into two, "electronics"→"screen"
+- cold-lamp.lua: broke long sentence, "dark"→"gives no light"
+- conveyor-belt.lua: "conveyor belt"→"moving belt"
+- golden-podium.lua, riddle-podium.lua: "podium"→"stand"
+- ingredient-shelf.lua: "ingredients"→"food" or "stuff"
+- giant-screen.lua, tv-screen.lua: "electronics"→"screen"
+- level-01.lua: "Contestant"→"Player"
+
+**Validation:**
+- Linter passed (material warnings pre-existed, unrelated to content)
+- All edits preserved meaning and MrBeast energy
+- Sentence length reduced where flagged (scoreboard, cold-lamp)
+- "Dark" references rephrased to be less scary (stage-hole, prize-chest, cold-lamp)
+
+**Lesson:** 3rd-grade vocabulary is HARDER than sensory realism. Every word choice matters. "Pedestal" feels fancy but blocks a 10-year-old. "Stand" is instant comprehension. The goal isn't dumbing down — it's removing friction between the kid and the story. Also: "podium" at a game show might be okay (YouTube exposure), but "stand" is safer. When in doubt, go simpler.

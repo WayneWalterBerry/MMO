@@ -507,6 +507,19 @@ function verbs.create()
         local original_hit = handlers["hit"]
 
         handlers["attack"] = function(ctx, noun)
+            -- E-rating enforcement: block in E-rated worlds (belt & suspenders with loop check)
+            if ctx and ctx.world and ctx.world.rating == "E" then
+                local friendly_messages = {
+                    "Whoa! This is a friendly zone. Try exploring instead!",
+                    "No fighting here! Try looking around or solving a puzzle.",
+                    "Let's keep this fun and friendly! What else can you try?",
+                    "That's not how we solve puzzles here! Try examining things.",
+                }
+                local msg = friendly_messages[math.random(#friendly_messages)]
+                print(msg)
+                return
+            end
+            
             if noun == "" then
                 print("Attack what?")
                 return

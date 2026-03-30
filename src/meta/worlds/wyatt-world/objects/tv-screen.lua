@@ -14,7 +14,7 @@ return {
     description = "A flat-screen TV on the wall. It shows a nature scene with birds flying. Just a normal TV! Nothing strange here.",
     room_presence = "A flat-screen TV shows a calm nature scene.",
     on_feel = "Smooth glass screen. Warm from being turned on. Normal!",
-    on_smell = "A faint warm electronics smell. Like any TV.",
+    on_smell = "A faint warm screen smell. Like any TV.",
     on_listen = "Quiet bird sounds play from the TV. Tweet tweet! Normal!",
     on_taste = "You lick the TV. Glass! Tastes like a normal screen!",
 

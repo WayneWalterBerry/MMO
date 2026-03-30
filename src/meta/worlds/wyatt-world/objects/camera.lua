@@ -11,8 +11,8 @@ return {
     portable = false,
 
     name = "a video camera",
-    description = "A big video camera on a tall tripod. A red light blinks on top. It's recording! You're going to be in a MrBeast video!",
-    room_presence = "A video camera on a tripod points at you. The red light is on!",
+    description = "A big video camera on a tall stand with three legs. A red light blinks on top. It's recording! You're going to be in a MrBeast video!",
+    room_presence = "A video camera on a stand points at you. The red light is on!",
     on_feel = "Cool metal and smooth plastic. The lens is round like a big eye.",
     on_smell = "Faint smell of metal and rubber grips.",
     on_listen = "A soft whirring sound. The camera is recording!",

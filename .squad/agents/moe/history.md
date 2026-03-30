@@ -167,3 +167,35 @@ All files under `src/meta/worlds/wyatt-world/`.
 - **Bob (WAVE-1c):** Room descriptions match CBG's design.md puzzle specs. Goals align with puzzle mechanics.
 - **Nelson (WAVE-1d):** Room-load tests can validate: 7 rooms load, required fields present, exits resolve, hub connectivity verified.
 - **Bart:** GUID pre-assignment file (`bart-wyatt-guids.md`) was not found. Generated GUIDs independently. No collision risk — all GUIDs verified unique.
+
+---
+
+## Learnings
+
+### 2025-01-XX — Wyatt World Room Wiring (Fix-0 + Fix-1)
+**Task:** Wire 68 objects into 7 rooms + add lighting to all rooms
+**Outcome:** Successfully completed. All 7 rooms now have `light_level = 1` and populated `instances` arrays with correct object GUIDs and spatial nesting.
+
+**Key Decisions:**
+- **Nesting Logic:** Used spatial common sense for object placement:
+  - `on_top`: Buttons on podiums, cards on tables, chocolate bars on conveyor belt, ingredients on shelf, letter on pedestal, book on bookshelf
+  - `contents`: Reserved for containers (bins, drawers — not heavily used in this world)
+  - Standalone objects: Most decorative/functional items placed at room level (signs, furniture, prizes)
+- **Light Level:** Set all rooms to `light_level = 1` since Wyatt's World is an E-rated kids' game show — no darkness puzzles
+
+**Lessons:**
+- Deep nesting syntax is straightforward: parent object defines nested arrays (`on_top`, `contents`, `nested`, `underneath`)
+- GUIDs must match exactly between room `type_id` and object `guid` — used PowerShell to extract and verify all 68 GUIDs
+- Puzzle specs are the authoritative source for object→room mapping
+- Room `description` should only contain permanent features; movable objects go in `instances` for runtime composition
+
+**Technical Notes:**
+- Beast Studio (hub): 11 instances (welcome sign, podium with button, decorative studio equipment)
+- Feastables Factory: 7 instances (conveyor belt with 5 chocolate bars on top, 4 sorting bins, medal)
+- Money Vault: 6 instances (3 tables each with card on top, safe, sign, gold coins)
+- Beast Burger Kitchen: 6 instances (shelf with 6 ingredients on top, plate, grill, sign, recipe card, coupon)
+- Last to Leave: 6 instances (couch, rug, bookshelf with backwards book, lamp, clock, found-it box)
+- Riddle Arena: 9 instances (3 riddle boards, podium, clock, piano, hole, spotlight, trophy)
+- Grand Prize Vault: 6 instances (chest, pedestal with letter on top, trophy, streamers, confetti cannon, golden trophy)
+
+**Impact:** This unblocks 97 filed bugs and makes Wyatt's World fully playable. Objects are now discoverable via LOOK, EXAMINE, and spatial verbs.

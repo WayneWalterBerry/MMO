@@ -26,6 +26,8 @@ data.GERUND_MAP = {
     using = "use", pouring = "pour", filling = "fill",
     applying = "apply", rubbing = "rub",
     washing = "wash", cleaning = "clean", rinsing = "rinse", scrubbing = "scrub",
+    turning = "turn", rotating = "rotate", spinning = "spin",
+    typing = "type", inputting = "input",
     -- WAVE-2a: Wyatt's World puzzle verbs
     sorting = "sort", counting = "count", pressing = "press",
     assembling = "assemble", building = "build", entering = "enter",
@@ -68,15 +70,17 @@ data.HIT_SYNONYMS = { smack=true, bang=true, slap=true, whack=true }
 data.KNOWN_VERBS = {
     -- sensory
     look = true, examine = true, x = true, inspect = true, check = true,
-    feel = true, touch = true, grope = true, smell = true, sniff = true,
+    feel = true, touch = true, smell = true, sniff = true,
     taste = true, lick = true, listen = true, hear = true, read = true,
     search = true, find = true,
     -- acquisition
     take = true, get = true, pick = true, grab = true, drop = true,
     pull = true, yank = true, tug = true, extract = true,
-    push = true, shove = true, nudge = true,
+    push = true, shove = true, nudge = true, press = true, click = true,
     move = true, shift = true, drag = true, slide = true,
     lift = true, heave = true, uncork = true, unstop = true, unseal = true,
+    turn = true, rotate = true, spin = true,
+    ["type"] = true, input = true, dial = true,
     -- containers
     open = true, close = true, shut = true, pry = true,
     unlock = true, lock = true,

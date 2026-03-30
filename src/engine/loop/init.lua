@@ -45,10 +45,27 @@ function loop.run(context)
   context.verbs = context.verbs or {}
 
   -- E-rating restricted verbs (blocked in rating="E" worlds)
+  -- All violent/combat verbs and their aliases
   local E_RESTRICTED_VERBS = {
-    attack = true, fight = true, kill = true, stab = true,
-    slash = true, punch = true, kick = true,
+    -- Direct violence verbs
+    attack = true, fight = true, kill = true,
     harm = true, hurt = true, injure = true, wound = true,
+    
+    -- Blunt trauma (hit + aliases)
+    hit = true, punch = true, kick = true, slap = true,
+    bash = true, bonk = true, thump = true, smack = true,
+    bang = true, whack = true, headbutt = true,
+    
+    -- Sharp weapons (stab, cut, slash + aliases)
+    stab = true, jab = true, pierce = true, stick = true,
+    cut = true, slice = true, nick = true,
+    slash = true,
+    
+    -- Self-harm
+    prick = true,
+    
+    -- Fire-based violence (burn has crafting uses, but not in E-worlds)
+    burn = true,
   }
 
   -- Context tracking for Tier 3 planner
@@ -496,7 +513,15 @@ function loop.run(context)
       if handler then
         -- E-rating enforcement: block combat/harm verbs in E-rated worlds
         if context.world and context.world.rating == "E" and E_RESTRICTED_VERBS[verb] then
-          print("That's not something you can do in this world!")
+          -- Kid-friendly refusal message
+          local friendly_messages = {
+            "Whoa! This is a friendly zone. Try exploring instead!",
+            "No fighting here! Try looking around or solving a puzzle.",
+            "Let's keep this fun and friendly! What else can you try?",
+            "That's not how we solve puzzles here! Try examining things.",
+          }
+          local msg = friendly_messages[math.random(#friendly_messages)]
+          print(msg)
           _G.print = old_print
           goto next_sub
         end

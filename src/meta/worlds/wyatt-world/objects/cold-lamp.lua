@@ -11,7 +11,7 @@ return {
     portable = false,
 
     name = "a table lamp",
-    description = "A lamp on the side table. The switch says ON, but the bulb is completely cold and gives off no light at all! A lamp that's \"on\" but makes no light? This lamp is FAKE!",
+    description = "A lamp on the side table. The switch says ON, but the bulb is ice cold! It gives off no light at all! A lamp that's \"on\" but makes no light? This lamp is FAKE!",
     room_presence = "A lamp sits on the side table. It says it's on but... is it?",
     on_feel = "The bulb is cold. Ice cold! But the switch says ON. That's not right!",
     on_smell = "Cold metal. No warm-bulb smell at all. Suspicious!",
@@ -19,7 +19,7 @@ return {
     on_taste = "Tastes like cold metal. This lamp is definitely broken or fake!",
 
     is_fake = true,
-    fake_reason = "The switch says ON but the bulb is cold and dark.",
+    fake_reason = "The switch says ON but the bulb is ice cold and gives no light.",
 
     location = nil,
     mutations = {},

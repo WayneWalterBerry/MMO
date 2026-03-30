@@ -7,7 +7,7 @@ local container_contents_accessible = H.container_contents_accessible
 local M = {}
 
 function M.register(handlers)
-    -- FEEL / TOUCH / GROPE -- works even in total darkness
+    -- FEEL / TOUCH — works even in total darkness
     ---------------------------------------------------------------------------
     handlers["feel"] = function(ctx, noun)
         -- Treat "around", "room", "here" the same as bare feel (room sweep)

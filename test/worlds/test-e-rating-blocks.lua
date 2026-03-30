@@ -264,7 +264,12 @@ if handlers_loaded and type(handlers) == "table" then
     end
 
     local function output_has_block_msg(output)
-        return output:find("not part of this world") ~= nil
+        -- Check for kid-friendly E-rating block messages
+        return output:find("friendly zone") ~= nil
+            or output:find("No fighting here") ~= nil
+            or output:find("fun and friendly") ~= nil
+            or output:find("solve puzzles here") ~= nil
+            or output:find("not part of this world") ~= nil  -- legacy fallback
     end
 
     local function make_e_context()

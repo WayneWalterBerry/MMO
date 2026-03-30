@@ -514,6 +514,8 @@ function M.register(handlers)
 
     handlers["shove"] = handlers["push"]
     handlers["nudge"] = handlers["push"]
+    handlers["press"] = handlers["push"]
+    handlers["click"] = handlers["push"]
 
     ---------------------------------------------------------------------------
     -- MOVE / SHIFT / DRAG — general spatial movement
@@ -589,6 +591,84 @@ function M.register(handlers)
     end
 
     handlers["heave"] = handlers["lift"]
+
+    ---------------------------------------------------------------------------
+    -- TYPE / INPUT — for entering codes/text into objects (keypads, dials, etc.)
+    -- Triggers FSM transition with verb "enter" or "type"
+    ---------------------------------------------------------------------------
+    handlers["type"] = function(ctx, noun)
+        if noun == "" then 
+            print("Type what?")
+            return 
+        end
+
+        -- First check: is there an object in the room that accepts "type" or "enter"?
+        -- Look for objects with transitions matching verb = "type" or verb = "enter"
+        local room = ctx.current_room
+        if room and room.contents then
+            for _, obj_id in ipairs(room.contents) do
+                local obj = ctx.registry:get(obj_id)
+                if obj and obj.transitions then
+                    -- Try FSM transition with "type" or "enter" verbs
+                    if try_fsm_verb(ctx, obj, "type") then
+                        return
+                    end
+                    if try_fsm_verb(ctx, obj, "enter") then
+                        return
+                    end
+                end
+            end
+        end
+
+        print("There's nothing here to type on.")
+    end
+
+    handlers["input"] = handlers["type"]
+    handlers["dial"] = handlers["type"]
+
+    ---------------------------------------------------------------------------
+    -- TURN — for rotating objects (dials, knobs, etc.)
+    -- Triggers FSM transition with verb "turn"
+    ---------------------------------------------------------------------------
+    handlers["turn"] = function(ctx, noun)
+        if noun == "" then 
+            print("Turn what?")
+            return 
+        end
+
+        -- Strip trailing "on" / "off" (those are different actions)
+        local target = noun:gsub("%s+on$", ""):gsub("%s+off$", "")
+
+        -- Try to find the object
+        local obj = find_visible(ctx, target)
+
+        if not obj then
+            -- Check room contents directly for objects with "turn" transitions
+            local room = ctx.current_room
+            if room and room.contents then
+                for _, obj_id in ipairs(room.contents) do
+                    local room_obj = ctx.registry:get(obj_id)
+                    if room_obj and room_obj.transitions then
+                        if try_fsm_verb(ctx, room_obj, "turn") then
+                            return
+                        end
+                    end
+                end
+            end
+            err_not_found(ctx)
+            return
+        end
+
+        -- Check for FSM transitions first
+        if try_fsm_verb(ctx, obj, "turn") then
+            return
+        end
+
+        print("You can't turn " .. (obj.name or "that") .. ".")
+    end
+
+    handlers["rotate"] = handlers["turn"]
+    handlers["spin"] = handlers["turn"]
 
     ---------------------------------------------------------------------------
     -- UNCORK / UNSTOP / UNSEAL — shorthand for detaching cork-type parts

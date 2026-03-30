@@ -446,12 +446,65 @@ function M.register(handlers)
         end
     end
 
-    -- ENTER {thing} -- move through an exit matched by keyword
+    -- ENTER {thing} -- dual-routing: check for objects first, then movement
     handlers["enter"] = function(ctx, noun)
         if noun == "" then
             print("Enter what?")
             return
         end
+
+        -- First check: is noun a number or code? (e.g., "enter 210")
+        if noun:match("^%d+$") then
+            -- This is a code/number - look for objects that accept "enter" verb
+            local room = ctx.current_room
+            if room and room.contents then
+                for _, obj_id in ipairs(room.contents) do
+                    local obj = ctx.registry:get(obj_id)
+                    if obj and obj.transitions then
+                        -- Check if object has "enter" transition
+                        for _, t in ipairs(obj.transitions) do
+                            if t.verb == "enter" or (t.aliases and table.concat(t.aliases, " "):find("enter")) then
+                                -- Found an object that accepts "enter" - try FSM
+                                local fsm_ok, fsm_mod = pcall(require, "engine.fsm")
+                                if fsm_ok and fsm_mod then
+                                    local trans, err = fsm_mod.transition(ctx.registry, obj.id, t.to, {})
+                                    if trans then
+                                        if t.message and t.message ~= "" then
+                                            print(t.message)
+                                        end
+                                        return
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            print("There's nothing here to enter a code into.")
+            return
+        end
+
+        -- Second check: is there an object in the room with FSM "enter" transition?
+        local obj = find_visible(ctx, noun)
+        if obj and obj.transitions then
+            for _, t in ipairs(obj.transitions) do
+                if t.verb == "enter" or (t.aliases and table.concat(t.aliases, " "):find("enter")) then
+                    -- Found matching transition
+                    local fsm_ok, fsm_mod = pcall(require, "engine.fsm")
+                    if fsm_ok and fsm_mod then
+                        local trans, err = fsm_mod.transition(ctx.registry, obj.id, t.to, {})
+                        if trans then
+                            if t.message and t.message ~= "" then
+                                print(t.message)
+                            end
+                            return
+                        end
+                    end
+                end
+            end
+        end
+
+        -- Third check: is it a room/exit/direction? Treat as movement
         handle_movement(ctx, noun)
     end
 
