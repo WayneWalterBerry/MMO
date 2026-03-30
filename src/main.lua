@@ -88,7 +88,7 @@ local function list_lua_files(dir)
     if SEP == "\\" then
         cmd = 'dir /b "' .. dir .. '\\*.lua" 2>nul'
     else
-        cmd = 'ls -1 "' .. dir .. '"/*.lua 2>/dev/null'
+        cmd = 'ls -1 ' .. dir .. '/*.lua 2>/dev/null'
     end
     local p = io.popen(cmd)
     if p then

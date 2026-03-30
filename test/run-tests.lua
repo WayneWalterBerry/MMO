@@ -258,7 +258,7 @@ for _, test_dir in ipairs(test_dirs) do
     if is_windows then
         list_cmd = 'dir /b "' .. test_dir .. '\\test-*.lua" 2>nul'
     else
-        list_cmd = 'ls "' .. test_dir .. '"/test-*.lua 2>/dev/null'
+        list_cmd = 'ls ' .. test_dir .. '/test-*.lua 2>/dev/null'
     end
 
     local handle = io.popen(list_cmd)
@@ -282,7 +282,7 @@ for _, test_dir in ipairs(test_dirs) do
         if is_windows then
             bench_cmd = 'dir /b "' .. test_dir .. '\\bench-*.lua" 2>nul'
         else
-            bench_cmd = 'ls "' .. test_dir .. '"/bench-*.lua 2>/dev/null'
+            bench_cmd = 'ls ' .. test_dir .. '/bench-*.lua 2>/dev/null'
         end
         local bench_handle = io.popen(bench_cmd)
         if bench_handle then

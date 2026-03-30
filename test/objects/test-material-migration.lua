@@ -179,7 +179,7 @@ test("8. Every object's material field resolves via materials.get()", function()
     if is_windows then
         list_cmd = 'dir /b "' .. objects_dir .. '*.lua" 2>nul'
     else
-        list_cmd = 'ls "' .. objects_dir .. '"*.lua 2>/dev/null'
+        list_cmd = 'ls ' .. objects_dir .. '*.lua 2>/dev/null'
     end
 
     local unresolved = {}
@@ -266,7 +266,7 @@ test("11. If src/meta/materials/ exists, per-file materials load correctly", fun
         if SEP == "\\" then
             list_cmd = 'dir /b "' .. meta_dir .. SEP .. '*.lua" 2>nul'
         else
-            list_cmd = 'ls "' .. meta_dir .. '/"*.lua 2>/dev/null'
+            list_cmd = 'ls ' .. meta_dir .. '/*.lua 2>/dev/null'
         end
         local file_count = 0
         local handle = io.popen(list_cmd)

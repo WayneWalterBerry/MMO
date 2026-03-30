@@ -81,6 +81,14 @@ return {
 
     transitions = {
         {
+            from = "locked", to = "open", verb = "open",
+            aliases = {"push open"},
+            message = "The window swings open far above. Cold bedroom air drifts down. The ivy on the wall provides a path up — if you dare.",
+            mutate = {
+                keywords = { add = {"open", "unlatched"} },
+            },
+        },
+        {
             from = "locked", to = "closed", verb = "unlock",
             message = "You hear a faint click from high above — the latch has been opened from the bedroom side.",
             mutate = {

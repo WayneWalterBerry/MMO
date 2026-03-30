@@ -1163,7 +1163,7 @@ test("every object file has on_feel property", function()
     if SEP == "\\" then
         list_cmd = 'dir /b "' .. dir .. '\\*.lua" 2>nul'
     else
-        list_cmd = 'ls "' .. dir .. '"/*.lua 2>/dev/null'
+        list_cmd = 'ls ' .. dir .. '/*.lua 2>/dev/null'
     end
     local handle = io.popen(list_cmd)
     local missing = {}

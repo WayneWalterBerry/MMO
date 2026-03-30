@@ -35,7 +35,7 @@ local list_cmd
 if is_windows then
     list_cmd = 'dir /b "' .. objects_dir .. '*.lua" 2>nul'
 else
-    list_cmd = 'ls "' .. objects_dir .. '"*.lua 2>/dev/null'
+    list_cmd = 'ls ' .. objects_dir .. '*.lua 2>/dev/null'
 end
 
 local object_files = {}

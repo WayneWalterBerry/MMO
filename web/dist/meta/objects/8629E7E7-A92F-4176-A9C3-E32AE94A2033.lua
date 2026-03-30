@@ -11,7 +11,7 @@ return {
     portable = true,
 
     name = "the third money card",
-    description = "A small card that says: \"This stack has 4 bills. Each bill is worth $25.\"",
+    description = "A small card that says: \"This stack has 4 bills. Each bill is worth $15.\"",
     room_presence = "A card sits in front of the third money stack.",
     on_feel = "Stiff cardboard. The numbers are printed in big bold text.",
     on_smell = "Cardboard. Clean and dry.",

@@ -79,7 +79,7 @@ local function load_templates()
     if is_windows then
         list_cmd = 'dir /b "' .. dir .. '*.lua" 2>nul'
     else
-        list_cmd = 'ls "' .. dir .. '"*.lua 2>/dev/null'
+        list_cmd = 'ls ' .. dir .. '*.lua 2>/dev/null'
     end
     local handle = io.popen(list_cmd)
     if handle then
@@ -110,7 +110,7 @@ local function build_object_sources(templates)
     if is_windows then
         list_cmd = 'dir /b "' .. dir .. '*.lua" 2>nul'
     else
-        list_cmd = 'ls "' .. dir .. '"*.lua 2>/dev/null'
+        list_cmd = 'ls ' .. dir .. '*.lua 2>/dev/null'
     end
     local handle = io.popen(list_cmd)
     if handle then

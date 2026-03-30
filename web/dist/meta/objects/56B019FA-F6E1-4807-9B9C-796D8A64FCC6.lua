@@ -11,10 +11,10 @@ return {
     portable = false,
 
     name = "a big scoreboard",
-    description = "A huge screen hangs from the ceiling. It shows your name in bright letters: \"WYATT\" and below it: \"Challenges Done: 0 / 6\" The numbers glow in neon green.",
+    description = "A huge screen hangs from the ceiling. It shows your name: \"WYATT\". Below it says: \"Challenges Done: 0 / 6\". The numbers glow in neon green.",
     room_presence = "A giant scoreboard hangs from the ceiling with your name on it.",
     on_feel = "You can't reach it. It's way up on the ceiling! But it looks awesome.",
-    on_smell = "The air near it smells a little warm. Like electronics.",
+    on_smell = "The air near it smells a little warm. Like a screen.",
     on_listen = "You hear a faint buzzing from the screen. It hums with power.",
     on_taste = "You can't reach it to taste it. Probably for the best!",
 

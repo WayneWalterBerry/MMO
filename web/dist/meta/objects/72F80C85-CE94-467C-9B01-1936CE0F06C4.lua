@@ -14,7 +14,7 @@ return {
     description = "A massive TV screen covers most of the wall. It flashes bright colors and shows the MrBeast logo spinning around. Big text scrolls across: \"WELCOME TO THE CHALLENGE!\"",
     room_presence = "A giant screen on the wall flashes bright colors and the MrBeast logo.",
     on_feel = "Smooth warm glass. You can feel the screen buzzing a tiny bit.",
-    on_smell = "Warm electronics. Like the back of a TV.",
+    on_smell = "Warm screen smell. Like the back of a TV.",
     on_listen = "Upbeat music plays from speakers nearby. The screen hums.",
     on_taste = "You lick the screen. It tastes like glass. Weird choice, but okay!",
 

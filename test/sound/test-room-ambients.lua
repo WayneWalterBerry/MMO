@@ -20,7 +20,7 @@ local function list_lua_files(dir)
     if is_windows then
         cmd = 'dir /b "' .. dir .. '\\*.lua" 2>nul'
     else
-        cmd = 'ls "' .. dir .. '"/*.lua 2>/dev/null'
+        cmd = 'ls ' .. dir .. '/*.lua 2>/dev/null'
     end
     local handle = io.popen(cmd)
     if handle then

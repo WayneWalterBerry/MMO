@@ -37,7 +37,7 @@ local function count_lua_files(dir)
     if is_windows then
         cmd = 'dir /b "' .. dir .. '\\*.lua" 2>nul'
     else
-        cmd = 'ls "' .. dir .. '"/*.lua 2>/dev/null'
+        cmd = 'ls ' .. dir .. '/*.lua 2>/dev/null'
     end
     local handle = io.popen(cmd)
     local count = 0
@@ -116,7 +116,7 @@ t.test("each room file parses without error", function()
     if is_windows then
         cmd = 'dir /b "' .. rooms_dir .. '\\*.lua" 2>nul'
     else
-        cmd = 'ls "' .. rooms_dir .. '"/*.lua 2>/dev/null'
+        cmd = 'ls ' .. rooms_dir .. '/*.lua 2>/dev/null'
     end
     local handle = io.popen(cmd)
     local all_ok = true

@@ -11,7 +11,7 @@ return {
     portable = false,
 
     name = "a big welcome sign",
-    description = "A huge, bright sign in red and gold letters. It says: \"Welcome, Wyatt! You are Contestant #1! Press the BIG RED BUTTON on the podium to start the show!\"",
+    description = "A huge, bright sign in red and gold letters. It says: \"Welcome, Wyatt! You are Player #1! Press the BIG RED BUTTON on the stand to start the show!\"",
     room_presence = "A giant welcome sign hangs on the wall in bright letters.",
     on_feel = "Smooth plastic with raised letters. You can feel each word with your fingers!",
     on_smell = "It smells like new paint. Fresh and clean.",

@@ -15,7 +15,7 @@ return {
         narrative = {
             "You walk through a giant golden door.",
             "A huge room with flashing lights stretches out in front of you.",
-            "A booming voice says: Welcome, Wyatt! You are Contestant #1!",
+            "A booming voice says: Welcome, Wyatt! You are Player #1!",
         },
         help = "Type 'help' for commands. Try 'look' to see the room!",
     },

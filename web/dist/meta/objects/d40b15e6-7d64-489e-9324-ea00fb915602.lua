@@ -39,10 +39,8 @@ return {
     on_feel = "Smooth wooden surface, crusted with hardened wax drippings. A small drawer handle protrudes from the front.",
 
     surfaces = {
-        top = { capacity = 3, max_item_size = 2, contents = {} },
+        top = { capacity = 4, max_item_size = 2, contents = {} },
     },
-
-    location = nil,
 
     sounds = {
         ["on_verb_open"] = "container-open.opus",
@@ -63,7 +61,7 @@ return {
             room_presence = "A small nightstand crusted with candle wax sits against the wall.",
             on_feel = "Smooth wooden surface, crusted with hardened wax drippings. A small drawer handle protrudes from the front.",
             surfaces = {
-                top = { capacity = 3, max_item_size = 2, contents = {} },
+                top = { capacity = 4, max_item_size = 2, contents = {} },
             },
             on_look = function(self, registry)
                 return look_with_top(self, registry) .. "\nThe drawer is closed."
@@ -76,7 +74,7 @@ return {
             room_presence = "A small nightstand with an open drawer sits against the wall, its top crusted with wax.",
             on_feel = "Smooth wooden surface, crusted with hardened wax drippings. The drawer slides open under your fingers.",
             surfaces = {
-                top = { capacity = 3, max_item_size = 2, contents = {} },
+                top = { capacity = 4, max_item_size = 2, contents = {} },
             },
             on_look = function(self, registry)
                 return look_with_top(self, registry) .. "\nThe drawer is pulled open."
@@ -89,7 +87,7 @@ return {
             room_presence = "A small nightstand sits against the wall, a dark slot gaping where its drawer used to be.",
             on_feel = "Smooth wooden surface, crusted with hardened wax drippings. Your fingers find an empty slot at the front where the drawer was.",
             surfaces = {
-                top = { capacity = 3, max_item_size = 2, contents = {} },
+                top = { capacity = 4, max_item_size = 2, contents = {} },
             },
             on_look = function(self, registry)
                 return look_with_top(self, registry) .. "\nThe drawer slot is empty."
@@ -102,7 +100,7 @@ return {
             room_presence = "A small nightstand sits against the wall, a dark slot gaping where its drawer used to be.",
             on_feel = "Smooth wooden surface, crusted with hardened wax drippings. Your fingers find an empty slot at the front where the drawer was.",
             surfaces = {
-                top = { capacity = 3, max_item_size = 2, contents = {} },
+                top = { capacity = 4, max_item_size = 2, contents = {} },
             },
             on_look = function(self, registry)
                 return look_with_top(self, registry) .. "\nThe drawer slot is empty."

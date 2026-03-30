@@ -65,7 +65,7 @@ local function scan_meta_root(root)
         if is_windows then
             file_cmd = 'dir /b "' .. dir .. '\\*.lua" 2>nul'
         else
-            file_cmd = 'ls "' .. dir .. '"/*.lua 2>/dev/null'
+            file_cmd = 'ls ' .. dir .. '/*.lua 2>/dev/null'
         end
         local fh = io.popen(file_cmd)
         if fh then

@@ -9,6 +9,7 @@ return {
     weight = 10,
     categories = {"furniture"},
     portable = false,
+    casts_light = true,
 
     name = "a bright spotlight",
     description = "A big bright spotlight shines down from the ceiling. It makes the stage glow like you're a real game show star! The light is warm and exciting!",
