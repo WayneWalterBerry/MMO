@@ -6,10 +6,11 @@
 (function () {
     'use strict';
 
-    // --- URL parameters: ?debug and ?room={id} ---
+    // --- URL parameters: ?debug, ?room={id}, ?world={id} ---
     var _urlParams = new URLSearchParams(window.location.search);
     window._debugMode = _urlParams.has('debug');
     window._startRoom = _urlParams.get('room') || null;
+    window._selectedWorld = _urlParams.get('world') || null;
 
     if (window._debugMode && window._startRoom) {
         console.log('Starting in room: ' + window._startRoom + ' (via URL override)');

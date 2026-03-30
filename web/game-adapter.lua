@@ -553,6 +553,38 @@ local ok, err = pcall(function()
     end
 
     -------------------------------------------------------------------
+    -- World selection (?world= URL param, default "manor")
+    -------------------------------------------------------------------
+    local selected_world = nil
+    local url_world = window._selectedWorld
+    local world_id = "manor"
+    if url_world and tostring(url_world) ~= "" and tostring(url_world) ~= "null"
+       and tostring(url_world) ~= "undefined" then
+        world_id = tostring(url_world)
+    end
+
+    -- Fetch world definition
+    local world_source = fetch_text("meta/worlds/" .. world_id .. "/world.lua")
+    if world_source then
+        selected_world = loader.load_source(world_source)
+        if selected_world then
+            selected_world.content_root = "worlds/" .. world_id
+            log_debug("World: " .. (selected_world.name or world_id))
+        end
+    end
+    if not selected_world then
+        -- Fallback: construct minimal manor world for backward compat
+        selected_world = {
+            id = "world-1",
+            name = "The Manor",
+            rating = "M",
+            content_root = "worlds/manor",
+            starting_room = "start-room",
+        }
+        log_debug("World: The Manor (default)")
+    end
+
+    -------------------------------------------------------------------
     -- Load level and starting room
     -------------------------------------------------------------------
     log_debug("Loading Level 1...")
@@ -662,6 +694,7 @@ local ok, err = pcall(function()
         headless        = false,
         debug           = DEBUG_MODE,
         sound_manager   = sm,
+        world           = selected_world,
 
         -- JS bridge: open URL in a new browser tab (for "report bug")
         open_url        = function(url)

@@ -16,6 +16,7 @@ local no_ui = false
 local headless = false
 local start_room_override = nil
 local list_rooms = false
+local world_id_override = nil
 do
     local args = arg or {}
     local i = 1
@@ -29,6 +30,9 @@ do
         elseif a == "--room" or a == "--start-room" then
             i = i + 1
             start_room_override = args[i]
+        elseif a == "--world" then
+            i = i + 1
+            world_id_override = args[i]
         end
         i = i + 1
     end
@@ -50,6 +54,7 @@ local ui_status   = require("engine.ui.status")
 local presentation = require("engine.ui.presentation")
 local sound_mgr    = require("engine.sound")
 local null_driver  = require("engine.sound.null-driver")
+local world_mod    = require("engine.world")
 
 -- Install word-wrapping print before any game output
 display.install()
@@ -111,7 +116,15 @@ end
 -- Load templates
 ---------------------------------------------------------------------------
 local meta_root = script_dir .. SEP .. "meta"
-local world_content_root = meta_root .. SEP .. "worlds" .. SEP .. "manor"
+
+-- Discover and select world (default to "world-1" for backward compat)
+local worlds_dir = meta_root .. SEP .. "worlds"
+local selected_world, world_err = world_mod.load(worlds_dir, list_lua_files, read_file, loader.load_source, world_id_override or "world-1")
+if not selected_world then
+    io.stderr:write("Error: " .. tostring(world_err) .. "\n")
+    os.exit(1)
+end
+local world_paths = world_mod.get_content_paths(selected_world, meta_root)
 
 local templates = {}
 local template_dir = meta_root .. SEP .. "templates"
@@ -134,7 +147,7 @@ end
 ---------------------------------------------------------------------------
 local object_sources = {}
 local base_classes = {}
-local object_dir = world_content_root .. SEP .. "objects"
+local object_dir = world_paths.objects_dir
 local object_files = list_lua_files(object_dir)
 for _, fname in ipairs(object_files) do
     local path = object_dir .. SEP .. fname
@@ -163,7 +176,7 @@ for _, fname in ipairs(object_files) do
     end
 end
 
-local creatures_dir = world_content_root .. SEP .. "creatures"
+local creatures_dir = world_paths.creatures_dir
 local creature_files = list_lua_files(creatures_dir)
 for _, fname in ipairs(creature_files) do
     local path = creatures_dir .. SEP .. fname
@@ -196,7 +209,7 @@ end
 -- Load all rooms from meta/rooms/
 ---------------------------------------------------------------------------
 local rooms = {}
-local room_dir = world_content_root .. SEP .. "rooms"
+local room_dir = world_paths.rooms_dir
 local room_files = list_lua_files(room_dir)
 for _, fname in ipairs(room_files) do
     local path = room_dir .. SEP .. fname
@@ -220,7 +233,7 @@ end
 -- Load level data (intro text, completion criteria, etc.)
 ---------------------------------------------------------------------------
 local level = nil
-local level_dir = world_content_root .. SEP .. "levels"
+local level_dir = world_paths.levels_dir
 local level_source = read_file(level_dir .. SEP .. "level-01.lua")
 if level_source then
     local lv, lv_err = loader.load_source(level_source)
@@ -249,7 +262,7 @@ end
 ---------------------------------------------------------------------------
 -- Select starting room (supports --room override for testing)
 ---------------------------------------------------------------------------
-local start_room_id = start_room_override or "start-room"
+local start_room_id = start_room_override or world_mod.get_starting_room(selected_world)
 local room = rooms[start_room_id]
 if not room then
     io.stderr:write("Error: room '" .. start_room_id .. "' not found.\n")
@@ -408,6 +421,7 @@ local context = {
     headless       = headless,
     debug          = debug_mode,
     sound_manager  = sm,
+    world          = selected_world,
 }
 
 ---------------------------------------------------------------------------

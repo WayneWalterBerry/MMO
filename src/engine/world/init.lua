@@ -84,17 +84,27 @@ function M.validate(world)
     return true
 end
 
---- select(worlds)
--- Single-world auto-select (Phase 1).
--- 0 worlds = FATAL. 2+ worlds = not implemented.
-function M.select(worlds)
+--- select(worlds, world_id)
+-- If world_id provided, find by ID. If nil and 1 world, auto-select.
+-- If nil and 2+ worlds, return error listing available IDs.
+function M.select(worlds, world_id)
     if #worlds == 0 then
         return nil, "FATAL: no worlds found"
     end
-    if #worlds > 1 then
-        return nil, "world selection not implemented (multiple worlds found)"
+    if world_id then
+        for _, w in ipairs(worlds) do
+            if w.id == world_id then return w, nil end
+        end
+        local ids = {}
+        for _, w in ipairs(worlds) do ids[#ids + 1] = w.id end
+        return nil, "world '" .. world_id .. "' not found. Available: " .. table.concat(ids, ", ")
     end
-    return worlds[1], nil
+    if #worlds == 1 then
+        return worlds[1], nil
+    end
+    local ids = {}
+    for _, w in ipairs(worlds) do ids[#ids + 1] = w.id end
+    return nil, "multiple worlds found, use --world <id> to select: " .. table.concat(ids, ", ")
 end
 
 --- get_starting_room(world)
@@ -103,10 +113,34 @@ function M.get_starting_room(world)
     return world.starting_room
 end
 
---- load(worlds_dir, list_lua_files, read_file, load_source)
+--- get_content_paths(world, meta_root)
+-- Returns a table of resolved directories for the world's content.
+-- If world.content_root is set, paths resolve relative to meta_root.
+-- Otherwise, falls back to legacy flat paths under meta_root.
+function M.get_content_paths(world, meta_root)
+    local sep = package.config:sub(1, 1)
+    if world.content_root then
+        local base = meta_root .. sep .. world.content_root
+        return {
+            rooms_dir     = base .. sep .. "rooms",
+            objects_dir   = base .. sep .. "objects",
+            creatures_dir = base .. sep .. "creatures",
+            levels_dir    = base .. sep .. "levels",
+        }
+    end
+    -- Legacy fallback (pre-worlds structure)
+    return {
+        rooms_dir     = meta_root .. sep .. "rooms",
+        objects_dir   = meta_root .. sep .. "objects",
+        creatures_dir = meta_root .. sep .. "creatures",
+        levels_dir    = meta_root .. sep .. "levels",
+    }
+end
+
+--- load(worlds_dir, list_lua_files, read_file, load_source, world_id)
 -- Orchestrator: discover → validate each → select.
 -- Returns selected world or nil, error.
-function M.load(worlds_dir, list_lua_files, read_file, load_source)
+function M.load(worlds_dir, list_lua_files, read_file, load_source, world_id)
     local worlds = M.discover(worlds_dir, list_lua_files, read_file, load_source)
     -- Validate each discovered world
     local valid = {}
@@ -116,7 +150,7 @@ function M.load(worlds_dir, list_lua_files, read_file, load_source)
             valid[#valid + 1] = world
         end
     end
-    return M.select(valid)
+    return M.select(valid, world_id)
 end
 
 return M

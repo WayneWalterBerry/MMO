@@ -127,12 +127,53 @@ t.test("select returns FATAL for zero worlds", function()
     t.assert_truthy(err and err:find("FATAL"), "error should be FATAL")
 end)
 
-t.test("select returns not-implemented for multiple worlds", function()
+t.test("select returns not-implemented for multiple worlds without world_id", function()
     local w1 = mock_load_source(mock_world_source)
     local w2 = mock_load_source(mock_world_source)
+    w2.id = "world-2"
     local result, err = world_mod.select({ w1, w2 })
+    t.assert_nil(result, "no world expected without world_id")
+    t.assert_truthy(err and err:find("multiple worlds"), "error should mention multiple worlds")
+end)
+
+t.test("select by world_id finds matching world", function()
+    local w1 = mock_load_source(mock_world_source)
+    local w2 = mock_load_source(mock_world_source)
+    w2.id = "world-2"
+    w2.name = "Second World"
+    local result, err = world_mod.select({ w1, w2 }, "world-2")
+    t.assert_truthy(result, "should find world-2")
+    t.assert_eq("world-2", result.id, "should return world-2")
+    t.assert_nil(err, "no error expected")
+end)
+
+t.test("select by world_id returns error for unknown ID", function()
+    local w1 = mock_load_source(mock_world_source)
+    local result, err = world_mod.select({ w1 }, "nonexistent")
     t.assert_nil(result, "no world expected")
-    t.assert_truthy(err and err:find("not implemented"), "error should say not implemented")
+    t.assert_truthy(err and err:find("not found"), "error should say not found")
+end)
+
+t.suite("world loader — get_content_paths()")
+
+t.test("get_content_paths with content_root returns world-specific dirs", function()
+    local world = { content_root = "worlds/manor" }
+    local paths = world_mod.get_content_paths(world, "src/meta")
+    local SEP = package.config:sub(1, 1)
+    t.assert_eq("src/meta" .. SEP .. "worlds/manor" .. SEP .. "rooms", paths.rooms_dir)
+    t.assert_eq("src/meta" .. SEP .. "worlds/manor" .. SEP .. "objects", paths.objects_dir)
+    t.assert_eq("src/meta" .. SEP .. "worlds/manor" .. SEP .. "creatures", paths.creatures_dir)
+    t.assert_eq("src/meta" .. SEP .. "worlds/manor" .. SEP .. "levels", paths.levels_dir)
+end)
+
+t.test("get_content_paths without content_root returns legacy dirs", function()
+    local world = {}
+    local paths = world_mod.get_content_paths(world, "src/meta")
+    local SEP = package.config:sub(1, 1)
+    t.assert_eq("src/meta" .. SEP .. "rooms", paths.rooms_dir)
+    t.assert_eq("src/meta" .. SEP .. "objects", paths.objects_dir)
+    t.assert_eq("src/meta" .. SEP .. "creatures", paths.creatures_dir)
+    t.assert_eq("src/meta" .. SEP .. "levels", paths.levels_dir)
 end)
 
 t.suite("world loader — get_starting_room()")

@@ -44,6 +44,13 @@ function loop.run(context)
   assert(context and context.registry, "loop: context.registry is required")
   context.verbs = context.verbs or {}
 
+  -- E-rating restricted verbs (blocked in rating="E" worlds)
+  local E_RESTRICTED_VERBS = {
+    attack = true, fight = true, kill = true, stab = true,
+    slash = true, punch = true, kick = true,
+    harm = true, hurt = true, injure = true, wound = true,
+  }
+
   -- Context tracking for Tier 3 planner
   context.last_tool = context.last_tool or nil
   context.known_objects = context.known_objects or {}
@@ -487,6 +494,12 @@ function loop.run(context)
 
       local handler = context.verbs[verb]
       if handler then
+        -- E-rating enforcement: block combat/harm verbs in E-rated worlds
+        if context.world and context.world.rating == "E" and E_RESTRICTED_VERBS[verb] then
+          print("That's not something you can do in this world!")
+          _G.print = old_print
+          goto next_sub
+        end
         if _G.TRACE then io.stderr:write("[TRACE] dispatch handler: " .. verb .. "(" .. noun .. ")\n") end
         context.current_verb = verb
         local h_ok, h_err = pcall(handler, context, noun)
