@@ -112,3 +112,31 @@
   - **Tests:** 7,643 tests pass. 12 pre-existing failures unchanged (not related)
   - **Commit:** `b9b7106` (pushed to `WayneWalterBerry/MMO` main)
   - **NOTE:** A deploy push to Pages repo is still needed for `?world=wyatt-world` to work on the live site. The code is correct; the content must be deployed.
+
+- **Options Module Bundle Fix (2026-03-30):**
+  - **Trigger:** Wayne Berry — web build crashing with "module 'src.engine.options' not found"
+  - **Status:** ✓ FIXED + PUSHED
+  - **Root cause:** Module path inconsistency
+    - `src/engine/verbs/options.lua` used `require("src.engine.options")`
+    - `src/engine/options/init.lua` used `require("src.engine.parser.*")` and `require("src.engine.ui.presentation")`
+    - `build-engine.ps1` strips `src.` prefix when creating `package.preload` entries (lines 55-78)
+    - All other engine modules correctly use `require("engine.*")` format
+    - This caused doubled path in error: `src/src/engine/options.lua`
+  - **Fix:** Changed require statements to use `engine.*` format (not `src.engine.*`)
+    - `src/engine/verbs/options.lua`: `require("src.engine.options")` → `require("engine.options")`
+    - `src/engine/options/init.lua`: `require("src.engine.parser.goal_planner")` → `require("engine.parser.goal_planner")`
+    - `src/engine/options/init.lua`: `require("src.engine.parser.context")` → `require("engine.parser.context")`
+    - `src/engine/options/init.lua`: `require("src.engine.ui.presentation")` → `require("engine.ui.presentation")`
+  - **Verification:**
+    - Rebuilt engine bundle: 101 engine files (up from 100), 310.2 KB .gz
+    - Confirmed `package.preload["engine.options"]` present in web/dist/engine.lua (line 8581)
+    - No more `require("src.engine.*")` patterns in bundled code
+    - All 7,687 tests pass (286 test files)
+  - **Commit:** `d56160e` (pushed to main)
+  - **Build artifacts:**
+    - `web/dist/engine.lua.gz`: 310.2 KB (1960.2 KB raw)
+    - `web/dist/embedding-vectors.json.gz`: 4813.6 KB
+    - BUILD_TIMESTAMP: `2026-03-30 14:27`
+    - CACHE_BUST: `20260330142742`
+  - **Resolves:** RC-3 (Engine Bundle Stale — options module missing from web build)
+  - **Next:** CI will auto-deploy to Pages repo via squad-deploy.yml workflow
