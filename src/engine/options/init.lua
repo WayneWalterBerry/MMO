@@ -107,6 +107,12 @@ local function wrap_goal_step(step, ctx)
         else
             display = "Search the " .. noun
         end
+    elseif verb == "put" then
+        if noun ~= "" then
+            display = "Sort items by putting them in the correct bin"
+        else
+            display = "Put items where they belong"
+        end
     else
         display = verb .. (noun ~= "" and (" the " .. noun) or "")
     end
@@ -237,7 +243,50 @@ local function scan_interesting_actions(ctx)
 
     local candidates = {}
 
-    -- Scan room contents
+    -- Puzzle-specific hints for Feastables Factory
+    if room.id == "feastables-factory" then
+        -- Find chocolate bars on surfaces (conveyor belt)
+        for _, obj_id in ipairs(room.contents or {}) do
+            local obj = ctx.registry:get(obj_id)
+            if obj and obj.surfaces then
+                for _, surface in pairs(obj.surfaces) do
+                    for _, surface_obj_id in ipairs(surface.contents or {}) do
+                        local surface_obj = ctx.registry:get(surface_obj_id)
+                        if surface_obj and surface_obj.categories then
+                            for _, cat in ipairs(surface_obj.categories) do
+                                if cat == "sortable" then
+                                    candidates[#candidates + 1] = { obj = surface_obj, score = 10 }
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- If we found chocolate bars, prioritize them
+        if #candidates > 0 then
+            local results = {}
+            -- Add a hint to examine a chocolate bar
+            local bar = candidates[1].obj
+            local kw = obj_keyword(bar)
+            results[#results + 1] = {
+                command = "examine " .. kw,
+                display = "Examine a chocolate bar to see its flavor",
+                source = "dynamic",
+            }
+            -- Add a hint to read the sign
+            results[#results + 1] = {
+                command = "examine sign",
+                display = "Read the sign for sorting instructions",
+                source = "dynamic",
+            }
+            return results
+        end
+    end
+
+    -- Standard object scan
     for _, obj_id in ipairs(room.contents or {}) do
         local obj = ctx.registry:get(obj_id)
         if obj then

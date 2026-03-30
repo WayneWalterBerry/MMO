@@ -392,6 +392,55 @@ function M.register(handlers)
 
     handlers["examine"] = function(ctx, noun)
         if noun == "" then print("Examine what? Try 'look' to see what's around you.") return end
+        
+        -- Handle plural "chocolate bars" — list available bars
+        local clean_noun = noun:lower():gsub("^the%s+", ""):gsub("^a%s+", ""):gsub("^an%s+", "")
+        if clean_noun == "chocolate bars" or clean_noun == "bars" then
+            local room = ctx.current_room
+            if room and room.id == "feastables-factory" then
+                local bars = {}
+                -- Scan room contents AND surfaces
+                for _, obj_id in ipairs(room.contents or {}) do
+                    local obj = ctx.registry:get(obj_id)
+                    if obj then
+                        -- Check if this object has sortable category
+                        if obj.categories then
+                            for _, cat in ipairs(obj.categories) do
+                                if cat == "sortable" then
+                                    bars[#bars + 1] = obj
+                                    break
+                                end
+                            end
+                        end
+                        -- Check surfaces for sortable items
+                        if obj.surfaces then
+                            for _, surface in pairs(obj.surfaces) do
+                                for _, surface_obj_id in ipairs(surface.contents or {}) do
+                                    local surface_obj = ctx.registry:get(surface_obj_id)
+                                    if surface_obj and surface_obj.categories then
+                                        for _, cat in ipairs(surface_obj.categories) do
+                                            if cat == "sortable" then
+                                                bars[#bars + 1] = surface_obj
+                                                break
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                if #bars > 0 then
+                    print("The chocolate bars on the conveyor belt are:")
+                    for _, bar in ipairs(bars) do
+                        print("  • " .. (bar.name or bar.id))
+                    end
+                    print("Try: examine <color> bar (like 'examine blue bar')")
+                    return
+                end
+            end
+        end
+        
         local blocked = vision_blocked_by_worn(ctx)
         if blocked then
             -- Vision blocked but player knows what they're holding
