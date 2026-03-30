@@ -20,6 +20,10 @@ return {
 
     is_fake = false,
 
+    surfaces = {
+        top = { capacity = 4, max_item_size = 2, contents = {} },
+    },
+
     location = nil,
     mutations = {},
 }
