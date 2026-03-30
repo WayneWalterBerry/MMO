@@ -24,6 +24,12 @@ lua test/run-tests.lua [--bench] [--shard <name>] [--changed]
 | `--shard <name>` | Run only tests in directories matching the shard name | `lua test/run-tests.lua --shard parser` |
 | `--changed` | Run only tests for directories affected by recent git changes | `lua test/run-tests.lua --changed` |
 
+**Benchmark Behavior:**
+- Benchmark failures are **informational only** — they track parser accuracy over time
+- Benchmarks with failing tests do NOT block CI or return non-zero exit codes
+- The summary shows benchmark pass rate as a percentage (e.g., "84% (169/200)")
+- Regular test failures still block CI as expected
+
 ### `--changed` Flag: Incremental Testing
 
 The `--changed` flag enables fast iteration by running only tests relevant to files you've modified. It uses `git diff` to detect staged and unstaged changes, then maps source files to test directories.

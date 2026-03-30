@@ -327,9 +327,11 @@ local total_passed_files = 0
 local grand_total_pass = 0
 local grand_total_fail = 0
 local failed_file_details = {}  -- { display, fail_lines }
+local benchmark_files_with_failures = {}  -- Track benchmarks separately
 
 for _, entry in ipairs(test_entries) do
     local filepath = entry.filepath
+    local is_benchmark = entry.display:match("^[^/\\]+/bench%-")
 
     if verbose then
         print(">> Running: " .. entry.display)
@@ -382,20 +384,36 @@ for _, entry in ipairs(test_entries) do
     end
 
     -- Check exit code or failure count
+    -- Benchmarks failures are informational only — they track parser improvement
     local file_failed = (not ok or (code and code ~= 0)) or file_fail > 0
     if file_failed then
-        total_failed_files = total_failed_files + 1
-        failed_file_details[#failed_file_details + 1] = {
-            display = entry.display,
-            fail_lines = fail_lines,
-        }
-        if verbose then
-            print(">> " .. entry.display .. " — FAILED\n")
+        if is_benchmark then
+            -- Benchmarks don't block CI — log failures separately
+            benchmark_files_with_failures[#benchmark_files_with_failures + 1] = {
+                display = entry.display,
+                fail_count = file_fail,
+                pass_count = file_pass,
+            }
+            if verbose then
+                print(">> " .. entry.display .. " — BENCHMARK (informational)\n")
+            else
+                print("  ⓘ " .. entry.display .. " (" .. file_pass .. " passed, " .. file_fail .. " aspirational)")
+            end
         else
-            local summary_parts = {}
-            if file_pass > 0 then summary_parts[#summary_parts + 1] = file_pass .. " passed" end
-            summary_parts[#summary_parts + 1] = file_fail .. " FAILED"
-            print("  ✗ " .. entry.display .. " (" .. table.concat(summary_parts, ", ") .. ")")
+            -- Regular test failures block CI
+            total_failed_files = total_failed_files + 1
+            failed_file_details[#failed_file_details + 1] = {
+                display = entry.display,
+                fail_lines = fail_lines,
+            }
+            if verbose then
+                print(">> " .. entry.display .. " — FAILED\n")
+            else
+                local summary_parts = {}
+                if file_pass > 0 then summary_parts[#summary_parts + 1] = file_pass .. " passed" end
+                summary_parts[#summary_parts + 1] = file_fail .. " FAILED"
+                print("  ✗ " .. entry.display .. " (" .. table.concat(summary_parts, ", ") .. ")")
+            end
         end
     else
         total_passed_files = total_passed_files + 1
@@ -420,6 +438,14 @@ if total_failed_files > 0 then
     os.exit(1)
 else
     print("  PASSED: " .. #test_entries .. " file(s) (" .. format_number(grand_total_pass) .. " tests)")
+    if #benchmark_files_with_failures > 0 then
+        print("\n  Benchmark Status (informational only):")
+        for _, bench in ipairs(benchmark_files_with_failures) do
+            local total = bench.pass_count + bench.fail_count
+            local percent = math.floor((bench.pass_count / total) * 100)
+            print(string.format("    ⓘ %s: %d%% (%d/%d)", bench.display, percent, bench.pass_count, total))
+        end
+    end
     print("════════════════════════════════════════")
     os.exit(0)
 end

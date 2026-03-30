@@ -389,11 +389,12 @@ print("--- BUG: Brass key doesn't unlock cellar storage door ---")
 test("unlock door with brass key in cellar should succeed", function()
     local cmds = {}
     for _, c in ipairs(preamble) do cmds[#cmds + 1] = c end
-    -- Get the brass key (under the rug)
-    cmds[#cmds + 1] = "look under rug"
-    cmds[#cmds + 1] = "take brass key"
     -- Reveal and open the trapdoor
-    cmds[#cmds + 1] = "lift rug"
+    cmds[#cmds + 1] = "look under rug"  -- Optional: see what's under the rug
+    cmds[#cmds + 1] = "push bed"  -- Move bed off rug first
+    cmds[#cmds + 1] = "lift rug"  -- Rug lifts, key falls to floor
+    cmds[#cmds + 1] = "drop matchbox"  -- Free up a hand
+    cmds[#cmds + 1] = "take brass key"  -- Pick up the key from floor
     cmds[#cmds + 1] = "open trapdoor"
     cmds[#cmds + 1] = "down"
     -- Try to unlock the storage door with brass key in hand

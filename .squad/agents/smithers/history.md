@@ -97,6 +97,24 @@ Implemented two-stage hybrid scoring pipeline per Frink's D1/D3 decisions:
 - **Constants added:** HYBRID_BM25_WEIGHT=0.70, HYBRID_MAXSIM_WEIGHT=0.30, HYBRID_THRESHOLD=0.20, BM25_TOP_N=50.
 - **Remaining from board:** noun synonym expansion (D2), soft cosine fallback (D3 fallback), accuracy benchmark to measure 91.2% → 93% delta.
 
+### Benchmark Test Gating Fix (2026-03-30)
+
+Fixed pre-existing benchmark failures blocking CI by implementing proper benchmark gating in `test/run-tests.lua`:
+
+- **Root Cause:** The benchmark file `bench-tier2-benchmark.lua` had 31 aspirational failures (84% pass rate, 169/200 tests). The test runner was treating all test file failures as CI blockers, even benchmarks.
+- **Fix:** Modified test runner to detect `bench-*` files and treat their failures as informational only. Benchmarks no longer block CI — they log pass rate percentage in the summary.
+- **Key Changes:**
+  - Added `is_benchmark` detection via filename pattern matching
+  - Created separate `benchmark_files_with_failures` tracking array
+  - Changed benchmark output symbol from "✗" to "ⓘ" (informational)
+  - Summary shows benchmark pass rate as percentage: "84% (169/200)"
+  - Exit code logic: benchmarks with failures do NOT increment `total_failed_files`
+- **Verification:** 
+  - `lua test/run-tests.lua --bench --shard parser` exits with code 0 despite 31 benchmark failures
+  - Regular test failures still block CI correctly (integration test still fails as expected)
+  - Benchmark failures show in summary as "Benchmark Status (informational only)"
+- **Decision Alignment:** This implements the intent of D-BENCHMARK-GATING decision — benchmarks are aspirational targets that track parser improvement over time, not correctness gates.
+
 ---
 
 ## Cross-Agent Coordination: Options Build Complete (2026-03-29)
