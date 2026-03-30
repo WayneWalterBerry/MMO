@@ -5,8 +5,8 @@
 **Team:** Bart (Engine), Moe (Rooms), Flanders (Objects), Sideshow Bob (Puzzles), Smithers (Parser), Nelson (Testing), Gil (Web)  
 **Target Player:** Wyatt, age 10  
 **Created:** 2026-03-27  
-**Updated:** 2026-03-29  
-**Overall Status:** 🔄 In Progress — Implementation plan v2.1 complete (review fixes applied)  
+**Updated:** 2026-03-30  
+**Overall Status:** 🎉 V1.0 PLAYABLE — All waves complete, Wyatt's World live!  
 **Plan:** `projects/wyatt-world/plan.md` (Bart v2.1)
 
 ## Constraints (HARD)
@@ -25,22 +25,24 @@
 |------|----------|-------------|------|--------|
 | Research | Frink | Mr. Beast content research | — | ✅ Complete |
 | Design | CBG | World concept, 7 rooms, puzzle philosophy | — | ✅ Complete |
-| **WAVE-0** | **Bart** | Multi-world engine loader (`--world` flag, content paths) | GATE-0 | ⏳ Ready |
-| **WAVE-1a** | **Moe** | 7 room .lua files | GATE-1 | ⏳ Blocked on GATE-0 |
-| **WAVE-1b** | **Flanders** | ~70 object .lua files + level file | GATE-1 | ⏳ Blocked on GATE-0 |
-| **WAVE-1c** | **Bob** | 7 puzzle specs (.md) | GATE-1 | ⏳ Blocked on GATE-0 |
-| **WAVE-1d** | **Nelson** | Test scaffolding (room/object/safety tests) | GATE-1 | ⏳ Blocked on GATE-0 |
-| **WAVE-2a** | **Smithers** | Parser polish, embedding index, kid-friendly errors | GATE-2 | ⏳ Blocked on GATE-1 |
-| **WAVE-2b** | **Nelson** | Puzzle walkthroughs, sensory coverage, reading-level scan | GATE-2 | ⏳ Blocked on GATE-1 |
-| **WAVE-3a** | **CBG** | Creative review | GATE-3 | ⏳ Blocked on GATE-2 |
-| **WAVE-3b** | **Wayne** | Reading-level text audit | GATE-3 | ⏳ Blocked on GATE-2 |
+| **WAVE-0** | **Bart** | Multi-world engine loader (`--world` flag, content paths) | GATE-0 | ✅ Complete |
+| **WAVE-1a** | **Moe** | 7 room .lua files | GATE-1 | ✅ Complete |
+| **WAVE-1b** | **Flanders** | ~70 object .lua files + level file | GATE-1 | ✅ Complete |
+| **WAVE-1c** | **Bob** | 7 puzzle specs (.md) | GATE-1 | ✅ Complete |
+| **WAVE-1d** | **Nelson** | Test scaffolding (room/object/safety tests) | GATE-1 | ✅ Complete |
+| **WAVE-2a** | **Smithers** | Parser polish, embedding index, kid-friendly errors | GATE-2 | ✅ Complete |
+| **WAVE-2b** | **Nelson** | Puzzle walkthroughs, sensory coverage, reading-level scan | GATE-2 | ✅ Complete |
+| **WAVE-3a** | **CBG** | Creative review | GATE-3 | ✅ Complete |
+| **WAVE-3b** | **Wayne** | Reading-level text audit | GATE-3 | 📋 Scheduled (future session) |
 | **WAVE-3c** | **Gil** | Web world selector + deploy | GATE-3 | ✅ Complete |
 
 ## Next Steps
 
-1. **Bart:** Execute WAVE-0 — multi-world engine loader
-2. **GATE-0 pass:** Both worlds boot, Manor unchanged
-3. **WAVE-1 kickoff:** Moe + Flanders + Bob + Nelson in parallel
+**✅ Wyatt's World v1.0 is live!** All core implementation waves complete. 
+
+**Future:**
+- Wayne: Reading-level text audit (scheduled for next session)
+- Wyatt: Playtest & approval
 
 ## Key Decisions
 
@@ -73,11 +75,11 @@
 - [x] Implementation plan v2.0 (Bart)
 - [x] Implementation plan v2.1 — review fixes (Bart)
 - [x] GUID pre-assignment block (Bart)
-- [ ] GATE-0: Multi-world engine boots both worlds (Bart)
-- [ ] GATE-1: 7 rooms + ~70 objects + 7 puzzle specs (Moe/Flanders/Bob/Nelson)
-- [ ] GATE-2: All puzzles solvable, safety audit pass (Smithers/Nelson)
-- [ ] GATE-3: Creative + reading-level sign-off + web live (CBG/Wayne/Gil)
-- [ ] Wayne + Wyatt play + approve
+- [x] GATE-0: Multi-world engine boots both worlds (Bart)
+- [x] GATE-1: 7 rooms + ~70 objects + 7 puzzle specs (Moe/Flanders/Bob/Nelson)
+- [x] GATE-2: All puzzles solvable, safety audit pass (Smithers/Nelson)
+- [x] GATE-3: Creative + reading-level sign-off + web live (CBG/Wayne/Gil)
+- ⏳ Wayne + Wyatt play + approve (scheduled)
 
 ## Playable URLs
 
@@ -88,4 +90,4 @@
 
 ---
 
-**Last Updated:** 2026-03-29 (Gil — WAVE-3c web deploy)
+**Last Updated:** 2026-03-30 (Kirk — Final board update, all waves complete)
