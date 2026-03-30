@@ -26,6 +26,9 @@ data.GERUND_MAP = {
     using = "use", pouring = "pour", filling = "fill",
     applying = "apply", rubbing = "rub",
     washing = "wash", cleaning = "clean", rinsing = "rinse", scrubbing = "scrub",
+    -- WAVE-2a: Wyatt's World puzzle verbs
+    sorting = "sort", counting = "count", pressing = "press",
+    assembling = "assemble", building = "build", entering = "enter",
 }
 
 data.IDIOM_TABLE = {
@@ -111,6 +114,8 @@ data.KNOWN_VERBS = {
     help = true, options = true, hint = true, hints = true, nudge_verb = true,
     wait = true, pass = true, use = true, utilize = true,
     apply = true, treat = true, appearance = true, quit = true,
+    -- Wyatt's World puzzle verbs (WAVE-2a)
+    sort = true, count = true, press = true, assemble = true, build = true,
 }
 
 return data

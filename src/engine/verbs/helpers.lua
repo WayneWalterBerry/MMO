@@ -27,14 +27,33 @@ local function err_not_found(ctx)
         ctx.disambiguation_prompt = nil
         return
     end
+    
+    -- WAVE-2a: Kid-friendly messages for E-rated worlds (Wyatt's World)
+    if ctx and ctx.world and ctx.world.rating == "E" then
+        print("Hmm, try looking around for clues!")
+        return
+    end
+    
     print("You don't notice anything called that nearby. Try 'search around' to discover what's here.")
 end
 
 local function err_cant_do_that()
+    -- WAVE-2a: Kid-friendly messages for E-rated worlds
+    if _G._context and _G._context.world and _G._context.world.rating == "E" then
+        print("That's not something you can do here. Try reading the signs!")
+        return
+    end
+    
     print("That doesn't seem to work. Maybe try examining it first, or type 'help' for ideas.")
 end
 
 local function err_nothing_happens(obj)
+    -- WAVE-2a: Kid-friendly messages for E-rated worlds
+    if _G._context and _G._context.world and _G._context.world.rating == "E" then
+        print("That didn't work. What else could you try?")
+        return
+    end
+    
     print("Nothing obvious happens. Try examining it more closely, or try a different approach.")
 end
 
