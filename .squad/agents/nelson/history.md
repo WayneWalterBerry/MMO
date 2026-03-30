@@ -146,3 +146,15 @@
 - **Infrastructure:** Registered `test/options/` in `run-tests.lua` test_dirs + source_to_tests mapping for `src/engine/verbs/options.lua`.
 - **Test runner:** 272 total files discovered (269 pass, 3 pre-existing failures unrelated to options).
 - Commit: ffbc584
+
+### WAVE-0 World Loader + E-Rating TDD Tests (2026-08-23)
+- Built 4 test files in `test/worlds/` — 78 tests total across 4 files, all passing except 1 expected TDD red.
+- **test-world-discovery.lua** (10 tests): subdirectory scanning finds world.lua files, manor id/name/rating correct, multi-world via legacy fallback, graceful skip on missing/malformed world.lua, content_root assignment.
+- **test-world-selection.lua** (10 tests): select by world_id (new 2-arg signature), auto-select single world, FATAL on zero worlds, error listing IDs on ambiguous multi-world, context.world field preservation including rating.
+- **test-e-rating-blocks.lua** (46 tests): Tier 1 spec validation (12 restricted verbs blocked, 17 safe verbs allowed, 6 M-rated not blocked, 3 edge cases, 3 friendly message checks, 2 world file ratings) + Tier 2 dispatch integration (3 tests, 1 expected fail).
+- **test-world-loader-regression.lua** (12 tests): manor discover+select, load() with world_id forwarding, validation, 7 rooms on disk, start-room exists, all rooms parse, objects present (70+), player spawn in start-room, headless boot + look + feel commands.
+- **E-rating Tier 2 TDD red:** 1 dispatch integration test fails because Bart hasn't wired E_RESTRICTED_VERBS check into verb dispatch yet. Attack handler executes normally instead of blocking. Exactly the expected TDD red state — turns green when Bart adds the `if context.world.rating == "E"` check to verbs/init.lua.
+- **Discovery:** Bart already implemented `select(worlds, world_id)`, `load(..., world_id)`, `get_content_paths()`, and multi-world error messages. All selection tests pass immediately.
+- **`hit` verb added to E_RESTRICTED_VERBS** per task spec — not in plan §4.0.7 but specified by Wayne. If Bart doesn't include it, test serves as spec feedback.
+- **No regressions:** 72 files, 2,076 tests total across "other" shard. Only the 1 expected TDD failure.
+- Commit: b491041
