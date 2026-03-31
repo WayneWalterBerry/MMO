@@ -4,6 +4,24 @@
 **Last user:** Wayne Berry
 
 ## What We Were Working On
+- Wyatt's World post-mortem fix: 97 bugs → 0 in one session
+- Puzzle UX polish (Feastables options, riddle boards, bookshelf surface)
+- CI/deploy pipeline fixed (glob bug, path doubling, options module)
+
+## Board State
+- Open issues: 6 (all pre-existing, not wyatt-world)
+- Open PRs: 0
+- Urgent: none
+
+## Tomorrow's Queue
+- More puzzle UX polish across all 7 rooms (especially put-in-bin flow)
+- Web bundle rebuild with latest options/lighting fixes
+- Pre-existing issues: #407, #410, #265, #263, #262, #126
+
+**Last session:** 2026-03-30
+**Last user:** Wayne Berry
+
+## What We Were Working On
 - Options hint system shipped (Phases 1-6 complete, Phase 7-8 pending)
 - Wyatt's World built autonomously (7 rooms, 68 objects, E-rating, MrBeast theme)
 - World folder restructure (168 files moved to worlds/manor/)
