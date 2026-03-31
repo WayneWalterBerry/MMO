@@ -81,6 +81,7 @@ Quick-reference table of **active + most recent decisions**.
 | D-SMITHERS-VERB-UX-FIXES | Verbs | ✅ Implemented | Smithers: 3 missing verbs (press, type, turn), enter dual-routing, grope→feel, spacing, greetings |
 | D-WYATT-CONTENT-SIMPLIFICATION | Content | ✅ Implemented | Flanders: 19 vocabulary simplifications across 15 objects for 3rd-grade reading level |
 | D-KID-FRIENDLY-UX | Parser & Loop | ✅ Implemented | Smithers: greetings/socials routed to help, easter eggs (MrBeast, frustration support), fuzzy verb typo match (≤2 Levenshtein), 26 new tests |
+| D-NELSON-WYATT-PUZZLE-FEEDBACK | Design | 🟢 Feedback | Nelson QA: 9/10 Wyatt's World puzzle rating; 6/7 excellent, 1 blocked by parser bug, minor UX friction on chocolate bars |
 
 
 ## D-WAYNE-PHASE5-DECISIONS: Phase 5 Scope Decisions
@@ -3060,3 +3061,95 @@ Content rating enforcement operates on **two layers:**
 | Hostile creatures | ⚠️ Not blocked | Objects designed as friendly/neutral only |
 
 ---
+
+## D-NELSON-WYATT-PUZZLE-FEEDBACK: QA Puzzle Playtest Report
+
+**Status:** 🟢 Feedback  
+**Author:** Nelson (QA Engineer)  
+**Date:** 2025-01-20  
+**Category:** Design / Quality Assurance  
+**For:** Sideshow Bob (Puzzle Designer), Comic Book Guy (Design Lead)
+
+### Executive Summary
+
+Wyatt's World puzzle suite: **9/10** overall rating.
+
+- **6/7 puzzles:** ✅ Excellent (zero frustration, clear aha moments)
+- **1/7 puzzles:** ❌ Blocked by parser bug #512 (cannot read riddle boards — ordinal resolution broken)
+- **Minor UX friction:** Chocolate bar examination returns generic hint instead of listing bars
+
+### Puzzle-by-Puzzle Scores
+
+| Room | Puzzle | Score | Status |
+|------|--------|-------|--------|
+| Beast Studio | Welcome Button | ✅ 10/10 | Perfect tutorial |
+| Feastables Factory | Chocolate Sorting | ⚠️ 8/10 | Good puzzle, UX issue |
+| Money Vault | Counting Challenge | ✅ 10/10 | Gold standard |
+| Beast Burger Kitchen | Recipe Assembly | ✅ 10/10 | Excellent sequential design |
+| Last to Leave | Spot the Fakes | ✅ 10/10 | Best puzzle (15-number clock is genius) |
+| Riddle Arena | Riddle Solving | ❌ N/A | Blocked by parser bug #512 |
+| Grand Prize Vault | Final Combination | ✅ 10/10 | Perfect capstone |
+
+### Key Findings
+
+**What Worked Brilliantly:**
+- Clear goal statements on every room sign
+- Progressive difficulty from tutorial to capstone
+- Sensory clues (smell, listen, feel) woven throughout
+- Age-appropriate math and reasoning challenges
+- No trial-and-error frustration in 6/7 puzzles
+
+**What Needs Fixing (Parser Bugs, Not Design):**
+- BUG #512: Ordinal resolution broken → cannot examine "first riddle board"
+- BUG #515: "Examine chocolate bars" returns generic hint (should list bars)
+- BUG #513: "Strike match" in help menu confuses young players
+
+**Recommendations for Bob:**
+1. Keep "Last to Leave" (15-number clock) as puzzle design template — it's world-class
+2. Use sensory clues MORE in future puzzles (system is excellent but underutilized)
+3. Add 2-3 progressive hint levels per puzzle (subtle → contextual → explicit)
+4. Test riddle boards after parser fix is merged
+
+### Sensory System Evaluation
+
+**Rating:** 10/10 — Exceptional implementation
+
+Sensory descriptions are rich and immersive. Recommendation: use them for **hints**, not just flavor:
+- Clock puzzle: "listen to clock" → "It ticks irregularly!"
+- Lamp puzzle: "feel lamp" → "The bulb is ice cold!"
+- Bars: "smell bars" → identify flavors
+
+### Target Audience Fit
+
+**Age:** 8-12 years old  
+**Verdict:** ✅ Perfect fit
+
+- Clear, colorful descriptions
+- No violence, scary content, or adult themes
+- Fun theme (MrBeast challenges) highly engaging
+- Reading level appropriate (3rd grade)
+- Strategic decision-making without punishment
+
+### Player Frustration Analysis
+
+| Puzzle | Frustration | Root Cause |
+|--------|-------------|-----------|
+| Button | 0/10 | Sign tells exact action |
+| Chocolate | 5/10 (if "examine bars" used) | Parser returns generic hint |
+| Money | 0/10 | Clear instructions + math |
+| Burger | 0/10 | Sequential steps obvious |
+| Fakes | 0/10 | Anomalies immediately visible |
+| Riddles | 10/10 | Cannot read riddles at all |
+| Vault | 0/10 | Letter explicitly hints at numbers |
+
+**Frustration ratio:** 1/7 blocked by engine bug (not design issue)
+
+### Sign-Off
+
+**Verdict:** Wyatt's World puzzle design is exceptional. The designer clearly understands age-appropriate puzzle construction. All major issues are parser/engine bugs (Wiggum + Smithers), not design flaws.
+
+Once parser bugs are fixed, this world is ready for production.
+
+**—Nelson (QA Engineer)**
+
+
